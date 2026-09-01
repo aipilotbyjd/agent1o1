@@ -72,7 +72,7 @@ const LoginPage = () => {
 							<img
 								src={isDarkTheme ? LogoDark : LogoLight}
 								className='h-16 cursor-pointer'
-								alt='Boltify'
+								alt='Agent1o1'
 							/>
 						</button>
 

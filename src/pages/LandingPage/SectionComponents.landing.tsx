@@ -69,7 +69,7 @@ const SectionComponentsLanding = () => {
 					</div>
 				</h2>
 				<p className='mt-3 text-center text-zinc-800 dark:text-neutral-200'>
-					Powered by Tailwind CSS utility classes, Boltify’s extensive library of prebuilt
+					Powered by Tailwind CSS utility classes, Agent1o1’s extensive library of prebuilt
 					components empowers you to effortlessly design and customize stunning, fully
 					responsive, mobile-first websites in record time.
 				</p>

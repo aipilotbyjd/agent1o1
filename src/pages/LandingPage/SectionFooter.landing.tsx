@@ -28,7 +28,7 @@ const SectionFooterLanding = () => {
 						<img
 							src={isDarkTheme ? LogoDark : LogoLight}
 							className='h-8'
-							alt='Boltify'
+							alt='Agent1o1'
 						/>
 					</a>
 					<p className='mt-3 text-xs text-zinc-600 sm:text-sm dark:text-neutral-400'>
@@ -257,7 +257,7 @@ const SectionFooterLanding = () => {
 								<img
 									src={isDarkTheme ? LogoDark : LogoLight}
 									className='h-8'
-									alt='Boltify'
+									alt='Agent1o1'
 								/>
 							</a>
 							<p className='mt-1 text-xs text-zinc-600 sm:text-sm dark:text-neutral-400'>

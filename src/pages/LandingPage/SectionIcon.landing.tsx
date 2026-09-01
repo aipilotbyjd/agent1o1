@@ -17,7 +17,7 @@ const SectionIconLanding = () => {
 							</h3>
 							<p className='text-zinc-600 dark:text-neutral-400'>
 								All components were carefully crafted using Tailwind CSS v4,
-								ensuring modern design and easy customization for Boltify.
+								ensuring modern design and easy customization for Agent1o1.
 							</p>
 						</div>
 

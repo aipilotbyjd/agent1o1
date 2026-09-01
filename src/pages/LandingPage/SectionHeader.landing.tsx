@@ -80,12 +80,12 @@ const SectionHeaderLanding = () => {
 				<div className='lg:col-span-3'>
 					<button
 						className='inline-block flex-none cursor-pointer rounded-xl text-xl font-semibold focus:opacity-80 focus:outline-hidden'
-						aria-label='Boltify'
+						aria-label='Agent1o1'
 						onClick={() => navigate('/')}>
 						<img
 							src={isDarkTheme ? LogoDark : LogoLight}
 							className='h-12'
-							alt='Boltify'
+							alt='Agent1o1'
 						/>
 					</button>
 				</div>

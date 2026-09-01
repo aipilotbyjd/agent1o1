@@ -49,7 +49,7 @@ const SectionTemplateLanding = () => {
 					</div>
 				</h2>
 				<p className='mt-3 text-center text-zinc-800 dark:text-neutral-200'>
-					Boltify offers free, ready-to-use templates so you can build your projects at
+					Agent1o1 offers free, ready-to-use templates so you can build your projects at
 					lightning speed—perfect for saving time and moving fast.
 				</p>
 			</div>

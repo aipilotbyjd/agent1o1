@@ -12,8 +12,8 @@ export default defineConfig({
 		VitePWA({
 			registerType: 'autoUpdate',
 			manifest: {
-				name: 'Boltify | React Tailwind',
-				short_name: 'Boltify',
+				name: 'Agent1o1 | React Tailwind',
+				short_name: 'Agent1o1',
 				start_url: '/',
 				display: 'standalone',
 				background_color: '#09090b',

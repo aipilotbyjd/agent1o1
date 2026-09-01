@@ -11,7 +11,7 @@ const SectionHeroLanding = () => {
 			<div className='grid gap-4 md:grid-cols-2 md:items-center md:gap-8 xl:gap-20'>
 				<div>
 					<h1 className='block text-3xl font-bold text-zinc-800 sm:text-4xl lg:text-6xl lg:leading-tight dark:text-white'>
-						Start your journey with <span className='text-primary-600'>Boltify</span>
+						Start your journey with <span className='text-primary-600'>Agent1o1</span>
 					</h1>
 					<p className='mt-3 text-lg text-zinc-800 dark:text-neutral-400'>
 						Kickstart your project effortlessly with ready-made components built with
