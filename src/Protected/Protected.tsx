@@ -2,7 +2,8 @@ import { Navigate, Outlet } from 'react-router';
 import { useAuth } from '@/context/authContext';
 import { LogoDark } from '@/assets/images';
 
-const Protected = ({ role }: { role: string }) => {
+// `role` is unused: the backend has no global role, only per-workspace ones.
+const Protected = ({ role: _role }: { role: string }) => {
 	const { userData, tokenStorage, isLoading } = useAuth();
 
 	if (isLoading) {
@@ -12,7 +13,7 @@ const Protected = ({ role }: { role: string }) => {
 			</div>
 		);
 	}
-	if (!tokenStorage || !userData?.role.includes(role)) {
+	if (!tokenStorage || !userData) {
 		return <Navigate to='/login' />;
 	}
 

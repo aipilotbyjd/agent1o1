@@ -176,9 +176,9 @@ const AsideFooterPart = () => {
 			)}
 			<User
 				name={userData ? `${userData?.firstName} ${userData?.lastName}` : undefined}
-				position={userData?.role}
+				position={userData?.email}
 				nameSuffix={userData?.isVerified && <Icon icon='CheckmarkBadge02' color='blue' />}
-				src={userData?.image.org}>
+				src={userData?.image?.org ?? undefined}>
 				<NavSeparator />
 
 				{tokenStorage && (

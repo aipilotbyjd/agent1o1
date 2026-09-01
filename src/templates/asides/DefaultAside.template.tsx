@@ -24,6 +24,7 @@ import Modal, {
 import classNames from 'classnames';
 import AsideHeaderPart from '@/templates/asides/_parts/AsideHeader.part';
 import AsideFooterPart from '@/templates/asides/_parts/AsideFooter.part';
+import WorkspaceSwitcherPart from '@/parts/WorkspaceSwitcher.part';
 import EXAMPLE from '@/examples/_index';
 
 const getFlattenPages = (pages: TPages, parentId?: string): TPage[] => {
@@ -230,6 +231,7 @@ const Search = () => {
 const DefaultAsideTemplate = () => {
 	const navigate = useNavigate();
 	const location = useLocation();
+	const { asideStatus } = useAsideStatus();
 
 	const tabs = {
 		dashboard: {
@@ -276,6 +278,7 @@ const DefaultAsideTemplate = () => {
 		<Aside>
 			<AsideHeaderPart />
 			<AsideBody>
+				{asideStatus && <WorkspaceSwitcherPart />}
 				<Search />
 				<AsideQuickContainer>
 					{Object.values(tabs).map((tab) => (

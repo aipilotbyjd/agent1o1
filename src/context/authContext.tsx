@@ -1,96 +1,113 @@
-import { createContext, useContext, useMemo, useState, useEffect } from 'react';
+import { createContext, useContext, useMemo, useState, useEffect, useCallback } from 'react';
 import { Outlet, useNavigate } from 'react-router';
-import useFakeUserAPI from '@/api/useFakeUserAPI';
-import { TUser } from '@/mocks/users.mock';
+import {
+	useLogin,
+	useLogout,
+	useRegister,
+	useCurrentUser,
+	getAccessToken,
+	setToken,
+	onCrossTabLogout,
+	TOKEN_CHANGE_EVENT,
+	AuthService,
+} from '@/api';
+import type { TUser, TRegisterDto } from '@/types/auth.type';
+import { WorkspaceProvider } from '@/context/workspaceContext';
 
 export interface IAuthContextProps {
 	isLoading: boolean;
-	onLogin: (
-		username: TUser['username'],
-		password: TUser['password'],
-		rememberMe: boolean,
-	) => Promise<void>;
+	isLoginLoading: boolean;
+	isRegisterLoading: boolean;
+	onLogin: (username: string, password: string, rememberMe: boolean) => Promise<void>;
+	onRegister: (data: TRegisterDto) => Promise<void>;
 	userData: TUser | null;
 	usernameStorage: string | null;
 	tokenStorage: string | null;
 	onLogout: (isRedirect: boolean) => Promise<void>;
+	refreshCurrentUser: () => Promise<void>;
 }
 const AuthContext = createContext<IAuthContextProps>({} as IAuthContextProps);
 
 export const AuthProvider = () => {
-	const getStorageItem = (key: string) =>
-		localStorage.getItem(key) ?? sessionStorage.getItem(key);
-	const tokenStorage = getStorageItem('token');
-	const usernameStorage = getStorageItem('username');
+	const [tokenStorage, setTokenStorage] = useState<string | null>(getAccessToken());
+	const [isBootstrapping, setIsBootstrapping] = useState(true);
 
-	const { response, isLoading, getCheckUser } = useFakeUserAPI(usernameStorage as string);
-	const [userData, setUserData] = useState<TUser | null>(null);
+	useEffect(() => {
+		const sync = () => setTokenStorage(getAccessToken());
+		window.addEventListener(TOKEN_CHANGE_EVENT, sync);
+		const unsubscribeCrossTab = onCrossTabLogout(sync);
+		return () => {
+			window.removeEventListener(TOKEN_CHANGE_EVENT, sync);
+			unsubscribeCrossTab();
+		};
+	}, []);
+
+	const { data: userData = null, refetch: refetchCurrentUser } = useCurrentUser(false);
+
+	useEffect(() => {
+		AuthService.refresh()
+			.then((tokens) => {
+				setToken(tokens.access_token, tokens.expires_in);
+				return refetchCurrentUser();
+			})
+			.catch(() => undefined)
+			.finally(() => setIsBootstrapping(false));
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
+	const loginMutation = useLogin();
+	const registerMutation = useRegister();
+	const logoutMutation = useLogout();
 
 	const navigate = useNavigate();
 
-	// On mount, restore userData from localStorage if available
-	useEffect(() => {
-		const stored = localStorage.getItem('userData') ?? sessionStorage.getItem('userData');
-		if (stored) {
-			try {
-				const parsed = JSON.parse(stored);
-				setUserData(parsed);
-			} catch {
-				/* empty */
-			}
-		}
-	}, []);
+	const refreshCurrentUser = useCallback(async () => {
+		await refetchCurrentUser();
+	}, [refetchCurrentUser]);
 
-	// Optionally, update userData state when response changes and usernameStorage exists (for hydration)
-	useEffect(() => {
-		if (response && usernameStorage) {
-			setUserData(response as TUser);
-		}
-	}, [response, usernameStorage]);
-
-	// call this function when you want to authenticate the user
-	const onLogin = async (
-		username: TUser['username'],
-		password: TUser['password'],
-		rememberMe: boolean,
-	) => {
-		await getCheckUser(username, password).then(async (user) => {
-			const storage = rememberMe ? localStorage : sessionStorage;
-			storage.setItem('username', username);
-			storage.setItem('token', 'XXXXX');
-			setUserData(user as TUser);
-			storage.setItem('userData', JSON.stringify(user));
-			navigate('/customer');
-		});
+	const onLogin = async (email: string, password: string) => {
+		await loginMutation.mutateAsync({ email, password });
+		navigate('/customer');
 	};
 
-	// call this function to sign out logged-in user
-	const onLogout = async (isNavigate = true) => {
-		localStorage.removeItem('username');
-		localStorage.removeItem('token');
-		localStorage.removeItem('userData');
-		sessionStorage.removeItem('username');
-		sessionStorage.removeItem('token');
-		sessionStorage.removeItem('userData');
-		setUserData(null);
-		if (isNavigate) navigate(`../login`, { replace: true });
+	const onRegister = async (data: TRegisterDto) => {
+		await registerMutation.mutateAsync(data);
+		navigate('/customer');
+	};
+
+	const onLogout = async (isRedirect = true) => {
+		await logoutMutation.mutateAsync().catch(() => undefined);
+		if (isRedirect) navigate('../login', { replace: true });
 	};
 
 	const value: IAuthContextProps = useMemo(
 		() => ({
-			usernameStorage,
+			usernameStorage: userData?.email ?? null,
 			tokenStorage,
 			onLogin,
+			onRegister,
 			onLogout,
+			refreshCurrentUser,
 			userData,
-			isLoading,
+			isLoading: isBootstrapping,
+			isLoginLoading: loginMutation.isPending,
+			isRegisterLoading: registerMutation.isPending,
 		}),
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[usernameStorage, userData, tokenStorage, isLoading],
+		[
+			userData,
+			tokenStorage,
+			isBootstrapping,
+			refreshCurrentUser,
+			loginMutation.isPending,
+			registerMutation.isPending,
+		],
 	);
 	return (
 		<AuthContext.Provider value={value}>
-			<Outlet />
+			<WorkspaceProvider>
+				<Outlet />
+			</WorkspaceProvider>
 		</AuthContext.Provider>
 	);
 };

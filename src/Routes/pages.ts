@@ -1156,5 +1156,34 @@ const documentation = {
 	},
 };
 
-const pages = { apps, pagesExamples, documentation, examples };
+const auth: TPages = {
+	login: pagesExamples.login,
+	signup: pagesExamples.signup,
+	forgotPassword: {
+		id: 'forgotPassword',
+		to: '/forgot-password',
+		text: 'Forgot Password',
+		icon: 'AiMail',
+	},
+	resetPassword: {
+		id: 'resetPassword',
+		to: '/reset-password',
+		text: 'Reset Password',
+		icon: 'AiLock',
+	},
+	verifyEmail: {
+		id: 'verifyEmail',
+		to: '/verify-email',
+		text: 'Verify Email',
+		icon: 'AiMail',
+	},
+	oauthCallback: {
+		id: 'oauthCallback',
+		to: '/oauth/callback',
+		text: 'OAuth Callback',
+		icon: 'Login03',
+	},
+};
+
+const pages = { apps, pagesExamples, auth, documentation, examples };
 export default pages;

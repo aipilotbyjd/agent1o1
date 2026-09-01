@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider } from 'react-router';
 import { lazy } from 'react';
-import LoginPage from '@/pages/Login.page';
+import LoginPage from '@/pages/auth/Login.page';
+import RegisterPage from '@/pages/auth/Register.page';
 import Protected from '@/Protected/Protected';
 import Root from '@/Root';
 import DefaultLayout from '@/layouts/Default.layout';
@@ -12,7 +13,11 @@ import Page404Page from '@/pages/Page404.page';
 import UnderConstructionPage from '@/pages/UnderConstruction.page';
 import DocumentationPages from '@/Routes/infoPages/documentationPages';
 import ExamplePages from '@/Routes/infoPages/examplePages';
-import RegisterPage from '@/pages/Register.page';
+
+const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPassword.page'));
+const ResetPasswordPage = lazy(() => import('@/pages/auth/ResetPassword.page'));
+const VerifyEmailPage = lazy(() => import('@/pages/auth/VerifyEmail.page'));
+const OAuthCallbackPage = lazy(() => import('@/pages/auth/OAuthCallback.page'));
 
 // Lazily loaded components for routes
 const SalesLayout = lazy(() => import('@/pages/apps/sales/_layouts/Sales.layout'));
@@ -71,6 +76,22 @@ const router = createBrowserRouter([
 					{
 						path: pages.pagesExamples.signup.to,
 						element: <RegisterPage />,
+					},
+					{
+						path: pages.auth.forgotPassword.to,
+						element: <ForgotPasswordPage />,
+					},
+					{
+						path: pages.auth.resetPassword.to,
+						element: <ResetPasswordPage />,
+					},
+					{
+						path: pages.auth.verifyEmail.to,
+						element: <VerifyEmailPage />,
+					},
+					{
+						path: pages.auth.oauthCallback.to,
+						element: <OAuthCallbackPage />,
 					},
 					{
 						element: <DefaultLayout />,
