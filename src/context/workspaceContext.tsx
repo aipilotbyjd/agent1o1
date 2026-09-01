@@ -1,13 +1,16 @@
-import { createContext, useContext, useMemo, ReactNode } from 'react';
+import { createContext, useContext, useMemo, useCallback, ReactNode } from 'react';
 import { useAuth } from '@/context/authContext';
 import { useWorkspaces, useCreateWorkspace, useSwitchWorkspace } from '@/api';
-import type { TWorkspace, TCreateWorkspaceDto } from '@/types/workspace.type';
+import type { TWorkspace, TWorkspaceRole, TCreateWorkspaceDto } from '@/types/workspace.type';
+import { hasWorkspacePermission, type TWorkspacePermission } from '@/utils/workspacePermission.util';
 
 export interface IWorkspaceContextProps {
 	workspaces: TWorkspace[];
 	isLoading: boolean;
 	activeWorkspaceId: string | null;
 	activeWorkspace: TWorkspace | null;
+	myRole: TWorkspaceRole | null;
+	can: (permission: TWorkspacePermission) => boolean;
 	switchWorkspace: (id: string) => Promise<void>;
 	createWorkspace: (data: TCreateWorkspaceDto) => Promise<TWorkspace>;
 	isSwitching: boolean;
@@ -29,6 +32,13 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
 		[workspaces, activeWorkspaceId],
 	);
 
+	const myRole = activeWorkspace?.role ?? null;
+
+	const can = useCallback(
+		(permission: TWorkspacePermission) => hasWorkspacePermission(myRole, permission),
+		[myRole],
+	);
+
 	const switchWorkspace = async (id: string) => {
 		await switchMutation.mutateAsync(id);
 	};
@@ -43,6 +53,8 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
 			isLoading,
 			activeWorkspaceId,
 			activeWorkspace,
+			myRole,
+			can,
 			switchWorkspace,
 			createWorkspace,
 			isSwitching: switchMutation.isPending,
@@ -54,6 +66,8 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
 			isLoading,
 			activeWorkspaceId,
 			activeWorkspace,
+			myRole,
+			can,
 			switchMutation.isPending,
 			createMutation.isPending,
 		],
