@@ -15,7 +15,7 @@ const AsideHeaderPart = () => {
 				<Link to='/' aria-label='Logo'>
 					<img
 						src={isDarkTheme ? LogoDark : LogoLight}
-						alt='Boltify'
+						alt='Agent1o1'
 						className='h-10 transition-all duration-300 ease-in-out'
 					/>
 				</Link>
