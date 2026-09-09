@@ -14,29 +14,121 @@ layer(base);
 		'Urbanist', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
 		'Segoe UI Symbol', 'Noto Color Emoji';
 
-	--color-primary-50: #f5fff4;
-	--color-primary-100: #e6ffec;
-	--color-primary-200: #ccffd8;
-	--color-primary-300: #99ffad;
-	--color-primary-400: #80ff94;
-	--color-primary-500: #66ff4c;
-	--color-primary-600: #59e644;
-	--color-primary-700: #4cc63b;
-	--color-primary-800: #3e9e32;
-	--color-primary-900: #307729;
-	--color-primary-950: #1c4e1f;
+	--color-primary-50: var(--primary-50);
+	--color-primary-100: var(--primary-100);
+	--color-primary-200: var(--primary-200);
+	--color-primary-300: var(--primary-300);
+	--color-primary-400: var(--primary-400);
+	--color-primary-500: var(--primary-500);
+	--color-primary-600: var(--primary-600);
+	--color-primary-700: var(--primary-700);
+	--color-primary-800: var(--primary-800);
+	--color-primary-900: var(--primary-900);
+	--color-primary-950: var(--primary-950);
 
-	--color-secondary-50: #fff4ef;
-	--color-secondary-100: #ffe4da;
-	--color-secondary-200: #ffc6b0;
-	--color-secondary-300: #ffa388;
-	--color-secondary-400: #ff8c66;
-	--color-secondary-500: #ff7a47;
-	--color-secondary-600: #e66e40;
-	--color-secondary-700: #cc6138;
-	--color-secondary-800: #b35430;
-	--color-secondary-900: #8a3f24;
-	--color-secondary-950: #4a2113;
+	--color-primary-foreground: var(--primary-foreground);
+
+	--color-zinc-100: var(--bg-base);
+	--color-zinc-200: var(--border-base);
+	--color-zinc-800: var(--text-primary);
+	--color-zinc-900: var(--text-primary);
+	--color-zinc-500: var(--text-secondary);
+	--color-zinc-600: var(--text-secondary);
+
+	--color-slate-100: var(--bg-base);
+	--color-slate-200: var(--border-base);
+	--color-slate-800: var(--text-primary);
+	--color-slate-900: var(--text-primary);
+	--color-slate-500: var(--text-secondary);
+	--color-slate-600: var(--text-secondary);
+
+	--color-bg-main: var(--bg-main);
+	--color-bg-sidebar: var(--bg-sidebar);
+	--color-bg-card: var(--bg-card);
+	--color-border-main: var(--border-main);
+	--color-text-main: var(--text-main);
+	--color-text-muted: var(--text-muted);
+	--color-soft-accent-bg: var(--soft-accent-bg);
+	--color-soft-accent-border: var(--soft-accent-border);
+
+	--shadow-2xs: var(--shadow-val);
+	--shadow-xs: var(--shadow-val);
+	--shadow-sm: var(--shadow-val);
+	--shadow-md: var(--shadow-val);
+
+	--color-secondary-50: var(--color-zinc-50);
+	--color-secondary-100: var(--color-zinc-100);
+	--color-secondary-200: var(--color-zinc-200);
+	--color-secondary-300: var(--color-zinc-300);
+	--color-secondary-400: var(--color-zinc-400);
+	--color-secondary-500: var(--color-zinc-500);
+	--color-secondary-600: var(--color-zinc-600);
+	--color-secondary-700: var(--color-zinc-700);
+	--color-secondary-800: var(--color-zinc-800);
+	--color-secondary-900: var(--color-zinc-900);
+	--color-secondary-950: var(--color-zinc-950);
+}
+
+:root {
+	--primary-50: #fffdf0;
+	--primary-100: #fefad4;
+	--primary-200: #fbf4aa;
+	--primary-300: #f6ea7d;
+	--primary-400: #cff54a;
+	--primary-500: #c4ee3d;
+	--primary-600: #b7e52f;
+	--primary-700: #9b941c;
+	--primary-800: #857e15;
+	--primary-900: #6f6a0f;
+	--primary-950: #4b4708;
+	--primary-foreground: #111111;
+
+	--bg-base: #fcfcfd;
+	--border-base: #eceef2;
+	--text-primary: #101828;
+	--text-secondary: #667085;
+
+	--bg-main: #fcfcfd;
+	--bg-sidebar: #ffffff;
+	--bg-card: #ffffff;
+	--border-main: #eceef2;
+	--text-main: #101828;
+	--text-muted: #667085;
+	--soft-accent-bg: #f8fde9;
+	--soft-accent-border: #eaf4bc;
+
+	--shadow-val: 0 4px 24px rgba(16, 24, 40, 0.04);
+}
+
+.dark {
+	--primary-50: rgba(207, 245, 74, 0.1);
+	--primary-100: rgba(207, 245, 74, 0.15);
+	--primary-200: #eaf4bc;
+	--primary-300: #dfee98;
+	--primary-400: #cff54a;
+	--primary-500: #c4ee3d;
+	--primary-600: #b7e52f;
+	--primary-700: #9b941c;
+	--primary-800: #857e15;
+	--primary-900: #6f6a0f;
+	--primary-950: #4b4708;
+	--primary-foreground: #111111;
+
+	--bg-base: #0d0f10;
+	--border-base: #2a2d31;
+	--text-primary: #ffffff;
+	--text-secondary: #a1a5ab;
+
+	--bg-main: #0d0f10;
+	--bg-sidebar: #111315;
+	--bg-card: #181a1d;
+	--border-main: #2a2d31;
+	--text-main: #ffffff;
+	--text-muted: #a1a5ab;
+	--soft-accent-bg: rgba(207, 245, 74, 0.1);
+	--soft-accent-border: #2a2d31;
+
+	--shadow-val: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
 @layer base {
@@ -167,6 +259,9 @@ layer(base);
 
 .Toastify__toast {
 	@apply border border-zinc-500/25;
+}
+.Toastify__toast--default {
+	--toast-accent: #cff54a; /* brand lime */
 }
 .Toastify__close-button {
 	@apply end-4 top-4;
