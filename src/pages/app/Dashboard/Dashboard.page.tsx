@@ -28,9 +28,9 @@ import { OutletContextType } from '@/pages/app/Dashboard/_layouts/Dashboard.layo
 import Breadcrumb from '@/components/layout/Breadcrumb';
 import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
-import { useAuth } from '@/context/auth';
+import { useAuth } from '@/context/authContext';
 import type { TOnboardingStepKey } from '@/types/auth.type';
-import { useWorkspaceContext } from '@/context/workspace';
+import { useWorkspaceContext } from '@/context/workspaceContext';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import { useDashboard } from '@/api/modules/dashboard';
 import { STATUS_BADGE_COLORS, type TExecutionStatus } from '@/types/dashboard.type';

@@ -1,4 +1,4 @@
-import { useAuth } from '@/context/auth';
+import { useAuth } from '@/context/authContext';
 import { useUploadAvatar } from '@/api/modules/auth';
 import { useCreateWorkspace, useSwitchWorkspace } from '@/api/modules/workspaces';
 import {

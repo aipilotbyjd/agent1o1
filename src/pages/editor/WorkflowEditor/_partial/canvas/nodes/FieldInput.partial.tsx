@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import { useCredentials } from '@/api/modules/credentials';
-import { useWorkspaceContext } from '@/context/workspace';
+import { useWorkspaceContext } from '@/context/workspaceContext';
 import type { TNodeField } from '../../../_types/node.type';
 import ExpressionInput from './ExpressionInput.partial';
 

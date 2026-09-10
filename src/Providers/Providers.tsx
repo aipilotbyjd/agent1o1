@@ -1,14 +1,11 @@
-import { ThemeContextProvider } from '@/context/theme';
-import { ConfirmProvider } from '@/context/confirm';
-import { AuthProvider } from '@/context/auth';
+import { ThemeContextProvider } from '@/context/themeContext';
+import { AuthProvider } from '@/context/authContext';
 
 const Providers = () => {
 	return (
 		<ThemeContextProvider>
-			<ConfirmProvider>
-				{/* <Outlet /> must be used in the innermost provider. */}
-				<AuthProvider />
-			</ConfirmProvider>
+			{/* <Outlet /> must be used in the innermost provider. */}
+			<AuthProvider />
 		</ThemeContextProvider>
 	);
 };

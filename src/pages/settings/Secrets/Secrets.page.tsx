@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Copy, Eye, EyeOff, Key, Lock, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
-import { useWorkspaceContext } from '@/context/workspace';
+import { useWorkspaceContext } from '@/context/workspaceContext';
 import {
 	useVariables,
 	useCreateVariable,

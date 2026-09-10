@@ -10,8 +10,8 @@ import {
 	ShieldCheck,
 	Trash2,
 } from 'lucide-react';
-import { useWorkspaceContext } from '@/context/workspace';
-import { useConfirm } from '@/context/confirm';
+import { useWorkspaceContext } from '@/context/workspaceContext';
+import { useConfirm } from '@/context/confirmContext';
 import { useUpdateWorkspace, useDeleteWorkspace } from '@/api/modules/workspaces';
 import { primaryBtn, secondaryBtn, dangerBtn } from '@/pages/settings/_shared/buttons';
 

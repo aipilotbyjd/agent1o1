@@ -16,7 +16,7 @@ import {
 import Icon from '@/components/icon/Icon';
 import Aside, { AsideBody, AsideFooter } from '@/components/layout/Aside';
 import useAsideStatus from '@/hooks/useAsideStatus';
-import { useAuth } from '@/context/auth';
+import { useAuth } from '@/context/authContext';
 import classNames from 'classnames';
 import { useGlobalSearchStore } from '@/store/globalSearch.store';
 import GlobalSearch from '@/templates/search/GlobalSearch.template';

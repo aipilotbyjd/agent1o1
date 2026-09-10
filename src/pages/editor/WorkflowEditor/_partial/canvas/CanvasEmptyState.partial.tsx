@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
 import { useAiChatStore } from '@/store/aiChat.store';
-import { useAuth } from '@/context/auth';
+import { useAuth } from '@/context/authContext';
 import {
 	Paperclip,
 	Sliders,

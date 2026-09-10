@@ -11,7 +11,7 @@ import {
 	Trash2,
 	X,
 } from 'lucide-react';
-import { useWorkspaceContext } from '@/context/workspace';
+import { useWorkspaceContext } from '@/context/workspaceContext';
 import {
 	useEnvironments,
 	useCreateEnvironment,

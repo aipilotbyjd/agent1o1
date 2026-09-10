@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, CreditCard, Package, Sparkles } from 'lucide-react';
-import { useWorkspaceContext } from '@/context/workspace';
+import { useWorkspaceContext } from '@/context/workspaceContext';
 import { useCreditBalance, useCreditPacks } from '@/api/modules/credits';
 import { useBuyCredits, usePackCatalog } from '@/api/modules/billing';
 import type { TCreditPack } from '@/types/credit.type';

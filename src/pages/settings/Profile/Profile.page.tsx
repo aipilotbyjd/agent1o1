@@ -23,8 +23,8 @@ import {
 	useUpdateProfile,
 	useUploadAvatar,
 } from '@/api/modules/auth';
-import { useAuth } from '@/context/auth';
-import { useConfirm } from '@/context/confirm';
+import { useAuth } from '@/context/authContext';
+import { useConfirm } from '@/context/confirmContext';
 import { primaryBtn, secondaryBtn, dangerBtn } from '@/pages/settings/_shared/buttons';
 
 type TProfileForm = {

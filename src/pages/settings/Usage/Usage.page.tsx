@@ -17,7 +17,7 @@ import {
 	Activity,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useWorkspaceContext } from '@/context/workspace';
+import { useWorkspaceContext } from '@/context/workspaceContext';
 import { useCreditBalance, useCreditTransactions } from '@/api/modules/credits';
 import { useUsageSnapshots } from '@/api/modules/plans';
 import pages from '@/Routes/pages';

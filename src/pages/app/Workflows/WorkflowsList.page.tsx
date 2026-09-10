@@ -24,12 +24,12 @@ import {
 	Clock,
 } from 'lucide-react';
 import { OutletContextType } from './_layouts/Workflows.layout';
-import { useConfirm } from '@/context/confirm';
+import { useConfirm } from '@/context/confirmContext';
 import Breadcrumb from '@/components/layout/Breadcrumb';
 import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
-import { useWorkspaceContext } from '@/context/workspace';
+import { useWorkspaceContext } from '@/context/workspaceContext';
 import {
 	useFolders,
 	useCreateFolder,

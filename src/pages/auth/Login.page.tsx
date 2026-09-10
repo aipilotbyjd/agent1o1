@@ -4,7 +4,7 @@ import { useFormik } from 'formik';
 import { motion, AnimatePresence } from 'framer-motion';
 import pages from '@/Routes/pages';
 import { ApiError } from '@/api/core';
-import { useAuth } from '@/context/auth';
+import { useAuth } from '@/context/authContext';
 import AuthShell from './_partial/AuthShell.partial';
 import Icon from '@/components/icon/Icon';
 import * as Yup from 'yup';

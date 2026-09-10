@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useWorkspaceContext } from '@/context/workspace';
-import { useConfirm } from '@/context/confirm';
+import { useWorkspaceContext } from '@/context/workspaceContext';
+import { useConfirm } from '@/context/confirmContext';
 import {
 	Plus,
 	Trash2,

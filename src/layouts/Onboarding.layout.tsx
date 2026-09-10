@@ -1,7 +1,7 @@
 import { Navigate, Outlet } from 'react-router';
 import { Suspense } from 'react';
 import Skeleton from '@/components/ui/Skeleton';
-import { useAuth } from '@/context/auth';
+import { useAuth } from '@/context/authContext';
 
 const OnboardingLayout = () => {
 	const { isAuthenticated, isLoading } = useAuth();

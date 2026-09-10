@@ -8,7 +8,7 @@ import {
 	useSendInvitation,
 	useCancelInvitation,
 } from '@/api/modules/workspace-members/workspace-members.hooks';
-import { useWorkspaceContext } from '@/context/workspace';
+import { useWorkspaceContext } from '@/context/workspaceContext';
 
 import type { TWorkspaceMember, TWorkspaceRole } from '@/types/workspace.type';
 import { notify } from '@/api/core';

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useRealtime } from '@/context/realtime';
+import { useRealtime } from '@/context/realtimeContext';
 import { useAiChatStore } from '@/store/aiChat.store';
 import { WorkflowBuilderService } from '@/api/modules/workflow-builder/workflow-builder.service';
 import {

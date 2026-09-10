@@ -22,7 +22,7 @@ import {
 	CreditCard,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useWorkspaceContext } from '@/context/workspace';
+import { useWorkspaceContext } from '@/context/workspaceContext';
 import {
 	useSubscription,
 	useCancelSubscription,

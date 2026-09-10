@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Check, X, Zap } from 'lucide-react';
-import { useWorkspaceContext } from '@/context/workspace';
+import { useWorkspaceContext } from '@/context/workspaceContext';
 import { usePlans, useSubscription } from '@/api/modules/plans';
 import { useBillingCheckout } from '@/api/modules/billing';
 import type { TBillingInterval, TPlanFeatures } from '@/types/billing.type';

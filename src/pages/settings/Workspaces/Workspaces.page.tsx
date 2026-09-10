@@ -23,7 +23,7 @@ import {
 import useDarkMode from '@/hooks/useDarkMode';
 import DARK_MODE from '@/constants/darkMode.constant';
 import { LogoLight, LogoDark } from '@/assets/images';
-import { useAuth } from '@/context/auth';
+import { useAuth } from '@/context/authContext';
 import type { TWorkspace } from '@/types/workspace.type';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 
@@ -35,7 +35,7 @@ import {
 	useLeaveWorkspace,
 } from '@/api/modules/workspaces';
 import Spinner from '@/components/ui/Spinner';
-import { useConfirm } from '@/context/confirm';
+import { useConfirm } from '@/context/confirmContext';
 
 // ─── helpers ───────────────────────────────────────────────────────────────────
 const getInitials = (name: string) =>

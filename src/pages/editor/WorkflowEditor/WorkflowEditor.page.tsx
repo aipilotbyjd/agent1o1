@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { useWorkspaceContext } from '@/context/workspace';
+import { useWorkspaceContext } from '@/context/workspaceContext';
 import { WorkflowService } from '@/api/modules/workflows/workflows.service';
 import pages from '@/Routes/pages';
 import WorkflowEditorLayout from './_layouts/WorkflowEditorLayout.layout';

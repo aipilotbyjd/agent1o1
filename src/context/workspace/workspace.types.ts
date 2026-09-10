@@ -1,7 +1,12 @@
 // ============================================================
 // Workspace Context Types
 // ============================================================
-import type { TWorkspace, TWorkspaceRole } from '@/types/workspace.type';
+import type {
+	TWorkspace,
+	TWorkspaceDetail,
+	TWorkspaceMember,
+	TWorkspaceRole,
+} from '@/types/workspace.type';
 
 export interface IWorkspaceContextProps {
 	// List of all accessible workspaces
@@ -10,9 +15,17 @@ export interface IWorkspaceContextProps {
 
 	// Active workspace info
 	activeWorkspaceId: string;
-	activeWorkspace: TWorkspace | null;
+	activeWorkspace: TWorkspaceDetail | null;
 	isActiveWorkspaceLoading: boolean;
+	isActiveWorkspaceError: boolean;
+	activeWorkspaceError: Error | null;
 
-	// Viewer's role on the active workspace
+	// Active workspace settings, roles, members
 	role: TWorkspaceRole | null;
+	members: TWorkspaceMember[];
+	isMembersLoading: boolean;
+
+	// Utilities
+	switchWorkspace: (idOrSlug: string) => void;
+	refetchActiveWorkspace: () => void;
 }

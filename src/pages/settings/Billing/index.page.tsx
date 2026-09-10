@@ -12,7 +12,7 @@ import {
 	CreditCard,
 	FileText,
 } from 'lucide-react';
-import { useWorkspaceContext } from '@/context/workspace';
+import { useWorkspaceContext } from '@/context/workspaceContext';
 import { useCreditBalance, useCreditPacks, useCreditTransactions } from '@/api/modules/credits';
 import { useBillingPortal, useBuyCredits, usePackCatalog } from '@/api/modules/billing';
 import { useSubscription } from '@/api/modules/plans';

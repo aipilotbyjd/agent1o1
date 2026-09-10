@@ -32,7 +32,7 @@ import useDarkMode from '@/hooks/useDarkMode';
 import DARK_MODE from '@/constants/darkMode.constant';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import Wrapper from '@/components/layout/Wrapper';
-import { useConfirm } from '@/context/confirm';
+import { useConfirm } from '@/context/confirmContext';
 
 // Interface declarations
 interface IWorkflow {
