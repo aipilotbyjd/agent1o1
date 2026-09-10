@@ -1,3 +1,0 @@
-```tsx
-<Button isDisable>...</Button>
-```
