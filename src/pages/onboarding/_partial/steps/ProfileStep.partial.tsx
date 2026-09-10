@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Check, Loader2, UploadCloud, X, Camera } from 'lucide-react';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/auth';
 import { useUploadAvatar } from '@/api/modules/auth';
 import { useOnboardingStore } from '../../_context/OnboardingStore.context';
 

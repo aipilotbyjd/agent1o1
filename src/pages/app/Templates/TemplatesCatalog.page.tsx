@@ -24,7 +24,7 @@ import { OutletContextType } from './_layouts/Templates.layout';
 import Breadcrumb from '@/components/layout/Breadcrumb';
 import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
-import { useWorkspaceContext } from '@/context/workspaceContext';
+import { useWorkspaceContext } from '@/context/workspace';
 import {
 	useTemplates,
 	useTemplate,

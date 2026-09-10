@@ -5,7 +5,7 @@ import {
 	subscribeToExecution,
 	type IExecutionNodeEvent,
 } from '@/api/modules/executions';
-import { useRealtime } from '@/context/realtimeContext';
+import { useRealtime } from '@/context/realtime';
 import type { TExecution } from '@/types/execution.type';
 import { createId } from '../_context/WorkflowEditorStore.context';
 import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';

@@ -32,7 +32,7 @@ import NodeDocumentationPanel from '../dialogs/NodeDocumentationPanel.partial';
 import NodeExpandedView from '../dialogs/NodeExpandedView.partial';
 import useDarkMode from '@/hooks/useDarkMode';
 import { useAiChatStore } from '@/store/aiChat.store';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/auth';
 import type { TCanvasNode } from '../../_types/canvas.type';
 import { validateWorkflow } from '../../_helper/validation.helper';
 import { getNodeDefinition, NODE_CATALOG_MAP } from '../../_helper/nodeCatalog.constants';

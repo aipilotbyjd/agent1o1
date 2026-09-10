@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
 import { useAiChatStore, type TAiChatMessage, type TAiTimelineItem } from '@/store/aiChat.store';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/auth';
 import type { IBuilderMessageAction } from '@/types/workflowBuilder.type';
 import {
 	Paperclip,

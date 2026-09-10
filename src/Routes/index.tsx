@@ -159,7 +159,7 @@ const router = createBrowserRouter([
 					},
 					// Protected routes
 					{
-						element: <Protected role='admin' />,
+						element: <Protected />,
 						children: [
 							// App routes
 							{

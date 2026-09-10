@@ -4,7 +4,6 @@ import Pusher from 'pusher-js';
 import { useWorkspaceContext } from '@/context/workspace';
 import { getAccessToken, TOKEN_CHANGE_EVENT } from '@/api/core/token-manager';
 import { useQueryClient } from '@tanstack/react-query';
-import { notificationKeys } from '@/api/modules/notifications/notifications.keys';
 import { notify } from '@/api/core';
 import RealtimeContext from './RealtimeContext';
 
@@ -94,7 +93,9 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
 			// Display a toast/notification
 			notify.success(notification.title || 'New notification received');
 			// Invalidate every notification query (lists across filters + unread count)
-			qc.invalidateQueries({ queryKey: notificationKeys.all(activeWorkspaceId) });
+			// No workspace-scoped key today — invalidate every notification query
+			// (list, unread count, events) via the shared 'notifications' prefix.
+			qc.invalidateQueries({ queryKey: ['notifications'] });
 		});
 
 		return () => {

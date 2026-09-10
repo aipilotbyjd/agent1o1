@@ -1,6 +1,6 @@
 import { ReactNode, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router';
-import { useAuth } from './context/authContext';
+import { useAuth } from './context/auth';
 import useFontSize from './hooks/useFontSize';
 import { Logo, LogoDark, LogoLight } from './assets/images';
 import { toast, ToastContainer, ToastContentProps } from 'react-toastify';

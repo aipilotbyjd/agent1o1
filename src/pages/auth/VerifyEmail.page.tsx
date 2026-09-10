@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import AuthShell from './_partial/AuthShell.partial';
 import Icon from '@/components/icon/Icon';
 import pages from '@/Routes/pages';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/auth';
 import { useResendVerificationEmail } from '@/api/modules/auth';
 
 const VerifyEmailPage = () => {

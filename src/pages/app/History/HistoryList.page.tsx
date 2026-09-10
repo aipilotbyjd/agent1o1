@@ -4,7 +4,7 @@ import { OutletContextType } from './_layouts/History.layout';
 import Breadcrumb from '@/components/layout/Breadcrumb';
 import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
-import { useWorkspaceContext } from '@/context/workspaceContext';
+import { useWorkspaceContext } from '@/context/workspace';
 import { useExecutions } from '@/api/modules/executions/executions.hooks';
 import type { TExecution } from '@/types/execution.type';
 import type { IHistoryItem } from './_types/history.types';

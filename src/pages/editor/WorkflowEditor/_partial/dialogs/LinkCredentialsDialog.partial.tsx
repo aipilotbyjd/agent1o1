@@ -10,7 +10,7 @@ import {
 } from '@/api/modules/credentials';
 import { useCredentialTypes } from '@/api/modules/credential-types';
 import type { TCredentialType } from '@/types/credentialType.type';
-import { useWorkspaceContext } from '@/context/workspaceContext';
+import { useWorkspaceContext } from '@/context/workspace';
 import { useQueryClient } from '@tanstack/react-query';
 
 const LinkCredentialsDialog = () => {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useWorkspaceContext } from '@/context/workspaceContext';
+import { useWorkspaceContext } from '@/context/workspace';
 import { Bell, ExternalLink, Save } from 'lucide-react';
 import { Link } from 'react-router';
 import {

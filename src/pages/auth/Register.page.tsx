@@ -6,7 +6,7 @@ import pages from '@/Routes/pages';
 import classNames from 'classnames';
 import type { TColors } from '@/types/colors.type';
 import { ApiError } from '@/api/core';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/auth';
 import AuthShell from './_partial/AuthShell.partial';
 import Icon from '@/components/icon/Icon';
 import * as Yup from 'yup';

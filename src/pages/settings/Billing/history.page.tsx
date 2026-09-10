@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useWorkspaceContext } from '@/context/workspaceContext';
+import { useWorkspaceContext } from '@/context/workspace';
 import { useCreditTransactions } from '@/api/modules/credits';
 import type { TCreditTransactionType } from '@/types/credit.type';
 

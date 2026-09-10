@@ -68,7 +68,7 @@ import DARK_MODE from '@/constants/darkMode.constant';
 import { LogoFyr } from '@/assets/images';
 import useAsideStatus from '@/hooks/useAsideStatus';
 import pages from '@/Routes/pages';
-import { useWorkspaceContext } from '@/context/workspaceContext';
+import { useWorkspaceContext } from '@/context/workspace';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import {
 	useAgent,
@@ -90,7 +90,7 @@ import type { TAgentTriggerType } from '@/types/agent.type';
 import { AgentService } from '@/api/modules/agents/agents.service';
 import { subscribeToAgentStream } from '@/api/modules/agents/agents.realtime';
 import { useDownloadArtifact } from '@/api/modules/artifacts';
-import { useRealtime } from '@/context/realtimeContext';
+import { useRealtime } from '@/context/realtime';
 import { XCircle, Wrench, FileDown } from 'lucide-react';
 import AgentDataPanel from './_partial/AgentDataPanel.partial';
 

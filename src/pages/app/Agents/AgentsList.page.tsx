@@ -17,11 +17,11 @@ import {
 	MoreHorizontal,
 } from 'lucide-react';
 import { OutletContextType } from './_layouts/Agents.layout';
-import { useConfirm } from '@/context/confirmContext';
+import { useConfirm } from '@/context/confirm';
 import Breadcrumb from '@/components/layout/Breadcrumb';
 import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
-import { useWorkspaceContext } from '@/context/workspaceContext';
+import { useWorkspaceContext } from '@/context/workspace';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import { useAgents, useUpdateAgent, useDeleteAgent } from '@/api/modules/agents';
 

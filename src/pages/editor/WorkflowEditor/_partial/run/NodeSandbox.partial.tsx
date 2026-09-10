@@ -9,7 +9,7 @@ import {
 	Play,
 	Terminal,
 } from 'lucide-react';
-import { useWorkspaceContext } from '@/context/workspaceContext';
+import { useWorkspaceContext } from '@/context/workspace';
 import { useNodeSandbox } from '@/api/modules/node-sandbox';
 
 const MAX_CODE_CHARS = 50_000;

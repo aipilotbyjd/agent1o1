@@ -22,7 +22,7 @@ import {
 import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import { useWorkflowRouteParams } from '../../_hooks/useWorkflowRouteParams.hook';
-import { useConfirm } from '@/context/confirmContext';
+import { useConfirm } from '@/context/confirm';
 import Modal from './Modal.partial';
 import {
 	useWorkflowVersions,

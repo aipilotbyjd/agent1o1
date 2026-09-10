@@ -26,8 +26,8 @@ import Breadcrumb from '@/components/layout/Breadcrumb';
 import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
 import { notify } from '@/api/core';
-import { useWorkspaceContext } from '@/context/workspaceContext';
-import { useConfirm } from '@/context/confirmContext';
+import { useWorkspaceContext } from '@/context/workspace';
+import { useConfirm } from '@/context/confirm';
 import {
 	MASKED_CREDENTIAL_VALUE,
 	type ICredential,

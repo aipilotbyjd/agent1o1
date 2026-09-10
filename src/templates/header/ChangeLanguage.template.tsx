@@ -3,7 +3,7 @@ import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import LANG from '@/constants/lang.constant';
 import { useContext } from 'react';
-import ThemeContext from '@/context/themeContext';
+import ThemeContext from '@/context/theme';
 import { useTranslation } from 'react-i18next';
 import Tooltip from '@/components/ui/Tooltip';
 

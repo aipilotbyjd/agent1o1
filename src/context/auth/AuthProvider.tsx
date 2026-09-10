@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router';
 import { clearTokens, getAccessToken, hasValidToken, TOKEN_CHANGE_EVENT } from '@/api/core';
-import { useCurrentUser, useLogin, useLogout, useRegister } from '@/api/modules/auth';
+import { useLogin, useLogout, useRegister } from '@/api/modules/auth';
+import { useCurrentUser } from '@/api/modules/user';
 import type { TLoginDto, TRegisterDto } from '@/types/auth.type';
 import { WorkspaceProvider } from '@/context/workspace';
 import { RealtimeProvider } from '@/context/realtime';
@@ -39,15 +40,9 @@ export const AuthProvider = () => {
 	const onLogin = useCallback(
 		async (email: string, password: string, rememberMe: boolean) => {
 			const credentials: TLoginDto = { email, password };
-			const { res } = await loginMutation.mutateAsync({ ...credentials, rememberMe });
+			await loginMutation.mutateAsync({ ...credentials, rememberMe });
 			setAccessToken(getAccessToken());
-			const onboarding = res.data.user.onboarding;
-			navigate(
-				onboarding && !onboarding.is_complete && !onboarding.is_dismissed
-					? '/onboarding'
-					: LOGIN_REDIRECT_PATH,
-				{ replace: true },
-			);
+			navigate(LOGIN_REDIRECT_PATH, { replace: true });
 		},
 		[loginMutation, navigate],
 	);
