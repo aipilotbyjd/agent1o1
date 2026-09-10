@@ -1,28 +1,17 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router';
 import { clearTokens, getAccessToken, hasValidToken, TOKEN_CHANGE_EVENT } from '@/api/core';
 import { useCurrentUser, useLogin, useLogout, useRegister } from '@/api/modules/auth';
-import type { TLoginDto, TRegisterDto, TUser } from '@/types/auth.type';
-import { WorkspaceProvider } from '@/context/workspaceContext';
-import { RealtimeProvider } from '@/context/realtimeContext';
+import type { TLoginDto, TRegisterDto } from '@/types/auth.type';
+import { WorkspaceProvider } from '@/context/workspace';
+import { RealtimeProvider } from '@/context/realtime';
+import AuthContext from './AuthContext';
+import type { IAuthContextProps } from './auth.types';
 
 const LOGIN_REDIRECT_PATH = '/workspaces';
 const REGISTER_REDIRECT_PATH = '/verify-email';
 
-export interface IAuthContextProps {
-	isLoading: boolean;
-	isLoginLoading: boolean;
-	isRegisterLoading: boolean;
-	isAuthenticated: boolean;
-	userData: TUser | null;
-	onLogin: (email: string, password: string, rememberMe: boolean) => Promise<void>;
-	onRegister: (data: TRegisterDto, rememberMe?: boolean) => Promise<void>;
-	onLogout: (isRedirect: boolean) => Promise<void>;
-	refreshCurrentUser: () => Promise<void>;
-}
-const AuthContext = createContext<IAuthContextProps>({} as IAuthContextProps);
-
-const RealAuthProvider = () => {
+export const AuthProvider = () => {
 	const navigate = useNavigate();
 	const [accessToken, setAccessToken] = useState<string | null>(() => getAccessToken());
 	const hasActiveToken = !!accessToken && hasValidToken();
@@ -133,6 +122,7 @@ const RealAuthProvider = () => {
 			enrichedUserData,
 		],
 	);
+
 	return (
 		<AuthContext.Provider value={value}>
 			<WorkspaceProvider>
@@ -142,11 +132,4 @@ const RealAuthProvider = () => {
 			</WorkspaceProvider>
 		</AuthContext.Provider>
 	);
-};
-
-export const AuthProvider = RealAuthProvider;
-
-// eslint-disable-next-line react-refresh/only-export-components
-export const useAuth = () => {
-	return useContext(AuthContext);
 };

@@ -1,29 +1,7 @@
-import {
-	createContext,
-	FC,
-	ReactNode,
-	useCallback,
-	useContext,
-	useMemo,
-	useRef,
-	useState,
-} from 'react';
+import { FC, ReactNode, useCallback, useMemo, useRef, useState } from 'react';
 import ConfirmDialog, { IConfirmDialogOptions } from '@/components/ui/ConfirmDialog';
-
-// @start-snippet:: interface
-export type TConfirmFn = (options?: IConfirmDialogOptions) => Promise<boolean>;
-
-export interface IConfirmContextProps {
-	/**
-	 * Opens a confirmation dialog and resolves to `true` when the user confirms
-	 * or `false` when they cancel / dismiss it. Designed as a drop-in,
-	 * promise-based replacement for `window.confirm`.
-	 */
-	confirm: TConfirmFn;
-}
-// @end-snippet:: interface
-
-const ConfirmContext = createContext<IConfirmContextProps>({} as IConfirmContextProps);
+import ConfirmContext from './ConfirmContext';
+import type { IConfirmContextProps, TConfirmFn } from './confirm.types';
 
 interface IConfirmState extends IConfirmDialogOptions {
 	isOpen: boolean;
@@ -76,16 +54,3 @@ export const ConfirmProvider: FC<IConfirmProviderProps> = ({ children }) => {
 		</ConfirmContext.Provider>
 	);
 };
-
-/**
- * Access the imperative confirmation dialog.
- *
- * @example
- * const { confirm } = useConfirm();
- * if (await confirm({ message: `Delete "${name}"?` })) {
- *   await deleteMutation.mutateAsync(id);
- * }
- */
-export const useConfirm = (): IConfirmContextProps => useContext(ConfirmContext);
-
-export default ConfirmContext;

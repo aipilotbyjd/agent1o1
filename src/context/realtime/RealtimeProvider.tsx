@@ -1,22 +1,17 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
-import { useWorkspaceContext } from '@/context/workspaceContext';
+import { useWorkspaceContext } from '@/context/workspace';
 import { getAccessToken, TOKEN_CHANGE_EVENT } from '@/api/core/token-manager';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationKeys } from '@/api/modules/notifications/notifications.keys';
 import { notify } from '@/api/core';
+import RealtimeContext from './RealtimeContext';
 
 // Ensure Pusher is on window for Laravel Echo
 if (typeof window !== 'undefined') {
 	(window as any).Pusher = Pusher;
 }
-
-interface IRealtimeContext {
-	echo: Echo<any> | null;
-}
-
-const RealtimeContext = createContext<IRealtimeContext>({ echo: null });
 
 export const RealtimeProvider = ({ children }: { children: React.ReactNode }) => {
 	const { activeWorkspaceId } = useWorkspaceContext();
@@ -109,5 +104,3 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
 
 	return <RealtimeContext.Provider value={{ echo }}>{children}</RealtimeContext.Provider>;
 };
-
-export const useRealtime = () => useContext(RealtimeContext);
