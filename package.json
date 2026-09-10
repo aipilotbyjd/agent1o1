@@ -41,9 +41,11 @@
 		"dayjs": "^1.11.21",
 		"formik": "^2.4.9",
 		"framer-motion": "^12.40.0",
+		"fuse.js": "^7.5.0",
 		"i18next": "^26.3.0",
 		"is-hotkey": "^0.2.0",
 		"lodash": "^4.18.1",
+		"lucide-react": "^1.43.0",
 		"rc-tree": "^5.13.1",
 		"re-resizable": "^6.11.2",
 		"react": "^19.2.7",
@@ -61,7 +63,8 @@
 		"slate-history": "^0.113.1",
 		"slate-react": "^0.124.2",
 		"web-vitals": "^5.3.0",
-		"yup": "^1.7.1"
+		"yup": "^1.7.1",
+		"zustand": "^5.0.15"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",

@@ -1,17 +1,15 @@
 import { Outlet } from 'react-router';
 import { Suspense } from 'react';
 import Wrapper from '@/components/layout/Wrapper';
-import DefaultAsideTemplate from '@/templates/asides/DefaultAside.template';
 import Container from '@/components/layout/Container';
 import Skeleton from '@/components/ui/Skeleton';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layout/Subheader';
 import Header, { HeaderLeft, HeaderRight } from '@/components/layout/Header';
 
-const DefaultLayout = () => {
+const EditorLayout = () => {
 	return (
 		<>
-			<DefaultAsideTemplate />
-			<Wrapper>
+			<Wrapper hasAside={false} borderDisabled={true}>
 				<Suspense
 					fallback={
 						<>
@@ -59,4 +57,4 @@ const DefaultLayout = () => {
 	);
 };
 
-export default DefaultLayout;
+export default EditorLayout;
