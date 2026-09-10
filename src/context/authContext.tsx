@@ -1,99 +1,150 @@
-import { createContext, useContext, useMemo, useState, useEffect } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router';
-import useFakeUserAPI from '@/api/useFakeUserAPI';
-import { TUser } from '@/mocks/users.mock';
+import { clearTokens, getAccessToken, hasValidToken, TOKEN_CHANGE_EVENT } from '@/api/core';
+import { useCurrentUser, useLogin, useLogout, useRegister } from '@/api/modules/auth';
+import type { TLoginDto, TRegisterDto, TUser } from '@/types/auth.type';
+import { WorkspaceProvider } from '@/context/workspaceContext';
+import { RealtimeProvider } from '@/context/realtimeContext';
+
+const LOGIN_REDIRECT_PATH = '/workspaces';
+const REGISTER_REDIRECT_PATH = '/verify-email';
 
 export interface IAuthContextProps {
 	isLoading: boolean;
-	onLogin: (
-		username: TUser['username'],
-		password: TUser['password'],
-		rememberMe: boolean,
-	) => Promise<void>;
+	isLoginLoading: boolean;
+	isRegisterLoading: boolean;
+	isAuthenticated: boolean;
 	userData: TUser | null;
-	usernameStorage: string | null;
-	tokenStorage: string | null;
+	onLogin: (email: string, password: string, rememberMe: boolean) => Promise<void>;
+	onRegister: (data: TRegisterDto, rememberMe?: boolean) => Promise<void>;
 	onLogout: (isRedirect: boolean) => Promise<void>;
+	refreshCurrentUser: () => Promise<void>;
 }
 const AuthContext = createContext<IAuthContextProps>({} as IAuthContextProps);
 
-export const AuthProvider = () => {
-	const getStorageItem = (key: string) =>
-		localStorage.getItem(key) ?? sessionStorage.getItem(key);
-	const tokenStorage = getStorageItem('token');
-	const usernameStorage = getStorageItem('username');
-
-	const { response, isLoading, getCheckUser } = useFakeUserAPI(usernameStorage as string);
-	const [userData, setUserData] = useState<TUser | null>(null);
-
+const RealAuthProvider = () => {
 	const navigate = useNavigate();
+	const [accessToken, setAccessToken] = useState<string | null>(() => getAccessToken());
+	const hasActiveToken = !!accessToken && hasValidToken();
+	const {
+		data: userData,
+		isLoading: isCurrentUserLoading,
+		refetch: refetchCurrentUser,
+	} = useCurrentUser(hasActiveToken);
+	const loginMutation = useLogin();
+	const registerMutation = useRegister();
+	const logoutMutation = useLogout();
 
-	// On mount, restore userData from localStorage if available
 	useEffect(() => {
-		const stored = localStorage.getItem('userData') ?? sessionStorage.getItem('userData');
-		if (stored) {
-			try {
-				const parsed = JSON.parse(stored);
-				setUserData(parsed);
-			} catch {
-				/* empty */
-			}
-		}
+		const syncToken = () => setAccessToken(getAccessToken());
+
+		window.addEventListener(TOKEN_CHANGE_EVENT, syncToken);
+		window.addEventListener('storage', syncToken);
+
+		return () => {
+			window.removeEventListener(TOKEN_CHANGE_EVENT, syncToken);
+			window.removeEventListener('storage', syncToken);
+		};
 	}, []);
 
-	// Optionally, update userData state when response changes and usernameStorage exists (for hydration)
-	useEffect(() => {
-		if (response && usernameStorage) {
-			setUserData(response as TUser);
-		}
-	}, [response, usernameStorage]);
+	const onLogin = useCallback(
+		async (email: string, password: string, rememberMe: boolean) => {
+			const credentials: TLoginDto = { email, password };
+			const { res } = await loginMutation.mutateAsync({ ...credentials, rememberMe });
+			setAccessToken(getAccessToken());
+			const onboarding = res.data.user.onboarding;
+			navigate(
+				onboarding && !onboarding.is_complete && !onboarding.is_dismissed
+					? '/onboarding'
+					: LOGIN_REDIRECT_PATH,
+				{ replace: true },
+			);
+		},
+		[loginMutation, navigate],
+	);
 
-	// call this function when you want to authenticate the user
-	const onLogin = async (
-		username: TUser['username'],
-		password: TUser['password'],
-		rememberMe: boolean,
-	) => {
-		await getCheckUser(username, password).then(async (user) => {
-			const storage = rememberMe ? localStorage : sessionStorage;
-			storage.setItem('username', username);
-			storage.setItem('token', 'XXXXX');
-			setUserData(user as TUser);
-			storage.setItem('userData', JSON.stringify(user));
-			navigate('/customer');
-		});
-	};
+	const onRegister = useCallback(
+		async (data: TRegisterDto) => {
+			await registerMutation.mutateAsync(data);
+			setAccessToken(getAccessToken());
+			navigate(REGISTER_REDIRECT_PATH, { replace: true });
+		},
+		[registerMutation, navigate],
+	);
 
-	// call this function to sign out logged-in user
-	const onLogout = async (isNavigate = true) => {
-		localStorage.removeItem('username');
-		localStorage.removeItem('token');
-		localStorage.removeItem('userData');
-		sessionStorage.removeItem('username');
-		sessionStorage.removeItem('token');
-		sessionStorage.removeItem('userData');
-		setUserData(null);
-		if (isNavigate) navigate(`../login`, { replace: true });
-	};
+	const onLogout = useCallback(
+		async (isNavigate = true) => {
+			try {
+				if (accessToken) await logoutMutation.mutateAsync();
+				else clearTokens();
+			} finally {
+				setAccessToken(getAccessToken());
+				if (isNavigate) navigate('/login', { replace: true });
+			}
+		},
+		[accessToken, logoutMutation, navigate],
+	);
+
+	const refreshCurrentUser = useCallback(async () => {
+		await refetchCurrentUser();
+	}, [refetchCurrentUser]);
+
+	const isLoading = isCurrentUserLoading;
+	const isLoginLoading = loginMutation.isPending;
+	const isRegisterLoading = registerMutation.isPending;
+	const isAuthenticated = hasActiveToken && !!userData;
+
+	const enrichedUserData = useMemo(() => {
+		if (!userData) return null;
+		const nameParts = userData.name.trim().split(/\s+/).filter(Boolean);
+		const firstName = nameParts[0] || '';
+		const lastName = nameParts.slice(1).join(' ') || '';
+		return {
+			...userData,
+			firstName,
+			lastName,
+			role: userData.current_workspace?.role ?? 'Member',
+			isVerified: !!userData.email_verified_at,
+			image: { org: userData.avatar ?? undefined },
+		};
+	}, [userData]);
 
 	const value: IAuthContextProps = useMemo(
 		() => ({
-			usernameStorage,
-			tokenStorage,
-			onLogin,
-			onLogout,
-			userData,
 			isLoading,
+			isLoginLoading,
+			isRegisterLoading,
+			isAuthenticated,
+			onLogout,
+			onLogin,
+			onRegister,
+			refreshCurrentUser,
+			userData: enrichedUserData,
 		}),
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[usernameStorage, userData, tokenStorage, isLoading],
+		[
+			isLoading,
+			isLoginLoading,
+			isRegisterLoading,
+			isAuthenticated,
+			onLogout,
+			onLogin,
+			onRegister,
+			refreshCurrentUser,
+			enrichedUserData,
+		],
 	);
 	return (
 		<AuthContext.Provider value={value}>
-			<Outlet />
+			<WorkspaceProvider>
+				<RealtimeProvider>
+					<Outlet />
+				</RealtimeProvider>
+			</WorkspaceProvider>
 		</AuthContext.Provider>
 	);
 };
+
+export const AuthProvider = RealAuthProvider;
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
