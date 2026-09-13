@@ -275,7 +275,7 @@ const AccountSecurityPage = () => {
 						<div className='grid gap-6 md:grid-cols-12'>
 							{/* Avatar upload section */}
 							<div className='md:col-span-4 flex flex-col items-center justify-center p-4 border border-dashed border-zinc-200 dark:border-zinc-700 rounded-2xl'>
-								<div className='relative size-20 rounded-full overflow-hidden border-2 border-purple-500 bg-purple-50 flex items-center justify-center text-purple-600 text-2xl font-bold mb-3'>
+								<div className='relative size-20 rounded-full overflow-hidden border-2 border-primary-500 bg-primary-50 flex items-center justify-center text-primary-700 dark:text-primary-400 text-2xl font-bold mb-3'>
 									{user?.avatar ? (
 										<img src={user.avatar} alt={user.name} className='size-full object-cover' />
 									) : (
@@ -284,7 +284,7 @@ const AccountSecurityPage = () => {
 								</div>
 
 								<div className='flex flex-wrap items-center justify-center gap-2'>
-									<label className='cursor-pointer inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors shadow-xs'>
+									<label className='cursor-pointer inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary-500 text-zinc-900 hover:bg-primary-600 transition-colors shadow-xs'>
 										<input
 											type='file'
 											accept='image/*'
@@ -830,7 +830,7 @@ const AccountSecurityPage = () => {
 
 						{/* Create Key Form Drawer */}
 						{showCreateKey && (
-							<form onSubmit={handleCreateApiKey} className='mb-6 rounded-2xl border border-purple-200 bg-purple-50/50 p-5 dark:border-purple-900/40 dark:bg-purple-950/20'>
+							<form onSubmit={handleCreateApiKey} className='mb-6 rounded-2xl border border-primary-200 bg-primary-50/50 p-5 dark:border-primary-900/40 dark:bg-primary-950/20'>
 								<h4 className='text-sm font-bold text-zinc-900 dark:text-white mb-3'>
 									Generate API Key
 								</h4>
@@ -864,7 +864,7 @@ const AccountSecurityPage = () => {
 														type='checkbox'
 														checked={keyAbilities.includes(ab)}
 														onChange={() => toggleAbility(ab)}
-														className='size-4 rounded border-zinc-300 text-purple-600 focus:ring-purple-500'
+														className='size-4 rounded border-zinc-300 text-primary-600 focus:ring-primary-500'
 													/>
 													<code>{ab}</code>
 												</label>
@@ -913,7 +913,7 @@ const AccountSecurityPage = () => {
 												{k.abilities.map((ab) => (
 													<span
 														key={ab}
-														className='inline-block rounded-md bg-purple-100 px-2 py-0.5 text-[10px] font-mono font-medium text-purple-700 dark:bg-purple-950 dark:text-purple-300'>
+														className='inline-block rounded-md bg-primary-100 px-2 py-0.5 text-[10px] font-mono font-medium text-primary-700 dark:bg-primary-950 dark:text-primary-300'>
 														{ab}
 													</span>
 												))}
