@@ -1,6 +1,6 @@
 import { createBrowserRouter, RouterProvider } from 'react-router';
 import { lazy } from 'react';
-import LoginPage from '@/pages/Login.page';
+import LoginPage from '@/pages/auth/Login.page';
 import Protected from '@/Protected/Protected';
 import Root from '@/Root';
 import DefaultLayout from '@/layouts/Default.layout';
@@ -12,12 +12,12 @@ import Page404Page from '@/pages/Page404.page';
 import UnderConstructionPage from '@/pages/UnderConstruction.page';
 import DocumentationPages from '@/Routes/infoPages/documentationPages';
 import ExamplePages from '@/Routes/infoPages/examplePages';
-import RegisterPage from '@/pages/Register.page';
-import OAuthCallbackPage from '@/pages/OAuthCallback.page';
+import RegisterPage from '@/pages/auth/Register.page';
+import OAuthCallbackPage from '@/pages/auth/OAuthCallback.page';
 import OnboardingPage from '@/pages/onboarding/Onboarding.page';
-import ForgotPasswordPage from '@/pages/ForgotPassword.page';
-import ResetPasswordPage from '@/pages/ResetPassword.page';
-import EmailVerifiedPage from '@/pages/EmailVerified.page';
+import ForgotPasswordPage from '@/pages/auth/ForgotPassword.page';
+import ResetPasswordPage from '@/pages/auth/ResetPassword.page';
+import EmailVerifiedPage from '@/pages/auth/EmailVerified.page';
 import AccountSecurityPage from '@/pages/settings/AccountSecurity.page';
 
 // Lazily loaded components for routes

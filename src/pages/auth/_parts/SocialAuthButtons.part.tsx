@@ -1,4 +1,3 @@
-import { FC } from 'react';
 import { useSocialRedirectUrl } from '@/api/modules/auth';
 import { TSocialProvider } from '@/types/auth.type';
 
@@ -12,7 +11,7 @@ import { TSocialProvider } from '@/types/auth.type';
 // ============================================================
 
 const GoogleMark = () => (
-	<svg className='h-auto w-4' width='46' height='47' viewBox='0 0 46 47' fill='none'>
+	<svg className='size-4' viewBox='0 0 46 47' fill='none'>
 		<path
 			d='M46 24.0287C46 22.09 45.8533 20.68 45.5013 19.2112H23.4694V27.9356H36.4069C36.1429 30.1094 34.7347 33.37 31.5957 35.5731L31.5663 35.8669L38.5191 41.2719L38.9885 41.3306C43.4477 37.2181 46 31.1669 46 24.0287Z'
 			fill='#4285F4'
@@ -33,22 +32,33 @@ const GoogleMark = () => (
 );
 
 const GithubMark = () => (
-	<svg className='h-auto w-4' viewBox='0 0 24 24' fill='currentColor' aria-hidden='true'>
+	<svg className='size-4' viewBox='0 0 24 24' fill='currentColor' aria-hidden='true'>
 		<path d='M12 .5C5.73.5.99 5.24.99 11.51c0 4.87 3.16 9 7.54 10.46.55.1.75-.24.75-.53v-2.06c-3.07.67-3.72-1.3-3.72-1.3-.5-1.28-1.23-1.62-1.23-1.62-1-.69.08-.67.08-.67 1.11.08 1.7 1.14 1.7 1.14.99 1.7 2.59 1.21 3.22.93.1-.72.39-1.21.7-1.49-2.45-.28-5.03-1.23-5.03-5.46 0-1.21.43-2.2 1.14-2.97-.11-.28-.49-1.4.11-2.92 0 0 .93-.3 3.05 1.14a10.5 10.5 0 0 1 5.56 0c2.12-1.44 3.05-1.14 3.05-1.14.6 1.52.22 2.64.11 2.92.71.77 1.14 1.76 1.14 2.97 0 4.24-2.58 5.18-5.04 5.45.4.34.75 1.02.75 2.06v3.05c0 .29.2.64.76.53 4.38-1.46 7.53-5.59 7.53-10.46C23.01 5.24 18.27.5 12 .5Z' />
 	</svg>
 );
 
-const PROVIDERS: Array<{ provider: TSocialProvider; label: string; Mark: FC }> = [
-	{ provider: 'google', label: 'Google', Mark: GoogleMark },
-	{ provider: 'github', label: 'GitHub', Mark: GithubMark },
+const PROVIDERS: Array<{
+	provider: TSocialProvider;
+	label: string;
+	Mark: () => JSX.Element;
+	className: string;
+}> = [
+	{
+		provider: 'google',
+		label: 'Google',
+		Mark: GoogleMark,
+		className:
+			'border border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50',
+	},
+	{
+		provider: 'github',
+		label: 'Github',
+		Mark: GithubMark,
+		className: 'bg-[#2e3138] text-white hover:bg-[#202227]',
+	},
 ];
 
-type TSocialAuthButtonsProps = {
-	/** "Continue" on login/register — copy only. */
-	action?: string;
-};
-
-const SocialAuthButtons: FC<TSocialAuthButtonsProps> = ({ action = 'Continue' }) => {
+const SocialAuthButtons = () => {
 	const redirect = useSocialRedirectUrl();
 
 	const handleClick = (provider: TSocialProvider) => {
@@ -60,17 +70,16 @@ const SocialAuthButtons: FC<TSocialAuthButtonsProps> = ({ action = 'Continue' })
 	};
 
 	return (
-		<div className='grid gap-y-2.5'>
-			{PROVIDERS.map(({ provider, label, Mark }) => (
+		<div className='grid grid-cols-2 gap-3'>
+			{PROVIDERS.map(({ provider, label, Mark, className }) => (
 				<button
 					key={provider}
 					type='button'
-					aria-label={`${action} with ${label}`}
 					disabled={redirect.isPending}
 					onClick={() => handleClick(provider)}
-					className='inline-flex w-full cursor-pointer items-center justify-center gap-x-2.5 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 shadow-2xs hover:bg-zinc-50 hover:border-zinc-300 focus:outline-hidden disabled:pointer-events-none disabled:opacity-50 transition-colors'>
+					className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold shadow-2xs transition-colors focus:outline-hidden disabled:pointer-events-none disabled:opacity-50 ${className}`}>
 					<Mark />
-					{action} with {label}
+					{label}
 				</button>
 			))}
 		</div>
