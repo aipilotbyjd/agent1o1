@@ -298,13 +298,14 @@ const onboarding: TPage = {
 			text: 'Invite Team',
 			icon: 'UserAdd01',
 		},
-		workspaceList: {
-			id: 'workspaceList',
-			to: '/workspaces',
-			text: 'Workspaces',
-			icon: 'DashboardSquare03',
-		},
 	},
+};
+
+const choose: TPage = {
+	id: 'workspaceList',
+	to: '/workspaces',
+	text: 'Workspaces',
+	icon: 'DashboardSquare03',
 };
 
 const pages = {
@@ -315,6 +316,7 @@ const pages = {
 	settings,
 	identity,
 	onboarding,
+	choose,
 };
 
 export default pages;
