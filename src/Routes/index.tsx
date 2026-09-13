@@ -9,18 +9,7 @@ import pages from './pages';
 import MailLayout from '@/layouts/Mail.layout';
 import Page404Page from '@/pages/Page404.page';
 import UnderConstructionPage from '@/pages/UnderConstruction.page';
-import DocumentationPages from '@/Routes/infoPages/documentationPages';
-import ExamplePages from '@/Routes/infoPages/examplePages';
-
-// Identity (auth) pages
-const LoginPage = lazy(() => import('@/pages/identity/Login/Login.page'));
-const SignupPage = lazy(() => import('@/pages/identity/Signup/Signup.page'));
-const ForgotPasswordPage = lazy(
-	() => import('@/pages/identity/ForgotPassword/ForgotPassword.page'),
-);
-const ResetPasswordPage = lazy(() => import('@/pages/identity/ResetPassword/ResetPassword.page'));
-const VerifyEmailPage = lazy(() => import('@/pages/identity/VerifyEmail/VerifyEmail.page'));
-const OAuthCallbackPage = lazy(() => import('@/pages/identity/OAuthCallback/OAuthCallback.page'));
+import IdentityPages from '@/Routes/appPages/identityPages';
 
 // Lazily loaded components for routes
 const SalesLayout = lazy(() => import('@/pages/apps/sales/_layouts/Sales.layout'));
@@ -72,34 +61,7 @@ const router = createBrowserRouter([
 						element: <LandingPage />,
 					},
 					// Public routes
-					{
-						path: pages.identity.login.to,
-						element: <LoginPage />,
-					},
-					{
-						path: pages.identity.signup.to,
-						element: <SignupPage />,
-					},
-					{
-						path: pages.identity.forgotPassword.to,
-						element: <ForgotPasswordPage />,
-					},
-					{
-						path: pages.identity.resetPassword.to,
-						element: <ResetPasswordPage />,
-					},
-					{
-						path: pages.identity.verifyEmail.to,
-						element: <VerifyEmailPage />,
-					},
-					{
-						path: pages.identity.oauthCallback.to,
-						element: <OAuthCallbackPage />,
-					},
-					{
-						element: <DefaultLayout />,
-						children: [...DocumentationPages, ...ExamplePages],
-					},
+					...IdentityPages,
 					{
 						path: pages.pagesExamples.underConstruction.to,
 						element: <UnderConstructionPage />,

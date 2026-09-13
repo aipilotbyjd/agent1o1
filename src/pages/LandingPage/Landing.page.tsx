@@ -4,7 +4,6 @@ import SectionHeaderLanding from '@/pages/LandingPage/SectionHeader.landing';
 import SectionHeroLanding from '@/pages/LandingPage/SectionHero.landing';
 import SectionIconLanding from '@/pages/LandingPage/SectionIcon.landing';
 import SectionComponentsLanding from '@/pages/LandingPage/SectionComponents.landing';
-import SectionExamplesLanding from '@/pages/LandingPage/SectionExamples.landing';
 import SectionTemplateLanding from '@/pages/LandingPage/SectionTemplate.landing';
 import SectionResponsiveLanding from '@/pages/LandingPage/SectionResponsive.landing';
 import SectionFooterLanding from '@/pages/LandingPage/SectionFooter.landing';
@@ -17,7 +16,6 @@ const LandingPage = () => {
 				<SectionHeroLanding />
 				<SectionIconLanding />
 				<SectionComponentsLanding />
-				<SectionExamplesLanding />
 				<SectionTemplateLanding />
 				<SectionResponsiveLanding />
 				<SectionFooterLanding />
