@@ -10,8 +10,19 @@ import {
 	useAuthSessions,
 	useRevokeSession,
 	useLogoutAll,
+	useResendVerificationEmail,
 } from '@/api/modules/auth';
-import { useCurrentUser } from '@/api/modules/user';
+import {
+	useCurrentUser,
+	useUpdateProfile,
+	useUploadAvatar,
+	useDeleteAvatar,
+	useDeleteAccount,
+	useApiKeys,
+	useCreateApiKey,
+	useDeleteApiKey,
+} from '@/api/modules/user';
+import type { TApiKeyAbility } from '@/types/auth.type';
 import Container from '@/components/layout/Container';
 import Subheader, { SubheaderLeft } from '@/components/layout/Subheader';
 import Card, { CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -53,6 +64,35 @@ const AccountSecurityPage = () => {
 	const { data: sessions, isLoading: isSessionsLoading } = useAuthSessions();
 	const revokeSession = useRevokeSession();
 	const logoutAll = useLogoutAll();
+	const resendVerification = useResendVerificationEmail();
+
+	const updateProfile = useUpdateProfile();
+	const uploadAvatar = useUploadAvatar();
+	const deleteAvatar = useDeleteAvatar();
+	const deleteAccount = useDeleteAccount();
+
+	const workspaceId = user?.current_workspace?.id ?? user?.current_workspace_id ?? '';
+	const { data: apiKeys, isLoading: isApiKeysLoading } = useApiKeys(workspaceId);
+	const createApiKey = useCreateApiKey(workspaceId);
+	const deleteApiKey = useDeleteApiKey(workspaceId);
+
+	// Profile States
+	const [name, setName] = useState('');
+	const [profileSaved, setProfileSaved] = useState(false);
+	const [verificationSent, setVerificationSent] = useState(false);
+	const fileInputRef = useState<HTMLInputElement | null>(null);
+
+	// API Keys States
+	const [showCreateKey, setShowCreateKey] = useState(false);
+	const [keyName, setKeyName] = useState('');
+	const [keyAbilities, setKeyAbilities] = useState<TApiKeyAbility[]>([
+		'workflows:read',
+		'workflows:write',
+	]);
+	const [createdPlainKey, setCreatedPlainKey] = useState<string | null>(null);
+
+	// Danger Zone State
+	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
 	// UI States
 	const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
@@ -149,6 +189,58 @@ const AccountSecurityPage = () => {
 		}
 	};
 
+	const handleSaveProfile = async (e: React.FormEvent) => {
+		e.preventDefault();
+		const finalName = name.trim() || user?.name;
+		if (!finalName) return;
+		try {
+			await updateProfile.mutateAsync({ name: finalName });
+			setProfileSaved(true);
+			setTimeout(() => setProfileSaved(false), 4000);
+		} catch {
+			// handled
+		}
+	};
+
+	const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (file) {
+			uploadAvatar.mutate(file);
+		}
+	};
+
+	const handleResendVerification = async () => {
+		try {
+			await resendVerification.mutateAsync();
+			setVerificationSent(true);
+			setTimeout(() => setVerificationSent(false), 5000);
+		} catch {
+			// handled
+		}
+	};
+
+	const handleCreateApiKey = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!keyName.trim() || keyAbilities.length === 0) return;
+		try {
+			const res = await createApiKey.mutateAsync({
+				name: keyName,
+				abilities: keyAbilities,
+			});
+			setCreatedPlainKey(res.plain_text_key);
+			setKeyName('');
+			setShowCreateKey(false);
+		} catch {
+			// handled
+		}
+	};
+
+	const toggleAbility = (ability: TApiKeyAbility) => {
+		setKeyAbilities((prev) =>
+			prev.includes(ability) ? prev.filter((a) => a !== ability) : [...prev, ability],
+		);
+	};
+
 	return (
 		<>
 			<Subheader>
@@ -163,6 +255,117 @@ const AccountSecurityPage = () => {
 			</Subheader>
 
 			<Container className='grid gap-6 py-6'>
+				{/* ─── Profile Information Card ──────────────────────────── */}
+				<Card>
+					<CardHeader>
+						<CardTitle>Profile Details</CardTitle>
+					</CardHeader>
+					<CardBody>
+						{profileSaved && (
+							<Alert color='emerald' variant='soft' icon='CheckmarkCircle02' className='mb-4' isClosable>
+								Profile updated successfully.
+							</Alert>
+						)}
+						{verificationSent && (
+							<Alert color='emerald' variant='soft' icon='MailCheck01' className='mb-4' isClosable>
+								Verification email sent! Check your inbox.
+							</Alert>
+						)}
+
+						<div className='grid gap-6 md:grid-cols-12'>
+							{/* Avatar upload section */}
+							<div className='md:col-span-4 flex flex-col items-center justify-center p-4 border border-dashed border-zinc-200 dark:border-zinc-700 rounded-2xl'>
+								<div className='relative size-20 rounded-full overflow-hidden border-2 border-purple-500 bg-purple-50 flex items-center justify-center text-purple-600 text-2xl font-bold mb-3'>
+									{user?.avatar ? (
+										<img src={user.avatar} alt={user.name} className='size-full object-cover' />
+									) : (
+										user?.name?.[0]?.toUpperCase() || 'A'
+									)}
+								</div>
+
+								<div className='flex flex-wrap items-center justify-center gap-2'>
+									<label className='cursor-pointer inline-flex items-center justify-center px-3 py-1.5 text-xs font-semibold rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors shadow-xs'>
+										<input
+											type='file'
+											accept='image/*'
+											className='hidden'
+											onChange={handleAvatarUpload}
+											disabled={uploadAvatar.isPending}
+										/>
+										{uploadAvatar.isPending ? 'Uploading…' : 'Upload photo'}
+									</label>
+
+									{user?.avatar && (
+										<Button
+											variant='outline'
+											color='red'
+											className='text-xs py-1.5!'
+											isLoading={deleteAvatar.isPending}
+											onClick={() => deleteAvatar.mutate()}>
+											Remove
+										</Button>
+									)}
+								</div>
+								<span className='mt-2 text-[11px] text-zinc-400'>JPG, PNG or WEBP up to 2MB</span>
+							</div>
+
+							{/* Name and Email section */}
+							<div className='md:col-span-8 flex flex-col justify-between'>
+								<form onSubmit={handleSaveProfile} className='grid gap-4'>
+									<div>
+										<Label htmlFor='user-name'>Full Name</Label>
+										<Input
+											id='user-name'
+											defaultValue={user?.name}
+											onChange={(e) => setName(e.target.value)}
+											placeholder='Your full name'
+										/>
+									</div>
+
+									<div>
+										<Label htmlFor='user-email'>Email Address</Label>
+										<div className='flex items-center gap-2'>
+											<Input
+												id='user-email'
+												value={user?.email || ''}
+												readOnly
+												disabled
+												className='bg-zinc-100! dark:bg-zinc-800! cursor-not-allowed'
+											/>
+											{user?.email_verified_at ? (
+												<Badge color='emerald' variant='soft' className='shrink-0 h-9 px-3 flex items-center gap-1'>
+													<Icon icon='CheckmarkBadge02' className='size-4 text-emerald-600' />
+													Verified
+												</Badge>
+											) : (
+												<Button
+													type='button'
+													variant='outline'
+													color='amber'
+													className='shrink-0 text-xs'
+													isLoading={resendVerification.isPending}
+													onClick={handleResendVerification}>
+													Verify Email
+												</Button>
+											)}
+										</div>
+									</div>
+
+									<div className='pt-2'>
+										<Button
+											type='submit'
+											variant='solid'
+											color='primary'
+											className='font-bold text-xs py-2.5!'
+											isLoading={updateProfile.isPending}>
+											Save Profile
+										</Button>
+									</div>
+								</form>
+							</div>
+						</div>
+					</CardBody>
+				</Card>
 				{/* ─── Change Password Card ──────────────────────────────── */}
 				<Card>
 					<CardHeader>
@@ -567,6 +770,226 @@ const AccountSecurityPage = () => {
 						) : (
 							<p className='text-sm text-zinc-500'>No active sessions found.</p>
 						)}
+					</CardBody>
+				</Card>
+
+				{/* ─── Workspace API Keys Card ──────────────────────────── */}
+				<Card>
+					<CardHeader>
+						<div className='flex items-center justify-between w-full'>
+							<div>
+								<CardTitle>Workspace API Keys</CardTitle>
+								<p className='mt-1 text-xs text-zinc-500'>
+									API keys allow external scripts and services to interact with this workspace.
+								</p>
+							</div>
+							<Button
+								variant='solid'
+								color='primary'
+								className='text-xs font-bold'
+								onClick={() => setShowCreateKey(!showCreateKey)}>
+								{showCreateKey ? 'Cancel' : '+ New API Key'}
+							</Button>
+						</div>
+					</CardHeader>
+					<CardBody>
+						{/* Created plain text key alert */}
+						{createdPlainKey && (
+							<div className='mb-6 rounded-xl border border-emerald-300 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950/40'>
+								<div className='flex items-start justify-between gap-3'>
+									<div>
+										<h4 className='text-sm font-bold text-emerald-800 dark:text-emerald-200'>
+											API Key Created! Copy it now.
+										</h4>
+										<p className='mt-0.5 text-xs text-emerald-700 dark:text-emerald-300'>
+											For security reasons, this secret key will never be shown again.
+										</p>
+									</div>
+									<Button
+										variant='link'
+										color='emerald'
+										className='text-xs font-bold'
+										onClick={() => setCreatedPlainKey(null)}>
+										Dismiss
+									</Button>
+								</div>
+								<div className='mt-3 flex items-center gap-2'>
+									<code className='flex-1 rounded bg-white px-3 py-2 font-mono text-xs font-bold text-zinc-800 border border-emerald-200 dark:bg-black dark:text-emerald-300 dark:border-emerald-800 select-all overflow-x-auto'>
+										{createdPlainKey}
+									</code>
+									<Button
+										variant='solid'
+										color='primary'
+										className='text-xs py-2!'
+										onClick={() => navigator.clipboard.writeText(createdPlainKey)}>
+										Copy
+									</Button>
+								</div>
+							</div>
+						)}
+
+						{/* Create Key Form Drawer */}
+						{showCreateKey && (
+							<form onSubmit={handleCreateApiKey} className='mb-6 rounded-2xl border border-purple-200 bg-purple-50/50 p-5 dark:border-purple-900/40 dark:bg-purple-950/20'>
+								<h4 className='text-sm font-bold text-zinc-900 dark:text-white mb-3'>
+									Generate API Key
+								</h4>
+								<div className='grid gap-4 max-w-lg'>
+									<div>
+										<Label htmlFor='api-key-name'>Key Name / Description</Label>
+										<Input
+											id='api-key-name'
+											value={keyName}
+											onChange={(e) => setKeyName(e.target.value)}
+											placeholder='e.g. CI/CD Deployment Key or Agent Bot'
+										/>
+									</div>
+
+									<div>
+										<Label>Permissions / Abilities</Label>
+										<div className='mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2'>
+											{(
+												[
+													'workflows:read',
+													'workflows:write',
+													'runs:read',
+													'agents:invoke',
+													'connectors:manage',
+												] as TApiKeyAbility[]
+											).map((ab) => (
+												<label
+													key={ab}
+													className='flex items-center gap-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 cursor-pointer select-none p-2 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800'>
+													<input
+														type='checkbox'
+														checked={keyAbilities.includes(ab)}
+														onChange={() => toggleAbility(ab)}
+														className='size-4 rounded border-zinc-300 text-purple-600 focus:ring-purple-500'
+													/>
+													<code>{ab}</code>
+												</label>
+											))}
+										</div>
+									</div>
+
+									<div className='flex gap-2 pt-2'>
+										<Button
+											type='submit'
+											variant='solid'
+											color='primary'
+											className='text-xs font-bold py-2!'
+											isLoading={createApiKey.isPending}>
+											Generate Key
+										</Button>
+										<Button
+											type='button'
+											variant='outline'
+											color='zinc'
+											className='text-xs py-2!'
+											onClick={() => setShowCreateKey(false)}>
+											Cancel
+										</Button>
+									</div>
+								</div>
+							</form>
+						)}
+
+						{/* API Keys Table */}
+						{isApiKeysLoading ? (
+							<div className='py-4 flex justify-center'>
+								<Spinner />
+							</div>
+						) : apiKeys && apiKeys.length > 0 ? (
+							<div className='divide-y divide-zinc-200 dark:divide-zinc-800'>
+								{apiKeys.map((k) => (
+									<div
+										key={k.id}
+										className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3 text-sm'>
+										<div>
+											<div className='font-bold text-zinc-900 dark:text-white'>
+												{k.name}
+											</div>
+											<div className='flex flex-wrap gap-1 mt-1'>
+												{k.abilities.map((ab) => (
+													<span
+														key={ab}
+														className='inline-block rounded-md bg-purple-100 px-2 py-0.5 text-[10px] font-mono font-medium text-purple-700 dark:bg-purple-950 dark:text-purple-300'>
+														{ab}
+													</span>
+												))}
+											</div>
+											<div className='mt-1 text-xs text-zinc-400'>
+												Created: {new Date(k.created_at).toLocaleDateString()}
+												{k.last_used_at && ` • Last used: ${new Date(k.last_used_at).toLocaleDateString()}`}
+											</div>
+										</div>
+
+										<Button
+											variant='outline'
+											color='red'
+											className='text-xs shrink-0 self-start sm:self-center'
+											isLoading={deleteApiKey.isPending}
+											onClick={() => deleteApiKey.mutate(k.id)}>
+											Revoke
+										</Button>
+									</div>
+								))}
+							</div>
+						) : (
+							<p className='text-sm text-zinc-500'>
+								No API keys generated yet for this workspace. Click &ldquo;+ New API Key&rdquo; to create one.
+							</p>
+						)}
+					</CardBody>
+				</Card>
+
+				{/* ─── Danger Zone Card ──────────────────────────────────── */}
+				<Card className='border-red-200 dark:border-red-950/60'>
+					<CardHeader>
+						<div className='flex items-center gap-2'>
+							<Icon icon='Alert02' className='text-red-500' />
+							<CardTitle className='text-red-600 dark:text-red-400'>Danger Zone</CardTitle>
+						</div>
+					</CardHeader>
+					<CardBody>
+						<div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
+							<div>
+								<h4 className='text-sm font-bold text-zinc-900 dark:text-white'>
+									Delete Account
+								</h4>
+								<p className='text-xs text-zinc-500'>
+									Permanently delete your user account, revoke all session tokens, and wipe associated settings. This action cannot be undone.
+								</p>
+							</div>
+
+							{showDeleteConfirm ? (
+								<div className='flex items-center gap-2 shrink-0'>
+									<Button
+										variant='solid'
+										color='red'
+										className='text-xs font-bold'
+										isLoading={deleteAccount.isPending}
+										onClick={() => deleteAccount.mutate()}>
+										Yes, Delete Account
+									</Button>
+									<Button
+										variant='outline'
+										color='zinc'
+										className='text-xs'
+										onClick={() => setShowDeleteConfirm(false)}>
+										Cancel
+									</Button>
+								</div>
+							) : (
+								<Button
+									variant='outline'
+									color='red'
+									className='text-xs shrink-0'
+									onClick={() => setShowDeleteConfirm(true)}>
+									Delete Account
+								</Button>
+							)}
+						</div>
 					</CardBody>
 				</Card>
 			</Container>
