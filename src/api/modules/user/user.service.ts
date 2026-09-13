@@ -36,6 +36,11 @@ export const UserService = {
 
 	destroy: () => axiosClient.delete(UserEndpoints.destroy).then(() => undefined),
 
+	cancelEmailChange: () =>
+		axiosClient
+			.delete<TApiResponse<{ user: TUser }>>(UserEndpoints.cancelEmailChange)
+			.then(unwrapKey<TUser>('user')),
+
 	// ─── API keys ────────────────────────────────────────────
 
 	listApiKeys: (ws: string, signal?: AbortSignal) =>

@@ -53,6 +53,15 @@ export const useDeleteAvatar = () => {
 	});
 };
 
+export const useCancelEmailChange = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: () => UserService.cancelEmailChange(),
+		onSuccess: (user) => qc.setQueryData(userKeys.current(), user),
+		meta: { errorMessage: 'Failed to cancel email change' },
+	});
+};
+
 export const useDeleteAccount = () => {
 	const qc = useQueryClient();
 	return useMutation({

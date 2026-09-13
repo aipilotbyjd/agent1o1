@@ -8,6 +8,8 @@ export const billingKeys = {
 	creditPacksPurchased: (ws: string) => ['billing', ws, 'credit-packs', 'purchased'] as const,
 	credits: (ws: string, params?: { page?: number; per_page?: number }) =>
 		['billing', ws, 'credits', params ?? {}] as const,
+	overage: (ws: string) => ['billing', ws, 'overage'] as const,
+	creditNotifications: (ws: string) => ['billing', ws, 'credit-notifications'] as const,
 	invoices: (ws: string, params?: { per_page?: number; cursor?: string }) =>
 		['billing', ws, 'invoices', params ?? {}] as const,
 	invoicesUpcoming: (ws: string) => ['billing', ws, 'invoices', 'upcoming'] as const,

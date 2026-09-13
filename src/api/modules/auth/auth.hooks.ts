@@ -139,6 +139,23 @@ export const useVerifyEmail = () => {
 	});
 };
 
+export const useConfirmEmailChange = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			id,
+			hash,
+			query,
+		}: {
+			id: string;
+			hash: string;
+			query?: Record<string, string>;
+		}) => AuthService.confirmEmailChange(id, hash, query),
+		onSuccess: () => qc.invalidateQueries({ queryKey: userKeys.current() }),
+		meta: { errorMessage: 'Email change confirmation failed' },
+	});
+};
+
 // ─── Sessions (issued tokens) ────────────────────────────────
 
 export const useAuthSessions = () =>
@@ -152,6 +169,12 @@ export const useRevokeSession = () => {
 		meta: { errorMessage: 'Failed to revoke session' },
 	});
 };
+
+export const useAuthEvents = (params?: { page?: number; per_page?: number }) =>
+	useQuery({
+		queryKey: ['auth-events', params ?? {}],
+		queryFn: () => AuthService.events(params),
+	});
 
 // ─── Two-factor ──────────────────────────────────────────────
 

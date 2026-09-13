@@ -137,6 +137,39 @@ export type TCheckoutCreditPackDto = {
 
 export type TCheckoutCreditPackResult = { credit_pack: TCreditPack; checkout_url: string };
 
+// ─── Overage ─────────────────────────────────────────────────
+
+export type TCreditOverage = {
+	available: boolean;
+	enabled: boolean;
+	limit: number | null;
+	effective_limit: number | null;
+	maximum_limit: number | null;
+	credits_used: number;
+	credits_remaining: number | null;
+	credit_value_usd: number;
+};
+
+export type TUpdateCreditOverageDto = {
+	enabled: boolean;
+	limit?: number | null;
+};
+
+// ─── Credit notifications ───────────────────────────────────────
+
+export type TCreditNotifications = {
+	out_of_credits_enabled: boolean;
+	thresholds: number[];
+	is_default: boolean;
+	default_thresholds: number[];
+	maximum_thresholds: number;
+};
+
+export type TUpdateCreditNotificationsDto = {
+	out_of_credits_enabled?: boolean;
+	thresholds?: number[] | null;
+};
+
 // ─── Credit ledger ───────────────────────────────────────────
 
 export type TCreditTransaction = {

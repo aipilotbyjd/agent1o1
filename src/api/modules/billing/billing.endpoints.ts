@@ -16,6 +16,9 @@ export const BillingEndpoints = {
 
 	credits: (ws: string) => `${base(ws)}/credits`,
 
+	overage: (ws: string) => `${base(ws)}/overage`,
+	creditNotifications: (ws: string) => `${base(ws)}/credit-notifications`,
+
 	invoices: (ws: string) => `${base(ws)}/invoices`,
 	invoicesUpcoming: (ws: string) => `${base(ws)}/invoices/upcoming`,
 	invoice: (ws: string, invoiceId: string) => `${base(ws)}/invoices/${invoiceId}`,

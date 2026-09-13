@@ -3,6 +3,8 @@ import type {
 	TCheckoutSubscriptionDto,
 	TPreviewSubscriptionSwapDto,
 	TCheckoutCreditPackDto,
+	TUpdateCreditOverageDto,
+	TUpdateCreditNotificationsDto,
 } from '@/types/billing.type';
 import { BillingService } from './billing.service';
 import { billingKeys } from './billing.keys';
@@ -44,7 +46,8 @@ const invalidateBilling = (qc: ReturnType<typeof useQueryClient>, ws: string) =>
 export const useCheckoutSubscription = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (payload: TCheckoutSubscriptionDto) => BillingService.checkoutSubscription(ws, payload),
+		mutationFn: (payload: TCheckoutSubscriptionDto) =>
+			BillingService.checkoutSubscription(ws, payload),
 		onSuccess: () => invalidateBilling(qc, ws),
 		meta: { errorMessage: 'Failed to start checkout' },
 	});
@@ -85,7 +88,8 @@ export const usePurchasedCreditPacks = (ws: string) =>
 export const useCheckoutCreditPack = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (payload: TCheckoutCreditPackDto) => BillingService.checkoutCreditPack(ws, payload),
+		mutationFn: (payload: TCheckoutCreditPackDto) =>
+			BillingService.checkoutCreditPack(ws, payload),
 		onSuccess: () => qc.invalidateQueries({ queryKey: billingKeys.creditPacksPurchased(ws) }),
 		meta: { errorMessage: 'Failed to start pack checkout' },
 	});
@@ -97,6 +101,39 @@ export const useCredits = (ws: string, params?: { page?: number; per_page?: numb
 		queryFn: ({ signal }) => BillingService.credits(ws, params, signal),
 		enabled: !!ws,
 	});
+
+export const useCreditOverage = (ws: string) =>
+	useQuery({
+		queryKey: billingKeys.overage(ws),
+		queryFn: ({ signal }) => BillingService.overage(ws, signal),
+		enabled: !!ws,
+	});
+
+export const useUpdateCreditOverage = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (payload: TUpdateCreditOverageDto) => BillingService.updateOverage(ws, payload),
+		onSuccess: () => qc.invalidateQueries({ queryKey: billingKeys.overage(ws) }),
+		meta: { errorMessage: 'Failed to update credit overage settings' },
+	});
+};
+
+export const useCreditNotifications = (ws: string) =>
+	useQuery({
+		queryKey: billingKeys.creditNotifications(ws),
+		queryFn: ({ signal }) => BillingService.creditNotifications(ws, signal),
+		enabled: !!ws,
+	});
+
+export const useUpdateCreditNotifications = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (payload: TUpdateCreditNotificationsDto) =>
+			BillingService.updateCreditNotifications(ws, payload),
+		onSuccess: () => qc.invalidateQueries({ queryKey: billingKeys.creditNotifications(ws) }),
+		meta: { errorMessage: 'Failed to update credit notification preferences' },
+	});
+};
 
 export const useInvoices = (ws: string, params?: { per_page?: number; cursor?: string }) =>
 	useQuery({

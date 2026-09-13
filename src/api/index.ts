@@ -32,6 +32,7 @@ export * as templatesApi from './modules/templates';
 export * as artifactsApi from './modules/artifacts';
 export * as onboardingApi from './modules/onboarding';
 export * as billingApi from './modules/billing';
+export * as dashboardApi from './modules/dashboard';
 export * as notificationsApi from './modules/notifications';
 export * as notificationChannelsApi from './modules/notification-channels';
 export * as notificationPreferencesApi from './modules/notification-preferences';

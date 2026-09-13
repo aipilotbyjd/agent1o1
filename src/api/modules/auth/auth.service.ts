@@ -1,6 +1,6 @@
 import { axiosClient } from '@/api/client';
 import { unwrap, unwrapKey } from '@/api/core';
-import type { TMessageResponse, TApiResponse } from '@/api/core';
+import type { TMessageResponse, TApiResponse, TPaginationMeta } from '@/api/core';
 import type {
 	TLoginDto,
 	TRegisterDto,
@@ -20,6 +20,7 @@ import type {
 	TSocialRedirectResult,
 	TExchangeSocialCodeDto,
 	TAuthSession,
+	TAuthEvent,
 	TLoginSuccessData,
 } from '@/types/auth.type';
 import { AuthEndpoints } from './auth.endpoints';
@@ -71,6 +72,13 @@ export const AuthService = {
 			.get<TMessageResponse>(AuthEndpoints.verifyEmail(id, hash), { params: query })
 			.then((r) => r.data),
 
+	/** Public, signed link — mirrors `verifyEmail`: `query` carries the
+	 *  signature/expiry params from the emailed link, not a bearer token. */
+	confirmEmailChange: (id: string, hash: string, query?: Record<string, string>) =>
+		axiosClient
+			.get<TMessageResponse>(AuthEndpoints.confirmEmailChange(id, hash), { params: query })
+			.then((r) => r.data),
+
 	sessions: () =>
 		axiosClient
 			.get<TApiResponse<{ sessions: TAuthSession[] }>>(AuthEndpoints.sessions)
@@ -78,6 +86,14 @@ export const AuthService = {
 
 	revokeSession: (tokenId: string) =>
 		axiosClient.delete(AuthEndpoints.revokeSession(tokenId)).then(() => undefined),
+
+	events: (params?: { page?: number; per_page?: number }, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<TAuthEvent[]> & { meta: TPaginationMeta }>(AuthEndpoints.events, {
+				params,
+				signal,
+			})
+			.then((r) => ({ events: r.data.data, meta: r.data.meta })),
 
 	twoFactorEnable: () =>
 		axiosClient
@@ -99,9 +115,9 @@ export const AuthService = {
 
 	twoFactorRegenerateRecoveryCodes: () =>
 		axiosClient
-			.post<TApiResponse<TTwoFactorRecoveryCodes>>(
-				AuthEndpoints.twoFactorRegenerateRecoveryCodes,
-			)
+			.post<
+				TApiResponse<TTwoFactorRecoveryCodes>
+			>(AuthEndpoints.twoFactorRegenerateRecoveryCodes)
 			.then(unwrap<TTwoFactorRecoveryCodes>),
 
 	socialRedirectUrl: (provider: TSocialProvider) =>

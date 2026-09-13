@@ -14,12 +14,18 @@ import type {
 	TCheckoutCreditPackDto,
 	TCheckoutCreditPackResult,
 	TCreditTransaction,
+	TCreditOverage,
+	TUpdateCreditOverageDto,
+	TCreditNotifications,
+	TUpdateCreditNotificationsDto,
 } from '@/types/billing.type';
 import { BillingEndpoints as E } from './billing.endpoints';
 
 export const BillingService = {
 	overview: (ws: string, signal?: AbortSignal) =>
-		axiosClient.get<TApiResponse<TBillingOverview>>(E.overview(ws), { signal }).then((r) => r.data.data),
+		axiosClient
+			.get<TApiResponse<TBillingOverview>>(E.overview(ws), { signal })
+			.then((r) => r.data.data),
 
 	plans: (ws: string, signal?: AbortSignal) =>
 		axiosClient
@@ -29,7 +35,9 @@ export const BillingService = {
 	// `null` when the workspace has never subscribed.
 	subscription: (ws: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ subscription: TSubscription | null }>>(E.subscription(ws), { signal })
+			.get<
+				TApiResponse<{ subscription: TSubscription | null }>
+			>(E.subscription(ws), { signal })
 			.then(unwrapKey<TSubscription | null>('subscription')),
 
 	// Starts a brand-new subscription (or a lifetime grant) with a Stripe
@@ -40,7 +48,11 @@ export const BillingService = {
 			.post<TApiResponse<TCheckoutSubscriptionResult>>(E.subscriptionCheckout(ws), payload)
 			.then((r) => r.data.data),
 
-	previewSubscriptionSwap: (ws: string, payload: TPreviewSubscriptionSwapDto, signal?: AbortSignal) =>
+	previewSubscriptionSwap: (
+		ws: string,
+		payload: TPreviewSubscriptionSwapDto,
+		signal?: AbortSignal,
+	) =>
 		axiosClient
 			.get<TApiResponse<{ invoice: TInvoice | null }>>(E.subscriptionPreview(ws), {
 				params: payload,
@@ -65,7 +77,9 @@ export const BillingService = {
 
 	creditPacksPurchased: (ws: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ credit_packs: TCreditPack[] }>>(E.creditPacksPurchased(ws), { signal })
+			.get<
+				TApiResponse<{ credit_packs: TCreditPack[] }>
+			>(E.creditPacksPurchased(ws), { signal })
 			.then(unwrapKey<TCreditPack[]>('credit_packs')),
 
 	checkoutCreditPack: (ws: string, payload: TCheckoutCreditPackDto) =>
@@ -78,6 +92,33 @@ export const BillingService = {
 		axiosClient
 			.get<TApiResponse<TCreditTransaction[]>>(E.credits(ws), { params, signal })
 			.then((r) => r.data.data),
+
+	overage: (ws: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<{ overage: TCreditOverage }>>(E.overage(ws), { signal })
+			.then(unwrapKey<TCreditOverage>('overage')),
+
+	updateOverage: (ws: string, payload: TUpdateCreditOverageDto) =>
+		axiosClient
+			.put<TApiResponse<{ overage: TCreditOverage }>>(E.overage(ws), payload)
+			.then(unwrapKey<TCreditOverage>('overage')),
+
+	creditNotifications: (ws: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<{ credit_notifications: TCreditNotifications }>>(
+				E.creditNotifications(ws),
+				{
+					signal,
+				},
+			)
+			.then(unwrapKey<TCreditNotifications>('credit_notifications')),
+
+	updateCreditNotifications: (ws: string, payload: TUpdateCreditNotificationsDto) =>
+		axiosClient
+			.put<
+				TApiResponse<{ credit_notifications: TCreditNotifications }>
+			>(E.creditNotifications(ws), payload)
+			.then(unwrapKey<TCreditNotifications>('credit_notifications')),
 
 	// Cursor-paginated — Stripe's list API has no total count or offset.
 	invoices: (ws: string, params?: { per_page?: number; cursor?: string }, signal?: AbortSignal) =>

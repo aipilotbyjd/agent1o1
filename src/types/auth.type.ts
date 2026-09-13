@@ -101,6 +101,16 @@ export type TAuthSession = {
 	created_at: string;
 };
 
+export type TAuthEvent = {
+	id: string;
+	event: string;
+	label: string;
+	ip_address: string | null;
+	user_agent: string | null;
+	context: Record<string, unknown> | null;
+	created_at: string;
+};
+
 // ─── API keys (workspace-scoped) ─────────────────────────────
 
 export type TApiKeyAbility =
