@@ -235,7 +235,7 @@ const settings: TPage = {
 	},
 };
 
-const auth: TPages = {
+const identity: TPages = {
 	login: {
 		id: 'login',
 		to: '/login',
@@ -247,6 +247,30 @@ const auth: TPages = {
 		to: '/signup',
 		text: 'Signup',
 		icon: 'AddTeam',
+	},
+	forgotPassword: {
+		id: 'forgotPassword',
+		to: '/forgot-password',
+		text: 'Forgot Password',
+		icon: 'LockPassword',
+	},
+	resetPassword: {
+		id: 'resetPassword',
+		to: '/reset-password',
+		text: 'Reset Password',
+		icon: 'LockPassword',
+	},
+	verifyEmail: {
+		id: 'verifyEmail',
+		to: '/verify-email',
+		text: 'Verify Email',
+		icon: 'CheckmarkCircle02',
+	},
+	oauthCallback: {
+		id: 'oauthCallback',
+		to: '/oauth/callback',
+		text: 'Signing in',
+		icon: 'Login03',
 	},
 };
 
@@ -289,7 +313,7 @@ const pages = {
 	agentEditor,
 	workspaceSettings,
 	settings,
-	auth,
+	identity,
 	onboarding,
 };
 
