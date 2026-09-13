@@ -1,5 +1,5 @@
-import { ThemeContextProvider } from '@/context/themeContext';
-import { AuthProvider } from '@/context/authContext';
+import { ThemeContextProvider } from '@/context/theme';
+import { AuthProvider } from '@/context/auth';
 
 const Providers = () => {
 	return (

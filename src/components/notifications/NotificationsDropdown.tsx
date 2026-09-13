@@ -11,7 +11,7 @@ import {
 import Button from '@/components/ui/Button';
 import Dropdown, { DropdownMenu, DropdownToggle } from '@/components/ui/Dropdown';
 import Tooltip from '@/components/ui/Tooltip';
-import { useWorkspaceContext } from '@/context/workspaceContext';
+import { useWorkspaceContext } from '@/context/workspace';
 import {
 	useDeleteNotification,
 	useMarkAllNotificationsRead,

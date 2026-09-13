@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from 'react-router';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/auth';
 import { LogoDark } from '@/assets/images';
 
 const Protected = ({ role }: { role: string }) => {

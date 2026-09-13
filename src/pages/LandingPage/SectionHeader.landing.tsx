@@ -1,7 +1,7 @@
 import useDarkMode from '@/hooks/useDarkMode';
 import { useNavigate } from 'react-router';
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/auth';
 import classNames from 'classnames';
 import { LogoDark, LogoLight } from '@/assets/images';
 import ChangeDarkModeTemplate from '@/templates/header/ChangeDarkMode.template';

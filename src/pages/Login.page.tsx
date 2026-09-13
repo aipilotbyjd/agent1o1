@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/auth';
 import useDarkMode from '@/hooks/useDarkMode';
 import { LogoDark, LogoLight } from '@/assets/images';
 import { Link, useNavigate } from 'react-router';

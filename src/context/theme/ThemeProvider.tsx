@@ -1,14 +1,4 @@
-import {
-	createContext,
-	Dispatch,
-	FC,
-	ReactNode,
-	SetStateAction,
-	useEffect,
-	useLayoutEffect,
-	useMemo,
-	useState,
-} from 'react';
+import { FC, ReactNode, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import theme from 'tailwindcss/defaultTheme';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
@@ -16,21 +6,8 @@ import { TDarkMode } from '@/types/darkMode.type';
 import DARK_MODE from '@/constants/darkMode.constant';
 import useDeviceScreen from '@/hooks/useDeviceScreen';
 import { TLang } from '@/types/lang.type';
-// import themeConfig from '@/config/theme.config';
-// import useDeviceScreen from '@/hooks/useDeviceScreen';
-
-export interface IThemeContextProps {
-	isDarkTheme: boolean;
-	darkModeStatus: TDarkMode | null;
-	setDarkModeStatus: Dispatch<SetStateAction<TDarkMode | null>>;
-	asideStatus: boolean;
-	setAsideStatus: Dispatch<SetStateAction<boolean>>;
-	fontSize: number;
-	setFontSize: Dispatch<SetStateAction<number>>;
-	language: TLang;
-	setLanguage: Dispatch<SetStateAction<TLang>>;
-}
-const ThemeContext = createContext<IThemeContextProps>({} as IThemeContextProps);
+import ThemeContext from './ThemeContext';
+import type { IThemeContextProps } from './theme.types';
 
 interface IThemeContextProviderProps {
 	children: ReactNode;
@@ -152,5 +129,3 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 
 	return <ThemeContext.Provider value={values}>{children}</ThemeContext.Provider>;
 };
-
-export default ThemeContext;
