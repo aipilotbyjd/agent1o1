@@ -13,6 +13,12 @@ import UnderConstructionPage from '@/pages/UnderConstruction.page';
 import DocumentationPages from '@/Routes/infoPages/documentationPages';
 import ExamplePages from '@/Routes/infoPages/examplePages';
 import RegisterPage from '@/pages/Register.page';
+import OAuthCallbackPage from '@/pages/OAuthCallback.page';
+import OnboardingPage from '@/pages/onboarding/Onboarding.page';
+import ForgotPasswordPage from '@/pages/ForgotPassword.page';
+import ResetPasswordPage from '@/pages/ResetPassword.page';
+import EmailVerifiedPage from '@/pages/EmailVerified.page';
+import AccountSecurityPage from '@/pages/settings/AccountSecurity.page';
 
 // Lazily loaded components for routes
 const SalesLayout = lazy(() => import('@/pages/apps/sales/_layouts/Sales.layout'));
@@ -73,6 +79,22 @@ const router = createBrowserRouter([
 						element: <RegisterPage />,
 					},
 					{
+						path: pages.pagesExamples.forgotPassword.to,
+						element: <ForgotPasswordPage />,
+					},
+					{
+						path: pages.pagesExamples.resetPassword.to,
+						element: <ResetPasswordPage />,
+					},
+					{
+						path: pages.pagesExamples.emailVerified.to,
+						element: <EmailVerifiedPage />,
+					},
+					{
+						path: pages.pagesExamples.oauthCallback.to,
+						element: <OAuthCallbackPage />,
+					},
+					{
 						element: <DefaultLayout />,
 						children: [...DocumentationPages, ...ExamplePages],
 					},
@@ -86,11 +108,22 @@ const router = createBrowserRouter([
 					},
 					// Protected routes
 					{
-						element: <Protected role='admin' />,
+						element: <Protected />,
 						children: [
+							{
+								// Full-page wizard — deliberately outside DefaultLayout,
+								// there's no aside to navigate to yet.
+								path: pages.pagesExamples.onboarding.to,
+								element: <OnboardingPage />,
+							},
 							{
 								element: <DefaultLayout />,
 								children: [
+									// Account & Security Settings
+									{
+										path: pages.pagesExamples.securitySettings.to,
+										element: <AccountSecurityPage />,
+									},
 									// Apps
 									{
 										// Sales

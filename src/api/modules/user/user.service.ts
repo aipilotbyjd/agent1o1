@@ -24,8 +24,13 @@ export const UserService = {
 	uploadAvatar: (file: File) => {
 		const form = new FormData();
 		form.append('avatar', file);
+		// The client defaults to `application/json`, and axios serializes
+		// FormData to JSON when that header is set — which drops the file.
+		// Overriding per-request lets it emit a real multipart body.
 		return axiosClient
-			.post<TApiResponse<{ user: TUser }>>(UserEndpoints.uploadAvatar, form)
+			.post<TApiResponse<{ user: TUser }>>(UserEndpoints.uploadAvatar, form, {
+				headers: { 'Content-Type': 'multipart/form-data' },
+			})
 			.then(unwrapKey<TUser>('user'));
 	},
 

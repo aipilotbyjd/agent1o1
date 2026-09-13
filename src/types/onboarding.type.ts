@@ -8,12 +8,15 @@
 // ============================================================
 import type { TPlan } from './billing.type';
 
+/** Mirrors `App\Enums\Onboarding\OnboardingStep`, in the same order —
+ *  the server returns `steps` in enum order and the wizard walks it. */
 export type TOnboardingStepKey =
 	| 'profile_picture'
 	| 'create_workspace'
 	| 'invite_team'
 	| 'role_selection'
 	| 'choose_plan'
+	| 'connect_apps'
 	| 'discovery_survey';
 
 export type TOnboardingStep = {

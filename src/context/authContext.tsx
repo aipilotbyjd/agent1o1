@@ -1,93 +1,98 @@
-import { createContext, useContext, useMemo, useState, useEffect } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router';
-import useFakeUserAPI from '@/api/useFakeUserAPI';
-import { TUser } from '@/mocks/users.mock';
+import { useQueryClient } from '@tanstack/react-query';
+import { authEvents, clearTokens, getAccessToken, TOKEN_CHANGE_EVENT } from '@/api/core';
+import { AuthService } from '@/api/modules/auth';
+import { useCurrentUser } from '@/api/modules/user';
+import { TUser } from '@/types/auth.type';
+import pages from '@/Routes/pages';
+
+// ============================================================
+// Auth Context
+// ------------------------------------------------------------
+// The session's single source of truth for the app shell. It owns
+// no user state of its own — the signed-in user lives in the
+// `user` module's query cache, which every auth mutation already
+// writes to, so this only mirrors it plus the token presence.
+// ============================================================
 
 export interface IAuthContextProps {
+	/** True only while an existing token is being exchanged for a user. */
 	isLoading: boolean;
-	onLogin: (
-		username: TUser['username'],
-		password: TUser['password'],
-		rememberMe: boolean,
-	) => Promise<void>;
+	isAuthenticated: boolean;
+	user: TUser | null;
+	/** Alias of `user`, kept so template components keep compiling. */
 	userData: TUser | null;
-	usernameStorage: string | null;
 	tokenStorage: string | null;
-	onLogout: (isRedirect: boolean) => Promise<void>;
+	onLogout: (isRedirect?: boolean) => Promise<void>;
 }
+
 const AuthContext = createContext<IAuthContextProps>({} as IAuthContextProps);
 
 export const AuthProvider = () => {
-	const getStorageItem = (key: string) =>
-		localStorage.getItem(key) ?? sessionStorage.getItem(key);
-	const tokenStorage = getStorageItem('token');
-	const usernameStorage = getStorageItem('username');
-
-	const { response, isLoading, getCheckUser } = useFakeUserAPI(usernameStorage as string);
-	const [userData, setUserData] = useState<TUser | null>(null);
-
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 
-	// On mount, restore userData from localStorage if available
+	// Token lives in web storage, which React can't observe — mirror it into
+	// state and resync on the token-manager's own event (same tab) and the
+	// `storage` event (other tabs signing in or out).
+	const [tokenStorage, setTokenStorage] = useState<string | null>(() => getAccessToken());
+
 	useEffect(() => {
-		const stored = localStorage.getItem('userData') ?? sessionStorage.getItem('userData');
-		if (stored) {
-			try {
-				const parsed = JSON.parse(stored);
-				setUserData(parsed);
-			} catch {
-				/* empty */
-			}
-		}
+		const sync = () => setTokenStorage(getAccessToken());
+		window.addEventListener(TOKEN_CHANGE_EVENT, sync);
+		window.addEventListener('storage', sync);
+		return () => {
+			window.removeEventListener(TOKEN_CHANGE_EVENT, sync);
+			window.removeEventListener('storage', sync);
+		};
 	}, []);
 
-	// Optionally, update userData state when response changes and usernameStorage exists (for hydration)
-	useEffect(() => {
-		if (response && usernameStorage) {
-			setUserData(response as TUser);
-		}
-	}, [response, usernameStorage]);
+	const { data: user, isLoading: isUserLoading } = useCurrentUser(!!tokenStorage);
 
-	// call this function when you want to authenticate the user
-	const onLogin = async (
-		username: TUser['username'],
-		password: TUser['password'],
-		rememberMe: boolean,
-	) => {
-		await getCheckUser(username, password).then(async (user) => {
-			const storage = rememberMe ? localStorage : sessionStorage;
-			storage.setItem('username', username);
-			storage.setItem('token', 'XXXXX');
-			setUserData(user as TUser);
-			storage.setItem('userData', JSON.stringify(user));
-			navigate('/customer');
-		});
-	};
+	const signOutLocally = useCallback(() => {
+		clearTokens();
+		queryClient.clear();
+	}, [queryClient]);
 
-	// call this function to sign out logged-in user
-	const onLogout = async (isNavigate = true) => {
-		localStorage.removeItem('username');
-		localStorage.removeItem('token');
-		localStorage.removeItem('userData');
-		sessionStorage.removeItem('username');
-		sessionStorage.removeItem('token');
-		sessionStorage.removeItem('userData');
-		setUserData(null);
-		if (isNavigate) navigate(`../login`, { replace: true });
-	};
+	const onLogout = useCallback(
+		async (isRedirect = true) => {
+			try {
+				await AuthService.logout();
+			} catch {
+				// The token may already be revoked or expired server-side —
+				// either way the local session has to go.
+			}
+			signOutLocally();
+			if (isRedirect) navigate(pages.pagesExamples.login.to, { replace: true });
+		},
+		[navigate, signOutLocally],
+	);
+
+	// The API layer never navigates itself (see `api/core/auth-events.ts`) —
+	// it announces a dead session and the shell decides where to send the user.
+	useEffect(
+		() =>
+			authEvents.subscribe((event) => {
+				if (event !== 'session-expired' && event !== 'signed-out') return;
+				signOutLocally();
+				navigate(pages.pagesExamples.login.to, { replace: true });
+			}),
+		[navigate, signOutLocally],
+	);
 
 	const value: IAuthContextProps = useMemo(
 		() => ({
-			usernameStorage,
+			isLoading: !!tokenStorage && isUserLoading,
+			isAuthenticated: !!tokenStorage && !!user,
+			user: user ?? null,
+			userData: user ?? null,
 			tokenStorage,
-			onLogin,
 			onLogout,
-			userData,
-			isLoading,
 		}),
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[usernameStorage, userData, tokenStorage, isLoading],
+		[tokenStorage, isUserLoading, user, onLogout],
 	);
+
 	return (
 		<AuthContext.Provider value={value}>
 			<Outlet />

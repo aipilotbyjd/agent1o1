@@ -15,6 +15,7 @@ export type TUser = {
 	email: string;
 	email_verified_at: string | null;
 	avatar: string | null;
+	two_factor_enabled?: boolean;
 	current_workspace_id: string | null;
 	current_workspace: TWorkspace | null;
 	created_at: string;
@@ -76,7 +77,7 @@ export type TDisableTwoFactorDto = {
 	current_password: string;
 };
 
-export type TTwoFactorEnableResult = { secret: string; qr_code_svg: string };
+export type TTwoFactorEnableResult = { secret: string; otpauth_url?: string; qr_code_svg?: string };
 export type TTwoFactorConfirmResult = { recovery_codes: string[] };
 export type TTwoFactorRecoveryCodes = { recovery_codes: string[] };
 

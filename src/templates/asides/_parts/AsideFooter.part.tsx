@@ -175,14 +175,25 @@ const AsideFooterPart = () => {
 				</div>
 			)}
 			<User
-				name={userData ? `${userData?.firstName} ${userData?.lastName}` : undefined}
-				position={userData?.role}
-				nameSuffix={userData?.isVerified && <Icon icon='CheckmarkBadge02' color='blue' />}
-				src={userData?.image.org}>
+				name={userData?.name}
+				position={userData?.current_workspace?.name ?? userData?.email}
+				nameSuffix={
+					!!userData?.email_verified_at && (
+						<Icon icon='CheckmarkBadge02' color='blue' />
+					)
+				}
+				src={userData?.avatar ?? undefined}>
 				<NavSeparator />
 
 				{tokenStorage && (
-					<NavItem text='Logout' icon='Logout03' onClick={() => onLogout(true)} />
+					<>
+						<NavItem
+							text='Security & Password'
+							icon='ShieldCheck'
+							onClick={() => navigate(pages.pagesExamples.securitySettings.to)}
+						/>
+						<NavItem text='Logout' icon='Logout03' onClick={() => onLogout(true)} />
+					</>
 				)}
 				{!tokenStorage && (
 					<NavItem

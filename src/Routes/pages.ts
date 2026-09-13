@@ -217,6 +217,48 @@ const pagesExamples: TPages = {
 		text: 'Signup',
 		icon: 'AddTeam',
 	},
+	register: {
+		id: 'register',
+		to: '/signup',
+		text: 'Signup',
+		icon: 'AddTeam',
+	},
+	forgotPassword: {
+		id: 'forgotPassword',
+		to: '/forgot-password',
+		text: 'Forgot Password',
+		icon: 'SquareLockPassword',
+	},
+	resetPassword: {
+		id: 'resetPassword',
+		to: '/reset-password',
+		text: 'Reset Password',
+		icon: 'SquareLockPassword',
+	},
+	emailVerified: {
+		id: 'emailVerified',
+		to: '/email-verified',
+		text: 'Email Verified',
+		icon: 'CheckmarkCircle02',
+	},
+	securitySettings: {
+		id: 'securitySettings',
+		to: '/settings/security',
+		text: 'Account & Security',
+		icon: 'ShieldCheck',
+	},
+	oauthCallback: {
+		id: 'oauthCallback',
+		to: '/oauth/callback',
+		text: 'Signing in',
+		icon: 'Login03',
+	},
+	onboarding: {
+		id: 'onboarding',
+		to: '/onboarding',
+		text: 'Onboarding',
+		icon: 'Rocket01',
+	},
 	notFound: {
 		id: 'notFound',
 		to: '/notFound',

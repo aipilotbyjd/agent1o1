@@ -15,6 +15,8 @@ export type TPlan = {
 	name: string;
 	slug: string;
 	description: string | null;
+	/** All `price_*` fields are in the currency's minor unit (2900 = $29.00),
+	 *  stored as unsigned integers — divide by 100 before formatting. */
 	price_monthly: number;
 	price_quarterly: number;
 	price_yearly: number;
