@@ -19,6 +19,14 @@ import ForgotPasswordPage from '@/pages/ForgotPassword.page';
 import ResetPasswordPage from '@/pages/ResetPassword.page';
 import EmailVerifiedPage from '@/pages/EmailVerified.page';
 import AccountSecurityPage from '@/pages/settings/AccountSecurity.page';
+import DashboardPage from '@/pages/dashboard/Dashboard.page';
+import AppLayout from '@/layouts/App.layout';
+import RunsListPage from '@/pages/runs/RunsList.page';
+import RunDetailPage from '@/pages/runs/RunDetail.page';
+import AgentsPage from '@/pages/agents/Agents.page';
+import AgentDetailPage from '@/pages/agents/AgentDetail.page';
+import ConnectorsPage from '@/pages/connectors/Connectors.page';
+import SecretsPage from '@/pages/secrets/Secrets.page';
 
 // Lazily loaded components for routes
 const SalesLayout = lazy(() => import('@/pages/apps/sales/_layouts/Sales.layout'));
@@ -119,6 +127,46 @@ const router = createBrowserRouter([
 							{
 								element: <DefaultLayout />,
 								children: [
+									{
+										// The product's own screens: one header
+										// (and one notification bell) for all of them.
+										element: <AppLayout />,
+										children: [
+											// Where every signed-in session lands
+											{
+												path: pages.main.dashboard.to,
+												element: <DashboardPage />,
+											},
+											{
+												path: pages.main.runs.to,
+												element: <RunsListPage />,
+											},
+											{
+												path: pages.main.runs.subPages!.detail.to,
+												element: <RunDetailPage />,
+											},
+											{
+												path: pages.main.agents.to,
+												element: <AgentsPage />,
+											},
+											{
+												path: pages.main.agents.subPages!.detail.to,
+												element: <AgentDetailPage />,
+											},
+											{
+												path: pages.main.agents.subPages!.detailTab.to,
+												element: <AgentDetailPage />,
+											},
+											{
+												path: pages.main.connectors.to,
+												element: <ConnectorsPage />,
+											},
+											{
+												path: pages.main.secrets.to,
+												element: <SecretsPage />,
+											},
+										],
+									},
 									// Account & Security Settings
 									{
 										path: pages.pagesExamples.securitySettings.to,

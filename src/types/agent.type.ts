@@ -75,7 +75,9 @@ export type TAgentSession = {
 	user_id: string;
 	title: string | null;
 	status: TAgentSessionStatus;
-	last_activity_at: string;
+	/** Null in practice — nothing on the backend writes it yet, so treat
+	 *  `created_at` as the fallback when showing session recency. */
+	last_activity_at: string | null;
 	messages?: TAgentMessage[];
 	created_at: string;
 };

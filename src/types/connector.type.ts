@@ -59,4 +59,11 @@ export type TInitiateOAuthConnectorDto = {
 	scope?: TConnectorCredentialScope;
 };
 
-export type TInitiateOAuthConnectorResult = { url: string };
+/** What `POST /connector-credentials/oauth/initiate` actually answers with.
+ *  `state` is the CSRF row the backend stored and the provider echoes back —
+ *  the client never sends it anywhere, but it identifies the pending
+ *  connection while the user is away at the provider. */
+export type TInitiateOAuthConnectorResult = {
+	authorize_url: string;
+	state: string;
+};

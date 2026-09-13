@@ -223,7 +223,16 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 			data-component-name='Button'
 			type={type}
 			className={classes}
-			{...rest}>
+			{...rest}
+			// After the spread on purpose: `disabled` is not destructured out
+			// of `rest`, so a caller's own value has to be folded in here
+			// rather than being allowed to overwrite this one.
+			//
+			// `btnDisabledClasses` applies `pointer-events-none`, which stops a
+			// mouse but not the keyboard — a focused button still fires on
+			// Enter. The native attribute makes it disabled for everyone, and
+			// lets assistive tech announce it.
+			disabled={isDisable || isLoading || rest.disabled}>
 			{(!!icon || isLoading) && (
 				<Icon
 					icon={isLoading ? 'Loading03' : (icon as TIcons)}

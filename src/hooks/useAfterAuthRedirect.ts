@@ -5,7 +5,7 @@ import { OnboardingService, onboardingKeys } from '@/api/modules/onboarding';
 import pages from '@/Routes/pages';
 
 /** Where a fully onboarded user lands after signing in. */
-export const AFTER_AUTH_PATH = pages.apps.customer.to;
+export const AFTER_AUTH_PATH = pages.main.dashboard.to;
 
 // ============================================================
 // useAfterAuthRedirect

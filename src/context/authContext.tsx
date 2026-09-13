@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+	createContext,
+	ReactNode,
+	useCallback,
+	useContext,
+	useEffect,
+	useMemo,
+	useState,
+} from 'react';
 import { Outlet, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { authEvents, clearTokens, getAccessToken, TOKEN_CHANGE_EVENT } from '@/api/core';
@@ -29,7 +37,7 @@ export interface IAuthContextProps {
 
 const AuthContext = createContext<IAuthContextProps>({} as IAuthContextProps);
 
-export const AuthProvider = () => {
+export const AuthProvider = ({ children }: { children?: ReactNode }) => {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 
@@ -95,7 +103,9 @@ export const AuthProvider = () => {
 
 	return (
 		<AuthContext.Provider value={value}>
-			<Outlet />
+			{/* Falls back to <Outlet /> so the innermost provider still
+			    renders the route tree when nothing is nested inside. */}
+			{children ?? <Outlet />}
 		</AuthContext.Provider>
 	);
 };

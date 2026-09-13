@@ -24,6 +24,7 @@ import Modal, {
 import classNames from 'classnames';
 import AsideHeaderPart from '@/templates/asides/_parts/AsideHeader.part';
 import AsideFooterPart from '@/templates/asides/_parts/AsideFooter.part';
+import WorkspaceSwitcherPart from '@/templates/asides/_parts/WorkspaceSwitcher.part';
 import EXAMPLE from '@/examples/_index';
 
 const getFlattenPages = (pages: TPages, parentId?: string): TPage[] => {
@@ -261,7 +262,7 @@ const DefaultAsideTemplate = () => {
 		localStorage.setItem('bolt_activeTab', id);
 
 		if (id === tabs.examples.id) navigate(pages.examples.exampleMain.to);
-		if (id === tabs.dashboard.id) navigate(pages.apps.sales.to);
+		if (id === tabs.dashboard.id) navigate(pages.main.dashboard.to);
 	};
 
 	useEffect(() => {
@@ -276,6 +277,7 @@ const DefaultAsideTemplate = () => {
 		<Aside>
 			<AsideHeaderPart />
 			<AsideBody>
+				<WorkspaceSwitcherPart />
 				<Search />
 				<AsideQuickContainer>
 					{Object.values(tabs).map((tab) => (
@@ -291,6 +293,13 @@ const DefaultAsideTemplate = () => {
 				<Nav>
 					{[tabs.dashboard.id].includes(activeTab as string) && (
 						<>
+							<NavTitle>Workspace</NavTitle>
+							<NavItem {...pages.main.dashboard} />
+							<NavItem {...pages.main.agents} />
+							<NavItem {...pages.main.runs} />
+							<NavItem {...pages.main.connectors} />
+							<NavItem {...pages.main.secrets} />
+
 							<NavTitle>Dashboards</NavTitle>
 							<NavItem {...pages.apps.sales} />
 							<NavItem {...pages.apps.customer} />

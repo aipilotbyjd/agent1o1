@@ -176,7 +176,16 @@ const Select: FC<TSelectProps> = (props) => {
 	);
 
 	const _SELECT = (
-		<select data-component-name='select' className={classes} name={name} {...rest}>
+		// `id` was destructured out of props and only ever used for this
+		// component's own `htmlFor`, so it never reached the element — which
+		// left both that label and any external `<Label htmlFor>` pointing at
+		// nothing. Put it back on the control it names.
+		<select
+			data-component-name='select'
+			id={id || defaultId}
+			className={classes}
+			name={name}
+			{...rest}>
 			{placeholder && !rest?.value && (
 				<option value={undefined} hidden>
 					{placeholder}

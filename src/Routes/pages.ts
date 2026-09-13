@@ -150,6 +150,70 @@ const apps = {
 		icon: 'Message02',
 	},
 };
+// ============================================================
+// Main
+// ------------------------------------------------------------
+// The real product's own pages, kept apart from the template's
+// `apps`/`examples` demos so the two can be told apart while the
+// demos are still being replaced screen by screen.
+// ============================================================
+const main: TPages = {
+	dashboard: {
+		id: 'dashboard',
+		to: '/dashboard',
+		text: 'Dashboard',
+		icon: 'DashboardSquare03',
+	},
+	runs: {
+		id: 'runs',
+		to: '/runs',
+		text: 'Runs',
+		icon: 'Activity03',
+		subPages: {
+			detail: {
+				id: 'runDetail',
+				to: '/runs/:runId',
+				text: 'Run',
+				icon: 'Activity03',
+			},
+		},
+	},
+	agents: {
+		id: 'agents',
+		to: '/agents',
+		text: 'Agents',
+		icon: 'Bot',
+		subPages: {
+			detail: {
+				id: 'agentDetail',
+				to: '/agents/:agentId',
+				text: 'Agent',
+				icon: 'Message02',
+			},
+			// Chat is the bare `/agents/:agentId`; every other panel is a
+			// `:tab` segment on the same screen.
+			detailTab: {
+				id: 'agentDetailTab',
+				to: '/agents/:agentId/:tab',
+				text: 'Agent',
+				icon: 'Message02',
+			},
+		},
+	},
+	connectors: {
+		id: 'connectors',
+		to: '/connectors',
+		text: 'Connectors',
+		icon: 'PlugSocket',
+	},
+	secrets: {
+		id: 'secrets',
+		to: '/secrets',
+		text: 'Secrets',
+		icon: 'SquareLockPassword',
+	},
+};
+
 const pagesExamples: TPages = {
 	list: {
 		id: 'list',
@@ -1198,5 +1262,5 @@ const documentation = {
 	},
 };
 
-const pages = { apps, pagesExamples, documentation, examples };
+const pages = { main, apps, pagesExamples, documentation, examples };
 export default pages;

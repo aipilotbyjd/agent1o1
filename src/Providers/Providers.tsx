@@ -3,6 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { createQueryClient } from '@/api/core';
 import { ThemeContextProvider } from '@/context/themeContext';
 import { AuthProvider } from '@/context/authContext';
+import { WorkspaceProvider } from '@/context/workspaceContext';
 
 const Providers = () => {
 	// Created once per app instance — a client rebuilt on render would
@@ -13,7 +14,9 @@ const Providers = () => {
 		<QueryClientProvider client={queryClient}>
 			<ThemeContextProvider>
 				{/* <Outlet /> must be used in the innermost provider. */}
-				<AuthProvider />
+				<AuthProvider>
+					<WorkspaceProvider />
+				</AuthProvider>
 			</ThemeContextProvider>
 		</QueryClientProvider>
 	);
