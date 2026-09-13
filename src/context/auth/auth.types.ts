@@ -1,16 +1,21 @@
 // ============================================================
 // Auth Context Types
 // ============================================================
-import type { TUser, TRegisterDto } from '@/types/auth.type';
+import type { TUser } from '@/types/auth.type';
+
+export type TEnrichedUser = TUser & {
+	firstName: string;
+	lastName: string;
+	role: string;
+	isVerified: boolean;
+	image: { org?: string };
+};
 
 export interface IAuthContextProps {
 	isLoading: boolean;
-	isLoginLoading: boolean;
-	isRegisterLoading: boolean;
 	isAuthenticated: boolean;
-	userData: TUser | null;
-	onLogin: (email: string, password: string, rememberMe: boolean) => Promise<void>;
-	onRegister: (data: TRegisterDto, rememberMe?: boolean) => Promise<void>;
-	onLogout: (isRedirect: boolean) => Promise<void>;
+	userData: TEnrichedUser | null;
+	tokenStorage: string | null;
+	onLogout: (isRedirect?: boolean) => Promise<void>;
 	refreshCurrentUser: () => Promise<void>;
 }

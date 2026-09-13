@@ -1,18 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router';
-import { clearTokens, getAccessToken, hasValidToken, TOKEN_CHANGE_EVENT } from '@/api/core';
-import { useCurrentUser, useLogin, useLogout, useRegister } from '@/api/modules/auth';
-import type { TLoginDto, TRegisterDto } from '@/types/auth.type';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+	authEvents,
+	clearTokens,
+	getAccessToken,
+	hasValidToken,
+	TOKEN_CHANGE_EVENT,
+} from '@/api/core';
+import { useCurrentUser } from '@/api/modules/user';
+import { useLogout } from '@/api/modules/auth';
 import { WorkspaceProvider } from '@/context/workspace';
 import { RealtimeProvider } from '@/context/realtime';
+import pages from '@/Routes/pages';
 import AuthContext from './AuthContext';
 import type { IAuthContextProps } from './auth.types';
 
-const LOGIN_REDIRECT_PATH = '/workspaces';
-const REGISTER_REDIRECT_PATH = '/verify-email';
-
 export const AuthProvider = () => {
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const [accessToken, setAccessToken] = useState<string | null>(() => getAccessToken());
 	const hasActiveToken = !!accessToken && hasValidToken();
 	const {
@@ -20,8 +26,6 @@ export const AuthProvider = () => {
 		isLoading: isCurrentUserLoading,
 		refetch: refetchCurrentUser,
 	} = useCurrentUser(hasActiveToken);
-	const loginMutation = useLogin();
-	const registerMutation = useRegister();
 	const logoutMutation = useLogout();
 
 	useEffect(() => {
@@ -36,51 +40,39 @@ export const AuthProvider = () => {
 		};
 	}, []);
 
-	const onLogin = useCallback(
-		async (email: string, password: string, rememberMe: boolean) => {
-			const credentials: TLoginDto = { email, password };
-			const { res } = await loginMutation.mutateAsync({ ...credentials, rememberMe });
-			setAccessToken(getAccessToken());
-			const onboarding = res.data.user.onboarding;
-			navigate(
-				onboarding && !onboarding.is_complete && !onboarding.is_dismissed
-					? '/onboarding'
-					: LOGIN_REDIRECT_PATH,
-				{ replace: true },
-			);
-		},
-		[loginMutation, navigate],
-	);
-
-	const onRegister = useCallback(
-		async (data: TRegisterDto) => {
-			await registerMutation.mutateAsync(data);
-			setAccessToken(getAccessToken());
-			navigate(REGISTER_REDIRECT_PATH, { replace: true });
-		},
-		[registerMutation, navigate],
-	);
+	const signOutLocally = useCallback(() => {
+		clearTokens();
+		queryClient.clear();
+		setAccessToken(getAccessToken());
+	}, [queryClient]);
 
 	const onLogout = useCallback(
 		async (isNavigate = true) => {
 			try {
 				if (accessToken) await logoutMutation.mutateAsync();
-				else clearTokens();
 			} finally {
-				setAccessToken(getAccessToken());
-				if (isNavigate) navigate('/login', { replace: true });
+				signOutLocally();
+				if (isNavigate) navigate(pages.identity.login.to, { replace: true });
 			}
 		},
-		[accessToken, logoutMutation, navigate],
+		[accessToken, logoutMutation, navigate, signOutLocally],
 	);
 
 	const refreshCurrentUser = useCallback(async () => {
 		await refetchCurrentUser();
 	}, [refetchCurrentUser]);
 
+	useEffect(
+		() =>
+			authEvents.subscribe((event) => {
+				if (event !== 'session-expired' && event !== 'signed-out') return;
+				signOutLocally();
+				navigate(pages.identity.login.to, { replace: true });
+			}),
+		[navigate, signOutLocally],
+	);
+
 	const isLoading = isCurrentUserLoading;
-	const isLoginLoading = loginMutation.isPending;
-	const isRegisterLoading = registerMutation.isPending;
 	const isAuthenticated = hasActiveToken && !!userData;
 
 	const enrichedUserData = useMemo(() => {
@@ -101,26 +93,13 @@ export const AuthProvider = () => {
 	const value: IAuthContextProps = useMemo(
 		() => ({
 			isLoading,
-			isLoginLoading,
-			isRegisterLoading,
 			isAuthenticated,
+			tokenStorage: accessToken,
 			onLogout,
-			onLogin,
-			onRegister,
 			refreshCurrentUser,
 			userData: enrichedUserData,
 		}),
-		[
-			isLoading,
-			isLoginLoading,
-			isRegisterLoading,
-			isAuthenticated,
-			onLogout,
-			onLogin,
-			onRegister,
-			refreshCurrentUser,
-			enrichedUserData,
-		],
+		[isLoading, isAuthenticated, accessToken, onLogout, refreshCurrentUser, enrichedUserData],
 	);
 
 	return (
