@@ -36,7 +36,8 @@ const AuthLayout: FC<TAuthLayoutProps> = ({ badge, children }) => (
 		<div className='pointer-events-none absolute top-12 right-0 hidden h-64 w-48 rounded-l-[40px] border-y border-l border-primary-500/20 lg:block' />
 
 		{/* ─── Left Panel: Hero Showcase (Brand Theme & Agent1o1 Tagline) ─── */}
-		<div className='relative z-10 flex flex-1 flex-col justify-between p-8 sm:p-12 lg:p-16'>
+		{/* Hidden below lg: on mobile the auth card should be reachable without scrolling past marketing copy. */}
+		<div className='relative z-10 hidden flex-1 flex-col justify-between p-8 sm:p-12 lg:flex lg:p-16'>
 			<div>
 				<div className='inline-flex items-center gap-2 rounded-full border border-primary-500/35 bg-primary-500/15 px-3.5 py-1 text-[11px] font-bold tracking-wider text-primary-300 uppercase'>
 					<span className='size-1.5 rounded-full bg-primary-400 animate-pulse' />
