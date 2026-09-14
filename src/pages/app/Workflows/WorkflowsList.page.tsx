@@ -135,7 +135,7 @@ const WorkflowsListPage = () => {
 	const hasWorkspace = Boolean(activeWorkspaceId);
 
 	// Fetch folders + workflows from the backend
-	const { data: apiFolders } = useFolders(currentWorkspaceId);
+	const { data: apiFolders } = useFolders(currentWorkspaceId, 'workflow');
 	const { data: apiWorkflowsResponse } = useWorkflows(currentWorkspaceId);
 
 	// Mutations

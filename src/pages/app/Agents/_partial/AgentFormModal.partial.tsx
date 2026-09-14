@@ -38,7 +38,7 @@ const AgentFormModal = ({
 }: IAgentFormModalProps) => {
 	const isEdit = !!target;
 	const { data: models } = useModelCatalog();
-	const { data: folders } = useFolders(ws);
+	const { data: agentFolders = [] } = useFolders(ws, 'agent');
 
 	const [name, setName] = useState('');
 	const [description, setDescription] = useState('');
@@ -58,9 +58,6 @@ const AgentFormModal = ({
 		setFolderId(target?.folder_id ?? '');
 		setError('');
 	}, [open, target]);
-
-	// Folders are per-type trees — only the agent one applies here.
-	const agentFolders = (folders ?? []).filter((f) => f.type === 'agent');
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type {
+	TFolderType,
 	TCreateFolderDto,
 	TUpdateFolderDto,
 	TMoveWorkflowsDto,
@@ -10,10 +11,10 @@ import { folderKeys } from './folders.keys';
 import { workflowKeys } from '../workflows/workflows.keys';
 import { agentKeys } from '../agents/agents.keys';
 
-export const useFolders = (ws: string) =>
+export const useFolders = (ws: string, type: TFolderType = 'workflow') =>
 	useQuery({
-		queryKey: folderKeys.list(ws),
-		queryFn: ({ signal }) => FolderService.list(ws, signal),
+		queryKey: folderKeys.list(ws, type),
+		queryFn: ({ signal }) => FolderService.list(ws, type, signal),
 		enabled: !!ws,
 	});
 

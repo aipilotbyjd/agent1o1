@@ -157,8 +157,7 @@ const AgentsListPage = () => {
 
 	// Tags and folders are both workspace resources; agents only reference them.
 	const { data: allTags } = useTags(currentWorkspaceId);
-	const { data: allFolders } = useFolders(currentWorkspaceId);
-	const agentFolders = (allFolders ?? []).filter((f) => f.type === 'agent');
+	const { data: agentFolders = [] } = useFolders(currentWorkspaceId, 'agent');
 
 	const createFolder = useCreateFolder(currentWorkspaceId);
 	const updateFolder = useUpdateFolder(currentWorkspaceId);
