@@ -195,7 +195,7 @@ export const Content: FC<IContentProps> = (props) => {
 	const { children, className, ...rest } = props;
 
 	const classes = classNames(
-		'pointer-events-auto relative flex h-full w-full flex-col overflow-hidden bg-white/75 dark:bg-zinc-950/95 backdrop-blur-md',
+		'pointer-events-auto relative flex h-full w-full flex-col overflow-hidden bg-bg-card/75 dark:bg-bg-card/95 backdrop-blur-md border-s border-border-main',
 		className,
 	);
 	return (

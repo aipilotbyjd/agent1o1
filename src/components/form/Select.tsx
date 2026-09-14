@@ -70,7 +70,7 @@ const Select: FC<TSelectProps> = (props) => {
 		default: {
 			general: classNames(
 				// Default
-				'dark:bg-zinc-900 dark:text-zinc-400',
+				'dark:bg-zinc-900 dark:text-white',
 				'border-zinc-200 dark:border-zinc-700',
 				'placeholder-zinc-500',
 				// Focus
@@ -106,7 +106,7 @@ const Select: FC<TSelectProps> = (props) => {
 			general: classNames(
 				// Default
 				'bg-zinc-100 dark:bg-zinc-700',
-				'dark:text-zinc-400',
+				'dark:text-white',
 				'border-transparent dark:border-transparent',
 				'dark:placeholder-zinc-500',
 				// Focus
@@ -124,7 +124,7 @@ const Select: FC<TSelectProps> = (props) => {
 			general: classNames(
 				// Default
 				'border-b-2 border-x-transparent! border-b-zinc-200 border-t-transparent!',
-				'bg-transparent pe-0 dark:border-b-zinc-700 dark:text-zinc-400 dark:placeholder-zinc-500 ',
+				'bg-transparent pe-0 dark:border-b-zinc-700 dark:text-white dark:placeholder-zinc-500 ',
 				// Focus
 				'focus:border-x-transparent focus:border-b-blue-500 focus:border-t-transparent focus:ring-0 dark:focus:border-b-zinc-600 dark:focus:ring-zinc-600',
 			),

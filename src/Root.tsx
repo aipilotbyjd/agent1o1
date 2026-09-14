@@ -1,6 +1,6 @@
 import { ReactNode, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router';
-import { useAuth } from './context/auth';
+import { useAuth } from './context/authContext';
 import useFontSize from './hooks/useFontSize';
 import { Logo, LogoDark, LogoLight } from './assets/images';
 import { toast, ToastContainer, ToastContentProps } from 'react-toastify';
@@ -68,7 +68,7 @@ const Root = () => {
 											className='h-full w-full hover:bg-zinc-500/25'
 											onClick={() => {
 												window.open(
-													'https://boltify.omtanke.studio',
+													'https://agent1o1.omtanke.studio',
 													'_blank',
 												);
 												closeToast();
@@ -118,7 +118,7 @@ const Root = () => {
 									<button
 										className='h-full w-full hover:bg-zinc-500/25'
 										onClick={() => {
-											window.open('https://boltify.omtanke.studio', '_blank');
+											window.open('https://agent1o1.omtanke.studio', '_blank');
 											closeToast();
 										}}>
 										Open

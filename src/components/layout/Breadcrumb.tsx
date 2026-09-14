@@ -23,7 +23,7 @@ const Breadcrumb: FC<IBreadcrumbProps> = (props) => {
 	return (
 		<div
 			data-component-name='Breadcrumb'
-			className={classNames(className, 'flex items-center gap-2 text-zinc-500')}>
+			className={classNames(className, 'flex items-center gap-2 text-zinc-500 dark:text-white')}>
 			<Icon
 				icon='Home09'
 				onClick={() => navigate(homePath)}

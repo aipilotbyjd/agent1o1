@@ -64,15 +64,15 @@ const Input = forwardRef<HTMLInputElement, TInputProps>((props, ref) => {
 		default: {
 			general: classNames(
 				// Default
-				'dark:bg-zinc-900 dark:text-zinc-400',
+				'dark:bg-zinc-900 dark:text-white',
 				'border-zinc-200 dark:border-zinc-700',
 				'placeholder-zinc-500',
 				// Focus
-				'focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-zinc-600',
+				'focus:border-primary-400 focus:ring-primary-400/18 focus:ring-4',
 			),
 			validation: classNames({
 				'border-red-500! ring-4 ring-red-500/30': !isValid && isTouched && invalidFeedback,
-				'border-emerald-500! focus:ring-4 focus:ring-emerald-500/30':
+				'border-primary-500! focus:ring-4 focus:ring-primary-500/30':
 					!isValid && isTouched && !invalidFeedback,
 			}),
 		},
@@ -82,17 +82,17 @@ const Input = forwardRef<HTMLInputElement, TInputProps>((props, ref) => {
 				[`border-zinc-100 dark:border-zinc-800`],
 				'bg-zinc-100 dark:bg-zinc-800',
 				// Hover
-				'hover:border-blue-500',
-				'dark:hover:border-blue-500',
+				'hover:border-primary-400',
+				'dark:hover:border-primary-400',
 				// Focus
-				'focus:border-zinc-300 dark:focus:border-zinc-800',
+				'focus:border-primary-400 dark:focus:border-primary-400 focus:ring-primary-400/18 focus:ring-4',
 				'focus:bg-transparent dark:focus:bg-transparent',
 				// Disabled
 				'disabled:border-zinc-500!',
 			),
 			validation: classNames({
 				'border-red-500! ring-4 ring-red-500/30': !isValid && isTouched && invalidFeedback,
-				'border-emerald-500! focus:ring-4 focus:ring-emerald-500/30':
+				'border-primary-500! focus:ring-4 focus:ring-primary-500/30':
 					!isValid && isTouched && !invalidFeedback,
 			}),
 		},
@@ -100,17 +100,17 @@ const Input = forwardRef<HTMLInputElement, TInputProps>((props, ref) => {
 			general: classNames(
 				// Default
 				'bg-zinc-100 dark:bg-zinc-700',
-				'dark:text-zinc-400',
+				'dark:text-white',
 				'border-transparent dark:border-transparent',
 				'dark:placeholder-zinc-500',
 				// Focus
-				'focus:ring-blue-500 dark:focus:ring-zinc-600',
-				'focus:border-blue-500',
+				'focus:ring-primary-400/18 focus:ring-4',
+				'focus:border-primary-400',
 			),
 
 			validation: classNames({
 				'border-red-500! ring-4 ring-red-500/30': !isValid && isTouched && invalidFeedback,
-				'border-emerald-500! focus:ring-4 focus:ring-emerald-500/30':
+				'border-primary-500! focus:ring-4 focus:ring-primary-500/30':
 					!isValid && isTouched && !invalidFeedback,
 			}),
 		},
@@ -118,13 +118,13 @@ const Input = forwardRef<HTMLInputElement, TInputProps>((props, ref) => {
 			general: classNames(
 				// Default
 				'border-b-2 border-x-transparent! border-b-zinc-200 border-t-transparent!',
-				'bg-transparent pe-0 dark:border-b-zinc-700 dark:text-zinc-400 dark:placeholder-zinc-500 ',
+				'bg-transparent pe-0 dark:border-b-zinc-700 dark:text-white dark:placeholder-zinc-500 ',
 				// Focus
-				'focus:border-x-transparent focus:border-b-blue-500 focus:border-t-transparent focus:ring-0 dark:focus:border-b-zinc-600 dark:focus:ring-zinc-600',
+				'focus:border-x-transparent focus:border-b-primary-400 focus:border-t-transparent focus:ring-0 dark:focus:border-b-primary-400',
 			),
 			validation: classNames({
 				'border-red-500! ring-4 ring-red-500/30': !isValid && isTouched && invalidFeedback,
-				'border-emerald-500! focus:ring-4 focus:ring-emerald-500/30':
+				'border-primary-500! focus:ring-4 focus:ring-primary-500/30':
 					!isValid && isTouched && !invalidFeedback,
 			}),
 		},
@@ -177,7 +177,7 @@ const Input = forwardRef<HTMLInputElement, TInputProps>((props, ref) => {
 			'peer placeholder:text-transparent!': isFloatingLabel,
 			'autofill:pb-2 autofill:pt-6 not-placeholder-shown:pb-2 not-placeholder-shown:pt-6':
 				isFloatingLabel,
-			'focus:border-blue-500 focus:pb-2 focus:pt-6 focus:ring-blue-500 dark:focus:ring-zinc-600':
+			'focus:border-primary-400 focus:pb-2 focus:pt-6 focus:ring-primary-400/18':
 				isFloatingLabel,
 		},
 		inputVariantClasses,

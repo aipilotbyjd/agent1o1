@@ -30,12 +30,12 @@ const navItemClasses = {
 		'hover:opacity-100',
 		'border',
 		'text-zinc-500',
-		'hover:text-zinc-950 dark:hover:text-zinc-100',
+		'hover:text-zinc-950 dark:hover:text-white',
 		'grow',
 		'transition-all duration-300 ease-in-out',
 	),
 	inactive: 'border-transparent',
-	active: 'border-zinc-300 text-zinc-950 dark:border-zinc-800 dark:text-zinc-100',
+	active: 'bg-primary-400/10 border-transparent text-primary-500 dark:text-primary-400 font-semibold',
 	here: 'text-zinc-950 dark:text-zinc-100 border-transparent',
 };
 
@@ -151,7 +151,7 @@ export const NavButton: FC<INavButtonProps> = (props) => {
 				size='text-2xl'
 				className={classNames(
 					{
-						'text-zinc-500 hover:text-zinc-950 dark:hover:text-zinc-100': !iconColor,
+						'text-zinc-500 hover:text-zinc-950 dark:hover:text-white': !iconColor,
 					},
 					'transition-all duration-300 ease-in-out',
 					iconClassName,
@@ -192,7 +192,7 @@ export const NavItem: FC<INavItemProps> = (props) => {
 
 	const { t } = useTranslation('menu');
 
-	const { asideStatus, setAsideStatus } = useAsideStatus();
+	const { asideStatus, closeAside } = useAsideStatus();
 
 	// @ts-ignore
 	const isChildrenNavButton = navItemChildCheck(children);
@@ -248,7 +248,7 @@ export const NavItem: FC<INavItemProps> = (props) => {
 						<NavLink
 							end
 							to={to}
-							onClick={() => setAsideStatus(false)}
+							onClick={closeAside}
 							className={({ isActive }) =>
 								isActive || isActiveOverwrite
 									? classNames(
@@ -440,7 +440,7 @@ export const NavUser: FC<INavUserProps> = (props) => {
 
 	const { t } = useTranslation('menu');
 
-	const { asideStatus, setAsideStatus } = useAsideStatus();
+	const { asideStatus, closeAside } = useAsideStatus();
 	// @ts-ignore
 	const isChildrenNavButton = navItemChildCheck(children);
 
@@ -496,7 +496,7 @@ export const NavUser: FC<INavUserProps> = (props) => {
 						<NavLink
 							end
 							to={to}
-							onClick={() => setAsideStatus(false)}
+							onClick={closeAside}
 							className={({ isActive }) =>
 								isActive
 									? classNames(

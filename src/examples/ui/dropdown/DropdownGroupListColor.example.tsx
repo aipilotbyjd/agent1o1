@@ -50,7 +50,7 @@ const DropdownGroupListColorExample = () => {
 				</DropdownItem>
 				<DropdownItem className='gap-2'>
 					<div className='flex items-center gap-2'>
-						<div className='h-6 w-2 rounded-2xl bg-indigo-500'></div>
+						<div className='h-6 w-2 rounded-2xl bg-primary-400'></div>
 						<span>Indigo</span>
 					</div>
 				</DropdownItem>

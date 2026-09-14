@@ -1,9 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { TUploadArtifactDto, TUpdateArtifactAccessDto, TShareArtifactDto } from '@/types/artifact.type';
+import type {
+	TArtifactFilters,
+	TUploadArtifactDto,
+	TUpdateArtifactAccessDto,
+	TShareArtifactDto,
+} from '@/types/artifact.type';
 import { ArtifactService } from './artifacts.service';
 import { artifactKeys } from './artifacts.keys';
 
-export const useArtifacts = (ws: string, params?: { page?: number; per_page?: number }) =>
+export const useArtifacts = (ws: string, params?: TArtifactFilters) =>
 	useQuery({
 		queryKey: artifactKeys.list(ws, params),
 		queryFn: ({ signal }) => ArtifactService.list(ws, params, signal),
@@ -25,6 +30,23 @@ export const useUploadArtifact = (ws: string) => {
 		meta: { errorMessage: 'Failed to upload artifact' },
 	});
 };
+
+/** Downloads the file and saves it under its own filename. */
+export const useDownloadArtifact = (ws: string) =>
+	useMutation({
+		mutationFn: async ({ id, filename }: { id: string; filename: string }) => {
+			const blob = await ArtifactService.download(ws, id);
+			const url = URL.createObjectURL(blob);
+			const link = document.createElement('a');
+			link.href = url;
+			link.download = filename;
+			document.body.appendChild(link);
+			link.click();
+			link.remove();
+			URL.revokeObjectURL(url);
+		},
+		meta: { errorMessage: 'Failed to download artifact' },
+	});
 
 export const useDeleteArtifact = (ws: string) => {
 	const qc = useQueryClient();

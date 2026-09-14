@@ -48,7 +48,7 @@ const ProgressCircular: FC<IProgressCircularProps> = (props) => {
 		emerald: 'text-emerald-500',
 		sky: 'text-sky-500',
 		blue: 'text-blue-500',
-		violet: 'text-violet-500',
+		violet: 'text-primary-500',
 	};
 
 	return (

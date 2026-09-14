@@ -4,20 +4,33 @@ const useDomRect = (ref: RefObject<HTMLElement>): [DOMRect | null] => {
 	const [domRect, setDomRect] = useState<DOMRect | null>(null);
 
 	useLayoutEffect(() => {
-		setDomRect(ref?.current && ref.current.getBoundingClientRect());
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
+		const element = ref?.current;
+		if (!element) return;
+
+		setDomRect(element.getBoundingClientRect());
+
+		const resizeObserver = new ResizeObserver(() => {
+			setDomRect(element.getBoundingClientRect());
+		});
+
+		resizeObserver.observe(element);
+		return () => {
+			resizeObserver.unobserve(element);
+			resizeObserver.disconnect();
+		};
+	}, [ref, ref.current]);
 
 	useEffect(() => {
 		const scrollHandler = () => {
-			setDomRect(ref?.current && ref.current.getBoundingClientRect());
+			if (ref?.current) {
+				setDomRect(ref.current.getBoundingClientRect());
+			}
 		};
 		window.addEventListener('scroll', scrollHandler, true);
 		return () => {
 			window.removeEventListener('scroll', scrollHandler, true);
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
+	}, [ref, ref.current]);
 
 	return [domRect];
 };

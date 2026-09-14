@@ -59,7 +59,7 @@ const HeroSectionsTextAndButtonExample = () => {
 					{/* Buttons */}
 					<div className='mt-8 flex justify-center gap-3'>
 						<a
-							className='inline-flex items-center justify-center gap-x-3 rounded-full border border-transparent bg-linear-to-tl from-blue-600 to-violet-600 px-4 py-3 text-center text-sm font-medium text-white hover:from-violet-600 hover:to-blue-600 focus:from-violet-600 focus:to-blue-600 focus:outline-hidden'
+							className='inline-flex items-center justify-center gap-x-3 rounded-full border border-transparent bg-linear-to-tl from-blue-600 to-primary-400 px-4 py-3 text-center text-sm font-medium text-primary-950 hover:from-primary-400 hover:to-blue-600 focus:from-primary-400 focus:to-blue-600 focus:outline-hidden'
 							href='/'>
 							<svg
 								className='size-4 shrink-0'

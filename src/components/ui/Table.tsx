@@ -118,7 +118,7 @@ export const ThResizer: FC<IThResizerProps> = (props) => {
 	const { isResizing, className, color = themeConfig.themeColor, ...rest } = props;
 
 	const colorClass: Record<TColors, string> = {
-		primary: 'bg-primary-500',
+		primary: 'bg-primary-400',
 		secondary: 'bg-secondary-500',
 		zinc: 'bg-zinc-500',
 		red: 'bg-red-500',
@@ -127,7 +127,7 @@ export const ThResizer: FC<IThResizerProps> = (props) => {
 		emerald: 'bg-emerald-500',
 		sky: 'bg-sky-500',
 		blue: 'bg-blue-500',
-		violet: 'bg-violet-500',
+		violet: 'bg-primary-400',
 	};
 
 	return (
@@ -162,8 +162,8 @@ export const Td: FC<ITdProps> = (props) => {
 		'first:rtl:rounded-r-lg last:rtl:rounded-l-lg',
 		'group-even/Tr:bg-zinc-500/5',
 		'group-hover/Tr:bg-zinc-500/10',
-		'dark:group-even/Tr:bg-zinc-900/50',
-		'dark:group-hover/Tr:bg-zinc-900/90',
+		'dark:group-even/Tr:bg-white/[0.02]',
+		'dark:group-hover/Tr:bg-white/[0.05]',
 		'p-4',
 		themeConfig.transition,
 		className,

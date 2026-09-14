@@ -45,7 +45,7 @@ const Alert: FC<IAlertProps> = (props) => {
 
 	const alertVariants: Record<TAlertVariants, Record<TColors, string>> = {
 		solid: {
-			primary: 'bg-primary-500 border-transparent text-zinc-800',
+			primary: 'bg-primary-400 border-transparent text-zinc-800',
 			secondary: 'bg-secondary-500 border-transparent text-zinc-800 dark:text-zinc-200',
 			zinc: 'bg-zinc-500 border-transparent text-zinc-800 dark:text-zinc-200',
 			red: 'bg-red-500 border-transparent text-zinc-800 dark:text-zinc-200',
@@ -54,10 +54,10 @@ const Alert: FC<IAlertProps> = (props) => {
 			emerald: 'bg-emerald-500 border-transparent text-zinc-800 dark:text-zinc-200',
 			sky: 'bg-sky-500 border-transparent text-zinc-800 dark:text-zinc-200',
 			blue: 'bg-blue-500 border-transparent text-zinc-800 dark:text-zinc-200',
-			violet: 'bg-violet-500 border-transparent text-zinc-800 dark:text-zinc-200',
+			violet: 'bg-primary-400 border-transparent text-zinc-800 dark:text-zinc-200',
 		},
 		outline: {
-			primary: 'border-primary-500 bg-primary-500/10 text-primary-500',
+			primary: 'border-primary-500 bg-primary-400/10 text-primary-500',
 			secondary: 'border-secondary-500 bg-secondary-500/10 text-secondary-500',
 			zinc: 'border-zinc-500 bg-zinc-500/10 text-zinc-500',
 			red: 'border-red-500 bg-red-500/10 text-red-500',
@@ -66,7 +66,7 @@ const Alert: FC<IAlertProps> = (props) => {
 			emerald: 'border-emerald-500 bg-emerald-500/10 text-emerald-500',
 			sky: 'border-sky-500 bg-sky-500/10 text-sky-500',
 			blue: 'border-blue-500 bg-blue-500/10 text-blue-500',
-			violet: 'border-violet-500 bg-violet-500/10 text-violet-500',
+			violet: 'border-primary-500 bg-primary-400/10 text-primary-500',
 		},
 		default: {
 			primary: 'text-primary-500 border-transparent',
@@ -78,10 +78,10 @@ const Alert: FC<IAlertProps> = (props) => {
 			emerald: 'text-emerald-500 border-transparent',
 			sky: 'text-sky-500 border-transparent',
 			blue: 'text-blue-500 border-transparent',
-			violet: 'text-violet-500 border-transparent',
+			violet: 'text-primary-500 border-transparent',
 		},
 		soft: {
-			primary: 'bg-primary-500/10 text-primary-500 border-transparent',
+			primary: 'bg-primary-400/10 text-primary-500 border-transparent',
 			secondary: 'bg-secondary-500/10 text-secondary-500 border-transparent',
 			zinc: 'bg-zinc-500/10 text-zinc-500 border-transparent',
 			red: 'bg-red-500/10 text-red-500 border-transparent',
@@ -90,7 +90,7 @@ const Alert: FC<IAlertProps> = (props) => {
 			emerald: 'bg-emerald-500/10 text-emerald-500 border-transparent',
 			sky: 'bg-sky-500/10 text-sky-500 border-transparent',
 			blue: 'bg-blue-500/10 text-blue-500 border-transparent',
-			violet: 'bg-violet-500/10 text-violet-500 border-transparent',
+			violet: 'bg-primary-400/10 text-primary-500 border-transparent',
 		},
 	};
 	const alertVariantClasses = alertVariants[variant][color];

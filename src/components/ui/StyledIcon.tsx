@@ -28,7 +28,7 @@ const StyledIcon: FC<IStyledIconProps> = (props) => {
 
 	const iconVariant: Record<TStyledIconVariants, Record<TColors, string>> = {
 		solid: {
-			primary: 'bg-primary-500 text-black',
+			primary: 'bg-primary-400 text-black',
 			secondary: 'bg-secondary-500 text-white',
 			zinc: 'bg-zinc-500 text-white',
 			red: 'bg-red-500 text-white',
@@ -37,7 +37,7 @@ const StyledIcon: FC<IStyledIconProps> = (props) => {
 			emerald: 'bg-emerald-500 text-white',
 			sky: 'bg-sky-500 text-white',
 			blue: 'bg-blue-500 text-white',
-			violet: 'bg-violet-500 text-white',
+			violet: 'bg-primary-400 text-primary-950',
 		},
 		outline: {
 			primary:
@@ -52,7 +52,7 @@ const StyledIcon: FC<IStyledIconProps> = (props) => {
 				'border-emerald-600 text-emerald-600 dark:border-emerald-500 dark:text-emerald-500 border',
 			sky: 'border-sky-600 text-sky-600 dark:border-sky-500 dark:text-sky-500 border',
 			blue: 'border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-500 border',
-			violet: 'border-violet-600 text-violet-600 dark:border-violet-500 dark:text-violet-500 border',
+			violet: 'border-primary-600 text-primary-600 dark:border-primary-500 dark:text-primary-500 border',
 		},
 		ghost: {
 			primary: 'text-primary-500',
@@ -64,7 +64,7 @@ const StyledIcon: FC<IStyledIconProps> = (props) => {
 			emerald: 'text-emerald-500',
 			sky: 'text-sky-500',
 			blue: 'text-blue-500',
-			violet: 'text-violet-500',
+			violet: 'text-primary-500',
 		},
 		soft: {
 			primary: 'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-400',
@@ -77,7 +77,7 @@ const StyledIcon: FC<IStyledIconProps> = (props) => {
 			emerald: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-400',
 			sky: 'bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-400',
 			blue: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-400',
-			violet: 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-400',
+			violet: 'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-400',
 		},
 		softOutline: {
 			primary:
@@ -92,7 +92,7 @@ const StyledIcon: FC<IStyledIconProps> = (props) => {
 				'border-emerald-100 bg-emerald-200 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-800 dark:text-emerald-400 border-4',
 			sky: 'border-sky-100 bg-sky-200 text-sky-800 dark:border-sky-900 dark:bg-sky-800 dark:text-sky-400 border-4',
 			blue: 'border-blue-100 bg-blue-200 text-blue-800 dark:border-blue-900 dark:bg-blue-800 dark:text-blue-400 border-4',
-			violet: 'border-violet-100 bg-violet-200 text-violet-800 dark:border-violet-900 dark:bg-violet-800 dark:text-violet-400 border-4',
+			violet: 'border-primary-100 bg-primary-200 text-primary-800 dark:border-primary-900 dark:bg-primary-800 dark:text-primary-400 border-4',
 		},
 	};
 

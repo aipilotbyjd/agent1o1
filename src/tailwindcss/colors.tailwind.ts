@@ -43,31 +43,19 @@ interface DefaultColors {
 }
 
 interface AllColor extends DefaultColors {
-	primary: {
-		50: '#F5FFF4';
-		100: '#E6FFEC';
-		200: '#CCFFD8';
-		300: '#99FFAD';
-		400: '#80FF94';
-		500: '#66FF4C';
-		600: '#59E644';
-		700: '#4CC63B';
-		800: '#3E9E32';
-		900: '#307729';
-		950: '#1C4E1F';
-	};
+	primary: TColorItem;
 	secondary: {
-		50: '#FFF4EF';
-		100: '#FFE4DA';
-		200: '#FFC6B0';
-		300: '#FFA388';
-		400: '#FF8C66';
-		500: '#FF7A47';
-		600: '#E66E40';
-		700: '#CC6138';
-		800: '#B35430';
-		900: '#8A3F24';
-		950: '#4A2113';
+		50: '#ECFDF5';
+		100: '#D1FAE5';
+		200: '#A7F3D0';
+		300: '#6EE7B7';
+		400: '#34D399';
+		500: '#10B981';
+		600: '#059669';
+		700: '#047857';
+		800: '#065F46';
+		900: '#064E3B';
+		950: '#022C22';
 	};
 }
 
@@ -286,43 +274,43 @@ const colors: AllColor = {
 		950: getComputedStyle(document.documentElement).getPropertyValue('--color-blue-950'),
 	},
 	indigo: {
-		50: getComputedStyle(document.documentElement).getPropertyValue('--color-indigo-50'),
-		100: getComputedStyle(document.documentElement).getPropertyValue('--color-indigo-100'),
-		200: getComputedStyle(document.documentElement).getPropertyValue('--color-indigo-200'),
-		300: getComputedStyle(document.documentElement).getPropertyValue('--color-indigo-300'),
-		400: getComputedStyle(document.documentElement).getPropertyValue('--color-indigo-400'),
-		500: getComputedStyle(document.documentElement).getPropertyValue('--color-indigo-500'),
-		600: getComputedStyle(document.documentElement).getPropertyValue('--color-indigo-600'),
-		700: getComputedStyle(document.documentElement).getPropertyValue('--color-indigo-700'),
-		800: getComputedStyle(document.documentElement).getPropertyValue('--color-indigo-800'),
-		900: getComputedStyle(document.documentElement).getPropertyValue('--color-indigo-900'),
-		950: getComputedStyle(document.documentElement).getPropertyValue('--color-indigo-950'),
+		50: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-50'),
+		100: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-100'),
+		200: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-200'),
+		300: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-300'),
+		400: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-400'),
+		500: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-500'),
+		600: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-600'),
+		700: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-700'),
+		800: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-800'),
+		900: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-900'),
+		950: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-950'),
 	},
 	violet: {
-		50: getComputedStyle(document.documentElement).getPropertyValue('--color-violet-50'),
-		100: getComputedStyle(document.documentElement).getPropertyValue('--color-violet-100'),
-		200: getComputedStyle(document.documentElement).getPropertyValue('--color-violet-200'),
-		300: getComputedStyle(document.documentElement).getPropertyValue('--color-violet-300'),
-		400: getComputedStyle(document.documentElement).getPropertyValue('--color-violet-400'),
-		500: getComputedStyle(document.documentElement).getPropertyValue('--color-violet-500'),
-		600: getComputedStyle(document.documentElement).getPropertyValue('--color-violet-600'),
-		700: getComputedStyle(document.documentElement).getPropertyValue('--color-violet-700'),
-		800: getComputedStyle(document.documentElement).getPropertyValue('--color-violet-800'),
-		900: getComputedStyle(document.documentElement).getPropertyValue('--color-violet-900'),
-		950: getComputedStyle(document.documentElement).getPropertyValue('--color-violet-950'),
+		50: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-50'),
+		100: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-100'),
+		200: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-200'),
+		300: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-300'),
+		400: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-400'),
+		500: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-500'),
+		600: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-600'),
+		700: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-700'),
+		800: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-800'),
+		900: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-900'),
+		950: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-950'),
 	},
 	purple: {
-		50: getComputedStyle(document.documentElement).getPropertyValue('--color-purple-50'),
-		100: getComputedStyle(document.documentElement).getPropertyValue('--color-purple-100'),
-		200: getComputedStyle(document.documentElement).getPropertyValue('--color-purple-200'),
-		300: getComputedStyle(document.documentElement).getPropertyValue('--color-purple-300'),
-		400: getComputedStyle(document.documentElement).getPropertyValue('--color-purple-400'),
-		500: getComputedStyle(document.documentElement).getPropertyValue('--color-purple-500'),
-		600: getComputedStyle(document.documentElement).getPropertyValue('--color-purple-600'),
-		700: getComputedStyle(document.documentElement).getPropertyValue('--color-purple-700'),
-		800: getComputedStyle(document.documentElement).getPropertyValue('--color-purple-800'),
-		900: getComputedStyle(document.documentElement).getPropertyValue('--color-purple-900'),
-		950: getComputedStyle(document.documentElement).getPropertyValue('--color-purple-950'),
+		50: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-50'),
+		100: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-100'),
+		200: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-200'),
+		300: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-300'),
+		400: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-400'),
+		500: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-500'),
+		600: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-600'),
+		700: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-700'),
+		800: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-800'),
+		900: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-900'),
+		950: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-950'),
 	},
 	fuchsia: {
 		50: getComputedStyle(document.documentElement).getPropertyValue('--color-fuchsia-50'),
@@ -338,17 +326,17 @@ const colors: AllColor = {
 		950: getComputedStyle(document.documentElement).getPropertyValue('--color-fuchsia-950'),
 	},
 	pink: {
-		50: getComputedStyle(document.documentElement).getPropertyValue('--color-pink-50'),
-		100: getComputedStyle(document.documentElement).getPropertyValue('--color-pink-100'),
-		200: getComputedStyle(document.documentElement).getPropertyValue('--color-pink-200'),
-		300: getComputedStyle(document.documentElement).getPropertyValue('--color-pink-300'),
-		400: getComputedStyle(document.documentElement).getPropertyValue('--color-pink-400'),
-		500: getComputedStyle(document.documentElement).getPropertyValue('--color-pink-500'),
-		600: getComputedStyle(document.documentElement).getPropertyValue('--color-pink-600'),
-		700: getComputedStyle(document.documentElement).getPropertyValue('--color-pink-700'),
-		800: getComputedStyle(document.documentElement).getPropertyValue('--color-pink-800'),
-		900: getComputedStyle(document.documentElement).getPropertyValue('--color-pink-900'),
-		950: getComputedStyle(document.documentElement).getPropertyValue('--color-pink-950'),
+		50: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-50'),
+		100: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-100'),
+		200: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-200'),
+		300: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-300'),
+		400: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-400'),
+		500: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-500'),
+		600: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-600'),
+		700: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-700'),
+		800: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-800'),
+		900: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-900'),
+		950: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-950'),
 	},
 	rose: {
 		50: getComputedStyle(document.documentElement).getPropertyValue('--color-rose-50'),
@@ -364,30 +352,30 @@ const colors: AllColor = {
 		950: getComputedStyle(document.documentElement).getPropertyValue('--color-rose-950'),
 	},
 	primary: {
-		50: '#F5FFF4',
-		100: '#E6FFEC',
-		200: '#CCFFD8',
-		300: '#99FFAD',
-		400: '#80FF94',
-		500: '#66FF4C',
-		600: '#59E644',
-		700: '#4CC63B',
-		800: '#3E9E32',
-		900: '#307729',
-		950: '#1C4E1F',
+		50: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-50'),
+		100: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-100'),
+		200: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-200'),
+		300: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-300'),
+		400: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-400'),
+		500: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-500'),
+		600: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-600'),
+		700: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-700'),
+		800: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-800'),
+		900: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-900'),
+		950: getComputedStyle(document.documentElement).getPropertyValue('--color-primary-950'),
 	},
 	secondary: {
-		50: '#FFF4EF',
-		100: '#FFE4DA',
-		200: '#FFC6B0',
-		300: '#FFA388',
-		400: '#FF8C66',
-		500: '#FF7A47',
-		600: '#E66E40',
-		700: '#CC6138',
-		800: '#B35430',
-		900: '#8A3F24',
-		950: '#4A2113',
+		50: '#ECFDF5',
+		100: '#D1FAE5',
+		200: '#A7F3D0',
+		300: '#6EE7B7',
+		400: '#34D399',
+		500: '#10B981',
+		600: '#059669',
+		700: '#047857',
+		800: '#065F46',
+		900: '#064E3B',
+		950: '#022C22',
 	},
 };
 

@@ -26,7 +26,7 @@ const Container = forwardRef<HTMLDivElement, IContainerProps>((props, ref) => {
 			ref={ref}
 			data-component-name='Container'
 			className={classNames(
-				'mx-auto h-full w-full bg-white px-2 pt-4 pb-2 dark:bg-zinc-950',
+				'mx-auto h-full w-full bg-bg-main px-2 pt-4 pb-2 dark:bg-bg-main',
 				breakpoint,
 				className,
 			)}

@@ -3,6 +3,7 @@ import { unwrapKey } from '@/api/core';
 import type { TApiResponse, TPaginationMeta } from '@/api/core';
 import type {
 	TArtifact,
+	TArtifactFilters,
 	TUploadArtifactDto,
 	TUpdateArtifactAccessDto,
 	TShareArtifactDto,
@@ -10,7 +11,7 @@ import type {
 import { ArtifactEndpoints as E } from './artifacts.endpoints';
 
 export const ArtifactService = {
-	list: (ws: string, params?: { page?: number; per_page?: number }, signal?: AbortSignal) =>
+	list: (ws: string, params?: TArtifactFilters, signal?: AbortSignal) =>
 		axiosClient
 			.get<TApiResponse<TArtifact[]> & { meta: TPaginationMeta }>(E.list(ws), { params, signal })
 			.then((r) => ({ artifacts: r.data.data, meta: r.data.meta })),
@@ -35,6 +36,13 @@ export const ArtifactService = {
 	remove: (ws: string, id: string) => axiosClient.delete(E.delete(ws, id)).then(() => undefined),
 
 	downloadUrl: (ws: string, id: string) => E.download(ws, id),
+
+	/** The endpoint streams the file behind bearer auth, so it can't just be
+	 *  linked to — it is fetched as a blob and handed to the browser. */
+	download: (ws: string, id: string) =>
+		axiosClient
+			.get<Blob>(E.download(ws, id), { responseType: 'blob' })
+			.then((r) => r.data),
 
 	updateAccess: (ws: string, id: string, payload: TUpdateArtifactAccessDto) =>
 		axiosClient

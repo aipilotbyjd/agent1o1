@@ -225,7 +225,7 @@ export const DropdownMenu = forwardRef<HTMLUListElement, IDropdownMenuProps>((pr
 				'flex flex-col gap-2 px-2 py-2',
 				'z-[9999]',
 				'min-w-60',
-				'border-zinc-300/25 bg-white shadow-lg dark:border-zinc-800/50 dark:bg-zinc-900',
+				'bg-bg-card shadow-lg border border-border-main dark:bg-bg-card',
 				borderWidth,
 				rounded,
 				className,
@@ -273,7 +273,7 @@ export const DropdownItem = forwardRef<HTMLLIElement, IDropdownItemProps>((props
 		emerald: 'text-emerald-500',
 		sky: 'text-sky-500',
 		blue: 'text-blue-500',
-		violet: 'text-violet-500',
+		violet: 'text-primary-500',
 	};
 
 	const classes = classNames(

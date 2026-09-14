@@ -68,7 +68,7 @@ const Avatar: FC<IAvatarProps> = (props) => {
 
 	const avatarVariants: Record<TAvatarVariants, Record<TColors, string>> = {
 		solid: {
-			primary: 'bg-primary-500 border-transparent text-zinc-800',
+			primary: 'bg-primary-400 border-transparent text-zinc-800',
 			secondary: 'bg-secondary-500 border-transparent text-zinc-800 dark:text-zinc-200',
 			zinc: 'bg-zinc-500 border-transparent text-zinc-800 dark:text-zinc-200',
 			red: 'bg-red-500 border-transparent text-zinc-800 dark:text-zinc-200',
@@ -77,10 +77,10 @@ const Avatar: FC<IAvatarProps> = (props) => {
 			emerald: 'bg-emerald-500 border-transparent text-zinc-800 dark:text-zinc-200',
 			sky: 'bg-sky-500 border-transparent text-zinc-800 dark:text-zinc-200',
 			blue: 'bg-blue-500 border-transparent text-zinc-800 dark:text-zinc-200',
-			violet: 'bg-violet-500 border-transparent text-zinc-800 dark:text-zinc-200',
+			violet: 'bg-primary-400 border-transparent text-zinc-800 dark:text-zinc-200',
 		},
 		outline: {
-			primary: 'border-primary-500 bg-primary-500/25 text-primary-500',
+			primary: 'border-primary-500 bg-primary-400/25 text-primary-500',
 			secondary: 'border-secondary-500 bg-secondary-500/25 text-secondary-500',
 			zinc: 'border-zinc-500 bg-zinc-500/25 text-zinc-500',
 			red: 'border-red-500 bg-red-500/25 text-red-500',
@@ -89,7 +89,7 @@ const Avatar: FC<IAvatarProps> = (props) => {
 			emerald: 'border-emerald-500 bg-emerald-500/25 text-emerald-500',
 			sky: 'border-sky-500 bg-sky-500/25 text-sky-500',
 			blue: 'border-blue-500 bg-blue-500/25 text-blue-500',
-			violet: 'border-violet-500 bg-violet-500/25 text-violet-500',
+			violet: 'border-primary-500 bg-primary-400/25 text-primary-500',
 		},
 		default: {
 			primary: 'border-transparent text-primary-500',
@@ -101,10 +101,10 @@ const Avatar: FC<IAvatarProps> = (props) => {
 			emerald: 'border-transparent text-emerald-500',
 			sky: 'border-transparent text-sky-500',
 			blue: 'border-transparent text-blue-500',
-			violet: 'border-transparent text-violet-500',
+			violet: 'border-transparent text-primary-500',
 		},
 		soft: {
-			primary: 'border-transparent bg-primary-500/25 text-primary-500',
+			primary: 'border-transparent bg-primary-400/25 text-primary-500',
 			secondary: 'border-transparent bg-secondary-500/25 text-secondary-500',
 			zinc: 'border-transparent bg-zinc-500/25 text-zinc-500',
 			red: 'border-transparent bg-red-500/25 text-red-500',
@@ -113,7 +113,7 @@ const Avatar: FC<IAvatarProps> = (props) => {
 			emerald: 'border-transparent bg-emerald-500/25 text-emerald-500',
 			sky: 'border-transparent bg-sky-500/25 text-sky-500',
 			blue: 'border-transparent bg-blue-500/25 text-blue-500',
-			violet: 'border-transparent bg-violet-500/25 text-violet-500',
+			violet: 'border-transparent bg-primary-400/25 text-primary-500',
 		},
 	};
 	const avatarVariantClasses = avatarVariants[variant][color];

@@ -11,7 +11,6 @@ import {
 import Button from '@/components/ui/Button';
 import Dropdown, { DropdownMenu, DropdownToggle } from '@/components/ui/Dropdown';
 import Tooltip from '@/components/ui/Tooltip';
-import { useWorkspaceContext } from '@/context/workspace';
 import {
 	useDeleteNotification,
 	useMarkAllNotificationsRead,
@@ -23,7 +22,7 @@ import type { TNotification } from '@/types/notification.type';
 
 type TTab = 'all' | 'unread';
 
-const isUnread = (n: TNotification) => !(n.is_read ?? !!n.read_at);
+const isUnread = (n: TNotification) => !n.read_at;
 
 const relativeTime = (iso: string): string => {
 	try {
@@ -33,11 +32,14 @@ const relativeTime = (iso: string): string => {
 	}
 };
 
-const TypeIcon = ({ type }: { type: string }) => {
-	if (type.startsWith('execution.failed')) {
+const TypeIcon = ({ type }: { type: string | null }) => {
+	if (!type) {
+		return <Bell size={16} className='text-zinc-400' />;
+	}
+	if (type.startsWith('run.failed') || type.startsWith('execution.failed')) {
 		return <AlertTriangle size={16} className='text-red-500' />;
 	}
-	if (type.startsWith('execution.')) {
+	if (type.startsWith('run.') || type.startsWith('execution.')) {
 		return <CheckCircle2 size={16} className='text-emerald-500' />;
 	}
 	if (type.startsWith('billing.')) {
@@ -102,21 +104,21 @@ const NotificationRow = ({
 };
 
 const NotificationsDropdown = () => {
-	const { activeWorkspaceId } = useWorkspaceContext();
 	const [tab, setTab] = useState<TTab>('all');
 
-	const { data: unreadData } = useUnreadNotificationCount(activeWorkspaceId);
+	// Notifications are account-level on the current API (GET /notifications),
+	// not workspace-scoped — each record carries its own workspace_id.
+	const { data: unreadData } = useUnreadNotificationCount();
 	const { data, isLoading } = useNotifications(
-		activeWorkspaceId,
 		tab === 'unread' ? { unread: true } : undefined,
 	);
 
-	const markRead = useMarkNotificationRead(activeWorkspaceId);
-	const markAllRead = useMarkAllNotificationsRead(activeWorkspaceId);
-	const deleteNotification = useDeleteNotification(activeWorkspaceId);
+	const markRead = useMarkNotificationRead();
+	const markAllRead = useMarkAllNotificationsRead();
+	const deleteNotification = useDeleteNotification();
 
-	const unreadCount = unreadData?.count ?? 0;
-	const notifications = data?.data ?? [];
+	const unreadCount = unreadData?.unread ?? 0;
+	const notifications: TNotification[] = data ?? [];
 
 	const tabClass = (active: boolean) =>
 		`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${

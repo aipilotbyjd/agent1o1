@@ -31,7 +31,11 @@ export const useSyncWorkflowTags = (ws: string, id: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (payload: TSyncWorkflowTagsDto) => WorkflowService.syncTags(ws, id, payload),
-		onSuccess: () => qc.invalidateQueries({ queryKey: workflowKeys.detail(ws, id) }),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: workflowKeys.detail(ws, id) });
+			// The list renders tags too, so it has to refetch as well.
+			qc.invalidateQueries({ queryKey: workflowKeys.lists(ws) });
+		},
 		meta: { errorMessage: 'Failed to update workflow tags' },
 	});
 };

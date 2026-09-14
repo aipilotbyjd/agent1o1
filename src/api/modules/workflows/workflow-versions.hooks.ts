@@ -34,3 +34,22 @@ export const usePublishWorkflowVersion = (ws: string, workflowId: string) => {
 		meta: { errorMessage: 'Failed to publish workflow' },
 	});
 };
+
+/**
+ * Workspace-scoped publish, for screens that act on a workflow they don't
+ * hold open — the list page's row action, for instance. Same endpoint as
+ * `usePublishWorkflowVersion`, with the workflow supplied per call.
+ */
+export const usePublishWorkflow = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({ workflowId, body }: { workflowId: string; body?: TPublishWorkflowDto }) =>
+			WorkflowVersionService.publish(ws, workflowId, body),
+		onSuccess: (_data, { workflowId }) => {
+			qc.invalidateQueries({ queryKey: keys.list(ws, workflowId) });
+			qc.invalidateQueries({ queryKey: workflowKeys.lists(ws) });
+			qc.invalidateQueries({ queryKey: workflowKeys.detail(ws, workflowId) });
+		},
+		meta: { errorMessage: 'Failed to publish workflow' },
+	});
+};

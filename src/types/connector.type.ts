@@ -7,6 +7,23 @@
 // write-only and never comes back in a response.
 // ============================================================
 
+export type TConnectorAuthType = 'oauth2' | 'api_key' | 'bearer_token' | 'basic_auth';
+
+export type TConnectorFieldType = 'string' | 'number' | 'boolean' | 'multiline';
+
+/** One entry of a connector's `fields` form schema — the shape a manual
+ *  (api_key / bearer_token / basic_auth) credential's `data` must satisfy.
+ *  OAuth connectors ship an empty array. */
+export type TConnectorField = {
+	name: string;
+	label: string;
+	type: TConnectorFieldType;
+	secret: boolean;
+	required?: boolean;
+	placeholder?: string;
+	description?: string;
+};
+
 export type TConnector = {
 	id: string;
 	key: string;
@@ -14,9 +31,9 @@ export type TConnector = {
 	description: string | null;
 	icon: string | null;
 	color: string | null;
-	auth_type: string;
+	auth_type: TConnectorAuthType;
 	is_oauth: boolean;
-	fields: unknown;
+	fields: TConnectorField[];
 	is_active: boolean;
 };
 
@@ -59,4 +76,6 @@ export type TInitiateOAuthConnectorDto = {
 	scope?: TConnectorCredentialScope;
 };
 
-export type TInitiateOAuthConnectorResult = { url: string };
+/** `OAuthConnectorFlowService::initiate()` returns the provider's authorize
+ *  URL plus the state it minted — the client redirects to the former. */
+export type TInitiateOAuthConnectorResult = { authorize_url: string; state: string };

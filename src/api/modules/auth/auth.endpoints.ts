@@ -12,7 +12,6 @@ export const AuthEndpoints = {
 	forgotPassword: '/auth/forgot-password',
 	resetPassword: '/auth/reset-password',
 	verifyEmail: (id: string, hash: string) => `/auth/verify-email/${id}/${hash}`,
-	confirmEmailChange: (id: string, hash: string) => `/auth/confirm-email-change/${id}/${hash}`,
 	socialRedirect: (provider: 'google' | 'github') => `/auth/social/${provider}/redirect`,
 	exchangeSocialCode: '/auth/social/exchange',
 
@@ -22,7 +21,6 @@ export const AuthEndpoints = {
 	resendVerification: '/auth/resend-verification',
 	sessions: '/auth/sessions',
 	revokeSession: (tokenId: string) => `/auth/sessions/${tokenId}`,
-	events: '/auth/events',
 
 	twoFactorEnable: '/auth/2fa/enable',
 	twoFactorConfirm: '/auth/2fa/confirm',

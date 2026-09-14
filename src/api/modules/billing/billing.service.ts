@@ -1,6 +1,6 @@
 import { axiosClient } from '@/api/client';
 import { unwrapKey } from '@/api/core';
-import type { TApiResponse, TCursorPaginationMeta } from '@/api/core';
+import type { TApiResponse, TCursorPaginationMeta, TPaginationMeta } from '@/api/core';
 import type {
 	TBillingOverview,
 	TPlan,
@@ -88,10 +88,15 @@ export const BillingService = {
 			.then((r) => r.data.data),
 
 	// The workspace's credit ledger — paginates internally.
+	// Paginated by `ApiResponse::paginated()` — `data` sits flat in the
+	// envelope with `meta` alongside it, so both are returned.
 	credits: (ws: string, params?: { page?: number; per_page?: number }, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<TCreditTransaction[]>>(E.credits(ws), { params, signal })
-			.then((r) => r.data.data),
+			.get<TApiResponse<TCreditTransaction[]> & { meta: TPaginationMeta }>(E.credits(ws), {
+				params,
+				signal,
+			})
+			.then((r) => ({ transactions: r.data.data, meta: r.data.meta })),
 
 	overage: (ws: string, signal?: AbortSignal) =>
 		axiosClient

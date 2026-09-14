@@ -6,8 +6,8 @@ import Dropdown, {
 } from '@/components/ui/Dropdown';
 
 import { useNavigate } from 'react-router';
-import { useWorkspaceContext } from '@/context/workspace';
-import { useAuth } from '@/context/auth';
+import { useWorkspaceContext } from '@/context/workspaceContext';
+import { useAuth } from '@/context/authContext';
 import {
 	Check,
 	PlusCircle,

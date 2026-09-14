@@ -29,7 +29,11 @@ export const useSyncAgentTags = (ws: string, id: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (payload: TSyncAgentTagsDto) => AgentService.syncTags(ws, id, payload),
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentKeys.detail(ws, id) }),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: agentKeys.detail(ws, id) });
+			// The list renders tags too, so it has to refetch as well.
+			qc.invalidateQueries({ queryKey: agentKeys.lists(ws) });
+		},
 		meta: { errorMessage: 'Failed to update agent tags' },
 	});
 };

@@ -1,12 +1,14 @@
 import { FC, memo } from 'react';
 import ReactApexChart, { Props } from 'react-apexcharts';
+import { ApexOptions } from 'apexcharts';
 import _ from 'lodash';
 
 // import colors from '../../tailwindcss/colors.tailwind';
 
-export interface IChartProps extends Props {
+export interface IChartProps extends Omit<Props, 'type'> {
 	width?: string | number;
 	height?: string | number;
+	type?: NonNullable<ApexOptions['chart']>['type'];
 }
 
 const Chart: FC<IChartProps> = (props) => {
@@ -115,7 +117,7 @@ const Chart: FC<IChartProps> = (props) => {
 		<ReactApexChart
 			options={_.merge(defaultOptions, options)}
 			series={series}
-			type={type}
+			type={type as Props['type']}
 			height={height}
 			width={width}
 		/>

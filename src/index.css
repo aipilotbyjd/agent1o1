@@ -25,7 +25,7 @@ layer(base);
 	--color-primary-800: var(--primary-800);
 	--color-primary-900: var(--primary-900);
 	--color-primary-950: var(--primary-950);
-
+	
 	--color-primary-foreground: var(--primary-foreground);
 
 	--color-zinc-100: var(--bg-base);
@@ -70,63 +70,63 @@ layer(base);
 }
 
 :root {
-	--primary-50: #fffdf0;
-	--primary-100: #fefad4;
-	--primary-200: #fbf4aa;
-	--primary-300: #f6ea7d;
-	--primary-400: #cff54a;
-	--primary-500: #c4ee3d;
-	--primary-600: #b7e52f;
-	--primary-700: #9b941c;
-	--primary-800: #857e15;
-	--primary-900: #6f6a0f;
-	--primary-950: #4b4708;
+	--primary-50: #FFFDF0;
+	--primary-100: #FEFAD4;
+	--primary-200: #FBF4AA;
+	--primary-300: #F6EA7D;
+	--primary-400: #CFF54A;
+	--primary-500: #C4EE3D;
+	--primary-600: #B7E52F;
+	--primary-700: #9B941C;
+	--primary-800: #857E15;
+	--primary-900: #6F6A0F;
+	--primary-950: #4B4708;
 	--primary-foreground: #111111;
 
-	--bg-base: #fcfcfd;
-	--border-base: #eceef2;
+	--bg-base: #FCFCFD;
+	--border-base: #ECEEF2;
 	--text-primary: #101828;
 	--text-secondary: #667085;
-
-	--bg-main: #fcfcfd;
-	--bg-sidebar: #ffffff;
-	--bg-card: #ffffff;
-	--border-main: #eceef2;
+	
+	--bg-main: #FCFCFD;
+	--bg-sidebar: #FFFFFF;
+	--bg-card: #FFFFFF;
+	--border-main: #ECEEF2;
 	--text-main: #101828;
 	--text-muted: #667085;
-	--soft-accent-bg: #f8fde9;
-	--soft-accent-border: #eaf4bc;
+	--soft-accent-bg: #F8FDE9;
+	--soft-accent-border: #EAF4BC;
 
 	--shadow-val: 0 4px 24px rgba(16, 24, 40, 0.04);
 }
 
 .dark {
-	--primary-50: rgba(207, 245, 74, 0.1);
+	--primary-50: rgba(207, 245, 74, 0.10);
 	--primary-100: rgba(207, 245, 74, 0.15);
-	--primary-200: #eaf4bc;
-	--primary-300: #dfee98;
-	--primary-400: #cff54a;
-	--primary-500: #c4ee3d;
-	--primary-600: #b7e52f;
-	--primary-700: #9b941c;
-	--primary-800: #857e15;
-	--primary-900: #6f6a0f;
-	--primary-950: #4b4708;
+	--primary-200: #EAF4BC;
+	--primary-300: #DFEE98;
+	--primary-400: #CFF54A;
+	--primary-500: #C4EE3D;
+	--primary-600: #B7E52F;
+	--primary-700: #9B941C;
+	--primary-800: #857E15;
+	--primary-900: #6F6A0F;
+	--primary-950: #4B4708;
 	--primary-foreground: #111111;
 
-	--bg-base: #0d0f10;
-	--border-base: #2a2d31;
-	--text-primary: #ffffff;
-	--text-secondary: #a1a5ab;
+	--bg-base: #0D0F10;
+	--border-base: #2A2D31;
+	--text-primary: #FFFFFF;
+	--text-secondary: #A1A5AB;
 
-	--bg-main: #0d0f10;
+	--bg-main: #0D0F10;
 	--bg-sidebar: #111315;
-	--bg-card: #181a1d;
-	--border-main: #2a2d31;
-	--text-main: #ffffff;
-	--text-muted: #a1a5ab;
-	--soft-accent-bg: rgba(207, 245, 74, 0.1);
-	--soft-accent-border: #2a2d31;
+	--bg-card: #181A1D;
+	--border-main: #2A2D31;
+	--text-main: #FFFFFF;
+	--text-muted: #A1A5AB;
+	--soft-accent-bg: rgba(207, 245, 74, 0.10);
+	--soft-accent-border: #2A2D31;
 
 	--shadow-val: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
@@ -257,21 +257,93 @@ layer(base);
 	}
 }
 
-.Toastify__toast {
-	@apply border border-zinc-500/25;
+/* ── Toasts: dark-glass, brand-matched ─────────────────────────────── */
+:root {
+	--toastify-toast-min-height: 1.5rem !important;
+}
+
+.Toastify__toast-container {
+	width: 22rem;
+}
+
+/* Per-status accent color (drives the left bar + icon chip) */
+.Toastify__toast--success {
+	--toast-accent: var(--toastify-color-success);
+}
+.Toastify__toast--error {
+	--toast-accent: var(--toastify-color-error);
+}
+.Toastify__toast--info {
+	--toast-accent: var(--toastify-color-info);
+}
+.Toastify__toast--warning {
+	--toast-accent: var(--toastify-color-warning);
 }
 .Toastify__toast--default {
 	--toast-accent: #cff54a; /* brand lime */
 }
+
+.Toastify__toast {
+	position: relative;
+	overflow: hidden;
+	padding: 0.875rem 1rem;
+	border-radius: 1rem;
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	background: rgba(18, 20, 23, 0.82);
+	color: #e4e4e7;
+	font-family: 'Urbanist', ui-sans-serif, system-ui, sans-serif;
+	backdrop-filter: blur(18px) saturate(160%);
+	-webkit-backdrop-filter: blur(18px) saturate(160%);
+	box-shadow:
+		inset 3px 0 0 0 var(--toast-accent, #cff54a),
+		inset 0 1px 0 0 rgba(255, 255, 255, 0.05),
+		0 24px 48px -24px rgba(0, 0, 0, 0.7);
+}
+
+.Toastify__toast-body {
+	align-items: center;
+	gap: 0.75rem;
+	margin: 0;
+	padding: 0;
+	font-size: 0.8125rem;
+	font-weight: 600;
+	line-height: 1.35;
+	color: #e4e4e7;
+}
+
+/* Icon rendered as a tinted rounded chip */
+.Toastify__toast-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 2rem;
+	height: 2rem;
+	margin-inline-end: 0.25rem;
+	border-radius: 0.625rem;
+	background: color-mix(in srgb, var(--toast-accent, #cff54a) 16%, transparent);
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--toast-accent, #cff54a) 32%, transparent);
+}
+.Toastify__toast-icon svg {
+	width: 1rem;
+	height: 1rem;
+	fill: var(--toast-accent, #cff54a);
+}
+
 .Toastify__close-button {
-	@apply end-4 top-4;
+	align-self: center;
+	margin-inline-start: 0.5rem;
+	color: #a1a1aa;
+	opacity: 0.6;
+	transition: opacity 0.15s ease;
+}
+.Toastify__close-button:hover {
+	opacity: 1;
 }
 .Toastify__close-button > svg {
-	@apply fill-zinc-500 stroke-zinc-950 stroke-1;
-}
-:root {
-	--toastify-toast-padding: 1rem !important;
-	--toastify-toast-min-height: 1.5rem !important;
+	@apply h-4 w-4;
+	fill: currentColor;
+	stroke: none;
 }
 
 .rc-tree .rc-tree-treenode span.rc-tree-switcher.rc-tree-switcher_open {
@@ -371,3 +443,132 @@ layer(base);
 .rdrDateInput.rdrDateDisplayItem.rdrDateDisplayItemActive {
 	@apply bg-transparent dark:bg-transparent;
 }
+
+@layer base {
+	:root {
+		--corner-bg: var(--color-zinc-100);
+	}
+	.dark {
+		--corner-bg: var(--color-zinc-900);
+	}
+}
+
+@utility corner-top-left {
+	background: radial-gradient(circle at 100% 100%, transparent 16px, var(--corner-bg) 16.5px);
+}
+@utility corner-top-right {
+	background: radial-gradient(circle at 0% 100%, transparent 16px, var(--corner-bg) 16.5px);
+}
+@utility corner-bottom-left {
+	background: radial-gradient(circle at 100% 0%, transparent 16px, var(--corner-bg) 16.5px);
+}
+@utility corner-bottom-right {
+	background: radial-gradient(circle at 0% 0%, transparent 16px, var(--corner-bg) 16.5px);
+}
+
+/* Fix Tailwind color override side-effects for backgrounds and borders in dark mode */
+.dark {
+	/* Background overrides */
+	.bg-zinc-900, .dark\:bg-zinc-900 {
+		background-color: var(--bg-card) !important;
+	}
+	.bg-zinc-900\/95, .dark\:bg-zinc-900\/95 {
+		background-color: color-mix(in srgb, var(--bg-card) 95%, transparent) !important;
+	}
+	.bg-zinc-900\/90, .dark\:bg-zinc-900\/90 {
+		background-color: color-mix(in srgb, var(--bg-card) 90%, transparent) !important;
+	}
+	.bg-zinc-900\/80, .dark\:bg-zinc-900\/80 {
+		background-color: color-mix(in srgb, var(--bg-card) 80%, transparent) !important;
+	}
+	.bg-zinc-900\/60, .dark\:bg-zinc-900\/60 {
+		background-color: color-mix(in srgb, var(--bg-card) 60%, transparent) !important;
+	}
+	.bg-zinc-900\/50, .dark\:bg-zinc-900\/50 {
+		background-color: color-mix(in srgb, var(--bg-card) 50%, transparent) !important;
+	}
+	.bg-zinc-900\/40, .dark\:bg-zinc-900\/40 {
+		background-color: color-mix(in srgb, var(--bg-card) 40%, transparent) !important;
+	}
+	.bg-zinc-900\/20, .dark\:bg-zinc-900\/20 {
+		background-color: color-mix(in srgb, var(--bg-card) 20%, transparent) !important;
+	}
+
+	.bg-zinc-800, .dark\:bg-zinc-800 {
+		background-color: var(--bg-card) !important;
+	}
+	.bg-zinc-800\/80, .dark\:bg-zinc-800\/80 {
+		background-color: color-mix(in srgb, var(--bg-card) 80%, transparent) !important;
+	}
+	.bg-zinc-800\/70, .dark\:bg-zinc-800\/70 {
+		background-color: color-mix(in srgb, var(--bg-card) 70%, transparent) !important;
+	}
+	.bg-zinc-800\/60, .dark\:bg-zinc-800\/60 {
+		background-color: color-mix(in srgb, var(--bg-card) 60%, transparent) !important;
+	}
+	.bg-zinc-800\/40, .dark\:bg-zinc-800\/40 {
+		background-color: color-mix(in srgb, var(--bg-card) 40%, transparent) !important;
+	}
+
+	/* Hover background overrides */
+	.hover\:bg-zinc-900:hover, .dark\:hover\:bg-zinc-900:hover {
+		background-color: var(--bg-card) !important;
+	}
+	.hover\:bg-zinc-900\/90:hover, .dark\:hover\:bg-zinc-900\/90:hover {
+		background-color: color-mix(in srgb, var(--bg-card) 90%, transparent) !important;
+	}
+	.hover\:bg-zinc-900\/60:hover, .dark\:hover\:bg-zinc-900\/60:hover {
+		background-color: color-mix(in srgb, var(--bg-card) 60%, transparent) !important;
+	}
+	.hover\:bg-zinc-900\/40:hover, .dark\:hover\:bg-zinc-900\/40:hover {
+		background-color: color-mix(in srgb, var(--bg-card) 40%, transparent) !important;
+	}
+	.hover\:bg-zinc-900\/20:hover, .dark\:hover\:bg-zinc-900\/20:hover {
+		background-color: color-mix(in srgb, var(--bg-card) 20%, transparent) !important;
+	}
+
+	/* Hover text overrides */
+	.hover\:text-zinc-100:hover, .dark\:hover\:text-zinc-100:hover {
+		color: var(--text-primary) !important;
+	}
+	.hover\:text-zinc-200:hover, .dark\:hover\:text-zinc-200:hover {
+		color: var(--text-secondary) !important;
+	}
+
+	/* Border overrides */
+	.border-zinc-800, .dark\:border-zinc-800 {
+		border-color: var(--border-main) !important;
+	}
+	.border-zinc-800\/85, .dark\:border-zinc-800\/85 {
+		border-color: color-mix(in srgb, var(--border-main) 85%, transparent) !important;
+	}
+	.border-zinc-800\/80, .dark\:border-zinc-800\/80 {
+		border-color: color-mix(in srgb, var(--border-main) 80%, transparent) !important;
+	}
+	.border-zinc-800\/60, .dark\:border-zinc-800\/60 {
+		border-color: color-mix(in srgb, var(--border-main) 60%, transparent) !important;
+	}
+
+	/* Slate variants safety overrides */
+	.bg-slate-900, .dark\:bg-slate-900 {
+		background-color: var(--bg-card) !important;
+	}
+	.bg-slate-900\/60, .dark\:bg-slate-900\/60 {
+		background-color: color-mix(in srgb, var(--bg-card) 60%, transparent) !important;
+	}
+	.bg-slate-900\/40, .dark\:bg-slate-900\/40 {
+		background-color: color-mix(in srgb, var(--bg-card) 40%, transparent) !important;
+	}
+	.border-slate-800, .dark\:border-slate-800 {
+		border-color: var(--border-main) !important;
+	}
+
+	/* Text overrides */
+	.text-zinc-100, .dark\:text-zinc-100 {
+		color: var(--text-primary) !important;
+	}
+	.text-zinc-200, .dark\:text-zinc-200 {
+		color: var(--text-secondary) !important;
+	}
+}
+

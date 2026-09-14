@@ -127,7 +127,8 @@ const MapWorldExample = () => {
 						color={colors.blue['500']}
 						value-suffix='people'
 						size='responsive'
-						data={dataMap}
+						// eslint-disable-next-line @typescript-eslint/no-explicit-any
+					data={dataMap as any}
 						backgroundColor='transparent'
 						borderColor={isDarkTheme ? colors.zinc['300'] : colors.zinc['700']}
 						tooltipTextFunction={({ countryName, countryValue }) =>

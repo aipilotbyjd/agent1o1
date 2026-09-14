@@ -83,3 +83,19 @@ export const useDetachAgentSkill = (ws: string, agentId: string) => {
 		meta: { errorMessage: 'Failed to detach skill' },
 	});
 };
+
+/**
+ * Workspace-scoped attach, for screens that pick the agent at click time
+ * (the skills list's "Add to agent" dialog) rather than holding one open.
+ * Same endpoint as `useAttachAgentSkill`, with the agent supplied per call.
+ */
+export const useAttachSkillToAgent = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({ agentId, skillId }: { agentId: string; skillId: string }) =>
+			AgentSkillAttachmentService.attach(ws, agentId, skillId),
+		onSuccess: (_data, { agentId }) =>
+			qc.invalidateQueries({ queryKey: agentSkillAttachmentKeys.list(ws, agentId) }),
+		meta: { errorMessage: 'Failed to attach skill' },
+	});
+};

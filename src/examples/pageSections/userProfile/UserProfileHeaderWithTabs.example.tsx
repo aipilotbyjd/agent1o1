@@ -8,7 +8,7 @@ const UserProfileHeaderWithTabsExample = () => {
 		<>
 			<div
 				style={{ backgroundImage: `url(${Bg}` }}
-				className='mb-12 flex h-48 items-end justify-center rounded-lg bg-gradient-to-r from-indigo-500 from-10% via-sky-500 via-30% to-emerald-500 to-90% bg-cover bg-top p-4'>
+				className='mb-12 flex h-48 items-end justify-center rounded-lg bg-gradient-to-r from-primary-400 from-10% via-sky-500 via-30% to-emerald-500 to-90% bg-cover bg-top p-4'>
 				<Avatar
 					src={Avatar3}
 					name='Catherine Robertson<'

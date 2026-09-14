@@ -14,6 +14,7 @@ export type TUser = {
 	name: string;
 	email: string;
 	email_verified_at: string | null;
+	two_factor_enabled: boolean;
 	avatar: string | null;
 	current_workspace_id: string | null;
 	current_workspace: TWorkspace | null;
@@ -76,9 +77,17 @@ export type TDisableTwoFactorDto = {
 	current_password: string;
 };
 
-export type TTwoFactorEnableResult = { secret: string; qr_code_svg: string };
+/** `POST /auth/2fa/enable` mints the secret and the otpauth:// URI for it.
+ *  No QR image is sent — the client renders one from `otpauth_url`, which
+ *  keeps the secret off any third-party image service. */
+export type TTwoFactorEnableResult = { secret: string; otpauth_url: string };
+/** Confirm and regenerate are the only two moments the plaintext codes exist
+ *  — they are hashed at rest and never shown again. */
 export type TTwoFactorConfirmResult = { recovery_codes: string[] };
-export type TTwoFactorRecoveryCodes = { recovery_codes: string[] };
+export type TTwoFactorRegenerateResult = { recovery_codes: string[] };
+
+/** `GET /auth/2fa/recovery-codes` therefore reports only how many are left. */
+export type TTwoFactorRecoveryCodes = { recovery_codes_remaining: number };
 
 // ─── Social login ────────────────────────────────────────────
 

@@ -5,14 +5,16 @@ import { OnboardingService, onboardingKeys } from '@/api/modules/onboarding';
 import pages from '@/Routes/pages';
 
 /** Where a fully onboarded user lands after signing in. */
-export const AFTER_AUTH_PATH = pages.workspace.to;
+export const AFTER_AUTH_PATH = pages.onboarding.subPages.workspaceList.to;
 
 // ============================================================
 // useAfterAuthRedirect
 // ------------------------------------------------------------
 // Every entry point into a session (login, 2FA, register, social
 // exchange) ends here, so the "onboard first" decision is made in
-// exactly one place instead of four.
+// exactly one place instead of four. The old app read onboarding
+// off the login response; the current API exposes it as its own
+// endpoint (GET /user/onboarding), so it is fetched here.
 // ============================================================
 export const useAfterAuthRedirect = () => {
 	const navigate = useNavigate();

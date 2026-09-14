@@ -56,8 +56,8 @@ const ChartAndGraphTimelineExample = () => {
 			},
 			dataLabels: {
 				enabled: true,
-				formatter(val, opts) {
-					const label = opts.w.globals.labels[opts.dataPointIndex];
+				formatter(val, opts?) {
+					const label = opts?.w.globals.labels[opts.dataPointIndex];
 					// @ts-ignore
 					const a = dayjs(val[0]);
 					// @ts-ignore

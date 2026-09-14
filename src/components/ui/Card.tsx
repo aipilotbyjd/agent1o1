@@ -2,8 +2,6 @@ import { FC, forwardRef, HTMLAttributes, ReactNode } from 'react';
 import classNames from 'classnames';
 import { AnimatePresence, motion } from 'framer-motion';
 import { TRounded } from '@/types/rounded.type';
-import useRoundedSize from '@/hooks/useRoundedSize';
-import themeConfig from '@/config/theme.config';
 import Icon, { IIconProps } from '@/components/icon/Icon';
 
 // @start-snippet:: interface
@@ -52,7 +50,7 @@ interface ICardHeaderSeparatorProps extends HTMLAttributes<HTMLDivElement> {
 export const CardHeaderSeparator: FC<ICardHeaderSeparatorProps> = (props) => {
 	const { className, ...rest } = props;
 
-	const classes = classNames('h-8 rounded-full border-s border-zinc-500/25', className);
+	const classes = classNames('h-8 rounded-full border-s border-border-main', className);
 
 	return <div className={classes} {...rest}></div>;
 };
@@ -202,13 +200,11 @@ interface ICardProps extends HTMLAttributes<HTMLDivElement> {
 const Card = forwardRef<HTMLDivElement, ICardProps>((props, ref) => {
 	const { children, className, rounded = 'auto', ...rest } = props;
 
-	const { roundedCustom } = useRoundedSize(themeConfig.rounded);
-
 	const cardClasses = classNames(
-		'flex flex-col bg-white dark:bg-zinc-950 border dark:border-zinc-500/25 border-zinc-500/10',
+		'flex flex-col bg-bg-card dark:bg-bg-card border border-border-main shadow-sm',
 		'overflow-hidden',
 		{ [`${rounded as TRounded}`]: rounded !== 'auto' },
-		{ [`${roundedCustom(1)}`]: rounded === 'auto' },
+		{ 'rounded-3xl': rounded === 'auto' },
 		className,
 	);
 

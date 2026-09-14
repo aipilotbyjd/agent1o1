@@ -76,7 +76,7 @@ export const AccordionItem: FC<IAccordionItemProps> = (props) => {
 		emerald: 'data-active:text-emerald-500',
 		sky: 'data-active:text-sky-500',
 		blue: 'data-active:text-blue-500',
-		violet: 'data-active:text-violet-500',
+		violet: 'data-active:text-primary-500',
 	};
 
 	return (

@@ -53,7 +53,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 	const btnVariants: Record<TButtonVariants, Record<TColors, string>> = {
 		solid: {
 			primary:
-				'text-zinc-800 border-primary-500 bg-primary-500 hover:border-primary-600 hover:bg-primary-600 active:border-primary-600 active:bg-primary-600 data-active:border-primary-600 data-active:bg-primary-600',
+				'text-[#111111] border-none bg-primary-400 hover:bg-primary-500 active:bg-primary-600 shadow-[0_10px_30px_rgba(207,245,74,0.22)]',
 			secondary:
 				'border-secondary-500 bg-secondary-500 hover:border-secondary-600 hover:bg-secondary-600 active:border-secondary-600 active:bg-secondary-600 data-active:border-secondary-600 data-active:bg-secondary-600 text-zinc-200',
 			blue: 'border-blue-500 bg-blue-500 hover:border-blue-600 hover:bg-blue-600 active:border-blue-600 active:bg-blue-600 data-active:border-blue-600 data-active:bg-blue-600 text-zinc-200',
@@ -64,7 +64,8 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 			emerald:
 				'border-emerald-500 bg-emerald-500 hover:border-emerald-600 hover:bg-emerald-600 active:border-emerald-600 active:bg-emerald-600 data-active:border-emerald-600 data-active:bg-emerald-600 dark:text-zinc-800',
 			sky: 'border-sky-500 bg-sky-500 hover:border-sky-600 hover:bg-sky-600 active:border-sky-600 active:bg-sky-600 data-active:border-sky-600 data-active:bg-sky-600 text-zinc-200',
-			violet: 'border-violet-500 bg-violet-500 hover:border-violet-600 hover:bg-violet-600 active:border-violet-600 active:bg-violet-600 data-active:border-violet-600 data-active:bg-violet-600 text-zinc-200',
+			violet:
+				'text-[#111111] border-none bg-primary-400 hover:bg-primary-500 active:bg-primary-600 shadow-[0_10px_30px_rgba(207,245,74,0.22)]',
 		},
 		outline: {
 			primary:
@@ -79,7 +80,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 				'border-emerald-500/50 bg-transparent text-black hover:border-emerald-500 active:border-emerald-500 data-active:border-emerald-500 dark:text-white',
 			sky: 'border-sky-500/50 bg-transparent text-black hover:border-sky-500 active:border-sky-500 data-active:border-sky-500 dark:text-white',
 			blue: 'border-blue-500/50 bg-transparent text-black hover:border-blue-500 active:border-blue-500 data-active:border-blue-500 dark:text-white',
-			violet: 'border-violet-500/50 bg-transparent text-black hover:border-violet-500 active:border-violet-500 data-active:border-violet-500 dark:text-white',
+			violet: 'border-primary-500/50 bg-transparent text-black hover:border-primary-500 active:border-primary-500 data-active:border-primary-500 dark:text-white',
 		},
 		default: {
 			primary:
@@ -94,11 +95,11 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 				'border-transparent bg-transparent text-emerald-500 hover:text-emerald-400 active:text-emerald-400 data-active:text-emerald-400 dark:hover:text-emerald-400',
 			sky: 'border-transparent bg-transparent text-sky-500 hover:text-sky-400 active:text-sky-400 data-active:text-sky-400 dark:hover:text-sky-400',
 			blue: 'border-transparent bg-transparent text-blue-500 hover:text-blue-400 active:text-blue-400 data-active:text-blue-400 dark:hover:text-blue-400',
-			violet: 'border-transparent bg-transparent text-violet-500 hover:text-violet-400 active:text-violet-400 data-active:text-violet-400 dark:hover:text-violet-400',
+			violet: 'border-transparent bg-transparent text-primary-500 hover:text-primary-400 active:text-primary-400 data-active:text-primary-400 dark:hover:text-primary-400',
 		},
 		soft: {
 			primary:
-				'border-transparent bg-primary-500/25 text-primary-500 hover:border-primary-600/50 hover:bg-primary-600/50 active:border-primary-600/50 active:bg-primary-600/50 data-active:border-primary-600/50 data-active:bg-primary-600/50',
+				'border-transparent bg-primary-400/25 text-primary-500 hover:border-primary-600/50 hover:bg-primary-500/50 active:border-primary-600/50 active:bg-primary-500/50 data-active:border-primary-600/50 data-active:bg-primary-500/50',
 			secondary:
 				'border-transparent bg-secondary-500/25 text-secondary-500 hover:border-secondary-600/50 hover:bg-secondary-600/50 active:border-secondary-600/50 active:bg-secondary-600/50 data-active:border-secondary-600/50 data-active:bg-secondary-600/50',
 			zinc: 'border-transparent bg-zinc-500/25 text-zinc-500 hover:border-zinc-600/50 hover:bg-zinc-600/50 active:border-zinc-600/50 active:bg-zinc-600/50 data-active:border-zinc-600/50 data-active:bg-zinc-600/50',
@@ -109,7 +110,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 				'border-transparent bg-emerald-500/25 text-emerald-500 hover:border-emerald-600/50 hover:bg-emerald-600/50 active:border-emerald-600/50 active:bg-emerald-600/50 data-active:border-emerald-600/50 data-active:bg-emerald-600/50',
 			sky: 'border-transparent bg-sky-500/25 text-sky-500 hover:border-sky-600/50 hover:bg-sky-600/50 active:border-sky-600/50 active:bg-sky-600/50 data-active:border-sky-600/50 data-active:bg-sky-600/50',
 			blue: 'border-transparent bg-blue-500/25 text-blue-500 hover:border-blue-600/50 hover:bg-blue-600/50 active:border-blue-600/50 active:bg-blue-600/50 data-active:border-blue-600/50 data-active:bg-blue-600/50',
-			violet: 'border-transparent bg-violet-500/25 text-violet-500 hover:border-violet-600/50 hover:bg-violet-600/50 active:border-violet-600/50 active:bg-violet-600/50 data-active:border-violet-600/50 data-active:bg-violet-600/50',
+			violet: 'border-transparent bg-primary-400/25 text-primary-500 hover:border-primary-600/50 hover:bg-primary-500/50 active:border-primary-600/50 active:bg-primary-500/50 data-active:border-primary-600/50 data-active:bg-primary-500/50',
 		},
 		link: {
 			primary:
@@ -124,7 +125,7 @@ const Button = forwardRef<HTMLButtonElement, IButtonProps>((props, ref) => {
 				'border-transparent bg-transparent text-zinc-800 hover:text-emerald-400 active:text-emerald-500 data-active:text-emerald-500 dark:text-zinc-200 dark:hover:text-emerald-400 dark:active:text-emerald-500 dark:data-active:text-emerald-500',
 			sky: 'border-transparent bg-transparent text-zinc-800 hover:text-sky-400 active:text-sky-500 data-active:text-sky-500 dark:text-zinc-200 dark:hover:text-sky-400 dark:active:text-sky-500 dark:data-active:text-sky-500',
 			blue: 'border-transparent bg-transparent text-zinc-800 hover:text-blue-400 active:text-blue-500 data-active:text-blue-500 dark:text-zinc-200 dark:hover:text-blue-400  dark:active:text-blue-500 dark:data-active:text-blue-500',
-			violet: 'border-transparent bg-transparent text-zinc-800 hover:text-violet-400 active:text-violet-500 data-active:text-violet-500 dark:text-zinc-200 dark:hover:text-violet-400 dark:active:text-violet-500 dark:data-active:text-violet-500',
+			violet: 'border-transparent bg-transparent text-zinc-800 hover:text-primary-400 active:text-primary-500 data-active:text-primary-500 dark:text-zinc-200 dark:hover:text-primary-400 dark:active:text-primary-500 dark:data-active:text-primary-500',
 		},
 	};
 	const btnVariantClasses = btnVariants[variant][color];

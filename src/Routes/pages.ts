@@ -10,232 +10,147 @@ export type TPage = {
 };
 export type TPages = Record<string, TPage>;
 
-const workspace: TPage = {
-	id: 'workspace',
-	to: '/:workspaceId',
-	text: 'Workspace',
-	icon: 'Home09',
-	subPages: {
-		dashboard: {
-			id: 'dashboard',
-			to: '/:workspaceId/dashboard',
-			text: 'Dashboard',
-			icon: 'Home09',
-			subPages: {
-				runStats: {
-					id: 'runStats',
-					to: '/:workspaceId/dashboard/run-stats',
-					text: 'Run Stats',
-					icon: 'DashboardSquareSetting',
-				},
-				creditUsage: {
-					id: 'creditUsage',
-					to: '/:workspaceId/dashboard/credit-usage',
-					text: 'Credit Usage',
-					icon: 'PieChart09',
-				},
-				pendingApprovals: {
-					id: 'pendingApprovals',
-					to: '/:workspaceId/dashboard/pending-approvals',
-					text: 'Pending Approvals',
-					icon: 'CheckmarkBadge01',
-				},
+const apps = {
+	sales: {
+		id: 'sales',
+		to: '/sales',
+		text: 'Sales',
+		icon: 'Store04',
+		subPages: {
+			list: {
+				id: 'list',
+				to: '/sales/list',
+				text: 'List',
+				icon: 'ProductLoading',
+			},
+			view: {
+				id: 'view',
+				to: '/sales/view',
+				text: 'View',
+				icon: 'DeliveryView01',
 			},
 		},
-		playbooks: {
-			id: 'playbooks',
-			to: '/:workspaceId/playbooks',
-			text: 'Playbooks',
-			icon: 'GitMerge',
-		},
-		agents: {
-			id: 'agents',
-			to: '/:workspaceId/agents',
-			text: 'Agents',
-			icon: 'Robot01',
-		},
-		activity: {
-			id: 'activity',
-			to: '/:workspaceId/activity',
-			text: 'Activity',
-			icon: 'Clock01',
-		},
-		skills: {
-			id: 'skills',
-			to: '/:workspaceId/skills',
-			text: 'Skills',
-			icon: 'Puzzle',
-		},
-		connections: {
-			id: 'connections',
-			to: '/:workspaceId/connections',
-			text: 'Connections',
-			icon: 'Plug01',
-		},
-		vault: {
-			id: 'vault',
-			to: '/:workspaceId/vault',
-			text: 'Vault',
-			icon: 'Lock',
-		},
-		artifacts: {
-			id: 'artifacts',
-			to: '/:workspaceId/artifacts',
-			text: 'Artifacts',
-			icon: 'FileDownload',
-		},
-		blueprints: {
-			id: 'blueprints',
-			to: '/:workspaceId/blueprints',
-			text: 'Blueprints',
-			icon: 'Layers01',
-		},
 	},
-};
-
-const playbookEditor: TPage = {
-	id: 'playbookEditor',
-	to: '/:workspaceId/playbooks/editor',
-	text: 'Playbook Editor',
-	icon: 'PencilEdit01',
-	subPages: {
-		add: {
-			id: 'addPlaybook',
-			to: '/:workspaceId/playbooks/new',
-			text: 'New Playbook',
-			icon: 'PencilEdit01',
-		},
-		edit: {
-			id: 'editPlaybook',
-			to: '/:workspaceId/playbooks/edit',
-			text: 'Edit Playbook',
-			icon: 'PencilEdit01',
-		},
-		view: {
-			id: 'viewPlaybook',
-			to: '/:workspaceId/playbooks/view',
-			text: 'View Playbook',
-			icon: 'PencilEdit01',
-		},
-	},
-};
-
-const agentEditor: TPage = {
-	id: 'agentEditor',
-	to: '/:workspaceId/agents/editor',
-	text: 'Agent Editor',
-	icon: 'Robot01',
-	subPages: {
-		add: {
-			id: 'addAgent',
-			to: '/:workspaceId/agents/new',
-			text: 'Add Agent',
-			icon: 'Robot01',
-		},
-		edit: {
-			id: 'editAgent',
-			to: '/:workspaceId/agents/edit',
-			text: 'Edit Agent',
-			icon: 'Robot01',
-		},
-	},
-};
-
-const workspaceSettings: TPage = {
-	id: 'workspaceSettings',
-	to: '/:workspaceId/settings',
-	text: 'Settings',
-	icon: 'Settings01',
-	subPages: {
-		workspace: {
-			id: 'workspaceGeneralSettings',
-			to: '/:workspaceId/settings/workspace',
-			text: 'Workspace',
-			icon: 'Settings01',
-		},
-		members: {
-			id: 'membersSettings',
-			to: '/:workspaceId/settings/members',
-			text: 'Members',
-			icon: 'UserGroup',
-		},
-		plan: {
-			id: 'planSettings',
-			to: '/:workspaceId/settings/plan',
-			text: 'Plan',
-			icon: 'Layers01',
-			subPages: {
-				upgrade: {
-					id: 'planUpgrade',
-					to: '/:workspaceId/settings/plan/upgrade',
-					text: 'Upgrade',
-					icon: 'Layers01',
-				},
+	customer: {
+		id: 'customer',
+		to: '/customer',
+		text: 'Customer',
+		icon: 'UserMultiple',
+		subPages: {
+			list: {
+				id: 'list',
+				to: '/customer/list',
+				text: 'List',
+				icon: 'UserList',
+			},
+			edit: {
+				id: 'edit',
+				to: '/customer/edit',
+				text: 'Edit',
+				icon: 'EditUser02',
+			},
+			view: {
+				id: 'view',
+				to: '/customer/view',
+				text: 'View',
+				icon: 'UserAccount',
 			},
 		},
-		billing: {
-			id: 'billingSettings',
-			to: '/:workspaceId/settings/billing',
-			text: 'Billing',
-			icon: 'CreditCard',
-			subPages: {
-				credits: {
-					id: 'billingCredits',
-					to: '/:workspaceId/settings/billing/credits',
-					text: 'Buy Credits',
-					icon: 'CreditCard',
-				},
-				history: {
-					id: 'billingHistory',
-					to: '/:workspaceId/settings/billing/history',
-					text: 'History',
-					icon: 'Clock01',
-				},
+	},
+	products: {
+		id: 'products',
+		to: '/products',
+		text: 'Products',
+		icon: 'PackageOpen',
+		subPages: {
+			list: {
+				id: 'list',
+				to: '/products/list',
+				text: 'List',
+				icon: 'PackageSearch',
+			},
+			edit: {
+				id: 'edit',
+				to: '/products/edit',
+				text: 'Edit',
+				icon: 'Edit02',
 			},
 		},
-		creditNotifications: {
-			id: 'creditNotificationsSettings',
-			to: '/:workspaceId/settings/credit-notifications',
-			text: 'Credit Notifications',
-			icon: 'Notification03',
-		},
-		environments: {
-			id: 'environmentsSettings',
-			to: '/:workspaceId/settings/environments',
-			text: 'Environments',
-			icon: 'ServerStack01',
-		},
-		apiKeys: {
-			id: 'apiKeysSettings',
-			to: '/:workspaceId/settings/api-keys',
-			text: 'API Keys',
-			icon: 'Lock',
+	},
+	projects: {
+		id: 'projects',
+		to: '/projects',
+		text: 'Projects',
+		icon: 'DashboardSquare03',
+		subPages: {
+			board: {
+				id: 'board',
+				to: '/projects/board',
+				text: 'Board',
+				icon: 'DashboardSquareSetting',
+			},
+			list: {
+				id: 'list',
+				to: '/projects/list',
+				text: 'List',
+				icon: 'ListView',
+			},
+			grid: {
+				id: 'grid',
+				to: '/projects/grid',
+				text: 'Grid',
+				icon: 'GridView',
+			},
 		},
 	},
-};
-
-const settings: TPage = {
-	id: 'settings',
-	to: '/settings',
-	text: 'Settings',
-	icon: 'Settings01',
-	subPages: {
-		profile: {
-			id: 'profileSettings',
-			to: '/settings/profile',
-			text: 'Profile',
-			icon: 'UserCircle',
-		},
-		notifications: {
-			id: 'notificationsSettings',
-			to: '/settings/notifications',
-			text: 'Notifications',
-			icon: 'Notification01',
+	invoices: {
+		id: 'invoices',
+		to: '/invoices',
+		text: 'Invoices',
+		icon: 'Invoice03',
+		subPages: {
+			list: {
+				id: 'list',
+				to: '/invoices/list',
+				text: 'List',
+				icon: 'Invoice02',
+			},
+			view: {
+				id: 'view',
+				to: '/invoices/view',
+				text: 'View',
+				icon: 'Invoice04',
+			},
 		},
 	},
+	mail: {
+		id: 'mail',
+		to: '/mail',
+		text: 'Mail',
+		icon: 'Mail01',
+		subPages: {
+			inbox: {
+				id: 'inbox',
+				to: '/mail/inbox',
+				text: 'Inbox',
+				icon: 'MailOpen01',
+			},
+			new: {
+				id: 'new',
+				to: '/mail/new',
+				text: 'New',
+				icon: 'MailEdit02',
+			},
+		},
+	},
+	chat: {
+		id: 'chat',
+		to: '/chat',
+		text: 'Chat',
+		icon: 'Message02',
+	},
 };
-
-const identity: TPages = {
+const pagesExamples: TPages = {
 	login: {
 		id: 'login',
 		to: '/login',
@@ -248,75 +163,335 @@ const identity: TPages = {
 		text: 'Signup',
 		icon: 'AddTeam',
 	},
+	notFound: {
+		id: 'notFound',
+		to: '/notFound',
+		text: '404 Not Found',
+		icon: 'HelpSquare',
+	},
+	underConstruction: {
+		id: 'underConstruction',
+		to: '/under-construction',
+		text: 'Under Construction',
+		icon: 'DashboardBrowsing',
+	},
+};
+
+const auth = {
+	login: pagesExamples.login,
+	signup: pagesExamples.signup,
 	forgotPassword: {
 		id: 'forgotPassword',
 		to: '/forgot-password',
 		text: 'Forgot Password',
-		icon: 'LockPassword',
+		icon: 'AiMail' as TIcons,
 	},
 	resetPassword: {
 		id: 'resetPassword',
 		to: '/reset-password',
 		text: 'Reset Password',
-		icon: 'LockPassword',
+		icon: 'AiLock' as TIcons,
 	},
 	verifyEmail: {
 		id: 'verifyEmail',
 		to: '/verify-email',
 		text: 'Verify Email',
-		icon: 'CheckmarkCircle02',
+		icon: 'AiMail' as TIcons,
+	},
+	twoFactor: {
+		id: 'twoFactor',
+		to: '/two-factor',
+		text: 'Two-Factor Auth',
+		icon: 'AiSecurity01' as TIcons,
+	},
+	twoFactorSetup: {
+		id: 'twoFactorSetup',
+		to: '/two-factor-setup',
+		text: '2FA Setup',
+		icon: 'AiSecurity01' as TIcons,
+	},
+	magicLink: {
+		id: 'magicLink',
+		to: '/magic-link',
+		text: 'Magic Link',
+		icon: 'AiMail' as TIcons,
 	},
 	oauthCallback: {
 		id: 'oauthCallback',
 		to: '/oauth/callback',
-		text: 'Signing in',
-		icon: 'Login03',
+		text: 'OAuth Callback',
+		icon: 'Login03' as TIcons,
+	},
+	oauthComplete: {
+		id: 'oauthComplete',
+		to: '/oauth/complete',
+		text: 'OAuth Complete',
+		icon: 'Login03' as TIcons,
+	},
+	accountLocked: {
+		id: 'accountLocked',
+		to: '/account-locked',
+		text: 'Account Locked',
+		icon: 'AiLock' as TIcons,
+	},
+	sessionExpired: {
+		id: 'sessionExpired',
+		to: '/session-expired',
+		text: 'Session Expired',
+		icon: 'Clock01' as TIcons,
 	},
 };
 
-const onboarding: TPage = {
+const app = {
+	id: 'app',
+	to: '/app',
+	text: 'App',
+	icon: 'Home09' as TIcons,
+	subPages: {
+		dashboard: {
+			id: 'dashboard',
+			to: '/dashboard',
+			text: 'Dashboard',
+			icon: 'Home09' as TIcons,
+		},
+		workflows: {
+			id: 'workflows',
+			to: '/workflows',
+			text: 'Workflows',
+			icon: 'GitMerge' as TIcons,
+		},
+		agents: {
+			id: 'agents',
+			to: '/agents',
+			text: 'Agents',
+			icon: 'Robot01' as TIcons,
+		},
+		skills: {
+			id: 'skills',
+			to: '/skills',
+			text: 'Skills',
+			icon: 'Puzzle' as TIcons,
+		},
+		apps: {
+			id: 'apps',
+			to: '/integrations',
+			text: 'Apps',
+			icon: 'Plug01' as TIcons,
+		},
+		artifacts: {
+			id: 'artifacts',
+			to: '/artifacts',
+			text: 'Artifacts',
+			icon: 'FileDownload' as TIcons,
+		},
+		knowledge: {
+			id: 'knowledge',
+			to: '/knowledge',
+			text: 'Knowledge',
+			icon: 'BookOpen01' as TIcons,
+		},
+		triggers: {
+			id: 'triggers',
+			to: '/triggers',
+			text: 'Triggers',
+			icon: 'Flash' as TIcons,
+		},
+		history: {
+			id: 'history',
+			to: '/history',
+			text: 'History',
+			icon: 'Clock01' as TIcons,
+		},
+		templates: {
+			id: 'templates',
+			to: '/templates',
+			text: 'Templates',
+			icon: 'Layers01' as TIcons,
+		},
+	},
+};
+
+const settings = {
+	id: 'settings',
+	to: '/settings',
+	text: 'Settings',
+	icon: 'Settings01' as TIcons,
+	subPages: {
+		profile: {
+			id: 'profileSettings',
+			to: '/settings/profile',
+			text: 'Profile',
+			icon: 'UserCircle' as TIcons,
+		},
+		security: {
+			id: 'securitySettings',
+			to: '/settings/security',
+			text: 'Security',
+			icon: 'AiSecurity01' as TIcons,
+		},
+		workspace: {
+			id: 'workspaceSettings',
+			to: '/settings/workspace',
+			text: 'Workspace Settings',
+			icon: 'Settings01' as TIcons,
+		},
+		plan: {
+			id: 'planSettings',
+			to: '/settings/plan',
+			text: 'Plan',
+			icon: 'Layers01' as TIcons,
+			subPages: {
+				upgrade: {
+					id: 'planUpgrade',
+					to: '/settings/plan/upgrade',
+					text: 'Upgrade',
+					icon: 'Layers01' as TIcons,
+				},
+			},
+		},
+		usage: {
+			id: 'usageSettings',
+			to: '/settings/plan?tab=usage',
+			text: 'Usage',
+			icon: 'PieChart09' as TIcons,
+		},
+		billing: {
+			id: 'billingSettings',
+			to: '/settings/plan?tab=billing',
+			text: 'Billing',
+			icon: 'CreditCard' as TIcons,
+			subPages: {
+				credits: {
+					id: 'billingCredits',
+					to: '/settings/billing/credits',
+					text: 'Buy Credits',
+					icon: 'CreditCard' as TIcons,
+				},
+				history: {
+					id: 'billingHistory',
+					to: '/settings/billing/history',
+					text: 'History',
+					icon: 'BarChart3' as TIcons,
+				},
+			},
+		},
+		members: {
+			id: 'membersSettings',
+			to: '/settings/members',
+			text: 'Members',
+			icon: 'UserGroup' as TIcons,
+		},
+		secrets: {
+			id: 'secretsSettings',
+			to: '/settings/secrets',
+			text: 'Secrets',
+			icon: 'Lock' as TIcons,
+		},
+		notifications: {
+			id: 'notificationsSettings',
+			to: '/settings/notifications',
+			text: 'Notifications',
+			icon: 'Notification03' as TIcons,
+		},
+		notificationChannels: {
+			id: 'notificationChannelsSettings',
+			to: '/settings/notification-channels',
+			text: 'Notification Channels',
+			icon: 'Notification01' as TIcons,
+		},
+	},
+};
+
+const editor = {
+	id: 'editor',
+	to: '/editor',
+	text: 'Editor',
+	icon: 'PencilEdit01' as TIcons,
+	subPages: {
+		addWorkflow: {
+			id: 'addWorkflow',
+			to: '/editor/add-workflow',
+			text: 'Add Workflow',
+			icon: 'PencilEdit01' as TIcons,
+		},
+		editWorkflow: {
+			id: 'editWorkflow',
+			to: '/editor/edit-workflow',
+			text: 'Edit Workflow',
+			icon: 'PencilEdit01' as TIcons,
+		},
+		viewWorkflow: {
+			id: 'viewWorkflow',
+			to: '/editor/view-workflow',
+			text: 'View Workflow',
+			icon: 'PencilEdit01' as TIcons,
+		},
+	},
+};
+
+const agent = {
+	id: 'agent',
+	to: '/agent',
+	text: 'Agent',
+	icon: 'Robot01' as TIcons,
+	subPages: {
+		addAgent: {
+			id: 'addAgent',
+			to: '/agent/add',
+			text: 'Add Agent',
+			icon: 'Robot01' as TIcons,
+		},
+		editAgent: {
+			id: 'editAgent',
+			to: '/agent/edit',
+			text: 'Edit Agent',
+			icon: 'Robot01' as TIcons,
+		},
+	},
+};
+
+const onboarding = {
 	id: 'onboarding',
 	to: '/onboarding',
 	text: 'Onboarding',
-	icon: 'Rocket01',
+	icon: 'Rocket01' as TIcons,
 	subPages: {
 		pricing: {
 			id: 'pricing',
 			to: '/pricing',
 			text: 'Pricing',
-			icon: 'CreditCard',
+			icon: 'CreditCard' as TIcons,
 		},
 		createWorkspace: {
 			id: 'createWorkspace',
 			to: '/onboarding/create-workspace',
 			text: 'Create Workspace',
-			icon: 'DashboardSquare03',
+			icon: 'DashboardSquare03' as TIcons,
 		},
 		inviteTeam: {
 			id: 'inviteTeam',
 			to: '/onboarding/invite-team',
 			text: 'Invite Team',
-			icon: 'UserAdd01',
+			icon: 'UserAdd01' as TIcons,
+		},
+		workspaceList: {
+			id: 'workspaceList',
+			to: '/workspaces',
+			text: 'Workspaces',
+			icon: 'DashboardSquare03' as TIcons,
 		},
 	},
 };
 
-const choose: TPage = {
-	id: 'workspaceList',
-	to: '/workspaces',
-	text: 'Workspaces',
-	icon: 'DashboardSquare03',
-};
-
 const pages = {
-	workspace,
-	playbookEditor,
-	agentEditor,
-	workspaceSettings,
+	apps,
+	app,
+	auth,
 	settings,
-	identity,
+	editor,
+	agent,
 	onboarding,
-	choose,
+	pagesExamples,
 };
 
 export default pages;

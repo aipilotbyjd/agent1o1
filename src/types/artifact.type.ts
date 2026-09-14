@@ -56,3 +56,16 @@ export type TUpdateArtifactAccessDto = {
 export type TShareArtifactDto = {
 	user_id: string;
 };
+
+// ─── List filters ────────────────────────────────────────────
+
+/** The three buckets `ArtifactController::MIME_CATEGORIES` groups by. */
+export type TArtifactMimeCategory = 'images' | 'documents' | 'spreadsheets';
+
+export type TArtifactFilters = {
+	search?: string;
+	agent_id?: string;
+	mime_category?: TArtifactMimeCategory;
+	page?: number;
+	per_page?: number;
+};

@@ -1,9 +1,10 @@
 import { Navigate, Outlet } from 'react-router';
-import { useAuth } from '@/context/auth';
+import { useAuth } from '@/context/authContext';
 import { LogoDark } from '@/assets/images';
 
 const Protected = ({ role }: { role: string }) => {
-	const { userData, tokenStorage, isLoading } = useAuth();
+	const { userData, isAuthenticated, isLoading } = useAuth();
+	void role;
 
 	if (isLoading) {
 		return (
@@ -12,7 +13,7 @@ const Protected = ({ role }: { role: string }) => {
 			</div>
 		);
 	}
-	if (!tokenStorage || !userData?.role.includes(role)) {
+	if (!isAuthenticated || !userData) {
 		return <Navigate to='/login' />;
 	}
 
