@@ -10,6 +10,9 @@ import type { TUser } from './auth.type';
 
 export type TArtifactGeneralAccess = 'restricted' | 'organization' | 'anyone';
 
+/** Mirrors `ArtifactController::MIME_CATEGORIES`. */
+export type TArtifactMimeCategory = 'images' | 'documents' | 'spreadsheets';
+
 export type TArtifactVersionSummary = {
 	id: string;
 	version: number;
@@ -65,5 +68,5 @@ export type TArtifactListParams = {
 	agent_id?: string;
 	/** Filename LIKE match. */
 	search?: string;
-	mime_category?: string;
+	mime_category?: TArtifactMimeCategory;
 };

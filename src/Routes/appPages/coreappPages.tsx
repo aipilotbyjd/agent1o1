@@ -28,12 +28,16 @@ const AgentBuilderPage = lazy(
 );
 const TrailLayout = lazy(() => import('@/pages/coreapp/Trail/_layouts/Trail.layout'));
 const SkillsLayout = lazy(() => import('@/pages/coreapp/Skills/_layouts/Skills.layout'));
+const SkillsListPage = lazy(() => import('@/pages/coreapp/Skills/SkillsList.page'));
 const AppsLayout = lazy(() => import('@/pages/coreapp/Apps/_layouts/Apps.layout'));
 const KnowledgeLayout = lazy(() => import('@/pages/coreapp/Knowledge/_layouts/Knowledge.layout'));
+const KnowledgeListPage = lazy(() => import('@/pages/coreapp/Knowledge/KnowledgeList.page'));
 const ArtifactsLayout = lazy(() => import('@/pages/coreapp/Artifacts/_layouts/Artifacts.layout'));
+const ArtifactsListPage = lazy(() => import('@/pages/coreapp/Artifacts/ArtifactsList.page'));
 const BlueprintsLayout = lazy(
 	() => import('@/pages/coreapp/Blueprints/_layouts/Blueprints.layout'),
 );
+const BlueprintsListPage = lazy(() => import('@/pages/coreapp/Blueprints/BlueprintsList.page'));
 
 /**
  * Workspace scoped routes (`/:workspaceId/...`).
@@ -112,7 +116,7 @@ const CoreAppPages = [
 				children: [
 					{
 						index: true,
-						element: <UnderConstructionPage />,
+						element: <SkillsListPage />,
 					},
 				],
 			},
@@ -132,7 +136,7 @@ const CoreAppPages = [
 				children: [
 					{
 						index: true,
-						element: <UnderConstructionPage />,
+						element: <KnowledgeListPage />,
 					},
 				],
 			},
@@ -142,7 +146,7 @@ const CoreAppPages = [
 				children: [
 					{
 						index: true,
-						element: <UnderConstructionPage />,
+						element: <ArtifactsListPage />,
 					},
 				],
 			},
@@ -152,7 +156,7 @@ const CoreAppPages = [
 				children: [
 					{
 						index: true,
-						element: <UnderConstructionPage />,
+						element: <BlueprintsListPage />,
 					},
 				],
 			},
