@@ -1,4 +1,4 @@
-import type { TAgentMessageRole } from '@/types/agent.type';
+import type { TAgentMessageCreatedEvent } from '@/types/agent.type';
 import type { IEchoLike } from '@/api/modules/workflow-builder/workflow-builder.realtime';
 
 /**
@@ -26,20 +26,6 @@ export const agentSessionChannelName = (workspaceId: string, sessionId: string) 
 /** Name from `AgentMessageCreated::broadcastAs()`. The leading dot stops Echo
  *  prefixing it with the `App.Events` namespace. */
 export const AGENT_MESSAGE_EVENT = '.agent.message';
-
-/**
- * Payload of `AgentMessageCreated::broadcastWith()`. Deliberately not derived
- * from `TAgentMessage`: the broadcast carries `tool_calls`, which the REST
- * resource omits, and omits `usage`, which the REST resource carries.
- */
-export type TAgentMessageCreatedEvent = {
-	id: string;
-	agent_session_id: string;
-	role: TAgentMessageRole;
-	content: unknown;
-	tool_calls: unknown;
-	created_at: string | null;
-};
 
 /**
  * Subscribe to a session's message feed. Returns an unsubscribe function.

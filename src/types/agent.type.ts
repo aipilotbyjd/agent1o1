@@ -543,6 +543,20 @@ export type TAgentStreamArtifact = {
 	size: number;
 };
 
+/**
+ * Payload of `AgentMessageCreated::broadcastWith()`. Deliberately not derived
+ * from `TAgentMessage`: the broadcast carries `tool_calls`, which the REST
+ * resource omits, and omits `usage`, which the REST resource carries.
+ */
+export type TAgentMessageCreatedEvent = {
+	id: string;
+	agent_session_id: string;
+	role: TAgentMessageRole;
+	content: unknown;
+	tool_calls: unknown;
+	created_at: string | null;
+};
+
 export type TAiAgentStep = {
 	id: string;
 	step_number: number;
