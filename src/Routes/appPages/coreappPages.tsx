@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 import { Navigate } from 'react-router';
 import CoreAppLayout from '@/layouts/CoreApp.layout';
+import AgentLayout from '@/layouts/Agent.layout';
 import UnderConstructionPage from '@/pages/UnderConstruction.page';
 import pages, { TPages } from '@/Routes/pages';
 
@@ -16,6 +17,10 @@ const dashboardRelativePath = workspacePages.dashboard.to.replace(`${pages.works
 const DashboardLayout = lazy(() => import('@/pages/coreapp/Dashboard/_layouts/Dashboard.layout'));
 const PlaybooksLayout = lazy(() => import('@/pages/coreapp/Playbooks/_layouts/Playbooks.layout'));
 const AgentsLayout = lazy(() => import('@/pages/coreapp/Agents/_layouts/Agents.layout'));
+const AgentsListPage = lazy(() => import('@/pages/coreapp/Agents/AgentsList.page'));
+const AgentBuilderPage = lazy(
+	() => import('@/pages/coreapp/Agents/AgentBuilder/AgentBuilder.page'),
+);
 const TrailLayout = lazy(() => import('@/pages/coreapp/Trail/_layouts/Trail.layout'));
 const SkillsLayout = lazy(() => import('@/pages/coreapp/Skills/_layouts/Skills.layout'));
 const AppsLayout = lazy(() => import('@/pages/coreapp/Apps/_layouts/Apps.layout'));
@@ -94,15 +99,7 @@ const CoreAppPages = [
 				children: [
 					{
 						index: true,
-						element: <UnderConstructionPage />,
-					},
-					{
-						path: agentEditorPages.add.to,
-						element: <UnderConstructionPage />,
-					},
-					{
-						path: agentEditorPages.edit.to,
-						element: <UnderConstructionPage />,
+						element: <AgentsListPage />,
 					},
 				],
 			},
@@ -170,6 +167,26 @@ const CoreAppPages = [
 				// No feature shell yet - rendered straight into the core app layout.
 				path: workspacePages.vault.to,
 				element: <UnderConstructionPage />,
+			},
+		],
+	},
+	{
+		/**
+		 * The builder is a sibling of `CoreAppLayout`, not a child: it ships its own
+		 * full-height shell (AgentAside + app bar) and must not render the core app
+		 * aside alongside it. Mirrors `agentPages` in the old frontend, which sat
+		 * outside the app layout for the same reason. Paths still carry the
+		 * `:workspaceId` prefix, so `useParams` resolves the workspace as before.
+		 */
+		element: <AgentLayout />,
+		children: [
+			{
+				path: agentEditorPages.add.to,
+				element: <AgentBuilderPage />,
+			},
+			{
+				path: `${agentEditorPages.edit.to}/:agentId`,
+				element: <AgentBuilderPage />,
 			},
 		],
 	},

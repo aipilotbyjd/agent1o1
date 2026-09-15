@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { TUploadArtifactDto, TUpdateArtifactAccessDto, TShareArtifactDto } from '@/types/artifact.type';
-import { ArtifactService } from './artifacts.service';
+import { ArtifactService, downloadArtifact } from './artifacts.service';
 import { artifactKeys } from './artifacts.keys';
 
 export const useArtifacts = (ws: string, params?: { page?: number; per_page?: number }) =>
@@ -64,3 +64,11 @@ export const useRemoveArtifactShare = (ws: string) => {
 		meta: { errorMessage: 'Failed to remove share' },
 	});
 };
+
+// ── Ported from the old frontend ──────────────────────────────────────────────
+export const useDownloadArtifact = (ws: string) =>
+	useMutation({
+		mutationFn: ({ artifactId, filename }: { artifactId: string; filename: string }) =>
+			downloadArtifact(ws, artifactId, filename),
+		meta: { errorMessage: 'Failed to download artifact' },
+	});

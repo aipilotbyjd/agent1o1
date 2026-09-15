@@ -1,16 +1,11 @@
-import { ChangeEvent, useEffect, useRef, useState } from 'react';
-import Aside, { AsideBody, AsideQuickContainer, AsideQuickNav } from '@/components/layout/Aside';
-import { useLocation, useNavigate } from 'react-router';
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
+import Aside, { AsideBody } from '@/components/layout/Aside';
+import { useNavigate, useParams } from 'react-router';
 import useAsideStatus from '@/hooks/useAsideStatus';
 import Icon from '@/components/icon/Icon';
-import Nav, {
-	NavButton,
-	NavCollapse,
-	NavItem,
-	NavSeparator,
-	NavTitle,
-} from '@/components/layout/Navigation/Nav';
+import Nav, { NavCollapse, NavItem, NavTitle } from '@/components/layout/Navigation/Nav';
 import pages, { TPage, TPages } from '@/Routes/pages';
+import { useWorkspaceContext } from '@/context/workspace';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Input from '@/components/form/Input';
@@ -24,7 +19,22 @@ import Modal, {
 import classNames from 'classnames';
 import AsideHeaderPart from '@/templates/asides/_parts/AsideHeader.part';
 import AsideFooterPart from '@/templates/asides/_parts/AsideFooter.part';
-import EXAMPLE from '@/examples/_index';
+
+/**
+ * Paths in `@/Routes/pages` are templates (`/:workspaceId/agents`). The aside renders
+ * inside the `/:workspaceId` route, so the active id comes from the URL; the workspace
+ * context is the fallback for the brief window before the param is available.
+ */
+const useWorkspacePath = () => {
+	const { workspaceId } = useParams<{ workspaceId: string }>();
+	const { activeWorkspaceId } = useWorkspaceContext();
+	const id = workspaceId || activeWorkspaceId;
+
+	return useMemo(
+		() => (to: string) => (id ? to.replace(':workspaceId', id) : to),
+		[id],
+	);
+};
 
 const getFlattenPages = (pages: TPages, parentId?: string): TPage[] => {
 	return Object.values(pages).flatMap((page) => {
@@ -38,6 +48,7 @@ const getFlattenPages = (pages: TPages, parentId?: string): TPage[] => {
 const Search = () => {
 	const { asideStatus } = useAsideStatus();
 	const navigate = useNavigate();
+	const resolvePath = useWorkspacePath();
 	const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
 	/**
@@ -74,10 +85,7 @@ const Search = () => {
 		setInputValue(e.target.value);
 	};
 
-	const flattenDocPages = getFlattenPages(pages.documentation as TPages);
-	const flattenExamplesPages = getFlattenPages(pages.examples as TPages);
-
-	const flattenPages = [...flattenDocPages, ...flattenExamplesPages];
+	const flattenPages = getFlattenPages(pages.workspace.subPages as TPages);
 	const result = flattenPages.filter((item: TPage) =>
 		item.text.toLowerCase().includes(inputValue.toLowerCase()),
 	);
@@ -92,7 +100,7 @@ const Search = () => {
 	}, [result.length, isModalOpen]);
 
 	const handleClick = (to: string) => {
-		navigate(to);
+		navigate(resolvePath(to));
 		setIsModalOpen(false);
 	};
 
@@ -174,7 +182,6 @@ const Search = () => {
 								key={item.id + index}
 								style={{
 									padding: '8px',
-									// backgroundColor: index === selectedIndex ? '#eee' : '#fff',
 									cursor: 'pointer',
 								}}
 								className={classNames(
@@ -227,298 +234,45 @@ const Search = () => {
 	);
 };
 
+const workspacePages = pages.workspace.subPages as TPages;
+
+/** Rendered under "Workspace", in the order the nav should read. */
+const workspaceNavOrder = [
+	'playbooks',
+	'agents',
+	'trail',
+	'skills',
+	'apps',
+	'knowledge',
+	'artifacts',
+	'blueprints',
+	'vault',
+] as const;
+
 const CoreAppAsideTemplate = () => {
-	const navigate = useNavigate();
-	const location = useLocation();
-
-	const tabs = {
-		dashboard: {
-			id: 'dashboard',
-			title: 'Dashboard',
-			icon: 'Home09',
-		},
-		apps: {
-			id: 'apps',
-			title: 'Apps',
-			icon: 'GridView',
-		},
-		documentation: {
-			id: 'documentation',
-			title: 'Documentation',
-			icon: 'BookBookmark02',
-		},
-		examples: {
-			id: 'examples',
-			title: 'Examples',
-			icon: 'Star',
-		},
-	};
-	const [activeTab, setActiveTab] = useState<string>(
-		localStorage.getItem('bolt_activeTab') || tabs.dashboard.id,
-	);
-	const handleActiveTab = (id: string) => {
-		setActiveTab(id);
-		localStorage.setItem('bolt_activeTab', id);
-
-		if (id === tabs.examples.id) navigate(pages.examples.exampleMain.to);
-		if (id === tabs.dashboard.id) navigate(pages.apps.sales.to);
-	};
-
-	useEffect(() => {
-		if ([tabs.examples.id, tabs.documentation.id].includes(location.pathname.split('/')[1])) {
-			setActiveTab(location.pathname.split('/')[1]);
-			localStorage.setItem('bolt_activeTab', location.pathname.split('/')[1]);
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [location.pathname.split('/')[1]]);
+	const resolvePath = useWorkspacePath();
 
 	return (
 		<Aside>
 			<AsideHeaderPart />
 			<AsideBody>
 				<Search />
-				<AsideQuickContainer>
-					{Object.values(tabs).map((tab) => (
-						<AsideQuickNav
-							key={tab.id}
-							icon={tab.icon}
-							isActive={activeTab === tab.id}
-							onClick={() => handleActiveTab(tab.id)}>
-							{tab.title}
-						</AsideQuickNav>
-					))}
-				</AsideQuickContainer>
 				<Nav>
-					{[tabs.dashboard.id].includes(activeTab as string) && (
-						<>
-							<NavTitle>Dashboards</NavTitle>
-							<NavItem {...pages.apps.sales} />
-							<NavItem {...pages.apps.customer} />
-							<NavItem {...pages.apps.products}>
-								<NavButton
-									icon='PlusSignCircle'
-									title='New'
-									onClick={() => navigate(pages.apps.products.subPages.edit.to)}
-								/>
-							</NavItem>
-							<NavItem {...pages.apps.projects} isChildrenNavButtonOverwrite>
-								<div className='-mx-2 -my-2'>
-									<EXAMPLE.Ui.Dropdown.Snooze />
-								</div>
-							</NavItem>
-							<NavItem {...pages.apps.invoices} />
-							<NavItem {...pages.apps.mail}>
-								<Badge variant='soft' color='emerald'>
-									8
-								</Badge>
-							</NavItem>
-							<NavItem {...pages.apps.chat}>
-								<Badge variant='soft'>Soon</Badge>
-							</NavItem>
-						</>
-					)}
-					{[tabs.dashboard.id, tabs.apps.id].includes(activeTab as string) && (
-						<>
-							<NavTitle>Apps</NavTitle>
-							<NavCollapse {...pages.apps.sales}>
-								<NavItem {...pages.apps.sales} />
-								<NavItem {...pages.apps.sales.subPages?.list} />
-								<NavItem {...pages.apps.sales.subPages?.view} />
-							</NavCollapse>
-							<NavCollapse {...pages.apps.customer}>
-								<NavItem {...pages.apps.customer} />
-								<NavItem {...pages.apps.customer.subPages?.list} />
-								<NavItem
-									{...pages.apps.customer.subPages?.edit}
-									to={`${pages.apps.customer.subPages.edit.to}?customerId=17`}
-								/>
-								<NavItem
-									{...pages.apps.customer.subPages?.view}
-									to={`${pages.apps.customer.subPages.view.to}?customerId=17`}
-								/>
-							</NavCollapse>
-							<NavCollapse {...pages.apps.products}>
-								<NavItem {...pages.apps.products} />
-								<NavItem {...pages.apps.products.subPages?.list} />
-								<NavItem {...pages.apps.products.subPages?.edit} />
-							</NavCollapse>
-							<NavCollapse {...pages.apps.projects}>
-								<NavItem {...pages.apps.projects} />
-								<NavItem {...pages.apps.projects.subPages?.board} />
-								<NavItem {...pages.apps.projects.subPages?.list} />
-								<NavItem {...pages.apps.projects.subPages?.grid} />
-							</NavCollapse>
-							<NavCollapse {...pages.apps.invoices}>
-								<NavItem {...pages.apps.invoices} />
-								<NavItem {...pages.apps.invoices.subPages?.list} />
-								<NavItem
-									{...pages.apps.invoices.subPages?.view}
-									to={`${pages.apps.invoices.subPages.view.to}?invoiceId=100023`}
-								/>
-							</NavCollapse>
-							<NavCollapse {...pages.apps.mail}>
-								<NavItem {...pages.apps.mail} />
-								<NavItem
-									{...pages.apps.mail.subPages?.new}
-									to={`${pages.apps.mail.to}?newMail=true`}
-								/>
-							</NavCollapse>
-							<NavItem {...pages.apps.chat} />
-							<NavSeparator />
-						</>
-					)}
-					{[tabs.dashboard.id].includes(activeTab as string) && (
-						<>
-							<NavTitle>Pages Examples</NavTitle>
-							<NavCollapse {...pages.pagesExamples.list}>
-								<NavItem {...pages.pagesExamples.list.subPages?.example1} />
-								<NavItem {...pages.pagesExamples.list.subPages?.example2} />
-							</NavCollapse>
-							<NavCollapse {...pages.pagesExamples.grid}>
-								<NavItem {...pages.pagesExamples.grid.subPages?.example1} />
-							</NavCollapse>
-							<NavCollapse {...pages.pagesExamples.edit}>
-								<NavItem {...pages.pagesExamples.edit.subPages?.example1} />
-								<NavItem {...pages.pagesExamples.edit.subPages?.example2} />
-							</NavCollapse>
-							<NavItem {...pages.pagesExamples.login} />
-							<NavItem {...pages.pagesExamples.signup} />
-							<NavItem {...pages.pagesExamples.notFound} />
-							<NavItem {...pages.pagesExamples.underConstruction} />
-						</>
-					)}
-					{[tabs.documentation.id].includes(activeTab as string) && (
-						<>
-							<NavTitle>Documentation</NavTitle>
-							<NavCollapse {...pages.documentation.gettingStarted}>
-								<NavItem
-									{...pages.documentation.gettingStarted.subPages?.installation}
-								/>
-								<NavItem
-									{...pages.documentation.gettingStarted.subPages?.changelog}
-								/>
-								<NavItem
-									{...pages.documentation.gettingStarted.subPages
-										?.projectStructure}
-								/>
-								<NavItem
-									{...pages.documentation.gettingStarted.subPages?.pagesConfigure}
-								/>
-							</NavCollapse>
-							<NavCollapse {...pages.documentation.layout}>
-								{Object.values(pages.documentation.layout.subPages).map((item) => (
-									<NavItem key={item.id} {...item} />
-								))}
-							</NavCollapse>
-							<NavCollapse {...pages.documentation.content}>
-								{Object.values(pages.documentation.content.subPages).map((item) => (
-									<NavItem key={item.id} {...item} />
-								))}
-							</NavCollapse>
-							<NavCollapse {...pages.documentation.baseComponent}>
-								{Object.values(pages.documentation.baseComponent.subPages).map(
-									(item) => (
-										<NavItem key={item.id} {...item}>
-											{['blockquote', 'carousel'].includes(item.id) && (
-												<Badge variant='soft' className='scale-90'>
-													Soon
-												</Badge>
-											)}
-										</NavItem>
-									),
-								)}
-							</NavCollapse>
-							<NavCollapse {...pages.documentation.forms}>
-								{Object.values(pages.documentation.forms.subPages).map((item) => (
-									<NavItem key={item.id} {...item}>
-										{['blockquote', 'carousel'].includes(item.id) && (
-											<Badge variant='soft' className='scale-90'>
-												Soon
-											</Badge>
-										)}
-									</NavItem>
-								))}
-							</NavCollapse>
-							<NavItem {...pages.documentation.icon} />
-						</>
-					)}
-					{[tabs.examples.id].includes(activeTab as string) && (
-						<>
-							<NavTitle>Examples</NavTitle>
-							<NavCollapse {...pages.examples.exampleMain.subPages.dataVisualization}>
-								{Object.values(
-									pages.examples.exampleMain.subPages.dataVisualization.subPages,
-								).map((item) => (
-									<NavItem key={item.id} {...item} />
-								))}
-							</NavCollapse>
-							<NavCollapse {...pages.examples.exampleMain.subPages.cards}>
-								{Object.values(
-									pages.examples.exampleMain.subPages.cards.subPages,
-								).map((item) => (
-									<NavItem key={item.id} {...item} />
-								))}
-							</NavCollapse>
-							<NavCollapse {...pages.examples.exampleMain.subPages.overlays}>
-								{Object.values(
-									pages.examples.exampleMain.subPages.overlays.subPages,
-								).map((item) => (
-									<NavItem key={item.id} {...item} />
-								))}
-							</NavCollapse>
-							<NavCollapse {...pages.examples.exampleMain.subPages.tables}>
-								{Object.values(
-									pages.examples.exampleMain.subPages.tables.subPages,
-								).map((item) => (
-									<NavItem key={item.id} {...item} />
-								))}
-							</NavCollapse>
-							<NavCollapse {...pages.examples.exampleMain.subPages.forms}>
-								{Object.values(
-									pages.examples.exampleMain.subPages.forms.subPages,
-								).map((item) => (
-									<NavItem key={item.id} {...item} />
-								))}
-							</NavCollapse>
-							<NavCollapse
-								{...pages.examples.exampleMain.subPages.searchAndCommandPalettes}>
-								{Object.values(
-									pages.examples.exampleMain.subPages.searchAndCommandPalettes
-										.subPages,
-								).map((item) => (
-									<NavItem key={item.id} {...item} />
-								))}
-							</NavCollapse>
-							<NavCollapse {...pages.examples.exampleMain.subPages.navigations}>
-								{Object.values(
-									pages.examples.exampleMain.subPages.navigations.subPages,
-								).map((item) => (
-									<NavItem key={item.id} {...item} />
-								))}
-							</NavCollapse>
-							<NavCollapse {...pages.examples.exampleMain.subPages.pageSections}>
-								{Object.values(
-									pages.examples.exampleMain.subPages.pageSections.subPages,
-								).map((item) => (
-									<NavItem key={item.id} {...item} />
-								))}
-							</NavCollapse>
-							<NavCollapse {...pages.examples.exampleMain.subPages.contactAndFooters}>
-								{Object.values(
-									pages.examples.exampleMain.subPages.contactAndFooters.subPages,
-								).map((item) => (
-									<NavItem key={item.id} {...item} />
-								))}
-							</NavCollapse>
-							<NavCollapse {...pages.examples.exampleMain.subPages.userInterface}>
-								{Object.values(
-									pages.examples.exampleMain.subPages.userInterface.subPages,
-								).map((item) => (
-									<NavItem key={item.id} {...item} />
-								))}
-							</NavCollapse>
-						</>
-					)}
+					<NavTitle>Overview</NavTitle>
+					<NavCollapse
+						{...workspacePages.dashboard}
+						to={resolvePath(workspacePages.dashboard.to)}>
+						{Object.values(workspacePages.dashboard.subPages as TPages).map((item) => (
+							<NavItem key={item.id} {...item} to={resolvePath(item.to)} />
+						))}
+					</NavCollapse>
+
+					<NavTitle>Workspace</NavTitle>
+					{workspaceNavOrder.map((id) => {
+						const item = workspacePages[id];
+						if (!item) return null;
+						return <NavItem key={item.id} {...item} to={resolvePath(item.to)} />;
+					})}
 				</Nav>
 			</AsideBody>
 			<AsideFooterPart />

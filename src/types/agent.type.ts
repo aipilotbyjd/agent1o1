@@ -400,3 +400,230 @@ export type TReflectionRun = {
 	finished_at: string | null;
 	created_at: string;
 };
+
+// ── Ported from the old frontend ──────────────────────────────────────────────
+// Types the AgentBuilder still references. Copied verbatim from the old
+// frontend; several describe API shapes the current backend no longer serves.
+
+export type TAgentTrigger = {
+	id: string;
+	agent_id: string;
+	type: TAgentTriggerType;
+	config: Record<string, unknown> | null;
+	initial_message?: string | null;
+	is_active: boolean;
+	webhook_url?: string;
+	last_fired_at?: string | null;
+	created_at: string;
+	updated_at: string;
+};
+
+export type TAgentTriggerType = 'schedule' | 'webhook' | 'event';
+
+export type TAgentRun = {
+	id: string;
+	agent_id: string;
+	conversation_id: string | null;
+	trigger_id: string | null;
+	source: TAgentRunSource;
+	status: TAgentRunStatus;
+	input: unknown;
+	output: unknown;
+	error: string | null;
+	provider: string | null;
+	model: string | null;
+	prompt_tokens: number | null;
+	completion_tokens: number | null;
+	total_tokens: number | null;
+	duration_ms: number | null;
+	metadata: Record<string, unknown> | null;
+	started_at: string | null;
+	finished_at: string | null;
+	steps_count?: number;
+	steps?: TAiAgentStep[];
+	created_at: string;
+};
+
+export type TAgentRunsFilters = {
+	status?: TAgentRunStatus;
+	source?: TAgentRunSource;
+	per_page?: number;
+	page?: number;
+};
+
+// ─────────────────────────────────────────────────────────────
+// Usage analytics — GET {agent}/analytics.
+// See AgentAnalyticsController::show().
+// ─────────────────────────────────────────────────────────────
+
+export type TAgentAnalytics = {
+	range: { from: string; to: string };
+	totals: {
+		total_runs: number;
+		completed: number;
+		failed: number;
+		running: number;
+		success_rate: number | null;
+	};
+	tokens: {
+		total: number;
+		prompt: number;
+		completion: number;
+		avg_per_run: number;
+	};
+	latency: {
+		avg_duration_ms: number;
+		max_duration_ms: number;
+	};
+	by_source: Record<string, number>;
+	by_day: TAgentAnalyticsDay[];
+};
+
+export type TAgentAnalyticsFilters = {
+	from?: string;
+	to?: string;
+};
+
+// ─────────────────────────────────────────────────────────────
+// Knowledge base (RAG grounding) — {agent}/knowledge CRUD.
+// See AgentKnowledgeResource / Store|UpdateAgentKnowledgeRequest.
+// ─────────────────────────────────────────────────────────────
+
+export type TAgentMemoryScope = 'agent' | 'user';
+
+export type TAgentMetaModelGroup = {
+	provider: string;
+	models: string[];
+};
+
+export type TAgentSkill = {
+	id: string;
+	name: string;
+	slug: string;
+	description: string | null;
+	category?: TAgentSkillCategory | string | null;
+	icon?: string | null;
+	color?: string | null;
+	tags?: string[] | null;
+	instructions: string;
+	is_shared: boolean;
+	version: number;
+	sort_order?: number;
+	references?: TAgentSkillReference[];
+	scripts?: TAgentSkillScript[];
+	references_count?: number;
+	scripts_count?: number;
+	created_at: string;
+	updated_at: string;
+};
+
+export type TSkillFilters = {
+	search?: string;
+	category?: string;
+	is_shared?: boolean;
+};
+
+export type TAgentStreamTextDelta = {
+	id: string;
+	invocation_id: string;
+	type: 'text_delta';
+	message_id: string;
+	delta: string;
+	timestamp: string;
+};
+
+export type TAgentStreamToolCall = {
+	id: string;
+	invocation_id: string;
+	type: 'tool_call';
+	tool_id: string;
+	tool_name: string;
+	arguments: Record<string, unknown>;
+	reasoning_id: string | null;
+	timestamp: string;
+};
+
+export type TAgentStreamToolResult = {
+	id: string;
+	invocation_id: string;
+	type: 'tool_result';
+	tool_id: string;
+	tool_name: string;
+	result: unknown;
+	successful: boolean;
+	error: string | null;
+	timestamp: string;
+};
+
+/** Broadcast right after ExportArtifactTool produces a result — see ProcessAgentMessageJob::broadcastArtifact(). */
+
+export type TAgentStreamArtifact = {
+	id: string;
+	group_id: string;
+	filename: string;
+	version: number;
+	mime_type: string;
+	size: number;
+};
+
+/** Terminal event on the same channel — mirrors AgentMessageReady::broadcastWith(). */
+
+export type TAgentMessageReadyEvent = {
+	conversation_id: string | null;
+	response: string;
+	agent_id: string;
+	error: boolean;
+	error_message: string | null;
+};
+
+export type TAiAgentStep = {
+	id: string;
+	step_number: number;
+	action: string | null;
+	tool_name: string | null;
+	tool_input: Record<string, unknown> | null;
+	tool_output: unknown;
+	llm_reasoning: string | null;
+	tokens_used: number | null;
+	duration_ms: number | null;
+	created_at: string;
+};
+
+export type TAgentRunSource = 'conversation' | 'trigger' | 'manual' | string;
+
+export type TAgentRunStatus = 'pending' | 'running' | 'completed' | 'failed' | string;
+
+export type TAgentAnalyticsDay = {
+	day: string;
+	runs: number;
+	tokens: number;
+	failed: number;
+};
+
+export type TAgentSkillScript = {
+	id: string;
+	name: string;
+	description: string;
+	language: 'php' | 'javascript';
+	code: string;
+	is_enabled: boolean;
+	created_at: string;
+	updated_at: string;
+};
+
+export type TAgentSkillReference = {
+	id: string;
+	title: string;
+	content: string;
+	sort_order: number;
+};
+
+export type TAgentSkillCategory =
+	| 'General'
+	| 'Research'
+	| 'Data'
+	| 'Communication'
+	| 'Automation'
+	| 'Development'
+	| 'Content';
+

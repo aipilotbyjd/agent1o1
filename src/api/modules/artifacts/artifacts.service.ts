@@ -49,3 +49,18 @@ export const ArtifactService = {
 	removeShare: (ws: string, id: string, userId: string) =>
 		axiosClient.delete(E.removeShare(ws, id, userId)).then(() => undefined),
 };
+
+// ── Ported from the old frontend ──────────────────────────────────────────────
+// The new module exposes `downloadUrl` only; the AgentBuilder expects the old
+// blob-download behaviour. Copied verbatim from the old module.
+export const downloadArtifact = async (ws: string, artifactId: string, filename: string) => {
+	const response = await axiosClient.get(E.download(ws, artifactId), { responseType: 'blob' });
+	const url = URL.createObjectURL(response.data as Blob);
+	const link = document.createElement('a');
+	link.href = url;
+	link.download = filename;
+	document.body.appendChild(link);
+	link.click();
+	link.remove();
+	URL.revokeObjectURL(url);
+};
