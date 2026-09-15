@@ -20,11 +20,7 @@ import classNames from 'classnames';
 import AsideHeaderPart from '@/templates/asides/_parts/AsideHeader.part';
 import AsideFooterPart from '@/templates/asides/_parts/AsideFooter.part';
 
-/**
- * Paths in `@/Routes/pages` are templates (`/:workspaceId/agents`). The aside renders
- * inside the `/:workspaceId` route, so the active id comes from the URL; the workspace
- * context is the fallback for the brief window before the param is available.
- */
+// Page paths are templates (`/:workspaceId/agents`); id comes from the URL, falling back to workspace context.
 const useWorkspacePath = () => {
 	const { workspaceId } = useParams<{ workspaceId: string }>();
 	const { activeWorkspaceId } = useWorkspaceContext();

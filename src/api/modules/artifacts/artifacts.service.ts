@@ -3,22 +3,12 @@ import { unwrapKey } from '@/api/core';
 import type { TApiResponse, TPaginationMeta } from '@/api/core';
 import type {
 	TArtifact,
+	TArtifactListParams,
 	TUploadArtifactDto,
 	TUpdateArtifactAccessDto,
 	TShareArtifactDto,
 } from '@/types/artifact.type';
 import { ArtifactEndpoints as E } from './artifacts.endpoints';
-
-/** Filters `ArtifactController::index` accepts. */
-export type TArtifactListParams = {
-	page?: number;
-	per_page?: number;
-	/** Only artifacts this agent exported — member uploads have no agent. */
-	agent_id?: string;
-	/** Filename LIKE match. */
-	search?: string;
-	mime_category?: string;
-};
 
 export const ArtifactService = {
 	list: (ws: string, params?: TArtifactListParams, signal?: AbortSignal) =>
@@ -59,19 +49,18 @@ export const ArtifactService = {
 
 	removeShare: (ws: string, id: string, userId: string) =>
 		axiosClient.delete(E.removeShare(ws, id, userId)).then(() => undefined),
-};
 
-// ── Ported from the old frontend ──────────────────────────────────────────────
-// The new module exposes `downloadUrl` only; the AgentBuilder expects the old
-// blob-download behaviour. Copied verbatim from the old module.
-export const downloadArtifact = async (ws: string, artifactId: string, filename: string) => {
-	const response = await axiosClient.get(E.download(ws, artifactId), { responseType: 'blob' });
-	const url = URL.createObjectURL(response.data as Blob);
-	const link = document.createElement('a');
-	link.href = url;
-	link.download = filename;
-	document.body.appendChild(link);
-	link.click();
-	link.remove();
-	URL.revokeObjectURL(url);
+	/** Fetches the file as a blob and triggers a browser save — the
+	 *  AgentBuilder expects this, `downloadUrl` alone isn't enough. */
+	download: async (ws: string, id: string, filename: string) => {
+		const response = await axiosClient.get(E.download(ws, id), { responseType: 'blob' });
+		const url = URL.createObjectURL(response.data as Blob);
+		const link = document.createElement('a');
+		link.href = url;
+		link.download = filename;
+		document.body.appendChild(link);
+		link.click();
+		link.remove();
+		URL.revokeObjectURL(url);
+	},
 };

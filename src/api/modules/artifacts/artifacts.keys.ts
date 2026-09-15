@@ -1,4 +1,4 @@
-import type { TArtifactListParams } from './artifacts.service';
+import type { TArtifactListParams } from '@/types/artifact.type';
 
 export const artifactKeys = {
 	all: (ws: string) => ['artifacts', ws] as const,

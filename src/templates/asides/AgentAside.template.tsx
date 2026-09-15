@@ -43,7 +43,7 @@ const relativeDay = (iso: string | null) => {
 	return then.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 };
 
-const AppAsideTemplate = () => {
+const AgentAsideTemplate = () => {
 	const navigate = useNavigate();
 	// Routes are workspace-scoped here; old's flat `/agents` would be swallowed
 	// by `/:workspaceId` and treated as a workspace id.
@@ -320,4 +320,4 @@ const AppAsideTemplate = () => {
 	);
 };
 
-export default AppAsideTemplate;
+export default AgentAsideTemplate;
