@@ -54,10 +54,10 @@ const workspace: TPage = {
 			text: 'Agents',
 			icon: 'Robot01',
 		},
-		activity: {
-			id: 'activity',
-			to: '/:workspaceId/activity',
-			text: 'Activity',
+		trail: {
+			id: 'trail',
+			to: '/:workspaceId/trail',
+			text: 'Trail',
 			icon: 'Clock01',
 		},
 		skills: {
@@ -66,10 +66,10 @@ const workspace: TPage = {
 			text: 'Skills',
 			icon: 'Puzzle',
 		},
-		connections: {
-			id: 'connections',
-			to: '/:workspaceId/connections',
-			text: 'Connections',
+		apps: {
+			id: 'apps',
+			to: '/:workspaceId/apps',
+			text: 'Apps',
 			icon: 'Plug01',
 		},
 		knowledge: {
