@@ -18,6 +18,7 @@ import {
 	Layers,
 	History,
 	Command,
+	X,
 } from 'lucide-react';
 import Modal, {
 	ModalBody,
@@ -78,6 +79,12 @@ const clearRecentSearches = () => {
 	localStorage.removeItem(STORAGE_KEY);
 };
 
+const removeRecentSearch = (query: string) => {
+	const current = getRecentSearches().filter((s) => s !== query);
+	localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+	return current;
+};
+
 // ─── Flatten Pages ────────────────────────────────────────────────────────────
 const getFlattenPages = (pagesList: TPages, parentId?: string): TPage[] => {
 	return Object.values(pagesList).flatMap((page) => {
@@ -104,10 +111,12 @@ const getFlattenedPageItems = (): TSearchItem[] => {
 		...getFlattenPages(pages.onboarding.subPages as TPages, pages.onboarding.id),
 	];
 
+	const textById = new Map(flattenPages.map((p) => [p.id, p.text]));
+
 	return flattenPages.map((item) => ({
 		id: `page-${item.id}`,
 		label: item.text,
-		description: item.to,
+		description: item.parentId ? textById.get(item.parentId) : undefined,
 		category: 'Pages' as TSearchCategory,
 		icon: item.icon ? (
 			<Icon icon={item.icon} className='text-zinc-400 dark:text-zinc-500' />
@@ -218,8 +227,8 @@ const MOCK_FILES: TSearchItem[] = [
 		label: 'Sales Report Q2 2026',
 		description: 'PDF · 2.4 MB · Updated 2 days ago',
 		category: 'Files',
-		icon: <FileText size={16} className='text-blue-500' />,
-		iconBg: 'bg-blue-500/10',
+		icon: <FileText size={16} className='text-cyan-500' />,
+		iconBg: 'bg-cyan-500/10',
 		to: '/files',
 		keywords: ['sales', 'report', 'q2', '2026', 'pdf'],
 	},
@@ -228,8 +237,8 @@ const MOCK_FILES: TSearchItem[] = [
 		label: 'API Documentation v3',
 		description: 'Markdown · 156 KB · Updated 5 hours ago',
 		category: 'Files',
-		icon: <FileText size={16} className='text-blue-500' />,
-		iconBg: 'bg-blue-500/10',
+		icon: <FileText size={16} className='text-cyan-500' />,
+		iconBg: 'bg-cyan-500/10',
 		to: '/files',
 		keywords: ['api', 'documentation', 'v3', 'markdown'],
 	},
@@ -238,8 +247,8 @@ const MOCK_FILES: TSearchItem[] = [
 		label: 'Customer Feedback Analysis',
 		description: 'CSV · 892 KB · Updated 1 week ago',
 		category: 'Files',
-		icon: <FileText size={16} className='text-blue-500' />,
-		iconBg: 'bg-blue-500/10',
+		icon: <FileText size={16} className='text-cyan-500' />,
+		iconBg: 'bg-cyan-500/10',
 		to: '/files',
 		keywords: ['customer', 'feedback', 'analysis', 'csv', 'data'],
 	},
@@ -248,8 +257,8 @@ const MOCK_FILES: TSearchItem[] = [
 		label: 'Skill Creator Research Brief',
 		description: 'PDF · 3.1 MB · Updated 3 days ago',
 		category: 'Files',
-		icon: <FileText size={16} className='text-blue-500' />,
-		iconBg: 'bg-blue-500/10',
+		icon: <FileText size={16} className='text-cyan-500' />,
+		iconBg: 'bg-cyan-500/10',
 		to: '/files',
 		keywords: ['skill', 'creator', 'research', 'brief', 'pdf'],
 	},
@@ -258,8 +267,8 @@ const MOCK_FILES: TSearchItem[] = [
 		label: 'Deployment Runbook',
 		description: 'Markdown · 45 KB · Updated 1 day ago',
 		category: 'Files',
-		icon: <FileText size={16} className='text-blue-500' />,
-		iconBg: 'bg-blue-500/10',
+		icon: <FileText size={16} className='text-cyan-500' />,
+		iconBg: 'bg-cyan-500/10',
 		to: '/files',
 		keywords: ['deployment', 'runbook', 'markdown', 'ops'],
 	},
@@ -375,8 +384,8 @@ const CATEGORY_CONFIG: Record<TSearchCategory, TCategoryConfig> = {
 	Files: {
 		label: 'Files',
 		icon: <Folder size={12} />,
-		bgClass: 'bg-blue-500/10',
-		textClass: 'text-blue-700 dark:text-blue-400',
+		bgClass: 'bg-cyan-500/10',
+		textClass: 'text-cyan-700 dark:text-cyan-400',
 		order: 5,
 	},
 	History: {
@@ -401,7 +410,7 @@ const CATEGORY_ICONS: Record<TSearchCategory, React.ReactNode> = {
 	Workflows: <Workflow size={16} className='text-emerald-500' />,
 	Agents: <Bot size={16} className='text-primary-500' />,
 	Templates: <Layers size={16} className='text-violet-500' />,
-	Files: <Folder size={16} className='text-blue-500' />,
+	Files: <Folder size={16} className='text-cyan-500' />,
 	History: <History size={16} className='text-zinc-500' />,
 	'Quick Actions': <Zap size={16} className='text-amber-500' />,
 	'Recent Searches': <Clock size={16} className='text-zinc-400' />,
@@ -594,6 +603,7 @@ const GlobalSearch = () => {
 			rounded='rounded-2xl'
 			isScrollable={false}
 			size='lg'
+			contentClassName='mx-4 sm:mx-auto'
 		>
 			<ModalHeader hasCloseButton={false}>
 				<div className='flex w-full items-center gap-3'>
@@ -604,7 +614,7 @@ const GlobalSearch = () => {
 						onChange={handleInputChange}
 						onKeyDown={handleKeyDown}
 						placeholder='Search workflows, agents, files, pages...'
-						className='w-full border-0 bg-transparent p-0 text-sm font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 dark:text-white dark:placeholder:text-zinc-500'
+						className='w-full border-0 bg-transparent p-0 text-sm font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-0 dark:text-white dark:placeholder:text-zinc-500'
 						aria-label='Search everything'
 					/>
 					<Badge color='zinc' variant='outline' className='font-mono text-xs shrink-0'>
@@ -635,15 +645,27 @@ const GlobalSearch = () => {
 						</div>
 						<div className='flex flex-wrap gap-2'>
 							{recentSearches.map((term) => (
-								<button
+								<div
 									key={term}
-									type='button'
-									onClick={() => handleRecentSearchClick(term)}
-									className='flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-600 shadow-xs transition-all hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-white'
+									className='group flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white pr-1.5 pl-3 text-xs font-semibold text-zinc-600 shadow-xs transition-all hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-white'
 								>
-									<Clock size={11} className='text-zinc-400' />
-									{term}
-								</button>
+									<button
+										type='button'
+										onClick={() => handleRecentSearchClick(term)}
+										className='flex items-center gap-1.5 py-1.5'
+									>
+										<Clock size={11} className='text-zinc-400' />
+										{term}
+									</button>
+									<button
+										type='button'
+										aria-label={`Remove "${term}" from recent searches`}
+										onClick={() => setRecentSearches(removeRecentSearch(term))}
+										className='rounded-full p-0.5 text-zinc-300 opacity-100 transition-opacity hover:text-zinc-600 sm:opacity-0 sm:group-hover:opacity-100 dark:text-zinc-600 dark:hover:text-zinc-300'
+									>
+										<X size={11} />
+									</button>
+								</div>
 							))}
 						</div>
 					</div>
@@ -661,26 +683,6 @@ const GlobalSearch = () => {
 						<p className='mt-1 text-xs text-zinc-400 dark:text-zinc-500'>
 							Type to search workflows, agents, files, pages, and more
 						</p>
-						<div className='mt-4 flex items-center gap-4 text-xs text-zinc-400 dark:text-zinc-500'>
-							<div className='flex items-center gap-1'>
-								<kbd className='rounded-md border border-zinc-200 bg-white px-1.5 py-0.5 font-mono text-[10px] text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'>
-									↑↓
-								</kbd>
-								<span>navigate</span>
-							</div>
-							<div className='flex items-center gap-1'>
-								<kbd className='rounded-md border border-zinc-200 bg-white px-1.5 py-0.5 font-mono text-[10px] text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'>
-									↵
-								</kbd>
-								<span>select</span>
-							</div>
-							<div className='flex items-center gap-1'>
-								<kbd className='rounded-md border border-zinc-200 bg-white px-1.5 py-0.5 font-mono text-[10px] text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'>
-									esc
-								</kbd>
-								<span>close</span>
-							</div>
-						</div>
 					</div>
 				)}
 
@@ -742,10 +744,10 @@ const GlobalSearch = () => {
 													type='button'
 													data-index={globalIdx}
 													className={classNames(
-														'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-150',
+														'flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-all duration-150',
 														isSelected
-															? 'bg-primary-50/80 shadow-xs dark:bg-zinc-800/60'
-															: 'hover:bg-zinc-50 dark:hover:bg-zinc-800/30',
+															? 'border-primary-500/20 bg-primary-50/80 shadow-xs dark:border-primary-400/20 dark:bg-zinc-800/60'
+															: 'border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-800/30',
 													)}
 													onMouseEnter={() => setSelectedIndex(globalIdx)}
 													onClick={() => handleNavigate(item)}
@@ -753,7 +755,7 @@ const GlobalSearch = () => {
 													{/* Icon */}
 													<div
 														className={classNames(
-															'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+															'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset ring-black/5 dark:ring-white/5',
 															item.iconBg || 'bg-zinc-100 dark:bg-zinc-800',
 														)}
 													>
@@ -815,7 +817,8 @@ const GlobalSearch = () => {
 
 			<ModalFooter>
 				<ModalFooterChild>
-					<div className='flex items-center gap-3 text-xs text-zinc-400 dark:text-zinc-500'>
+					{/* Full hint set — hidden on narrow screens where it would crowd the footer */}
+					<div className='hidden items-center gap-3 text-xs text-zinc-400 sm:flex dark:text-zinc-500'>
 						<div className='flex items-center gap-1.5'>
 							<kbd className='rounded-md border border-zinc-200 bg-white px-1.5 py-0.5 font-mono text-[10px] text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'>
 								↑↓
@@ -834,6 +837,13 @@ const GlobalSearch = () => {
 							</kbd>
 							<span>close</span>
 						</div>
+					</div>
+					{/* Compact hint on narrow screens */}
+					<div className='flex items-center gap-1.5 text-xs text-zinc-400 sm:hidden dark:text-zinc-500'>
+						<kbd className='rounded-md border border-zinc-200 bg-white px-1.5 py-0.5 font-mono text-[10px] text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'>
+							esc
+						</kbd>
+						<span>to close</span>
 					</div>
 				</ModalFooterChild>
 			</ModalFooter>

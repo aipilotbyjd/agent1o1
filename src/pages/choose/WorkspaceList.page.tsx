@@ -26,6 +26,7 @@ import { LogoLight, LogoDark } from '@/assets/images';
 import { useAuth } from '@/context/auth';
 import type { TWorkspace } from '@/types/workspace.type';
 import { useWorkspaceContext } from '@/context/workspace';
+import pages, { TPages } from '@/Routes/pages';
 
 import {
 	useWorkspaces,
@@ -266,7 +267,8 @@ const WorkspacesPage = () => {
 		const name = workspaces.find((w: IWorkspaceCard) => w.id === id)?.name ?? 'workspace';
 		triggerToast(`Entering workspace "${name}"...`, 'info');
 		await switchWorkspace(id);
-		setTimeout(() => navigate('/dashboard'), 800);
+		const agentsPath = (pages.workspace.subPages as TPages).agents.to.replace(':workspaceId', id);
+		setTimeout(() => navigate(agentsPath), 800);
 	};
 
 	const handleCreateWorkspace = async (e: React.FormEvent) => {

@@ -604,11 +604,11 @@ const BuildPage = () => {
 				: newTriggerType === 'event'
 					? { event: newTriggerEventName }
 					: {};
+		if (newTriggerInitialMessage) config.initial_message = newTriggerInitialMessage;
 
 		createTriggerMutation.mutate({
 			type: newTriggerType,
 			config,
-			initial_message: newTriggerInitialMessage || undefined,
 			is_active: true,
 		});
 		setNewTriggerEventName('');

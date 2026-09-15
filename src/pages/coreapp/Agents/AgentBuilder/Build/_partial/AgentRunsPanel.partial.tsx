@@ -16,7 +16,7 @@ import {
 import { useAgentRuns, useAgentRun } from '@/api/modules/agents';
 import { useDownloadArtifact } from '@/api/modules/artifacts';
 import type { TAgentRunStatus } from '@/types/agent.type';
-import type { TRun, TNodeRun } from '@/types/run.type';
+import type { TRun, TNodeRun, TRunStatus } from '@/types/run.type';
 
 type TArtifactStepOutput = { id: string; filename: string; version: number };
 
@@ -171,7 +171,7 @@ const RunRow = ({ ws, agentId, run }: { ws: string; agentId: string; run: TRun }
  * Backed by {agent}/runs — see AgentRunController.
  */
 const AgentRunsPanel = ({ ws, agentId }: TProps) => {
-	const [statusFilter, setStatusFilter] = useState<TAgentRunStatus | undefined>(undefined);
+	const [statusFilter, setStatusFilter] = useState<TRunStatus | undefined>(undefined);
 	const { data, isLoading } = useAgentRuns(
 		ws,
 		agentId ?? '',
@@ -198,7 +198,7 @@ const AgentRunsPanel = ({ ws, agentId }: TProps) => {
 			</div>
 
 			<div className='flex gap-1.5'>
-				{([undefined, 'completed', 'failed', 'running'] as (TAgentRunStatus | undefined)[]).map(
+				{([undefined, 'completed', 'failed', 'running'] as (TRunStatus | undefined)[]).map(
 					(s) => (
 						<button
 							key={s ?? 'all'}
