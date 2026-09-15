@@ -72,6 +72,12 @@ const workspace: TPage = {
 			text: 'Connections',
 			icon: 'Plug01',
 		},
+		knowledge: {
+			id: 'knowledge',
+			to: '/:workspaceId/knowledge',
+			text: 'Knowledge',
+			icon: 'Book02',
+		},
 		vault: {
 			id: 'vault',
 			to: '/:workspaceId/vault',
