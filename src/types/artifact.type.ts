@@ -56,3 +56,14 @@ export type TUpdateArtifactAccessDto = {
 export type TShareArtifactDto = {
 	user_id: string;
 };
+
+/** Filters `ArtifactController::index` accepts. */
+export type TArtifactListParams = {
+	page?: number;
+	per_page?: number;
+	/** Only artifacts this agent exported — member uploads have no agent. */
+	agent_id?: string;
+	/** Filename LIKE match. */
+	search?: string;
+	mime_category?: string;
+};

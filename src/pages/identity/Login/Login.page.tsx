@@ -120,7 +120,7 @@ const LoginPage = () => {
 							<Icon icon='ShieldCheck' className='size-3.5' />
 							Two-Factor Challenge
 						</div>
-						<h2 className='mt-2.5 text-2xl font-extrabold tracking-tight text-zinc-900'>
+						<h2 className='mt-2.5 text-2xl font-extrabold tracking-tight text-zinc-950'>
 							Enter 6-digit Code
 						</h2>
 						<p className='mt-1 text-xs font-medium text-zinc-500'>
@@ -141,7 +141,7 @@ const LoginPage = () => {
 									className='size-4 shrink-0 text-zinc-400'
 								/>
 								<input
-									className='input-clean w-full border-0 border-none bg-transparent p-0 text-center font-mono text-base tracking-[0.4em] text-zinc-900 shadow-none placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
+									className='input-clean w-full border-0 border-none bg-transparent p-0 text-center font-mono text-base tracking-[0.4em] text-zinc-950 shadow-none placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
 									id='code'
 									name='code'
 									autoComplete='one-time-code'
@@ -163,7 +163,7 @@ const LoginPage = () => {
 						<button
 							type='submit'
 							disabled={verifyTwoFactor.isPending}
-							className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 active:bg-primary-800 mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-900 uppercase shadow-md transition-all disabled:pointer-events-none disabled:opacity-50'>
+							className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 active:bg-primary-800 mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-md transition-all disabled:pointer-events-none disabled:opacity-50'>
 							{verifyTwoFactor.isPending && <Spinner className='size-4' />}
 							VERIFY & SIGN IN ›
 						</button>
@@ -183,7 +183,7 @@ const LoginPage = () => {
 				<>
 					{/* Header */}
 					<div>
-						<h2 className='text-3xl font-extrabold tracking-tight text-zinc-900'>
+						<h2 className='text-3xl font-extrabold tracking-tight text-zinc-950'>
 							Sign in
 						</h2>
 						<p className='mt-1 text-xs font-medium text-zinc-500'>
@@ -220,7 +220,7 @@ const LoginPage = () => {
 							<div className='focus-within:border-primary-500 focus-within:ring-primary-500/15 flex items-center gap-2.5 rounded-xl border border-[#d8e2ee] bg-[#eef2f8] px-3.5 py-2.5 transition-all focus-within:bg-white focus-within:ring-2'>
 								<Icon icon='Mail01' className='size-4 shrink-0 text-zinc-400' />
 								<input
-									className='input-clean w-full border-0 border-none bg-transparent p-0 text-sm font-medium text-zinc-900 shadow-none placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
+									className='input-clean w-full border-0 border-none bg-transparent p-0 text-sm font-medium text-zinc-950 shadow-none placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
 									id='email'
 									name='email'
 									type='email'
@@ -257,7 +257,7 @@ const LoginPage = () => {
 								/>
 								<input
 									type={showPassword ? 'text' : 'password'}
-									className='input-clean w-full border-0 border-none bg-transparent p-0 font-mono text-sm text-zinc-900 shadow-none placeholder:font-sans placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
+									className='input-clean w-full border-0 border-none bg-transparent p-0 font-mono text-sm text-zinc-950 shadow-none placeholder:font-sans placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
 									id='password'
 									name='password'
 									autoComplete='current-password'
@@ -289,7 +289,7 @@ const LoginPage = () => {
 						<div className='flex items-center pt-1'>
 							<label
 								htmlFor='rememberMe'
-								className='group flex cursor-pointer items-center gap-2 text-xs font-medium text-zinc-600 select-none hover:text-zinc-900'>
+								className='group flex cursor-pointer items-center gap-2 text-xs font-medium text-zinc-600 select-none hover:text-zinc-950'>
 								<input
 									type='checkbox'
 									id='rememberMe'
@@ -306,7 +306,7 @@ const LoginPage = () => {
 						<button
 							type='submit'
 							disabled={login.isPending}
-							className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 active:bg-primary-800 mt-2 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-900 uppercase shadow-md transition-all disabled:pointer-events-none disabled:opacity-50'>
+							className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 active:bg-primary-800 mt-2 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-md transition-all disabled:pointer-events-none disabled:opacity-50'>
 							{login.isPending && <Spinner className='size-4' />}
 							SIGN IN TO DASHBOARD ›
 						</button>

@@ -98,7 +98,7 @@ const ResetPasswordPage = () => {
 			{isSuccess ? (
 				<div className='grid gap-y-5 text-center'>
 					<div>
-						<h2 className='text-2xl font-extrabold tracking-tight text-zinc-900 sm:text-3xl'>
+						<h2 className='text-2xl font-extrabold tracking-tight text-zinc-950 sm:text-3xl'>
 							Password reset!
 						</h2>
 						<p className='mt-2 text-xs font-medium text-zinc-500'>
@@ -118,7 +118,7 @@ const ResetPasswordPage = () => {
 					<Link to={pages.identity.login.to}>
 						<button
 							type='button'
-							className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-900 uppercase shadow-md transition-all'>
+							className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-md transition-all'>
 							SIGN IN NOW ›
 						</button>
 					</Link>
@@ -126,7 +126,7 @@ const ResetPasswordPage = () => {
 			) : isTokenMissing ? (
 				<div className='grid gap-y-5 text-center'>
 					<div>
-						<h2 className='text-2xl font-extrabold tracking-tight text-zinc-900 sm:text-3xl'>
+						<h2 className='text-2xl font-extrabold tracking-tight text-zinc-950 sm:text-3xl'>
 							Invalid reset link
 						</h2>
 						<p className='mt-2 text-xs font-medium text-zinc-500'>
@@ -141,7 +141,7 @@ const ResetPasswordPage = () => {
 					<Link to={pages.identity.forgotPassword.to}>
 						<button
 							type='button'
-							className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-900 uppercase shadow-md transition-all'>
+							className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-md transition-all'>
 							REQUEST A NEW LINK ›
 						</button>
 					</Link>
@@ -149,12 +149,12 @@ const ResetPasswordPage = () => {
 			) : (
 				<>
 					<div>
-						<h2 className='text-3xl font-extrabold tracking-tight text-zinc-900'>
+						<h2 className='text-3xl font-extrabold tracking-tight text-zinc-950'>
 							Set new password
 						</h2>
 						<p className='mt-1 text-xs font-medium text-zinc-500'>
 							Resetting password for{' '}
-							<span className='font-bold text-zinc-900'>{email}</span>
+							<span className='font-bold text-zinc-950'>{email}</span>
 						</p>
 					</div>
 
@@ -173,7 +173,7 @@ const ResetPasswordPage = () => {
 								/>
 								<input
 									type={showPassword ? 'text' : 'password'}
-									className='input-clean w-full border-0 border-none bg-transparent p-0 font-mono text-sm text-zinc-900 shadow-none placeholder:font-sans placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
+									className='input-clean w-full border-0 border-none bg-transparent p-0 font-mono text-sm text-zinc-950 shadow-none placeholder:font-sans placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
 									id='password'
 									name='password'
 									autoComplete='new-password'
@@ -214,7 +214,7 @@ const ResetPasswordPage = () => {
 								/>
 								<input
 									type={showConfirm ? 'text' : 'password'}
-									className='input-clean w-full border-0 border-none bg-transparent p-0 font-mono text-sm text-zinc-900 shadow-none placeholder:font-sans placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
+									className='input-clean w-full border-0 border-none bg-transparent p-0 font-mono text-sm text-zinc-950 shadow-none placeholder:font-sans placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
 									id='password_confirmation'
 									name='password_confirmation'
 									autoComplete='new-password'
@@ -303,7 +303,7 @@ const ResetPasswordPage = () => {
 						<button
 							type='submit'
 							disabled={resetPassword.isPending || passedCount < 5}
-							className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 active:bg-primary-800 mt-3 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-900 uppercase shadow-md transition-all disabled:pointer-events-none disabled:opacity-50'>
+							className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 active:bg-primary-800 mt-3 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-md transition-all disabled:pointer-events-none disabled:opacity-50'>
 							{resetPassword.isPending && <Spinner className='size-4' />}
 							RESET PASSWORD ›
 						</button>

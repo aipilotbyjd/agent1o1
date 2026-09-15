@@ -6,10 +6,12 @@ import useAsideStatus from '@/hooks/useAsideStatus';
 interface IWrapperProps {
 	children: ReactNode;
 	className?: string;
+	/** Drop the 1rem side borders — for full-bleed shells like the Agent Builder. */
+	borderDisabled?: boolean;
 }
 // @end-snippet:: interface
 const Wrapper: FC<IWrapperProps> = (props) => {
-	const { children, className, ...rest } = props;
+	const { children, className, borderDisabled = false, ...rest } = props;
 
 	const { asideStatus } = useAsideStatus();
 
@@ -19,7 +21,8 @@ const Wrapper: FC<IWrapperProps> = (props) => {
 			className={classNames(
 				'flex flex-auto flex-col',
 				'bg-white dark:bg-zinc-950',
-				'border-s-[1rem] border-e-[1rem] border-zinc-100 md:border-s-0 dark:border-zinc-900',
+				!borderDisabled &&
+					'border-s-[1rem] border-e-[1rem] border-zinc-100 md:border-s-0 dark:border-zinc-900',
 				'transition-all duration-300 ease-in-out',
 				className,
 				{
