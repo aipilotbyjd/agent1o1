@@ -107,8 +107,7 @@ const CoreAppPages = [
 				],
 			},
 			{
-				// The run/activity trail.
-				path: workspacePages.activity.to,
+				path: workspacePages.trail.to,
 				element: <TrailLayout />,
 				children: [
 					{
@@ -128,8 +127,7 @@ const CoreAppPages = [
 				],
 			},
 			{
-				// Connected apps / integrations.
-				path: workspacePages.connections.to,
+				path: workspacePages.apps.to,
 				element: <AppsLayout />,
 				children: [
 					{
