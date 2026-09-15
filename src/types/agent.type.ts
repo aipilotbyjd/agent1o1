@@ -523,40 +523,17 @@ export type TSkillFilters = {
 	is_shared?: boolean;
 };
 
-export type TAgentStreamTextDelta = {
-	id: string;
-	invocation_id: string;
-	type: 'text_delta';
-	message_id: string;
-	delta: string;
-	timestamp: string;
-};
+// The old backend broadcast a reply token by token (`text_delta`, `tool_call`,
+// `tool_result`, `artifact`, and a terminal `agent.message.ready`). This one
+// streams the same turn over server-sent events instead — see
+// `TAgentSessionStreamEvent` above — so those event types are gone.
 
-export type TAgentStreamToolCall = {
-	id: string;
-	invocation_id: string;
-	type: 'tool_call';
-	tool_id: string;
-	tool_name: string;
-	arguments: Record<string, unknown>;
-	reasoning_id: string | null;
-	timestamp: string;
-};
-
-export type TAgentStreamToolResult = {
-	id: string;
-	invocation_id: string;
-	type: 'tool_result';
-	tool_id: string;
-	tool_name: string;
-	result: unknown;
-	successful: boolean;
-	error: string | null;
-	timestamp: string;
-};
-
-/** Broadcast right after ExportArtifactTool produces a result — see ProcessAgentMessageJob::broadcastArtifact(). */
-
+/**
+ * One file an agent exported during a turn. Mirrors `ExportArtifactTool`'s
+ * JSON return exactly; the SSE `tool-result` event does not carry the tool's
+ * payload, so the chat resolves these from `artifacts.index` after the turn
+ * completes.
+ */
 export type TAgentStreamArtifact = {
 	id: string;
 	group_id: string;
@@ -564,16 +541,6 @@ export type TAgentStreamArtifact = {
 	version: number;
 	mime_type: string;
 	size: number;
-};
-
-/** Terminal event on the same channel — mirrors AgentMessageReady::broadcastWith(). */
-
-export type TAgentMessageReadyEvent = {
-	conversation_id: string | null;
-	response: string;
-	agent_id: string;
-	error: boolean;
-	error_message: string | null;
 };
 
 export type TAiAgentStep = {

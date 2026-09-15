@@ -84,16 +84,58 @@ import {
 	useFireAgentTrigger,
 	useAgentMetaModels,
 	useAgentSkillAttachments,
+	useAgentToolBindings,
+	useCreateAgentToolBinding,
+	useDeleteAgentToolBinding,
+	useAgentWorkflowTools,
+	useAttachAgentWorkflow,
+	useDetachAgentWorkflow,
 } from '@/api/modules/agents';
+import { useGlobalNodeCatalog } from '@/api/modules/nodes';
+import { useWorkflows } from '@/api/modules/workflows';
+import type { TBuiltinNode } from '@/types/node.type';
 import type { TTrigger } from '@/types/trigger.type';
 import type { TAgentTriggerType } from '@/types/agent.type';
+import { useAgentSession } from '@/api/modules/agents';
 import { AgentSessionService } from '@/api/modules/agents/agent-sessions.service';
-import { subscribeToAgentStream } from '@/api/modules/agents/agents.realtime';
-import { useDownloadArtifact } from '@/api/modules/artifacts';
-import { useRealtime } from '@/context/realtime';
+import { useDownloadArtifact, ArtifactService } from '@/api/modules/artifacts';
+import type { TArtifact } from '@/types/artifact.type';
+import type { TAgentMessage } from '@/types/agent.type';
+import { useAgentChatStore } from '@/store/agentChat.store';
 import { XCircle, Wrench, FileDown } from 'lucide-react';
 import AgentDataPanel from './_partial/AgentDataPanel.partial';
 
+
+/**
+ * A stored transcript as chat bubbles.
+ *
+ * Only the two conversational roles are rendered: `tool` and `system` turns are
+ * part of the model's context, not of the conversation, and the builder shows
+ * tool activity through the timeline instead. Replies stream in as plain text,
+ * so a non-string `content` is a structured turn — shown raw rather than hidden.
+ */
+const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
+	messages
+		.filter((message) => message.role === 'user' || message.role === 'assistant')
+		.map((message) => ({
+			id: `msg-${message.id}`,
+			sender: message.role === 'user' ? ('user' as const) : ('agent' as const),
+			text:
+				typeof message.content === 'string'
+					? message.content
+					: JSON.stringify(message.content, null, 2),
+			timestamp: new Date(message.created_at).toLocaleTimeString([], {
+				hour: '2-digit',
+				minute: '2-digit',
+			}),
+			type: 'text' as const,
+		}));
+
+/**
+ * Name `ExportArtifactTool` reaches the wire under. The tool declares no
+ * `name()`, so Laravel\Ai's ToolNameResolver falls back to its class basename.
+ */
+const EXPORT_ARTIFACT_TOOL = 'ExportArtifactTool';
 
 /**
  * Triggers carry a token, not a ready-made URL — the old API returned
@@ -260,8 +302,13 @@ const BuildPage = () => {
 	const toWorkspacePath = (to: string) => to.replace(':workspaceId', workspaceId);
 
 	const [currentAgentId, setCurrentAgentId] = useState<string | undefined>(routeAgentId);
-	const [conversationId, setConversationId] = useState<string | null>(null);
-	const { echo } = useRealtime();
+
+	// The open chat is shared with AgentAside, which lists this agent's past
+	// sessions and can switch between them — see store/agentChat.store.ts.
+	const conversationId = useAgentChatStore((state) => state.sessionId);
+	const openSession = useAgentChatStore((state) => state.openSession);
+	const newSession = useAgentChatStore((state) => state.newSession);
+	const setChatAgentId = useAgentChatStore((state) => state.setAgentId);
 
 	// Live scratchpad for the reply currently streaming in — reset on every send.
 	const [streamTimeline, setStreamTimeline] = useState<TChatTimelineItem[]>([]);
@@ -354,6 +401,56 @@ const BuildPage = () => {
 	const [chatHistory, setChatHistory] = useState<TMessage[]>([]);
 	const [chatInput, setChatInput] = useState('');
 	const [isTyping, setIsTyping] = useState(false);
+
+	// Tell the aside which agent's chats to list. A draft agent has no id until
+	// it is first saved, which is why this tracks `currentAgentId` rather than
+	// the route param.
+	useEffect(() => {
+		setChatAgentId(currentAgentId ?? null);
+	}, [currentAgentId, setChatAgentId]);
+
+	/** The session whose transcript `chatHistory` currently holds. Sessions this
+	 *  page just created are recorded here so the loader below skips them —
+	 *  their messages are already on screen. */
+	const loadedSessionRef = useRef<string | null>(null);
+
+	// `show` eager-loads the transcript, so opening a chat is one request.
+	const { data: openedSession } = useAgentSession(
+		workspaceId,
+		currentAgentId ?? '',
+		conversationId ?? '',
+	);
+
+	// Swap in a chat picked from the aside, or clear the one it closed.
+	useEffect(() => {
+		if (!conversationId) {
+			// The aside started a new chat, or deleted the open one. Callers that
+			// set their own greeting clear the ref first, so this skips them.
+			if (loadedSessionRef.current === null) return;
+
+			loadedSessionRef.current = null;
+			setChatHistory([
+				{
+					id: 'init-' + Date.now(),
+					sender: 'agent',
+					text: `Hi! I'm your ${agentName}. How can I help you today?`,
+					timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+					type: 'text',
+				},
+			]);
+			return;
+		}
+
+		if (loadedSessionRef.current === conversationId) return;
+		if (!openedSession || String(openedSession.id) !== String(conversationId)) return;
+
+		loadedSessionRef.current = conversationId;
+		setChatHistory(transcriptToMessages(openedSession.messages ?? []));
+		setIsPreviewMode(true);
+		// `agentName` only supplies the greeting text for a chat being cleared —
+		// re-running this when the agent is renamed would wipe the transcript.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [conversationId, openedSession]);
 	const [incognito, setIncognito] = useState(false);
 	const [skillEnabled, setSkillEnabled] = useState(true);
 
@@ -375,17 +472,25 @@ const BuildPage = () => {
 	// Icon Picker Dropdown State
 	const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
 
-	// Connected Apps State
-	const [connectedApps, setConnectedApps] = useState([
-		{ id: 'firecrawl', name: 'Firecrawl', desc: 'Scrape and extract data from websites.', icon: Flame, iconBg: 'bg-orange-500', isConnected: true },
-		{ id: 'google-docs', name: 'Google Docs', desc: 'Create, read and update documents.', icon: FileText, iconBg: 'bg-blue-500', isConnected: false },
-		{ id: 'parallel', name: 'Parallel', desc: 'Run AI tasks in parallel for faster results.', icon: Globe, iconBg: 'bg-zinc-800 dark:bg-zinc-700 border dark:border-zinc-600', isConnected: true }
-	]);
+	// Tools the agent can call. Two separate resources on this backend: a
+	// `tool_binding` exposes one workflow **node type** (Slack, HTTP, …), and a
+	// workflow can be attached whole as a single callable tool.
+	const { data: toolBindings } = useAgentToolBindings(workspaceId, currentAgentId ?? '');
+	const { data: workflowTools } = useAgentWorkflowTools(workspaceId, currentAgentId ?? '');
+	const createToolBindingMutation = useCreateAgentToolBinding(workspaceId, currentAgentId ?? '');
+	const deleteToolBindingMutation = useDeleteAgentToolBinding(workspaceId, currentAgentId ?? '');
+	const attachWorkflowMutation = useAttachAgentWorkflow(workspaceId, currentAgentId ?? '');
+	const detachWorkflowMutation = useDetachAgentWorkflow(workspaceId, currentAgentId ?? '');
 
-	// Add an App drawer states
+	// What there is to attach: the global node catalog, and this workspace's
+	// workflows.
+	const { data: nodeCatalog } = useGlobalNodeCatalog();
+	const { data: workspaceWorkflows } = useWorkflows(workspaceId);
+
+	// Add a Tool drawer states
 	const [isAddAppOpen, setIsAddAppOpen] = useState(false);
 	const [appSearchQuery, setAppSearchQuery] = useState('');
-	const [appCategory, setAppCategory] = useState<'all' | 'custom'>('all');
+	const [toolTab, setToolTab] = useState<'nodes' | 'workflows'>('nodes');
 
 	// Saving and dropdown states
 	const [isSaving, setIsSaving] = useState(false);
@@ -574,19 +679,6 @@ const BuildPage = () => {
 		{ value: 'rainbow', bgClass: 'bg-gradient-to-tr from-primary-400 via-emerald-500 to-rose-500' },
 	];
 
-	const availableApps = [
-		{ id: 'slack', name: 'Slack', desc: 'Connect Slack channels and send notifications.', icon: MessageSquare, iconBg: 'bg-rose-500', isConnected: true },
-		{ id: 'airtable', name: 'Airtable', desc: 'Read and write data to Airtable bases.', icon: Database, iconBg: 'bg-blue-400', isConnected: true },
-		{ id: 'gmail', name: 'Gmail', desc: 'Send and read emails directly.', icon: Mail, iconBg: 'bg-red-500', isConnected: true },
-		{ id: 'google-sheets', name: 'Google Sheets', desc: 'Create and update spreadsheet rows.', icon: FileSpreadsheet, iconBg: 'bg-emerald-500', isConnected: true },
-		{ id: 'google-drive', name: 'Google Drive', desc: 'Search and read files from Google Drive.', icon: HardDrive, iconBg: 'bg-blue-600', isConnected: true },
-		{ id: 'google-calendar', name: 'Google Calendar', desc: 'Create calendar events.', icon: Calendar, iconBg: 'bg-blue-500', isConnected: true },
-		{ id: 'google-docs', name: 'Google Docs', desc: 'Create, read and update documents.', icon: FileText, iconBg: 'bg-blue-500', isConnected: true },
-		{ id: 'google-slides', name: 'Google Slides', desc: 'Generate presentation slides.', icon: FileText, iconBg: 'bg-amber-500', isConnected: true },
-		{ id: 'google-ads', name: 'Google Ads', desc: 'Create search keyword campaigns.', icon: TrendingUp, iconBg: 'bg-blue-500', isConnected: true },
-		{ id: 'google-search-console', name: 'Google Search Console', desc: 'Check search engine optimization details.', icon: Search, iconBg: 'bg-blue-500', isConnected: true },
-		{ id: 'google-bigquery', name: 'Google BigQuery', desc: 'Run SQL analytics on datasets.', icon: Database, iconBg: 'bg-primary-400', isConnected: true },
-	];
 
 	const getIconColorClass = (color: string) => {
 		switch (color) {
@@ -710,7 +802,41 @@ const BuildPage = () => {
 		startPreview(matchedName, matchedIcon, matchedColor, greeting);
 	};
 
-// Sends a message to the real agent — persists the agent first if this is
+	/**
+	 * Files an `export_artifact` call produced during a turn, as download chips.
+	 *
+	 * The SSE `tool-result` event carries only the tool's id and name, not its
+	 * return value, so the artifact ids are not on the wire. They are read back
+	 * from `artifacts.index` instead, which returns one row per filename group
+	 * at its newest version — see ArtifactController::index's latestPerGroup().
+	 */
+	const appendExportedArtifacts = async (agentId: string, filenames: string[]) => {
+		try {
+			const { artifacts } = await ArtifactService.list(workspaceId, {
+				agent_id: agentId,
+				per_page: 50,
+			});
+			const byFilename = new Map(artifacts.map((a) => [a.filename, a]));
+			const items = Array.from(new Set(filenames))
+				.map((filename) => byFilename.get(filename))
+				.filter((a): a is TArtifact => !!a)
+				.map((a) => ({
+					kind: 'artifact' as const,
+					id: a.id,
+					filename: a.filename,
+					version: a.version,
+					mimeType: a.mime_type,
+					size: a.size,
+				}));
+
+			if (items.length > 0) setTimeline((prev) => [...prev, ...items]);
+		} catch {
+			// A failed lookup costs the download chip, not the reply — the file is
+			// stored either way and still shows on the workspace's Artifacts page.
+		}
+	};
+
+	// Sends a message to the real agent — persists the agent first if this is
 	// still an unsaved draft, then starts or continues its conversation.
 	const sendChatMessage = async (messageText: string) => {
 		const trimmed = messageText.trim();
@@ -730,95 +856,112 @@ const BuildPage = () => {
 		try {
 			const agentIdForRun = await ensureAgentPersisted();
 
-			if (!echo) {
-				throw new Error('Realtime connection unavailable — check your connection and try again.');
+			// Conversations are "sessions" in this backend. The old API created one
+			// implicitly with the first message and handed its id back on the reply;
+			// here it is an explicit resource — created once, then reused for every
+			// later turn so the agent keeps the thread's history.
+			let sessionId = conversationId;
+			if (!sessionId) {
+				// Sessions are stored untitled unless the client names one, which
+				// would leave the aside's Recents list a wall of "Untitled chat".
+				const created = await AgentSessionService.create(workspaceId, agentIdForRun, {
+					title: trimmed.slice(0, 60),
+				});
+				sessionId = String(created.id);
+				// This transcript is already on screen — keep the loader off it.
+				loadedSessionRef.current = sessionId;
+				openSession(sessionId);
 			}
 
-			// Conversations are "sessions" in this backend: create one, then post the
-			// message to it (the old API created a conversation and sent in one call).
-			const sessionId =
-				conversationId ??
-				(await AgentSessionService.create(workspaceId, agentIdForRun)).id;
-			await AgentSessionService.sendMessage(
+			// Filenames exported during this turn, resolved to artifacts once it ends.
+			const exportedFilenames: string[] = [];
+			let replyText = '';
+			let sawComplete = false;
+
+			// The reply arrives as server-sent events on `.../messages/stream` — the
+			// old backend broadcast it over Echo instead, which this one never does.
+			for await (const event of AgentSessionService.streamMessage(
 				workspaceId,
 				agentIdForRun,
 				sessionId,
 				{ message: trimmed },
-			);
-
-			// The reply streams over the session channel
-			// (workspaces.{ws}.agent-sessions.{session}); we resolve on "ready".
-			await new Promise<void>((resolve, reject) => {
-				const unsubscribe = subscribeToAgentStream(echo, workspaceId, sessionId, {
-					onTextDelta: (event) => {
-						setTimeline((prev) => {
-							const last = prev[prev.length - 1];
-							if (last && last.kind === 'text') {
-								return [...prev.slice(0, -1), { ...last, text: last.text + event.delta }];
-							}
-							return [...prev, { kind: 'text', id: event.id, text: event.delta }];
-						});
-					},
-					onToolCall: (event) => {
-						setTimeline((prev) => [
-							...prev,
-							{
-								kind: 'tool',
-								id: event.tool_id,
-								toolName: event.tool_name,
-								arguments: event.arguments,
-								status: 'running',
-							},
-						]);
-					},
-					onToolResult: (event) => {
-						setTimeline((prev) =>
-							prev.map((item) =>
-								item.kind === 'tool' && item.id === event.tool_id
-									? { ...item, status: event.successful ? 'done' : 'error' }
-									: item,
-							),
-						);
-					},
-					onArtifact: (event) => {
-						setTimeline((prev) => [
-							...prev,
-							{
-								kind: 'artifact',
-								id: event.id,
-								filename: event.filename,
-								version: event.version,
-								mimeType: event.mime_type,
-								size: event.size,
-							},
-						]);
-					},
-					onReady: (event) => {
-						unsubscribe();
-
-						if (event.error) {
-							reject(new Error(event.error_message || 'The agent failed to respond.'));
-							return;
+			)) {
+				if (event.event === 'delta') {
+					setTimeline((prev) => {
+						const last = prev[prev.length - 1];
+						if (last && last.kind === 'text') {
+							return [...prev.slice(0, -1), { ...last, text: last.text + event.delta }];
 						}
+						return [...prev, { kind: 'text', id: `text-${prev.length}`, text: event.delta }];
+					});
+					continue;
+				}
 
-						if (!conversationId && event.conversation_id) {
-							setConversationId(event.conversation_id);
-						}
+				if (event.event === 'tool-call') {
+					const args = (event.arguments ?? {}) as Record<string, unknown>;
+					if (event.name === EXPORT_ARTIFACT_TOOL && typeof args.filename === 'string') {
+						exportedFilenames.push(args.filename);
+					}
+					setTimeline((prev) => [
+						...prev,
+						{
+							kind: 'tool',
+							id: event.id,
+							toolName: event.name,
+							arguments: args,
+							status: 'running',
+						},
+					]);
+					continue;
+				}
 
-						const finishedTimeline = streamTimelineRef.current;
-						const agentMsg: TMessage = {
-							id: 'agent-' + Date.now(),
-							sender: 'agent',
-							text: event.response,
-							timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-							type: 'text',
-							timeline: finishedTimeline.length > 0 ? finishedTimeline : undefined,
-						};
-						setChatHistory((prev) => [...prev, agentMsg]);
-						resolve();
-					},
-				});
-			});
+				if (event.event === 'tool-result') {
+					// Only a tool that returned is reported; one that threw ends the
+					// turn with `error` instead, so reaching here means success.
+					setTimeline((prev) =>
+						prev.map((item) =>
+							item.kind === 'tool' && item.id === event.id ? { ...item, status: 'done' } : item,
+						),
+					);
+					continue;
+				}
+
+				if (event.event === 'complete') {
+					sawComplete = true;
+					// The persisted reply. Same string the deltas spell out, and the
+					// fallback when a provider streamed none.
+					replyText = event.text ?? replyText;
+					continue;
+				}
+
+				if (event.event === 'error') {
+					throw new Error(event.message || 'The agent failed to respond.');
+				}
+			}
+
+			if (!sawComplete) {
+				throw new Error('The connection dropped before the agent finished replying.');
+			}
+
+			if (exportedFilenames.length > 0) {
+				await appendExportedArtifacts(agentIdForRun, exportedFilenames);
+			}
+
+			const finishedTimeline = streamTimelineRef.current;
+			const streamedText = finishedTimeline
+				.filter((item) => item.kind === 'text')
+				.map((item) => item.text)
+				.join('');
+
+			const agentMsg: TMessage = {
+				id: 'agent-' + Date.now(),
+				sender: 'agent',
+				text: replyText || streamedText,
+				timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+				type: 'text',
+				timeline: finishedTimeline.length > 0 ? finishedTimeline : undefined,
+			};
+			setChatHistory((prev) => [...prev, agentMsg]);
 		} catch (err) {
 			setChatHistory((prev) => [
 				...prev,
@@ -857,24 +1000,35 @@ const BuildPage = () => {
 	};
 
 	// Add selected app to active connected apps
-	const handleAddAppFromList = (app: typeof availableApps[0]) => {
-		if (connectedApps.some((a) => a.id === app.id)) {
-			toast.info(`${app.name} is already added!`);
+	/** Tools need a saved agent to hang off — same rule as skills and triggers. */
+	const openToolDrawer = async () => {
+		await ensureAgentPersisted();
+		setAppSearchQuery('');
+		setToolTab('nodes');
+		setIsAddAppOpen(true);
+	};
+
+	const handleAttachNode = (node: TBuiltinNode) => {
+		if (!currentAgentId) return;
+		if ((toolBindings ?? []).some((binding) => binding.node_type === node.type)) {
+			toast.info(`${node.name} is already attached.`);
 			return;
 		}
+		createToolBindingMutation.mutate(
+			{ node_type: node.type },
+			{ onSuccess: () => toast.success(`${node.name} attached.`) },
+		);
+	};
 
-		const newApp = {
-			id: app.id,
-			name: app.name,
-			desc: app.desc,
-			icon: app.icon,
-			iconBg: app.iconBg,
-			isConnected: true,
-		};
-
-		setConnectedApps((prev) => [...prev, newApp]);
-		toast.success(`${app.name} connected successfully!`);
-		setIsAddAppOpen(false);
+	const handleAttachWorkflow = (workflow: TWorkflow) => {
+		if (!currentAgentId) return;
+		if ((workflowTools ?? []).some((attached) => String(attached.id) === String(workflow.id))) {
+			toast.info(`${workflow.name} is already attached.`);
+			return;
+		}
+		attachWorkflowMutation.mutate(String(workflow.id), {
+			onSuccess: () => toast.success(`${workflow.name} attached.`),
+		});
 	};
 
 	// Filter templates based on dynamic active tab state, limited to first 3
@@ -884,15 +1038,29 @@ const BuildPage = () => {
 			: agentTemplates.filter((template) => template.categories?.includes(activeTab))
 	).slice(0, 3);
 
-	// Filter available apps based on search query
-	const filteredAvailableApps = availableApps.filter((app) => {
-		const matchesSearch = app.name.toLowerCase().includes(appSearchQuery.toLowerCase()) || 
-		                      app.desc.toLowerCase().includes(appSearchQuery.toLowerCase());
-		if (appCategory === 'custom') {
-			return matchesSearch && app.id === 'slack'; // mock custom category
-		}
-		return matchesSearch;
-	});
+	// Drawer contents for whichever tab is showing, minus what's already attached.
+	const attachedNodeTypes = new Set((toolBindings ?? []).map((binding) => binding.node_type));
+	const attachedWorkflowIds = new Set((workflowTools ?? []).map((w) => String(w.id)));
+	const toolQuery = appSearchQuery.trim().toLowerCase();
+
+	const attachableNodes = (nodeCatalog ?? []).filter(
+		(node) =>
+			!attachedNodeTypes.has(node.type) &&
+			(!toolQuery ||
+				node.name.toLowerCase().includes(toolQuery) ||
+				node.description.toLowerCase().includes(toolQuery)),
+	);
+
+	const attachableWorkflows = (workspaceWorkflows ?? []).filter(
+		(workflow) =>
+			!attachedWorkflowIds.has(String(workflow.id)) &&
+			(!toolQuery ||
+				workflow.name.toLowerCase().includes(toolQuery) ||
+				(workflow.description ?? '').toLowerCase().includes(toolQuery)),
+	);
+
+	/** Node metadata for an attached binding, so a row can show a real name. */
+	const nodeFor = (nodeType: string) => (nodeCatalog ?? []).find((node) => node.type === nodeType);
 
 	const AgentIconComponent = agentIcon;
 
@@ -1229,7 +1397,10 @@ const BuildPage = () => {
 												<button
 													onClick={() => {
 														setIsMoreDropdownOpen(false);
-														setConversationId(null);
+														// Leaves the stored session intact — it stays in the
+														// aside's Recents; the next message opens a new one.
+														newSession();
+														loadedSessionRef.current = null;
 														const greeting = `Hi! I'm your ${agentName}. How can I help you today?`;
 														setChatHistory([
 															{
@@ -1255,7 +1426,10 @@ const BuildPage = () => {
 															description: agentDescription,
 															instructions: agentInstructions,
 															color: agentIconColor,
-															connectedApps: connectedApps.filter(app => app.isConnected).map(app => app.name),
+															tools: [
+																...(toolBindings ?? []).map((b) => nodeFor(b.node_type)?.name ?? b.node_type),
+																...(workflowTools ?? []).map((w) => w.name),
+															],
 														};
 														const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(agentConfig, null, 2));
 														const downloadAnchor = document.createElement('a');
@@ -2102,58 +2276,89 @@ const BuildPage = () => {
 													<Layers size={14} />
 												</div>
 												<div className='flex items-center gap-2'>
-													<h4 className='text-xs font-black text-zinc-900 dark:text-white'>Apps</h4>
-													<span className='inline-flex items-center gap-1 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/5 px-2 py-0.5 rounded-full'>
-														<span className='h-1.5 w-1.5 rounded-full bg-emerald-500' />
-														<span>AI Discovery: ON</span>
+													<h4 className='text-xs font-black text-zinc-900 dark:text-white'>Tools</h4>
+													<span className='inline-flex items-center gap-1 text-[9px] font-bold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800/60 px-2 py-0.5 rounded-full'>
+														<span>{(toolBindings ?? []).length + (workflowTools ?? []).length} attached</span>
 													</span>
 												</div>
 											</div>
-											<button 
-												onClick={() => {
-													setAppSearchQuery('');
-													setAppCategory('all');
-													setIsAddAppOpen(true);
-												}} 
+											<button
+												onClick={openToolDrawer}
 												className='flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black text-primary-600 hover:bg-zinc-50 dark:border-primary-500/20 dark:bg-zinc-900 dark:text-primary-400 dark:hover:bg-zinc-800'>
 												<Plus size={10} />
-												<span>App</span>
+												<span>Tool</span>
 											</button>
 										</div>
 
-										{/* App List */}
+										{/* Attached tools — node bindings first, then whole workflows */}
+										{(toolBindings ?? []).length === 0 && (workflowTools ?? []).length === 0 && (
+											<p className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 pl-9'>
+												Attach nodes or workflows to let this agent act outside the chat.
+											</p>
+										)}
+
 										<div className='space-y-2 pl-9'>
-											{connectedApps.map((app) => {
-												const AppIcon = app.icon;
+											{(toolBindings ?? []).map((binding) => {
+												const node = nodeFor(binding.node_type);
 												return (
-													<div key={app.id} className='flex items-center justify-between py-2 border-b border-zinc-100 dark:border-zinc-800/80 last:border-0'>
+													<div
+														key={binding.id}
+														className='flex items-center justify-between py-2 border-b border-zinc-100 dark:border-zinc-800/80 last:border-0'>
 														<div className='flex items-center gap-3'>
-															<div className={`flex h-8 w-8 items-center justify-center rounded-lg ${app.iconBg} text-white`}>
-																<AppIcon size={15} />
+															<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500 text-white'>
+																<Wrench size={15} />
 															</div>
 															<div className='flex flex-col'>
-																<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>{app.name}</span>
-																<span className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 leading-tight mt-0.5'>{app.desc}</span>
+																<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
+																	{node?.name ?? binding.node_type}
+																</span>
+																<span className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 leading-tight mt-0.5'>
+																	{node?.description ?? binding.node_type}
+																</span>
+																{/* A node that talks to a third party is inert until the
+																    workspace has credentials for it. */}
+																{node?.requires_connector && (
+																	<span className='mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-bold text-amber-600 dark:bg-amber-500/5 dark:text-amber-400'>
+																		Needs a connector credential
+																	</span>
+																)}
 															</div>
 														</div>
-														<div className='flex items-center gap-2'>
-															{!app.isConnected && app.id === 'google-docs' ? (
-																<button
-																	onClick={() => {
-																		setConnectedApps(prev => prev.map(a => a.id === 'google-docs' ? { ...a, isConnected: true } : a));
-																		toast.success('Google Docs connected successfully!');
-																	}}
-																	className='px-2.5 py-1 border border-primary-200 text-primary-600 bg-primary-50 text-[10px] font-bold rounded-lg hover:bg-primary-100 dark:border-primary-500/20 dark:bg-primary-400/10 dark:text-primary-400 animate-pulse'>
-																	Connect
-																</button>
-															) : (
-																<ChevronRight size={14} className='text-zinc-400' />
-															)}
-															<button className='text-zinc-400 hover:text-zinc-700 p-1 dark:hover:text-zinc-200'><MoreHorizontal size={14}/></button>
-														</div>
+														<button
+															onClick={() => deleteToolBindingMutation.mutate(String(binding.id))}
+															title='Remove tool'
+															className='cursor-pointer p-1 text-zinc-400 hover:text-red-500 dark:hover:text-red-400'>
+															<Trash2 size={14} />
+														</button>
 													</div>
 												);
 											})}
+
+											{(workflowTools ?? []).map((workflow) => (
+												<div
+													key={workflow.id}
+													className='flex items-center justify-between py-2 border-b border-zinc-100 dark:border-zinc-800/80 last:border-0'>
+													<div className='flex items-center gap-3'>
+														<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-primary-500 text-white'>
+															<GitMerge size={15} />
+														</div>
+														<div className='flex flex-col'>
+															<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
+																{workflow.name}
+															</span>
+															<span className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 leading-tight mt-0.5'>
+																{workflow.description || 'Workflow, callable as one tool.'}
+															</span>
+														</div>
+													</div>
+													<button
+														onClick={() => detachWorkflowMutation.mutate(String(workflow.id))}
+														title='Remove tool'
+														className='cursor-pointer p-1 text-zinc-400 hover:text-red-500 dark:hover:text-red-400'>
+														<Trash2 size={14} />
+													</button>
+												</div>
+											))}
 										</div>
 									</div>
 
@@ -2604,7 +2809,7 @@ const BuildPage = () => {
 						>
 							{/* Drawer Header */}
 							<div className='flex h-16 shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-5 dark:border-white/10 dark:bg-zinc-900'>
-								<h3 className='text-[16px] font-black text-zinc-900 dark:text-white'>Add an app</h3>
+								<h3 className='text-[16px] font-black text-zinc-900 dark:text-white'>Add a tool</h3>
 								<button
 									onClick={() => setIsAddAppOpen(false)}
 									className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-500 dark:hover:bg-zinc-800'>
@@ -2622,82 +2827,110 @@ const BuildPage = () => {
 											type='text'
 											value={appSearchQuery}
 											onChange={(e) => setAppSearchQuery(e.target.value)}
-											placeholder='Search 98 apps'
+											placeholder={
+												toolTab === 'nodes'
+													? `Search ${(nodeCatalog ?? []).length} nodes`
+													: `Search ${(workspaceWorkflows ?? []).length} workflows`
+											}
 											className='flex-1 bg-transparent px-2.5 text-xs font-semibold text-zinc-900 placeholder:text-zinc-400 outline-none border-none focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
 										/>
 									</div>
 
-									{/* Filter Tabs (All / Custom) */}
+									{/* The two kinds of tool this backend supports */}
 									<div className='flex bg-zinc-100 rounded-lg p-0.5 dark:bg-zinc-950/45 shrink-0'>
 										<button
-											onClick={() => setAppCategory('all')}
+											onClick={() => setToolTab('nodes')}
 											className={`px-3 py-1.5 text-[10px] font-black rounded-md transition ${
-												appCategory === 'all'
+												toolTab === 'nodes'
 													? 'bg-white text-zinc-900 shadow-2xs dark:bg-zinc-800 dark:text-white'
 													: 'text-zinc-400 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-300'
 											}`}>
-											All
+											Nodes
 										</button>
 										<button
-											onClick={() => setAppCategory('custom')}
+											onClick={() => setToolTab('workflows')}
 											className={`px-3 py-1.5 text-[10px] font-black rounded-md transition ${
-												appCategory === 'custom'
+												toolTab === 'workflows'
 													? 'bg-white text-zinc-900 shadow-2xs dark:bg-zinc-800 dark:text-white'
 													: 'text-zinc-400 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-300'
 											}`}>
-											Custom
+											Workflows
 										</button>
 									</div>
 								</div>
 							</div>
 
-							{/* Apps List Scrollable */}
+							{/* Attachable tools. Each row attaches on click — there is no
+							    staged selection to save, so the drawer has no footer. */}
 							<div className='flex-1 overflow-y-auto p-4 space-y-3 dark:bg-zinc-950/10'>
-								<h4 className='text-[10px] font-black text-zinc-400 uppercase tracking-widest pl-1'>All apps</h4>
-								
+								<h4 className='text-[10px] font-black text-zinc-400 uppercase tracking-widest pl-1'>
+									{toolTab === 'nodes' ? 'Available nodes' : 'Workspace workflows'}
+								</h4>
+
 								<div className='space-y-1.5'>
-									{filteredAvailableApps.map((app) => {
-										const AppIcon = app.icon;
-										return (
+									{toolTab === 'nodes' &&
+										attachableNodes.map((node) => (
 											<div
-												key={app.id}
+												key={node.type}
 												className='flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/40 transition'>
 												<div className='flex items-center gap-3'>
-													<div className={`flex h-8 w-8 items-center justify-center rounded-lg ${app.iconBg} text-white shadow-2xs`}>
-														<AppIcon size={16} />
+													<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500 text-white shadow-2xs'>
+														<Wrench size={16} />
 													</div>
 													<div className='flex flex-col'>
-														<span className='text-xs font-black text-zinc-900 dark:text-zinc-100'>{app.name}</span>
-														{/* Add description in mock detail */}
-														<span className='text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 mt-0.5 leading-tight'>{app.desc}</span>
+														<span className='text-xs font-black text-zinc-900 dark:text-zinc-100'>
+															{node.name}
+														</span>
+														<span className='text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 mt-0.5 leading-tight'>
+															{node.description}
+														</span>
 													</div>
 												</div>
 												<button
-													onClick={() => handleAddAppFromList(app)}
-													className='flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 active:scale-90 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white transition shadow-2xs'>
+													onClick={() => handleAttachNode(node)}
+													disabled={createToolBindingMutation.isPending}
+													className='flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 active:scale-90 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white transition shadow-2xs'>
 													<Plus size={14} />
 												</button>
 											</div>
-										);
-									})}
-									{filteredAvailableApps.length === 0 && (
+										))}
+
+									{toolTab === 'workflows' &&
+										attachableWorkflows.map((workflow) => (
+											<div
+												key={workflow.id}
+												className='flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/40 transition'>
+												<div className='flex items-center gap-3'>
+													<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-primary-500 text-white shadow-2xs'>
+														<GitMerge size={16} />
+													</div>
+													<div className='flex flex-col'>
+														<span className='text-xs font-black text-zinc-900 dark:text-zinc-100'>
+															{workflow.name}
+														</span>
+														<span className='text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 mt-0.5 leading-tight'>
+															{workflow.description || 'No description provided.'}
+														</span>
+													</div>
+												</div>
+												<button
+													onClick={() => handleAttachWorkflow(workflow)}
+													disabled={attachWorkflowMutation.isPending}
+													className='flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 active:scale-90 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white transition shadow-2xs'>
+													<Plus size={14} />
+												</button>
+											</div>
+										))}
+
+									{((toolTab === 'nodes' && attachableNodes.length === 0) ||
+										(toolTab === 'workflows' && attachableWorkflows.length === 0)) && (
 										<div className='text-center py-8 text-xs font-bold text-zinc-400 dark:text-zinc-500'>
-											No apps match "{appSearchQuery}"
+											{appSearchQuery.trim()
+												? `Nothing matches "${appSearchQuery}"`
+												: 'Everything here is already attached.'}
 										</div>
 									)}
 								</div>
-							</div>
-
-							{/* Save Footer Bar */}
-							<div className='p-3 border-t border-zinc-200 bg-zinc-50 dark:border-white/10 dark:bg-zinc-900 flex justify-center'>
-								<button
-									onClick={() => {
-										toast.success('App selections saved!');
-										setIsAddAppOpen(false);
-									}}
-									className='w-full max-w-[380px] flex h-10 items-center justify-center gap-2 rounded-xl bg-zinc-500 text-white font-bold text-xs shadow-md shadow-zinc-500/20 hover:bg-zinc-600 transition active:scale-95 dark:bg-zinc-700 dark:hover:bg-zinc-600 dark:shadow-none'>
-									<span>Save ⌘ S</span>
-								</button>
 							</div>
 						</motion.div>
 					</>

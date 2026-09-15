@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { TUploadArtifactDto, TUpdateArtifactAccessDto, TShareArtifactDto } from '@/types/artifact.type';
 import { ArtifactService, downloadArtifact } from './artifacts.service';
+import type { TArtifactListParams } from './artifacts.service';
 import { artifactKeys } from './artifacts.keys';
 
-export const useArtifacts = (ws: string, params?: { page?: number; per_page?: number }) =>
+export const useArtifacts = (ws: string, params?: TArtifactListParams) =>
 	useQuery({
 		queryKey: artifactKeys.list(ws, params),
 		queryFn: ({ signal }) => ArtifactService.list(ws, params, signal),

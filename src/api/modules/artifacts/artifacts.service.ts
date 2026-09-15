@@ -9,8 +9,19 @@ import type {
 } from '@/types/artifact.type';
 import { ArtifactEndpoints as E } from './artifacts.endpoints';
 
+/** Filters `ArtifactController::index` accepts. */
+export type TArtifactListParams = {
+	page?: number;
+	per_page?: number;
+	/** Only artifacts this agent exported — member uploads have no agent. */
+	agent_id?: string;
+	/** Filename LIKE match. */
+	search?: string;
+	mime_category?: string;
+};
+
 export const ArtifactService = {
-	list: (ws: string, params?: { page?: number; per_page?: number }, signal?: AbortSignal) =>
+	list: (ws: string, params?: TArtifactListParams, signal?: AbortSignal) =>
 		axiosClient
 			.get<TApiResponse<TArtifact[]> & { meta: TPaginationMeta }>(E.list(ws), { params, signal })
 			.then((r) => ({ artifacts: r.data.data, meta: r.data.meta })),

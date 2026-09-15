@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import {
 	ArrowLeft,
@@ -12,13 +12,36 @@ import {
 	ListFilter,
 	MoreVertical,
 	Bot,
+	Loader2,
+	Trash2,
 } from 'lucide-react';
 import Icon from '@/components/icon/Icon';
 import Aside, { AsideBody, AsideFooter } from '@/components/layout/Aside';
 import useAsideStatus from '@/hooks/useAsideStatus';
 import { useAuth } from '@/context/auth';
+import { useConfirm } from '@/context/confirm';
 import { useGlobalSearchStore } from '@/store/globalSearch.store';
+import { useAgentChatStore } from '@/store/agentChat.store';
+import { useAgentSessions, useDeleteAgentSession } from '@/api/modules/agents';
+import type { TAgentSession } from '@/types/agent.type';
 import GlobalSearch from '@/templates/search/GlobalSearch.template';
+
+/** A session is created untitled when the builder can't name it; the first
+ *  message normally supplies the title. */
+const sessionTitle = (session: TAgentSession) => session.title?.trim() || 'Untitled chat';
+
+/** Coarse "when" label for the Recents list — exact times aren't useful here. */
+const relativeDay = (iso: string | null) => {
+	if (!iso) return '';
+	const then = new Date(iso);
+	if (Number.isNaN(then.getTime())) return '';
+
+	const days = Math.floor((Date.now() - then.getTime()) / 86_400_000);
+	if (days <= 0) return 'Today';
+	if (days === 1) return 'Yesterday';
+	if (days < 7) return `${days} days ago`;
+	return then.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+};
 
 const AppAsideTemplate = () => {
 	const navigate = useNavigate();
@@ -29,7 +52,38 @@ const AppAsideTemplate = () => {
 	const { asideStatus, setAsideStatus } = useAsideStatus();
 	const closeAside = () => setAsideStatus(false);
 	const { userData } = useAuth();
+	const { confirm } = useConfirm();
 	const [recentSearch, setRecentSearch] = useState('');
+
+	// The builder publishes which agent (and chat) is on screen — see
+	// store/agentChat.store.ts.
+	const { agentId, sessionId, openSession, newSession } = useAgentChatStore();
+	const { data: sessions, isLoading: isLoadingSessions } = useAgentSessions(
+		workspaceId ?? '',
+		agentId ?? '',
+	);
+	const deleteSessionMutation = useDeleteAgentSession(workspaceId ?? '', agentId ?? '');
+
+	const recentSessions = useMemo(() => {
+		const query = recentSearch.trim().toLowerCase();
+		const rows = sessions ?? [];
+		if (!query) return rows;
+		return rows.filter((session) => sessionTitle(session).toLowerCase().includes(query));
+	}, [sessions, recentSearch]);
+
+	const handleDeleteSession = async (session: TAgentSession) => {
+		const confirmed = await confirm({
+			title: 'Delete chat',
+			message: `"${sessionTitle(session)}" and its messages will be permanently deleted.`,
+			confirmText: 'Delete',
+		});
+		if (!confirmed) return;
+
+		// Clear the transcript first: deleting the chat that is on screen would
+		// otherwise leave the builder showing messages that no longer exist.
+		if (String(session.id) === String(sessionId)) newSession();
+		deleteSessionMutation.mutate(String(session.id));
+	};
 
 	return (
 		<Aside className='border-e border-zinc-200/80 bg-white dark:border-zinc-800/80 dark:bg-zinc-950'>
@@ -82,9 +136,13 @@ const AppAsideTemplate = () => {
 					{asideStatus && <span>Go back</span>}
 				</button>
 
-				{/* New Chat Button */}
+				{/* New Chat Button — the session itself is created by the first message */}
 				<div className='px-3'>
-					<button className='flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-2 text-xs font-black text-zinc-700 shadow-2xs transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800'>
+					<button
+						onClick={newSession}
+						disabled={!agentId}
+						title={agentId ? 'Start a new chat' : 'Open an agent to start a chat'}
+						className='flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-2 text-xs font-black text-zinc-700 shadow-2xs transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800'>
 						<Plus size={14} />
 						{asideStatus && <span>New Chat</span>}
 					</button>
@@ -150,9 +208,63 @@ const AppAsideTemplate = () => {
 							</div>
 						</div>
 					)}
-					{/* Scrollable list content placeholder */}
 					{asideStatus && (
-						<div className='mx-3 mt-3 h-24 overflow-y-auto rounded-xl border border-dashed border-zinc-200 bg-zinc-50/30 dark:border-zinc-800 dark:bg-zinc-900/10' />
+						<div className='mx-3 mt-3 max-h-56 overflow-y-auto'>
+							{!agentId && (
+								<p className='rounded-xl border border-dashed border-zinc-200 px-3 py-4 text-center text-[10px] font-bold text-zinc-400 dark:border-zinc-800 dark:text-zinc-500'>
+									Open an agent to see its chats.
+								</p>
+							)}
+
+							{agentId && isLoadingSessions && (
+								<div className='flex items-center justify-center py-5 text-zinc-400'>
+									<Loader2 size={14} className='animate-spin' />
+								</div>
+							)}
+
+							{agentId && !isLoadingSessions && recentSessions.length === 0 && (
+								<p className='rounded-xl border border-dashed border-zinc-200 px-3 py-4 text-center text-[10px] font-bold text-zinc-400 dark:border-zinc-800 dark:text-zinc-500'>
+									{recentSearch.trim() ? 'No chats match that search.' : 'No chats yet.'}
+								</p>
+							)}
+
+							<div className='flex flex-col gap-0.5'>
+								{recentSessions.map((session) => {
+									const isOpen = String(session.id) === String(sessionId);
+									return (
+										<div
+											key={session.id}
+											className={`group flex items-center gap-1 rounded-xl px-2.5 py-2 transition ${
+												isOpen
+													? 'bg-primary-400/10 dark:bg-primary-400/10'
+													: 'hover:bg-zinc-50/80 dark:hover:bg-zinc-900'
+											}`}>
+											<button
+												onClick={() => openSession(String(session.id))}
+												className='min-w-0 flex-1 text-left'>
+												<p
+													className={`truncate text-xs font-bold ${
+														isOpen
+															? 'text-primary-600 dark:text-primary-400'
+															: 'text-zinc-700 dark:text-zinc-300'
+													}`}>
+													{sessionTitle(session)}
+												</p>
+												<p className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+													{relativeDay(session.last_activity_at ?? session.created_at)}
+												</p>
+											</button>
+											<button
+												onClick={() => handleDeleteSession(session)}
+												title='Delete chat'
+												className='shrink-0 cursor-pointer rounded-lg p-1 text-zinc-400 opacity-0 transition group-hover:opacity-100 hover:text-red-500'>
+												<Trash2 size={12} />
+											</button>
+										</div>
+									);
+								})}
+							</div>
+						</div>
 					)}
 				</div>
 			</AsideBody>
