@@ -15,7 +15,12 @@ const agentEditorPages = pages.agentEditor.subPages as TPages;
 const dashboardRelativePath = workspacePages.dashboard.to.replace(`${pages.workspace.to}/`, '');
 
 const DashboardLayout = lazy(() => import('@/pages/coreapp/Dashboard/_layouts/Dashboard.layout'));
+const DashboardPage = lazy(() => import('@/pages/coreapp/Dashboard/Dashboard.page'));
 const PlaybooksLayout = lazy(() => import('@/pages/coreapp/Playbooks/_layouts/Playbooks.layout'));
+const WorkflowsListPage = lazy(() => import('@/pages/coreapp/Playbooks/WorkflowsList.page'));
+const WorkflowEditorPage = lazy(
+	() => import('@/pages/coreapp/Playbooks/WorkflowEditor/WorkflowEditor.page'),
+);
 const AgentsLayout = lazy(() => import('@/pages/coreapp/Agents/_layouts/Agents.layout'));
 const AgentsListPage = lazy(() => import('@/pages/coreapp/Agents/AgentsList.page'));
 const AgentBuilderPage = lazy(
@@ -55,7 +60,7 @@ const CoreAppPages = [
 				children: [
 					{
 						index: true,
-						element: <UnderConstructionPage />,
+						element: <DashboardPage />,
 					},
 					{
 						path: dashboardPages.runStats.to,
@@ -77,19 +82,7 @@ const CoreAppPages = [
 				children: [
 					{
 						index: true,
-						element: <UnderConstructionPage />,
-					},
-					{
-						path: playbookEditorPages.add.to,
-						element: <UnderConstructionPage />,
-					},
-					{
-						path: playbookEditorPages.edit.to,
-						element: <UnderConstructionPage />,
-					},
-					{
-						path: playbookEditorPages.view.to,
-						element: <UnderConstructionPage />,
+						element: <WorkflowsListPage />,
 					},
 				],
 			},
@@ -169,6 +162,24 @@ const CoreAppPages = [
 				element: <UnderConstructionPage />,
 			},
 		],
+	},
+	/**
+	 * Same reasoning as the agent builder below: the workflow editor renders its own
+	 * full-height shell (canvas + topbar + panels) and must not sit inside the core
+	 * app layout. It carries no wrapper element of its own - the page mounts
+	 * `WorkflowEditorLayout` itself, exactly as `editorPages` did in the old frontend.
+	 */
+	{
+		path: playbookEditorPages.add.to,
+		element: <WorkflowEditorPage />,
+	},
+	{
+		path: `${playbookEditorPages.edit.to}/:workflowId`,
+		element: <WorkflowEditorPage />,
+	},
+	{
+		path: `${playbookEditorPages.view.to}/:workflowId`,
+		element: <WorkflowEditorPage />,
 	},
 	{
 		/**

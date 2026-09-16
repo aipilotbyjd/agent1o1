@@ -13,7 +13,10 @@ const CoreAppLayout = () => {
 	const { workspaceId } = useParams<{ workspaceId: string }>();
 	const { workspaces, isLoading } = useWorkspaceContext();
 
-	if (!isLoading && !workspaces.some((w) => w.id === workspaceId)) {
+	// Ids are typed `string` here but Laravel sends them as numbers, so the raw
+	// comparison never matched and every workspace bounced straight back to the
+	// chooser.
+	if (!isLoading && !workspaces.some((w) => String(w.id) === String(workspaceId))) {
 		return <Navigate to={pages.choose.to} replace />;
 	}
 

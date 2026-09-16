@@ -68,3 +68,8 @@ export const useMoveAgentsToFolder = (ws: string) => {
 		meta: { errorMessage: 'Failed to move agents' },
 	});
 };
+
+// ── Ported-frontend adapter ───────────────────────────────────────────────────
+/** Old name for `useMoveWorkflowsToFolder`; kept so the ported workflows list
+ *  needed no changes. */
+export const useMoveWorkflows = useMoveWorkflowsToFolder;
