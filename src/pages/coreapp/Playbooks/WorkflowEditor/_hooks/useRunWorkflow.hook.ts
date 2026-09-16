@@ -1,12 +1,13 @@
 import { useRef } from 'react';
-import { WorkflowService, useWorkflow } from '@/api/modules/workflows';
+import { useWorkflow } from '@/api/modules/workflows';
 import {
-	ExecutionService,
-	subscribeToExecution,
-	type IExecutionNodeEvent,
-} from '@/api/modules/executions';
+	RunService,
+	subscribeToRun,
+	type IRunStateChangedEvent,
+	type INodeRunStateChangedEvent,
+} from '@/api/modules/runs';
+import type { TNodeRunDetail, TRunStatus } from '@/types/run.type';
 import { useRealtime } from '@/context/realtime';
-import type { TExecution } from '@/types/execution.type';
 import { createId } from '../_context/WorkflowEditorStore.context';
 import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
 import { getRunOrder } from '../_helper/runGraph.helper';
@@ -19,7 +20,7 @@ import {
 	type TNodeOutputs,
 } from '../_helper/runtime.helper';
 import { getNodeDefinition } from '../_helper/nodeCatalog.constants';
-import type { TNodeRunRecord, TRunLog, TRunRecord } from '../_types/run.type';
+import type { TNodeRunRecord, TRunRecord } from '../_types/run.type';
 import type { TNodeRunStatus } from '../_types/node.type';
 import { notify } from '@/api/core/notify';
 
@@ -32,17 +33,15 @@ const MAX_POLL_ATTEMPTS = 150;
 /** How long a breakpoint waits for a manual step before auto-continuing. */
 const BREAKPOINT_TIMEOUT_MS = 60_000;
 
-/**
- * Map a backend node-step status onto the editor's local run status. Steps report
- * `success` (the run reports `completed`); both are mapped so either shape works.
- */
+/** Map a backend node-run status onto the editor's local run status. */
 const API_NODE_STATUS_MAP: Record<string, TNodeRunStatus> = {
-	success: 'success',
 	completed: 'success',
 	failed: 'error',
+	cancelled: 'error',
 	running: 'running',
 	pending: 'queued',
-	queued: 'queued',
+	awaiting_approval: 'queued',
+	awaiting_callback: 'queued',
 	skipped: 'skipped',
 };
 
@@ -56,15 +55,12 @@ const errorText = (error: unknown): string | undefined => {
 	return undefined;
 };
 
-/** Shape of a single node result returned by the executions API. */
-type TApiNodeResult = {
-	node_run_key?: string;
-	status?: string;
-	duration_ms?: number;
-	error?: { message?: string };
-	input_data?: unknown;
-	output_data?: unknown;
-};
+const ACTIVE_RUN_STATUSES = new Set<TRunStatus>([
+	'pending',
+	'running',
+	'awaiting_approval',
+	'awaiting_callback',
+]);
 
 export const useRunWorkflow = () => {
 	const { state, dispatch } = useWorkflowEditor();
@@ -123,36 +119,38 @@ export const useRunWorkflow = () => {
 	};
 
 	/** Finalise a remote run: cancel on stop, otherwise flip status from the result. */
-	const finishRemoteRun = async (ws: string, executionId: string, status: string | undefined) => {
+	const finishRemoteRun = async (ws: string, runId: string, status: TRunStatus | undefined) => {
 		if (stopped.current) {
 			try {
-				await ExecutionService.cancel(ws, executionId);
+				await RunService.cancel(ws, runId);
 			} catch (e) {
-				console.error('Failed to cancel execution on backend:', e);
+				console.error('Failed to cancel run on backend:', e);
 			}
 			dispatch({ type: 'RUN_FINISH', status: 'stopped' });
 			return;
 		}
 
-		const finalStatus: 'success' | 'error' = status === 'completed' ? 'success' : 'error';
+		const finalStatus: 'success' | 'error' | 'stopped' =
+			status === 'completed' ? 'success' : status === 'cancelled' ? 'stopped' : 'error';
 		dispatch({ type: 'RUN_FINISH', status: finalStatus });
 		dispatch({
 			type: 'APPEND_LOG',
 			log: {
 				level: finalStatus === 'success' ? 'info' : 'error',
-				message: `Execution finished with status: ${status ?? 'unknown'}`,
+				message: `Run finished with status: ${status ?? 'unknown'}`,
 			},
 		});
 	};
 
 	/**
-	 * Realtime path: subscribe to the execution's private channel and mirror
-	 * `node.completed` / lifecycle events. Resolves with the final run status.
+	 * Realtime path: subscribe to the run's private channel and mirror
+	 * `run.state-changed` / `node-run.state-changed`. Resolves with the final
+	 * run status.
 	 */
-	const runViaRealtime = (channel: string, executionId: string) =>
-		new Promise<string>((resolve) => {
+	const runViaRealtime = (ws: string, runId: string) =>
+		new Promise<TRunStatus>((resolve) => {
 			let settled = false;
-			const settle = (status: string) => {
+			const settle = (status: TRunStatus) => {
 				if (settled) return;
 				settled = true;
 				unsubscribe();
@@ -161,91 +159,75 @@ export const useRunWorkflow = () => {
 				resolve(status);
 			};
 
-			const unsubscribe = subscribeToExecution(echo!, channel, {
-				onStarted: () =>
+			const unsubscribe = subscribeToRun(echo!, ws, runId, {
+				onRunState: (event: IRunStateChangedEvent) => {
+					if (event.status === 'completed' || event.status === 'failed' || event.status === 'cancelled') {
+						if (event.status === 'failed' && event.error) {
+							dispatch({
+								type: 'APPEND_LOG',
+								log: { level: 'error', message: errorText(event.error) ?? 'Run failed' },
+							});
+						}
+						settle(event.status);
+						return;
+					}
+					if (event.status === 'awaiting_approval' || event.status === 'awaiting_callback') {
+						dispatch({
+							type: 'APPEND_LOG',
+							log: { level: 'info', message: `Run paused: ${event.status}` },
+						});
+						return;
+					}
 					dispatch({
 						type: 'APPEND_LOG',
-						log: { level: 'info', message: `Execution ${executionId} started` },
-					}),
-				onNode: (event: IExecutionNodeEvent) =>
-					applyNodeResult(
-						event.node_id,
-						event.status,
-						event.duration_ms,
-						event.error,
-						event.output,
-						event.input,
-					),
-				onWaiting: (event) =>
-					dispatch({
-						type: 'APPEND_LOG',
-						log: { level: 'info', message: `Execution paused: ${event.reason ?? 'waiting'}` },
-					}),
-				onCompleted: (event) => settle(event.status ?? 'completed'),
-				onFailed: (event) => {
-					dispatch({
-						type: 'APPEND_LOG',
-						log: { level: 'error', message: errorText(event.error) ?? 'Execution failed' },
+						log: { level: 'info', message: `Run ${runId} ${event.status}` },
 					});
-					settle('failed');
 				},
+				onNodeState: (event: INodeRunStateChangedEvent) =>
+					applyNodeResult(event.key, event.status, undefined, event.error, undefined, undefined),
 			});
 
 			// Backstops: overall time cap, and a watcher so Stop tears the run down.
-			const safetyTimer = setTimeout(() => settle('timeout'), MAX_POLL_ATTEMPTS * POLL_INTERVAL_MS);
+			const safetyTimer = setTimeout(
+				() => settle('failed'),
+				MAX_POLL_ATTEMPTS * POLL_INTERVAL_MS,
+			);
 			const stopWatch = setInterval(() => {
-				if (stopped.current) settle('stopped');
+				if (stopped.current) settle('cancelled');
 			}, 500);
 		});
 
 	/** Polling path (used when no realtime connection is available). */
-	const runViaPolling = async (ws: string, executionId: string, initialStatus: string) => {
+	const runViaPolling = async (ws: string, runId: string, initialStatus: TRunStatus) => {
 		let status = initialStatus;
 		const poll = async () => {
 			if (stopped.current) return;
 			try {
-				const detail = await ExecutionService.detail(ws, executionId);
+				const detail = await RunService.detail(ws, runId);
 				status = detail.status;
 
-				const nodesData = await ExecutionService.nodes(ws, executionId);
-				const nodesList: TApiNodeResult[] = Array.isArray(nodesData)
-					? nodesData
-					: ((nodesData as { data?: TApiNodeResult[] })?.data ?? []);
-
-				for (const nodeRes of nodesList) {
-					if (!nodeRes.node_run_key) continue;
+				const nodeRuns: TNodeRunDetail[] = await RunService.nodeRuns(ws, runId);
+				for (const nodeRun of nodeRuns) {
 					applyNodeResult(
-						nodeRes.node_run_key,
-						nodeRes.status,
-						nodeRes.duration_ms,
-						nodeRes.error,
-						nodeRes.output_data,
-						nodeRes.input_data,
+						nodeRun.key,
+						nodeRun.status,
+						nodeRun.duration_ms ?? undefined,
+						nodeRun.error,
+						nodeRun.output,
+						nodeRun.input,
 					);
 				}
-
-				const logsData = await ExecutionService.logs(ws, executionId);
-				if (Array.isArray(logsData)) {
-					const mappedLogs: TRunLog[] = logsData.map((log, idx) => ({
-						id: `log_${idx}`,
-						nodeId: log.node_id,
-						level: log.level === 'warning' ? 'warn' : log.level === 'error' ? 'error' : 'info',
-						message: log.message,
-						at: new Date(log.timestamp).getTime(),
-					}));
-					dispatch({ type: 'SET_LOGS', logs: mappedLogs });
-				}
 			} catch (e) {
-				console.error('Error polling execution:', e);
+				console.error('Error polling run:', e);
 			}
 		};
 
 		let attempts = 0;
-		while ((status === 'running' || status === 'queued' || status === 'pending') && !stopped.current) {
+		while (ACTIVE_RUN_STATUSES.has(status) && !stopped.current) {
 			if (attempts >= MAX_POLL_ATTEMPTS) {
 				dispatch({
 					type: 'APPEND_LOG',
-					log: { level: 'warn', message: 'Stopped polling: execution did not finish in time.' },
+					log: { level: 'warn', message: 'Stopped polling: run did not finish in time.' },
 				});
 				break;
 			}
@@ -257,31 +239,28 @@ export const useRunWorkflow = () => {
 	};
 
 	/**
-	 * Drive a real backend execution. Prefers the realtime channel returned by the
-	 * execute call; falls back to polling when no Echo connection is configured.
+	 * Drive a real backend run. Prefers realtime when Echo is connected;
+	 * falls back to polling otherwise.
 	 */
 	const runRemoteWorkflow = async (ws: string, wfId: string) => {
 		try {
-			const { execution, channel } = await WorkflowService.execute(ws, wfId, {
-				trigger_data: {},
-			});
-			dispatch({ type: 'RUN_START', id: execution.id });
+			const run = await RunService.start(ws, wfId, { input: {} });
+			dispatch({ type: 'RUN_START', id: run.id });
 			dispatch({
 				type: 'APPEND_LOG',
 				log: {
 					level: 'info',
-					message: `Execution ${execution.id} started with status ${execution.status || 'running'}`,
+					message: `Run ${run.id} started with status ${run.status || 'running'}`,
 				},
 			});
 
-			const status =
-				echo && channel
-					? await runViaRealtime(channel, execution.id)
-					: await runViaPolling(ws, execution.id, (execution as TExecution).status);
+			const status = echo
+				? await runViaRealtime(ws, run.id)
+				: await runViaPolling(ws, run.id, run.status);
 
-			await finishRemoteRun(ws, execution.id, status);
+			await finishRemoteRun(ws, run.id, status);
 		} catch (error) {
-			const msg = error instanceof Error ? error.message : 'Failed to execute workflow';
+			const msg = error instanceof Error ? error.message : 'Failed to start run';
 			notify.error(msg);
 			dispatch({ type: 'RUN_FINISH', status: 'error' });
 		}

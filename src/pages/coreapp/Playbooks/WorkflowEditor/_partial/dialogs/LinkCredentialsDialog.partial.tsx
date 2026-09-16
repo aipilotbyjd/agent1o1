@@ -4,12 +4,13 @@ import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context
 import { getNodeDefinition } from '../../_helper/nodeCatalog.constants';
 import { useMemo, useState } from 'react';
 import {
-	useCredentials,
-	useConnectOAuthCredential,
-	useCreateCredential,
-} from '@/api/modules/credentials';
-import { useCredentialTypes } from '@/api/modules/credential-types';
-import type { TCredentialType } from '@/types/credentialType.type';
+	useConnectorCredentials,
+	useInitiateOAuthConnector,
+	useCreateConnectorCredential,
+	useConnectors,
+	connectorCredentialKeys,
+} from '@/api/modules/connectors';
+import type { TConnector } from '@/types/connector.type';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -20,13 +21,10 @@ const LinkCredentialsDialog = () => {
 
 	const { activeWorkspaceId } = useWorkspaceContext();
 	const queryClient = useQueryClient();
-	const { data: credentials = [] } = useCredentials(
-		activeWorkspaceId,
-		{ per_page: 100 },
-	);
-	const connectOAuthMutation = useConnectOAuthCredential(activeWorkspaceId);
-	const createCredentialMutation = useCreateCredential(activeWorkspaceId);
-	const { data: credentialTypes = [] } = useCredentialTypes({ per_page: 200 });
+	const { data: credentials = [] } = useConnectorCredentials(activeWorkspaceId);
+	const connectOAuthMutation = useInitiateOAuthConnector(activeWorkspaceId);
+	const createCredentialMutation = useCreateConnectorCredential(activeWorkspaceId);
+	const { data: connectorTypes = [] } = useConnectors();
 	const [selectedCredentials, setSelectedCredentials] = useState<Record<string, string>>({});
 	const [isConnecting, setIsConnecting] = useState<Record<string, boolean>>({});
 	// Inline "create credential" forms, keyed by node id.
@@ -34,14 +32,20 @@ const LinkCredentialsDialog = () => {
 		Record<string, { name: string; data: Record<string, string>; error?: string }>
 	>({});
 
-	// Look up a credential type definition by its key (e.g. "slack").
+	// Look up a connector definition by its key (e.g. "slack").
 	const credTypeByKey = useMemo(() => {
-		const map: Record<string, TCredentialType> = {};
-		credentialTypes.forEach((ct) => {
-			map[(ct.type || '').toLowerCase()] = ct;
+		const map: Record<string, TConnector> = {};
+		connectorTypes.forEach((ct) => {
+			map[(ct.key || '').toLowerCase()] = ct;
 		});
 		return map;
-	}, [credentialTypes]);
+	}, [connectorTypes]);
+
+	type TConnectorFieldsSchema = {
+		required?: string[];
+		properties?: Record<string, { label?: string; secret?: boolean; placeholder?: string; description?: string }>;
+	};
+	const fieldsSchemaOf = (ct?: TConnector) => (ct?.fields as TConnectorFieldsSchema | undefined) ?? undefined;
 
 	if (!open) return null;
 
@@ -91,22 +95,29 @@ const LinkCredentialsDialog = () => {
 		}
 	};
 
-	// "+ Connect New" — OAuth types open the provider popup; everything else
+	// "+ Connect New" — OAuth types open the provider's consent page in a new
+	// tab and refetch the credential list on window focus; everything else
 	// (api_key / basic) opens an inline form to enter the key/token manually.
 	const handleConnect = async (nodeId: string, credentialType: string) => {
 		const credType = credTypeByKey[credentialType.toLowerCase()];
 
-		if (credType?.auth_type === 'oauth') {
+		if (credType?.is_oauth) {
 			setIsConnecting((prev) => ({ ...prev, [nodeId]: true }));
 			try {
-				const res = await connectOAuthMutation.mutateAsync({ credentialType });
-				if (res.success && res.credentialId) {
-					handleLink(nodeId, res.credentialId);
-					queryClient.invalidateQueries({ queryKey: ['credentials', activeWorkspaceId] });
-				}
+				const { url } = await connectOAuthMutation.mutateAsync({
+					connector_id: credType.id,
+					name: `${credType.name} account`,
+					redirect_uri: window.location.href,
+				});
+				window.open(url, '_blank', 'noopener,noreferrer');
+				const onFocus = () => {
+					queryClient.invalidateQueries({ queryKey: connectorCredentialKeys.lists(activeWorkspaceId) });
+					window.removeEventListener('focus', onFocus);
+					setIsConnecting((prev) => ({ ...prev, [nodeId]: false }));
+				};
+				window.addEventListener('focus', onFocus);
 			} catch (error) {
 				console.error('OAuth connection error:', error);
-			} finally {
 				setIsConnecting((prev) => ({ ...prev, [nodeId]: false }));
 			}
 			return;
@@ -136,15 +147,11 @@ const LinkCredentialsDialog = () => {
 		}));
 	};
 
-	const submitCredentialForm = async (
-		nodeId: string,
-		credentialType: string,
-		credType?: TCredentialType,
-	) => {
+	const submitCredentialForm = async (nodeId: string, credType?: TConnector) => {
 		const form = forms[nodeId];
-		if (!form) return;
+		if (!form || !credType) return;
 
-		const required = credType?.fields_schema?.required ?? [];
+		const required = fieldsSchemaOf(credType)?.required ?? [];
 		const missing = required.filter((key) => !form.data[key]?.trim());
 		if (!form.name.trim() || missing.length > 0) {
 			setForms((prev) => ({
@@ -160,8 +167,8 @@ const LinkCredentialsDialog = () => {
 		setIsConnecting((prev) => ({ ...prev, [nodeId]: true }));
 		try {
 			const created = await createCredentialMutation.mutateAsync({
+				connector_id: credType.id,
 				name: form.name.trim(),
-				type: credentialType,
 				data: form.data,
 			});
 			handleLink(nodeId, created.id);
@@ -169,7 +176,7 @@ const LinkCredentialsDialog = () => {
 				const { [nodeId]: _omit, ...rest } = prev;
 				return rest;
 			});
-			queryClient.invalidateQueries({ queryKey: ['credentials', activeWorkspaceId] });
+			queryClient.invalidateQueries({ queryKey: connectorCredentialKeys.lists(activeWorkspaceId) });
 		} catch {
 			setForms((prev) => ({
 				...prev,
@@ -272,12 +279,12 @@ const LinkCredentialsDialog = () => {
 									const def = getNodeDefinition(node.data.defKey, node.data.definition);
 									const credentialType = getCredentialType(node, def);
 									const credType = credTypeByKey[credentialType.toLowerCase()];
-									const isOAuth = credType?.auth_type === 'oauth';
+									const isOAuth = Boolean(credType?.is_oauth);
 									const form = forms[node.id];
-									const fieldEntries = Object.entries(credType?.fields_schema?.properties ?? {});
+									const fieldEntries = Object.entries(fieldsSchemaOf(credType)?.properties ?? {});
 
 									const matchingCredentials = credentials.filter(
-										(c) => (c.type || '').toLowerCase() === credentialType.toLowerCase()
+										(c) => (c.connector?.key || '').toLowerCase() === credentialType.toLowerCase()
 									);
 
 									const isGoogle = node.data.defKey.includes('google') || credentialType.startsWith('google') || credentialType === 'gmail';
@@ -365,7 +372,7 @@ const LinkCredentialsDialog = () => {
 
 													{fieldEntries.map(([key, field]) => {
 														const isRequired = (
-															credType?.fields_schema?.required ?? []
+															fieldsSchemaOf(credType)?.required ?? []
 														).includes(key);
 														return (
 															<div key={key}>
@@ -393,19 +400,10 @@ const LinkCredentialsDialog = () => {
 													)}
 
 													<div className='flex items-center justify-end gap-2 pt-0.5'>
-														{credType?.docs_url && (
-															<a
-																href={credType.docs_url}
-																target='_blank'
-																rel='noreferrer'
-																className='mr-auto text-[10px] font-semibold text-primary-500 hover:underline'>
-																How to get this?
-															</a>
-														)}
 														<button
 															type='button'
 															disabled={isConnecting[node.id]}
-															onClick={() => submitCredentialForm(node.id, credentialType, credType)}
+															onClick={() => submitCredentialForm(node.id, credType)}
 															className='flex items-center justify-center rounded-lg bg-emerald-600 hover:bg-emerald-700 px-4 py-1.5 text-xs font-bold text-white shadow-xs transition active:scale-97 disabled:opacity-50'>
 															{isConnecting[node.id] ? 'Saving…' : 'Create & Link'}
 														</button>

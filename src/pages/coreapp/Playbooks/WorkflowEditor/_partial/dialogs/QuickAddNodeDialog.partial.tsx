@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { Box, Search, Sparkles } from 'lucide-react';
-import { useNodeCategories } from '@/api/modules/node-types';
+import { useNodeCategories } from '@/api/modules/catalog';
 import { mapApiCategoriesToGroups } from '../../_helper/apiNodeCatalog.helper';
 import { NODE_GROUPS } from '../../_helper/nodeGroups.constants';
 import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
@@ -17,9 +17,7 @@ const QuickAddNodeDialog = () => {
 		data: apiCategories,
 		isLoading: apiIsLoading,
 		isError: apiIsError,
-	} = useNodeCategories({
-		include_nodes: true,
-	});
+	} = useNodeCategories(true);
 
 	const apiGroups = useMemo(
 		() => (apiCategories?.length ? mapApiCategoriesToGroups(apiCategories) : []),

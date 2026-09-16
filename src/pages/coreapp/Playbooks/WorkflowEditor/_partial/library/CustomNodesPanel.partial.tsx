@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { AlertTriangle, PackageOpen } from 'lucide-react';
-import { useCustomNodes } from '@/api/modules/node-types';
+import { useCustomNodes } from '@/api/modules/nodes';
 import { mapApiNodeToDefinition } from '../../_helper/apiNodeCatalog.helper';
 import type { TNodeDefinition } from '../../_types/node.type';
 import { NodeRow, PanelLoader, RetryButton, StateMessage } from './LibraryItems.partial';

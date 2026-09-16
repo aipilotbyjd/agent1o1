@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { AlertTriangle } from 'lucide-react';
-import { useNodeCategory } from '@/api/modules/node-types';
+import { useNodeCategory } from '@/api/modules/catalog';
 import { mapApiCategoryToGroup } from '../../_helper/apiNodeCatalog.helper';
 import type { TNodeDefinition } from '../../_types/node.type';
 import { NodeRow, PanelLoader, RetryButton, StateMessage } from './LibraryItems.partial';
@@ -11,8 +11,9 @@ type Props = {
 	onAdd: (node: TNodeDefinition) => void;
 };
 
-const CategoryPanel = ({ categoryId, workspaceId, onAdd }: Props) => {
-	const { data, isLoading, isError, refetch } = useNodeCategory(categoryId, workspaceId);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const CategoryPanel = ({ categoryId, workspaceId: _workspaceId, onAdd }: Props) => {
+	const { data, isLoading, isError, refetch } = useNodeCategory(categoryId);
 	const group = useMemo(() => (data ? mapApiCategoryToGroup(data) : null), [data]);
 
 	if (isLoading) return <PanelLoader />;

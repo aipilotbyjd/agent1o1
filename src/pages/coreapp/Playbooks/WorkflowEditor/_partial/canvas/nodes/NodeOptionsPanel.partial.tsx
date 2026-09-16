@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { KeyRound, RefreshCw, SlidersHorizontal } from 'lucide-react';
-import { useCredentials, useRefreshCredentialToken } from '@/api/modules/credentials';
+import { useConnectorCredentials } from '@/api/modules/connectors';
 import { useWorkflowRouteParams } from '../../../_hooks/useWorkflowRouteParams.hook';
 import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
 import ConfigureInputsDialog from '../../dialogs/ConfigureInputsDialog.partial';
@@ -23,13 +24,18 @@ const NodeOptionsPanel = ({ nodeId, fields, credentialField, credentialId }: Pro
 	const { workspaceId } = useWorkflowRouteParams();
 	const [configureOpen, setConfigureOpen] = useState(false);
 
-	const { data: credentials = [], isLoading } = useCredentials(
-		workspaceId,
-		credentialField?.credentialType
-			? { type: credentialField.credentialType, per_page: 100 }
-			: { per_page: 100 },
-	);
-	const refreshToken = useRefreshCredentialToken(workspaceId);
+	const { data: allCredentials = [], isLoading } = useConnectorCredentials(workspaceId);
+
+	const credentials = credentialField?.credentialType
+		? allCredentials.filter((c) => c.connector?.key === credentialField.credentialType)
+		: allCredentials;
+
+	// No token-refresh endpoint on this backend; OAuth is re-initiated instead.
+	const refreshToken = useMutation({
+		mutationFn: (_credentialId: string): Promise<never> =>
+			Promise.reject(new Error('Refreshing a credential token is not supported by this backend')),
+		meta: { errorMessage: 'Token refresh is not supported yet' },
+	});
 
 	const selected = credentials.find((credential) => credential.id === credentialId);
 

@@ -5,7 +5,7 @@ import { useWorkflowRouteParams } from '../../_hooks/useWorkflowRouteParams.hook
 import { mapApiCategoriesToGroups } from '../../_helper/apiNodeCatalog.helper';
 import type { TNodeCategoryGroup } from '../../_helper/apiNodeCatalog.helper';
 import type { TNodeDefinition } from '../../_types/node.type';
-import { useNodeCategories } from '@/api/modules/node-types';
+import { useNodeCategories } from '@/api/modules/catalog';
 import NodeLibrarySearch from './NodeLibrarySearch.partial';
 import CategoryIcon from './CategoryIcon.partial';
 import { PanelLoader } from './LibraryItems.partial';

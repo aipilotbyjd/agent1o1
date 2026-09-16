@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
-import { useCredentials } from '@/api/modules/credentials';
+import { useConnectorCredentials } from '@/api/modules/connectors';
 import { useWorkspaceContext } from '@/context/workspace';
 import type { TNodeField } from '../../../_types/node.type';
 import ExpressionInput from './ExpressionInput.partial';
@@ -22,13 +22,14 @@ type FieldInputProps = {
 const CredentialFieldInput = ({ field, value, onChange, compact }: FieldInputProps) => {
 	const { activeWorkspaceId } = useWorkspaceContext();
 	const {
-		data: credentials = [],
+		data: allCredentials = [],
 		isLoading,
 		isError,
-	} = useCredentials(
-		activeWorkspaceId,
-		field.credentialType ? { type: field.credentialType, per_page: 100 } : { per_page: 100 },
-	);
+	} = useConnectorCredentials(activeWorkspaceId);
+
+	const credentials = field.credentialType
+		? allCredentials.filter((c) => c.connector?.key === field.credentialType)
+		: allCredentials;
 
 	const cls = compact ? compactInputClass : inputClass;
 

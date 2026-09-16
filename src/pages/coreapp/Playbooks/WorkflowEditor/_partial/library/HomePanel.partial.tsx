@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { AlertTriangle, PackageOpen } from 'lucide-react';
-import { useNodeCategories, useNodes, useRecentlyUsedNodes } from '@/api/modules/node-types';
+import { useNodeCategories } from '@/api/modules/catalog';
+import { useNodes, useRecentlyUsedNodes } from '@/api/modules/nodes';
 import {
 	mapApiCategoriesToGroups,
 	mapApiNodeToDefinition,
@@ -30,8 +31,8 @@ const HomePanel = ({ workspaceId, onSelectCategory, onAdd }: Props) => {
 	const { data: recentlyUsed, isLoading: recentLoading } = useRecentlyUsedNodes(workspaceId);
 
 	const recent = useMemo(() => recentlyUsed?.nodes ?? [], [recentlyUsed]);
-	const needsFallback = !workspaceId || (!recentLoading && recent.length === 0);
-	const { data: fallbackNodes } = useNodes({ per_page: FREQUENT_COUNT }, needsFallback);
+	const needsFallback = !recentLoading && recent.length === 0;
+	const { data: fallbackNodes } = useNodes(needsFallback ? workspaceId : '');
 
 	const groups = useMemo(() => mapApiCategoriesToGroups(categories ?? []), [categories]);
 	const coreGroups = useMemo(() => groups.filter((group) => group.kind === 'core'), [groups]);

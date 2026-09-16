@@ -1,5 +1,5 @@
 import { KeyRound } from 'lucide-react';
-import { useCredential } from '@/api/modules/credentials/credentials.hooks';
+import { useConnectorCredential } from '@/api/modules/connectors';
 import { useWorkflowRouteParams } from '../../../_hooks/useWorkflowRouteParams.hook';
 import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
 
@@ -9,7 +9,7 @@ type Props = { credentialId: string };
 const NodeCredentialBadge = ({ credentialId }: Props) => {
 	const { dispatch } = useWorkflowEditor();
 	const { workspaceId } = useWorkflowRouteParams();
-	const { data: credential, isLoading } = useCredential(workspaceId, credentialId);
+	const { data: credential, isLoading } = useConnectorCredential(workspaceId, credentialId);
 
 	if (isLoading || !credential) return null;
 
