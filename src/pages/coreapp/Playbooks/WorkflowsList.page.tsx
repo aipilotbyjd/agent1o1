@@ -303,8 +303,6 @@ const WorkflowsListPage = () => {
 				name: newWfTitle.trim(),
 				description: newWfDesc.trim() || undefined,
 				folder_id: newWfFolderId || undefined,
-				nodes: [],
-				connections: [],
 			});
 			if (newWfFolderId) setExpandedFolders((prev) => ({ ...prev, [newWfFolderId]: true }));
 			setNewWfTitle('');
@@ -323,8 +321,6 @@ const WorkflowsListPage = () => {
 		try {
 			const res = await createWorkflowMutation.mutateAsync({
 				name: 'Untitled Workflow',
-				nodes: [],
-				connections: [],
 			});
 			navigate(`${toWorkspacePath(pages.playbookEditor.subPages!.edit.to)}/${res.id}`);
 		} catch {
@@ -337,6 +333,7 @@ const WorkflowsListPage = () => {
 		if (!newFolderName.trim()) return;
 		try {
 			const res = await createFolderMutation.mutateAsync({
+				type: 'workflow',
 				name: newFolderName.trim(),
 				color: newFolderColor,
 			});
@@ -412,10 +409,7 @@ const WorkflowsListPage = () => {
 	const handleDuplicate = async (workflow: IWorkflow, e: React.MouseEvent) => {
 		e.stopPropagation();
 		try {
-			await duplicateWorkflowMutation.mutateAsync({
-				id: workflow.id,
-				body: { name: `${workflow.title} (Copy)` },
-			});
+			await duplicateWorkflowMutation.mutateAsync(workflow.id);
 			triggerToast(`Duplicated "${workflow.title}"`);
 		} catch {
 			// Error is surfaced by the mutation hook
