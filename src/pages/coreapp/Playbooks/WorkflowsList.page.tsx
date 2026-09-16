@@ -101,12 +101,8 @@ const formatDate = (value: number | string | null | undefined) => {
 	return date.toLocaleDateString();
 };
 
-const getAppNames = (nodes: { type?: string }[] | undefined) => {
-	const names = (nodes ?? [])
-		.map((node) => node.type?.toLowerCase())
-		.filter((type): type is string => Boolean(type));
-	return Array.from(new Set(names)).slice(0, 4);
-};
+const getAppNames = (nodeTypes: string[] | undefined) =>
+	(nodeTypes ?? []).map((type) => type.toLowerCase()).slice(0, 4);
 
 const AppBadge = ({ name }: { name: string }) => (
 	<span className='text-primary-600 shadow-3xs rounded-full border border-primary-100/60 bg-primary-50/30 px-2.5 py-0.5 text-[10px] font-bold capitalize transition-all duration-200 hover:border-primary-200/50 hover:bg-primary-50 dark:border-zinc-800/80 dark:bg-zinc-800/20 dark:text-primary-400 dark:hover:bg-primary-950/20'>
@@ -164,21 +160,21 @@ const WorkflowsListPage = () => {
 		}));
 	}, [apiFolders]);
 
-	// Map backend workflows → view model
+	// Map backend workflows → view model.
 	const workflows = useMemo<IWorkflow[]>(() => {
-		if (!apiWorkflowsResponse?.data || apiWorkflowsResponse.data.length === 0) return [];
-		return apiWorkflowsResponse.data.map((w): IWorkflow => {
+		if (!apiWorkflowsResponse || apiWorkflowsResponse.length === 0) return [];
+		return apiWorkflowsResponse.map((w): IWorkflow => {
 			return {
 				id: w.id,
 				title: w.name,
 				description: w.description || 'No description provided.',
-				status: w.is_active ? 'active' : 'inactive',
-				lastRun: formatDate(w.last_executed_at),
+				status: w.is_published ? 'active' : 'inactive',
+				lastRun: formatDate(w.last_run_at),
 				folderId: w.folder_id || null,
-				apps: getAppNames(w.nodes),
-				starred: w.is_favorite || false,
+				apps: getAppNames(w.node_types),
+				starred: w.is_favorite ?? false,
 				lastEdited: formatDate(w.updated_at),
-				nodesCount: w.nodes?.length ?? 0,
+				nodesCount: w.nodes_count ?? 0,
 			};
 		});
 	}, [apiWorkflowsResponse]);

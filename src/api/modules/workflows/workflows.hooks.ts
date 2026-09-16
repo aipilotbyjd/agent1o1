@@ -90,14 +90,15 @@ export const useDeactivateWorkflow = (_ws: string) =>
 		meta: { errorMessage: 'Deactivating a workflow is not supported yet' },
 	});
 
-/** This backend does not model favourites at all — `TWorkflow` carries no
- *  `is_favorite` field and there is no endpoint behind it. */
-export const useToggleFavorite = (_ws: string) =>
-	useMutation({
-		mutationFn: (_vars: { id: string; is_favorite: boolean }): Promise<never> =>
-			Promise.reject(new Error('Favouriting a workflow is not supported by this backend yet')),
-		meta: { errorMessage: 'Favourites are not supported yet' },
+export const useToggleFavorite = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({ id, is_favorite }: { id: string; is_favorite: boolean }) =>
+			WorkflowService.setFavorite(ws, id, is_favorite),
+		onSuccess: () => qc.invalidateQueries({ queryKey: workflowKeys.lists(ws) }),
+		meta: { errorMessage: 'Failed to update favorite' },
 	});
+};
 
 /** Old posted to the workflow itself; here a run is its own resource. */
 export const useExecuteWorkflow = (ws: string) => {

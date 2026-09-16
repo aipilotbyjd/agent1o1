@@ -55,4 +55,7 @@ export const WorkflowService = {
 		axiosClient
 			.delete<TApiResponse<{ node: TWorkflowNode }>>(E.unpinNode(ws, id, nodeId))
 			.then(unwrapKey<TWorkflowNode>('node')),
+
+	setFavorite: (ws: string, id: string, is_favorite: boolean) =>
+		axiosClient.patch(E.favorite(ws, id), { is_favorite }).then(() => undefined),
 };
