@@ -278,6 +278,16 @@ const identity: TPages = {
 		text: 'Signing in',
 		icon: 'Login03',
 	},
+	/**
+	 * Where an app-integration OAuth redirect lands — deliberately a separate
+	 * path from `oauthCallback`, which is social sign-in.
+	 */
+	connectorOAuthComplete: {
+		id: 'connectorOAuthComplete',
+		to: '/oauth/connector-complete',
+		text: 'Completing connection',
+		icon: 'Plug01',
+	},
 };
 
 const onboarding: TPage = {

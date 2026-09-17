@@ -30,6 +30,7 @@ const TrailLayout = lazy(() => import('@/pages/coreapp/Trail/_layouts/Trail.layo
 const SkillsLayout = lazy(() => import('@/pages/coreapp/Skills/_layouts/Skills.layout'));
 const SkillsListPage = lazy(() => import('@/pages/coreapp/Skills/SkillsList.page'));
 const AppsLayout = lazy(() => import('@/pages/coreapp/Apps/_layouts/Apps.layout'));
+const AppsListPage = lazy(() => import('@/pages/coreapp/Apps/AppsList.page'));
 const KnowledgeLayout = lazy(() => import('@/pages/coreapp/Knowledge/_layouts/Knowledge.layout'));
 const KnowledgeListPage = lazy(() => import('@/pages/coreapp/Knowledge/KnowledgeList.page'));
 const ArtifactsLayout = lazy(() => import('@/pages/coreapp/Artifacts/_layouts/Artifacts.layout'));
@@ -126,7 +127,7 @@ const CoreAppPages = [
 				children: [
 					{
 						index: true,
-						element: <UnderConstructionPage />,
+						element: <AppsListPage />,
 					},
 				],
 			},

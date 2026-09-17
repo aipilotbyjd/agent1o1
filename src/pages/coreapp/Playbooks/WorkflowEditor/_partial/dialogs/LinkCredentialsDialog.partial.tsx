@@ -5,7 +5,7 @@ import { getNodeDefinition } from '../../_helper/nodeCatalog.constants';
 import { useMemo, useState } from 'react';
 import {
 	useConnectorCredentials,
-	useInitiateOAuthConnector,
+	useConnectOAuthConnector,
 	useCreateConnectorCredential,
 	useConnectors,
 	connectorCredentialKeys,
@@ -22,7 +22,7 @@ const LinkCredentialsDialog = () => {
 	const { activeWorkspaceId } = useWorkspaceContext();
 	const queryClient = useQueryClient();
 	const { data: credentials = [] } = useConnectorCredentials(activeWorkspaceId);
-	const connectOAuthMutation = useInitiateOAuthConnector(activeWorkspaceId);
+	const connectOAuthMutation = useConnectOAuthConnector(activeWorkspaceId);
 	const createCredentialMutation = useCreateConnectorCredential(activeWorkspaceId);
 	const { data: connectorTypes = [] } = useConnectors();
 	const [selectedCredentials, setSelectedCredentials] = useState<Record<string, string>>({});
@@ -41,11 +41,20 @@ const LinkCredentialsDialog = () => {
 		return map;
 	}, [connectorTypes]);
 
-	type TConnectorFieldsSchema = {
-		required?: string[];
-		properties?: Record<string, { label?: string; secret?: boolean; placeholder?: string; description?: string }>;
+	/**
+	 * `connector.fields` is a JSON *array* of field descriptors server-side, but
+	 * the form below reads it as `{ required, properties }`. Derive that shape
+	 * instead of casting — the cast that used to live here quietly yielded an
+	 * object with no `properties`, so the form rendered no fields at all.
+	 */
+	const fieldsSchemaOf = (ct?: TConnector) => {
+		const fields = ct?.fields;
+		if (!fields?.length) return undefined;
+		return {
+			required: fields.filter((field) => field.required).map((field) => field.name),
+			properties: Object.fromEntries(fields.map((field) => [field.name, field])),
+		};
 	};
-	const fieldsSchemaOf = (ct?: TConnector) => (ct?.fields as TConnectorFieldsSchema | undefined) ?? undefined;
 
 	if (!open) return null;
 
@@ -95,29 +104,25 @@ const LinkCredentialsDialog = () => {
 		}
 	};
 
-	// "+ Connect New" — OAuth types open the provider's consent page in a new
-	// tab and refetch the credential list on window focus; everything else
-	// (api_key / basic) opens an inline form to enter the key/token manually.
+	// "+ Connect New" — OAuth types run the consent flow in a popup and settle
+	// when it reports back; everything else (api_key / basic) opens an inline
+	// form to enter the key/token manually.
 	const handleConnect = async (nodeId: string, credentialType: string) => {
 		const credType = credTypeByKey[credentialType.toLowerCase()];
 
 		if (credType?.is_oauth) {
 			setIsConnecting((prev) => ({ ...prev, [nodeId]: true }));
 			try {
-				const { url } = await connectOAuthMutation.mutateAsync({
+				await connectOAuthMutation.mutateAsync({
 					connector_id: credType.id,
 					name: `${credType.name} account`,
-					redirect_uri: window.location.href,
 				});
-				window.open(url, '_blank', 'noopener,noreferrer');
-				const onFocus = () => {
-					queryClient.invalidateQueries({ queryKey: connectorCredentialKeys.lists(activeWorkspaceId) });
-					window.removeEventListener('focus', onFocus);
-					setIsConnecting((prev) => ({ ...prev, [nodeId]: false }));
-				};
-				window.addEventListener('focus', onFocus);
+				queryClient.invalidateQueries({
+					queryKey: connectorCredentialKeys.lists(activeWorkspaceId),
+				});
 			} catch (error) {
 				console.error('OAuth connection error:', error);
+			} finally {
 				setIsConnecting((prev) => ({ ...prev, [nodeId]: false }));
 			}
 			return;

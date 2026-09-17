@@ -10,11 +10,14 @@ import pages, { TPages } from '@/Routes/pages';
 
 const WorkspaceListPage = lazy(() => import('@/pages/choose/WorkspaceList.page'));
 
+const OnboardingLayout = lazy(() => import('@/layouts/Onboarding.layout'));
+const OnboardingPage = lazy(() => import('@/pages/welcome/Onboarding.page'));
+const PricingPage = lazy(() => import('@/pages/welcome/Pricing.page'));
+const CreateWorkspacePage = lazy(() => import('@/pages/welcome/standalone/CreateWorkspace.page'));
+const InviteTeamPage = lazy(() => import('@/pages/welcome/standalone/InviteTeam.page'));
+
 /** `/onboarding`, plus its steps and `/pricing`. */
-const onboardingPages = {
-	root: pages.onboarding,
-	...(pages.onboarding.subPages as TPages),
-};
+const onboardingPages = pages.onboarding.subPages as TPages;
 
 const router = createBrowserRouter([
 	{
@@ -35,12 +38,28 @@ const router = createBrowserRouter([
 					 * Registered ahead of the workspace routes below: without these the
 					 * static `/onboarding` paths fall through to `/:workspaceId` and the
 					 * core app shell renders with "onboarding" as the workspace id.
-					 * Placeholders until the pages land, per `coreappPages`.
 					 */
-					...Object.values(onboardingPages).map((page) => ({
-						path: page.to,
-						element: <UnderConstructionPage />,
-					})),
+					{
+						element: <OnboardingLayout />,
+						children: [
+							{
+								path: pages.onboarding.to,
+								element: <OnboardingPage />,
+							},
+							{
+								path: onboardingPages.pricing.to,
+								element: <PricingPage />,
+							},
+							{
+								path: onboardingPages.createWorkspace.to,
+								element: <CreateWorkspacePage />,
+							},
+							{
+								path: onboardingPages.inviteTeam.to,
+								element: <InviteTeamPage />,
+							},
+						],
+					},
 					// Workspace (core app) routes
 					...CoreAppPages,
 					{

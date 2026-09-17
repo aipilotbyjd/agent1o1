@@ -2,10 +2,15 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { OnboardingService, onboardingKeys } from '@/api/modules/onboarding';
-import pages from '@/Routes/pages';
+import { UserService, userKeys } from '@/api/modules/user';
+import pages, { type TPages } from '@/Routes/pages';
 
-/** Where a fully onboarded user lands after signing in. */
-export const AFTER_AUTH_PATH = pages.workspace.to;
+/** Where a fully onboarded user lands after signing in. The dashboard is
+ *  workspace scoped, so this is the picker: the workspace id is only known
+ *  once the current user is loaded, and a user may not have one at all. */
+export const AFTER_AUTH_PATH = pages.choose.to;
+
+const dashboardPath = (pages.workspace.subPages as TPages).dashboard.to;
 
 // ============================================================
 // useAfterAuthRedirect
@@ -33,6 +38,26 @@ export const useAfterAuthRedirect = () => {
 			} catch {
 				// Onboarding state is advisory — a failure here must never
 				// strand a user who just authenticated successfully.
+			}
+
+			// Only resolve a workspace when nothing more specific was asked
+			// for: an explicit `fallback` is the page the user was bounced off.
+			if (fallback === AFTER_AUTH_PATH) {
+				try {
+					const user = await queryClient.fetchQuery({
+						queryKey: userKeys.current(),
+						queryFn: ({ signal }) => UserService.fetchMe(signal),
+					});
+
+					if (user.current_workspace_id) {
+						navigate(dashboardPath.replace(':workspaceId', user.current_workspace_id), {
+							replace: true,
+						});
+						return;
+					}
+				} catch {
+					// Fall through to the picker.
+				}
 			}
 
 			navigate(fallback, { replace: true });

@@ -7,7 +7,7 @@
 // ============================================================
 import type { TUser } from './auth.type';
 
-export type TWorkspaceRole = 'owner' | 'admin' | 'member';
+export type TWorkspaceRole = 'owner' | 'admin' | 'editor' | 'member' | 'viewer';
 
 /** Roles grantable via invite or role-update. Owner is derived from
  *  workspace ownership and can never be assigned directly. */
