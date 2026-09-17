@@ -29,7 +29,9 @@ export const ArtifactService = {
 		if (payload.group_id) form.append('group_id', payload.group_id);
 		if (payload.metadata) form.append('metadata', JSON.stringify(payload.metadata));
 		return axiosClient
-			.post<TApiResponse<{ artifact: TArtifact }>>(E.create(ws), form)
+			.post<TApiResponse<{ artifact: TArtifact }>>(E.create(ws), form, {
+				headers: { 'Content-Type': undefined },
+			})
 			.then(unwrapKey<TArtifact>('artifact'));
 	},
 

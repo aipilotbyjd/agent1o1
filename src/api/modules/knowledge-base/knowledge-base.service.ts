@@ -39,7 +39,9 @@ export const KnowledgeBaseService = {
 		if (payload.collection) form.append('collection', payload.collection);
 		if (payload.metadata) form.append('metadata', JSON.stringify(payload.metadata));
 		return axiosClient
-			.post<TApiResponse<TIngestKnowledgeResult>>(E.ingest(ws), form)
+			.post<TApiResponse<TIngestKnowledgeResult>>(E.ingest(ws), form, {
+				headers: { 'Content-Type': undefined },
+			})
 			.then((r) => r.data.data);
 	},
 
