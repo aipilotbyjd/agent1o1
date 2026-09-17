@@ -14,6 +14,8 @@ import {
 	Bot,
 	Loader2,
 	Trash2,
+	ChevronsLeft,
+	ChevronsRight,
 } from 'lucide-react';
 import Icon from '@/components/icon/Icon';
 import Aside, { AsideBody, AsideFooter } from '@/components/layout/Aside';
@@ -88,7 +90,10 @@ const AgentAsideTemplate = () => {
 	return (
 		<Aside className='border-e border-zinc-200/80 bg-white dark:border-zinc-800/80 dark:bg-zinc-950'>
 			{/* Sidebar Header */}
-			<div className='flex h-14 items-center justify-between border-b border-zinc-100 px-4 dark:border-zinc-800/80'>
+			<div
+				className={`flex h-14 items-center border-b border-zinc-100 dark:border-zinc-800/80 ${
+					asideStatus ? 'justify-between px-4' : 'justify-center px-2'
+				}`}>
 				<div className='flex items-center gap-2'>
 					{/* Logo */}
 					<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-primary-400 text-primary-950'>
@@ -104,59 +109,77 @@ const AgentAsideTemplate = () => {
 					<div className='flex items-center gap-2.5'>
 						<button
 							onClick={() => useGlobalSearchStore.getState().open()}
-							className='text-zinc-400 hover:text-zinc-950 dark:hover:text-white'>
+							className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'>
 							<Search size={15} />
 						</button>
 						<button
 							onClick={closeAside}
 							title='Collapse sidebar'
-							className='text-zinc-400 hover:text-zinc-950 dark:hover:text-white'>
-							<svg
-								width='16'
-								height='16'
-								viewBox='0 0 24 24'
-								fill='none'
-								stroke='currentColor'
-								strokeWidth='2.5'
-								strokeLinecap='round'
-								strokeLinejoin='round'>
-								<path d='m11 17-5-5 5-5M18 17l-5-5 5-5' />
-							</svg>
+							className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'>
+							<ChevronsLeft size={16} strokeWidth={2.5} />
 						</button>
 					</div>
 				)}
 			</div>
 
 			<AsideBody className='flex flex-col gap-4 py-4'>
+				{/* Collapsed rail has no header toggle (it's only rendered when expanded), so give it one here */}
+				{!asideStatus && (
+					<div className='flex justify-center px-3'>
+						<button
+							onClick={() => setAsideStatus(true)}
+							title='Expand sidebar'
+							className='flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'>
+							<ChevronsRight size={17} strokeWidth={2.5} />
+						</button>
+					</div>
+				)}
+
 				{/* Go Back button */}
 				<button
 					onClick={() => navigate(`/${workspaceId}/agents`)}
-					className='flex items-center gap-2.5 px-3 py-1 text-xs font-bold text-zinc-500 transition-colors hover:text-zinc-900 dark:hover:text-white'>
+					className={`flex items-center gap-2.5 py-1 text-xs font-bold text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white ${
+						asideStatus ? 'px-3' : 'w-full justify-center'
+					}`}>
 					<ArrowLeft size={15} />
 					{asideStatus && <span>Go back</span>}
 				</button>
 
 				{/* New Chat Button — the session itself is created by the first message */}
-				<div className='px-3'>
+				<div className={asideStatus ? 'px-3' : 'px-2'}>
 					<button
 						onClick={newSession}
 						disabled={!agentId}
 						title={agentId ? 'Start a new chat' : 'Open an agent to start a chat'}
-						className='flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-2 text-xs font-black text-zinc-700 shadow-2xs transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800'>
-						<Plus size={14} />
+						className={`flex w-full items-center gap-2.5 rounded-xl border border-zinc-200 bg-white py-2 text-xs font-black text-zinc-700 shadow-2xs transition hover:border-zinc-300 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 ${
+							asideStatus ? 'px-3' : 'justify-center'
+						}`}>
+						<span className='flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary-400 text-primary-950'>
+							<Plus size={14} strokeWidth={2.5} />
+						</span>
 						{asideStatus && <span>New Chat</span>}
 					</button>
 				</div>
 
 				{/* Navigation Items */}
 				<div className='flex flex-col gap-1 px-3'>
-					<button className='flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50/80 dark:text-zinc-300 dark:hover:bg-zinc-900'>
-						<Folder size={15} className='text-zinc-450 dark:text-zinc-500' />
-						{asideStatus && <span>Files Generated</span>}
+					<button className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50/80 dark:text-zinc-300 dark:hover:bg-zinc-900 ${asideStatus ? '' : 'w-full justify-center'}`}>
+						<span className='relative shrink-0'>
+							<Folder size={15} className='text-zinc-600 dark:text-zinc-400' />
+							{!asideStatus && (
+								<span className='absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-zinc-400 ring-2 ring-white dark:bg-zinc-500 dark:ring-zinc-950' />
+							)}
+						</span>
+						{asideStatus && <span className='truncate'>Files Generated</span>}
 					</button>
-					<button className='flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50/80 dark:text-zinc-300 dark:hover:bg-zinc-900'>
-						<Sparkles size={15} className='text-zinc-455 dark:text-zinc-500' />
-						{asideStatus && <span>Reflections</span>}
+					<button className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50/80 dark:text-zinc-300 dark:hover:bg-zinc-900 ${asideStatus ? '' : 'w-full justify-center'}`}>
+						<span className='relative shrink-0'>
+							<Sparkles size={15} className='text-zinc-600 dark:text-zinc-400' />
+							{!asideStatus && (
+								<span className='absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-zinc-400 ring-2 ring-white dark:bg-zinc-500 dark:ring-zinc-950' />
+							)}
+						</span>
+						{asideStatus && <span className='truncate'>Reflections</span>}
 					</button>
 				</div>
 
@@ -168,21 +191,41 @@ const AgentAsideTemplate = () => {
 						</h4>
 					)}
 					<div className='mt-2 flex flex-col gap-1'>
-						<button className='flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-650 transition hover:bg-zinc-50/80 dark:text-zinc-400 dark:hover:bg-zinc-900'>
-							<Mail size={14} />
-							{asideStatus && <span>Email</span>}
+						<button className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50/80 dark:text-zinc-400 dark:hover:bg-zinc-900 ${asideStatus ? '' : 'w-full justify-center'}`}>
+							<span className='relative shrink-0'>
+								<Mail size={15} className='text-zinc-600 dark:text-zinc-400' />
+								{!asideStatus && (
+									<span className='absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-zinc-400 ring-2 ring-white dark:bg-zinc-500 dark:ring-zinc-950' />
+								)}
+							</span>
+							{asideStatus && <span className='truncate'>Email</span>}
 						</button>
-						<button className='flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-650 transition hover:bg-zinc-50/80 dark:text-zinc-400 dark:hover:bg-zinc-900'>
-							<Icon icon='Slack' className='text-zinc-500 hover:text-zinc-950 dark:hover:text-white' style={{ fontSize: '14px' }} />
-							{asideStatus && <span>Slack</span>}
+						<button className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50/80 dark:text-zinc-400 dark:hover:bg-zinc-900 ${asideStatus ? '' : 'w-full justify-center'}`}>
+							<span className='relative shrink-0'>
+								<Icon icon='Slack' className='text-zinc-600 dark:text-zinc-400' style={{ fontSize: '15px' }} />
+								{!asideStatus && (
+									<span className='absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-zinc-400 ring-2 ring-white dark:bg-zinc-500 dark:ring-zinc-950' />
+								)}
+							</span>
+							{asideStatus && <span className='truncate'>Slack</span>}
 						</button>
-						<button className='flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-650 transition hover:bg-zinc-50/80 dark:text-zinc-400 dark:hover:bg-zinc-900'>
-							<MessageSquare size={14} />
-							{asideStatus && <span>Microsoft Teams</span>}
+						<button className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50/80 dark:text-zinc-400 dark:hover:bg-zinc-900 ${asideStatus ? '' : 'w-full justify-center'}`}>
+							<span className='relative shrink-0'>
+								<MessageSquare size={15} className='text-zinc-600 dark:text-zinc-400' />
+								{!asideStatus && (
+									<span className='absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-zinc-400 ring-2 ring-white dark:bg-zinc-500 dark:ring-zinc-950' />
+								)}
+							</span>
+							{asideStatus && <span className='truncate'>Microsoft Teams</span>}
 						</button>
-						<button className='flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-650 transition hover:bg-zinc-50/80 dark:text-zinc-400 dark:hover:bg-zinc-900'>
-							<Globe size={14} />
-							{asideStatus && <span>Hosted Page</span>}
+						<button className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50/80 dark:text-zinc-400 dark:hover:bg-zinc-900 ${asideStatus ? '' : 'w-full justify-center'}`}>
+							<span className='relative shrink-0'>
+								<Globe size={15} className='text-zinc-600 dark:text-zinc-400' />
+								{!asideStatus && (
+									<span className='absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-zinc-400 ring-2 ring-white dark:bg-zinc-500 dark:ring-zinc-950' />
+								)}
+							</span>
+							{asideStatus && <span className='truncate'>Hosted Page</span>}
 						</button>
 					</div>
 				</div>
@@ -273,7 +316,7 @@ const AgentAsideTemplate = () => {
 			<AsideFooter className='border-t border-zinc-100 p-4 dark:border-zinc-800/80'>
 				{asideStatus && (
 					<div className='mb-4 flex flex-col gap-2'>
-						<div className='flex items-center justify-between text-[10px] font-black text-zinc-550 dark:text-zinc-400'>
+						<div className='flex items-center justify-between text-[10px] font-black text-zinc-600 dark:text-zinc-400'>
 							<span>Credits Remaining</span>
 							<span>5.0k of 5.0k</span>
 						</div>
@@ -302,7 +345,7 @@ const AgentAsideTemplate = () => {
 								<div className='truncate text-xs font-bold text-zinc-950 dark:text-white'>
 									{userData?.name || 'Amaan'}
 								</div>
-								<div className='text-[10px] text-zinc-450 dark:text-zinc-500'>
+								<div className='text-[10px] text-zinc-400 dark:text-zinc-500'>
 									{userData?.role || 'Member'}
 								</div>
 							</div>
