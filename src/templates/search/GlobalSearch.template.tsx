@@ -107,8 +107,8 @@ const getFlattenedPageItems = (): TSearchItem[] => {
 		...getFlattenPages(pages.playbookEditor.subPages as TPages, pages.playbookEditor.id),
 		pages.agentEditor as TPage,
 		...getFlattenPages(pages.agentEditor.subPages as TPages, pages.agentEditor.id),
-		pages.onboarding as TPage,
-		...getFlattenPages(pages.onboarding.subPages as TPages, pages.onboarding.id),
+		pages.welcome as TPage,
+		...getFlattenPages(pages.welcome.subPages as TPages, pages.welcome.id),
 	];
 
 	const textById = new Map(flattenPages.map((p) => [p.id, p.text]));

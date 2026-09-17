@@ -120,7 +120,7 @@ const PricingPage = () => {
 							'Basic run history',
 						]}
 						cta='Start free'
-						to={pages.onboarding.subPages!.createWorkspace.to}
+						to={pages.welcome.subPages!.createWorkspace.to}
 					/>
 					<PricingCard
 						name='Pro'
@@ -136,7 +136,7 @@ const PricingPage = () => {
 							'Priority automation runs',
 						]}
 						cta='Choose Pro'
-						to={pages.onboarding.subPages!.createWorkspace.to}
+						to={pages.welcome.subPages!.createWorkspace.to}
 					/>
 					<PricingCard
 						name='Scale'
@@ -151,7 +151,7 @@ const PricingPage = () => {
 							'Workspace governance',
 						]}
 						cta='Talk to sales'
-						to={pages.onboarding.subPages!.inviteTeam.to}
+						to={pages.welcome.subPages!.inviteTeam.to}
 					/>
 				</div>
 
@@ -190,7 +190,7 @@ const PricingNav = () => (
 			</div>
 			<div className='flex items-center gap-3'>
 				<Link
-					to={pages.onboarding.subPages!.inviteTeam.to}
+					to={pages.welcome.subPages!.inviteTeam.to}
 					className='hidden text-sm font-bold text-slate-500 transition hover:text-slate-950 sm:block'>
 					Talk to sales
 				</Link>

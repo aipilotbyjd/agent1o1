@@ -61,7 +61,7 @@ const CreateWorkspacePage = () => {
 				});
 				notify.success(`Workspace "${workspace.name}" created`);
 				await switchWorkspace.mutateAsync({ workspace_id: workspace.id });
-				navigate(`${pages.onboarding.subPages!.inviteTeam.to}?workspaceId=${workspace.id}`);
+				navigate(`${pages.welcome.subPages!.inviteTeam.to}?workspaceId=${workspace.id}`);
 			} catch (error) {
 				if (ApiError.is(error)) {
 					const fieldErrors = error.fieldErrors();

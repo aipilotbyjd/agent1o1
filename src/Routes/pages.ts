@@ -290,10 +290,10 @@ const identity: TPages = {
 	},
 };
 
-const onboarding: TPage = {
-	id: 'onboarding',
+const welcome: TPage = {
+	id: 'welcome',
 	to: '/onboarding',
-	text: 'Onboarding',
+	text: 'Welcome',
 	icon: 'Rocket01',
 	subPages: {
 		pricing: {
@@ -331,7 +331,7 @@ const pages = {
 	workspaceSettings,
 	settings,
 	identity,
-	onboarding,
+	welcome,
 	choose,
 };
 

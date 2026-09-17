@@ -5,19 +5,11 @@ import Providers from '@/Providers/Providers';
 import Page404Page from '@/pages/Page404.page';
 import UnderConstructionPage from '@/pages/UnderConstruction.page';
 import IdentityPages from '@/Routes/appPages/identityPages';
+import WelcomePages from '@/Routes/appPages/welcomePages';
 import CoreAppPages from '@/Routes/appPages/coreappPages';
-import pages, { TPages } from '@/Routes/pages';
+import pages from '@/Routes/pages';
 
 const WorkspaceListPage = lazy(() => import('@/pages/choose/WorkspaceList.page'));
-
-const OnboardingLayout = lazy(() => import('@/layouts/Onboarding.layout'));
-const OnboardingPage = lazy(() => import('@/pages/welcome/Onboarding.page'));
-const PricingPage = lazy(() => import('@/pages/welcome/Pricing.page'));
-const CreateWorkspacePage = lazy(() => import('@/pages/welcome/standalone/CreateWorkspace.page'));
-const InviteTeamPage = lazy(() => import('@/pages/welcome/standalone/InviteTeam.page'));
-
-/** `/onboarding`, plus its steps and `/pricing`. */
-const onboardingPages = pages.onboarding.subPages as TPages;
 
 const router = createBrowserRouter([
 	{
@@ -34,32 +26,11 @@ const router = createBrowserRouter([
 						path: pages.choose.to,
 						element: <WorkspaceListPage />,
 					},
-					/**
-					 * Registered ahead of the workspace routes below: without these the
-					 * static `/onboarding` paths fall through to `/:workspaceId` and the
-					 * core app shell renders with "onboarding" as the workspace id.
-					 */
-					{
-						element: <OnboardingLayout />,
-						children: [
-							{
-								path: pages.onboarding.to,
-								element: <OnboardingPage />,
-							},
-							{
-								path: onboardingPages.pricing.to,
-								element: <PricingPage />,
-							},
-							{
-								path: onboardingPages.createWorkspace.to,
-								element: <CreateWorkspacePage />,
-							},
-							{
-								path: onboardingPages.inviteTeam.to,
-								element: <InviteTeamPage />,
-							},
-						],
-					},
+					// Welcome / onboarding routes — must come before the workspace routes
+					// below, or static paths like `/onboarding` fall through to
+					// `/:workspaceId` and the core app shell renders with "onboarding"
+					// as the workspace id. Auth-gated inside OnboardingLayout.
+					...WelcomePages,
 					// Workspace (core app) routes
 					...CoreAppPages,
 					{
