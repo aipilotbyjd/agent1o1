@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider } from 'react-router';
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router';
 import { lazy } from 'react';
 import Root from '@/Root';
 import Providers from '@/Providers/Providers';
@@ -10,6 +10,8 @@ import CoreAppPages from '@/Routes/appPages/coreappPages';
 import pages from '@/Routes/pages';
 
 const WorkspaceListPage = lazy(() => import('@/pages/choose/WorkspaceList.page'));
+const BillingSuccessPage = lazy(() => import('@/pages/billing/BillingSuccess.page'));
+const BillingCancelPage = lazy(() => import('@/pages/billing/BillingCancel.page'));
 
 const router = createBrowserRouter([
 	{
@@ -20,6 +22,12 @@ const router = createBrowserRouter([
 				path: '/',
 				element: <Root />,
 				children: [
+					// `/` itself has no page — send it to login, which bounces an
+					// already-authenticated visitor onward on its own.
+					{
+						index: true,
+						element: <Navigate to={pages.identity.login.to} replace />,
+					},
 					// Public routes
 					...IdentityPages,
 					{
@@ -36,6 +44,15 @@ const router = createBrowserRouter([
 					{
 						path: '/under-construction',
 						element: <UnderConstructionPage />,
+					},
+					// Stripe callback pages (full-screen, no layout)
+					{
+						path: '/billing/success',
+						element: <BillingSuccessPage />,
+					},
+					{
+						path: '/billing/cancel',
+						element: <BillingCancelPage />,
 					},
 					{
 						path: '*',

@@ -3,6 +3,7 @@ import { Navigate } from 'react-router';
 import CoreAppLayout from '@/layouts/CoreApp.layout';
 import AgentLayout from '@/layouts/Agent.layout';
 import UnderConstructionPage from '@/pages/UnderConstruction.page';
+import SettingsPages from '@/Routes/appPages/settingsPages';
 import pages, { TPages } from '@/Routes/pages';
 
 const workspacePages = pages.workspace.subPages as TPages;
@@ -27,6 +28,7 @@ const AgentBuilderPage = lazy(
 	() => import('@/pages/coreapp/Agents/AgentBuilder/AgentBuilder.page'),
 );
 const TrailLayout = lazy(() => import('@/pages/coreapp/Trail/_layouts/Trail.layout'));
+const HistoryListPage = lazy(() => import('@/pages/coreapp/Trail/HistoryList.page'));
 const SkillsLayout = lazy(() => import('@/pages/coreapp/Skills/_layouts/Skills.layout'));
 const SkillsListPage = lazy(() => import('@/pages/coreapp/Skills/SkillsList.page'));
 const AppsLayout = lazy(() => import('@/pages/coreapp/Apps/_layouts/Apps.layout'));
@@ -39,6 +41,8 @@ const BlueprintsLayout = lazy(
 	() => import('@/pages/coreapp/Blueprints/_layouts/Blueprints.layout'),
 );
 const BlueprintsListPage = lazy(() => import('@/pages/coreapp/Blueprints/BlueprintsList.page'));
+const VaultLayout = lazy(() => import('@/pages/coreapp/Vault/_layouts/Secrets.layout'));
+const SecretsPage = lazy(() => import('@/pages/coreapp/Vault/Secrets.page'));
 
 /**
  * Workspace scoped routes (`/:workspaceId/...`).
@@ -46,9 +50,9 @@ const BlueprintsListPage = lazy(() => import('@/pages/coreapp/Blueprints/Bluepri
  * Every screen lives under `CoreAppLayout` (aside + wrapper + suspense) and, where the
  * feature folder ships one, under its own `_layouts` shell from `@/pages/coreapp/*`.
  *
- * The leaf elements are `UnderConstructionPage` placeholders on purpose: the feature
- * folders under `@/pages/coreapp` only hold layouts so far. Swap each placeholder for the
- * real `*.page.tsx` as it lands - the paths stay owned by `@/Routes/pages`.
+ * The `UnderConstructionPage` leaves that remain (the dashboard sub-tabs) are
+ * placeholders on purpose - those feature folders hold no page yet. Swap each one for
+ * the real `*.page.tsx` as it lands; the paths stay owned by `@/Routes/pages`.
  */
 const CoreAppPages = [
 	{
@@ -107,7 +111,7 @@ const CoreAppPages = [
 				children: [
 					{
 						index: true,
-						element: <UnderConstructionPage />,
+						element: <HistoryListPage />,
 					},
 				],
 			},
@@ -162,10 +166,18 @@ const CoreAppPages = [
 				],
 			},
 			{
-				// No feature shell yet - rendered straight into the core app layout.
 				path: workspacePages.vault.to,
-				element: <UnderConstructionPage />,
+				element: <VaultLayout />,
+				children: [
+					{
+						index: true,
+						element: <SecretsPage />,
+					},
+				],
 			},
+			// `/:workspaceId/settings/...` - own file, same split the old frontend
+			// used, but nested here so settings keeps the aside and wrapper.
+			...SettingsPages,
 		],
 	},
 	/**

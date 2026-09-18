@@ -180,3 +180,25 @@ export type TCreditTransaction = {
 	reason: string | null;
 	created_at: string;
 };
+
+// ─── Ported from the old frontend ────────────────────────────
+// The billing UI copied over from `agent-1o1` talks to the old
+// pack-catalog / portal endpoints. These shapes are the old
+// backend's; the new contract above supersedes them once the
+// pages are rewired.
+
+export type TCreditPackCatalogItem = {
+	key: string;
+	label: string;
+	credits: number;
+	price_cents: number;
+	available: boolean;
+};
+
+export type TBuyCreditsDto = {
+	pack_key: string;
+};
+
+export type TBillingUrlResponse = {
+	url: string;
+};
