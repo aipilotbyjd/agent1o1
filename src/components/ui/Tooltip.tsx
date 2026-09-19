@@ -15,7 +15,7 @@ import {
 	FloatingArrow,
 	Placement,
 } from '@floating-ui/react';
-import { TBorderWidth } from '@/types/borderWidth.type';
+import { TBorderWidth } from '@/types/border-width.type';
 import { TRounded } from '@/types/rounded.type';
 import Icon from '@/components/icon/Icon';
 import Portal from '@/components/layout/Portal/Portal';

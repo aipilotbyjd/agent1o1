@@ -37,11 +37,14 @@ export const setNotifyAdapter = (next: TNotifyAdapter) => {
 	};
 };
 
-export const notify: TNotifyAdapter = {
+export const notify: TNotifyAdapter & {
+	fromError: (fallback: string) => (error: unknown) => void;
+} = {
 	success: (msg) => adapter.success(msg),
 	error: (msg) => adapter.error(msg),
 	info: (msg) => adapter.info(msg),
 	warn: (msg) => adapter.warn(msg),
+	fromError: (fallback) => (error) => adapter.error(messageFromError(error, fallback)),
 };
 
 export const messageFromError = (error: unknown, fallback: string): string =>

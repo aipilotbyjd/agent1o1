@@ -1,3 +1,0 @@
-```tsx
-<Select multiple {...rest} />
-```

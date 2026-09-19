@@ -5,7 +5,7 @@ import * as SvgIcon from './svg-icons';
 import * as Huge from './huge';
 import {TIcons} from '@/types/icons.type';
 import {TColors} from '@/types/colors.type';
-import {TFontSizes} from '@/types/fontSizes.type';
+import {TFontSizes} from '@/types/font-sizes.type';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface IRefWrapperProps extends Record<string, any> {

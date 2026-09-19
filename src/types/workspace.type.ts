@@ -7,7 +7,7 @@
 // ============================================================
 import type { TUser } from './auth.type';
 
-export type TWorkspaceRole = 'owner' | 'admin' | 'member';
+export type TWorkspaceRole = 'owner' | 'admin' | 'editor' | 'member' | 'viewer';
 
 /** Roles grantable via invite or role-update. Owner is derived from
  *  workspace ownership and can never be assigned directly. */
@@ -21,6 +21,8 @@ export type TWorkspace = {
 	owner_id: string;
 	owner: TUser | null;
 	role: TWorkspaceRole | null;
+	workflows_count?: number;
+	agents_count?: number;
 	created_at: string;
 	updated_at: string;
 };

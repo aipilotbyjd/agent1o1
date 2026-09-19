@@ -8,11 +8,11 @@ import { NavItem, NavSeparator } from '@/components/layout/Navigation/Nav';
 import DarkModeSwitcherPart from '@/parts/DarkModeSwitcher.part';
 import { AsideFooter } from '@/components/layout/Aside';
 import useAsideStatus from '@/hooks/useAsideStatus';
-import { useAuth } from '@/context/authContext';
+import { useAuth } from '@/context/auth';
 import useDarkMode from '@/hooks/useDarkMode';
 import { useTranslation } from 'react-i18next';
 import { useContext } from 'react';
-import ThemeContext from '@/context/themeContext';
+import ThemeContext from '@/context/theme';
 import LANG from '@/constants/lang.constant';
 import useFontSize from '@/hooks/useFontSize';
 import { useNavigate } from 'react-router';
@@ -150,22 +150,6 @@ const AsideFooterPart = () => {
 						</DropdownMenu>
 					</Dropdown>
 					<Button
-						icon='Book02'
-						variant='link'
-						aria-label='ınstallation'
-						onClick={() =>
-							navigate(pages.documentation.gettingStarted.subPages.installation.to)
-						}
-						className='!p-0'
-					/>
-					<Button
-						icon='ArtificialIntelligence08'
-						variant='link'
-						aria-label='View examples'
-						onClick={() => navigate(pages.examples.exampleMain.to)}
-						className='!p-0'
-					/>
-					<Button
 						icon='AiChat02'
 						variant='link'
 						aria-label='Quick view'
@@ -188,7 +172,7 @@ const AsideFooterPart = () => {
 					<NavItem
 						text='Log in'
 						icon='Login03'
-						onClick={() => navigate(pages.pagesExamples.login.to)}
+						onClick={() => navigate(pages.identity.login.to)}
 					/>
 				)}
 				<DarkModeSwitcherPart />

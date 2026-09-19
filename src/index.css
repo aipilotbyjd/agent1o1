@@ -28,10 +28,22 @@ layer(base);
 
 	--color-primary-foreground: var(--primary-foreground);
 
-	--color-zinc-100: var(--bg-base);
-	--color-zinc-200: var(--border-base);
-	--color-zinc-800: var(--text-primary);
-	--color-zinc-900: var(--text-primary);
+	/* The zinc scale is deliberately NOT remapped onto semantic tokens.
+	 *
+	 * The template pairs every zinc step across themes — `bg-zinc-100
+	 * dark:bg-zinc-900`, `text-zinc-800 dark:text-zinc-200` — so each step must
+	 * keep its literal lightness. Aliasing a step to a token that flips with the
+	 * theme inverts those pairs:
+	 *   zinc-800/900 -> --text-primary  (#fff in dark) turned ~355 dark
+	 *     surfaces white: the header bar, wrapper borders, corner strips.
+	 *   zinc-100/200 -> --bg-base/--border-base (near-black in dark) turned 130
+	 *     `dark:text-zinc-100/200` rules black — nav hover and active states.
+	 *
+	 * Semantic theming is available separately as bg-main / bg-card /
+	 * border-main / text-main below; use those, not the zinc scale.
+	 *
+	 * zinc-500/600 stay mapped: --text-secondary is a mid grey in both themes
+	 * (#667085 / #a1a5ab), so it does not invert. */
 	--color-zinc-500: var(--text-secondary);
 	--color-zinc-600: var(--text-secondary);
 

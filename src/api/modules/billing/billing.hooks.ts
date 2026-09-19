@@ -1,10 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { notify } from '@/api/core';
 import type {
 	TCheckoutSubscriptionDto,
 	TPreviewSubscriptionSwapDto,
 	TCheckoutCreditPackDto,
 	TUpdateCreditOverageDto,
 	TUpdateCreditNotificationsDto,
+	TBuyCreditsDto,
 } from '@/types/billing.type';
 import { BillingService } from './billing.service';
 import { billingKeys } from './billing.keys';
@@ -160,4 +162,36 @@ export const useCreateBillingPortalSession = (ws: string) =>
 	useMutation({
 		mutationFn: () => BillingService.createPortalSession(ws),
 		meta: { errorMessage: 'Failed to open billing portal' },
+	});
+
+// ─── Ported from the old frontend ──────────────────────────
+// Copied verbatim from `agent-1o1`'s billing module so the ported
+// billing screens run unchanged. They sit on the old backend's
+// pack-catalog and portal endpoints; the hooks above are the new
+// contract the screens should move onto.
+
+export const usePackCatalog = (ws: string) =>
+	useQuery({
+		queryKey: billingKeys.packCatalog(ws),
+		queryFn: ({ signal }) => BillingService.packCatalog(ws, signal),
+		enabled: !!ws,
+		staleTime: 5 * 60_000,
+	});
+
+export const useBuyCredits = (ws: string) =>
+	useMutation({
+		mutationFn: (body: TBuyCreditsDto) => BillingService.buyCredits(ws, body),
+		onSuccess: ({ url }) => {
+			window.location.href = url;
+		},
+		onError: notify.fromError('Failed to start credit purchase'),
+	});
+
+export const useBillingPortal = (ws: string) =>
+	useMutation({
+		mutationFn: () => BillingService.portal(ws),
+		onSuccess: ({ url }) => {
+			window.location.href = url;
+		},
+		onError: notify.fromError('Failed to open billing portal'),
 	});

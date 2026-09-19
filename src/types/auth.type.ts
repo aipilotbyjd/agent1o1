@@ -48,6 +48,7 @@ export type TResetPasswordDto = {
 
 export type TUpdateProfileDto = {
 	name?: string;
+	email?: string;
 };
 
 export type TChangePasswordDto = {
@@ -114,6 +115,7 @@ export type TAuthEvent = {
 // ─── API keys (workspace-scoped) ─────────────────────────────
 
 export type TApiKeyAbility =
+	| '*'
 	| 'workflows:read'
 	| 'workflows:write'
 	| 'runs:read'

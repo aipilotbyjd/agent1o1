@@ -1,9 +1,9 @@
 import DARK_MODE from '@/constants/darkMode.constant';
-import { TDarkMode } from '@/types/darkMode.type';
+import { TDarkMode } from '@/types/dark-mode.type';
 import { TRounded } from '@/types/rounded.type';
 import { TColors } from '@/types/colors.type';
-import { TColorIntensity } from '@/types/colorIntensities.type';
-import { TBorderWidth } from '@/types/borderWidth.type';
+import { TColorIntensity } from '@/types/color-intensities.type';
+import { TBorderWidth } from '@/types/border-width.type';
 import { TLang } from '@/types/lang.type';
 
 type TThemeConfigs = {
