@@ -10,7 +10,7 @@ import type {
 	IBuilderMessage,
 	IBuilderMessageReadyEvent,
 	IBuilderNodePosition,
-} from '@/types/workflowBuilder.type';
+} from '@/types/workflow-builder.type';
 import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
 import { useWorkflowRouteParams } from './useWorkflowRouteParams.hook';
 import {

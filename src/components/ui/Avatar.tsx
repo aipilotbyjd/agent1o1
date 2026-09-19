@@ -4,7 +4,7 @@ import { TRounded } from '@/types/rounded.type';
 import themeConfig from '@/config/theme.config';
 import getFirstLetterUtil from '@/utils/getFirstLetter.util';
 import { TColors } from '@/types/colors.type';
-import { TBorderWidth } from '@/types/borderWidth.type';
+import { TBorderWidth } from '@/types/border-width.type';
 
 // @start-snippet:: interface
 export type TAvatarSize =

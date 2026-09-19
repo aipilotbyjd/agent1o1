@@ -2,7 +2,7 @@ import { FC, HTMLAttributes, ReactNode } from 'react';
 import classNames from 'classnames';
 import { TColors } from '@/types/colors.type';
 import themeConfig from '@/config/theme.config';
-import { TBorderWidth } from '@/types/borderWidth.type';
+import { TBorderWidth } from '@/types/border-width.type';
 import { TRounded } from '@/types/rounded.type';
 
 // @start-snippet:: interface

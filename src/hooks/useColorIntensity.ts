@@ -1,4 +1,4 @@
-import { TColorIntensity } from '@/types/colorIntensities.type';
+import { TColorIntensity } from '@/types/color-intensities.type';
 
 function useColorIntensity(shade: TColorIntensity | undefined) {
 	const colorShades: TColorIntensity[] = [

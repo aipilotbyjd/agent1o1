@@ -4,9 +4,9 @@ import { TColors } from '@/types/colors.type';
 import themeConfig from '@/config/theme.config';
 import { TIcons } from '@/types/icons.type';
 import Icon from '@/components/icon/Icon';
-import { TFontSizes } from '@/types/fontSizes.type';
+import { TFontSizes } from '@/types/font-sizes.type';
 import { TRounded } from '@/types/rounded.type';
-import { TBorderWidth } from '@/types/borderWidth.type';
+import { TBorderWidth } from '@/types/border-width.type';
 import CloseButton from './CloseButton';
 
 // @start-snippet:: interface

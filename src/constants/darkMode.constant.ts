@@ -1,4 +1,4 @@
-import { TDarkModes } from '@/types/darkMode.type';
+import { TDarkModes } from '@/types/dark-mode.type';
 
 const DARK_MODE: TDarkModes = {
 	DARK: 'dark',

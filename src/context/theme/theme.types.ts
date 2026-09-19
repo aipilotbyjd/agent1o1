@@ -2,7 +2,7 @@
 // Theme Context Types
 // ============================================================
 import type { Dispatch, SetStateAction } from 'react';
-import type { TDarkMode } from '@/types/darkMode.type';
+import type { TDarkMode } from '@/types/dark-mode.type';
 import type { TLang } from '@/types/lang.type';
 
 export interface IThemeContextProps {

@@ -1,4 +1,4 @@
-import type { IBuilderDraft, IBuilderEdge, IBuilderNode } from '@/types/workflowBuilder.type';
+import type { IBuilderDraft, IBuilderEdge, IBuilderNode } from '@/types/workflow-builder.type';
 import { getNodeDefinition } from './nodeCatalog.constants';
 import type { TCanvasEdge, TCanvasNode } from '../_types/canvas.type';
 

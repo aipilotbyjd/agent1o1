@@ -2,7 +2,7 @@ import { FC, ReactNode, useEffect, useLayoutEffect, useMemo, useState } from 're
 import theme from 'tailwindcss/defaultTheme';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import { TDarkMode } from '@/types/darkMode.type';
+import { TDarkMode } from '@/types/dark-mode.type';
 import DARK_MODE from '@/constants/darkMode.constant';
 import useDeviceScreen from '@/hooks/useDeviceScreen';
 import { TLang } from '@/types/lang.type';

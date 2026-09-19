@@ -1,13 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { WorkflowBuilderService } from '@/api/modules/workflow-builder/workflow-builder.service';
-import { isSessionQueued } from '@/types/workflowBuilder.type';
+import { isSessionQueued } from '@/types/workflow-builder.type';
 import type {
 	IBuilderMessage,
 	IBuilderMessageAction,
 	IBuilderMessageReadyEvent,
 	IBuilderSession,
-} from '@/types/workflowBuilder.type';
+} from '@/types/workflow-builder.type';
 
 export type TAiChatMode = 'build' | 'ask';
 

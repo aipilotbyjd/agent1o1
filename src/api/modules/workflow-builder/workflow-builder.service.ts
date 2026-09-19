@@ -12,10 +12,12 @@ import type {
 	TWorkflowValidationResult,
 	TWorkflowDryRunResult,
 	TTestWorkflowNodeDto,
+	IBuilderSession,
+	IBuilderNode,
+	IBuilderEdge,
 } from '@/types/workflow-builder.type';
 import type { TWorkflow, TReplaceGraphDto } from '@/types/workflow.type';
 import type { TNodeRunDetail } from '@/types/run.type';
-import type { IBuilderSession, IBuilderNode, IBuilderEdge } from '@/types/workflowBuilder.type';
 import { WorkflowBuilderEndpoints as E, WorkflowDiagnosticsEndpoints as D } from './workflow-builder.endpoints';
 
 export const WorkflowBuilderSessionService = {

@@ -3,7 +3,7 @@ import type {
 	IBuilderStreamTextDeltaEvent,
 	IBuilderStreamToolCallEvent,
 	IBuilderStreamToolResultEvent,
-} from '@/types/workflowBuilder.type';
+} from '@/types/workflow-builder.type';
 
 /**
  * Minimal structural type for a Laravel Echo instance. We avoid a hard

@@ -3,7 +3,7 @@ import type {
 	INodeSchema,
 	INodeSchemaProperty,
 	INodeType,
-} from '@/types/nodeType.type';
+} from '@/types/node-type.type';
 import type {
 	TFieldKind,
 	TNodeCategory,
