@@ -1,19 +1,33 @@
 import { lazy } from 'react';
-import { Navigate } from 'react-router';
+import { Navigate, useParams } from 'react-router';
 import CoreAppLayout from '@/layouts/CoreApp.layout';
 import AgentLayout from '@/layouts/Agent.layout';
-import UnderConstructionPage from '@/pages/UnderConstruction.page';
 import SettingsPages from '@/Routes/appPages/settingsPages';
 import pages, { TPages } from '@/Routes/pages';
 
 const workspacePages = pages.workspace.subPages as TPages;
-const dashboardPages = workspacePages.dashboard.subPages as TPages;
 const playbookEditorPages = pages.playbookEditor.subPages as TPages;
 const agentEditorPages = pages.agentEditor.subPages as TPages;
 
 /** `/:workspaceId/dashboard` -> `dashboard`, so the redirect below stays relative to the
  *  matched workspace instead of navigating to the literal `:workspaceId` segment. */
 const dashboardRelativePath = workspacePages.dashboard.to.replace(`${pages.workspace.to}/`, '');
+
+/**
+ * The dashboard sub-tab URLs (`/run-stats`, `/credit-usage`, `/pending-approvals`)
+ * are gone; anything still pointing at one lands on the dashboard rather than the
+ * global 404.
+ */
+const DashboardRedirect = () => {
+	const { workspaceId } = useParams<{ workspaceId: string }>();
+
+	return (
+		<Navigate
+			to={workspacePages.dashboard.to.replace(':workspaceId', workspaceId ?? '')}
+			replace
+		/>
+	);
+};
 
 const DashboardLayout = lazy(() => import('@/pages/coreapp/Dashboard/_layouts/Dashboard.layout'));
 const DashboardPage = lazy(() => import('@/pages/coreapp/Dashboard/Dashboard.page'));
@@ -50,9 +64,9 @@ const SecretsPage = lazy(() => import('@/pages/coreapp/Vault/Secrets.page'));
  * Every screen lives under `CoreAppLayout` (aside + wrapper + suspense) and, where the
  * feature folder ships one, under its own `_layouts` shell from `@/pages/coreapp/*`.
  *
- * The `UnderConstructionPage` leaves that remain (the dashboard sub-tabs) are
- * placeholders on purpose - those feature folders hold no page yet. Swap each one for
- * the real `*.page.tsx` as it lands; the paths stay owned by `@/Routes/pages`.
+ * The dashboard is a single screen: the run-stats / credit-usage / pending-approvals
+ * sub-tabs were `UnderConstructionPage` placeholders and have been dropped, so
+ * `/:workspaceId/dashboard` renders the core app dashboard itself.
  */
 const CoreAppPages = [
 	{
@@ -72,16 +86,8 @@ const CoreAppPages = [
 						element: <DashboardPage />,
 					},
 					{
-						path: dashboardPages.runStats.to,
-						element: <UnderConstructionPage />,
-					},
-					{
-						path: dashboardPages.creditUsage.to,
-						element: <UnderConstructionPage />,
-					},
-					{
-						path: dashboardPages.pendingApprovals.to,
-						element: <UnderConstructionPage />,
+						path: '*',
+						element: <DashboardRedirect />,
 					},
 				],
 			},

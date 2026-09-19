@@ -102,18 +102,13 @@ import { useDownloadArtifact, ArtifactService } from '@/api/modules/artifacts';
 import type { TArtifact } from '@/types/artifact.type';
 import type { TAgentMessage } from '@/types/agent.type';
 import { useAgentChatStore } from '@/store/agentChat.store';
+import { useAgentBuilderStore } from '@/store/agentBuilder.store';
 import { XCircle, Wrench, FileDown } from 'lucide-react';
 import AgentDataPanel from './_partial/AgentDataPanel.partial';
+import AgentTagsPanel from './_partial/AgentTagsPanel.partial';
 
 
-/**
- * A stored transcript as chat bubbles.
- *
- * Only the two conversational roles are rendered: `tool` and `system` turns are
- * part of the model's context, not of the conversation, and the builder shows
- * tool activity through the timeline instead. Replies stream in as plain text,
- * so a non-string `content` is a structured turn — shown raw rather than hidden.
- */
+
 const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 	messages
 		.filter((message) => message.role === 'user' || message.role === 'assistant')
@@ -131,20 +126,13 @@ const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 			type: 'text' as const,
 		}));
 
-/**
- * Name `ExportArtifactTool` reaches the wire under. The tool declares no
- * `name()`, so Laravel\Ai's ToolNameResolver falls back to its class basename.
- */
+
 const EXPORT_ARTIFACT_TOOL = 'ExportArtifactTool';
 
-/**
- * Triggers carry a token, not a ready-made URL — the old API returned
- * `webhook_url` pre-built. Reconstructed here against the API origin.
- */
+
 const webhookUrlFor = (trigger: TTrigger) =>
 	`${import.meta.env.VITE_API_URL ?? ''}/triggers/${trigger.id}/${trigger.token ?? ''}`;
 
-/** One entry in the live "scratchpad" — reasoning text or a tool call, exactly as it streamed in. */
 type TChatTimelineItem =
 	| { kind: 'text'; id: string; text: string }
 	| {
@@ -173,11 +161,9 @@ interface TMessage {
 	data?: any[];
 	followUp?: string;
 	actions?: { label: string; type: string }[];
-	/** What the agent did to produce this reply — kept collapsible under the finished message. */
 	timeline?: TChatTimelineItem[];
 }
 
-/** Markdown rendering for agent replies, sized for this page's chat bubble type scale. */
 const mdComponents: Components = {
 	p: ({ children }) => <p className='mb-2 last:mb-0 whitespace-pre-line'>{children}</p>,
 	strong: ({ children }) => <strong className='font-black text-zinc-900 dark:text-white'>{children}</strong>,
@@ -233,7 +219,6 @@ const formatArtifactSize = (bytes: number): string => {
 	return `${exponent === 0 ? value : value.toFixed(1)} ${units[exponent]}`;
 };
 
-/** Rich, always-visible card for a file an agent exported mid-conversation. */
 const ArtifactCard = ({
 	item,
 	ws,
@@ -263,7 +248,6 @@ const ArtifactCard = ({
 	);
 };
 
-/** Collapsible "N steps" summary shown above a finished agent reply — what it did to get there. */
 const TimelineSteps = ({ items, className = '' }: { items: TChatTimelineItem[]; className?: string }) => {
 	const [expanded, setExpanded] = useState(false);
 	const toolCount = items.filter((item) => item.kind === 'tool').length;
@@ -342,14 +326,10 @@ const BuildPage = () => {
 	const fireTriggerMutation = useFireAgentTrigger(workspaceId, currentAgentId ?? '');
 	const [isTriggerPanelOpen, setIsTriggerPanelOpen] = useState(false);
 
-	// Live model catalog from the backend (agents/meta/models). Only models the
-	// workspace actually has a configured provider for are returned — merge them
-	// with the static option metadata (label/tier/description) where names match,
-	// and fall back to the static list when the catalog is empty/unconfigured.
+
 	const { data: metaModelGroups } = useAgentMetaModels(workspaceId);
 	const modelOptions = useMemo(() => {
-		// `catalog.modelCatalog` returns flat entries (id/slug/display_name/brand),
-		// not the old provider→models grouping.
+		
 		const liveIds = (metaModelGroups ?? [])
 			.map((entry) => (entry as { slug?: string; id?: string }).slug ?? (entry as { id?: string }).id)
 			.filter((id): id is string => typeof id === 'string');
@@ -393,7 +373,6 @@ const BuildPage = () => {
 		return () => window.removeEventListener('resize', checkMobile);
 	}, []);
 
-	// Preview / Chat states
 	const [isPreviewMode, setIsPreviewMode] = useState(false);
 	const [agentName, setAgentName] = useState('Lead Generation Agent');
 	const [agentIcon, setAgentIcon] = useState<any>(Bot);
@@ -402,30 +381,22 @@ const BuildPage = () => {
 	const [chatInput, setChatInput] = useState('');
 	const [isTyping, setIsTyping] = useState(false);
 
-	// Tell the aside which agent's chats to list. A draft agent has no id until
-	// it is first saved, which is why this tracks `currentAgentId` rather than
-	// the route param.
+	
 	useEffect(() => {
 		setChatAgentId(currentAgentId ?? null);
 	}, [currentAgentId, setChatAgentId]);
 
-	/** The session whose transcript `chatHistory` currently holds. Sessions this
-	 *  page just created are recorded here so the loader below skips them —
-	 *  their messages are already on screen. */
+	
 	const loadedSessionRef = useRef<string | null>(null);
 
-	// `show` eager-loads the transcript, so opening a chat is one request.
 	const { data: openedSession } = useAgentSession(
 		workspaceId,
 		currentAgentId ?? '',
 		conversationId ?? '',
 	);
 
-	// Swap in a chat picked from the aside, or clear the one it closed.
 	useEffect(() => {
 		if (!conversationId) {
-			// The aside started a new chat, or deleted the open one. Callers that
-			// set their own greeting clear the ref first, so this skips them.
 			if (loadedSessionRef.current === null) return;
 
 			loadedSessionRef.current = null;
@@ -447,9 +418,6 @@ const BuildPage = () => {
 		loadedSessionRef.current = conversationId;
 		setChatHistory(transcriptToMessages(openedSession.messages ?? []));
 		setIsPreviewMode(true);
-		// `agentName` only supplies the greeting text for a chat being cleared —
-		// re-running this when the agent is renamed would wipe the transcript.
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [conversationId, openedSession]);
 	const [incognito, setIncognito] = useState(false);
 	const [skillEnabled, setSkillEnabled] = useState(true);
@@ -459,6 +427,13 @@ const BuildPage = () => {
 	const [activeSidebarTab, setActiveSidebarTab] = useState<
 		'agent' | 'settings' | 'chatDetails' | 'data'
 	>('agent');
+
+	const requestedDataSection = useAgentBuilderStore((state) => state.requestedDataSection);
+	useEffect(() => {
+		if (!requestedDataSection) return;
+		setActiveSidebarTab('data');
+		setIsSettingsOpen(true);
+	}, [requestedDataSection]);
 	const [agentInstructions, setAgentInstructions] = useState('');
 	const [agentModel, setAgentModel] = useState(
 		agentModelOptions.find((m) => m.label === 'Sonnet 5')?.id ?? agentModelOptions[0].id,
@@ -469,12 +444,8 @@ const BuildPage = () => {
 		'An agent that helps me research competitors, analyze their strategies, products, pricing, marketing, reviews, and overall market positioning.'
 	);
 
-	// Icon Picker Dropdown State
 	const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
 
-	// Tools the agent can call. Two separate resources on this backend: a
-	// `tool_binding` exposes one workflow **node type** (Slack, HTTP, …), and a
-	// workflow can be attached whole as a single callable tool.
 	const { data: toolBindings } = useAgentToolBindings(workspaceId, currentAgentId ?? '');
 	const { data: workflowTools } = useAgentWorkflowTools(workspaceId, currentAgentId ?? '');
 	const createToolBindingMutation = useCreateAgentToolBinding(workspaceId, currentAgentId ?? '');
@@ -482,17 +453,13 @@ const BuildPage = () => {
 	const attachWorkflowMutation = useAttachAgentWorkflow(workspaceId, currentAgentId ?? '');
 	const detachWorkflowMutation = useDetachAgentWorkflow(workspaceId, currentAgentId ?? '');
 
-	// What there is to attach: the global node catalog, and this workspace's
-	// workflows.
 	const { data: nodeCatalog } = useGlobalNodeCatalog();
 	const { data: workspaceWorkflows } = useWorkflows(workspaceId);
 
-	// Add a Tool drawer states
 	const [isAddAppOpen, setIsAddAppOpen] = useState(false);
 	const [appSearchQuery, setAppSearchQuery] = useState('');
 	const [toolTab, setToolTab] = useState<'nodes' | 'workflows'>('nodes');
 
-	// Saving and dropdown states
 	const [isSaving, setIsSaving] = useState(false);
 	const [saveStatus, setSaveStatus] = useState('Agent draft autosaved');
 	const [isMoreDropdownOpen, setIsMoreDropdownOpen] = useState(false);
@@ -501,21 +468,16 @@ const BuildPage = () => {
 		setDarkModeStatus(isDarkTheme ? DARK_MODE.LIGHT : DARK_MODE.DARK);
 	};
 
-	// Hydrate the form once the real agent record loads (edit mode)
 	useEffect(() => {
 		if (!existingAgent) return;
 		setAgentName(existingAgent.name);
 		setAgentDescription(existingAgent.description ?? '');
 		setAgentInstructions(existingAgent.instructions ?? '');
-		// Only trust a saved model if it's still a valid, AnyAPI-prefixed option —
-		// agents saved before the AnyAPI switch may hold a stale unprefixed id
-		// (e.g. 'claude-opus-4-8'), which AnyAPI can't resolve and 502s on.
 		if (existingAgent.model && agentModelOptions.some((m) => m.id === existingAgent.model)) {
 			setAgentModel(existingAgent.model);
 		}
 	}, [existingAgent]);
 
-	// Creates the agent on first save, updates it on every save after that.
 	// Returns the persisted agent's id so callers (chat, settings) can use it immediately.
 	const ensureAgentPersisted = async (): Promise<string> => {
 		const payload = {
@@ -2132,6 +2094,9 @@ const BuildPage = () => {
 											</button>
 										</div>
 									</div>
+
+									{/* Tags Section */}
+									<AgentTagsPanel ws={workspaceId} agentId={currentAgentId} />
 
 									{/* Triggers Section */}
 									<div className='rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40 space-y-3'>

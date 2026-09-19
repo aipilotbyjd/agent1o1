@@ -22,10 +22,10 @@ import type { TCreditPack } from '@/types/credit.type';
 // Settings and the dashboard are workspace-scoped here (`/:workspaceId/...`),
 // so these `to` values are resolved against the active workspace below. The
 // old app's standalone `/settings/plan?tab=usage` screen has no counterpart
-// yet - credit usage lives under the dashboard.
+// yet - usage is read off the dashboard.
 const settingsPages = pages.workspaceSettings.subPages!;
 const billingPages = settingsPages.billing.subPages!;
-const creditUsagePath = pages.workspace.subPages!.dashboard.subPages!.creditUsage.to;
+const dashboardPath = pages.workspace.subPages!.dashboard.to;
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -152,7 +152,7 @@ const BillingOverviewPage = () => {
 									/>
 								</div>
 								<Link
-									to={toWorkspacePath(creditUsagePath)}
+									to={toWorkspacePath(dashboardPath)}
 									className='flex items-center gap-0.5 text-xs font-bold text-primary-600 transition hover:text-primary-700 dark:text-primary-400'>
 									<span>View usage</span>
 									<ArrowRight size={12} />

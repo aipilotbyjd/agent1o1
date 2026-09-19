@@ -5,13 +5,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useWorkspaceContext } from '@/context/workspace';
 import pages from '@/Routes/pages';
 
-// Every destination below is workspace-scoped in this app (`/:workspaceId/...`),
-// so the raw `to` values are resolved against the active workspace at render.
-// `workflows` is `playbooks` here; the old standalone usage screen now lives
-// under the dashboard.
+
 const settingsPages = pages.workspaceSettings.subPages!;
 const playbooksPath = pages.workspace.subPages!.playbooks.to;
-const creditUsagePath = pages.workspace.subPages!.dashboard.subPages!.creditUsage.to;
+const dashboardPath = pages.workspace.subPages!.dashboard.to;
 
 const NEXT_STEPS = [
 	{
@@ -32,7 +29,7 @@ const NEXT_STEPS = [
 		icon: CreditCard,
 		title: 'Check your credits',
 		desc: 'Track your credit balance and usage in real time.',
-		to: creditUsagePath,
+		to: dashboardPath,
 		cta: 'View usage',
 	},
 ];
@@ -52,7 +49,10 @@ const BillingSuccessPage = () => {
 	const [searchParams] = useSearchParams();
 	const queryClient = useQueryClient();
 	const { activeWorkspaceId } = useWorkspaceContext();
-	const toWorkspacePath = (to: string) => to.replace(':workspaceId', activeWorkspaceId);
+	// `ws` is set by BillingReturn.page — the workspace that was actually paid for,
+	// which need not be the active one. Fall back for direct visits.
+	const workspaceId = searchParams.get('ws') || activeWorkspaceId;
+	const toWorkspacePath = (to: string) => to.replace(':workspaceId', workspaceId);
 	const type = searchParams.get('type') ?? 'plan';
 	const copy = TYPE_COPY[type] ?? TYPE_COPY.plan;
 

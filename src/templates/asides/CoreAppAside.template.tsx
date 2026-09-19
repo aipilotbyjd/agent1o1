@@ -3,7 +3,7 @@ import Aside, { AsideBody } from '@/components/layout/Aside';
 import { useParams } from 'react-router';
 import useAsideStatus from '@/hooks/useAsideStatus';
 import Icon from '@/components/icon/Icon';
-import Nav, { NavCollapse, NavItem, NavTitle } from '@/components/layout/Navigation/Nav';
+import Nav, { NavItem, NavTitle } from '@/components/layout/Navigation/Nav';
 import pages, { TPages } from '@/Routes/pages';
 import { useWorkspaceContext } from '@/context/workspace';
 import Tooltip from '@/components/ui/Tooltip';
@@ -78,13 +78,10 @@ const CoreAppAsideTemplate = () => {
 				<Search />
 				<Nav>
 					<NavTitle>Overview</NavTitle>
-					<NavCollapse
+					<NavItem
 						{...workspacePages.dashboard}
-						to={resolvePath(workspacePages.dashboard.to)}>
-						{Object.values(workspacePages.dashboard.subPages as TPages).map((item) => (
-							<NavItem key={item.id} {...item} to={resolvePath(item.to)} />
-						))}
-					</NavCollapse>
+						to={resolvePath(workspacePages.dashboard.to)}
+					/>
 
 					<NavTitle>Workspace</NavTitle>
 					{workspaceNavOrder.map((id) => {

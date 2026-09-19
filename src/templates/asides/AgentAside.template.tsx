@@ -24,6 +24,7 @@ import { useAuth } from '@/context/auth';
 import { useConfirm } from '@/context/confirm';
 import { useGlobalSearchStore } from '@/store/globalSearch.store';
 import { useAgentChatStore } from '@/store/agentChat.store';
+import { useAgentBuilderStore } from '@/store/agentBuilder.store';
 import { useAgentSessions, useDeleteAgentSession } from '@/api/modules/agents';
 import type { TAgentSession } from '@/types/agent.type';
 import GlobalSearch from '@/templates/search/GlobalSearch.template';
@@ -60,6 +61,7 @@ const AgentAsideTemplate = () => {
 	// The builder publishes which agent (and chat) is on screen — see
 	// store/agentChat.store.ts.
 	const { agentId, sessionId, openSession, newSession } = useAgentChatStore();
+	const requestDataSection = useAgentBuilderStore((state) => state.requestDataSection);
 	const { data: sessions, isLoading: isLoadingSessions } = useAgentSessions(
 		workspaceId ?? '',
 		agentId ?? '',
@@ -172,7 +174,11 @@ const AgentAsideTemplate = () => {
 						</span>
 						{asideStatus && <span className='truncate'>Files Generated</span>}
 					</button>
-					<button className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50/80 dark:text-zinc-300 dark:hover:bg-zinc-900 ${asideStatus ? '' : 'w-full justify-center'}`}>
+					<button
+						onClick={() => requestDataSection('reflections')}
+						disabled={!agentId}
+						title={agentId ? 'Open reflections' : 'Open an agent to see reflections'}
+						className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50/80 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-zinc-900 ${asideStatus ? '' : 'w-full justify-center'}`}>
 						<span className='relative shrink-0'>
 							<Sparkles size={15} className='text-zinc-600 dark:text-zinc-400' />
 							{!asideStatus && (
