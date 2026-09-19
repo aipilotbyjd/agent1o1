@@ -203,12 +203,6 @@ const workspaceSettings: TPage = {
 			text: 'Notification Channels',
 			icon: 'Notification02',
 		},
-		environments: {
-			id: 'environmentsSettings',
-			to: '/:workspaceId/settings/environments',
-			text: 'Environments',
-			icon: 'ServerStack01',
-		},
 		apiKeys: {
 			id: 'apiKeysSettings',
 			to: '/:workspaceId/settings/api-keys',

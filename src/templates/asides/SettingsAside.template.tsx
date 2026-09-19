@@ -56,10 +56,6 @@ const SettingsAsideTemplate = () => {
 						to={resolvePath(workspaceSettingsPages.members.to)}
 					/>
 					<NavItem
-						{...workspaceSettingsPages.environments}
-						to={resolvePath(workspaceSettingsPages.environments.to)}
-					/>
-					<NavItem
 						{...workspaceSettingsPages.apiKeys}
 						to={resolvePath(workspaceSettingsPages.apiKeys.to)}
 					/>

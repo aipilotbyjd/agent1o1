@@ -21,6 +21,11 @@ const BillingHistoryPage = lazy(() => import('@/pages/settings/Billing/history.p
 const WorkspacePage = lazy(() => import('@/pages/settings/Workspace/Workspace.page'));
 const ProfilePage = lazy(() => import('@/pages/settings/Profile/Profile.page'));
 const MembersPage = lazy(() => import('@/pages/settings/Members/Members.page'));
+const ApiKeysPage = lazy(() => import('@/pages/settings/ApiKeys/ApiKeys.page'));
+const NotificationsPage = lazy(() => import('@/pages/settings/Notifications/Notifications.page'));
+const NotificationChannelsPage = lazy(
+	() => import('@/pages/settings/NotificationChannels/NotificationChannels.page'),
+);
 
 const SettingsPages = [
 	{
@@ -75,19 +80,15 @@ const SettingsPages = [
 			},
 			{
 				path: workspaceSettingsPages.notificationChannels.to,
-				element: <UnderConstructionPage />,
-			},
-			{
-				path: workspaceSettingsPages.environments.to,
-				element: <UnderConstructionPage />,
+				element: <NotificationChannelsPage />,
 			},
 			{
 				path: workspaceSettingsPages.apiKeys.to,
-				element: <UnderConstructionPage />,
+				element: <ApiKeysPage />,
 			},
 			{
 				path: workspaceSettingsPages.notifications.to,
-				element: <UnderConstructionPage />,
+				element: <NotificationsPage />,
 			},
 		],
 	},
