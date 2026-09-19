@@ -21,6 +21,8 @@ export type TWorkspace = {
 	owner_id: string;
 	owner: TUser | null;
 	role: TWorkspaceRole | null;
+	workflows_count?: number;
+	agents_count?: number;
 	created_at: string;
 	updated_at: string;
 };
