@@ -171,14 +171,14 @@ const workspaceSettings: TPage = {
 			text: 'Members',
 			icon: 'UserGroup',
 		},
-		plan: {
-			id: 'planSettings',
+		legacyPlan: {
+			id: 'legacyPlanSettings',
 			to: '/:workspaceId/settings/plan',
 			text: 'Plan',
 			icon: 'Layers01',
 			subPages: {
 				upgrade: {
-					id: 'planUpgrade',
+					id: 'legacyPlanUpgrade',
 					to: '/:workspaceId/settings/plan/upgrade',
 					text: 'Upgrade',
 					icon: 'Layers01',
@@ -191,6 +191,12 @@ const workspaceSettings: TPage = {
 			text: 'Billing',
 			icon: 'CreditCard',
 			subPages: {
+				plans: {
+					id: 'billingPlans',
+					to: '/:workspaceId/settings/billing/plans',
+					text: 'Plans',
+					icon: 'Layers01',
+				},
 				credits: {
 					id: 'billingCredits',
 					to: '/:workspaceId/settings/billing/credits',

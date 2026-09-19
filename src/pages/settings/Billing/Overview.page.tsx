@@ -26,6 +26,8 @@ import {
 import pages from '@/Routes/pages';
 import type { TSubscription } from '@/types/billing.type';
 
+const billingPages = pages.workspaceSettings.subPages!.billing.subPages!;
+
 const statusConfig: Record<TSubscription['stripe_status'], { label: string; className: string }> = {
 	active: {
 		label: 'Active',
@@ -100,13 +102,15 @@ const fmtDate = (value: string) =>
 		year: 'numeric',
 	});
 
-const PlanPage = () => {
+const BillingOverviewPage = () => {
 	const { workspaceId } = useParams<{ workspaceId: string }>();
 	const { data: workspace } = useWorkspace(workspaceId!);
 	const { data: overview, isLoading } = useBillingOverview(workspaceId!);
 	const portal = useCreateBillingPortalSession(workspaceId!);
 	const cancelSubscription = useCancelSubscription(workspaceId!);
 	const resumeSubscription = useResumeSubscription(workspaceId!);
+
+	const toWorkspacePath = (to: string) => to.replace(':workspaceId', workspaceId!);
 
 	const role = workspace?.role;
 	const canManage = role === 'admin' || role === 'owner';
@@ -119,7 +123,7 @@ const PlanPage = () => {
 					Access Restricted
 				</h2>
 				<p className='max-w-sm text-sm text-zinc-500 dark:text-zinc-400'>
-					Only workspace admins and owners can view plan settings.
+					Only workspace admins and owners can view billing.
 				</p>
 			</div>
 		);
@@ -161,9 +165,11 @@ const PlanPage = () => {
 		(status === 'active' || status === 'trialing');
 	const canResume = !!subscription && !!cancelsAt && cancelsAtInFuture;
 
-	const creditsUsedPct = usage.credits_limit
-		? Math.min(100, Math.round((usage.credits_used / usage.credits_limit) * 100))
-		: 0;
+	const total =
+		usage.credits_limit === null ? null : usage.credits_limit + overview.topup_credits;
+	const remaining = overview.credits_available ?? total ?? 0;
+	const creditsUsedPct =
+		total && total > 0 ? Math.min(100, Math.round(((total - remaining) / total) * 100)) : 0;
 
 	const handleCancel = () => {
 		if (
@@ -222,10 +228,10 @@ const PlanPage = () => {
 			<div className='flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between'>
 				<div>
 					<h1 className='text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-50'>
-						Plan
+						Billing
 					</h1>
 					<p className='mt-1 text-sm font-medium text-zinc-500 dark:text-zinc-400'>
-						Your current plan, limits, and included features.
+						Your plan, credits, and payment settings — all in one place.
 					</p>
 				</div>
 				<div className='flex flex-wrap items-center gap-3'>
@@ -238,10 +244,7 @@ const PlanPage = () => {
 						{portal.isPending ? 'Opening…' : 'Manage billing'}
 					</button>
 					<Link
-						to={pages.workspaceSettings.subPages!.plan.subPages!.upgrade.to.replace(
-							':workspaceId',
-							workspaceId!,
-						)}
+						to={toWorkspacePath(billingPages.plans.to)}
 						className='bg-primary-400 text-primary-950 shadow-primary-500/15 hover:bg-primary-500 flex h-10 items-center gap-2 rounded-xl px-5 text-sm font-bold shadow-md transition'>
 						<Zap size={14} />
 						Upgrade plan
@@ -259,102 +262,100 @@ const PlanPage = () => {
 				</div>
 			</div>
 
-			{/* Current plan card */}
-			<div className='relative overflow-hidden rounded-2xl border border-zinc-100 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-950/60'>
-				<div className='flex flex-wrap items-start justify-between gap-4'>
-					<div className='flex items-start gap-4'>
-						<div className='border-primary-100/30 from-primary-50 to-primary-50 text-primary-600 dark:border-primary-900/30 dark:from-primary-950/30 dark:to-primary-950/30 dark:text-primary-400 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border bg-gradient-to-br shadow-xs'>
-							<Crown size={26} />
-						</div>
-						<div>
-							<p className='text-[10px] font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
-								Current plan
-							</p>
-							<div className='mt-1 flex items-center gap-2'>
-								<h2 className='text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-50'>
-									{plan?.name ?? 'Free'}
-								</h2>
+			{/* Current plan + credits */}
+			<div className='grid gap-4 lg:grid-cols-2'>
+				{/* Current plan card */}
+				<div className='relative overflow-hidden rounded-2xl border border-zinc-100 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-950/60'>
+					<div className='flex flex-wrap items-start justify-between gap-4'>
+						<div className='flex items-start gap-4'>
+							<div className='border-primary-100/30 from-primary-50 to-primary-50 text-primary-600 dark:border-primary-900/30 dark:from-primary-950/30 dark:to-primary-950/30 dark:text-primary-400 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border bg-gradient-to-br shadow-xs'>
+								<Crown size={26} />
+							</div>
+							<div>
+								<p className='text-[10px] font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
+									Current plan
+								</p>
+								<div className='mt-1 flex items-center gap-2'>
+									<h2 className='text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-50'>
+										{plan?.name ?? 'Free'}
+									</h2>
+									{isLifetime && (
+										<span className='inline-flex items-center gap-1 rounded-full border border-amber-200/20 bg-amber-100 px-2.5 py-0.5 text-[10px] font-black text-amber-700 dark:bg-amber-950 dark:text-amber-300'>
+											<Crown size={11} />
+											Lifetime
+										</span>
+									)}
+								</div>
 								{isLifetime && (
-									<span className='inline-flex items-center gap-1 rounded-full border border-amber-200/20 bg-amber-100 px-2.5 py-0.5 text-[10px] font-black text-amber-700 dark:bg-amber-950 dark:text-amber-300'>
-										<Crown size={11} />
-										Lifetime
-									</span>
+									<p className='mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400'>
+										One-time purchase · Never expires
+									</p>
 								)}
 							</div>
-							{isLifetime && (
-								<p className='mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400'>
-									One-time purchase · Never expires
-								</p>
+						</div>
+						{statusCfg && (
+							<span
+								className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${statusCfg.className}`}>
+								<CheckCircle2 size={12} />
+								{statusCfg.label}
+							</span>
+						)}
+					</div>
+					{(cancelsAt || subscription?.trial_ends_at) && (
+						<div className='mt-5 flex flex-wrap gap-4 border-t border-zinc-100 pt-4 text-xs font-semibold text-zinc-400 dark:border-zinc-800 dark:text-zinc-500'>
+							{subscription?.trial_ends_at && (
+								<span className='font-bold text-sky-600 dark:text-sky-400'>
+									Trial ends {fmtDate(subscription.trial_ends_at)}
+								</span>
+							)}
+							{cancelsAt && (
+								<span className='font-bold text-red-500 dark:text-red-400'>
+									Cancels {fmtDate(cancelsAt)}
+								</span>
 							)}
 						</div>
-					</div>
-					{statusCfg && (
-						<span
-							className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${statusCfg.className}`}>
-							<CheckCircle2 size={12} />
-							{statusCfg.label}
-						</span>
 					)}
 				</div>
-				{(cancelsAt || subscription?.trial_ends_at) && (
-					<div className='mt-5 flex flex-wrap gap-4 border-t border-zinc-100 pt-4 text-xs font-semibold text-zinc-400 dark:border-zinc-800 dark:text-zinc-500'>
-						{subscription?.trial_ends_at && (
-							<span className='font-bold text-sky-600 dark:text-sky-400'>
-								Trial ends {fmtDate(subscription.trial_ends_at)}
-							</span>
-						)}
-						{cancelsAt && (
-							<span className='font-bold text-red-500 dark:text-red-400'>
-								Cancels {fmtDate(cancelsAt)}
-							</span>
-						)}
-					</div>
-				)}
-			</div>
 
-			{/* Credits */}
-			<section>
-				<h3 className='mt-8 mb-4 text-xs font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
-					Credits
-				</h3>
-				<div className='rounded-2xl border border-zinc-100 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-950/40'>
-					<div className='flex items-center gap-3'>
-						<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50/70 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400'>
-							<Coins size={16} />
+				{/* Credits card */}
+				<div className='rounded-2xl border border-zinc-100 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-950/60'>
+					<div className='flex items-start justify-between'>
+						<div className='flex items-center gap-3'>
+							<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50/70 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400'>
+								<Coins size={16} />
+							</div>
+							<p className='text-[10px] font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
+								Credits this period
+							</p>
 						</div>
-						<p className='text-[10px] font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
-							This period
-						</p>
+						<Link
+							to={toWorkspacePath(billingPages.history.to)}
+							className='text-primary-600 dark:text-primary-400 text-xs font-bold hover:underline'>
+							View history
+						</Link>
 					</div>
-					<p className='mt-3.5 text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-50'>
-						{usage.credits_used.toLocaleString()} / {fmtLimit(usage.credits_limit)}
+					<p className='mt-3.5 text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-50'>
+						{remaining.toLocaleString()}
+						<span className='ml-1 text-sm font-bold text-zinc-400'>
+							/ {fmtLimit(total)} left
+						</span>
 					</p>
-					{usage.credits_limit !== null && (
+					{!!total && total > 0 && (
 						<div className='mt-3 h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800'>
 							<div
 								className={`h-full rounded-full ${creditsUsedPct >= 80 ? 'bg-rose-500' : 'bg-primary-400'}`}
-								style={{ width: `${creditsUsedPct}%` }}
+								style={{ width: `${100 - creditsUsedPct}%` }}
 							/>
 						</div>
 					)}
-					<p className='mt-3 text-xs font-semibold text-zinc-400 dark:text-zinc-500'>
-						{overview.topup_credits.toLocaleString()} credits from top-ups ·{' '}
-						{overview.credits_available === null
-							? 'Unlimited'
-							: overview.credits_available.toLocaleString()}{' '}
-						available now
-					</p>
 					<Link
-						to={pages.workspaceSettings.subPages!.billing.subPages!.credits.to.replace(
-							':workspaceId',
-							workspaceId!,
-						)}
-						className='text-primary-600 hover:text-primary-700 dark:text-primary-400 mt-3 inline-flex items-center gap-1 text-xs font-bold transition'>
+						to={toWorkspacePath(billingPages.credits.to)}
+						className='text-primary-600 dark:text-primary-400 mt-3 inline-flex items-center gap-1 text-xs font-bold'>
 						<span>Buy more credits</span>
 						<ArrowRight size={12} />
 					</Link>
 				</div>
-			</section>
+			</div>
 
 			{/* Limits */}
 			<section>
@@ -430,4 +431,4 @@ const PlanPage = () => {
 	);
 };
 
-export default PlanPage;
+export default BillingOverviewPage;

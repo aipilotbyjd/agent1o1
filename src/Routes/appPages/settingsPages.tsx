@@ -1,22 +1,26 @@
 import { lazy } from 'react';
+import { Navigate, useParams } from 'react-router';
 import SettingsLayout from '@/layouts/Settings.layout';
 import UnderConstructionPage from '@/pages/UnderConstruction.page';
 import pages, { TPages } from '@/Routes/pages';
 
 const workspaceSettingsPages = pages.workspaceSettings.subPages as TPages;
+const billingPlansPath = (workspaceSettingsPages.billing.subPages as TPages).plans.to;
+
+const RedirectToBillingPlans = () => {
+	const { workspaceId } = useParams<{ workspaceId: string }>();
+	return <Navigate to={billingPlansPath.replace(':workspaceId', workspaceId!)} replace />;
+};
 
 const BillingLayout = lazy(() => import('@/pages/settings/Billing/_layouts/Billing.layout'));
-const BillingOverviewPage = lazy(() => import('@/pages/settings/Billing/index.page'));
+const BillingOverviewPage = lazy(() => import('@/pages/settings/Billing/Overview.page'));
+const BillingPlansPage = lazy(() => import('@/pages/settings/Billing/plans.page'));
 const BillingCreditsPage = lazy(() => import('@/pages/settings/Billing/credits.page'));
 const BillingHistoryPage = lazy(() => import('@/pages/settings/Billing/history.page'));
 
 const WorkspacePage = lazy(() => import('@/pages/settings/Workspace/Workspace.page'));
 const ProfilePage = lazy(() => import('@/pages/settings/Profile/Profile.page'));
 const MembersPage = lazy(() => import('@/pages/settings/Members/Members.page'));
-
-const PlanLayout = lazy(() => import('@/pages/settings/Plan/_layouts/Plan.layout'));
-const PlanPage = lazy(() => import('@/pages/settings/Plan/Plan.page'));
-const PlanUpgradePage = lazy(() => import('@/pages/settings/Plan/PlanUpgrade.page'));
 
 const SettingsPages = [
 	{
@@ -40,21 +44,25 @@ const SettingsPages = [
 				element: <MembersPage />,
 			},
 			{
-				path: workspaceSettingsPages.plan.to,
-				element: <PlanLayout />,
-				children: [
-					{ index: true, element: <PlanPage /> },
-					{
-						path: (workspaceSettingsPages.plan.subPages as TPages).upgrade.to,
-						element: <PlanUpgradePage />,
-					},
-				],
+				path: workspaceSettingsPages.legacyPlan.to,
+				element: <RedirectToBillingPlans />,
+			},
+			{
+				path: (workspaceSettingsPages.legacyPlan.subPages as TPages).upgrade.to,
+				element: <RedirectToBillingPlans />,
 			},
 			{
 				path: workspaceSettingsPages.billing.to,
 				element: <BillingLayout />,
 				children: [
-					{ index: true, element: <BillingOverviewPage /> },
+					{
+						index: true,
+						element: <BillingOverviewPage />,
+					},
+					{
+						path: 'plans',
+						element: <BillingPlansPage />,
+					},
 					{
 						path: 'credits',
 						element: <BillingCreditsPage />,

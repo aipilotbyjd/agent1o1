@@ -1,27 +1,16 @@
 import { Outlet, NavLink } from 'react-router';
-import { CreditCard, History, LayoutGrid } from 'lucide-react';
+import { CreditCard, History, Layers, LayoutGrid } from 'lucide-react';
 import { useWorkspaceContext } from '@/context/workspace';
 import pages from '@/Routes/pages';
 
-// Settings sit under `/:workspaceId/settings` in this app, so every tab `to`
-// carries the param and is resolved against the active workspace below.
 const settingsPages = pages.workspaceSettings.subPages!;
 const billingPages = settingsPages.billing.subPages!;
 
 const tabs = [
 	{ to: settingsPages.billing.to, label: 'Overview', icon: LayoutGrid, end: true },
-	{
-		to: billingPages.credits.to,
-		label: 'Buy Credits',
-		icon: CreditCard,
-		end: false,
-	},
-	{
-		to: billingPages.history.to,
-		label: 'History',
-		icon: History,
-		end: false,
-	},
+	{ to: billingPages.plans.to, label: 'Plans', icon: Layers, end: false },
+	{ to: billingPages.credits.to, label: 'Buy Credits', icon: CreditCard, end: false },
+	{ to: billingPages.history.to, label: 'History', icon: History, end: false },
 ];
 
 const BillingLayout = () => {

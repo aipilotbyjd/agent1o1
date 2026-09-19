@@ -39,7 +39,7 @@ const priceForInterval = (
 		lifetime: plan.price_lifetime,
 	})[interval];
 
-const PlanUpgradePage = () => {
+const BillingPlansPage = () => {
 	const { workspaceId } = useParams<{ workspaceId: string }>();
 	const { data: plans, isLoading } = usePlans(workspaceId!);
 	const { data: overview } = useBillingOverview(workspaceId!);
@@ -270,4 +270,4 @@ const PlanUpgradePage = () => {
 	);
 };
 
-export default PlanUpgradePage;
+export default BillingPlansPage;

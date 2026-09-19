@@ -14,7 +14,6 @@ const useWorkspaceId = () => {
 };
 
 const workspaceSettingsPages = pages.workspaceSettings.subPages!;
-const billingPages = workspaceSettingsPages.billing.subPages!;
 
 const SettingsAsideTemplate = () => {
 	const navigate = useNavigate();
@@ -41,17 +40,11 @@ const SettingsAsideTemplate = () => {
 						to={resolvePath(workspaceSettingsPages.profile.to)}
 					/>
 
-					<NavTitle>Plan & Credits</NavTitle>
-					<NavItem
-						{...workspaceSettingsPages.plan}
-						to={resolvePath(workspaceSettingsPages.plan.to)}
-					/>
+					<NavTitle>Billing</NavTitle>
 					<NavItem
 						{...workspaceSettingsPages.billing}
 						to={resolvePath(workspaceSettingsPages.billing.to)}
 					/>
-					<NavItem {...billingPages.credits} to={resolvePath(billingPages.credits.to)} />
-					<NavItem {...billingPages.history} to={resolvePath(billingPages.history.to)} />
 
 					<NavTitle>Organization</NavTitle>
 					<NavItem
