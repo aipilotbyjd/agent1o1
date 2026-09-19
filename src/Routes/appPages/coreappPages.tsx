@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 import { Navigate } from 'react-router';
 import CoreAppLayout from '@/layouts/CoreApp.layout';
+import AgentLayout from '@/layouts/Agent.layout';
 import UnderConstructionPage from '@/pages/UnderConstruction.page';
 import pages, { TPages } from '@/Routes/pages';
 
@@ -9,32 +10,37 @@ const dashboardPages = workspacePages.dashboard.subPages as TPages;
 const playbookEditorPages = pages.playbookEditor.subPages as TPages;
 const agentEditorPages = pages.agentEditor.subPages as TPages;
 
-/** `/:workspaceId/dashboard` -> `dashboard`, so the redirect below stays relative to the
- *  matched workspace instead of navigating to the literal `:workspaceId` segment. */
 const dashboardRelativePath = workspacePages.dashboard.to.replace(`${pages.workspace.to}/`, '');
 
 const DashboardLayout = lazy(() => import('@/pages/coreapp/Dashboard/_layouts/Dashboard.layout'));
+const DashboardPage = lazy(() => import('@/pages/coreapp/Dashboard/Dashboard.page'));
 const PlaybooksLayout = lazy(() => import('@/pages/coreapp/Playbooks/_layouts/Playbooks.layout'));
+const WorkflowsListPage = lazy(() => import('@/pages/coreapp/Playbooks/WorkflowsList.page'));
+const WorkflowEditorPage = lazy(
+	() => import('@/pages/coreapp/Playbooks/WorkflowEditor/WorkflowEditor.page'),
+);
 const AgentsLayout = lazy(() => import('@/pages/coreapp/Agents/_layouts/Agents.layout'));
+const AgentsListPage = lazy(() => import('@/pages/coreapp/Agents/AgentsList.page'));
+const AgentBuilderPage = lazy(
+	() => import('@/pages/coreapp/Agents/AgentBuilder/AgentBuilder.page'),
+);
 const TrailLayout = lazy(() => import('@/pages/coreapp/Trail/_layouts/Trail.layout'));
+const HistoryListPage = lazy(() => import('@/pages/coreapp/Trail/HistoryList.page'));
 const SkillsLayout = lazy(() => import('@/pages/coreapp/Skills/_layouts/Skills.layout'));
+const SkillsListPage = lazy(() => import('@/pages/coreapp/Skills/SkillsList.page'));
 const AppsLayout = lazy(() => import('@/pages/coreapp/Apps/_layouts/Apps.layout'));
+const AppsListPage = lazy(() => import('@/pages/coreapp/Apps/AppsList.page'));
 const KnowledgeLayout = lazy(() => import('@/pages/coreapp/Knowledge/_layouts/Knowledge.layout'));
+const KnowledgeListPage = lazy(() => import('@/pages/coreapp/Knowledge/KnowledgeList.page'));
 const ArtifactsLayout = lazy(() => import('@/pages/coreapp/Artifacts/_layouts/Artifacts.layout'));
+const ArtifactsListPage = lazy(() => import('@/pages/coreapp/Artifacts/ArtifactsList.page'));
 const BlueprintsLayout = lazy(
 	() => import('@/pages/coreapp/Blueprints/_layouts/Blueprints.layout'),
 );
+const BlueprintsListPage = lazy(() => import('@/pages/coreapp/Blueprints/BlueprintsList.page'));
+const VaultLayout = lazy(() => import('@/pages/coreapp/Vault/_layouts/Secrets.layout'));
+const SecretsPage = lazy(() => import('@/pages/coreapp/Vault/Secrets.page'));
 
-/**
- * Workspace scoped routes (`/:workspaceId/...`).
- *
- * Every screen lives under `CoreAppLayout` (aside + wrapper + suspense) and, where the
- * feature folder ships one, under its own `_layouts` shell from `@/pages/coreapp/*`.
- *
- * The leaf elements are `UnderConstructionPage` placeholders on purpose: the feature
- * folders under `@/pages/coreapp` only hold layouts so far. Swap each placeholder for the
- * real `*.page.tsx` as it lands - the paths stay owned by `@/Routes/pages`.
- */
 const CoreAppPages = [
 	{
 		path: pages.workspace.to,
@@ -50,7 +56,7 @@ const CoreAppPages = [
 				children: [
 					{
 						index: true,
-						element: <UnderConstructionPage />,
+						element: <DashboardPage />,
 					},
 					{
 						path: dashboardPages.runStats.to,
@@ -72,19 +78,7 @@ const CoreAppPages = [
 				children: [
 					{
 						index: true,
-						element: <UnderConstructionPage />,
-					},
-					{
-						path: playbookEditorPages.add.to,
-						element: <UnderConstructionPage />,
-					},
-					{
-						path: playbookEditorPages.edit.to,
-						element: <UnderConstructionPage />,
-					},
-					{
-						path: playbookEditorPages.view.to,
-						element: <UnderConstructionPage />,
+						element: <WorkflowsListPage />,
 					},
 				],
 			},
@@ -94,15 +88,7 @@ const CoreAppPages = [
 				children: [
 					{
 						index: true,
-						element: <UnderConstructionPage />,
-					},
-					{
-						path: agentEditorPages.add.to,
-						element: <UnderConstructionPage />,
-					},
-					{
-						path: agentEditorPages.edit.to,
-						element: <UnderConstructionPage />,
+						element: <AgentsListPage />,
 					},
 				],
 			},
@@ -112,7 +98,7 @@ const CoreAppPages = [
 				children: [
 					{
 						index: true,
-						element: <UnderConstructionPage />,
+						element: <HistoryListPage />,
 					},
 				],
 			},
@@ -122,7 +108,7 @@ const CoreAppPages = [
 				children: [
 					{
 						index: true,
-						element: <UnderConstructionPage />,
+						element: <SkillsListPage />,
 					},
 				],
 			},
@@ -132,7 +118,7 @@ const CoreAppPages = [
 				children: [
 					{
 						index: true,
-						element: <UnderConstructionPage />,
+						element: <AppsListPage />,
 					},
 				],
 			},
@@ -142,7 +128,7 @@ const CoreAppPages = [
 				children: [
 					{
 						index: true,
-						element: <UnderConstructionPage />,
+						element: <KnowledgeListPage />,
 					},
 				],
 			},
@@ -152,7 +138,7 @@ const CoreAppPages = [
 				children: [
 					{
 						index: true,
-						element: <UnderConstructionPage />,
+						element: <ArtifactsListPage />,
 					},
 				],
 			},
@@ -162,14 +148,44 @@ const CoreAppPages = [
 				children: [
 					{
 						index: true,
-						element: <UnderConstructionPage />,
+						element: <BlueprintsListPage />,
 					},
 				],
 			},
 			{
-				// No feature shell yet - rendered straight into the core app layout.
 				path: workspacePages.vault.to,
-				element: <UnderConstructionPage />,
+				element: <VaultLayout />,
+				children: [
+					{
+						index: true,
+						element: <SecretsPage />,
+					},
+				],
+			},
+		],
+	},
+	{
+		path: playbookEditorPages.add.to,
+		element: <WorkflowEditorPage />,
+	},
+	{
+		path: `${playbookEditorPages.edit.to}/:workflowId`,
+		element: <WorkflowEditorPage />,
+	},
+	{
+		path: `${playbookEditorPages.view.to}/:workflowId`,
+		element: <WorkflowEditorPage />,
+	},
+	{
+		element: <AgentLayout />,
+		children: [
+			{
+				path: agentEditorPages.add.to,
+				element: <AgentBuilderPage />,
+			},
+			{
+				path: `${agentEditorPages.edit.to}/:agentId`,
+				element: <AgentBuilderPage />,
 			},
 		],
 	},

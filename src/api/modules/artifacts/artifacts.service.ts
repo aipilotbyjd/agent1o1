@@ -3,6 +3,7 @@ import { unwrapKey } from '@/api/core';
 import type { TApiResponse, TPaginationMeta } from '@/api/core';
 import type {
 	TArtifact,
+	TArtifactListParams,
 	TUploadArtifactDto,
 	TUpdateArtifactAccessDto,
 	TShareArtifactDto,
@@ -10,7 +11,7 @@ import type {
 import { ArtifactEndpoints as E } from './artifacts.endpoints';
 
 export const ArtifactService = {
-	list: (ws: string, params?: { page?: number; per_page?: number }, signal?: AbortSignal) =>
+	list: (ws: string, params?: TArtifactListParams, signal?: AbortSignal) =>
 		axiosClient
 			.get<TApiResponse<TArtifact[]> & { meta: TPaginationMeta }>(E.list(ws), { params, signal })
 			.then((r) => ({ artifacts: r.data.data, meta: r.data.meta })),
@@ -28,7 +29,9 @@ export const ArtifactService = {
 		if (payload.group_id) form.append('group_id', payload.group_id);
 		if (payload.metadata) form.append('metadata', JSON.stringify(payload.metadata));
 		return axiosClient
-			.post<TApiResponse<{ artifact: TArtifact }>>(E.create(ws), form)
+			.post<TApiResponse<{ artifact: TArtifact }>>(E.create(ws), form, {
+				headers: { 'Content-Type': undefined },
+			})
 			.then(unwrapKey<TArtifact>('artifact'));
 	},
 
@@ -48,4 +51,18 @@ export const ArtifactService = {
 
 	removeShare: (ws: string, id: string, userId: string) =>
 		axiosClient.delete(E.removeShare(ws, id, userId)).then(() => undefined),
+
+	/** Fetches the file as a blob and triggers a browser save — the
+	 *  AgentBuilder expects this, `downloadUrl` alone isn't enough. */
+	download: async (ws: string, id: string, filename: string) => {
+		const response = await axiosClient.get(E.download(ws, id), { responseType: 'blob' });
+		const url = URL.createObjectURL(response.data as Blob);
+		const link = document.createElement('a');
+		link.href = url;
+		link.download = filename;
+		document.body.appendChild(link);
+		link.click();
+		link.remove();
+		URL.revokeObjectURL(url);
+	},
 };

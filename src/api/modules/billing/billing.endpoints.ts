@@ -24,4 +24,12 @@ export const BillingEndpoints = {
 	invoice: (ws: string, invoiceId: string) => `${base(ws)}/invoices/${invoiceId}`,
 
 	portal: (ws: string) => `${base(ws)}/portal`,
+
+	// ── Ported from the old frontend ──────────────────────────
+	// Old paths, kept as-is. `subscriptionPortal` is the old
+	// `portal` entry, renamed only because `portal` above already
+	// owns that key on the new contract.
+	packCatalog: (ws: string) => `/workspaces/${ws}/billing/packs`,
+	buyCredits: (ws: string) => `/workspaces/${ws}/billing/packs`,
+	subscriptionPortal: (ws: string) => `/workspaces/${ws}/subscription/portal`,
 } as const;

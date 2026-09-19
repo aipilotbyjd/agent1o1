@@ -60,12 +60,12 @@ const ForgotPasswordPage = () => {
 			{submittedEmail ? (
 				<div className='grid gap-y-5 text-center'>
 					<div>
-						<h2 className='text-2xl font-extrabold tracking-tight text-zinc-900 sm:text-3xl'>
+						<h2 className='text-2xl font-extrabold tracking-tight text-zinc-950 sm:text-3xl'>
 							Check your inbox
 						</h2>
 						<p className='mt-2 text-xs font-medium text-zinc-500'>
 							If an account exists for{' '}
-							<span className='font-bold text-zinc-900'>{submittedEmail}</span>, we've
+							<span className='font-bold text-zinc-950'>{submittedEmail}</span>, we've
 							sent reset instructions to it.
 						</p>
 					</div>
@@ -92,7 +92,7 @@ const ForgotPasswordPage = () => {
 						<Link to={pages.identity.login.to}>
 							<button
 								type='button'
-								className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-900 uppercase shadow-md transition-all'>
+								className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-md transition-all'>
 								BACK TO SIGN IN ›
 							</button>
 						</Link>
@@ -101,7 +101,7 @@ const ForgotPasswordPage = () => {
 			) : (
 				<>
 					<div>
-						<h2 className='text-3xl font-extrabold tracking-tight text-zinc-900'>
+						<h2 className='text-3xl font-extrabold tracking-tight text-zinc-950'>
 							Forgot password?
 						</h2>
 						<p className='mt-1 text-xs font-medium text-zinc-500'>
@@ -119,7 +119,7 @@ const ForgotPasswordPage = () => {
 							<div className='focus-within:border-primary-500 focus-within:ring-primary-500/15 flex items-center gap-2.5 rounded-xl border border-[#d8e2ee] bg-[#eef2f8] px-3.5 py-2.5 transition-all focus-within:bg-white focus-within:ring-2'>
 								<Icon icon='Mail01' className='size-4 shrink-0 text-zinc-400' />
 								<input
-									className='input-clean w-full border-0 border-none bg-transparent p-0 text-sm font-medium text-zinc-900 shadow-none placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
+									className='input-clean w-full border-0 border-none bg-transparent p-0 text-sm font-medium text-zinc-950 shadow-none placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
 									id='email'
 									name='email'
 									type='email'
@@ -139,7 +139,7 @@ const ForgotPasswordPage = () => {
 						<button
 							type='submit'
 							disabled={forgotPassword.isPending}
-							className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 active:bg-primary-800 mt-2 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-900 uppercase shadow-md transition-all disabled:pointer-events-none disabled:opacity-50'>
+							className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 active:bg-primary-800 mt-2 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-md transition-all disabled:pointer-events-none disabled:opacity-50'>
 							{forgotPassword.isPending && <Spinner className='size-4' />}
 							SEND RESET LINK ›
 						</button>

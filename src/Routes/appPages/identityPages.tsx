@@ -9,6 +9,7 @@ const ForgotPasswordPage = lazy(
 const ResetPasswordPage = lazy(() => import('@/pages/identity/ResetPassword/ResetPassword.page'));
 const VerifyEmailPage = lazy(() => import('@/pages/identity/VerifyEmail/VerifyEmail.page'));
 const OAuthCallbackPage = lazy(() => import('@/pages/identity/OAuthCallback/OAuthCallback.page'));
+const ConnectorOAuthCompletePage = lazy(() => import('@/pages/coreapp/Apps/OAuthComplete.page'));
 
 const IdentityPages = [
 	{
@@ -34,6 +35,10 @@ const IdentityPages = [
 	{
 		path: pages.identity.oauthCallback.to,
 		element: <OAuthCallbackPage />,
+	},
+	{
+		path: pages.identity.connectorOAuthComplete.to,
+		element: <ConnectorOAuthCompletePage />,
 	},
 ];
 

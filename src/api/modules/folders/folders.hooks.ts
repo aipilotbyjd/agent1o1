@@ -45,7 +45,7 @@ export const useDeleteFolder = (ws: string) => {
 	});
 };
 
-export const useMoveWorkflowsToFolder = (ws: string) => {
+export const useMoveWorkflows = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (payload: TMoveWorkflowsDto) => FolderService.moveWorkflows(ws, payload),

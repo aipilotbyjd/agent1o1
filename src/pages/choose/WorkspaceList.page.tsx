@@ -26,6 +26,7 @@ import { LogoLight, LogoDark } from '@/assets/images';
 import { useAuth } from '@/context/auth';
 import type { TWorkspace } from '@/types/workspace.type';
 import { useWorkspaceContext } from '@/context/workspace';
+import pages, { TPages } from '@/Routes/pages';
 
 import {
 	useWorkspaces,
@@ -114,13 +115,16 @@ type TierName = (typeof PLAN_TIERS)[number]['name'];
 
 // ─── mapping ───────────────────────────────────────────────────────────────────
 const mapApiWorkspaceToCard = (w: TWorkspace, currentUserId?: string): IWorkspaceCard => {
-	const index = w.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+	// Ids are typed `string` here but Laravel sends them as numbers, so every id that
+	// reaches this mapper is normalised before it is used or compared.
+	const id = String(w.id);
+	const index = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
 	const g = GRADIENTS[index % GRADIENTS.length];
 
 	let role: 'Owner' | 'Admin' | 'Member' = 'Member';
 	if (w.role === 'owner') role = 'Owner';
 	else if (w.role === 'admin') role = 'Admin';
-	else if (w.owner?.id && currentUserId && w.owner.id === currentUserId) role = 'Owner';
+	else if (w.owner?.id && currentUserId && String(w.owner.id) === String(currentUserId)) role = 'Owner';
 
 	const tier: TierName = role === 'Owner' ? 'Enterprise' : role === 'Admin' ? 'Pro' : 'Free';
 
@@ -149,7 +153,7 @@ const mapApiWorkspaceToCard = (w: TWorkspace, currentUserId?: string): IWorkspac
 	}
 
 	return {
-		id: w.id,
+		id,
 		name: w.name,
 		tier,
 		role,
@@ -266,7 +270,8 @@ const WorkspacesPage = () => {
 		const name = workspaces.find((w: IWorkspaceCard) => w.id === id)?.name ?? 'workspace';
 		triggerToast(`Entering workspace "${name}"...`, 'info');
 		await switchWorkspace(id);
-		setTimeout(() => navigate('/dashboard'), 800);
+		const agentsPath = (pages.workspace.subPages as TPages).agents.to.replace(':workspaceId', id);
+		setTimeout(() => navigate(agentsPath), 800);
 	};
 
 	const handleCreateWorkspace = async (e: React.FormEvent) => {

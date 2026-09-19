@@ -94,7 +94,8 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
 			// Display a toast/notification
 			notify.success(notification.title || 'New notification received');
 			// Invalidate every notification query (lists across filters + unread count)
-			qc.invalidateQueries({ queryKey: notificationKeys.all(activeWorkspaceId) });
+			qc.invalidateQueries({ queryKey: ['notifications'] });
+			qc.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
 		});
 
 		return () => {

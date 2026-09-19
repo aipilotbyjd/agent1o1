@@ -153,6 +153,12 @@ const workspaceSettings: TPage = {
 	text: 'Settings',
 	icon: 'Settings01',
 	subPages: {
+		profile: {
+			id: 'profileSettings',
+			to: '/:workspaceId/settings/profile',
+			text: 'Profile',
+			icon: 'UserCircle',
+		},
 		workspace: {
 			id: 'workspaceGeneralSettings',
 			to: '/:workspaceId/settings/workspace',
@@ -165,14 +171,14 @@ const workspaceSettings: TPage = {
 			text: 'Members',
 			icon: 'UserGroup',
 		},
-		plan: {
-			id: 'planSettings',
+		legacyPlan: {
+			id: 'legacyPlanSettings',
 			to: '/:workspaceId/settings/plan',
 			text: 'Plan',
 			icon: 'Layers01',
 			subPages: {
 				upgrade: {
-					id: 'planUpgrade',
+					id: 'legacyPlanUpgrade',
 					to: '/:workspaceId/settings/plan/upgrade',
 					text: 'Upgrade',
 					icon: 'Layers01',
@@ -185,6 +191,12 @@ const workspaceSettings: TPage = {
 			text: 'Billing',
 			icon: 'CreditCard',
 			subPages: {
+				plans: {
+					id: 'billingPlans',
+					to: '/:workspaceId/settings/billing/plans',
+					text: 'Plans',
+					icon: 'Layers01',
+				},
 				credits: {
 					id: 'billingCredits',
 					to: '/:workspaceId/settings/billing/credits',
@@ -205,6 +217,12 @@ const workspaceSettings: TPage = {
 			text: 'Credit Notifications',
 			icon: 'Notification03',
 		},
+		notificationChannels: {
+			id: 'notificationChannelsSettings',
+			to: '/:workspaceId/settings/notification-channels',
+			text: 'Notification Channels',
+			icon: 'Notification02',
+		},
 		environments: {
 			id: 'environmentsSettings',
 			to: '/:workspaceId/settings/environments',
@@ -217,6 +235,12 @@ const workspaceSettings: TPage = {
 			text: 'API Keys',
 			icon: 'Lock',
 		},
+		notifications: {
+			id: 'notificationsSettings',
+			to: '/:workspaceId/settings/notifications',
+			text: 'Notifications',
+			icon: 'Notification01',
+		},
 	},
 };
 
@@ -225,20 +249,6 @@ const settings: TPage = {
 	to: '/settings',
 	text: 'Settings',
 	icon: 'Settings01',
-	subPages: {
-		profile: {
-			id: 'profileSettings',
-			to: '/settings/profile',
-			text: 'Profile',
-			icon: 'UserCircle',
-		},
-		notifications: {
-			id: 'notificationsSettings',
-			to: '/settings/notifications',
-			text: 'Notifications',
-			icon: 'Notification01',
-		},
-	},
 };
 
 const identity: TPages = {
@@ -278,12 +288,18 @@ const identity: TPages = {
 		text: 'Signing in',
 		icon: 'Login03',
 	},
+	connectorOAuthComplete: {
+		id: 'connectorOAuthComplete',
+		to: '/oauth/connector-complete',
+		text: 'Completing connection',
+		icon: 'Plug01',
+	},
 };
 
-const onboarding: TPage = {
-	id: 'onboarding',
+const welcome: TPage = {
+	id: 'welcome',
 	to: '/onboarding',
-	text: 'Onboarding',
+	text: 'Welcome',
 	icon: 'Rocket01',
 	subPages: {
 		pricing: {
@@ -321,7 +337,7 @@ const pages = {
 	workspaceSettings,
 	settings,
 	identity,
-	onboarding,
+	welcome,
 	choose,
 };
 

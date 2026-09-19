@@ -21,11 +21,9 @@ export type TPlan = {
 	price_lifetime: number;
 	credits_monthly: number;
 	limits: Record<string, number | null> | null;
-	features: string[] | null;
+	features: Record<string, boolean> | null;
 	trial_days: number;
 	is_active: boolean;
-	/** The intervals actually on sale — render buy options from this, not
-	 *  from whichever `price_*` field is non-zero. */
 	available_intervals: TBillingInterval[];
 };
 
@@ -57,11 +55,23 @@ export type TUsagePeriod = {
 	credits_limit: number | null;
 	/** `null` when the plan is unlimited. */
 	credits_remaining: number | null;
+	/** The share of `credits_used` that neither the plan allowance nor the
+	 *  top-up pool covered — a subset of it, not additional spend. */
+	overage_credits_used: number;
+	overage_credits_billed: number;
 };
 
 export type TPlanLimitUsage = { used: number; max: number | null };
 
 export type TBillingDunning = { started_at: string; attempts: number; invoice_id: string | null };
+
+export type TBillingOverage = {
+	available: boolean;
+	enabled: boolean;
+	effective_limit: number | null;
+	credits_used: number;
+	credits_remaining: number | null;
+};
 
 export type TBillingOverview = {
 	subscription: TSubscription | null;
@@ -71,6 +81,7 @@ export type TBillingOverview = {
 	topup_credits: number;
 	credits_available: number | null;
 	limits: Record<string, TPlanLimitUsage>;
+	overage: TBillingOverage;
 	dunning: TBillingDunning | null;
 };
 
@@ -171,12 +182,35 @@ export type TUpdateCreditNotificationsDto = {
 };
 
 // ─── Credit ledger ───────────────────────────────────────────
-
 export type TCreditTransaction = {
 	id: string;
 	source_type: string;
 	source_id: string;
 	credits: number;
+	topup_credits: number;
+	overage_credits: number;
 	reason: string | null;
 	created_at: string;
+};
+
+// ─── Ported from the old frontend ────────────────────────────
+// The billing UI copied over from `agent-1o1` talks to the old
+// pack-catalog / portal endpoints. These shapes are the old
+// backend's; the new contract above supersedes them once the
+// pages are rewired.
+
+export type TCreditPackCatalogItem = {
+	key: string;
+	label: string;
+	credits: number;
+	price_cents: number;
+	available: boolean;
+};
+
+export type TBuyCreditsDto = {
+	pack_key: string;
+};
+
+export type TBillingUrlResponse = {
+	url: string;
 };

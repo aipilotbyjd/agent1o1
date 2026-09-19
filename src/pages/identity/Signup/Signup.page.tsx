@@ -99,7 +99,7 @@ const RegisterPage = () => {
 
 			{/* Header */}
 			<div>
-				<h2 className='text-3xl font-extrabold tracking-tight text-zinc-900'>
+				<h2 className='text-3xl font-extrabold tracking-tight text-zinc-950'>
 					Create account
 				</h2>
 				<p className='mt-1 text-xs font-medium text-zinc-500'>
@@ -136,7 +136,7 @@ const RegisterPage = () => {
 					<div className='focus-within:border-primary-500 focus-within:ring-primary-500/15 flex items-center gap-2.5 rounded-xl border border-[#d8e2ee] bg-[#eef2f8] px-3.5 py-2.5 transition-all focus-within:bg-white focus-within:ring-2'>
 						<Icon icon='User' className='size-4 shrink-0 text-zinc-400' />
 						<input
-							className='input-clean w-full border-0 border-none bg-transparent p-0 text-sm font-medium text-zinc-900 shadow-none placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
+							className='input-clean w-full border-0 border-none bg-transparent p-0 text-sm font-medium text-zinc-950 shadow-none placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
 							id='name'
 							name='name'
 							autoComplete='name'
@@ -161,7 +161,7 @@ const RegisterPage = () => {
 					<div className='focus-within:border-primary-500 focus-within:ring-primary-500/15 flex items-center gap-2.5 rounded-xl border border-[#d8e2ee] bg-[#eef2f8] px-3.5 py-2.5 transition-all focus-within:bg-white focus-within:ring-2'>
 						<Icon icon='Mail01' className='size-4 shrink-0 text-zinc-400' />
 						<input
-							className='input-clean w-full border-0 border-none bg-transparent p-0 text-sm font-medium text-zinc-900 shadow-none placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
+							className='input-clean w-full border-0 border-none bg-transparent p-0 text-sm font-medium text-zinc-950 shadow-none placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
 							id='email'
 							name='email'
 							type='email'
@@ -188,7 +188,7 @@ const RegisterPage = () => {
 						<Icon icon='SquareLockPassword' className='size-4 shrink-0 text-zinc-400' />
 						<input
 							type={showPassword ? 'text' : 'password'}
-							className='input-clean w-full border-0 border-none bg-transparent p-0 font-mono text-sm text-zinc-900 shadow-none placeholder:font-sans placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
+							className='input-clean w-full border-0 border-none bg-transparent p-0 font-mono text-sm text-zinc-950 shadow-none placeholder:font-sans placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
 							id='password'
 							name='password'
 							autoComplete='new-password'
@@ -224,7 +224,7 @@ const RegisterPage = () => {
 						<Icon icon='SquareLockPassword' className='size-4 shrink-0 text-zinc-400' />
 						<input
 							type={showConfirm ? 'text' : 'password'}
-							className='input-clean w-full border-0 border-none bg-transparent p-0 font-mono text-sm text-zinc-900 shadow-none placeholder:font-sans placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
+							className='input-clean w-full border-0 border-none bg-transparent p-0 font-mono text-sm text-zinc-950 shadow-none placeholder:font-sans placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
 							id='password_confirmation'
 							name='password_confirmation'
 							autoComplete='new-password'
@@ -310,7 +310,7 @@ const RegisterPage = () => {
 				<button
 					type='submit'
 					disabled={register.isPending || passedCount < 5}
-					className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 active:bg-primary-800 mt-3 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-900 uppercase shadow-md transition-all disabled:pointer-events-none disabled:opacity-50'>
+					className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 active:bg-primary-800 mt-3 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-md transition-all disabled:pointer-events-none disabled:opacity-50'>
 					{register.isPending && <Spinner className='size-4' />}
 					CREATE ACCOUNT ›
 				</button>

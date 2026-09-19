@@ -37,11 +37,17 @@ export const setNotifyAdapter = (next: TNotifyAdapter) => {
 	};
 };
 
-export const notify: TNotifyAdapter = {
+export const notify: TNotifyAdapter & {
+	fromError: (fallback: string) => (error: unknown) => void;
+} = {
 	success: (msg) => adapter.success(msg),
 	error: (msg) => adapter.error(msg),
 	info: (msg) => adapter.info(msg),
 	warn: (msg) => adapter.warn(msg),
+	/** Ported modules from the old frontend hand this straight to
+	 *  react-query's `onError`. New code prefers `meta.errorMessage`,
+	 *  which `query-client.ts` owns. */
+	fromError: (fallback) => (error) => adapter.error(messageFromError(error, fallback)),
 };
 
 export const messageFromError = (error: unknown, fallback: string): string =>
