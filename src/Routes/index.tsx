@@ -11,9 +11,9 @@ import SettingsPages from '@/Routes/appPages/settingsPages';
 import pages from '@/Routes/pages';
 
 const WorkspaceListPage = lazy(() => import('@/pages/choose/WorkspaceList.page'));
-const BillingSuccessPage = lazy(() => import('@/pages/billing/BillingSuccess.page'));
-const BillingCancelPage = lazy(() => import('@/pages/billing/BillingCancel.page'));
-const BillingReturnPage = lazy(() => import('@/pages/billing/BillingReturn.page'));
+const BillingSuccessPage = lazy(() => import('@/pages/settings/Billing/BillingSuccess.page'));
+const BillingCancelPage = lazy(() => import('@/pages/settings/Billing/BillingCancel.page'));
+const BillingReturnPage = lazy(() => import('@/pages/settings/Billing/BillingReturn.page'));
 const PricingPage = lazy(() => import('@/pages/welcome/Pricing.page'));
 
 const router = createBrowserRouter([

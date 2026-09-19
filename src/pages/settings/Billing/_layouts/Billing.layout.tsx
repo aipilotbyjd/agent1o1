@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from 'react-router';
-import { CreditCard, History, Layers, LayoutGrid } from 'lucide-react';
+import { Activity, CreditCard, Layers, LayoutGrid } from 'lucide-react';
 import { useWorkspaceContext } from '@/context/workspace';
 import pages from '@/Routes/pages';
 
@@ -10,7 +10,7 @@ const tabs = [
 	{ to: settingsPages.billing.to, label: 'Overview', icon: LayoutGrid, end: true },
 	{ to: billingPages.plans.to, label: 'Plans', icon: Layers, end: false },
 	{ to: billingPages.credits.to, label: 'Buy Credits', icon: CreditCard, end: false },
-	{ to: billingPages.history.to, label: 'History', icon: History, end: false },
+	{ to: billingPages.usage.to, label: 'Usage', icon: Activity, end: false },
 ];
 
 const BillingLayout = () => {

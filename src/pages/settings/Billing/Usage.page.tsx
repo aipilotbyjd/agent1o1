@@ -21,7 +21,7 @@ const SOURCE_TYPE_LABELS: Record<string, { label: string; color: string }> = {
 	},
 };
 
-const HistoryPage = () => {
+const UsagePage = () => {
 	const { activeWorkspaceId } = useWorkspaceContext();
 	const [page, setPage] = useState(1);
 
@@ -36,7 +36,7 @@ const HistoryPage = () => {
 			{/* Header */}
 			<div>
 				<h1 className='text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-50'>
-					History
+					Usage
 				</h1>
 				<p className='mt-1 text-sm font-medium text-zinc-500 dark:text-zinc-400'>
 					Full credit transaction log for this workspace.
@@ -136,4 +136,4 @@ const HistoryPage = () => {
 	);
 };
 
-export default HistoryPage;
+export default UsagePage;

@@ -329,9 +329,9 @@ const BillingOverviewPage = () => {
 							</p>
 						</div>
 						<Link
-							to={toWorkspacePath(billingPages.history.to)}
+							to={toWorkspacePath(billingPages.usage.to)}
 							className='text-primary-600 dark:text-primary-400 text-xs font-bold hover:underline'>
-							View history
+							View usage
 						</Link>
 					</div>
 					<p className='mt-3.5 text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-50'>

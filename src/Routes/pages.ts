@@ -183,10 +183,10 @@ const workspaceSettings: TPage = {
 					text: 'Buy Credits',
 					icon: 'CreditCard',
 				},
-				history: {
-					id: 'billingHistory',
-					to: '/:workspaceId/settings/billing/history',
-					text: 'History',
+				usage: {
+					id: 'billingUsage',
+					to: '/:workspaceId/settings/billing/usage',
+					text: 'Usage',
 					icon: 'Clock01',
 				},
 			},

@@ -14,9 +14,9 @@ const RedirectToBillingPlans = () => {
 
 const BillingLayout = lazy(() => import('@/pages/settings/Billing/_layouts/Billing.layout'));
 const BillingOverviewPage = lazy(() => import('@/pages/settings/Billing/Overview.page'));
-const BillingPlansPage = lazy(() => import('@/pages/settings/Billing/plans.page'));
-const BillingCreditsPage = lazy(() => import('@/pages/settings/Billing/credits.page'));
-const BillingHistoryPage = lazy(() => import('@/pages/settings/Billing/history.page'));
+const BillingPlansPage = lazy(() => import('@/pages/settings/Billing/Plans.page'));
+const BillingCreditsPage = lazy(() => import('@/pages/settings/Billing/Credits.page'));
+const BillingUsagePage = lazy(() => import('@/pages/settings/Billing/Usage.page'));
 
 const WorkspacePage = lazy(() => import('@/pages/settings/Workspace/Workspace.page'));
 const ProfilePage = lazy(() => import('@/pages/settings/Profile/Profile.page'));
@@ -73,8 +73,8 @@ const SettingsPages = [
 						element: <BillingCreditsPage />,
 					},
 					{
-						path: 'history',
-						element: <BillingHistoryPage />,
+						path: 'usage',
+						element: <BillingUsagePage />,
 					},
 				],
 			},
