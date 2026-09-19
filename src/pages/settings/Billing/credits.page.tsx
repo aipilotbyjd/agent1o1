@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, CreditCard, Package, Sparkles } from 'lucide-react';
 import { useWorkspaceContext } from '@/context/workspace';
-import { useCreditBalance, useCreditPacks } from '@/api/modules/credits';
-import { useBuyCredits, usePackCatalog } from '@/api/modules/billing';
-import type { TCreditPack } from '@/types/credit.type';
+import {
+	useBillingOverview,
+	useCreditPacks as useCreditPackCatalog,
+	usePurchasedCreditPacks,
+	useCheckoutCreditPack,
+} from '@/api/modules/billing';
+import type { TCreditPack } from '@/types/billing.type';
 import { primaryBtn } from '@/pages/settings/_shared/buttons';
 
 const formatPrice = (cents: number) =>
@@ -25,16 +29,6 @@ const packStatusBadge: Record<TCreditPack['status'], { bg: string; text: string;
 			text: 'text-emerald-700 dark:text-emerald-400',
 			label: 'Active',
 		},
-		exhausted: {
-			bg: 'bg-zinc-100 dark:bg-zinc-800',
-			text: 'text-zinc-500 dark:text-zinc-500',
-			label: 'Exhausted',
-		},
-		expired: {
-			bg: 'bg-red-50 dark:bg-red-950',
-			text: 'text-red-600 dark:text-red-400',
-			label: 'Expired',
-		},
 		refunded: {
 			bg: 'bg-amber-50 dark:bg-amber-950',
 			text: 'text-amber-700 dark:text-amber-400',
@@ -44,10 +38,11 @@ const packStatusBadge: Record<TCreditPack['status'], { bg: string; text: string;
 
 const CreditsPage = () => {
 	const { activeWorkspaceId } = useWorkspaceContext();
-	const { data: balance, isLoading: balanceLoading } = useCreditBalance(activeWorkspaceId);
-	const { data: activePacks, isLoading: packsLoading } = useCreditPacks(activeWorkspaceId);
-	const { data: catalog, isLoading: catalogLoading } = usePackCatalog(activeWorkspaceId);
-	const buyCredits = useBuyCredits(activeWorkspaceId);
+	const { data: overview, isLoading: overviewLoading } = useBillingOverview(activeWorkspaceId);
+	const { data: activePacks, isLoading: packsLoading } =
+		usePurchasedCreditPacks(activeWorkspaceId);
+	const { data: catalog, isLoading: catalogLoading } = useCreditPackCatalog(activeWorkspaceId);
+	const buyCredits = useCheckoutCreditPack(activeWorkspaceId);
 
 	const [selected, setSelected] = useState<string | null>(null);
 
@@ -57,26 +52,28 @@ const CreditsPage = () => {
 		}
 	}, [catalog, selected]);
 
-	const credits = balance?.credits;
-	const remaining = credits?.remaining ?? 0;
-	const limit = credits?.limit ?? 0;
-	const fromPacks = credits?.from_packs ?? 0;
-	const rolledOver = credits?.rolled_over ?? 0;
-	const totalAvailable = limit + fromPacks + rolledOver;
-	const usedPct =
-		totalAvailable > 0
-			? Math.min(100, Math.round(((totalAvailable - remaining) / totalAvailable) * 100))
-			: 0;
+	const total = (overview?.usage_period.credits_limit ?? 0) + (overview?.topup_credits ?? 0);
+	const remaining = overview?.credits_available ?? total;
+	const topupCredits = overview?.topup_credits ?? 0;
+	const usedPct = total > 0 ? Math.min(100, Math.round(((total - remaining) / total) * 100)) : 0;
 	const barColor =
 		usedPct >= 80 ? 'bg-red-500' : usedPct >= 60 ? 'bg-yellow-500' : 'bg-emerald-500';
 
 	const packs = catalog ?? [];
 	const selectedPack = packs.find((p) => p.key === selected);
 
+	const handleBuy = async () => {
+		if (!selectedPack) return;
+		const { checkout_url } = await buyCredits.mutateAsync({ pack_key: selectedPack.key });
+		window.location.href = checkout_url;
+	};
+
 	return (
 		<div className='text-zinc-950 dark:text-zinc-50'>
 			<div>
-				<h1 className='text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-50'>Buy Credits</h1>
+				<h1 className='text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-50'>
+					Buy Credits
+				</h1>
 				<p className='mt-1 text-sm font-medium text-zinc-500 dark:text-zinc-400'>
 					Top up your workspace with a one-time credit pack. Credits are added instantly.
 				</p>
@@ -140,37 +137,39 @@ const CreditsPage = () => {
 
 					{/* Checkout summary */}
 					{selectedPack && (
-					<div className='mt-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900'>
-						<div className='flex items-center justify-between'>
-							<div>
-								<p className='text-sm font-black'>Order summary</p>
-								<p className='mt-1 text-sm text-zinc-500 dark:text-zinc-400'>
-									<span className='font-bold text-zinc-800 dark:text-zinc-200'>
-										{selectedPack.credits.toLocaleString()} credits
-									</span>
-								</p>
+						<div className='mt-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900'>
+							<div className='flex items-center justify-between'>
+								<div>
+									<p className='text-sm font-black'>Order summary</p>
+									<p className='mt-1 text-sm text-zinc-500 dark:text-zinc-400'>
+										<span className='font-bold text-zinc-800 dark:text-zinc-200'>
+											{selectedPack.credits.toLocaleString()} credits
+										</span>
+									</p>
+								</div>
+								<div className='text-right'>
+									<p className='text-2xl font-black'>
+										{formatPrice(selectedPack.price_cents)}
+									</p>
+									<p className='text-xs text-zinc-400 dark:text-zinc-500'>
+										one-time
+									</p>
+								</div>
 							</div>
-							<div className='text-right'>
-								<p className='text-2xl font-black'>
-									{formatPrice(selectedPack.price_cents)}
-								</p>
-								<p className='text-xs text-zinc-400 dark:text-zinc-500'>one-time</p>
-							</div>
+							<button
+								type='button'
+								disabled={buyCredits.isPending || !selectedPack.available}
+								onClick={handleBuy}
+								className={`${primaryBtn} mt-4 w-full`}>
+								<CreditCard size={16} />
+								{buyCredits.isPending
+									? 'Redirecting to checkout…'
+									: `Buy ${selectedPack.credits.toLocaleString()} credits`}
+							</button>
+							<p className='mt-2 text-center text-xs text-zinc-400 dark:text-zinc-500'>
+								Secure payment via Stripe. Credits activate instantly after payment.
+							</p>
 						</div>
-						<button
-							type='button'
-							disabled={buyCredits.isPending || !selectedPack.available}
-							onClick={() => buyCredits.mutate({ pack_key: selectedPack.key })}
-							className={`${primaryBtn} mt-4 w-full`}>
-							<CreditCard size={16} />
-							{buyCredits.isPending
-								? 'Redirecting to checkout…'
-								: `Buy ${selectedPack.credits.toLocaleString()} credits`}
-						</button>
-						<p className='mt-2 text-center text-xs text-zinc-400 dark:text-zinc-500'>
-							Secure payment via Stripe. Credits activate instantly after payment.
-						</p>
-					</div>
 					)}
 				</div>
 
@@ -181,7 +180,7 @@ const CreditsPage = () => {
 						<p className='text-xs font-black tracking-widest text-zinc-400 uppercase dark:text-zinc-500'>
 							Current balance
 						</p>
-						{balanceLoading ? (
+						{overviewLoading ? (
 							<div className='mt-3 h-16 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-800' />
 						) : (
 							<>
@@ -198,16 +197,11 @@ const CreditsPage = () => {
 									/>
 								</div>
 								<p className='mt-1.5 text-xs text-zinc-400 dark:text-zinc-500'>
-									{usedPct}% used of {totalAvailable.toLocaleString()} total
+									{usedPct}% used of {total.toLocaleString()} total
 								</p>
-								{fromPacks > 0 && (
+								{topupCredits > 0 && (
 									<p className='mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400'>
-										+{fromPacks.toLocaleString()} from packs
-									</p>
-								)}
-								{rolledOver > 0 && (
-									<p className='mt-0.5 text-xs font-semibold text-sky-600 dark:text-sky-400'>
-										+{rolledOver.toLocaleString()} rolled over
+										+{topupCredits.toLocaleString()} from packs
 									</p>
 								)}
 								{remaining <= 0 && (
@@ -267,17 +261,12 @@ const CreditsPage = () => {
 								<tr className='text-left text-xs font-black text-zinc-400 dark:text-zinc-500'>
 									<th className='py-3 pr-4 font-black'>Pack</th>
 									<th className='py-3 pr-4 font-black'>Status</th>
-									<th className='py-3 pr-4 font-black'>Credits remaining</th>
-									<th className='py-3 pr-4 font-black'>Expires</th>
 									<th className='py-3 font-black'>Purchased</th>
 								</tr>
 							</thead>
 							<tbody>
 								{activePacks.map((pack) => {
 									const badge = packStatusBadge[pack.status];
-									const progressPct = Math.round(
-										(pack.credits_remaining / pack.credits_amount) * 100,
-									);
 									return (
 										<tr
 											key={pack.id}
@@ -297,41 +286,16 @@ const CreditsPage = () => {
 													{badge.label}
 												</span>
 											</td>
-											<td className='py-3 pr-4'>
-												<div className='flex items-center gap-2'>
-													<div className='h-1.5 w-20 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-700'>
-														<div
-															className='h-full rounded-full bg-emerald-500'
-															style={{ width: `${progressPct}%` }}
-														/>
-													</div>
-													<span className='text-xs font-bold text-zinc-700 dark:text-zinc-300'>
-														{pack.credits_remaining.toLocaleString()} /{' '}
-														{pack.credits_amount.toLocaleString()}
-													</span>
-												</div>
-											</td>
-											<td className='py-3 pr-4 text-xs text-zinc-500 dark:text-zinc-400'>
-												{pack.expires_at
-													? new Date(pack.expires_at).toLocaleDateString(
-															undefined,
-															{
-																month: 'short',
-																day: 'numeric',
-																year: 'numeric',
-															},
-														)
-													: '—'}
-											</td>
 											<td className='py-3 text-xs text-zinc-500 dark:text-zinc-400'>
-												{new Date(pack.purchased_at).toLocaleDateString(
-													undefined,
-													{
-														month: 'short',
-														day: 'numeric',
-														year: 'numeric',
-													},
-												)}
+												{pack.purchased_at
+													? new Date(
+															pack.purchased_at,
+														).toLocaleDateString(undefined, {
+															month: 'short',
+															day: 'numeric',
+															year: 'numeric',
+														})
+													: '—'}
 											</td>
 										</tr>
 									);

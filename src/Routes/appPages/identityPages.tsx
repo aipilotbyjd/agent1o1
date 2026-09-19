@@ -9,8 +9,6 @@ const ForgotPasswordPage = lazy(
 const ResetPasswordPage = lazy(() => import('@/pages/identity/ResetPassword/ResetPassword.page'));
 const VerifyEmailPage = lazy(() => import('@/pages/identity/VerifyEmail/VerifyEmail.page'));
 const OAuthCallbackPage = lazy(() => import('@/pages/identity/OAuthCallback/OAuthCallback.page'));
-// Lives with Apps rather than identity, but has to be routed outside the
-// workspace tree: it runs in a popup with no workspace in its URL.
 const ConnectorOAuthCompletePage = lazy(() => import('@/pages/coreapp/Apps/OAuthComplete.page'));
 
 const IdentityPages = [

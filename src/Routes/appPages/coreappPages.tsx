@@ -3,7 +3,6 @@ import { Navigate } from 'react-router';
 import CoreAppLayout from '@/layouts/CoreApp.layout';
 import AgentLayout from '@/layouts/Agent.layout';
 import UnderConstructionPage from '@/pages/UnderConstruction.page';
-import SettingsPages from '@/Routes/appPages/settingsPages';
 import pages, { TPages } from '@/Routes/pages';
 
 const workspacePages = pages.workspace.subPages as TPages;
@@ -11,8 +10,6 @@ const dashboardPages = workspacePages.dashboard.subPages as TPages;
 const playbookEditorPages = pages.playbookEditor.subPages as TPages;
 const agentEditorPages = pages.agentEditor.subPages as TPages;
 
-/** `/:workspaceId/dashboard` -> `dashboard`, so the redirect below stays relative to the
- *  matched workspace instead of navigating to the literal `:workspaceId` segment. */
 const dashboardRelativePath = workspacePages.dashboard.to.replace(`${pages.workspace.to}/`, '');
 
 const DashboardLayout = lazy(() => import('@/pages/coreapp/Dashboard/_layouts/Dashboard.layout'));
@@ -44,16 +41,6 @@ const BlueprintsListPage = lazy(() => import('@/pages/coreapp/Blueprints/Bluepri
 const VaultLayout = lazy(() => import('@/pages/coreapp/Vault/_layouts/Secrets.layout'));
 const SecretsPage = lazy(() => import('@/pages/coreapp/Vault/Secrets.page'));
 
-/**
- * Workspace scoped routes (`/:workspaceId/...`).
- *
- * Every screen lives under `CoreAppLayout` (aside + wrapper + suspense) and, where the
- * feature folder ships one, under its own `_layouts` shell from `@/pages/coreapp/*`.
- *
- * The `UnderConstructionPage` leaves that remain (the dashboard sub-tabs) are
- * placeholders on purpose - those feature folders hold no page yet. Swap each one for
- * the real `*.page.tsx` as it lands; the paths stay owned by `@/Routes/pages`.
- */
 const CoreAppPages = [
 	{
 		path: pages.workspace.to,
@@ -175,17 +162,8 @@ const CoreAppPages = [
 					},
 				],
 			},
-			// `/:workspaceId/settings/...` - own file, same split the old frontend
-			// used, but nested here so settings keeps the aside and wrapper.
-			...SettingsPages,
 		],
 	},
-	/**
-	 * Same reasoning as the agent builder below: the workflow editor renders its own
-	 * full-height shell (canvas + topbar + panels) and must not sit inside the core
-	 * app layout. It carries no wrapper element of its own - the page mounts
-	 * `WorkflowEditorLayout` itself, exactly as `editorPages` did in the old frontend.
-	 */
 	{
 		path: playbookEditorPages.add.to,
 		element: <WorkflowEditorPage />,
@@ -199,13 +177,6 @@ const CoreAppPages = [
 		element: <WorkflowEditorPage />,
 	},
 	{
-		/**
-		 * The builder is a sibling of `CoreAppLayout`, not a child: it ships its own
-		 * full-height shell (AgentAside + app bar) and must not render the core app
-		 * aside alongside it. Mirrors `agentPages` in the old frontend, which sat
-		 * outside the app layout for the same reason. Paths still carry the
-		 * `:workspaceId` prefix, so `useParams` resolves the workspace as before.
-		 */
 		element: <AgentLayout />,
 		children: [
 			{

@@ -153,6 +153,12 @@ const workspaceSettings: TPage = {
 	text: 'Settings',
 	icon: 'Settings01',
 	subPages: {
+		profile: {
+			id: 'profileSettings',
+			to: '/:workspaceId/settings/profile',
+			text: 'Profile',
+			icon: 'UserCircle',
+		},
 		workspace: {
 			id: 'workspaceGeneralSettings',
 			to: '/:workspaceId/settings/workspace',
@@ -205,6 +211,12 @@ const workspaceSettings: TPage = {
 			text: 'Credit Notifications',
 			icon: 'Notification03',
 		},
+		notificationChannels: {
+			id: 'notificationChannelsSettings',
+			to: '/:workspaceId/settings/notification-channels',
+			text: 'Notification Channels',
+			icon: 'Notification02',
+		},
 		environments: {
 			id: 'environmentsSettings',
 			to: '/:workspaceId/settings/environments',
@@ -217,6 +229,12 @@ const workspaceSettings: TPage = {
 			text: 'API Keys',
 			icon: 'Lock',
 		},
+		notifications: {
+			id: 'notificationsSettings',
+			to: '/:workspaceId/settings/notifications',
+			text: 'Notifications',
+			icon: 'Notification01',
+		},
 	},
 };
 
@@ -225,20 +243,6 @@ const settings: TPage = {
 	to: '/settings',
 	text: 'Settings',
 	icon: 'Settings01',
-	subPages: {
-		profile: {
-			id: 'profileSettings',
-			to: '/settings/profile',
-			text: 'Profile',
-			icon: 'UserCircle',
-		},
-		notifications: {
-			id: 'notificationsSettings',
-			to: '/settings/notifications',
-			text: 'Notifications',
-			icon: 'Notification01',
-		},
-	},
 };
 
 const identity: TPages = {
@@ -278,10 +282,6 @@ const identity: TPages = {
 		text: 'Signing in',
 		icon: 'Login03',
 	},
-	/**
-	 * Where an app-integration OAuth redirect lands — deliberately a separate
-	 * path from `oauthCallback`, which is social sign-in.
-	 */
 	connectorOAuthComplete: {
 		id: 'connectorOAuthComplete',
 		to: '/oauth/connector-complete',

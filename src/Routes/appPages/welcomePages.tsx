@@ -7,18 +7,8 @@ const PricingPage = lazy(() => import('@/pages/welcome/Pricing.page'));
 const CreateWorkspacePage = lazy(() => import('@/pages/welcome/standalone/CreateWorkspace.page'));
 const InviteTeamPage = lazy(() => import('@/pages/welcome/standalone/InviteTeam.page'));
 
-/** `/onboarding`, plus its steps and `/pricing`. */
 const welcomeSubPages = pages.welcome.subPages as TPages;
 
-/**
- * Registered ahead of the workspace routes in index.tsx: without these the
- * static `/onboarding` paths fall through to `/:workspaceId` and the core
- * app shell renders with "onboarding" as the workspace id.
- *
- * `OnboardingLayout` is the auth boundary for this whole group — it redirects
- * to `/login` when the visitor isn't authenticated, so every child route here
- * inherits that guard for free; none of them need to check `useAuth()` themselves.
- */
 const WelcomePages = [
 	{
 		element: <OnboardingLayout />,

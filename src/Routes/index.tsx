@@ -7,6 +7,7 @@ import UnderConstructionPage from '@/pages/UnderConstruction.page';
 import IdentityPages from '@/Routes/appPages/identityPages';
 import WelcomePages from '@/Routes/appPages/welcomePages';
 import CoreAppPages from '@/Routes/appPages/coreappPages';
+import SettingsPages from '@/Routes/appPages/settingsPages';
 import pages from '@/Routes/pages';
 
 const WorkspaceListPage = lazy(() => import('@/pages/choose/WorkspaceList.page'));
@@ -22,30 +23,22 @@ const router = createBrowserRouter([
 				path: '/',
 				element: <Root />,
 				children: [
-					// `/` itself has no page — send it to login, which bounces an
-					// already-authenticated visitor onward on its own.
 					{
 						index: true,
 						element: <Navigate to={pages.identity.login.to} replace />,
 					},
-					// Public routes
 					...IdentityPages,
 					{
 						path: pages.choose.to,
 						element: <WorkspaceListPage />,
 					},
-					// Welcome / onboarding routes — must come before the workspace routes
-					// below, or static paths like `/onboarding` fall through to
-					// `/:workspaceId` and the core app shell renders with "onboarding"
-					// as the workspace id. Auth-gated inside OnboardingLayout.
 					...WelcomePages,
-					// Workspace (core app) routes
 					...CoreAppPages,
+					...SettingsPages,
 					{
 						path: '/under-construction',
 						element: <UnderConstructionPage />,
 					},
-					// Stripe callback pages (full-screen, no layout)
 					{
 						path: '/billing/success',
 						element: <BillingSuccessPage />,

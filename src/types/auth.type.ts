@@ -48,6 +48,7 @@ export type TResetPasswordDto = {
 
 export type TUpdateProfileDto = {
 	name?: string;
+	email?: string;
 };
 
 export type TChangePasswordDto = {

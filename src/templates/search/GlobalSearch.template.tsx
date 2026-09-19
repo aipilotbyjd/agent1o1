@@ -86,8 +86,8 @@ const removeRecentSearch = (query: string) => {
 };
 
 // ─── Flatten Pages ────────────────────────────────────────────────────────────
-const getFlattenPages = (pagesList: TPages, parentId?: string): TPage[] => {
-	return Object.values(pagesList).flatMap((page) => {
+const getFlattenPages = (pagesList: TPages | undefined, parentId?: string): TPage[] => {
+	return Object.values(pagesList ?? {}).flatMap((page) => {
 		const { subPages, ...pageData } = page;
 		const currentPage: TPage = { ...pageData, parentId };
 		const subPagesArray = subPages ? getFlattenPages(subPages, page.id) : [];
