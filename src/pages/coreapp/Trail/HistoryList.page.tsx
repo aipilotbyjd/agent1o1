@@ -7,20 +7,20 @@ import pages from '@/Routes/pages';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useRuns } from '@/api/modules/runs';
 import type { TRun } from '@/types/run.type';
-import type { IHistoryItem } from './_types/history.types';
+import type { IHistoryItem } from './_types/history.type';
 import { mockHistoryData } from './_helper/mockData';
 import { mapToDisplayItem } from './_helper/mapExecution';
 
 // Sub-components
-import HistoryPageHeader from './_partial/HistoryPageHeader';
-import HistoryStatsCards from './_partial/HistoryStatsCards';
-import HistorySearchBar from './_partial/HistorySearchBar';
-import HistorySkeletonLoader from './_partial/HistorySkeletonLoader';
-import HistoryEmptyState from './_partial/HistoryEmptyState';
-import HistoryTableRow from './_partial/HistoryTableRow';
-import HistoryMobileCard from './_partial/HistoryMobileCard';
-import HistoryPagination from './_partial/HistoryPagination';
-import HistoryDetailDrawer from './_partial/HistoryDetailDrawer';
+import HistoryPageHeader from './_partial/HistoryPageHeader.partial';
+import HistoryStatsCards from './_partial/HistoryStatsCards.partial';
+import HistorySearchBar from './_partial/HistorySearchBar.partial';
+import HistorySkeletonLoader from './_partial/HistorySkeletonLoader.partial';
+import HistoryEmptyState from './_partial/HistoryEmptyState.partial';
+import HistoryTableRow from './_partial/HistoryTableRow.partial';
+import HistoryMobileCard from './_partial/HistoryMobileCard.partial';
+import HistoryPagination from './_partial/HistoryPagination.partial';
+import HistoryDetailDrawer from './_partial/HistoryDetailDrawer.partial';
 
 const HistoryListPage = () => {
 	const { setHeaderLeft } = useOutletContext<OutletContextType>();

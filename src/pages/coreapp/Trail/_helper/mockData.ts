@@ -1,5 +1,5 @@
 import { Bot, MessageSquare, Sparkles, Workflow } from 'lucide-react';
-import type { IHistoryItem } from '../_types/history.types';
+import type { IHistoryItem } from '../_types/history.type';
 
 export const mockHistoryData: IHistoryItem[] = [
 	{

@@ -1,7 +1,7 @@
 import { Activity, Check, Clock, Coins, Copy, ExternalLink, MessageSquare, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import ExecutionLogsViewer from './ExecutionLogsViewer';
-import type { DisplayItem } from '../_types/history.types';
+import ExecutionLogsViewer from './ExecutionLogsViewer.partial';
+import type { DisplayItem } from '../_types/history.type';
 
 interface HistoryDetailDrawerProps {
 	selectedDetails: DisplayItem | null;

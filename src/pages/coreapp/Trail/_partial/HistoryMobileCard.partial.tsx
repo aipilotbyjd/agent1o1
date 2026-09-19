@@ -1,5 +1,5 @@
 import { ChevronRight, Link2 } from 'lucide-react';
-import type { DisplayItem } from '../_types/history.types';
+import type { DisplayItem } from '../_types/history.type';
 
 interface HistoryMobileCardProps {
 	displayItem: DisplayItem;

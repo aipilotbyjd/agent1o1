@@ -13,9 +13,9 @@ import Spinner from '@/components/ui/Spinner';
 import Progress from '@/components/ui/Progress';
 import List, { Li } from '@/components/ui/List';
 import { TColors } from '@/types/colors.type';
-import AuthLayout from '../_partial/AuthLayout.part';
-import AuthCardHeader from '../_partial/AuthCardHeader.part';
-import SocialAuthButtons from '../_partial/SocialAuthButtons.part';
+import AuthLayout from '../_partial/AuthLayout.partial';
+import AuthCardHeader from '../_partial/AuthCardHeader.partial';
+import SocialAuthButtons from '../_partial/SocialAuthButtons.partial';
 
 interface IRegisterFormValues {
 	name: string;

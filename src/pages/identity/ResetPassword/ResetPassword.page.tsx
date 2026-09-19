@@ -12,8 +12,8 @@ import Progress from '@/components/ui/Progress';
 import List, { Li } from '@/components/ui/List';
 import Alert from '@/components/ui/Alert';
 import { TColors } from '@/types/colors.type';
-import AuthLayout from '../_partial/AuthLayout.part';
-import AuthCardHeader from '../_partial/AuthCardHeader.part';
+import AuthLayout from '../_partial/AuthLayout.partial';
+import AuthCardHeader from '../_partial/AuthCardHeader.partial';
 
 interface IResetPasswordFormValues {
 	password: string;

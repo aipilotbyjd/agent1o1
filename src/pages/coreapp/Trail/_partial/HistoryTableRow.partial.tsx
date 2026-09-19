@@ -1,6 +1,6 @@
 import { Calendar, Link2, MoreVertical } from 'lucide-react';
-import type { DisplayItem } from '../_types/history.types';
-import type { IHistoryItem } from '../_types/history.types';
+import type { DisplayItem } from '../_types/history.type';
+import type { IHistoryItem } from '../_types/history.type';
 import type { TRun } from '@/types/run.type';
 
 interface HistoryTableRowProps {

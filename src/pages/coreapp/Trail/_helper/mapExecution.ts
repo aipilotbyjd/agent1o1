@@ -1,6 +1,6 @@
 import { Bot, Workflow } from 'lucide-react';
 import dayjs from 'dayjs';
-import type { DisplayItem, IHistoryItem } from '../_types/history.types';
+import type { DisplayItem, IHistoryItem } from '../_types/history.type';
 import type { TRun } from '@/types/run.type';
 
 /**
