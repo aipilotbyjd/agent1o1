@@ -3,9 +3,7 @@ import { XCircle, ArrowRight, RotateCcw, HelpCircle } from 'lucide-react';
 import { useWorkspaceContext } from '@/context/workspace';
 import pages from '@/Routes/pages';
 
-// Every destination below is workspace-scoped in this app (`/:workspaceId/...`),
-// so the raw `to` values are resolved against the active workspace at render.
-// `workflows` is `playbooks` here.
+
 const settingsPages = pages.workspaceSettings.subPages!;
 const billingPages = settingsPages.billing.subPages!;
 const playbooksPath = pages.workspace.subPages!.playbooks.to;
@@ -24,7 +22,8 @@ const REASSURANCES = [
 const BillingCancelPage = () => {
 	const [searchParams] = useSearchParams();
 	const { activeWorkspaceId } = useWorkspaceContext();
-	const toWorkspacePath = (to: string) => to.replace(':workspaceId', activeWorkspaceId);
+	const workspaceId = searchParams.get('ws') || activeWorkspaceId;
+	const toWorkspacePath = (to: string) => to.replace(':workspaceId', workspaceId);
 	const type = searchParams.get('type') ?? 'plan';
 	const backTo = toWorkspacePath(TYPE_BACK[type] ?? settingsPages.billing.to);
 	const backLabel = type === 'credits' ? 'Back to Buy Credits' : 'Back to Plans';

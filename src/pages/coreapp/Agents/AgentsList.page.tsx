@@ -15,6 +15,7 @@ import {
 	Megaphone,
 	Briefcase,
 	MoreHorizontal,
+	Copy,
 } from 'lucide-react';
 import { OutletContextType } from './_layouts/Agents.layout';
 import { useConfirm } from '@/context/confirm';
@@ -22,7 +23,7 @@ import Breadcrumb from '@/components/layout/Breadcrumb';
 import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
 import { useWorkspaceContext } from '@/context/workspace';
-import { useAgents, useDeleteAgent } from '@/api/modules/agents';
+import { useAgents, useDeleteAgent, useDuplicateAgent } from '@/api/modules/agents';
 
 interface IAgentItem {
 	id: string;
@@ -85,14 +86,9 @@ const AgentsListPage = () => {
 
 	const { data: apiAgents, isLoading } = useAgents(currentWorkspaceId);
 	const deleteAgentMutation = useDeleteAgent(currentWorkspaceId);
+	const duplicateAgentMutation = useDuplicateAgent(currentWorkspaceId);
 
-	// Map backend agents → view model.
-	//
-	// The old API carried `is_active`, `category`, `skills_count` and
-	// `conversations_count` on the agent. This backend has none of them: an agent
-	// row is id/name/slug/description/instructions/provider/model/temperature/
-	// settings/tags/folder. `category` is superseded by `tags`, which the agents
-	// index already eager-loads, so it costs no extra request.
+
 	const agents = useMemo<IAgentItem[]>(() => {
 		if (!apiAgents || apiAgents.length === 0) return [];
 		return apiAgents.map((a) => ({
@@ -104,7 +100,6 @@ const AgentsListPage = () => {
 		}));
 	}, [apiAgents]);
 
-	/** Tag vocabulary, derived from whatever the workspace's agents actually carry. */
 	const categories = useMemo(() => {
 		const seen = new Set<string>();
 		agents.forEach((a) => a.tags.forEach((t) => seen.add(t)));
@@ -537,6 +532,13 @@ const AgentsListPage = () => {
 												className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl bg-primary-400 text-primary-950 shadow-md shadow-primary-500/10 transition-transform hover:scale-105 hover:bg-primary-500 active:scale-95'
 												title='Run agent'>
 												<Play size={12} className='fill-current' />
+											</button>
+											<button
+												onClick={() => duplicateAgentMutation.mutate(agent.id)}
+												disabled={duplicateAgentMutation.isPending}
+												className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition-all hover:border-primary-300 hover:bg-primary-50 hover:text-primary-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:hover:border-primary-900/30 dark:hover:bg-primary-950/20'
+												title='Duplicate agent'>
+												<Copy size={12} />
 											</button>
 											<button
 												onClick={() => handleDelete(agent.id)}

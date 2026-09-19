@@ -12,22 +12,32 @@ import {
 	Play,
 	Trash2,
 	MoreHorizontal,
+	X,
+	Loader2,
+	Settings,
+	SlidersHorizontal,
+	Grid,
+	List,
 } from 'lucide-react';
 import { OutletContextType } from './_layouts/Blueprints.layout';
 import { useConfirm } from '@/context/confirm';
 import { notify } from '@/api/core';
 import Container from '@/components/layout/Container';
 import Breadcrumb from '@/components/layout/Breadcrumb';
+import Button from '@/components/ui/Button';
 import pages from '@/Routes/pages';
 import { useWorkspaceContext } from '@/context/workspace';
 import {
 	useWorkflowTemplates,
+	useWorkflowTemplate,
 	useDeleteWorkflowTemplate,
 	useUseWorkflowTemplate,
 	useAgentTemplates,
+	useAgentTemplate,
 	useDeleteAgentTemplate,
 	useUseAgentTemplate,
 	useTemplateCollections,
+	useTemplateCollection,
 	useDeleteTemplateCollection,
 	useUseTemplateCollection,
 } from '@/api/modules/templates';
@@ -38,6 +48,114 @@ type TTab = 'workflows' | 'agents' | 'collections';
 
 /** Page paths are templates (`/:workspaceId/...`). */
 const useWorkspacePath = (ws: string) => (to: string) => to.replace(':workspaceId', ws);
+
+interface IPreviewNode {
+	id: string;
+	type?: string;
+	position?: { x: number; y: number };
+	data?: { label?: string };
+}
+
+interface IPreviewEdge {
+	id: string;
+	source: string;
+	target: string;
+}
+
+// Mini read-only node graph visualizer
+const GraphPreview = ({
+	nodes = [],
+	edges = [],
+}: {
+	nodes?: IPreviewNode[];
+	edges?: IPreviewEdge[];
+}) => {
+	if (!nodes || nodes.length === 0) {
+		return (
+			<div className='flex h-48 items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50 text-sm text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/30'>
+				No graph layout available
+			</div>
+		);
+	}
+
+	// Normalise coordinates to fit in container
+	const coords = nodes.map((n) => ({ x: n.position?.x ?? 0, y: n.position?.y ?? 0 }));
+	const minX = Math.min(...coords.map((c) => c.x));
+	const maxX = Math.max(...coords.map((c) => c.x));
+	const minY = Math.min(...coords.map((c) => c.y));
+	const maxY = Math.max(...coords.map((c) => c.y));
+
+	const widthRange = maxX - minX || 1;
+	const heightRange = maxY - minY || 1;
+
+	// Scale variables
+	const containerWidth = 500;
+	const containerHeight = 200;
+	const padding = 50;
+
+	const scaledNodes = nodes.map((node) => {
+		const nx = node.position?.x ?? 0;
+		const ny = node.position?.y ?? 0;
+		const x = padding + ((nx - minX) / widthRange) * (containerWidth - padding * 2);
+		const y = padding + ((ny - minY) / heightRange) * (containerHeight - padding * 2);
+		return { ...node, x, y };
+	});
+
+	return (
+		<div className='relative h-[240px] w-full overflow-hidden rounded-xl border border-zinc-100 bg-zinc-900/5 p-4 dark:border-zinc-800 dark:bg-zinc-900/20'>
+			<svg className='pointer-events-none absolute inset-0 h-full w-full'>
+				<defs>
+					<marker
+						id='arrow'
+						viewBox='0 0 10 10'
+						refX='22'
+						refY='5'
+						markerWidth='6'
+						markerHeight='6'
+						orient='auto-start-reverse'>
+						<path d='M 0 1 L 10 5 L 0 9 z' fill='#8B5CF6' />
+					</marker>
+				</defs>
+				{edges.map((edge) => {
+					const sourceNode = scaledNodes.find((n) => n.id === edge.source);
+					const targetNode = scaledNodes.find((n) => n.id === edge.target);
+					if (!sourceNode || !targetNode) return null;
+
+					return (
+						<line
+							key={edge.id}
+							x1={sourceNode.x}
+							y1={sourceNode.y}
+							x2={targetNode.x}
+							y2={targetNode.y}
+							stroke='#8B5CF6'
+							strokeWidth='2'
+							strokeDasharray='4 4'
+							markerEnd='url(#arrow)'
+							className='opacity-70'
+						/>
+					);
+				})}
+			</svg>
+			{scaledNodes.map((node) => (
+				<div
+					key={node.id}
+					style={{
+						position: 'absolute',
+						left: `${node.x}px`,
+						top: `${node.y}px`,
+						transform: 'translate(-50%, -50%)',
+					}}
+					className='flex max-w-[150px] items-center gap-2 overflow-hidden rounded-lg border border-primary-200 bg-white px-3 py-1.5 shadow-xs dark:border-zinc-800 dark:bg-zinc-950'>
+					<div className='h-2 w-2 shrink-0 rounded-full bg-primary-400' />
+					<div className='truncate text-[10px] font-bold text-zinc-800 select-none dark:text-zinc-200'>
+						{node.data?.label || node.type || 'Action'}
+					</div>
+				</div>
+			))}
+		</div>
+	);
+};
 
 const BlueprintsListPage = () => {
 	const { setHeaderLeft } = useOutletContext<OutletContextType>();
@@ -59,11 +177,22 @@ const BlueprintsListPage = () => {
 	const [searchQuery, setSearchQuery] = useState('');
 	const [selectedCategory, setSelectedCategory] = useState('');
 
+	// Details dialog trigger
+	const [previewId, setPreviewId] = useState<string | null>(null);
+
 	// None of these endpoints take query params — the whole workspace list
 	// comes back at once, so search/category filter client-side.
 	const { data: workflows, isLoading: isWfsLoading } = useWorkflowTemplates(ws);
 	const { data: agents, isLoading: isAgentsLoading } = useAgentTemplates(ws);
 	const { data: collections, isLoading: isCollsLoading } = useTemplateCollections(ws);
+
+	// Fetch details when previewId is active. The hooks self-guard on an empty id.
+	const { data: wfDetail } = useWorkflowTemplate(ws, previewId && activeTab === 'workflows' ? previewId : '');
+	const { data: agentDetail } = useAgentTemplate(ws, previewId && activeTab === 'agents' ? previewId : '');
+	const { data: collectionDetail } = useTemplateCollection(
+		ws,
+		previewId && activeTab === 'collections' ? previewId : '',
+	);
 
 	const deleteWorkflowTemplate = useDeleteWorkflowTemplate(ws);
 	const useWorkflowTemplateMutation = useUseWorkflowTemplate(ws);
@@ -334,10 +463,11 @@ const BlueprintsListPage = () => {
 
 						{activeTab !== 'collections' && (
 							<div className='relative w-full sm:w-auto'>
+								<SlidersHorizontal className='pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400 dark:text-zinc-600' />
 								<select
 									value={selectedCategory}
 									onChange={(e) => setSelectedCategory(e.target.value)}
-									className='shadow-3xs w-full cursor-pointer appearance-none rounded-xl border border-zinc-200/80 bg-white py-2 pr-8 pl-3 text-xs text-zinc-700 focus:ring-1 focus:ring-primary-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300'>
+									className='shadow-3xs w-full cursor-pointer appearance-none rounded-xl border border-zinc-200/80 bg-white py-2 pr-8 pl-9 text-xs text-zinc-700 focus:ring-1 focus:ring-primary-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300'>
 									<option value=''>All Categories</option>
 									{(activeTab === 'workflows' ? wfCategories : agentCategories).map((cat) => (
 										<option key={cat.category} value={cat.category}>
@@ -353,17 +483,43 @@ const BlueprintsListPage = () => {
 
 				{/* Main grid list */}
 				<div className='mt-8'>
-					<div className='mb-6 flex items-center gap-2'>
-						<h2 className='text-sm font-bold text-zinc-800 dark:text-zinc-200'>
-							{activeTab === 'workflows' ? 'All Workflows' : activeTab === 'agents' ? 'All Agents' : 'All Collections'}
-						</h2>
-						<span className='rounded-full bg-zinc-200/50 px-2.5 py-0.5 text-[10px] font-extrabold text-zinc-500 dark:bg-zinc-800/80 dark:text-zinc-400'>
-							{activeTab === 'workflows'
-								? filteredWorkflows.length
-								: activeTab === 'agents'
-									? filteredAgents.length
-									: filteredCollections.length}
-						</span>
+					<div className='mb-6 flex items-center justify-between gap-2'>
+						<div className='flex items-center gap-2'>
+							<h2 className='text-sm font-bold text-zinc-800 dark:text-zinc-200'>
+								{activeTab === 'workflows' ? 'All Workflows' : activeTab === 'agents' ? 'All Agents' : 'All Collections'}
+							</h2>
+							<span className='rounded-full bg-zinc-200/50 px-2.5 py-0.5 text-[10px] font-extrabold text-zinc-500 dark:bg-zinc-800/80 dark:text-zinc-400'>
+								{activeTab === 'workflows'
+									? filteredWorkflows.length
+									: activeTab === 'agents'
+										? filteredAgents.length
+										: filteredCollections.length}
+							</span>
+						</div>
+
+						<div className='flex items-center gap-3'>
+							{/* Sort Dropdown */}
+							<div className='relative'>
+								<select
+									style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
+									className='shadow-3xs cursor-pointer appearance-none rounded-xl border border-zinc-200/80 bg-white py-1.5 pr-8 pl-3 text-[11px] text-zinc-600 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400'>
+									<option>Latest Added</option>
+									<option>Popularity</option>
+									<option>Alphabetical</option>
+								</select>
+								<ChevronDown className='pointer-events-none absolute top-1/2 right-2 h-3 w-3 -translate-y-1/2 text-zinc-400' />
+							</div>
+
+							{/* Layout Switcher */}
+							<div className='flex items-center rounded-lg border border-zinc-200/20 bg-zinc-200/55 p-0.5 dark:bg-zinc-900'>
+								<button className='text-primary-600 shadow-3xs cursor-pointer rounded-md bg-white p-1.5 dark:bg-zinc-800 dark:text-primary-400'>
+									<Grid className='h-3.5 w-3.5' />
+								</button>
+								<button className='cursor-pointer rounded-md p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
+									<List className='h-3.5 w-3.5' />
+								</button>
+							</div>
+						</div>
 					</div>
 
 					{(activeTab === 'workflows' && isWfsLoading) ||
@@ -394,6 +550,7 @@ const BlueprintsListPage = () => {
 											footerLeft={`${wf.graph.nodes.length} node${wf.graph.nodes.length === 1 ? '' : 's'}`}
 											usageCount={wf.usage_count}
 											isUsePending={useWorkflowTemplateMutation.isPending}
+											onPreview={() => setPreviewId(wf.id)}
 											onUse={() => handleUseWorkflow(wf)}
 											onDelete={() => handleDeleteWorkflow(wf)}
 										/>
@@ -412,6 +569,7 @@ const BlueprintsListPage = () => {
 											footerLeft={agent.config.model || 'Default model'}
 											usageCount={agent.usage_count}
 											isUsePending={useAgentTemplateMutation.isPending}
+											onPreview={() => setPreviewId(agent.id)}
 											onUse={() => handleUseAgent(agent)}
 											onDelete={() => handleDeleteAgent(agent)}
 										/>
@@ -430,6 +588,7 @@ const BlueprintsListPage = () => {
 											footerLeft={`${coll.item_count ?? 0} items`}
 											usageCount={0}
 											isUsePending={useCollectionMutation.isPending}
+											onPreview={() => setPreviewId(coll.id)}
 											onUse={() => handleUseCollection(coll)}
 											onDelete={() => handleDeleteCollection(coll)}
 										/>
@@ -439,11 +598,389 @@ const BlueprintsListPage = () => {
 					)}
 				</div>
 			</div>
+
+			<AnimatePresence>
+				{previewId && (
+					<div className='fixed inset-0 z-50 flex justify-end'>
+						{/* Backdrop */}
+						<motion.div
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 0.5 }}
+							exit={{ opacity: 0 }}
+							onClick={() => setPreviewId(null)}
+							className='absolute inset-0 bg-black/60 backdrop-blur-xs'
+						/>
+						{/* Slide-over Card */}
+						<motion.div
+							initial={{ x: '100%' }}
+							animate={{ x: 0 }}
+							exit={{ x: '100%' }}
+							transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+							className='relative z-10 flex h-full w-full max-w-xl flex-col border-l border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950'>
+							{/* Close trigger button */}
+							<button
+								onClick={() => setPreviewId(null)}
+								className='absolute top-4 right-4 rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-900'>
+								<X className='h-5 w-5' />
+							</button>
+
+							{/* Active tab details content */}
+							<div className='flex-1 overflow-y-auto p-6 md:p-8'>
+								{/* Workflow Template Preview Details */}
+								{activeTab === 'workflows' && (
+									<>
+										{!wfDetail ? (
+											<div className='flex h-full flex-col items-center justify-center gap-2'>
+												<Loader2 className='h-6 w-6 animate-spin text-primary-500' />
+												<span className='text-xs text-zinc-500'>
+													Fetching template metadata...
+												</span>
+											</div>
+										) : (
+											<div className='flex flex-col gap-6'>
+												{/* Header info */}
+												<div className='flex items-center gap-4'>
+													<div
+														style={{ backgroundColor: `${wfDetail.color ?? '#C4EE3D'}15` }}
+														className='flex h-12 w-12 items-center justify-center rounded-xl border border-zinc-100 dark:border-zinc-800'>
+														<Workflow className='h-6 w-6' style={{ color: wfDetail.color ?? undefined }} />
+													</div>
+													<div>
+														<h2 className='text-lg font-bold text-zinc-800 dark:text-zinc-100'>
+															{wfDetail.name}
+														</h2>
+														<div className='mt-1 flex items-center gap-2'>
+															<span className='text-xs text-zinc-400 capitalize'>
+																{wfDetail.category ?? 'uncategorized'}
+															</span>
+															<span className='text-zinc-300'>•</span>
+															<span className='text-[10px] text-zinc-400'>
+																{wfDetail.usage_count || 0} active deployments
+															</span>
+														</div>
+													</div>
+												</div>
+
+												{/* Description */}
+												<div>
+													<h3 className='mb-2 text-xs font-bold tracking-wider text-zinc-800 uppercase dark:text-zinc-200'>
+														About this Template
+													</h3>
+													<p className='text-xs leading-relaxed text-zinc-600 dark:text-zinc-400'>
+														{wfDetail.description ||
+															'Pre-configured node layout to easily connect tools and run task sequences automatically.'}
+													</p>
+												</div>
+
+												{/* Visual Graph Preview */}
+												<div>
+													<h3 className='mb-3 text-xs font-bold tracking-wider text-zinc-800 uppercase dark:text-zinc-200'>
+														Workflow Graph Preview
+													</h3>
+													<GraphPreview
+														nodes={(wfDetail.graph?.nodes as IPreviewNode[]) || []}
+														edges={(wfDetail.graph?.edges as IPreviewEdge[]) || []}
+													/>
+												</div>
+
+												{/* Use Template Action */}
+												<div className='mt-4 border-t border-zinc-200 pt-6 dark:border-zinc-800'>
+													<Button
+														color='violet'
+														variant='solid'
+														dimension='lg'
+														className='flex w-full cursor-pointer items-center justify-center gap-2 py-3 text-sm font-bold shadow-lg transition-all hover:shadow-xl'
+														isLoading={useWorkflowTemplateMutation.isPending}
+														onClick={() => {
+															setPreviewId(null);
+															handleUseWorkflow(wfDetail);
+														}}>
+														{!useWorkflowTemplateMutation.isPending && (
+															<Play className='h-4 w-4 fill-current' />
+														)}
+														Use Template
+													</Button>
+												</div>
+											</div>
+										)}
+									</>
+								)}
+
+								{/* Agent Template Preview Details */}
+								{activeTab === 'agents' && (
+									<>
+										{!agentDetail ? (
+											<div className='flex h-full flex-col items-center justify-center gap-2'>
+												<Loader2 className='h-6 w-6 animate-spin text-primary-500' />
+												<span className='text-xs text-zinc-500'>Fetching agent metadata...</span>
+											</div>
+										) : (
+											<div className='flex flex-col gap-6'>
+												{/* Header info */}
+												<div className='flex items-center gap-4'>
+													<div
+														style={{ backgroundColor: `${agentDetail.color ?? '#C4EE3D'}15` }}
+														className='flex h-12 w-12 items-center justify-center rounded-xl border border-zinc-100 dark:border-zinc-800'>
+														<Cpu className='h-6 w-6' style={{ color: agentDetail.color ?? undefined }} />
+													</div>
+													<div>
+														<h2 className='text-lg font-bold text-zinc-800 dark:text-zinc-100'>
+															{agentDetail.name}
+														</h2>
+														<div className='mt-1 flex items-center gap-2'>
+															<span className='text-xs text-zinc-400 capitalize'>
+																{agentDetail.category ?? 'uncategorized'}
+															</span>
+															<span className='text-zinc-300'>•</span>
+															<span className='text-[10px] text-zinc-400'>
+																{agentDetail.usage_count || 0} deploys
+															</span>
+														</div>
+													</div>
+												</div>
+
+												{/* Description */}
+												<div>
+													<h3 className='mb-2 text-xs font-bold tracking-wider text-zinc-800 uppercase dark:text-zinc-200'>
+														Description
+													</h3>
+													<p className='text-xs leading-relaxed text-zinc-600 dark:text-zinc-400'>
+														{agentDetail.description ||
+															'Pre-configured autonomous conversational AI agent, with full system instructions, system prompts, and pre-packaged tools.'}
+													</p>
+												</div>
+
+												{/* Model specifications */}
+												<div className='grid grid-cols-2 gap-4'>
+													<div className='rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900'>
+														<div className='mb-1 text-[10px] font-bold text-zinc-400 uppercase'>
+															Model Provider
+														</div>
+														<div className='text-xs font-bold text-zinc-800 capitalize dark:text-zinc-200'>
+															{agentDetail.config.provider || 'Anthropic'}
+														</div>
+													</div>
+													<div className='rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900'>
+														<div className='mb-1 text-[10px] font-bold text-zinc-400 uppercase'>LLM Model</div>
+														<div className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
+															{agentDetail.config.model || '—'}
+														</div>
+													</div>
+												</div>
+
+												{/* Agent Parameters */}
+												<div>
+													<h3 className='mb-2 text-xs font-bold tracking-wider text-zinc-800 uppercase dark:text-zinc-200'>
+														Agent Parameters
+													</h3>
+													<div className='grid grid-cols-4 gap-2.5'>
+														<ParamTile label='Temp' value={agentDetail.config.temperature} />
+														<ParamTile label='Max Tokens' value={agentDetail.config.settings?.max_tokens} />
+														<ParamTile label='Max Steps' value={agentDetail.config.settings?.max_steps} />
+														<ParamTile
+															label='Timeout'
+															value={agentDetail.config.settings?.timeout_seconds}
+															suffix='s'
+														/>
+													</div>
+												</div>
+
+												{/* Pre-packaged tools */}
+												{agentDetail.config.tool_bindings && agentDetail.config.tool_bindings.length > 0 && (
+													<div>
+														<h3 className='mb-2 text-xs font-bold tracking-wider text-zinc-800 uppercase dark:text-zinc-200'>
+															Available System Tools
+														</h3>
+														<div className='flex flex-col gap-2'>
+															{(agentDetail.config.tool_bindings as TToolBinding[]).map((t, idx) => (
+																<div
+																	key={idx}
+																	className='flex gap-2.5 rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900'>
+																	<div className='flex h-7 w-7 shrink-0 items-center justify-center rounded border border-primary-100 bg-primary-50 text-primary-500 dark:border-primary-900 dark:bg-primary-950/20'>
+																		<Settings className='animate-spin-slow h-4 w-4' />
+																	</div>
+																	<div>
+																		<div className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
+																			{t?.name ?? `Tool ${idx + 1}`}
+																		</div>
+																		{t?.description && (
+																			<div className='mt-0.5 text-[10px] leading-relaxed text-zinc-500 dark:text-zinc-400'>
+																				{t.description}
+																			</div>
+																		)}
+																	</div>
+																</div>
+															))}
+														</div>
+													</div>
+												)}
+
+												{/* System Prompt */}
+												{agentDetail.config.instructions && (
+													<div>
+														<h3 className='mb-2 text-xs font-bold tracking-wider text-zinc-800 uppercase dark:text-zinc-200'>
+															System Instructions
+														</h3>
+														<div className='max-h-[120px] overflow-y-auto rounded-xl border border-zinc-200 bg-zinc-900/5 p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap text-zinc-700 select-all dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400'>
+															{agentDetail.config.instructions}
+														</div>
+													</div>
+												)}
+
+												{/* Deploy Agent action */}
+												<div className='mt-4 border-t border-zinc-200 pt-6 dark:border-zinc-800'>
+													<Button
+														color='primary'
+														variant='solid'
+														dimension='lg'
+														className='flex w-full cursor-pointer items-center justify-center gap-2 py-3 text-sm font-bold shadow-lg transition-all hover:shadow-xl'
+														isLoading={useAgentTemplateMutation.isPending}
+														onClick={() => {
+															setPreviewId(null);
+															handleUseAgent(agentDetail);
+														}}>
+														{!useAgentTemplateMutation.isPending && (
+															<Play className='h-4 w-4 fill-current' />
+														)}
+														Deploy Agent
+													</Button>
+												</div>
+											</div>
+										)}
+									</>
+								)}
+
+								{/* Template Collection Preview Details */}
+								{activeTab === 'collections' && (
+									<>
+										{!collectionDetail ? (
+											<div className='flex h-full flex-col items-center justify-center gap-2'>
+												<Loader2 className='h-6 w-6 animate-spin text-primary-500' />
+												<span className='text-xs text-zinc-500'>Fetching collection stack...</span>
+											</div>
+										) : (
+											<div className='flex flex-col gap-6'>
+												{/* Header info */}
+												<div className='flex items-center gap-4'>
+													<div
+														style={{ backgroundColor: `${collectionDetail.color ?? '#F59E0B'}15` }}
+														className='flex h-12 w-12 items-center justify-center rounded-xl border border-zinc-100 dark:border-zinc-800'>
+														<Layers className='h-6 w-6' style={{ color: collectionDetail.color ?? undefined }} />
+													</div>
+													<div>
+														<h2 className='text-lg font-bold text-zinc-800 dark:text-zinc-100'>
+															{collectionDetail.name}
+														</h2>
+														<div className='mt-1 flex items-center gap-2'>
+															<span className='text-xs text-zinc-400'>Template Stack</span>
+															<span className='text-zinc-300'>•</span>
+															<span className='text-[10px] text-zinc-400'>
+																{collectionDetail.items?.length ?? 0} assets included
+															</span>
+														</div>
+													</div>
+												</div>
+
+												{/* Description */}
+												<div>
+													<h3 className='mb-2 text-xs font-bold tracking-wider text-zinc-800 uppercase dark:text-zinc-200'>
+														About this Bundle
+													</h3>
+													<p className='text-xs leading-relaxed text-zinc-600 dark:text-zinc-400'>
+														{collectionDetail.description || 'No description provided.'}
+													</p>
+												</div>
+
+												{/* List of items included */}
+												<div>
+													<h3 className='mb-3 text-xs font-bold tracking-wider text-zinc-800 uppercase dark:text-zinc-200'>
+														Included Assets ({collectionDetail.items?.length ?? 0})
+													</h3>
+
+													<div className='flex flex-col gap-3'>
+														{(collectionDetail.items ?? []).map((item, idx) => {
+															const isAgent = item.templatable_type === 'agent_template';
+															const asset = item.templatable;
+															const name = asset?.name || (isAgent ? 'Agent' : 'Workflow');
+															const color = asset?.color || (isAgent ? '#3B82F6' : '#10B981');
+															const desc = asset?.description || '';
+
+															return (
+																<div
+																	key={item.id ?? idx}
+																	className='flex gap-3.5 rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900'>
+																	<div
+																		style={{ backgroundColor: `${color}15` }}
+																		className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-100 dark:border-zinc-800'>
+																		{isAgent ? (
+																			<Cpu className='h-5 w-5' style={{ color }} />
+																		) : (
+																			<Workflow className='h-5 w-5' style={{ color }} />
+																		)}
+																	</div>
+																	<div className='flex-1'>
+																		<div className='flex items-center gap-2.5'>
+																			<h4 className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
+																				{name}
+																			</h4>
+																			<span className='rounded border border-zinc-200/40 bg-zinc-50 px-1.5 py-0.5 text-[9px] font-bold text-zinc-400 uppercase dark:bg-zinc-950'>
+																				{isAgent ? 'agent' : 'workflow'}
+																			</span>
+																		</div>
+																		<p className='mt-1 text-[10px] leading-relaxed text-zinc-500 dark:text-zinc-400'>
+																			{desc}
+																		</p>
+																	</div>
+																</div>
+															);
+														})}
+													</div>
+												</div>
+
+												{/* Deploy Collection action */}
+												<div className='mt-4 border-t border-zinc-200 pt-6 dark:border-zinc-800'>
+													<Button
+														color='amber'
+														variant='solid'
+														dimension='lg'
+														className='flex w-full cursor-pointer items-center justify-center gap-2 py-3 text-sm font-bold shadow-lg transition-all hover:shadow-xl'
+														isLoading={useCollectionMutation.isPending}
+														onClick={() => {
+															setPreviewId(null);
+															handleUseCollection(collectionDetail);
+														}}>
+														{!useCollectionMutation.isPending && <Play className='h-4 w-4 fill-current' />}
+														Deploy Collection
+													</Button>
+												</div>
+											</div>
+										)}
+									</>
+								)}
+							</div>
+						</motion.div>
+					</div>
+				)}
+			</AnimatePresence>
 		</Container>
 	);
 };
 
 // ─── Shared pieces ───────────────────────────────────────────────
+
+/** `config.tool_bindings` is `unknown[]` on the contract — the shape below is
+ *  what the agent editor writes, so read it defensively. */
+type TToolBinding = { name?: string; description?: string } | null;
+
+/** `config.settings` is a free-form bag; tolerate a missing/odd value. */
+const ParamTile = ({ label, value, suffix = '' }: { label: string; value?: unknown; suffix?: string }) => (
+	<div className='rounded-lg border border-zinc-100 bg-white p-2.5 text-center dark:border-zinc-800 dark:bg-zinc-900/40'>
+		<div className='mb-0.5 text-[9px] font-bold text-zinc-400 uppercase'>{label}</div>
+		<div className='text-xs font-bold text-zinc-800 dark:text-zinc-100'>
+			{value === null || value === undefined || value === '' ? '—' : `${String(value)}${suffix}`}
+		</div>
+	</div>
+);
 
 const EmptyState = ({ icon: Icon, title }: { icon: typeof Workflow; title: string }) => (
 	<div className='rounded-2xl border border-dashed border-zinc-200 bg-white/50 py-16 text-center dark:border-zinc-800 dark:bg-zinc-950/50'>
@@ -463,6 +1000,7 @@ const CatalogCard = ({
 	footerLeft,
 	usageCount,
 	isUsePending,
+	onPreview,
 	onUse,
 	onDelete,
 }: {
@@ -475,6 +1013,7 @@ const CatalogCard = ({
 	footerLeft: string;
 	usageCount: number;
 	isUsePending: boolean;
+	onPreview: () => void;
 	onUse: () => void;
 	onDelete: () => void;
 }) => {
@@ -489,7 +1028,8 @@ const CatalogCard = ({
 			animate={{ opacity: 1, y: 0 }}
 			exit={{ opacity: 0, y: 10 }}
 			transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-			className={`group relative flex flex-col rounded-2xl border border-slate-200/60 bg-white p-5 transition-all duration-300 hover:-translate-y-1 ${hoverBorder} hover:shadow-[0_12px_24px_-10px_rgba(16,24,40,0.06)] dark:border-zinc-800/80 dark:bg-zinc-950 dark:hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.5)]`}>
+			onClick={onPreview}
+			className={`group relative flex cursor-pointer flex-col rounded-2xl border border-slate-200/60 bg-white p-5 transition-all duration-300 hover:-translate-y-1 ${hoverBorder} hover:shadow-[0_12px_24px_-10px_rgba(16,24,40,0.06)] dark:border-zinc-800/80 dark:bg-zinc-950 dark:hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.5)]`}>
 			<div className='mb-3.5 flex items-start justify-between'>
 				<div className='flex min-w-0 items-center gap-3'>
 					<div
@@ -508,7 +1048,10 @@ const CatalogCard = ({
 				</div>
 				<div className='relative shrink-0'>
 					<button
-						onClick={() => setMenuOpen((o) => !o)}
+						onClick={(e) => {
+							e.stopPropagation();
+							setMenuOpen((o) => !o);
+						}}
 						title='More options'
 						className='rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:hover:bg-zinc-900 dark:hover:text-zinc-200'>
 						<MoreHorizontal className='h-4 w-4' />
@@ -516,7 +1059,8 @@ const CatalogCard = ({
 					{menuOpen && (
 						<div className='absolute top-8 right-0 z-10 w-32 overflow-hidden rounded-xl border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
 							<button
-								onClick={() => {
+								onClick={(e) => {
+									e.stopPropagation();
 									setMenuOpen(false);
 									onDelete();
 								}}
@@ -544,7 +1088,10 @@ const CatalogCard = ({
 			</div>
 
 			<button
-				onClick={onUse}
+				onClick={(e) => {
+					e.stopPropagation();
+					onUse();
+				}}
 				disabled={isUsePending}
 				className='mt-3 flex h-8 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-primary-400 text-[11px] font-black text-primary-950 transition-all hover:bg-primary-500 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'>
 				<Play size={12} />

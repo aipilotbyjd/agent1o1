@@ -1,16 +1,30 @@
 import { lazy } from 'react';
-import { Navigate } from 'react-router';
+import { Navigate, useParams } from 'react-router';
 import CoreAppLayout from '@/layouts/CoreApp.layout';
 import AgentLayout from '@/layouts/Agent.layout';
-import UnderConstructionPage from '@/pages/UnderConstruction.page';
 import pages, { TPages } from '@/Routes/pages';
 
 const workspacePages = pages.workspace.subPages as TPages;
-const dashboardPages = workspacePages.dashboard.subPages as TPages;
 const playbookEditorPages = pages.playbookEditor.subPages as TPages;
 const agentEditorPages = pages.agentEditor.subPages as TPages;
 
 const dashboardRelativePath = workspacePages.dashboard.to.replace(`${pages.workspace.to}/`, '');
+
+/**
+ * The dashboard sub-tab URLs (`/run-stats`, `/credit-usage`, `/pending-approvals`)
+ * are gone; anything still pointing at one lands on the dashboard rather than the
+ * global 404.
+ */
+const DashboardRedirect = () => {
+	const { workspaceId } = useParams<{ workspaceId: string }>();
+
+	return (
+		<Navigate
+			to={workspacePages.dashboard.to.replace(':workspaceId', workspaceId ?? '')}
+			replace
+		/>
+	);
+};
 
 const DashboardLayout = lazy(() => import('@/pages/coreapp/Dashboard/_layouts/Dashboard.layout'));
 const DashboardPage = lazy(() => import('@/pages/coreapp/Dashboard/Dashboard.page'));
@@ -59,16 +73,8 @@ const CoreAppPages = [
 						element: <DashboardPage />,
 					},
 					{
-						path: dashboardPages.runStats.to,
-						element: <UnderConstructionPage />,
-					},
-					{
-						path: dashboardPages.creditUsage.to,
-						element: <UnderConstructionPage />,
-					},
-					{
-						path: dashboardPages.pendingApprovals.to,
-						element: <UnderConstructionPage />,
+						path: '*',
+						element: <DashboardRedirect />,
 					},
 				],
 			},

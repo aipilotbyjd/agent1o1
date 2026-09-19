@@ -21,26 +21,6 @@ const workspace: TPage = {
 			to: '/:workspaceId/dashboard',
 			text: 'Dashboard',
 			icon: 'Home09',
-			subPages: {
-				runStats: {
-					id: 'runStats',
-					to: '/:workspaceId/dashboard/run-stats',
-					text: 'Run Stats',
-					icon: 'DashboardSquareSetting',
-				},
-				creditUsage: {
-					id: 'creditUsage',
-					to: '/:workspaceId/dashboard/credit-usage',
-					text: 'Credit Usage',
-					icon: 'PieChart09',
-				},
-				pendingApprovals: {
-					id: 'pendingApprovals',
-					to: '/:workspaceId/dashboard/pending-approvals',
-					text: 'Pending Approvals',
-					icon: 'CheckmarkBadge01',
-				},
-			},
 		},
 		playbooks: {
 			id: 'playbooks',
