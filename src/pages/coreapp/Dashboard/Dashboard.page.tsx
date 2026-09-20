@@ -30,11 +30,16 @@ import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
 import paths, { withWorkspace } from '@/Routes/paths';
 import { useAuth } from '@/context/auth';
+import { useOnboardingState, useDismissOnboarding } from '@/api/modules/onboarding';
 import type { TOnboardingStepKey } from '@/types/onboarding.type';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import { useDashboard } from './_helper/dashboard.adapter';
 import { STATUS_BADGE_COLORS, type TExecutionStatus } from './_types/dashboard.type';
+
+const workspacePages = pages.workspace.subPages!;
+const settingsPages = pages.settings.subPages!;
+const welcomePages = pages.welcome.subPages!;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const formatRelativeTime = (value?: number) => {
@@ -78,12 +83,13 @@ const buildSpark = (values: number[], w = 100, h = 30) => {
 };
 
 const onboardingIcons: Record<TOnboardingStepKey, React.ComponentType<{ size?: number }>> = {
-	verify_email: Mail,
-	complete_profile: User,
-	create_workspace: Bot,
-	add_credential: GitMerge,
-	create_workflow: GitMerge,
-	activate_workflow: Zap,
+	profile_picture: User,
+	create_workspace: Plus,
+	invite_team: Mail,
+	role_selection: ShieldCheck,
+	choose_plan: Crown,
+	connect_apps: GitMerge,
+	discovery_survey: FileText,
 };
 
 // KPI tile tones
@@ -154,34 +160,47 @@ const DashboardPage = () => {
 		},
 	];
 
-	// ─── Onboarding (from the authenticated user) ──────────────────────────────
-	const onboarding = userData?.onboarding;
+	// ─── Onboarding (GET /user/onboarding) ─────────────────────────────────────
+	const { data: onboarding } = useOnboardingState();
+	const dismissOnboarding = useDismissOnboarding();
 	const [isOnboardingDismissed, setIsOnboardingDismissed] = useState(false);
 	const showOnboarding =
-		!!onboarding && !onboarding.is_complete && !onboarding.is_dismissed && !isOnboardingDismissed;
-	const nextOnboardingStep = onboarding?.steps.find((item) => !item.done);
+		!!onboarding && !onboarding.completed && !onboarding.dismissed && !isOnboardingDismissed;
+	const completedStepCount = onboarding?.steps.filter((item) => item.completed).length ?? 0;
+	const nextOnboardingStep = onboarding?.steps.find((item) => !item.completed);
 
+	/**
+	 * The onboarding wizard is one route driven by its own step store, so only
+	 * the steps with a destination of their own get a direct link; the rest drop
+	 * the user back into the wizard.
+	 */
 	const handleOnboardingAction = (key: TOnboardingStepKey) => {
 		switch (key) {
-			case 'verify_email':
-				navigate('/verify-email');
-				break;
-			case 'complete_profile':
-				navigate('/onboarding');
+			case 'profile_picture':
+				navigate(toWorkspacePath(settingsPages.profile.to));
 				break;
 			case 'create_workspace':
-				navigate('/onboarding/create-workspace');
+				navigate(welcomePages.createWorkspace.to);
 				break;
-			case 'add_credential':
-				navigate('/integrations?connect=true');
+			case 'invite_team':
+				navigate(welcomePages.inviteTeam.to);
 				break;
-			case 'create_workflow':
-				navigate('/workflows?create=true');
+			case 'connect_apps':
+				navigate(toWorkspacePath(workspacePages.apps.to));
 				break;
-			case 'activate_workflow':
-				navigate('/workflows');
+			case 'choose_plan':
+				navigate(paths.billingPlans(currentWorkspaceId));
+				break;
+			case 'role_selection':
+			case 'discovery_survey':
+				navigate(pages.welcome.to);
 				break;
 		}
+	};
+
+	const handleDismissOnboarding = () => {
+		setIsOnboardingDismissed(true);
+		dismissOnboarding.mutate();
 	};
 
 	// ─── Banner identity ───────────────────────────────────────────────────────
@@ -244,7 +263,7 @@ const DashboardPage = () => {
 						<div className='flex-1 space-y-4'>
 							<h1 className='flex flex-wrap items-center gap-2 text-2xl font-black tracking-tight text-slate-900 md:text-3xl dark:text-white'>
 								Welcome back,{' '}
-								<span className='text-slate-955 dark:bg-gradient-to-r dark:from-primary-400 dark:to-primary-300 dark:bg-clip-text dark:text-transparent'>
+								<span className='text-slate-900 dark:bg-gradient-to-r dark:from-primary-400 dark:to-primary-300 dark:bg-clip-text dark:text-transparent'>
 									{userName}
 								</span>
 								<motion.span
@@ -286,7 +305,7 @@ const DashboardPage = () => {
 
 							<div className='flex flex-wrap items-center gap-2.5 pt-1'>
 								{/* Active Workspace */}
-								<div className='flex items-center gap-1.5 rounded-full border border-white/20 bg-white/40 px-3 py-1 text-[11px] font-bold text-slate-900 shadow-xs dark:border-white/10 dark:bg-slate-900/60 dark:text-white/95'>
+								<div className='flex items-center gap-1.5 rounded-full border border-white/20 bg-white/40 px-3 py-1 text-[11px] font-bold text-slate-900 shadow-xs dark:border-white/10 dark:bg-bg-card/60 dark:text-white/95'>
 									<span className='text-[10px] font-extrabold tracking-wider text-slate-800/80 uppercase dark:text-zinc-400'>
 										Workspace
 									</span>
@@ -440,13 +459,13 @@ const DashboardPage = () => {
 										Account setup
 									</p>
 									<h2 className='mt-1 text-sm font-black text-slate-950 dark:text-white'>
-										{onboarding.progress} of {onboarding.total} milestones complete
+										{completedStepCount} of {onboarding.steps.length} milestones complete
 									</h2>
 								</div>
 								<button
 									type='button'
-									onClick={() => setIsOnboardingDismissed(true)}
-									className='flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-400 transition hover:bg-slate-50 hover:text-slate-650 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
+									onClick={handleDismissOnboarding}
+									className='flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
 									<X className='h-3.5 w-3.5' />
 									Dismiss
 								</button>
@@ -456,7 +475,7 @@ const DashboardPage = () => {
 								<div
 									className='h-full rounded-full bg-gradient-to-r from-primary-400 to-primary-400 transition-all duration-500'
 									style={{
-										width: `${Math.min(100, (onboarding.progress / Math.max(onboarding.total, 1)) * 100)}%`,
+										width: `${(completedStepCount / Math.max(onboarding.steps.length, 1)) * 100}%`,
 									}}
 								/>
 							</div>
@@ -466,10 +485,10 @@ const DashboardPage = () => {
 									const isNext = nextOnboardingStep?.key === item.key;
 									const IconComp = onboardingIcons[item.key] || Circle;
 									const cardBorder =
-										isNext && !item.done
+										isNext && !item.completed
 											? 'border-primary-400 shadow-sm'
 											: 'border-border-main';
-									const iconStyle = item.done
+									const iconStyle = item.completed
 										? 'bg-primary-100/50 text-primary-600 dark:bg-primary-950/20 dark:text-primary-400'
 										: isNext
 											? 'bg-primary-100/60 text-primary-600 dark:bg-primary-950/40 dark:text-primary-400'
@@ -487,7 +506,7 @@ const DashboardPage = () => {
 												</div>
 												<div className='min-w-0 flex-1'>
 													<span
-														className={`block truncate text-xs font-black ${item.done ? 'text-slate-500 dark:text-zinc-400' : 'text-slate-805 dark:text-zinc-100'}`}>
+														className={`block truncate text-xs font-black ${item.completed ? 'text-slate-500 dark:text-zinc-400' : 'text-slate-800 dark:text-zinc-100'}`}>
 														{item.label}
 													</span>
 													<span className='mt-0.5 block truncate text-[10px] leading-relaxed font-semibold text-slate-400 dark:text-zinc-500'>
@@ -496,7 +515,7 @@ const DashboardPage = () => {
 												</div>
 											</div>
 											<div className='shrink-0 pl-1'>
-												{item.done ? (
+												{item.completed ? (
 													<div className='flex h-4.5 w-4.5 items-center justify-center rounded-full bg-primary-400 text-primary-950'>
 														<Check className='h-3 w-3 stroke-[3]' />
 													</div>

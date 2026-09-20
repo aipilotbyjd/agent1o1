@@ -90,10 +90,10 @@ const AgentAsideTemplate = () => {
 	};
 
 	return (
-		<Aside className='border-e border-zinc-200/80 bg-white dark:border-zinc-800/80 dark:bg-zinc-950'>
+		<Aside>
 			{/* Sidebar Header */}
 			<div
-				className={`flex h-14 items-center border-b border-zinc-100 dark:border-zinc-800/80 ${
+				className={`flex h-14 items-center ${
 					asideStatus ? 'justify-between px-4' : 'justify-center px-2'
 				}`}>
 				<div className='flex items-center gap-2'>
