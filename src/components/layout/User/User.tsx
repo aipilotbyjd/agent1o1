@@ -42,7 +42,7 @@ const User: FC<IUserProps> = (props) => {
 		<div data-component-name='User' className={classNames('relative', className)} {...rest}>
 			<div
 				className={classNames(
-					'mb-2 min-w-[4.5rem] overflow-hidden rounded-xl bg-white dark:bg-zinc-950',
+					'bg-bg-card dark:bg-bg-card border-border-main mb-2 min-w-[4.5rem] overflow-hidden rounded-xl border',
 					{
 						'ltr:translate-x-[-0.625rem] rtl:translate-x-[0.625rem]': !asideStatus,
 					},
@@ -67,7 +67,7 @@ const User: FC<IUserProps> = (props) => {
 					) : (
 						<div
 							className={classNames(
-								'bg-primary-500/25 text-primary-500 flex aspect-square h-12 w-12 items-center justify-center',
+								'bg-primary-100/50 text-primary-800 dark:bg-primary-950/40 dark:text-primary-400 flex aspect-square h-12 w-12 items-center justify-center font-bold',
 								[`${roundedCustom(-2)}`],
 							)}>
 							{name && getFirstLetterUtil(name)}
@@ -76,11 +76,11 @@ const User: FC<IUserProps> = (props) => {
 					<div className='flex basis-full flex-wrap items-center truncate'>
 						<div className='flex basis-full items-center gap-2 truncate'>
 							{namePrefix && <span>{namePrefix}</span>}
-							<span className='truncate font-semibold'>{name}</span>
+							<span className='truncate font-bold text-slate-800 dark:text-white'>{name}</span>
 							{nameSuffix && <span>{nameSuffix}</span>}
 						</div>
 						{position && (
-							<div className='basis-full truncate text-xs first-letter:uppercase'>
+							<div className='basis-full truncate text-xs text-slate-400 first-letter:uppercase dark:text-zinc-500'>
 								{position}
 							</div>
 						)}
@@ -107,11 +107,11 @@ const User: FC<IUserProps> = (props) => {
 				</AnimatePresence>
 			</div>
 			<span
-				className={classNames('absolute end-0 top-0 -me-1 -mt-1 flex h-3 w-3', {
-					'ltr:translate-x-[0.625rem] rtl:translate-x-[-0.625rem]': !asideStatus,
+				className={classNames('absolute end-4 top-1/2 flex h-2.5 w-2.5 -translate-y-1/2', {
+					hidden: !asideStatus,
 				})}>
-				<span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75' />
-				<span className='relative inline-flex h-3 w-3 rounded-full bg-blue-500' />
+				<span className='bg-primary-400 absolute inline-flex h-full w-full animate-ping rounded-full opacity-75' />
+				<span className='relative inline-flex h-2.5 w-2.5 rounded-full bg-[#CFF54A]' />
 			</span>
 		</div>
 	);

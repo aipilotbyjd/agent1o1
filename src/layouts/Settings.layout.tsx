@@ -13,7 +13,7 @@ const SettingsLayout = () => {
 	return (
 		<>
 			<SettingsAsideTemplate />
-			<Wrapper borderDisabled={true} className='min-h-0 overflow-y-auto'>
+			<Wrapper className='min-h-0 overflow-y-auto'>
 				<Header>
 					<HeaderLeft>Settings</HeaderLeft>
 					<HeaderRight>
