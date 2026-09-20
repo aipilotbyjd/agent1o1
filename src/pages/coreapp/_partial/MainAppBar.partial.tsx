@@ -1,4 +1,4 @@
-import { CheckCircle2, Cloud, Menu, Moon, Play, Rocket, Settings2, Sun } from 'lucide-react';
+import { CheckCircle2, Menu, Moon, Play, Rocket, Settings2, Sun } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -93,26 +93,21 @@ const MainAppBar = ({
 	const { isDarkTheme, setDarkModeStatus } = useDarkMode();
 
 	return (
-		<header className='flex h-16 shrink-0 items-center gap-3 border-b border-zinc-200 bg-white/95 px-4 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/92'>
+		<header className='flex h-14 shrink-0 items-center gap-3 border-b border-zinc-200 bg-white/95 px-4 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/92'>
 			<MainAppBarIconButton title='Open workspace sidebar' onClick={toggleAside} className={toggleClassName}>
 				<Menu size={16} />
 			</MainAppBarIconButton>
 
-			<div className='min-w-0 flex-1'>
-				<div className='flex items-center gap-3'>
-					<div className='max-w-xl min-w-0 flex-1 truncate rounded-lg border border-transparent bg-transparent px-1 py-1 text-[15px] font-semibold tracking-tight text-zinc-950 dark:text-white'>
-						{title}
-					</div>
-					<span className='rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-100'>
-						Draft
-					</span>
-				</div>
-				<div className='mt-0.5 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-500'>
-					<Cloud size={13} />
-					<span>{status}</span>
-					<span className='h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-700' />
-					<span>{meta ?? 'Updated just now'}</span>
-				</div>
+			<div className='flex min-w-0 flex-1 items-center gap-3'>
+				<span className='min-w-0 truncate text-[15px] font-semibold tracking-tight text-zinc-950 dark:text-white'>
+					{title}
+				</span>
+				<span className='shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-100'>
+					Draft
+				</span>
+				<span className='hidden min-w-0 truncate text-xs text-zinc-500 sm:inline dark:text-zinc-500'>
+					{status} · {meta ?? 'Updated just now'}
+				</span>
 			</div>
 
 			<div className='hidden items-center gap-2 md:flex'>
