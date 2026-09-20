@@ -1,4 +1,4 @@
-import Dropdown, { DropdownItem, DropdownMenu, DropdownToggle } from '@/components/ui/Dropdown';
+import Dropdown, { DropdownMenu, DropdownToggle } from '@/components/ui/Dropdown';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import DARK_MODE from '@/constants/darkMode.constant';
@@ -10,10 +10,6 @@ import { AsideFooter } from '@/components/layout/Aside';
 import useAsideStatus from '@/hooks/useAsideStatus';
 import { useAuth } from '@/context/auth';
 import useDarkMode from '@/hooks/useDarkMode';
-import { useTranslation } from 'react-i18next';
-import { useContext } from 'react';
-import ThemeContext from '@/context/theme';
-import LANG from '@/constants/lang.constant';
 import useFontSize from '@/hooks/useFontSize';
 import useResolvePath from '@/hooks/useResolvePath';
 import { useNavigate } from 'react-router';
@@ -27,13 +23,7 @@ const AsideFooterPart = () => {
 
 	const { onLogout } = useAuth();
 
-	const { i18n } = useTranslation();
-	const { setLanguage } = useContext(ThemeContext);
-
 	const { userData, tokenStorage } = useAuth();
-
-	const langArray = Object.values(LANG);
-	const activeLang = langArray.filter((key) => key.lng === i18n.language)[0];
 
 	const { fontSize, setFontSize } = useFontSize();
 
@@ -41,55 +31,28 @@ const AsideFooterPart = () => {
 		<AsideFooter>
 			{asideStatus && (
 				<div className='flex justify-between gap-3 p-3'>
-					<Dropdown>
-						<DropdownToggle hasIcon={false}>
-							<Button
-								icon='LanguageSquare'
-								variant='link'
-								aria-label='Select Language'
-								className='!p-0'
-							/>
-						</DropdownToggle>
-						<DropdownMenu>
-							{langArray.map((item) => (
-								<DropdownItem
-									isActive={activeLang.lng === item.lng}
-									key={item.lng}
-									onClick={() => setLanguage(item.lng)}>
-									<Icon
-										icon={item.icon}
-										size='text-2xl'
-										className='ltr:mr-2 rtl:ml-2'
-									/>
-									{item.text}
-								</DropdownItem>
-							))}
-						</DropdownMenu>
-					</Dropdown>
 					<Button
-						icon={
-							(darkModeStatus === DARK_MODE.LIGHT && 'Sun03') ||
-							(darkModeStatus === DARK_MODE.DARK && 'Moon02') ||
-							'Computer'
-						}
+						icon='Book02'
 						variant='link'
-						aria-label='Change theme'
+						aria-label='Documentation'
+						onClick={() =>
+							window.open('https://docs.agent1o1.com', '_blank', 'noopener,noreferrer')
+						}
 						className='!p-0'
-						onClick={() => {
-							if (darkModeStatus === DARK_MODE.LIGHT)
-								setDarkModeStatus(DARK_MODE.DARK);
-							if (darkModeStatus === DARK_MODE.DARK)
-								setDarkModeStatus(DARK_MODE.SYSTEM);
-							if (darkModeStatus === DARK_MODE.SYSTEM)
-								setDarkModeStatus(DARK_MODE.LIGHT);
-						}}
+					/>
+					<Button
+						icon={pages.settings.icon}
+						variant='link'
+						aria-label={pages.settings.text}
+						onClick={() => navigate(resolvePath(pages.settings.to))}
+						className='!p-0'
 					/>
 					<Dropdown>
 						<DropdownToggle hasIcon={false}>
 							<Button
-								icon='Settings02'
+								icon='TextFont'
 								variant='link'
-								aria-label='Select Language'
+								aria-label='Text size'
 								className='!p-0'
 							/>
 						</DropdownToggle>
@@ -152,11 +115,22 @@ const AsideFooterPart = () => {
 						</DropdownMenu>
 					</Dropdown>
 					<Button
-						icon='AiChat02'
+						icon={
+							(darkModeStatus === DARK_MODE.LIGHT && 'Sun03') ||
+							(darkModeStatus === DARK_MODE.DARK && 'Moon02') ||
+							'Computer'
+						}
 						variant='link'
-						aria-label='Quick view'
-						onClick={() => {}}
+						aria-label='Change theme'
 						className='!p-0'
+						onClick={() => {
+							if (darkModeStatus === DARK_MODE.LIGHT)
+								setDarkModeStatus(DARK_MODE.DARK);
+							if (darkModeStatus === DARK_MODE.DARK)
+								setDarkModeStatus(DARK_MODE.SYSTEM);
+							if (darkModeStatus === DARK_MODE.SYSTEM)
+								setDarkModeStatus(DARK_MODE.LIGHT);
+						}}
 					/>
 				</div>
 			)}
