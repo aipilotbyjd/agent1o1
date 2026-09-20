@@ -2,9 +2,10 @@ import { Link, useSearchParams } from 'react-router';
 import { XCircle, ArrowRight, RotateCcw, HelpCircle } from 'lucide-react';
 import { useWorkspaceContext } from '@/context/workspace';
 import pages from '@/Routes/pages';
+import { withWorkspace } from '@/Routes/paths';
 
 
-const settingsPages = pages.workspaceSettings.subPages!;
+const settingsPages = pages.settings.subPages!;
 const billingPages = settingsPages.billing.subPages!;
 const playbooksPath = pages.workspace.subPages!.playbooks.to;
 
@@ -23,7 +24,7 @@ const BillingCancelPage = () => {
 	const [searchParams] = useSearchParams();
 	const { activeWorkspaceId } = useWorkspaceContext();
 	const workspaceId = searchParams.get('ws') || activeWorkspaceId;
-	const toWorkspacePath = (to: string) => to.replace(':workspaceId', workspaceId);
+	const toWorkspacePath = (to: string) => withWorkspace(to, workspaceId);
 	const type = searchParams.get('type') ?? 'plan';
 	const backTo = toWorkspacePath(TYPE_BACK[type] ?? settingsPages.billing.to);
 	const backLabel = type === 'credits' ? 'Back to Buy Credits' : 'Back to Plans';

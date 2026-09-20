@@ -66,6 +66,7 @@ import DARK_MODE from '@/constants/darkMode.constant';
 import { LogoFyr } from '@/assets/images';
 import useAsideStatus from '@/hooks/useAsideStatus';
 import pages from '@/Routes/pages';
+import paths, { withWorkspace } from '@/Routes/paths';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import {
@@ -283,7 +284,7 @@ const BuildPage = () => {
 	const workspaceId = routeWorkspaceId || activeWorkspaceId || fallbackWorkspaceId;
 
 	/** `pages` paths are templates (`/:workspaceId/agents/edit`). */
-	const toWorkspacePath = (to: string) => to.replace(':workspaceId', workspaceId);
+	const toWorkspacePath = (to: string) => withWorkspace(to, workspaceId);
 
 	const [currentAgentId, setCurrentAgentId] = useState<string | undefined>(routeAgentId);
 
@@ -495,7 +496,7 @@ const BuildPage = () => {
 
 		const created = await createAgentMutation.mutateAsync(payload);
 		setCurrentAgentId(created.id);
-		navigate(`${toWorkspacePath(pages.agentEditor.subPages!.edit.to)}/${created.id}`, { replace: true });
+		navigate(paths.editAgent(workspaceId, created.id), { replace: true });
 		return created.id;
 	};
 

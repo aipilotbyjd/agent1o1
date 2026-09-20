@@ -24,9 +24,10 @@ import {
 	useResumeSubscription,
 } from '@/api/modules/billing';
 import pages from '@/Routes/pages';
+import { withWorkspace } from '@/Routes/paths';
 import type { TSubscription } from '@/types/billing.type';
 
-const billingPages = pages.workspaceSettings.subPages!.billing.subPages!;
+const billingPages = pages.settings.subPages!.billing.subPages!;
 
 const statusConfig: Record<TSubscription['stripe_status'], { label: string; className: string }> = {
 	active: {
@@ -110,7 +111,7 @@ const BillingOverviewPage = () => {
 	const cancelSubscription = useCancelSubscription(workspaceId!);
 	const resumeSubscription = useResumeSubscription(workspaceId!);
 
-	const toWorkspacePath = (to: string) => to.replace(':workspaceId', workspaceId!);
+	const toWorkspacePath = (to: string) => withWorkspace(to, workspaceId!);
 
 	const role = workspace?.role;
 	const canManage = role === 'admin' || role === 'owner';

@@ -7,8 +7,7 @@ import UnderConstructionPage from '@/pages/UnderConstruction.page';
 import IdentityPages from '@/Routes/appPages/identityPages';
 import WelcomePages from '@/Routes/appPages/welcomePages';
 import CoreAppPages from '@/Routes/appPages/coreappPages';
-import SettingsPages from '@/Routes/appPages/settingsPages';
-import pages from '@/Routes/pages';
+import pages, { billingCallbacks } from '@/Routes/pages';
 
 const WorkspaceListPage = lazy(() => import('@/pages/choose/WorkspaceList.page'));
 const BillingSuccessPage = lazy(() => import('@/pages/settings/Billing/BillingSuccess.page'));
@@ -44,7 +43,7 @@ const router = createBrowserRouter([
 					// Stripe returns here (see BillingReturn.page.tsx); must be registered
 					// before the `/:workspaceId` core-app routes or it falls through.
 					{
-						path: '/workspaces/:workspaceSlug/billing',
+						path: billingCallbacks.stripeReturn,
 						element: <BillingReturnPage />,
 					},
 					// Welcome / onboarding routes — must come before the workspace routes
@@ -52,18 +51,19 @@ const router = createBrowserRouter([
 					// `/:workspaceId` and the core app shell renders with "onboarding"
 					// as the workspace id. Auth-gated inside OnboardingLayout.
 					...WelcomePages,
+					// Settings is registered inside CoreAppPages, under the same
+					// `/:workspaceId` membership guard as the core app.
 					...CoreAppPages,
-					...SettingsPages,
 					{
 						path: '/under-construction',
 						element: <UnderConstructionPage />,
 					},
 					{
-						path: '/billing/success',
+						path: billingCallbacks.success,
 						element: <BillingSuccessPage />,
 					},
 					{
-						path: '/billing/cancel',
+						path: billingCallbacks.cancel,
 						element: <BillingCancelPage />,
 					},
 					{

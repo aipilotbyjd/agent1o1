@@ -1,4 +1,4 @@
-import { Navigate, Outlet, useParams } from 'react-router';
+import { Outlet } from 'react-router';
 import { Suspense } from 'react';
 import Wrapper from '@/components/layout/Wrapper';
 import CoreAppAsideTemplate from '@/templates/asides/CoreAppAside.template';
@@ -6,20 +6,9 @@ import Container from '@/components/layout/Container';
 import Skeleton from '@/components/ui/Skeleton';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layout/Subheader';
 import Header, { HeaderLeft, HeaderRight } from '@/components/layout/Header';
-import { useWorkspaceContext } from '@/context/workspace';
-import pages from '@/Routes/pages';
 
+// Workspace membership is enforced upstream by WorkspaceGuard.layout.
 const CoreAppLayout = () => {
-	const { workspaceId } = useParams<{ workspaceId: string }>();
-	const { workspaces, isLoading } = useWorkspaceContext();
-
-	// Ids are typed `string` here but Laravel sends them as numbers, so the raw
-	// comparison never matched and every workspace bounced straight back to the
-	// chooser.
-	if (!isLoading && !workspaces.some((w) => String(w.id) === String(workspaceId))) {
-		return <Navigate to={pages.choose.to} replace />;
-	}
-
 	return (
 		<>
 			<CoreAppAsideTemplate />

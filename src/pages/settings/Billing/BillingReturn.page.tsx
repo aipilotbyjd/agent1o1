@@ -23,7 +23,7 @@ const BillingReturnPage = () => {
 			<Navigate
 				to={
 					workspaceId
-						? pages.workspaceSettings.subPages!.billing.to.replace(':workspaceId', workspaceId)
+						? pages.settings.subPages!.billing.to.replace(':workspaceId', workspaceId)
 						: pages.choose.to
 				}
 				replace

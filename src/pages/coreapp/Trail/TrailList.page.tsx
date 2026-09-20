@@ -22,7 +22,7 @@ import HistoryMobileCard from './_partial/HistoryMobileCard.partial';
 import HistoryPagination from './_partial/HistoryPagination.partial';
 import HistoryDetailDrawer from './_partial/HistoryDetailDrawer.partial';
 
-const HistoryListPage = () => {
+const TrailListPage = () => {
 	const { setHeaderLeft } = useOutletContext<OutletContextType>();
 	const { activeWorkspaceId } = useWorkspaceContext();
 
@@ -212,4 +212,4 @@ const HistoryListPage = () => {
 	);
 };
 
-export default HistoryListPage;
+export default TrailListPage;

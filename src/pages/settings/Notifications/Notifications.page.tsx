@@ -101,7 +101,7 @@ const NotificationsPage = () => {
 
 			{channels.length === 0 && (
 				<Link
-					to={pages.workspaceSettings.subPages!.notificationChannels.to.replace(
+					to={pages.settings.subPages!.notificationChannels.to.replace(
 						':workspaceId',
 						activeWorkspaceId,
 					)}

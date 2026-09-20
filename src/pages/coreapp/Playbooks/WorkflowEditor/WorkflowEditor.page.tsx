@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useWorkflowRouteParams } from './_hooks/useWorkflowRouteParams.hook';
 import { WorkflowService } from '@/api/modules/workflows/workflows.service';
-import pages from '@/Routes/pages';
+import paths from '@/Routes/paths';
 import WorkflowEditorLayout from './_layouts/WorkflowEditorLayout.layout';
 import BuildPage from './Build/Build.page';
 import { Loader2 } from 'lucide-react';
@@ -33,11 +33,7 @@ const WorkflowEditorPage = () => {
 			connections: [],
 		})
 			.then((res) => {
-				const editPath = pages.playbookEditor.subPages!.edit.to.replace(
-					':workspaceId',
-					activeWorkspaceId,
-				);
-				navigate(`${editPath}/${res.id}`, { replace: true });
+				navigate(paths.editPlaybook(activeWorkspaceId, res.id), { replace: true });
 			})
 			.catch((err) => {
 				console.error('Failed to auto-create workflow:', err);

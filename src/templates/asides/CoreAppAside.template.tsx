@@ -1,29 +1,15 @@
-import { useMemo } from 'react';
 import Aside, { AsideBody } from '@/components/layout/Aside';
-import { useParams } from 'react-router';
 import useAsideStatus from '@/hooks/useAsideStatus';
 import Icon from '@/components/icon/Icon';
-import Nav, { NavItem, NavTitle } from '@/components/layout/Navigation/Nav';
-import pages, { TPages } from '@/Routes/pages';
-import { useWorkspaceContext } from '@/context/workspace';
+import Nav from '@/components/layout/Navigation/Nav';
 import Tooltip from '@/components/ui/Tooltip';
 import classNames from 'classnames';
 import AsideHeaderPart from '@/templates/asides/_parts/AsideHeader.part';
 import AsideFooterPart from '@/templates/asides/_parts/AsideFooter.part';
+import NavSectionsPart from '@/templates/asides/_parts/NavSections.part';
+import { coreAppNavigation } from '@/Routes/navigation';
 import { useGlobalSearchStore } from '@/store/globalSearch.store';
 import GlobalSearch from '@/templates/search/GlobalSearch.template';
-
-// Page paths are templates (`/:workspaceId/agents`); id comes from the URL, falling back to workspace context.
-const useWorkspacePath = () => {
-	const { workspaceId } = useParams<{ workspaceId: string }>();
-	const { activeWorkspaceId } = useWorkspaceContext();
-	const id = workspaceId || activeWorkspaceId;
-
-	return useMemo(
-		() => (to: string) => (id ? to.replace(':workspaceId', id) : to),
-		[id],
-	);
-};
 
 const Search = () => {
 	const { asideStatus } = useAsideStatus();
@@ -36,7 +22,7 @@ const Search = () => {
 				title='Search workspace'
 				onClick={open}
 				className={classNames(
-					'group relative mb-4 flex h-12 w-full items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-600 shadow-sm transition hover:border-primary-300 hover:bg-white hover:text-zinc-950 dark:border-white/10 dark:bg-white/[0.045] dark:text-zinc-300 dark:shadow-xl dark:shadow-black/10 dark:hover:border-primary-400/25 dark:hover:bg-white/[0.07] dark:hover:text-white',
+					'group hover:border-primary-300 dark:hover:border-primary-400/25 relative mb-4 flex h-12 w-full items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-600 shadow-sm transition hover:bg-white hover:text-zinc-950 dark:border-white/10 dark:bg-white/[0.045] dark:text-zinc-300 dark:shadow-xl dark:shadow-black/10 dark:hover:bg-white/[0.07] dark:hover:text-white',
 					asideStatus ? 'px-4' : 'justify-center px-0',
 				)}>
 				<Icon icon='Search01' className='shrink-0' />
@@ -53,42 +39,14 @@ const Search = () => {
 	);
 };
 
-const workspacePages = pages.workspace.subPages as TPages;
-
-/** Rendered under "Workspace", in the order the nav should read. */
-const workspaceNavOrder = [
-	'playbooks',
-	'agents',
-	'trail',
-	'skills',
-	'apps',
-	'knowledge',
-	'artifacts',
-	'blueprints',
-	'vault',
-] as const;
-
 const CoreAppAsideTemplate = () => {
-	const resolvePath = useWorkspacePath();
-
 	return (
 		<Aside>
 			<AsideHeaderPart />
 			<AsideBody>
 				<Search />
 				<Nav>
-					<NavTitle>Overview</NavTitle>
-					<NavItem
-						{...workspacePages.dashboard}
-						to={resolvePath(workspacePages.dashboard.to)}
-					/>
-
-					<NavTitle>Workspace</NavTitle>
-					{workspaceNavOrder.map((id) => {
-						const item = workspacePages[id];
-						if (!item) return null;
-						return <NavItem key={item.id} {...item} to={resolvePath(item.to)} />;
-					})}
+					<NavSectionsPart sections={coreAppNavigation} />
 				</Nav>
 			</AsideBody>
 			<AsideFooterPart />

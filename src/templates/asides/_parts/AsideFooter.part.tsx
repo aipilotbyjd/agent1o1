@@ -15,10 +15,12 @@ import { useContext } from 'react';
 import ThemeContext from '@/context/theme';
 import LANG from '@/constants/lang.constant';
 import useFontSize from '@/hooks/useFontSize';
+import useResolvePath from '@/hooks/useResolvePath';
 import { useNavigate } from 'react-router';
 
 const AsideFooterPart = () => {
 	const { asideStatus } = useAsideStatus();
+	const { resolvePath } = useResolvePath();
 	const { setDarkModeStatus, darkModeStatus } = useDarkMode();
 
 	const navigate = useNavigate();
@@ -165,6 +167,9 @@ const AsideFooterPart = () => {
 				src={userData?.image.org}>
 				<NavSeparator />
 
+				{tokenStorage && (
+					<NavItem {...pages.settings} to={resolvePath(pages.settings.to)} end={false} />
+				)}
 				{tokenStorage && (
 					<NavItem text='Logout' icon='Logout03' onClick={() => onLogout(true)} />
 				)}

@@ -22,6 +22,7 @@ import { useConfirm } from '@/context/confirm';
 import Breadcrumb from '@/components/layout/Breadcrumb';
 import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
+import paths from '@/Routes/paths';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useAgents, useDeleteAgent, useDuplicateAgent } from '@/api/modules/agents';
 
@@ -80,9 +81,6 @@ const AgentsListPage = () => {
 	const { workspaceId } = useParams<{ workspaceId: string }>();
 	const { activeWorkspaceId } = useWorkspaceContext();
 	const currentWorkspaceId = workspaceId || activeWorkspaceId;
-
-	/** `pages` paths are templates (`/:workspaceId/agents/new`). */
-	const toWorkspacePath = (to: string) => to.replace(':workspaceId', currentWorkspaceId);
 
 	const { data: apiAgents, isLoading } = useAgents(currentWorkspaceId);
 	const deleteAgentMutation = useDeleteAgent(currentWorkspaceId);
@@ -177,7 +175,7 @@ const AgentsListPage = () => {
 						</div>
 
 						<button
-							onClick={() => navigate(toWorkspacePath(pages.agentEditor.subPages!.add.to))}
+							onClick={() => navigate(paths.newAgent(currentWorkspaceId))}
 							className='flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-400 to-primary-400 px-5 text-xs font-black text-primary-950 shadow-lg shadow-primary-500/20 transition-all hover:from-primary-400 hover:to-primary-400 hover:shadow-xl hover:shadow-primary-500/30 active:scale-95 dark:shadow-none'>
 							<Sparkles size={14} className='animate-pulse' />
 							<span>Build Agent</span>
@@ -511,7 +509,7 @@ const AgentsListPage = () => {
 										<button
 											onClick={() =>
 												navigate(
-													`${toWorkspacePath(pages.agentEditor.subPages!.edit.to)}/${agent.id}`,
+													paths.editAgent(currentWorkspaceId, agent.id),
 												)
 											}
 											className='dark:text-zinc-300 dark:hover:bg-zinc-955/60 flex h-9 cursor-pointer items-center gap-1.5 rounded-xl border border-border-main bg-bg-card px-3.5 text-[11px] font-bold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 dark:border-border-main dark:bg-bg-card'>
@@ -571,7 +569,7 @@ const AgentsListPage = () => {
 						</div>
 					</div>
 					<button
-						onClick={() => navigate(toWorkspacePath(pages.agentEditor.subPages!.add.to))}
+						onClick={() => navigate(paths.newAgent(currentWorkspaceId))}
 						className='hover:text-primary-700 flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-primary-200 bg-white px-5 text-xs font-bold text-primary-600 shadow-2xs transition-all hover:border-primary-300 hover:bg-primary-50 dark:border-primary-900/50 dark:bg-bg-card dark:text-primary-400 dark:hover:bg-zinc-950/60'>
 						<span>Build Custom Agent</span>
 						<span className='text-sm font-semibold'>→</span>

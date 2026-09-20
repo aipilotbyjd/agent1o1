@@ -28,6 +28,7 @@ import { useConfirm } from '@/context/confirm';
 import Breadcrumb from '@/components/layout/Breadcrumb';
 import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
+import paths, { withWorkspace } from '@/Routes/paths';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import { useWorkspaceContext } from '@/context/workspace';
 import {
@@ -121,7 +122,7 @@ const WorkflowsListPage = () => {
 	const currentWorkspaceId = activeWorkspaceId || fallbackWorkspaceId;
 	// Paths in `@/Routes/pages` are workspace-scoped templates here, unlike old's
 	// flat `/editor/...`; same helper the ported Agents list uses.
-	const toWorkspacePath = (to: string) => to.replace(':workspaceId', currentWorkspaceId);
+	const toWorkspacePath = (to: string) => withWorkspace(to, currentWorkspaceId);
 
 	const workspaceSummary = useMemo(
 		() => workspaces.find((workspace) => workspace.id === activeWorkspaceId),
@@ -310,7 +311,7 @@ const WorkflowsListPage = () => {
 			setNewWfFolderId('');
 			setIsCreateWorkflowOpen(false);
 			triggerToast(`Workflow "${res.name}" created successfully!`);
-			navigate(`${toWorkspacePath(pages.playbookEditor.subPages!.edit.to)}/${res.id}`);
+			navigate(paths.editPlaybook(currentWorkspaceId, res.id));
 		} catch {
 			// Error is surfaced by the mutation hook
 		}
@@ -322,7 +323,7 @@ const WorkflowsListPage = () => {
 			const res = await createWorkflowMutation.mutateAsync({
 				name: 'Untitled Workflow',
 			});
-			navigate(`${toWorkspacePath(pages.playbookEditor.subPages!.edit.to)}/${res.id}`);
+			navigate(paths.editPlaybook(currentWorkspaceId, res.id));
 		} catch {
 			// Error is surfaced by the mutation hook
 		}
@@ -617,7 +618,7 @@ const WorkflowsListPage = () => {
 						Build an automation, connect the steps, and run it when you are ready.
 					</p>
 					<button
-						onClick={() => navigate(toWorkspacePath(pages.playbookEditor.subPages!.add.to))}
+						onClick={() => navigate(paths.newPlaybook(currentWorkspaceId))}
 						className='mt-6 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-400 to-primary-400 px-5 text-xs font-black text-primary-950 shadow-md shadow-primary-500/15 transition hover:brightness-110 active:scale-[0.98] sm:w-auto'>
 						<Plus size={15} strokeWidth={3} />
 						Create Workflow
@@ -974,13 +975,13 @@ const WorkflowsListPage = () => {
 															onDragEnd={handleDragEnd}
 															onClick={() =>
 																navigate(
-																	`${toWorkspacePath(pages.playbookEditor.subPages!.edit.to)}/${wf.id}`,
+																	paths.editPlaybook(currentWorkspaceId, wf.id),
 																)
 															}
 															onKeyDown={(e) => {
 																if (e.key === 'Enter') {
 																	navigate(
-																		`${toWorkspacePath(pages.playbookEditor.subPages!.edit.to)}/${wf.id}`,
+																		paths.editPlaybook(currentWorkspaceId, wf.id),
 																	);
 																}
 															}}
@@ -1190,7 +1191,7 @@ const WorkflowsListPage = () => {
 																									null,
 																								);
 																								navigate(
-																									`${toWorkspacePath(pages.playbookEditor.subPages!.edit.to)}/${wf.id}`,
+																									paths.editPlaybook(currentWorkspaceId, wf.id),
 																								);
 																							}}
 																							className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-800'>
@@ -1376,7 +1377,7 @@ const WorkflowsListPage = () => {
 																	key={wf.id}
 																	onClick={() =>
 																		navigate(
-																			`${toWorkspacePath(pages.playbookEditor.subPages!.edit.to)}/${wf.id}`,
+																			paths.editPlaybook(currentWorkspaceId, wf.id),
 																		)
 																	}
 																	className='cursor-pointer transition-colors duration-200 hover:bg-slate-50/50 dark:hover:bg-zinc-900/20'>

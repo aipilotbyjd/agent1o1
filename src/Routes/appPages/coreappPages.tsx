@@ -1,30 +1,18 @@
 import { lazy } from 'react';
-import { Navigate, useParams } from 'react-router';
+import { Navigate, RouteObject } from 'react-router';
+import WorkspaceGuardLayout from '@/layouts/WorkspaceGuard.layout';
 import CoreAppLayout from '@/layouts/CoreApp.layout';
 import AgentLayout from '@/layouts/Agent.layout';
-import pages, { TPages } from '@/Routes/pages';
+import pages, { editorRedirects, relativeToWorkspace } from '@/Routes/pages';
+import WorkspaceRedirect from '@/Routes/redirects';
+import SettingsPages from '@/Routes/appPages/settingsPages';
 
-const workspacePages = pages.workspace.subPages as TPages;
-const playbookEditorPages = pages.playbookEditor.subPages as TPages;
-const agentEditorPages = pages.agentEditor.subPages as TPages;
+const workspacePages = pages.workspace.subPages!;
+const playbookEditorPages = pages.playbookEditor.subPages!;
+const agentEditorPages = pages.agentEditor.subPages!;
 
-const dashboardRelativePath = workspacePages.dashboard.to.replace(`${pages.workspace.to}/`, '');
-
-/**
- * The dashboard sub-tab URLs (`/run-stats`, `/credit-usage`, `/pending-approvals`)
- * are gone; anything still pointing at one lands on the dashboard rather than the
- * global 404.
- */
-const DashboardRedirect = () => {
-	const { workspaceId } = useParams<{ workspaceId: string }>();
-
-	return (
-		<Navigate
-			to={workspacePages.dashboard.to.replace(':workspaceId', workspaceId ?? '')}
-			replace
-		/>
-	);
-};
+/** Children of `/:workspaceId` are registered relative to it. */
+const rel = relativeToWorkspace;
 
 const DashboardLayout = lazy(() => import('@/pages/coreapp/Dashboard/_layouts/Dashboard.layout'));
 const DashboardPage = lazy(() => import('@/pages/coreapp/Dashboard/Dashboard.page'));
@@ -39,7 +27,7 @@ const AgentBuilderPage = lazy(
 	() => import('@/pages/coreapp/Agents/AgentBuilder/AgentBuilder.page'),
 );
 const TrailLayout = lazy(() => import('@/pages/coreapp/Trail/_layouts/Trail.layout'));
-const HistoryListPage = lazy(() => import('@/pages/coreapp/Trail/HistoryList.page'));
+const TrailListPage = lazy(() => import('@/pages/coreapp/Trail/TrailList.page'));
 const SkillsLayout = lazy(() => import('@/pages/coreapp/Skills/_layouts/Skills.layout'));
 const SkillsListPage = lazy(() => import('@/pages/coreapp/Skills/SkillsList.page'));
 const AppsLayout = lazy(() => import('@/pages/coreapp/Apps/_layouts/Apps.layout'));
@@ -52,147 +40,82 @@ const BlueprintsLayout = lazy(
 	() => import('@/pages/coreapp/Blueprints/_layouts/Blueprints.layout'),
 );
 const BlueprintsListPage = lazy(() => import('@/pages/coreapp/Blueprints/BlueprintsList.page'));
-const VaultLayout = lazy(() => import('@/pages/coreapp/Vault/_layouts/Secrets.layout'));
+const VaultLayout = lazy(() => import('@/pages/coreapp/Vault/_layouts/Vault.layout'));
 const SecretsPage = lazy(() => import('@/pages/coreapp/Vault/Secrets.page'));
 
-const CoreAppPages = [
-	{
-		path: pages.workspace.to,
-		element: <CoreAppLayout />,
-		children: [
-			{
-				index: true,
-				element: <Navigate to={dashboardRelativePath} replace />,
-			},
-			{
-				path: workspacePages.dashboard.to,
-				element: <DashboardLayout />,
-				children: [
-					{
-						index: true,
-						element: <DashboardPage />,
-					},
-					{
-						path: '*',
-						element: <DashboardRedirect />,
-					},
-				],
-			},
-			{
-				path: workspacePages.playbooks.to,
-				element: <PlaybooksLayout />,
-				children: [
-					{
-						index: true,
-						element: <WorkflowsListPage />,
-					},
-				],
-			},
-			{
-				path: workspacePages.agents.to,
-				element: <AgentsLayout />,
-				children: [
-					{
-						index: true,
-						element: <AgentsListPage />,
-					},
-				],
-			},
-			{
-				path: workspacePages.trail.to,
-				element: <TrailLayout />,
-				children: [
-					{
-						index: true,
-						element: <HistoryListPage />,
-					},
-				],
-			},
-			{
-				path: workspacePages.skills.to,
-				element: <SkillsLayout />,
-				children: [
-					{
-						index: true,
-						element: <SkillsListPage />,
-					},
-				],
-			},
-			{
-				path: workspacePages.apps.to,
-				element: <AppsLayout />,
-				children: [
-					{
-						index: true,
-						element: <AppsListPage />,
-					},
-				],
-			},
-			{
-				path: workspacePages.knowledge.to,
-				element: <KnowledgeLayout />,
-				children: [
-					{
-						index: true,
-						element: <KnowledgeListPage />,
-					},
-				],
-			},
-			{
-				path: workspacePages.artifacts.to,
-				element: <ArtifactsLayout />,
-				children: [
-					{
-						index: true,
-						element: <ArtifactsListPage />,
-					},
-				],
-			},
-			{
-				path: workspacePages.blueprints.to,
-				element: <BlueprintsLayout />,
-				children: [
-					{
-						index: true,
-						element: <BlueprintsListPage />,
-					},
-				],
-			},
-			{
-				path: workspacePages.vault.to,
-				element: <VaultLayout />,
-				children: [
-					{
-						index: true,
-						element: <SecretsPage />,
-					},
-				],
-			},
-		],
-	},
-	{
-		path: playbookEditorPages.add.to,
-		element: <WorkflowEditorPage />,
-	},
-	{
-		path: `${playbookEditorPages.edit.to}/:workflowId`,
-		element: <WorkflowEditorPage />,
-	},
-	{
-		path: `${playbookEditorPages.view.to}/:workflowId`,
-		element: <WorkflowEditorPage />,
-	},
+/**
+ * The dashboard sub-tab URLs (`/run-stats`, `/credit-usage`, `/pending-approvals`)
+ * are gone; anything still pointing at one lands on the dashboard rather than the
+ * global 404. Relative, so it resolves against `/:workspaceId/dashboard`.
+ */
+const dashboardRoute: RouteObject = {
+	path: rel(workspacePages.dashboard.to),
+	element: <DashboardLayout />,
+	children: [
+		{ index: true, element: <DashboardPage /> },
+		{ path: '*', element: <WorkspaceRedirect to={workspacePages.dashboard.to} /> },
+	],
+};
+
+/** List pages: each gets its own layout wrapper, rendered inside the core-app shell. */
+const listRoutes: RouteObject[] = (
+	[
+		[workspacePages.playbooks.to, <PlaybooksLayout />, <WorkflowsListPage />],
+		[workspacePages.agents.to, <AgentsLayout />, <AgentsListPage />],
+		[workspacePages.blueprints.to, <BlueprintsLayout />, <BlueprintsListPage />],
+		[workspacePages.skills.to, <SkillsLayout />, <SkillsListPage />],
+		[workspacePages.apps.to, <AppsLayout />, <AppsListPage />],
+		[workspacePages.knowledge.to, <KnowledgeLayout />, <KnowledgeListPage />],
+		[workspacePages.vault.to, <VaultLayout />, <SecretsPage />],
+		[workspacePages.trail.to, <TrailLayout />, <TrailListPage />],
+		[workspacePages.artifacts.to, <ArtifactsLayout />, <ArtifactsListPage />],
+	] as const
+).map(([to, layout, page]) => ({
+	path: rel(to),
+	element: layout,
+	children: [{ index: true, element: page }],
+}));
+
+/**
+ * Full-screen editors. They share the `/:workspaceId` guard but deliberately sit
+ * outside CoreAppLayout so the sidebar and header do not render around them.
+ */
+const editorRoutes: RouteObject[] = [
+	{ path: rel(playbookEditorPages.add.to), element: <WorkflowEditorPage /> },
+	{ path: rel(playbookEditorPages.edit.to), element: <WorkflowEditorPage /> },
+	{ path: rel(playbookEditorPages.view.to), element: <WorkflowEditorPage /> },
 	{
 		element: <AgentLayout />,
 		children: [
+			{ path: rel(agentEditorPages.add.to), element: <AgentBuilderPage /> },
+			{ path: rel(agentEditorPages.edit.to), element: <AgentBuilderPage /> },
+		],
+	},
+	// Pre-normalisation editor URLs (`playbooks/edit/:id`), kept resolvable.
+	...editorRedirects.map(({ from, to }) => ({
+		path: rel(from),
+		element: <WorkspaceRedirect to={to} />,
+	})),
+];
+
+const CoreAppPages: RouteObject[] = [
+	{
+		path: pages.workspace.to,
+		element: <WorkspaceGuardLayout />,
+		children: [
 			{
-				path: agentEditorPages.add.to,
-				element: <AgentBuilderPage />,
+				element: <CoreAppLayout />,
+				children: [
+					{
+						index: true,
+						element: <Navigate to={rel(workspacePages.dashboard.to)} replace />,
+					},
+					dashboardRoute,
+					...listRoutes,
+				],
 			},
-			{
-				path: `${agentEditorPages.edit.to}/:agentId`,
-				element: <AgentBuilderPage />,
-			},
+			...SettingsPages,
+			...editorRoutes,
 		],
 	},
 ];

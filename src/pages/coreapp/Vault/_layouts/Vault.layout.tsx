@@ -9,7 +9,7 @@ export interface OutletContextType {
 	setHeaderLeft: Dispatch<SetStateAction<ReactNode>>;
 }
 
-const SecretsLayout = () => {
+const VaultLayout = () => {
 	const [headerLeft, setHeaderLeft] = useState('');
 
 	return (
@@ -26,4 +26,4 @@ const SecretsLayout = () => {
 	);
 };
 
-export default SecretsLayout;
+export default VaultLayout;

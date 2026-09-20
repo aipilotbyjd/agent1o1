@@ -29,6 +29,8 @@ import Modal, {
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import pages, { TPage, TPages } from '@/Routes/pages';
+import { buildPath } from '@/Routes/paths';
+import useResolvePath from '@/hooks/useResolvePath';
 import { useGlobalSearchStore } from '@/store/globalSearch.store';
 import { MOCK_AGENT_TEMPLATES, MOCK_TEMPLATE_COLLECTIONS } from '@/mocks/templates.mock';
 
@@ -95,21 +97,24 @@ const getFlattenPages = (pagesList: TPages | undefined, parentId?: string): TPag
 	});
 };
 
-const getFlattenedPageItems = (): TSearchItem[] => {
+/**
+ * A result has to be navigable on click. Anything still carrying an unfilled
+ * param once the workspace id is substituted (the editors, which need a
+ * playbook or agent id) has no meaningful destination from a search box.
+ */
+const isNavigable = (to: string) => !to.includes('/:');
+
+const getFlattenedPageItems = (workspaceId: string): TSearchItem[] => {
 	const flattenPages = [
 		pages.workspace as TPage,
 		...getFlattenPages(pages.workspace.subPages as TPages, pages.workspace.id),
-		pages.workspaceSettings as TPage,
-		...getFlattenPages(pages.workspaceSettings.subPages as TPages, pages.workspaceSettings.id),
 		pages.settings as TPage,
 		...getFlattenPages(pages.settings.subPages as TPages, pages.settings.id),
-		pages.playbookEditor as TPage,
-		...getFlattenPages(pages.playbookEditor.subPages as TPages, pages.playbookEditor.id),
-		pages.agentEditor as TPage,
-		...getFlattenPages(pages.agentEditor.subPages as TPages, pages.agentEditor.id),
 		pages.welcome as TPage,
 		...getFlattenPages(pages.welcome.subPages as TPages, pages.welcome.id),
-	];
+	]
+		.map((page) => ({ ...page, to: buildPath(page.to, { workspaceId }) }))
+		.filter((page) => isNavigable(page.to));
 
 	const textById = new Map(flattenPages.map((p) => [p.id, p.text]));
 
@@ -417,19 +422,16 @@ const CATEGORY_ICONS: Record<TSearchCategory, React.ReactNode> = {
 };
 
 // ─── Build all searchable items ───────────────────────────────────────────────
-const buildSearchItems = (): TSearchItem[] => [
+const buildSearchItems = (workspaceId: string): TSearchItem[] => [
 	...QUICK_ACTIONS,
-	...getFlattenedPageItems(),
+	...getFlattenedPageItems(workspaceId),
 	...MOCK_WORKFLOWS,
 	...MOCK_AGENTS,
 	...MOCK_TEMPLATES,
 	...MOCK_FILES,
 ];
 
-const ALL_SEARCH_ITEMS = buildSearchItems();
-
-// ─── Fuse.js setup ────────────────────────────────────────────────────────────
-const fuse = new Fuse(ALL_SEARCH_ITEMS, {
+const FUSE_OPTIONS = {
 	keys: [
 		{ name: 'label', weight: 2 },
 		{ name: 'description', weight: 1 },
@@ -438,12 +440,18 @@ const fuse = new Fuse(ALL_SEARCH_ITEMS, {
 	threshold: 0.35,
 	distance: 200,
 	minMatchCharLength: 1,
-});
+};
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const GlobalSearch = () => {
 	const { isOpen, close } = useGlobalSearchStore();
 	const navigate = useNavigate();
+	const { workspaceId } = useResolvePath();
+
+	// Page results are URL templates until the workspace id is substituted, so
+	// the index is rebuilt when the active workspace changes.
+	const allSearchItems = useMemo(() => buildSearchItems(workspaceId), [workspaceId]);
+	const fuse = useMemo(() => new Fuse(allSearchItems, FUSE_OPTIONS), [allSearchItems]);
 	const [query, setQuery] = useState('');
 	const [selectedIndex, setSelectedIndex] = useState(0);
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -494,7 +502,7 @@ const GlobalSearch = () => {
 		if (!trimmed) return [];
 		const fuseResults = fuse.search(trimmed);
 		return fuseResults.map((r) => r.item);
-	}, [query]);
+	}, [query, fuse]);
 
 	// Group results by category
 	const groupedResults = useMemo(() => {

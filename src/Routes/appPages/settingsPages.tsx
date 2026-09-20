@@ -1,16 +1,14 @@
 import { lazy } from 'react';
-import { Navigate, useParams } from 'react-router';
+import { Navigate, RouteObject } from 'react-router';
 import SettingsLayout from '@/layouts/Settings.layout';
-import UnderConstructionPage from '@/pages/UnderConstruction.page';
-import pages, { TPages } from '@/Routes/pages';
+import pages, { relativeTo, relativeToWorkspace, settingsRedirects } from '@/Routes/pages';
+import WorkspaceRedirect from '@/Routes/redirects';
 
-const workspaceSettingsPages = pages.workspaceSettings.subPages as TPages;
-const billingPlansPath = (workspaceSettingsPages.billing.subPages as TPages).plans.to;
+const settingsPages = pages.settings.subPages!;
+const billingPages = settingsPages.billing.subPages!;
 
-const RedirectToBillingPlans = () => {
-	const { workspaceId } = useParams<{ workspaceId: string }>();
-	return <Navigate to={billingPlansPath.replace(':workspaceId', workspaceId!)} replace />;
-};
+/** Children are relative to `/:workspaceId/settings`, which the parent route owns. */
+const rel = (to: string) => relativeTo(pages.settings.to, to);
 
 const BillingLayout = lazy(() => import('@/pages/settings/Billing/_layouts/Billing.layout'));
 const BillingOverviewPage = lazy(() => import('@/pages/settings/Billing/Overview.page'));
@@ -27,69 +25,49 @@ const NotificationChannelsPage = lazy(
 	() => import('@/pages/settings/NotificationChannels/NotificationChannels.page'),
 );
 
-const SettingsPages = [
+/** Registered as a child of the `/:workspaceId` guard, alongside the core-app shell. */
+const SettingsPages: RouteObject[] = [
 	{
-		path: pages.workspaceSettings.to,
+		path: relativeToWorkspace(pages.settings.to),
 		element: <SettingsLayout />,
 		children: [
 			{
 				index: true,
-				element: <UnderConstructionPage />,
+				element: <Navigate to={rel(settingsPages.profile.to)} replace />,
+			},
+			{ path: rel(settingsPages.profile.to), element: <ProfilePage /> },
+			{ path: rel(settingsPages.notifications.to), element: <NotificationsPage /> },
+			{ path: rel(settingsPages.workspace.to), element: <WorkspacePage /> },
+			{ path: rel(settingsPages.members.to), element: <MembersPage /> },
+			{ path: rel(settingsPages.apiKeys.to), element: <ApiKeysPage /> },
+			{
+				path: rel(settingsPages.notificationChannels.to),
+				element: <NotificationChannelsPage />,
 			},
 			{
-				path: workspaceSettingsPages.profile.to,
-				element: <ProfilePage />,
-			},
-			{
-				path: workspaceSettingsPages.workspace.to,
-				element: <WorkspacePage />,
-			},
-			{
-				path: workspaceSettingsPages.members.to,
-				element: <MembersPage />,
-			},
-			{
-				path: workspaceSettingsPages.legacyPlan.to,
-				element: <RedirectToBillingPlans />,
-			},
-			{
-				path: (workspaceSettingsPages.legacyPlan.subPages as TPages).upgrade.to,
-				element: <RedirectToBillingPlans />,
-			},
-			{
-				path: workspaceSettingsPages.billing.to,
+				path: rel(settingsPages.billing.to),
 				element: <BillingLayout />,
 				children: [
+					{ index: true, element: <BillingOverviewPage /> },
 					{
-						index: true,
-						element: <BillingOverviewPage />,
-					},
-					{
-						path: 'plans',
+						path: relativeTo(settingsPages.billing.to, billingPages.plans.to),
 						element: <BillingPlansPage />,
 					},
 					{
-						path: 'credits',
+						path: relativeTo(settingsPages.billing.to, billingPages.credits.to),
 						element: <BillingCreditsPage />,
 					},
 					{
-						path: 'usage',
+						path: relativeTo(settingsPages.billing.to, billingPages.usage.to),
 						element: <BillingUsagePage />,
 					},
 				],
 			},
-			{
-				path: workspaceSettingsPages.notificationChannels.to,
-				element: <NotificationChannelsPage />,
-			},
-			{
-				path: workspaceSettingsPages.apiKeys.to,
-				element: <ApiKeysPage />,
-			},
-			{
-				path: workspaceSettingsPages.notifications.to,
-				element: <NotificationsPage />,
-			},
+			// Pre-reshuffle URLs, kept so existing bookmarks and emailed links resolve.
+			...settingsRedirects.map(({ from, to }) => ({
+				path: rel(from),
+				element: <WorkspaceRedirect to={to} />,
+			})),
 		],
 	},
 ];

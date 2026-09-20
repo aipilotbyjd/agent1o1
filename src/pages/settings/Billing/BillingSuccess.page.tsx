@@ -4,9 +4,10 @@ import { CheckCircle, ArrowRight, Zap, LayoutGrid, CreditCard } from 'lucide-rea
 import { useQueryClient } from '@tanstack/react-query';
 import { useWorkspaceContext } from '@/context/workspace';
 import pages from '@/Routes/pages';
+import { withWorkspace } from '@/Routes/paths';
 
 
-const settingsPages = pages.workspaceSettings.subPages!;
+const settingsPages = pages.settings.subPages!;
 const playbooksPath = pages.workspace.subPages!.playbooks.to;
 const dashboardPath = pages.workspace.subPages!.dashboard.to;
 
@@ -52,7 +53,7 @@ const BillingSuccessPage = () => {
 	// `ws` is set by BillingReturn.page — the workspace that was actually paid for,
 	// which need not be the active one. Fall back for direct visits.
 	const workspaceId = searchParams.get('ws') || activeWorkspaceId;
-	const toWorkspacePath = (to: string) => to.replace(':workspaceId', workspaceId);
+	const toWorkspacePath = (to: string) => withWorkspace(to, workspaceId);
 	const type = searchParams.get('type') ?? 'plan';
 	const copy = TYPE_COPY[type] ?? TYPE_COPY.plan;
 

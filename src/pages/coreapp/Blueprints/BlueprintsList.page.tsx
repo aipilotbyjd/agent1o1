@@ -26,6 +26,7 @@ import Container from '@/components/layout/Container';
 import Breadcrumb from '@/components/layout/Breadcrumb';
 import Button from '@/components/ui/Button';
 import pages from '@/Routes/pages';
+import paths from '@/Routes/paths';
 import { useWorkspaceContext } from '@/context/workspace';
 import {
 	useWorkflowTemplates,
@@ -45,9 +46,6 @@ import type { TWorkflowTemplate, TAgentTemplate, TTemplateCollection } from '@/t
 import { formatUsageCount } from './_helper/blueprints.constants';
 
 type TTab = 'workflows' | 'agents' | 'collections';
-
-/** Page paths are templates (`/:workspaceId/...`). */
-const useWorkspacePath = (ws: string) => (to: string) => to.replace(':workspaceId', ws);
 
 interface IPreviewNode {
 	id: string;
@@ -171,7 +169,6 @@ const BlueprintsListPage = () => {
 	const { workspaceId } = useParams<{ workspaceId: string }>();
 	const { activeWorkspaceId } = useWorkspaceContext();
 	const ws = workspaceId || activeWorkspaceId;
-	const resolvePath = useWorkspacePath(ws);
 
 	const [activeTab, setActiveTab] = useState<TTab>('workflows');
 	const [searchQuery, setSearchQuery] = useState('');
@@ -267,7 +264,7 @@ const BlueprintsListPage = () => {
 			{
 				onSuccess: (workflow) => {
 					notify.success(`Created "${workflow.name}" from template.`);
-					navigate(`${resolvePath(pages.playbookEditor.subPages!.edit.to)}/${workflow.id}`);
+					navigate(paths.editPlaybook(ws, workflow.id));
 				},
 			},
 		);
@@ -279,7 +276,7 @@ const BlueprintsListPage = () => {
 			{
 				onSuccess: (agent) => {
 					notify.success(`Created "${agent.name}" from template.`);
-					navigate(`${resolvePath(pages.agentEditor.subPages!.edit.to)}/${agent.id}`);
+					navigate(paths.editAgent(ws, agent.id));
 				},
 			},
 		);
