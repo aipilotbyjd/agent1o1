@@ -89,6 +89,15 @@ const CoreAppAsideTemplate = () => {
 						if (!item) return null;
 						return <NavItem key={item.id} {...item} to={resolvePath(item.to)} />;
 					})}
+
+					{/* Settings had no entry point anywhere in the app: the footer's gear
+					    is a font-size dropdown, not a link, so the section was reachable
+					    only by typing the URL or via global search. */}
+					<NavTitle>Account</NavTitle>
+					<NavItem
+						{...pages.workspaceSettings}
+						to={resolvePath(pages.workspaceSettings.to)}
+					/>
 				</Nav>
 			</AsideBody>
 			<AsideFooterPart />

@@ -42,11 +42,6 @@ import {
 	Lock,
 	AlertTriangle,
 	ExternalLink,
-	Mail,
-	FileSpreadsheet,
-	HardDrive,
-	Calendar,
-	TrendingUp,
 	Search,
 	Rocket,
 	Loader2,
@@ -99,11 +94,12 @@ import type { TAgentTriggerType } from '@/types/agent.type';
 import { useAgentSession } from '@/api/modules/agents';
 import { AgentSessionService } from '@/api/modules/agents/agent-sessions.service';
 import { useDownloadArtifact, ArtifactService } from '@/api/modules/artifacts';
+import type { TWorkflow } from '@/types/workflow.type';
 import type { TArtifact } from '@/types/artifact.type';
 import type { TAgentMessage } from '@/types/agent.type';
 import { useAgentChatStore } from '@/store/agentChat.store';
 import { useAgentBuilderStore } from '@/store/agentBuilder.store';
-import { XCircle, Wrench, FileDown } from 'lucide-react';
+import { XCircle, Wrench, FileDown, GitMerge } from 'lucide-react';
 import AgentDataPanel from './_partial/AgentDataPanel.partial';
 import AgentTagsPanel from './_partial/AgentTagsPanel.partial';
 

@@ -1,15 +1,20 @@
 import { lazy } from 'react';
 import { Navigate, useParams } from 'react-router';
 import SettingsLayout from '@/layouts/Settings.layout';
-import UnderConstructionPage from '@/pages/UnderConstruction.page';
 import pages, { TPages } from '@/Routes/pages';
 
 const workspaceSettingsPages = pages.workspaceSettings.subPages as TPages;
 const billingPlansPath = (workspaceSettingsPages.billing.subPages as TPages).plans.to;
+const profilePath = workspaceSettingsPages.profile.to;
 
 const RedirectToBillingPlans = () => {
 	const { workspaceId } = useParams<{ workspaceId: string }>();
 	return <Navigate to={billingPlansPath.replace(':workspaceId', workspaceId!)} replace />;
+};
+
+const RedirectToProfile = () => {
+	const { workspaceId } = useParams<{ workspaceId: string }>();
+	return <Navigate to={profilePath.replace(':workspaceId', workspaceId!)} replace />;
 };
 
 const BillingLayout = lazy(() => import('@/pages/settings/Billing/_layouts/Billing.layout'));
@@ -34,7 +39,7 @@ const SettingsPages = [
 		children: [
 			{
 				index: true,
-				element: <UnderConstructionPage />,
+				element: <RedirectToProfile />,
 			},
 			{
 				path: workspaceSettingsPages.profile.to,

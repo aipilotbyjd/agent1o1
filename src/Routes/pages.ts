@@ -256,6 +256,24 @@ const identity: TPages = {
 		text: 'Verify Email',
 		icon: 'CheckmarkCircle02',
 	},
+	twoFactorSetup: {
+		id: 'twoFactorSetup',
+		to: '/two-factor-setup',
+		text: 'Two-Factor Setup',
+		icon: 'Shield01',
+	},
+	accountLocked: {
+		id: 'accountLocked',
+		to: '/account-locked',
+		text: 'Account Locked',
+		icon: 'AiLock',
+	},
+	sessionExpired: {
+		id: 'sessionExpired',
+		to: '/session-expired',
+		text: 'Session Expired',
+		icon: 'Clock01',
+	},
 	oauthCallback: {
 		id: 'oauthCallback',
 		to: '/oauth/callback',
