@@ -17,7 +17,7 @@ const DiscoveryStep = () => {
 					You're almost there
 				</h1>
 				<p className='mt-2 text-sm font-medium text-slate-500 dark:text-zinc-400'>
-					One quick question — how did you find us? It helps us reach more builders like
+					One quick question - how did you find us? It helps us reach more builders like
 					you.
 				</p>
 			</div>

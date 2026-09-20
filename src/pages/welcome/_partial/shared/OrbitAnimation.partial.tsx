@@ -176,7 +176,7 @@ const OrbitAnimation = ({
 					{step === 3 &&
 						'Orbiting tools are dynamically tailored based on your selected role.'}
 					{step === 4 &&
-						'Upgrade any time from your workspace settings — no commitments.'}
+						'Upgrade any time from your workspace settings - no commitments.'}
 					{step === 5 &&
 						'Your secure connections are live-linked directly with the cloud nodes.'}
 					{step === 6 &&

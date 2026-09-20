@@ -221,7 +221,7 @@ const BaseNode = ({ id, data, selected }: NodeProps<TCanvasNode>) => {
 			{/* Breakpoint indicator */}
 			{data.breakpoint && (
 				<div
-					title='Breakpoint set — execution will pause here'
+					title='Breakpoint set - execution will pause here'
 					className='absolute -top-1.5 -left-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full border-2 border-rose-300 bg-rose-500 text-white shadow-sm'>
 					<OctagonX size={10} />
 				</div>
@@ -313,7 +313,7 @@ const BaseNode = ({ id, data, selected }: NodeProps<TCanvasNode>) => {
 								</button>
 								{data.pinned && (
 									<span
-										title='Output pinned — reused on re-run'
+										title='Output pinned - reused on re-run'
 										className='flex h-4 w-4 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400'>
 										<Pin size={9} />
 									</span>

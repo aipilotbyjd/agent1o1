@@ -20,7 +20,7 @@ const initialState: IOnboardingState = {
 	inviteEmails: '',
 	inviteRole: 'member' as TWorkspaceRole,
 	inviteMessage:
-		"Just set up our Agent1o1 workspace — jump in when you're ready. Excited to build together.",
+		"Just set up our Agent1o1 workspace - jump in when you're ready. Excited to build together.",
 	invitesSent: false,
 	selectedRoleIndex: null,
 	selectedJobRole: '',

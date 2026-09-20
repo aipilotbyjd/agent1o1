@@ -79,7 +79,7 @@ const IngestKnowledgeDialog = ({
 							Ingest knowledge
 						</h2>
 						<p className='mt-0.5 text-xs font-semibold text-zinc-400 dark:text-zinc-500'>
-							Paste text or upload a file — it&apos;s chunked, embedded, and made searchable
+							Paste text or upload a file - it&apos;s chunked, embedded, and made searchable
 							workspace-wide.
 						</p>
 					</div>
@@ -128,7 +128,7 @@ const IngestKnowledgeDialog = ({
 					) : (
 						<div>
 							<label className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
-								File — {ALLOWED_EXTENSIONS.join(', ')} (max 5 MB)
+								File - {ALLOWED_EXTENSIONS.join(', ')} (max 5 MB)
 							</label>
 							<input
 								type='file'

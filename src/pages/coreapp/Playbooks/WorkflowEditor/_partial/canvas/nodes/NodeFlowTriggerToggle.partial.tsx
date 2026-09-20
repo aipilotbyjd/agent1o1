@@ -34,7 +34,7 @@ const NodeFlowTriggerToggle = ({ nodeId, active }: { nodeId: string; active: boo
 					Activate as flow trigger
 				</span>
 				<span
-					title='When on, the flow starts from this node whenever it detects new data — one trigger per flow.'
+					title='When on, the flow starts from this node whenever it detects new data - one trigger per flow.'
 					className='shrink-0 text-zinc-400 transition hover:text-primary-500 dark:text-zinc-500'>
 					<Info size={11} />
 				</span>

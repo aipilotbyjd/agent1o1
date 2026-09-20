@@ -57,7 +57,7 @@ const RUN_STATUS_STYLE: Record<string, { icon: typeof CheckCircle2; className: s
 	skipped: { icon: MinusCircle, className: 'text-zinc-400' },
 };
 
-const fmtDate = (value: string | null) => (value ? new Date(value).toLocaleString() : '—');
+const fmtDate = (value: string | null) => (value ? new Date(value).toLocaleString() : '-');
 
 /** Toggle row — same switch markup the Settings tab uses in Build.page. */
 const ToggleRow = ({

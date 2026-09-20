@@ -84,7 +84,7 @@ const KnowledgeListPage = () => {
 					<strong className='font-semibold text-zinc-800 dark:text-zinc-200'>
 						&quot;{collection}&quot;
 					</strong>
-					? This is the way to re-ingest a document — drop the collection, then ingest the new
+					? This is the way to re-ingest a document - drop the collection, then ingest the new
 					revision. This cannot be undone.
 				</>
 			),
@@ -155,7 +155,7 @@ const KnowledgeListPage = () => {
 						))}
 						{!isLoadingCollections && collections?.length === 0 && (
 							<span className='py-1.5 text-xs font-semibold text-slate-400 dark:text-zinc-500'>
-								No collections yet — ingest a document to create one.
+								No collections yet - ingest a document to create one.
 							</span>
 						)}
 					</div>

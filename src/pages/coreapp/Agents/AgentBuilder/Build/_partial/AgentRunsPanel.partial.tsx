@@ -65,7 +65,7 @@ const SOURCE_ICON: Record<string, typeof Zap> = {
 };
 
 const fmtDuration = (ms: number | null) => {
-	if (ms == null) return '—';
+	if (ms == null) return '-';
 	if (ms < 1000) return `${ms}ms`;
 	return `${(ms / 1000).toFixed(1)}s`;
 };

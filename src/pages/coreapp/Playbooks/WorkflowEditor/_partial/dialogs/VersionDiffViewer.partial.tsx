@@ -69,7 +69,7 @@ const VersionDiffViewer = () => {
 								className='w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100'>
 								{snapshots.map((snap, i) => (
 									<option key={i} value={i}>
-										Snapshot {i + 1} — {snap.nodes.length} nodes,{' '}
+										Snapshot {i + 1} - {snap.nodes.length} nodes,{' '}
 										{snap.edges.length} edges
 									</option>
 								))}

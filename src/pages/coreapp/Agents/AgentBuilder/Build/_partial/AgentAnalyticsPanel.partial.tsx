@@ -64,7 +64,7 @@ const AgentAnalyticsPanel = ({ ws, agentId }: TProps) => {
 
 	const { totals, tokens, latency, by_source, by_day } = data;
 	const successPct =
-		totals.success_rate != null ? `${Math.round(totals.success_rate * 100)}%` : '—';
+		totals.success_rate != null ? `${Math.round(totals.success_rate * 100)}%` : '-';
 	const maxDayRuns = Math.max(1, ...by_day.map((d) => d.runs));
 	const sources = Object.entries(by_source);
 

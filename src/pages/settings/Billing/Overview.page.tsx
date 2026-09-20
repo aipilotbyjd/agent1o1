@@ -232,7 +232,7 @@ const BillingOverviewPage = () => {
 						Billing
 					</h1>
 					<p className='mt-1 text-sm font-medium text-zinc-500 dark:text-zinc-400'>
-						Your plan, credits, and payment settings — all in one place.
+						Your plan, credits, and payment settings - all in one place.
 					</p>
 				</div>
 				<div className='flex flex-wrap items-center gap-3'>

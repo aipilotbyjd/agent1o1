@@ -58,7 +58,7 @@ export const useNodeTestRunner = (nodeId: string, defKey: string) => {
 				id: nodeId,
 				status: 'error',
 				error:
-					err instanceof Error ? err.message : 'Test request failed — check the connection.',
+					err instanceof Error ? err.message : 'Test request failed - check the connection.',
 			});
 		}
 	};

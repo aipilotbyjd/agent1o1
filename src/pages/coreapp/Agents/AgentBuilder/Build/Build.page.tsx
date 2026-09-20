@@ -931,7 +931,7 @@ const BuildPage = () => {
 				{
 					id: 'agent-error-' + Date.now(),
 					sender: 'agent',
-					text: "Sorry, I couldn't process that — please try again.",
+					text: "Sorry, I couldn't process that - please try again.",
 					timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
 					type: 'text',
 				},

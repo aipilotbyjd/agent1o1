@@ -295,7 +295,7 @@ const CreditsPage = () => {
 															day: 'numeric',
 															year: 'numeric',
 														})
-													: '—'}
+													: '-'}
 											</td>
 										</tr>
 									);

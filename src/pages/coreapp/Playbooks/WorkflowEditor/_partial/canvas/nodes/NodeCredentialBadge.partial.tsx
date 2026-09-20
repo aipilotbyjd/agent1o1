@@ -18,7 +18,7 @@ const NodeCredentialBadge = ({ credentialId }: Props) => {
 	return (
 		<button
 			type='button'
-			title={`Connected via ${credential.name}${expired ? ' — expired, click to switch' : ' — click to switch'}`}
+			title={`Connected via ${credential.name}${expired ? ' - expired, click to switch' : ' - click to switch'}`}
 			onPointerDown={(event) => event.stopPropagation()}
 			onClick={(event) => {
 				event.stopPropagation();

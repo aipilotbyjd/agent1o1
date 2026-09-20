@@ -344,7 +344,7 @@ const BlueprintsListPage = () => {
 								Blueprints
 							</h1>
 							<p className='mb-6 max-w-2xl text-xs leading-relaxed text-zinc-850 sm:text-sm dark:text-zinc-400'>
-								Turn any workflow, agent, or bundle of both into a reusable template — then spin
+								Turn any workflow, agent, or bundle of both into a reusable template - then spin
 								up new ones from it in one click.
 							</p>
 
@@ -760,7 +760,7 @@ const BlueprintsListPage = () => {
 													<div className='rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900'>
 														<div className='mb-1 text-[10px] font-bold text-zinc-400 uppercase'>LLM Model</div>
 														<div className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
-															{agentDetail.config.model || '—'}
+															{agentDetail.config.model || '-'}
 														</div>
 													</div>
 												</div>
@@ -974,7 +974,7 @@ const ParamTile = ({ label, value, suffix = '' }: { label: string; value?: unkno
 	<div className='rounded-lg border border-zinc-100 bg-white p-2.5 text-center dark:border-zinc-800 dark:bg-zinc-900/40'>
 		<div className='mb-0.5 text-[9px] font-bold text-zinc-400 uppercase'>{label}</div>
 		<div className='text-xs font-bold text-zinc-800 dark:text-zinc-100'>
-			{value === null || value === undefined || value === '' ? '—' : `${String(value)}${suffix}`}
+			{value === null || value === undefined || value === '' ? '-' : `${String(value)}${suffix}`}
 		</div>
 	</div>
 );

@@ -19,7 +19,7 @@ const InviteTeamStep = () => {
 					Who's building with you?
 				</h1>
 				<p className='text-xs leading-relaxed font-semibold text-slate-500 dark:text-zinc-400'>
-					Automation is a team sport — invite the people who'll run and manage workflows
+					Automation is a team sport - invite the people who'll run and manage workflows
 					alongside you.
 				</p>
 			</div>

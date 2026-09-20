@@ -39,7 +39,7 @@ import type { TCanvasNode } from '../../_types/canvas.type';
 /** Starter prompts shown in the empty state, before the first message. */
 const STARTER_SUGGESTIONS: { icon: typeof Workflow; label: string; prompt: string; mode: 'build' | 'ask' }[] = [
 	{ icon: Workflow, label: 'Explain this flow to me', prompt: 'Explain what this workflow does, step by step.', mode: 'ask' },
-	{ icon: Bug, label: 'Help me debug this flow', prompt: 'Something in this workflow isn’t working as expected — help me find the issue.', mode: 'ask' },
+	{ icon: Bug, label: 'Help me debug this flow', prompt: 'Something in this workflow isn’t working as expected - help me find the issue.', mode: 'ask' },
 	{ icon: Tag, label: 'Rename my nodes to be more descriptive', prompt: 'Rename all the nodes in this workflow to be clearer and more descriptive.', mode: 'build' },
 	{ icon: HelpCircle, label: 'What can you do?', prompt: 'What can you help me with in this workflow builder?', mode: 'ask' },
 ];

@@ -90,7 +90,7 @@ const UsagePage = () => {
 									{cfg.label}
 								</span>
 								<span className='truncate text-sm text-zinc-600 dark:text-zinc-400'>
-									{tx.reason || '—'}
+									{tx.reason || '-'}
 								</span>
 								<span
 									className={`text-sm font-black ${isNeg ? 'text-red-500' : 'text-emerald-500'}`}>

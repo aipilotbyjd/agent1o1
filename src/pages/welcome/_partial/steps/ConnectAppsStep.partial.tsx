@@ -59,7 +59,7 @@ const ConnectAppsStep = () => {
 					Give your agent its tools
 				</h1>
 				<p className='mt-2 text-sm font-medium text-slate-500 dark:text-zinc-400'>
-					Plug in the apps your team already uses — your agent will start connecting the
+					Plug in the apps your team already uses - your agent will start connecting the
 					dots right away.
 				</p>
 			</div>

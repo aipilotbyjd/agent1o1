@@ -401,7 +401,7 @@ const ApiKeysPage = () => {
 				</ModalHeader>
 				<ModalBody>
 					<p className='text-sm font-semibold text-zinc-500 dark:text-zinc-400'>
-						Copy this key now — you won't be able to see it again.
+						Copy this key now - you won't be able to see it again.
 					</p>
 					<div className='mt-4 flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800'>
 						<code className='flex-1 truncate text-sm font-bold text-zinc-800 dark:text-zinc-200'>

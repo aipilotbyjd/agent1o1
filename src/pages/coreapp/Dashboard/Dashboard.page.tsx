@@ -38,10 +38,10 @@ import { STATUS_BADGE_COLORS, type TExecutionStatus } from './_types/dashboard.t
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const formatRelativeTime = (value?: number) => {
-	if (!value) return '—';
+	if (!value) return '-';
 	const ms = value < 1_000_000_000_000 ? value * 1000 : value;
 	const diff = Date.now() - ms;
-	if (Number.isNaN(diff)) return '—';
+	if (Number.isNaN(diff)) return '-';
 	if (diff < 0) return 'just now';
 	const minutes = Math.floor(diff / 60_000);
 	if (minutes < 1) return 'just now';
@@ -53,7 +53,7 @@ const formatRelativeTime = (value?: number) => {
 };
 
 const formatDuration = (ms?: number) => {
-	if (!ms || ms <= 0) return '—';
+	if (!ms || ms <= 0) return '-';
 	if (ms < 1000) return `${Math.round(ms)}ms`;
 	const s = ms / 1000;
 	if (s < 60) return `${s.toFixed(s < 10 ? 1 : 0)}s`;
@@ -536,7 +536,7 @@ const DashboardPage = () => {
 								</div>
 								<div className='mt-4'>
 									<div className='text-3xl font-black tracking-tight text-slate-900 dark:text-white'>
-										{isLoading ? '—' : kpi.value}
+										{isLoading ? '-' : kpi.value}
 									</div>
 									<div className='mt-0.5 text-[11px] font-semibold text-slate-400 dark:text-zinc-500'>
 										{kpi.sub}
@@ -569,7 +569,7 @@ const DashboardPage = () => {
 									<div className='flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'>
 										<ShieldCheck size={20} />
 									</div>
-									<p className='text-xs font-bold text-text-main'>No failures — all clear</p>
+									<p className='text-xs font-bold text-text-main'>No failures - all clear</p>
 									<p className='text-[11px] font-semibold text-text-muted'>
 										Failed runs from your workflows will show up here.
 									</p>

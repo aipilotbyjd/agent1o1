@@ -222,7 +222,7 @@ const NotificationsPage = () => {
 			<div className='mt-8 flex items-center gap-3 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 dark:border-amber-950/20 dark:bg-amber-950/10'>
 				<AlertTriangle size={16} className='shrink-0 text-amber-500' />
 				<p className='text-xs font-semibold text-amber-700 dark:text-amber-400'>
-					These preferences are yours alone — they don't change what other members of this
+					These preferences are yours alone - they don't change what other members of this
 					workspace receive.
 				</p>
 			</div>

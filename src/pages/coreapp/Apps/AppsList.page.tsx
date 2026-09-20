@@ -1952,7 +1952,7 @@ const DetailModalContent = ({
 							Type
 						</span>
 						<span className='mt-1 inline-block rounded-lg border border-slate-200 bg-white px-2 py-0.5 text-xs font-bold text-slate-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'>
-							{connector?.key ?? '—'}
+							{connector?.key ?? '-'}
 						</span>
 					</div>
 

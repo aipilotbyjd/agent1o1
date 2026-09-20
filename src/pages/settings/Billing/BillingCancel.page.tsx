@@ -15,7 +15,7 @@ const TYPE_BACK: Record<string, string> = {
 };
 
 const REASSURANCES = [
-	'No charge was made — you can safely close this page.',
+	'No charge was made - you can safely close this page.',
 	'Your current plan and credits are unchanged.',
 	'You can upgrade or buy credits any time from Settings.',
 ];
@@ -49,7 +49,7 @@ const BillingCancelPage = () => {
 					Payment cancelled
 				</h1>
 				<p className='mt-3 text-center text-base text-zinc-500 dark:text-zinc-400'>
-					No worries — nothing was charged. Your account is exactly as you left it.
+					No worries - nothing was charged. Your account is exactly as you left it.
 				</p>
 
 				{/* Divider */}

@@ -234,7 +234,7 @@ const NodeIOPanel = ({ nodeId, nodeColor, incoming, outputs }: Props) => {
 																port={port}
 																sourceId={group.sourceId}
 																color={group.sourceColor}
-																title={`Drag "${portLabel(port)}" from "${group.sourceLabel}" into a field — ${port.name}: ${port.type}`}
+																title={`Drag "${portLabel(port)}" from "${group.sourceLabel}" into a field - ${port.name}: ${port.type}`}
 															/>
 														))}
 													</div>

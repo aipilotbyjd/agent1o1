@@ -71,7 +71,7 @@ const RunHistory = () => {
 	if (!history.length) {
 		return (
 			<div className='flex h-32 items-center justify-center rounded-lg border border-dashed border-white/10 text-xs text-zinc-500'>
-				No runs yet — execute the workflow to build history
+				No runs yet - execute the workflow to build history
 			</div>
 		);
 	}

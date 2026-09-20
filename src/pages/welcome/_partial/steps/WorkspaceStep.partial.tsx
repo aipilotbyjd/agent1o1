@@ -31,7 +31,7 @@ const WorkspaceStep = ({ workspaceError }: IWorkspaceStepProps) => {
 				</h1>
 				<p className='text-xs leading-relaxed font-semibold text-slate-500 dark:text-zinc-400'>
 					This is where your agents live, your automations run, and your team collaborates
-					— all in one place.
+					- all in one place.
 				</p>
 			</div>
 
@@ -79,7 +79,7 @@ const WorkspaceStep = ({ workspaceError }: IWorkspaceStepProps) => {
 							className='block text-[11px] font-black tracking-wider text-slate-500 uppercase dark:text-zinc-400'>
 							Workspace URL
 							<span className='ml-1.5 font-bold tracking-normal text-slate-400 normal-case dark:text-zinc-500'>
-								— generated from the name
+								- generated from the name
 							</span>
 						</label>
 						<div className='focus-within:border-primary-500 focus-within:ring-primary-400/10 relative flex h-12 items-center rounded-2xl border border-slate-200/80 bg-slate-50/50 shadow-2xs transition-all duration-300 focus-within:bg-white focus-within:ring-4 dark:border-zinc-800/80 dark:bg-zinc-950/30 dark:focus-within:bg-zinc-950'>

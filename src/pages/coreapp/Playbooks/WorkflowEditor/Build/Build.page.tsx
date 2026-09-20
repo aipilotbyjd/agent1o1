@@ -74,7 +74,7 @@ const BuildPage = () => {
 		<div className='flex h-full min-h-0 bg-zinc-50 dark:bg-[#07080b] flex-col'>
 			{apiState.isError && (
 				<div className='absolute top-0 right-0 left-0 z-50 flex items-center justify-center gap-2 bg-rose-500 px-4 py-1 text-xs font-bold text-white'>
-					API unavailable — running in local mode.
+					API unavailable - running in local mode.
 				</div>
 			)}
 			{resolvedView !== 'settings' && resolvedView !== 'editor' && (

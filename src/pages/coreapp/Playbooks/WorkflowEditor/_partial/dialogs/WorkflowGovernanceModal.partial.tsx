@@ -944,7 +944,7 @@ const WorkflowGovernanceModal = () => {
 																	</span>
 																)}
 																<span className="text-[10px] text-zinc-400 font-medium">
-																	— Canvas structure matches contract rules.
+																	- Canvas structure matches contract rules.
 																</span>
 															</div>
 
