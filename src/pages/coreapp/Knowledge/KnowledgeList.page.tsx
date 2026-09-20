@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext, useParams } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CloudUpload, Database, FileText, BookOpen, Trash2, Search as SearchIcon, Sparkles } from 'lucide-react';
+import { CloudUpload, FileText, BookOpen, Trash2, Search as SearchIcon } from 'lucide-react';
 import { OutletContextType } from './_layouts/Knowledge.layout';
 import { useConfirm } from '@/context/confirm';
 import Breadcrumb from '@/components/layout/Breadcrumb';
@@ -52,7 +52,6 @@ const KnowledgeListPage = () => {
 
 	const chunks = chunkPage?.chunks ?? [];
 	const meta = chunkPage?.meta;
-	const totalChunks = collections?.reduce((sum, c) => sum + c.chunks_count, 0) ?? 0;
 
 	const handleSelectCollection = (collection: string | undefined) => {
 		setSelectedCollection(collection);
@@ -108,87 +107,18 @@ const KnowledgeListPage = () => {
 
 	return (
 		<Container className='relative overflow-x-hidden overflow-y-auto bg-[#F8F9FC] bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:20px_20px] !p-0 dark:bg-zinc-950 dark:bg-[radial-gradient(#27272a_1px,transparent_1px)]'>
-			<style>{`
-				@keyframes float { 0%, 100% { transform: translateY(0px) rotate(-10deg) skewX(2deg); } 50% { transform: translateY(-12px) rotate(-8deg) skewX(1deg); } }
-				@keyframes float-teal { 0%, 100% { transform: translateY(0px) rotate(15deg) skewX(-2deg); } 50% { transform: translateY(-8px) rotate(12deg) skewX(-1deg); } }
-				@keyframes float-coral { 0%, 100% { transform: translateY(0px) rotate(-5deg); } 50% { transform: translateY(-10px) rotate(-8deg); } }
-				.animate-3d-float { animation: float 6s ease-in-out infinite; }
-				.animate-3d-float-teal { animation: float-teal 5s ease-in-out infinite; }
-				.animate-3d-float-coral { animation: float-coral 7s ease-in-out infinite; }
-			`}</style>
-
 			<div className='mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8'>
-				{/* Hero header banner */}
-				<div className='relative mb-8 overflow-hidden rounded-3xl border border-primary-500/20 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600 px-6 py-8 text-[#101828] shadow-xl sm:px-10 sm:py-12 dark:border-zinc-800 dark:bg-gradient-to-r dark:from-[#111315] dark:via-[#141619] dark:to-[#0d0e10] dark:text-white'>
-					<div className='grid grid-cols-1 items-center gap-8 lg:grid-cols-12'>
-						<div className='relative z-10 lg:col-span-8'>
-							<div className='mb-4 flex items-center gap-3'>
-								<div className='inline-block rounded-md border border-white/30 bg-white/40 px-2.5 py-1 text-[10px] font-bold tracking-wider text-[#101828] uppercase backdrop-blur-md dark:border-primary-500/20 dark:bg-primary-950/30 dark:text-primary-400'>
-									Workspace-wide retrieval
-								</div>
-							</div>
-							<h1 className='mb-3 text-3xl font-extrabold tracking-tight text-[#101828] sm:text-4xl dark:text-white'>
-								Knowledge Base
-							</h1>
-							<p className='mb-6 max-w-2xl text-xs leading-relaxed text-zinc-850 sm:text-sm dark:text-zinc-400'>
-								Ingest text or files, grouped into collections — every agent in the workspace can
-								search it.
-							</p>
-
-							<div className='mt-6 flex flex-wrap items-center gap-4'>
-								<div className='flex items-center gap-3 rounded-2xl border border-white/20 bg-white/40 px-4 py-2.5 shadow-xs backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/60'>
-									<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-white/50 dark:bg-zinc-850'>
-										<FileText className='h-4.5 w-4.5 text-[#101828] dark:text-primary-400' />
-									</div>
-									<div>
-										<div className='text-sm leading-none font-extrabold text-[#101828] dark:text-white'>
-											{totalChunks}
-										</div>
-										<div className='mt-0.5 text-[10px] font-semibold text-slate-800 dark:text-zinc-500'>
-											Chunks
-										</div>
-									</div>
-								</div>
-
-								<div className='flex items-center gap-3 rounded-2xl border border-white/20 bg-white/40 px-4 py-2.5 shadow-xs backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/60'>
-									<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-white/50 dark:bg-zinc-850'>
-										<Database className='h-4.5 w-4.5 text-[#101828] dark:text-primary-400' />
-									</div>
-									<div>
-										<div className='text-sm leading-none font-extrabold text-[#101828] dark:text-white'>
-											{collections?.length ?? 0}
-										</div>
-										<div className='mt-0.5 text-[10px] font-semibold text-slate-800 dark:text-zinc-500'>
-											Collections
-										</div>
-									</div>
-								</div>
-
-								<button
-									onClick={() => setIsIngestOpen(true)}
-									className='flex h-10 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/20 bg-[#101828] px-5 text-xs font-black text-white shadow-lg transition-all hover:opacity-90 active:scale-95 dark:bg-primary-400 dark:text-primary-950'>
-									<CloudUpload size={14} />
-									Ingest
-								</button>
-							</div>
-						</div>
-
-						{/* 3D graphic column */}
-						<div className='pointer-events-none relative hidden h-56 justify-center select-none lg:col-span-4 lg:flex'>
-							<div className='relative flex h-64 w-64 items-center justify-center' style={{ perspective: '1000px' }}>
-								<div className='animate-3d-float absolute flex h-36 w-36 items-center justify-center rounded-3xl border border-white/25 bg-gradient-to-br from-primary-400 to-primary-500 shadow-[0_25px_50px_-12px_rgba(196,238,61,0.25)]'>
-									<div className='pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-tr from-white/15 via-transparent to-transparent' />
-									<BookOpen className='h-16 w-16 text-zinc-900 drop-shadow-[0_0_12px_rgba(255,255,255,0.7)]' />
-								</div>
-								<div className='animate-3d-float-teal absolute top-28 left-4 flex h-12 w-12 items-center justify-center rounded-xl border border-white/20 bg-gradient-to-tr from-[#7B37FC] to-[#501EE3] shadow-lg'>
-									<Database className='h-5 w-5 text-white' />
-								</div>
-								<div className='animate-3d-float-coral absolute top-12 right-6 flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 bg-gradient-to-tr from-orange-400 to-primary-400 shadow-lg'>
-									<Sparkles className='h-4.5 w-4.5 text-white' />
-								</div>
-							</div>
-						</div>
-					</div>
+				{/* Header panel */}
+				<div className='mb-8 flex items-center justify-between gap-4'>
+					<h1 className='text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white'>
+						Knowledge Base
+					</h1>
+					<button
+						onClick={() => setIsIngestOpen(true)}
+						className='flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-400 px-5 text-xs font-bold text-primary-950 shadow-md shadow-primary-500/10 transition-all hover:bg-primary-500 hover:shadow-lg hover:shadow-primary-500/20 active:scale-95 dark:shadow-none'>
+						<CloudUpload size={14} />
+						<span>Ingest</span>
+					</button>
 				</div>
 
 				{/* Collections + view toggle */}
