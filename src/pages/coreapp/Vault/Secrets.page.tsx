@@ -323,20 +323,18 @@ const SecretsPage = () => {
 	return (
 		<div className='mx-auto w-full max-w-[1180px] px-6 py-8 text-zinc-950 sm:px-10 lg:px-14 dark:text-zinc-50'>
 			{/* Header */}
-			<div className='mb-10 flex flex-col justify-between gap-5 sm:flex-row sm:items-start'>
-				<div>
-					<h1 className='text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-50'>
-						Your Secrets
-					</h1>
-					<p className='mt-1 max-w-2xl text-sm font-medium text-zinc-500 dark:text-zinc-400'>
-						Configure secrets to use them in custom nodes and MCP nodes. Secrets are
-						encrypted and should be used for sensitive data.
-					</p>
-				</div>
+			<div className='mb-8 flex items-center justify-between gap-4'>
+				<h1 className='text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-50'>
+					Your Secrets
+				</h1>
+				<button type='button' onClick={openAdd} className={primaryBtn}>
+					<Plus size={15} />
+					Add Secret
+				</button>
 			</div>
 
-			{/* Search + Add */}
-			<div className='mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+			{/* Search */}
+			<div className='mb-6'>
 				<div className='relative w-full max-w-sm'>
 					<Search className='pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-400' />
 					<input
@@ -355,13 +353,6 @@ const SecretsPage = () => {
 						</button>
 					)}
 				</div>
-				<button
-					type='button'
-					onClick={openAdd}
-					className={primaryBtn}>
-					<Plus size={15} />
-					Add Secret
-				</button>
 			</div>
 
 			{/* Loading */}
@@ -496,7 +487,7 @@ const SecretsPage = () => {
 
 										{/* Description */}
 										<Td className='p-4 text-sm text-zinc-400 dark:text-zinc-500'>
-											{secret.description || '—'}
+											{secret.description || '-'}
 										</Td>
 
 										{/* Created */}
