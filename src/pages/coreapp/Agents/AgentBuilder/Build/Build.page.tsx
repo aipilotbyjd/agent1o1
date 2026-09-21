@@ -302,6 +302,7 @@ const BuildPage = () => {
 
 	const { data: existingAgent } = useAgent(workspaceId, currentAgentId ?? '');
 	const duplicateAgentMutation = useDuplicateAgent(workspaceId);
+	const [showGetStarted, setShowGetStarted] = useState(true);
 	const createAgentMutation = useCreateAgent(workspaceId);
 	const updateAgentMutation = useUpdateAgent(workspaceId);
 	const deleteAgentMutation = useDeleteAgent(workspaceId);
@@ -1301,7 +1302,14 @@ const BuildPage = () => {
 									<span className='truncate text-[14px] font-black tracking-tight text-zinc-900 dark:text-white'>
 										{agentName}
 									</span>
-									<button className='text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300'>
+									<button
+										type='button'
+										title='Rename agent'
+										onClick={() => {
+											setActiveSidebarTab('agent');
+											setIsSettingsOpen(true);
+										}}
+										className='text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300'>
 										<SquarePen size={12} />
 									</button>
 								</div>
@@ -1503,49 +1511,56 @@ const BuildPage = () => {
 								</div>
 
 								{/* Get started section */}
-								<div className='w-full mt-12 px-4'>
-									<div className='flex items-center justify-between mb-4'>
-										<span className='text-[15px] font-black text-zinc-800 dark:text-zinc-100'>Get started</span>
-										<button className='text-xs font-bold text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'>Dismiss</button>
-									</div>
+								{showGetStarted && (
+									<div className='w-full mt-12 px-4'>
+										<div className='flex items-center justify-between mb-4'>
+											<span className='text-[15px] font-black text-zinc-800 dark:text-zinc-100'>Get started</span>
+											<button
+												type='button'
+												onClick={() => setShowGetStarted(false)}
+												className='text-xs font-bold text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'>
+												Dismiss
+											</button>
+										</div>
 
-									{/* Horizontal scrolling grid container */}
-									<div className='flex gap-4 overflow-x-auto pb-4 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
-										{/* Card 1 */}
-										<button
-											type='button'
-											onClick={() => {
-												sendChatMessage('Set up a trigger for Competitor Research Agent');
-											}}
-											className='flex min-w-[270px] max-w-[270px] flex-col rounded-2xl border border-zinc-150 bg-white p-5 text-left shadow-2xs hover:bg-zinc-50/30 transition dark:border-zinc-800/80 dark:bg-zinc-900'
-										>
-											<div className='flex items-center gap-2 mb-2 text-zinc-800 dark:text-zinc-200'>
-												<Zap size={16} className='text-zinc-450 dark:text-zinc-400' />
-												<span className='text-xs font-black'>Set up a trigger</span>
-											</div>
-											<p className='text-[11px] font-semibold text-zinc-500 leading-relaxed dark:text-zinc-400'>
-												I want you to start doing things without me having to ask. Help me set up a trigger so you can run on a schedule or...
-											</p>
-										</button>
+										{/* Horizontal scrolling grid container */}
+										<div className='flex gap-4 overflow-x-auto pb-4 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
+											{/* Card 1 */}
+											<button
+												type='button'
+												onClick={() => {
+													sendChatMessage('Set up a trigger for Competitor Research Agent');
+												}}
+												className='flex min-w-[270px] max-w-[270px] flex-col rounded-2xl border border-zinc-150 bg-white p-5 text-left shadow-2xs hover:bg-zinc-50/30 transition dark:border-zinc-800/80 dark:bg-zinc-900'
+											>
+												<div className='flex items-center gap-2 mb-2 text-zinc-800 dark:text-zinc-200'>
+													<Zap size={16} className='text-zinc-450 dark:text-zinc-400' />
+													<span className='text-xs font-black'>Set up a trigger</span>
+												</div>
+												<p className='text-[11px] font-semibold text-zinc-500 leading-relaxed dark:text-zinc-400'>
+													I want you to start doing things without me having to ask. Help me set up a trigger so you can run on a schedule or...
+												</p>
+											</button>
 
-										{/* Card 2 */}
-										<button
-											type='button'
-											onClick={() => {
-												sendChatMessage('Build a competitor marketing analysis dashboard');
-											}}
-											className='flex min-w-[270px] max-w-[270px] flex-col rounded-2xl border border-zinc-150 bg-white p-5 text-left shadow-2xs hover:bg-zinc-50/30 transition dark:border-zinc-800/80 dark:bg-zinc-900'
-										>
-											<div className='flex items-center gap-2 mb-2 text-zinc-800 dark:text-zinc-200'>
-												<Layers size={16} className='text-zinc-455 dark:text-zinc-400' />
-												<span className='text-xs font-black'>Build widgets</span>
-											</div>
-											<p className='text-[11px] font-semibold text-zinc-500 leading-relaxed dark:text-zinc-400'>
-												Build me a fresh copy of your application or customize your views to match your design system and preferences.
-											</p>
-										</button>
+											{/* Card 2 */}
+											<button
+												type='button'
+												onClick={() => {
+													sendChatMessage('Build a competitor marketing analysis dashboard');
+												}}
+												className='flex min-w-[270px] max-w-[270px] flex-col rounded-2xl border border-zinc-150 bg-white p-5 text-left shadow-2xs hover:bg-zinc-50/30 transition dark:border-zinc-800/80 dark:bg-zinc-900'
+											>
+												<div className='flex items-center gap-2 mb-2 text-zinc-800 dark:text-zinc-200'>
+													<Layers size={16} className='text-zinc-455 dark:text-zinc-400' />
+													<span className='text-xs font-black'>Build widgets</span>
+												</div>
+												<p className='text-[11px] font-semibold text-zinc-500 leading-relaxed dark:text-zinc-400'>
+													Build me a fresh copy of your application or customize your views to match your design system and preferences.
+												</p>
+											</button>
+										</div>
 									</div>
-								</div>
+								)}
 							</div>
 						) : (
 							chatHistory.map((message) => {
@@ -1883,7 +1898,14 @@ const BuildPage = () => {
 								
 								<div className='flex items-center justify-center gap-1.5 text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
 									<span>Agent can make mistakes. Please verify important information.</span>
-									<button className='underline hover:text-zinc-700 dark:hover:text-zinc-300'>Report an issue</button>
+									<button
+										type='button'
+										onClick={() =>
+											window.open('https://docs.agent1o1.com', '_blank', 'noopener,noreferrer')
+										}
+										className='underline hover:text-zinc-700 dark:hover:text-zinc-300'>
+										Report an issue
+									</button>
 								</div>
 							</div>
 						</footer>
@@ -1997,7 +2019,11 @@ const BuildPage = () => {
 												<ChevronDown size={16} className='text-zinc-500' />
 												<h3 className='text-sm font-black text-zinc-900 dark:text-white'>Agent Preferences</h3>
 											</div>
-											<button className='inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-bold text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'>
+											<button
+												type='button'
+												disabled
+												title='Advanced preferences are not available yet'
+												className='inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-bold text-zinc-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
 												<span>Advanced</span>
 												<SlidersHorizontal size={10} />
 											</button>
@@ -2467,7 +2493,13 @@ const BuildPage = () => {
 													<span className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 leading-tight mt-0.5'>Enables me to clone myself as a subagent to research competitors.</span>
 												</div>
 											</div>
-											<button className='text-zinc-400 hover:text-zinc-700 p-1 dark:hover:text-zinc-200'><MoreHorizontal size={14}/></button>
+											<button
+											type='button'
+											disabled
+											title='Subagents are not available yet'
+											className='text-zinc-400 p-1 disabled:cursor-not-allowed disabled:opacity-50'>
+											<MoreHorizontal size={14} />
+										</button>
 										</div>
 									</div>
 

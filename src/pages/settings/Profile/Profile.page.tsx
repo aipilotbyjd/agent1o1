@@ -24,6 +24,7 @@ import {
 } from '@/api/modules/user';
 import { useConfirm } from '@/context/confirm';
 import { primaryBtn, secondaryBtn, dangerBtn } from '@/pages/settings/_shared/buttons';
+import { useWorkspaceContext } from '@/context/workspace';
 
 type TProfileForm = {
 	firstName: string;
@@ -102,6 +103,7 @@ const SettingsFieldRow = ({
 const ProfilePage = () => {
 	const navigate = useNavigate();
 	const { data: userData } = useCurrentUser();
+	const { workspaces, activeWorkspaceId, isSwitching, switchWorkspace } = useWorkspaceContext();
 	const { confirm } = useConfirm();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const updateProfile = useUpdateProfile();
@@ -160,9 +162,9 @@ const ProfilePage = () => {
 		[formik.values.firstName, formik.values.lastName],
 	);
 
-	const displayName = fullName || userData?.name || 'Sahil';
-	const joinedAt = formatDate(userData?.created_at || '2026-06-01');
-	const workspaceName = userData?.current_workspace?.name ?? 'asdas';
+	const displayName = fullName || userData?.name || '';
+	const joinedAt = userData?.created_at ? formatDate(userData.created_at) : '';
+	const workspaceName = userData?.current_workspace?.name ?? '';
 	const workspaceRole = formatRole(userData?.current_workspace?.role);
 	const emailStatus = userData?.email_verified_at ? 'Email verified' : 'Email not verified';
 	const isProfileDirty = Boolean(
@@ -374,8 +376,16 @@ const ProfilePage = () => {
 						<div className='relative w-full'>
 							<select
 								aria-label='Current Workspace'
-								className={`${inputClass} appearance-none pr-11`}>
-								<option value={workspaceName}>{workspaceName}</option>
+								value={activeWorkspaceId}
+								disabled={isSwitching || workspaces.length === 0}
+								onChange={(e) => switchWorkspace(e.target.value)}
+								className={`${inputClass} appearance-none pr-11 disabled:cursor-not-allowed disabled:opacity-60`}>
+								{workspaces.length === 0 && <option value=''>{workspaceName}</option>}
+								{workspaces.map((ws) => (
+									<option key={ws.id} value={ws.id}>
+										{ws.name}
+									</option>
+								))}
 							</select>
 							<ChevronDown
 								size={18}
@@ -390,10 +400,16 @@ const ProfilePage = () => {
 						title='Timezone'
 						description='Your local timezone for time-based features.'>
 						<div className='relative w-full'>
+							{/* The profile endpoint accepts only name and email, so a choice here
+								    cannot be saved. Left visible but inert rather than silently
+								    discarding it; drop the `disabled` once the backend carries a
+								    timezone field. */}
 							<select
 								aria-label='Timezone'
 								defaultValue='Asia/Kolkata'
-								className={`${inputClass} appearance-none pr-11`}>
+								disabled
+								title='Timezone cannot be saved yet'
+								className={`${inputClass} appearance-none pr-11 disabled:cursor-not-allowed disabled:opacity-60`}>
 								<option value='Asia/Kolkata'>Asia/Kolkata</option>
 								<option value='America/New_York'>America/New_York</option>
 								<option value='Europe/London'>Europe/London</option>
