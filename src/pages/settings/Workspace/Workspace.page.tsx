@@ -5,6 +5,7 @@ import { Building2, Calendar, ChevronDown, Globe, Link2, ShieldCheck, Trash2 } f
 import { useConfirm } from '@/context/confirm';
 import { useUpdateWorkspace, useDeleteWorkspace, useWorkspace } from '@/api/modules/workspaces';
 import { primaryBtn, secondaryBtn, dangerBtn } from '@/pages/settings/_shared/buttons';
+import { notify } from '@/api/core';
 
 const inputClass =
 	'h-12 w-full rounded-xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-800 shadow-xs outline-none placeholder:text-zinc-400 focus:border-primary-300 focus:ring-4 focus:ring-primary-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-primary-500 dark:focus:ring-primary-500/20';
@@ -139,6 +140,7 @@ const WorkspacePage = () => {
 
 		try {
 			await deleteWorkspace.mutateAsync(activeWorkspaceId);
+			notify.success('Workspace deleted.');
 			navigate('/workspaces');
 		} catch {
 			// Toast notification is managed by hook

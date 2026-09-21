@@ -25,6 +25,8 @@ import pages from '@/Routes/pages';
 import paths from '@/Routes/paths';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useAgents, useDeleteAgent, useDuplicateAgent } from '@/api/modules/agents';
+import ListSkeletonPart from '@/parts/ListSkeleton.part';
+import { notify } from '@/api/core';
 
 interface IAgentItem {
 	id: string;
@@ -136,7 +138,9 @@ const AgentsListPage = () => {
 			),
 		});
 		if (!confirmed) return;
-		deleteAgentMutation.mutate(id);
+		deleteAgentMutation.mutate(id, {
+			onSuccess: () => notify.success(agent ? `"${agent.name}" deleted.` : 'Agent deleted.'),
+		});
 	};
 
 	return (
@@ -415,8 +419,8 @@ const AgentsListPage = () => {
 
 				{/* Agent List Cards */}
 				{isLoading ? (
-					<div className='flex items-center justify-center rounded-3xl border border-border-main bg-bg-card py-16 text-xs font-semibold text-slate-400 dark:text-zinc-500'>
-						Loading agents…
+					<div className='grid gap-6 md:grid-cols-2 xl:grid-cols-3'>
+						<ListSkeletonPart count={6} />
 					</div>
 				) : filteredAgents.length === 0 ? (
 					<div className='flex flex-col items-center justify-center gap-2 rounded-3xl border border-border-main bg-bg-card py-16 text-center'>

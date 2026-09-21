@@ -23,6 +23,7 @@ import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import { useWorkflowRouteParams } from '../../_hooks/useWorkflowRouteParams.hook';
 import { useConfirm } from '@/context/confirm';
+import { notify } from '@/api/core';
 import Modal from './Modal.partial';
 import {
 	useWorkflowVersions,
@@ -468,7 +469,9 @@ const WorkflowGovernanceModal = () => {
 																	'Are you sure you want to delete this share link? Anyone using it will lose access. This action cannot be undone.',
 															});
 															if (!confirmed) return;
-															deleteShare.mutate(share.id);
+															deleteShare.mutate(share.id, {
+																onSuccess: () => notify.success('Share link revoked.'),
+															});
 														}}
 														disabled={deleteShare.isPending}
 														className="text-zinc-400 hover:text-rose-500 dark:hover:text-rose-400 transition"

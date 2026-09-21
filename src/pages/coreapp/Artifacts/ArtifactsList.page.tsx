@@ -10,6 +10,8 @@ import pages from '@/Routes/pages';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useArtifacts, useDeleteArtifact, useDownloadArtifact } from '@/api/modules/artifacts';
 import type { TArtifact, TArtifactMimeCategory } from '@/types/artifact.type';
+import ListSkeletonPart from '@/parts/ListSkeleton.part';
+import { notify } from '@/api/core';
 import { ARTIFACT_CATEGORIES, getArtifactIcon, getArtifactColor, formatBytes } from './_helper/artifacts.constants';
 import ArtifactVersionsModal from './_partial/ArtifactVersionsModal.partial';
 
@@ -70,7 +72,9 @@ const ArtifactsListPage = () => {
 			),
 		});
 		if (!confirmed) return;
-		deleteMutation.mutate(artifact.id);
+		deleteMutation.mutate(artifact.id, {
+			onSuccess: () => notify.success('Artifact deleted.'),
+		});
 	};
 
 	return (
@@ -122,8 +126,8 @@ const ArtifactsListPage = () => {
 				</div>
 
 				{isLoading ? (
-					<div className='flex items-center justify-center rounded-3xl border border-border-main bg-bg-card py-16 text-xs font-semibold text-slate-400 dark:text-zinc-500'>
-						Loading artifacts…
+					<div className='grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
+						<ListSkeletonPart count={8} />
 					</div>
 				) : artifactList.length === 0 ? (
 					<div className='flex flex-col items-center justify-center gap-2 rounded-3xl border border-border-main bg-bg-card py-16 text-center'>

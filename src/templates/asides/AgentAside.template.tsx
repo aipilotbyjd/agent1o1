@@ -28,6 +28,7 @@ import { useAgentBuilderStore } from '@/store/agentBuilder.store';
 import { useAgentSessions, useDeleteAgentSession } from '@/api/modules/agents';
 import type { TAgentSession } from '@/types/agent.type';
 import GlobalSearch from '@/templates/search/GlobalSearch.template';
+import { notify } from '@/api/core';
 
 /** A session is created untitled when the builder can't name it; the first
  *  message normally supplies the title. */
@@ -86,7 +87,9 @@ const AgentAsideTemplate = () => {
 		// Clear the transcript first: deleting the chat that is on screen would
 		// otherwise leave the builder showing messages that no longer exist.
 		if (String(session.id) === String(sessionId)) newSession();
-		deleteSessionMutation.mutate(String(session.id));
+		deleteSessionMutation.mutate(String(session.id), {
+			onSuccess: () => notify.success('Chat deleted.'),
+		});
 	};
 
 	return (

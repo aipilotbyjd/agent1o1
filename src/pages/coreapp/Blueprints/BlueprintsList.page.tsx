@@ -43,6 +43,7 @@ import {
 	useUseTemplateCollection,
 } from '@/api/modules/templates';
 import type { TWorkflowTemplate, TAgentTemplate, TTemplateCollection } from '@/types/template.type';
+import ListSkeletonPart from '@/parts/ListSkeleton.part';
 import { formatUsageCount } from './_helper/blueprints.constants';
 
 type TTab = 'workflows' | 'agents' | 'collections';
@@ -522,8 +523,8 @@ const BlueprintsListPage = () => {
 					{(activeTab === 'workflows' && isWfsLoading) ||
 					(activeTab === 'agents' && isAgentsLoading) ||
 					(activeTab === 'collections' && isCollsLoading) ? (
-						<div className='flex flex-col items-center justify-center gap-2 py-24 text-xs font-semibold text-zinc-500 dark:text-zinc-400'>
-							Loading catalog…
+						<div className='grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
+							<ListSkeletonPart count={8} />
 						</div>
 					) : activeTab === 'workflows' && filteredWorkflows.length === 0 ? (
 						<EmptyState icon={Workflow} title='No workflow templates found' />

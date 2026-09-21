@@ -14,7 +14,7 @@ import {
 	Camera,
 	AlertCircle,
 } from 'lucide-react';
-import { ApiError } from '@/api/core';
+import { ApiError, notify } from '@/api/core';
 import {
 	useCurrentUser,
 	useDeleteAccount,
@@ -202,6 +202,7 @@ const ProfilePage = () => {
 
 		try {
 			await deleteAccount.mutateAsync();
+			notify.success('Your account has been deleted.');
 			navigate('/login', { replace: true });
 		} catch {
 			// Toast is handled by the API hook.
