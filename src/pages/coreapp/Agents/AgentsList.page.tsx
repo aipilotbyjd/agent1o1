@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useOutletContext, useNavigate, useParams } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -23,8 +24,9 @@ import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
 import paths from '@/Routes/paths';
 import { useWorkspaceContext } from '@/context/workspace';
-import { useAgents, useDeleteAgent, useDuplicateAgent } from '@/api/modules/agents';
+import { agentKeys, useAgents, useDeleteAgent, useDuplicateAgent } from '@/api/modules/agents';
 import ListSkeletonPart from '@/parts/ListSkeleton.part';
+import type { TAgent } from '@/types/agent.type';
 import { notify } from '@/api/core';
 
 interface IAgentItem {
@@ -86,6 +88,7 @@ const AgentsListPage = () => {
 	const { data: apiAgents, isLoading } = useAgents(currentWorkspaceId);
 	const deleteAgentMutation = useDeleteAgent(currentWorkspaceId);
 	const duplicateAgentMutation = useDuplicateAgent(currentWorkspaceId);
+	const queryClient = useQueryClient();
 
 
 	const agents = useMemo<IAgentItem[]>(() => {
@@ -137,8 +140,22 @@ const AgentsListPage = () => {
 			),
 		});
 		if (!confirmed) return;
+
+		// Pull the card now instead of after the round trip. The dialog above is
+		// the safety net, so a failure rolls the list back rather than offering
+		// an undo the backend could not honour anyway.
+		const listKey = agentKeys.list(currentWorkspaceId);
+		const previousAgents = queryClient.getQueryData<TAgent[]>(listKey);
+		queryClient.setQueryData<TAgent[]>(listKey, (rows) =>
+			(rows ?? []).filter((row) => String(row.id) !== String(id)),
+		);
+
 		deleteAgentMutation.mutate(id, {
 			onSuccess: () => notify.success(agent ? `"${agent.name}" deleted.` : 'Agent deleted.'),
+			// No toast here — query-client.ts already reports the failure globally.
+			onError: () => {
+				if (previousAgents) queryClient.setQueryData(listKey, previousAgents);
+			},
 		});
 	};
 

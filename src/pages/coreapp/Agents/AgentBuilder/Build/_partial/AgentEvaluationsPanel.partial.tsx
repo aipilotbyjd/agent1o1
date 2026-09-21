@@ -12,12 +12,17 @@ import {
 	Tag,
 	Ruler,
 	Database,
+	RotateCw,
+	Play,
 } from 'lucide-react';
 import {
 	useAgentEvaluationSettings,
 	useUpdateAgentEvaluationSettings,
 	useAgentSessionEvaluations,
+	useAgentSessions,
+	useRunAgentSessionEvaluation,
 } from '@/api/modules/agents';
+import { notify } from '@/api/core';
 import type {
 	TAgentEvaluationSettings,
 	TAgentSessionEvaluation,
@@ -434,8 +439,16 @@ const EvaluationSettingsForm = ({
 	);
 };
 
-/** One graded chat. */
-const EvaluationCard = ({ evaluation }: { evaluation: TAgentSessionEvaluation }) => {
+/** One graded chat. `onRegrade` re-runs the grader on the chat behind it. */
+const EvaluationCard = ({
+	evaluation,
+	onRegrade,
+	isRegrading,
+}: {
+	evaluation: TAgentSessionEvaluation;
+	onRegrade: (sessionId: string) => void;
+	isRegrading: boolean;
+}) => {
 	const grade = evaluation.grade ? GRADE_STYLE[evaluation.grade] : null;
 	const GradeIcon = grade?.icon ?? Clock;
 
@@ -468,6 +481,20 @@ const EvaluationCard = ({ evaluation }: { evaluation: TAgentSessionEvaluation })
 							? new Date(evaluation.evaluated_at).toLocaleString()
 							: new Date(evaluation.created_at).toLocaleString()}
 					</span>
+				</div>
+				<button
+					type='button'
+					onClick={() => onRegrade(String(evaluation.agent_session_id))}
+					disabled={isRegrading}
+					title='Grade this chat again'
+					className='shrink-0 rounded-lg border border-zinc-200 bg-white p-1 text-zinc-400 transition hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:text-zinc-200'>
+					<RotateCw size={10} className={isRegrading ? 'animate-spin' : undefined} />
+				</button>
+			</div>
+
+			<div className='flex items-start gap-3'>
+				<div className='w-[14px] shrink-0' />
+				<div className='min-w-0 flex-1'>
 					{evaluation.summary && (
 						<p className='mt-1 line-clamp-3 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400'>
 							{evaluation.summary}
@@ -508,8 +535,20 @@ const AgentEvaluationsPanel = ({ ws, agentId }: TProps) => {
 	const [gradeFilter, setGradeFilter] = useState<TAgentSessionEvaluationGrade | undefined>(
 		undefined,
 	);
+	// Chat picked in the "grade a chat" row. '' means nothing chosen yet.
+	const [sessionToGrade, setSessionToGrade] = useState('');
 
 	const { data: settings } = useAgentEvaluationSettings(ws, agentId ?? '');
+	const { data: sessions } = useAgentSessions(ws, agentId ?? '');
+	const runEvaluation = useRunAgentSessionEvaluation(ws, agentId ?? '');
+
+	/** Grades one chat on demand, instead of waiting for the automatic pass. */
+	const gradeSession = (sessionId: string) => {
+		if (!sessionId) return;
+		runEvaluation.mutate(sessionId, {
+			onSuccess: () => notify.success('Chat graded.'),
+		});
+	};
 	const { data, isLoading } = useAgentSessionEvaluations(
 		ws,
 		agentId ?? '',
@@ -559,6 +598,34 @@ const AgentEvaluationsPanel = ({ ws, agentId }: TProps) => {
 					</p>
 				))}
 
+			{/* Grade a chat on demand — the settings above only schedule the
+			    automatic pass, so without this the panel can just read results. */}
+			<div className='flex items-center gap-1.5'>
+				<select
+					value={sessionToGrade}
+					onChange={(e) => setSessionToGrade(e.target.value)}
+					className={`${selectClass} min-w-0 flex-1`}>
+					<option value=''>Grade a chat…</option>
+					{(sessions ?? []).map((session) => (
+						<option key={session.id} value={String(session.id)}>
+							{session.title?.trim() || 'Untitled chat'}
+						</option>
+					))}
+				</select>
+				<button
+					type='button'
+					onClick={() => gradeSession(sessionToGrade)}
+					disabled={!sessionToGrade || runEvaluation.isPending}
+					className='flex shrink-0 items-center gap-1 rounded-lg bg-primary-400 px-2.5 py-1.5 text-[10px] font-black text-primary-950 transition hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-40'>
+					{runEvaluation.isPending ? (
+						<Loader2 size={10} className='animate-spin' />
+					) : (
+						<Play size={10} />
+					)}
+					<span>Grade</span>
+				</button>
+			</div>
+
 			{/* Grade filter */}
 			<div className='flex gap-1.5'>
 				{(
@@ -588,7 +655,15 @@ const AgentEvaluationsPanel = ({ ws, agentId }: TProps) => {
 			) : (
 				<div className='space-y-2'>
 					{items.map((evaluation) => (
-						<EvaluationCard key={evaluation.id} evaluation={evaluation} />
+						<EvaluationCard
+							key={evaluation.id}
+							evaluation={evaluation}
+							onRegrade={gradeSession}
+							isRegrading={
+								runEvaluation.isPending &&
+								String(runEvaluation.variables) === String(evaluation.agent_session_id)
+							}
+						/>
 					))}
 				</div>
 			)}

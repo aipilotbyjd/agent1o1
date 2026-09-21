@@ -39,6 +39,7 @@ import {
 	Target,
 	Shield,
 	Copy,
+	RefreshCw,
 	Lock,
 	AlertTriangle,
 	ExternalLink,
@@ -160,7 +161,39 @@ interface TMessage {
 	followUp?: string;
 	actions?: { label: string; type: string }[];
 	timeline?: TChatTimelineItem[];
+	/** Set on a reply the user cut short with Stop — the text is a partial. */
+	stopped?: boolean;
 }
+
+/** Where an unsent composer draft is parked, per agent and per chat. */
+const draftKey = (agentId: string | null, sessionId: string | null) =>
+	`agent1o1:chat-draft:${agentId ?? 'draft'}:${sessionId ?? 'new'}`;
+
+/** Browser storage is unavailable in private windows and with site data blocked,
+ *  so a lost draft must never take the composer down with it. */
+const readDraft = (key: string) => {
+	try {
+		return localStorage.getItem(key) ?? '';
+	} catch {
+		return '';
+	}
+};
+
+const writeDraft = (key: string, value: string) => {
+	try {
+		if (value.trim()) localStorage.setItem(key, value);
+		else localStorage.removeItem(key);
+	} catch {
+		// A draft that cannot be parked is not worth an error — it stays in state.
+	}
+};
+
+/** Grows the composer to fit its content. The height has to be reset first or
+ *  scrollHeight only ever reports the taller of the two. */
+const autoSizeComposer = (el: HTMLTextAreaElement) => {
+	el.style.height = 'auto';
+	el.style.height = `${el.scrollHeight}px`;
+};
 
 const mdComponents: Components = {
 	p: ({ children }) => <p className='mb-2 last:mb-0 whitespace-pre-line'>{children}</p>,
@@ -380,8 +413,14 @@ const BuildPage = () => {
 	const [chatHistory, setChatHistory] = useState<TMessage[]>([]);
 	const [chatInput, setChatInput] = useState('');
 	const [isTyping, setIsTyping] = useState(false);
+	// Aborts the turn in flight. `streamMessage` already takes an AbortSignal —
+	// this is the Stop button's end of it.
+	const streamAbortRef = useRef<AbortController | null>(null);
+	// Message whose hover toolbar is pinned open on touch, where there is no hover.
+	const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
+	const composerRef = useRef<HTMLTextAreaElement | null>(null);
 
-	
+
 	useEffect(() => {
 		setChatAgentId(currentAgentId ?? null);
 	}, [currentAgentId, setChatAgentId]);
@@ -419,6 +458,30 @@ const BuildPage = () => {
 		setChatHistory(transcriptToMessages(openedSession.messages ?? []));
 		setIsPreviewMode(true);
 	}, [conversationId, openedSession]);
+
+	// An unsent message survives a chat switch, a tab change and a reload — it is
+	// parked per agent and per chat, so two chats never share one draft.
+	const draftKeyRef = useRef<string>('');
+	useEffect(() => {
+		const nextKey = draftKey(currentAgentId ?? null, conversationId ?? null);
+		if (nextKey === draftKeyRef.current) return;
+		draftKeyRef.current = nextKey;
+		setChatInput(readDraft(nextKey));
+	}, [currentAgentId, conversationId]);
+
+	/** Every write to the composer goes through here so the draft stays parked.
+	 *  Parking in an effect instead would race the restore above and blank it. */
+	const updateChatInput = (value: string) => {
+		setChatInput(value);
+		writeDraft(draftKeyRef.current, value);
+	};
+
+	// A restored draft is set straight into state, so nothing has resized the box
+	// for it — a two-line draft would come back showing one line.
+	useEffect(() => {
+		if (composerRef.current) autoSizeComposer(composerRef.current);
+	}, [chatInput]);
+
 	const [incognito, setIncognito] = useState(false);
 	const [skillEnabled, setSkillEnabled] = useState(true);
 
@@ -815,6 +878,11 @@ const BuildPage = () => {
 		setIsTyping(true);
 		setTimeline(() => []);
 
+		// One controller per turn — Stop aborts this one, and `finally` clears it
+		// so a later Stop can never abort a turn that already ended.
+		const controller = new AbortController();
+		streamAbortRef.current = controller;
+
 		try {
 			const agentIdForRun = await ensureAgentPersisted();
 
@@ -847,6 +915,7 @@ const BuildPage = () => {
 				agentIdForRun,
 				sessionId,
 				{ message: trimmed },
+				controller.signal,
 			)) {
 				if (event.event === 'delta') {
 					setTimeline((prev) => {
@@ -925,21 +994,80 @@ const BuildPage = () => {
 			};
 			setChatHistory((prev) => [...prev, agentMsg]);
 		} catch (err) {
-			setChatHistory((prev) => [
-				...prev,
-				{
-					id: 'agent-error-' + Date.now(),
-					sender: 'agent',
-					text: "Sorry, I couldn't process that - please try again.",
-					timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-					type: 'text',
-				},
-			]);
-			toast.error(err instanceof Error ? err.message : 'Failed to reach the agent.');
+			// Stop is not a failure. Keep whatever the agent had already streamed —
+			// throwing it away is the one thing a Stop button must not do.
+			if (controller.signal.aborted) {
+				const partial = streamTimelineRef.current;
+				const partialText = partial
+					.filter((item) => item.kind === 'text')
+					.map((item) => item.text)
+					.join('');
+				setChatHistory((prev) => [
+					...prev,
+					{
+						id: 'agent-stopped-' + Date.now(),
+						sender: 'agent',
+						text: partialText || '_Stopped before the agent replied._',
+						timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+						type: 'text',
+						timeline: partial.length > 0 ? partial : undefined,
+						stopped: true,
+					},
+				]);
+			} else {
+				setChatHistory((prev) => [
+					...prev,
+					{
+						id: 'agent-error-' + Date.now(),
+						sender: 'agent',
+						text: "Sorry, I couldn't process that - please try again.",
+						timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+						type: 'text',
+					},
+				]);
+				toast.error(err instanceof Error ? err.message : 'Failed to reach the agent.');
+			}
 		} finally {
+			streamAbortRef.current = null;
 			setIsTyping(false);
 			setTimeline(() => []);
 		}
+	};
+
+	/** Cuts the turn in flight short; the catch above keeps the partial reply. */
+	const stopStreaming = () => {
+		streamAbortRef.current?.abort();
+	};
+
+	/** Re-runs the last user message. The backend keeps the abandoned turn in the
+	 *  session's history — this appends a fresh one rather than replacing it. */
+	const regenerateLastReply = () => {
+		if (isTyping) return;
+		const lastUser = [...chatHistory].reverse().find((message) => message.sender === 'user');
+		if (!lastUser) return;
+		// Drop the reply being replaced so the transcript does not show both.
+		setChatHistory((prev) => {
+			const lastUserIdx = prev.map((m) => m.id).lastIndexOf(lastUser.id);
+			return lastUserIdx === -1 ? prev : prev.slice(0, lastUserIdx);
+		});
+		sendChatMessage(lastUser.text);
+	};
+
+	/** Puts a sent message back in the composer and rewinds the transcript to it. */
+	const editUserMessage = (message: TMessage) => {
+		if (isTyping) return;
+		setChatHistory((prev) => {
+			const idx = prev.map((m) => m.id).lastIndexOf(message.id);
+			return idx === -1 ? prev : prev.slice(0, idx);
+		});
+		updateChatInput(message.text);
+		// The composer only exists on the desktop layout; mobile falls back to state.
+		requestAnimationFrame(() => composerRef.current?.focus());
+	};
+
+	const copyMessage = (text: string) => {
+		navigator.clipboard.writeText(text).catch(() => {});
+		toast.success('Message copied.');
 	};
 
 	// Action chip clicks in chat response
@@ -1451,7 +1579,7 @@ const BuildPage = () => {
 									<button
 										type='button'
 										onClick={() => {
-											setChatInput('Research top competitor strategies...');
+											updateChatInput('Research top competitor strategies...');
 										}}
 										className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-orange-50/60 text-orange-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-orange-500/20 dark:bg-orange-500/10'
 									>
@@ -1460,7 +1588,7 @@ const BuildPage = () => {
 									<button
 										type='button'
 										onClick={() => {
-											setChatInput('Generate competitor comparison matrix...');
+											updateChatInput('Generate competitor comparison matrix...');
 										}}
 										className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50/60 text-blue-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-blue-500/20 dark:bg-blue-500/10'
 									>
@@ -1563,10 +1691,13 @@ const BuildPage = () => {
 								)}
 							</div>
 						) : (
-							chatHistory.map((message) => {
+							chatHistory.map((message, messageIdx) => {
 								const isUser = message.sender === 'user';
+								// Regenerate only makes sense on the reply that is actually last —
+								// re-running an older turn would strand everything after it.
+								const isLastMessage = messageIdx === chatHistory.length - 1;
 								return (
-									<div key={message.id} className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'}`}>
+									<div key={message.id} className={`group flex w-full ${isUser ? 'justify-end' : 'justify-start'}`}>
 										<div className={`flex gap-3 max-w-[90%] sm:max-w-[80%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
 											{/* Agent Avatar in body */}
 											{!isUser && (
@@ -1661,10 +1792,63 @@ const BuildPage = () => {
 													</div>
 												)}
 
-												{/* Timestamp */}
-												<span className={`text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 mt-1.5 ${isUser ? 'text-right' : 'text-left'}`}>
-													{message.timestamp}
-												</span>
+												{/* Timestamp + per-message actions. The toolbar rides the row's
+												    hover; on touch there is none, so tapping the timestamp pins it. */}
+												<div className={`mt-1.5 flex items-center gap-1.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+													<button
+														type='button'
+														onClick={() =>
+															setActiveMessageId((current) =>
+																current === message.id ? null : message.id,
+															)
+														}
+														className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+														{message.timestamp}
+													</button>
+
+													{message.stopped && (
+														<span className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'>
+															Stopped
+														</span>
+													)}
+
+													<div
+														className={`flex items-center gap-0.5 transition ${
+															activeMessageId === message.id
+																? 'opacity-100'
+																: 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'
+														}`}>
+														<button
+															type='button'
+															onClick={() => copyMessage(message.text)}
+															title='Copy message'
+															className='rounded-md p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
+															<Copy size={11} />
+														</button>
+
+														{isUser && (
+															<button
+																type='button'
+																onClick={() => editUserMessage(message)}
+																disabled={isTyping}
+																title='Edit and resend'
+																className='rounded-md p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
+																<SquarePen size={11} />
+															</button>
+														)}
+
+														{!isUser && isLastMessage && (
+															<button
+																type='button'
+																onClick={regenerateLastReply}
+																disabled={isTyping}
+																title='Regenerate reply'
+																className='rounded-md p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
+																<RefreshCw size={11} />
+															</button>
+														)}
+													</div>
+												</div>
 											</div>
 										</div>
 									</div>
@@ -1733,13 +1917,13 @@ const BuildPage = () => {
 									<textarea
 										rows={2}
 										value={chatInput}
-										onChange={(e) => setChatInput(e.target.value)}
+										onChange={(e) => updateChatInput(e.target.value)}
 										onKeyDown={(e) => {
 											if (e.key === 'Enter' && !e.shiftKey) {
 												e.preventDefault();
-												if (chatInput.trim()) {
+												if (chatInput.trim() && !isTyping) {
 													sendChatMessage(chatInput);
-													setChatInput('');
+													updateChatInput('');
 												}
 											}
 										}}
@@ -1759,9 +1943,11 @@ const BuildPage = () => {
 										
 										{/* Right controls: Loader, Mic, Send */}
 										<div className='flex items-center gap-2.5'>
-											{/* Loading spinner */}
-											<div className='flex h-4 w-4 items-center justify-center rounded-full border border-zinc-200 border-t-zinc-400 animate-spin size-4 shrink-0' style={{ borderTopColor: '#3b82f6', borderWidth: '1.5px' }} />
-											
+											{/* Loading spinner — only while a turn is actually in flight */}
+											{isTyping && (
+												<div className='flex h-4 w-4 items-center justify-center rounded-full border border-zinc-200 border-t-zinc-400 animate-spin size-4 shrink-0' style={{ borderTopColor: '#3b82f6', borderWidth: '1.5px' }} />
+											)}
+
 											{/* Mic */}
 											<button 
 												type='button'
@@ -1771,18 +1957,31 @@ const BuildPage = () => {
 												<Mic size={18} />
 											</button>
 
-											{/* Send button (pink/purple gradient circle with white up-arrow) */}
+											{/* Send button — becomes Stop for the duration of a turn */}
 											<button
 												type='button'
 												onClick={() => {
+													if (isTyping) {
+														stopStreaming();
+														return;
+													}
 													if (chatInput.trim()) {
 														sendChatMessage(chatInput);
-														setChatInput('');
+														updateChatInput('');
 													}
 												}}
-												className='flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-tr from-primary-400 to-primary-400 text-primary-950 shadow-2xs transition hover:opacity-90 active:scale-95'
+												title={isTyping ? 'Stop generating' : 'Send message'}
+												className={`flex h-8 w-8 items-center justify-center rounded-full shadow-2xs transition hover:opacity-90 active:scale-95 ${
+													isTyping
+														? 'bg-zinc-900 text-white dark:bg-zinc-200 dark:text-zinc-900'
+														: 'bg-linear-to-tr from-primary-400 to-primary-400 text-primary-950'
+												}`}
 											>
-												<ArrowUp size={16} strokeWidth={2.5} />
+												{isTyping ? (
+													<Square size={12} strokeWidth={3} className='fill-current' />
+												) : (
+													<ArrowUp size={16} strokeWidth={2.5} />
+												)}
 											</button>
 										</div>
 									</div>
@@ -1834,22 +2033,31 @@ const BuildPage = () => {
 										</button>
 									</div>
 
-									{/* Chat Input */}
-									<input
-										type='text'
+									{/* Chat Input — a textarea, so Shift+Enter can open a new line.
+									    It grows with the message and stops at ~6 rows. */}
+									<textarea
+										ref={composerRef}
+										rows={1}
 										value={chatInput}
-										onChange={(e) => setChatInput(e.target.value)}
+										onChange={(e) => {
+											updateChatInput(e.target.value);
+											autoSizeComposer(e.currentTarget);
+										}}
 										onKeyDown={(e) => {
-											if (e.key === 'Enter') {
+											if (e.key === 'Enter' && !e.shiftKey) {
 												e.preventDefault();
-												if (chatInput.trim()) {
+												if (chatInput.trim() && !isTyping) {
 													sendChatMessage(chatInput);
-													setChatInput('');
+													updateChatInput('');
+													// The box grew with the draft — put it back to one row.
+													requestAnimationFrame(() => {
+														if (composerRef.current) autoSizeComposer(composerRef.current);
+													});
 												}
 											}
 										}}
 										placeholder='Send a message to your agent...'
-										className='flex-1 bg-transparent px-3 text-sm font-semibold text-zinc-900 placeholder:text-zinc-400 outline-none border-none focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
+										className='max-h-[9rem] flex-1 resize-none self-center bg-transparent px-3 py-1.5 text-sm font-semibold text-zinc-900 placeholder:text-zinc-400 outline-none border-none focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
 									/>
 
 									{/* Right features: Incognito & Send */}
@@ -1859,7 +2067,7 @@ const BuildPage = () => {
 											<button
 												onClick={() => setIncognito(!incognito)}
 												className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-													incognito ? 'bg-zinc-800 dark:bg-zinc-700' : 'bg-zinc-200 dark:bg-zinc-800'
+													incognito ? 'bg-primary-400 dark:bg-primary-400' : 'bg-zinc-200 dark:bg-zinc-800'
 												}`}>
 												<span
 													className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
@@ -1868,7 +2076,10 @@ const BuildPage = () => {
 												/>
 											</button>
 											<div className='flex items-center gap-1 text-[11px] font-black text-zinc-400 dark:text-zinc-500'>
-												<Ghost size={12} className={incognito ? 'text-zinc-700 dark:text-zinc-300' : ''} />
+												<Ghost
+													size={12}
+													className={incognito ? 'text-primary-600 dark:text-primary-400' : ''}
+												/>
 												<span>Incognito</span>
 											</div>
 										</div>
@@ -1882,16 +2093,29 @@ const BuildPage = () => {
 											<Mic size={18} />
 										</button>
 
-										{/* Send Button */}
+										{/* Send Button — turns into Stop while the agent is replying */}
 										<button
 											onClick={() => {
+												if (isTyping) {
+													stopStreaming();
+													return;
+												}
 												if (chatInput.trim()) {
 													sendChatMessage(chatInput);
-													setChatInput('');
+													updateChatInput('');
 												}
 											}}
-											className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-400 text-primary-950 shadow-md transition hover:bg-primary-500 active:scale-95'>
-											<ArrowUp size={16} strokeWidth={2.5} />
+											title={isTyping ? 'Stop generating' : 'Send message'}
+											className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full shadow-md transition active:scale-95 ${
+												isTyping
+													? 'bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-200 dark:text-zinc-900 dark:hover:bg-white'
+													: 'bg-primary-400 text-primary-950 hover:bg-primary-500'
+											}`}>
+											{isTyping ? (
+												<Square size={13} strokeWidth={3} className='fill-current' />
+											) : (
+												<ArrowUp size={16} strokeWidth={2.5} />
+											)}
 										</button>
 									</div>
 								</div>

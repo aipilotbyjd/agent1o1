@@ -31,6 +31,7 @@ import { useRunWorkflow } from '../../_hooks/useRunWorkflow.hook';
 import { useAiChatStore } from '@/store/aiChat.store';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import pages from '@/Routes/pages';
+import NotificationsDropdown from '@/components/notifications/NotificationsDropdown';
 
 export const EditableWorkflowName = ({
 	name,
@@ -171,6 +172,12 @@ const Topbar = () => {
 	const dashboardPath = state.workflow.workspaceId
 		? pages.workspace.subPages!.dashboard.to.replace(':workspaceId', state.workflow.workspaceId)
 		: pages.choose.to;
+	const workspaceSettingsPath = state.workflow.workspaceId
+		? pages.settings.subPages!.workspace.to.replace(
+				':workspaceId',
+				state.workflow.workspaceId,
+		  )
+		: null;
 	const saveVersion = useCreateWorkflowVersion(state.workflow.workspaceId ?? '');
 	const updateWorkflow = useUpdateWorkflow(state.workflow.workspaceId ?? '');
 	const setGovModalOpen = useWorkflowShellStore((store) => store.setGovModalOpen);
@@ -248,23 +255,9 @@ const Topbar = () => {
 					/>
 				</div>
 
-				{/* Right Section: Notification bell with badge dot */}
+				{/* Right Section: Notifications */}
 				<div className='flex items-center gap-3'>
-					<button
-						type='button'
-						title='Notifications'
-						className='dark:text-zinc-450 relative flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:bg-white/[0.05] dark:hover:text-white'>
-						<svg
-							className='h-5 w-5 fill-none stroke-current'
-							viewBox='0 0 24 24'
-							strokeWidth='2'
-							strokeLinecap='round'
-							strokeLinejoin='round'>
-							<path d='M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9' />
-							<path d='M10.3 21a1.94 1.94 0 0 0 3.4 0' />
-						</svg>
-						<span className='bg-primary-400 absolute top-1 right-1 h-2 w-2 rounded-full ring-2 ring-white dark:ring-[#07080b]' />
-					</button>
+					<NotificationsDropdown />
 				</div>
 			</header>
 		);
@@ -283,12 +276,14 @@ const Topbar = () => {
 							agent101
 						</span>
 					</Link>
-					<button
-						type='button'
-						title='Workspace Settings'
-						className='flex hidden h-7 w-7 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 sm:flex dark:hover:bg-white/[0.05] dark:hover:text-white'>
-						<Settings2 size={15} />
-					</button>
+					{workspaceSettingsPath && (
+						<Link
+							to={workspaceSettingsPath}
+							title='Workspace Settings'
+							className='hidden h-7 w-7 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 sm:flex dark:hover:bg-white/[0.05] dark:hover:text-white'>
+							<Settings2 size={15} />
+						</Link>
+					)}
 				</div>
 
 				<div className='hidden h-6 w-px bg-zinc-200 sm:block dark:bg-zinc-800' />
