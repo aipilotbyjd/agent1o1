@@ -43,6 +43,7 @@ import {
 	useUseTemplateCollection,
 } from '@/api/modules/templates';
 import type { TWorkflowTemplate, TAgentTemplate, TTemplateCollection } from '@/types/template.type';
+import ListSkeletonPart from '@/parts/ListSkeleton.part';
 import { formatUsageCount } from './_helper/blueprints.constants';
 
 type TTab = 'workflows' | 'agents' | 'collections';
@@ -173,6 +174,8 @@ const BlueprintsListPage = () => {
 	const [activeTab, setActiveTab] = useState<TTab>('workflows');
 	const [searchQuery, setSearchQuery] = useState('');
 	const [selectedCategory, setSelectedCategory] = useState('');
+	const [sortMode, setSortMode] = useState<'latest' | 'popular' | 'alpha'>('latest');
+	const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
 	// Details dialog trigger
 	const [previewId, setPreviewId] = useState<string | null>(null);
@@ -222,14 +225,35 @@ const BlueprintsListPage = () => {
 	}, [agents]);
 
 	const query = searchQuery.trim().toLowerCase();
+
+	/** Templates and collections both carry `name` and `created_at`; only the two
+	 *  template kinds carry `usage_count`, so collections fall back to their
+	 *  item count for Popularity. */
+	const bySortMode = <TItem extends { name: string; created_at?: string }>(
+		a: TItem,
+		b: TItem,
+	) => {
+		if (sortMode === 'alpha') return a.name.localeCompare(b.name);
+		if (sortMode === 'popular') {
+			const weight = (item: TItem) =>
+				(item as { usage_count?: number; item_count?: number }).usage_count ??
+				(item as { item_count?: number }).item_count ??
+				0;
+			return weight(b) - weight(a) || a.name.localeCompare(b.name);
+		}
+		return (b.created_at ?? '').localeCompare(a.created_at ?? '');
+	};
+
 	const filteredWorkflows = useMemo(
 		() =>
 			(workflows ?? []).filter(
 				(t) =>
 					(!query || t.name.toLowerCase().includes(query) || (t.description ?? '').toLowerCase().includes(query)) &&
 					(!selectedCategory || (t.category ?? 'uncategorized') === selectedCategory),
-			),
-		[workflows, query, selectedCategory],
+			)
+				.slice()
+				.sort(bySortMode),
+		[workflows, query, selectedCategory, sortMode],
 	);
 	const filteredAgents = useMemo(
 		() =>
@@ -237,15 +261,19 @@ const BlueprintsListPage = () => {
 				(t) =>
 					(!query || t.name.toLowerCase().includes(query) || (t.description ?? '').toLowerCase().includes(query)) &&
 					(!selectedCategory || (t.category ?? 'uncategorized') === selectedCategory),
-			),
-		[agents, query, selectedCategory],
+			)
+				.slice()
+				.sort(bySortMode),
+		[agents, query, selectedCategory, sortMode],
 	);
 	const filteredCollections = useMemo(
 		() =>
 			(collections ?? []).filter(
 				(c) => !query || c.name.toLowerCase().includes(query) || (c.description ?? '').toLowerCase().includes(query),
-			),
-		[collections, query],
+			)
+				.slice()
+				.sort(bySortMode),
+		[collections, query, sortMode],
 	);
 
 	const totalTemplates = (workflows?.length ?? 0) + (agents?.length ?? 0);
@@ -498,21 +526,36 @@ const BlueprintsListPage = () => {
 							{/* Sort Dropdown */}
 							<div className='relative'>
 								<select
+									value={sortMode}
+									onChange={(e) =>
+										setSortMode(e.target.value as 'latest' | 'popular' | 'alpha')
+									}
+									aria-label='Sort templates'
 									style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
 									className='shadow-3xs cursor-pointer appearance-none rounded-xl border border-zinc-200/80 bg-white py-1.5 pr-8 pl-3 text-[11px] text-zinc-600 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400'>
-									<option>Latest Added</option>
-									<option>Popularity</option>
-									<option>Alphabetical</option>
+									<option value='latest'>Latest Added</option>
+									<option value='popular'>Popularity</option>
+									<option value='alpha'>Alphabetical</option>
 								</select>
 								<ChevronDown className='pointer-events-none absolute top-1/2 right-2 h-3 w-3 -translate-y-1/2 text-zinc-400' />
 							</div>
 
 							{/* Layout Switcher */}
 							<div className='flex items-center rounded-lg border border-zinc-200/20 bg-zinc-200/55 p-0.5 dark:bg-zinc-900'>
-								<button className='text-primary-600 shadow-3xs cursor-pointer rounded-md bg-white p-1.5 dark:bg-zinc-800 dark:text-primary-400'>
+								<button
+									type='button'
+									onClick={() => setViewMode('grid')}
+									aria-pressed={viewMode === 'grid'}
+									title='Grid view'
+									className={`cursor-pointer ${viewMode === 'grid' ? 'text-primary-600 shadow-3xs rounded-md bg-white p-1.5 dark:bg-zinc-800 dark:text-primary-400' : 'rounded-md p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'}`}>
 									<Grid className='h-3.5 w-3.5' />
 								</button>
-								<button className='cursor-pointer rounded-md p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
+								<button
+									type='button'
+									onClick={() => setViewMode('list')}
+									aria-pressed={viewMode === 'list'}
+									title='List view'
+									className={`cursor-pointer ${viewMode === 'list' ? 'text-primary-600 shadow-3xs rounded-md bg-white p-1.5 dark:bg-zinc-800 dark:text-primary-400' : 'rounded-md p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'}`}>
 									<List className='h-3.5 w-3.5' />
 								</button>
 							</div>
@@ -522,8 +565,8 @@ const BlueprintsListPage = () => {
 					{(activeTab === 'workflows' && isWfsLoading) ||
 					(activeTab === 'agents' && isAgentsLoading) ||
 					(activeTab === 'collections' && isCollsLoading) ? (
-						<div className='flex flex-col items-center justify-center gap-2 py-24 text-xs font-semibold text-zinc-500 dark:text-zinc-400'>
-							Loading catalog…
+						<div className='grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
+							<ListSkeletonPart count={8} />
 						</div>
 					) : activeTab === 'workflows' && filteredWorkflows.length === 0 ? (
 						<EmptyState icon={Workflow} title='No workflow templates found' />
@@ -532,7 +575,12 @@ const BlueprintsListPage = () => {
 					) : activeTab === 'collections' && filteredCollections.length === 0 ? (
 						<EmptyState icon={Layers} title='No collections found' />
 					) : (
-						<div className='grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
+						<div
+							className={`grid gap-5 ${
+								viewMode === 'list'
+									? 'grid-cols-1'
+									: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+							}`}>
 							<AnimatePresence mode='popLayout'>
 								{activeTab === 'workflows' &&
 									filteredWorkflows.map((wf) => (

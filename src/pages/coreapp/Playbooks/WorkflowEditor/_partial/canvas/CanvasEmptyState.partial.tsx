@@ -944,7 +944,7 @@ const CanvasEmptyState = () => {
 										</div>
 
 										{/* Handle right port */}
-										<button className='absolute -right-2 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-white border border-emerald-400 text-[10px] text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 dark:bg-zinc-900 dark:border-emerald-800 shadow-xs z-20 font-bold'>+</button>
+										<span aria-hidden className='absolute -right-2 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-white border border-emerald-400 text-[10px] text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 dark:bg-zinc-900 dark:border-emerald-800 shadow-xs z-20 font-bold'>+</span>
 									</motion.div>
 								)}
 							</AnimatePresence>
@@ -1049,8 +1049,8 @@ const CanvasEmptyState = () => {
 										</div>
 
 										{/* Handle left & right ports */}
-										<button className='absolute -left-2 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-white border border-primary-400 text-[10px] text-primary-505 hover:text-primary-700 hover:bg-primary-50 dark:bg-zinc-900 dark:border-primary-800 shadow-xs z-20 font-bold'>+</button>
-										<button className='absolute -right-2 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-white border border-primary-400 text-[10px] text-primary-505 hover:text-primary-700 hover:bg-primary-50 dark:bg-zinc-900 dark:border-primary-800 shadow-xs z-20 font-bold'>+</button>
+										<span aria-hidden className='absolute -left-2 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-white border border-primary-400 text-[10px] text-primary-505 hover:text-primary-700 hover:bg-primary-50 dark:bg-zinc-900 dark:border-primary-800 shadow-xs z-20 font-bold'>+</span>
+										<span aria-hidden className='absolute -right-2 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-white border border-primary-400 text-[10px] text-primary-505 hover:text-primary-700 hover:bg-primary-50 dark:bg-zinc-900 dark:border-primary-800 shadow-xs z-20 font-bold'>+</span>
 									</motion.div>
 								)}
 							</AnimatePresence>
@@ -1130,7 +1130,7 @@ const CanvasEmptyState = () => {
 										</div>
 
 										{/* Handle left port */}
-										<button className='absolute -left-2 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-white border border-blue-400 text-[10px] text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:bg-zinc-900 dark:border-blue-800 shadow-xs z-20 font-bold'>+</button>
+										<span aria-hidden className='absolute -left-2 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-white border border-blue-400 text-[10px] text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:bg-zinc-900 dark:border-blue-800 shadow-xs z-20 font-bold'>+</span>
 									</motion.div>
 								)}
 							</AnimatePresence>

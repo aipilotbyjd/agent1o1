@@ -20,6 +20,8 @@ import pages from '@/Routes/pages';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useAgentSkills, useDeleteAgentSkill } from '@/api/modules/agent-skills';
 import type { TAgentSkill } from '@/types/agent-skill.type';
+import ListSkeletonPart from '@/parts/ListSkeleton.part';
+import { notify } from '@/api/core';
 import { SKILL_CATEGORIES, getSkillIconComponent, getSkillCategoryColor } from './_helper/skills.constants';
 import SkillEditorDrawer from './_partial/SkillEditorDrawer.partial';
 import AddToAgentDialog from './_partial/AddToAgentDialog.partial';
@@ -89,7 +91,9 @@ const SkillsListPage = () => {
 			),
 		});
 		if (!confirmed) return;
-		deleteSkillMutation.mutate(skill.id);
+		deleteSkillMutation.mutate(skill.id, {
+			onSuccess: () => notify.success(`"${skill.name}" deleted.`),
+		});
 	};
 
 	return (
@@ -166,8 +170,8 @@ const SkillsListPage = () => {
 
 				{/* Grid */}
 				{isLoading ? (
-					<div className='flex items-center justify-center rounded-3xl border border-zinc-200 bg-white py-16 text-xs font-semibold text-slate-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-500'>
-						Loading skills…
+					<div className='grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
+						<ListSkeletonPart count={8} />
 					</div>
 				) : skillList.length === 0 ? (
 					<div className='flex flex-col items-center justify-center gap-2 rounded-3xl border border-zinc-200 bg-white py-16 text-center dark:border-zinc-800 dark:bg-zinc-900'>

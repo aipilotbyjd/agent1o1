@@ -1,5 +1,5 @@
 import { axiosClient } from '@/api/client';
-import { unwrap, unwrapKey } from '@/api/core';
+import { unwrapKey } from '@/api/core';
 import type { TApiResponse, TCursorPaginationMeta, TPaginationMeta } from '@/api/core';
 import type {
 	TBillingOverview,
@@ -18,9 +18,6 @@ import type {
 	TUpdateCreditOverageDto,
 	TCreditNotifications,
 	TUpdateCreditNotificationsDto,
-	TCreditPackCatalogItem,
-	TBuyCreditsDto,
-	TBillingUrlResponse,
 } from '@/types/billing.type';
 import { BillingEndpoints as E } from './billing.endpoints';
 
@@ -149,25 +146,4 @@ export const BillingService = {
 		axiosClient
 			.post<TApiResponse<{ portal_url: string }>>(E.portal(ws))
 			.then(unwrapKey<string>('portal_url')),
-
-	// ── Ported from the old frontend ──────────────────────
-	// Backs the billing UI copied over from `agent-1o1`. These hit
-	// the old backend's paths and envelopes (`unwrap`, not
-	// `unwrapKey`) and are expected to 404 here until the pages are
-	// moved onto the methods above.
-
-	packCatalog: (ws: string, signal?: AbortSignal) =>
-		axiosClient
-			.get<TApiResponse<TCreditPackCatalogItem[]>>(E.packCatalog(ws), { signal })
-			.then(unwrap<TCreditPackCatalogItem[]>),
-
-	buyCredits: (ws: string, body: TBuyCreditsDto) =>
-		axiosClient
-			.post<TApiResponse<TBillingUrlResponse>>(E.buyCredits(ws), body)
-			.then(unwrap<TBillingUrlResponse>),
-
-	portal: (ws: string) =>
-		axiosClient
-			.get<TApiResponse<TBillingUrlResponse>>(E.subscriptionPortal(ws))
-			.then(unwrap<TBillingUrlResponse>),
 };

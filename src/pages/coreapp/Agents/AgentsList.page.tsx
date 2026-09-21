@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useOutletContext, useNavigate, useParams } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -14,7 +15,6 @@ import {
 	Terminal,
 	Megaphone,
 	Briefcase,
-	MoreHorizontal,
 	Copy,
 } from 'lucide-react';
 import { OutletContextType } from './_layouts/Agents.layout';
@@ -24,7 +24,10 @@ import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
 import paths from '@/Routes/paths';
 import { useWorkspaceContext } from '@/context/workspace';
-import { useAgents, useDeleteAgent, useDuplicateAgent } from '@/api/modules/agents';
+import { agentKeys, useAgents, useDeleteAgent, useDuplicateAgent } from '@/api/modules/agents';
+import ListSkeletonPart from '@/parts/ListSkeleton.part';
+import type { TAgent } from '@/types/agent.type';
+import { notify } from '@/api/core';
 
 interface IAgentItem {
 	id: string;
@@ -85,6 +88,7 @@ const AgentsListPage = () => {
 	const { data: apiAgents, isLoading } = useAgents(currentWorkspaceId);
 	const deleteAgentMutation = useDeleteAgent(currentWorkspaceId);
 	const duplicateAgentMutation = useDuplicateAgent(currentWorkspaceId);
+	const queryClient = useQueryClient();
 
 
 	const agents = useMemo<IAgentItem[]>(() => {
@@ -136,7 +140,23 @@ const AgentsListPage = () => {
 			),
 		});
 		if (!confirmed) return;
-		deleteAgentMutation.mutate(id);
+
+		// Pull the card now instead of after the round trip. The dialog above is
+		// the safety net, so a failure rolls the list back rather than offering
+		// an undo the backend could not honour anyway.
+		const listKey = agentKeys.list(currentWorkspaceId);
+		const previousAgents = queryClient.getQueryData<TAgent[]>(listKey);
+		queryClient.setQueryData<TAgent[]>(listKey, (rows) =>
+			(rows ?? []).filter((row) => String(row.id) !== String(id)),
+		);
+
+		deleteAgentMutation.mutate(id, {
+			onSuccess: () => notify.success(agent ? `"${agent.name}" deleted.` : 'Agent deleted.'),
+			// No toast here — query-client.ts already reports the failure globally.
+			onError: () => {
+				if (previousAgents) queryClient.setQueryData(listKey, previousAgents);
+			},
+		});
 	};
 
 	return (
@@ -415,8 +435,8 @@ const AgentsListPage = () => {
 
 				{/* Agent List Cards */}
 				{isLoading ? (
-					<div className='flex items-center justify-center rounded-3xl border border-border-main bg-bg-card py-16 text-xs font-semibold text-slate-400 dark:text-zinc-500'>
-						Loading agents…
+					<div className='grid gap-6 md:grid-cols-2 xl:grid-cols-3'>
+						<ListSkeletonPart count={6} />
 					</div>
 				) : filteredAgents.length === 0 ? (
 					<div className='flex flex-col items-center justify-center gap-2 rounded-3xl border border-border-main bg-bg-card py-16 text-center'>
@@ -461,18 +481,12 @@ const AgentsListPage = () => {
 											<IconComponent className='h-5 w-5' />
 										</div>
 
-										{/* Options Menu. The old Active/Inactive switch is gone:
-										    this backend has no `is_active` column and
-										    UpdateAgentRequest has no rule for it, so the PATCH
-										    was silently discarded. */}
-										<div className='flex items-center gap-2'>
-											<button
-												className='dark:hover:bg-zinc-950/60 flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-border-main bg-bg-card text-slate-400 hover:bg-slate-50 dark:border-border-main dark:bg-bg-card'
-												title='More options'
-												aria-label='More options'>
-												<MoreHorizontal size={14} />
-											</button>
-										</div>
+										{/* The old Active/Inactive switch is gone: this backend has no
+										    `is_active` column and UpdateAgentRequest has no rule for it,
+										    so the PATCH was silently discarded. The "More options" button
+										    beside it opened nothing, and had nothing left to open -
+										    Configure, Run, Duplicate and Delete are already buttons in
+										    the card footer. */}
 									</div>
 
 									{/* Card Content */}
@@ -522,10 +536,10 @@ const AgentsListPage = () => {
 
 										<div className='flex items-center gap-2'>
 											<button
+												// The builder opens on its chat surface, which is where an agent is
+												// actually run; Configure lands on that same screen's settings panel.
 												onClick={() =>
-													alert(
-														`Starting interactive run with Agent: ${agent.name}`,
-													)
+													navigate(paths.editAgent(currentWorkspaceId, agent.id))
 												}
 												className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl bg-primary-400 text-primary-950 shadow-md shadow-primary-500/10 transition-transform hover:scale-105 hover:bg-primary-500 active:scale-95'
 												title='Run agent'>

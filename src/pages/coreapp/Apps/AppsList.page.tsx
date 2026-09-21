@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, type ReactNode, type SVGProps } from 'react';
-import { useOutletContext, useParams, useSearchParams } from 'react-router';
+import { useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router';
 import {
 	Calendar,
 	Check,
@@ -28,6 +28,7 @@ import pages from '@/Routes/pages';
 import { notify } from '@/api/core';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useConfirm } from '@/context/confirm';
+import { withWorkspace } from '@/Routes/paths';
 import type {
 	TConnector,
 	TConnectorCredential,
@@ -274,9 +275,12 @@ const createInitialFormValues = (connector?: TConnector | null) =>
 /** Secrets never come back from the API, so an edit always starts blank. */
 const createEditFormValues = createInitialFormValues;
 
+const workspacePages = pages.workspace.subPages!;
+
 const AppsListPage = () => {
 	const { setHeaderLeft } = useOutletContext<OutletContextType>();
 	const [searchParams, setSearchParams] = useSearchParams();
+	const navigate = useNavigate();
 
 	useEffect(() => {
 		setHeaderLeft(<Breadcrumb list={[{ ...pages.workspace.subPages!.apps }]} />);
@@ -413,6 +417,13 @@ const AppsListPage = () => {
 		'All' | 'Connected' | 'Productivity' | 'Developer' | 'Marketing' | 'Collaboration'
 	>('All');
 
+	/** The card grid shows rating, installs and a Popular badge, so those are what
+	 *  the control sorts by. Cycles rather than opening a menu - one control, and
+	 *  the label always says which order is active. */
+	const [sortBy, setSortBy] = useState<'popular' | 'name' | 'connected'>('popular');
+	const SORT_LABELS = { popular: 'Popular', name: 'Name (A-Z)', connected: 'Connected first' };
+	const SORT_ORDER = ['popular', 'name', 'connected'] as const;
+
 	// Modal States
 	const [isConnectModalOpen, setIsConnectModalOpen] = useState(
 		() => searchParams.get('connect') === 'true',
@@ -453,8 +464,19 @@ const AppsListPage = () => {
 				(selectedCategory !== 'Connected' && app.category === selectedCategory);
 
 			return matchesSearch && matchesCategory;
-		});
-	}, [apps, searchQuery, selectedCategory]);
+		})
+			.slice()
+			.sort((a, b) => {
+				if (sortBy === 'name') return a.name.localeCompare(b.name);
+				if (sortBy === 'connected')
+					return Number(b.isConnected) - Number(a.isConnected) || a.name.localeCompare(b.name);
+				return (
+					Number(b.isPopular) - Number(a.isPopular) ||
+					b.rating - a.rating ||
+					a.name.localeCompare(b.name)
+				);
+			});
+	}, [apps, searchQuery, selectedCategory, sortBy]);
 
 	// Filter available apps inside modal
 	const filteredAvailableApps = useMemo(() => {
@@ -730,9 +752,12 @@ const AppsListPage = () => {
 									</div>
 								</div>
 								<button
+									type='button'
 									onClick={() =>
-										alert(
-											'Credentials are securely stored and encrypted in Transit & at Rest using military-grade AES-256.',
+										window.open(
+											'https://docs.agent1o1.com',
+											'_blank',
+											'noopener,noreferrer',
 										)
 									}
 									className='relative mt-5 h-9 w-full cursor-pointer rounded-xl border border-slate-200 text-[11px] font-extrabold text-slate-600 transition-all hover:bg-slate-50 dark:border-zinc-800 dark:text-zinc-350 dark:hover:bg-zinc-800/40'>
@@ -882,9 +907,16 @@ const AppsListPage = () => {
 								</div>
 
 								<button
-									onClick={() => alert('Sorting updated.')}
+									type='button'
+									title='Change sort order'
+									onClick={() =>
+										setSortBy(
+											(current) =>
+												SORT_ORDER[(SORT_ORDER.indexOf(current) + 1) % SORT_ORDER.length],
+										)
+									}
 									className='flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200/60 bg-white px-3.5 text-xs font-extrabold text-primary-700 shadow-xs transition-all hover:bg-slate-50 dark:border-zinc-800/80 dark:bg-[#11131c]'>
-									<span>Sort: Popular</span>
+									<span>Sort: {SORT_LABELS[sortBy]}</span>
 								</button>
 							</div>
 						</div>
@@ -1050,7 +1082,11 @@ const AppsListPage = () => {
 									Recent Activity
 								</h3>
 								<button
-									onClick={() => alert('Recent activities opened.')}
+									type='button'
+									// The list above this is placeholder copy; the real record is the Trail.
+									onClick={() =>
+										navigate(withWorkspace(workspacePages.trail.to, currentWorkspaceId))
+									}
 									className='text-[10px] font-bold text-primary-700 hover:underline'>
 									View all
 								</button>

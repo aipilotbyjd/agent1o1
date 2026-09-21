@@ -29,10 +29,17 @@ import Modal, {
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/icon/Icon';
 import pages, { TPage, TPages } from '@/Routes/pages';
-import { buildPath } from '@/Routes/paths';
+import paths, { buildPath } from '@/Routes/paths';
+import { useWorkflows } from '@/api/modules/workflows';
+import { useAgents } from '@/api/modules/agents';
+import { useWorkflowTemplates } from '@/api/modules/templates';
+import { useArtifacts } from '@/api/modules/artifacts';
+import type { TWorkflow } from '@/types/workflow.type';
+import type { TAgent } from '@/types/agent.type';
+import type { TWorkflowTemplate } from '@/types/template.type';
+import type { TArtifact } from '@/types/artifact.type';
 import useResolvePath from '@/hooks/useResolvePath';
 import { useGlobalSearchStore } from '@/store/globalSearch.store';
-import { MOCK_AGENT_TEMPLATES, MOCK_TEMPLATE_COLLECTIONS } from '@/mocks/templates.mock';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type TSearchCategory =
@@ -102,6 +109,9 @@ const getFlattenPages = (pagesList: TPages | undefined, parentId?: string): TPag
  * param once the workspace id is substituted (the editors, which need a
  * playbook or agent id) has no meaningful destination from a search box.
  */
+const workspacePages = pages.workspace.subPages!;
+const settingsPages = pages.settings.subPages!;
+
 const isNavigable = (to: string) => !to.includes('/:');
 
 const getFlattenedPageItems = (workspaceId: string): TSearchItem[] => {
@@ -133,162 +143,79 @@ const getFlattenedPageItems = (workspaceId: string): TSearchItem[] => {
 	}));
 };
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-const MOCK_WORKFLOWS: TSearchItem[] = [
-	{
-		id: 'wf-1',
-		label: 'Customer Onboarding Flow',
-		description: 'Automates new user signup, welcome email, and CRM entry',
-		category: 'Workflows',
-		icon: <Workflow size={16} className='text-emerald-500' />,
-		iconBg: 'bg-emerald-500/10',
-		to: '/editor/edit-workflow/wf-1',
-		badge: 'active',
-		keywords: ['customer', 'onboarding', 'signup', 'welcome', 'email'],
-	},
-	{
-		id: 'wf-2',
-		label: 'Slack Notification on Webhook',
-		description: 'Sends Slack alerts when a webhook is received',
-		category: 'Workflows',
-		icon: <Workflow size={16} className='text-emerald-500' />,
-		iconBg: 'bg-emerald-500/10',
-		to: '/editor/edit-workflow/wf-2',
-		badge: 'active',
-		keywords: ['slack', 'notification', 'webhook', 'alert'],
-	},
-	{
-		id: 'wf-3',
-		label: 'Stripe Payment to CRM Sync',
-		description: 'Maps Stripe transactions to customer profiles in CRM',
-		category: 'Workflows',
-		icon: <Workflow size={16} className='text-emerald-500' />,
-		iconBg: 'bg-emerald-500/10',
-		to: '/editor/edit-workflow/wf-3',
-		badge: 'inactive',
-		keywords: ['stripe', 'payment', 'crm', 'sync', 'transaction'],
-	},
-	{
-		id: 'wf-4',
-		label: 'Daily Database Backup Reminder',
-		description: 'Flags missed nightly backups and notifies the team',
-		category: 'Workflows',
-		icon: <Workflow size={16} className='text-emerald-500' />,
-		iconBg: 'bg-emerald-500/10',
-		to: '/editor/edit-workflow/wf-4',
-		badge: 'active',
-		keywords: ['database', 'backup', 'nightly', 'notification'],
-	},
-	{
-		id: 'wf-5',
-		label: 'Lead Enrichment Pipeline',
-		description: 'Parses social data for inbound email leads',
-		category: 'Workflows',
-		icon: <Workflow size={16} className='text-emerald-500' />,
-		iconBg: 'bg-emerald-500/10',
-		to: '/editor/edit-workflow/wf-5',
-		badge: 'inactive',
-		keywords: ['lead', 'enrichment', 'social', 'email', 'pipeline'],
-	},
-	{
-		id: 'wf-6',
-		label: 'Multi-Channel Error Alert',
-		description: 'Broadcasts critical logs to Slack & Email',
-		category: 'Workflows',
-		icon: <Workflow size={16} className='text-emerald-500' />,
-		iconBg: 'bg-emerald-500/10',
-		to: '/editor/edit-workflow/wf-6',
-		badge: 'active',
-		keywords: ['error', 'alert', 'slack', 'email', 'logs', 'critical'],
-	},
-];
+// ─── Live workspace records ──────────────────────────────────────────────────
+// These used to be four hardcoded arrays whose `to` values pointed at pre-port
+// paths (`/editor/edit-workflow/:id`, `/files`, `/templates`) that match no
+// route, so every result 404-ed. They are now built from the same queries the
+// list pages use, and routed through `paths`.
 
-const MOCK_AGENTS: TSearchItem[] = MOCK_AGENT_TEMPLATES.map((agent) => ({
-	id: `agent-${agent.id}`,
-	label: agent.name,
-	description: agent.description,
-	category: 'Agents' as TSearchCategory,
-	icon: <Bot size={16} className='text-primary-500' />,
-	iconBg: 'bg-primary-500/10',
-	badge: agent.category,
-	keywords: [agent.name, agent.description, agent.category, ...agent.tags],
-}));
+type TLiveRecords = {
+	workflows?: TWorkflow[];
+	agents?: TAgent[];
+	templates?: TWorkflowTemplate[];
+	artifacts?: TArtifact[];
+};
 
-const MOCK_TEMPLATES: TSearchItem[] = MOCK_TEMPLATE_COLLECTIONS.map((col) => ({
-	id: `template-${col.id}`,
-	label: col.name,
-	description: col.description,
-	category: 'Templates' as TSearchCategory,
-	icon: <Layers size={16} className='text-violet-500' />,
-	iconBg: 'bg-violet-500/10',
-	to: '/templates',
-	badge: `${col.item_count} items`,
-	keywords: [col.name, col.description],
-}));
+const workflowItems = (workspaceId: string, rows: TWorkflow[] = []): TSearchItem[] =>
+	rows.map((w) => ({
+		id: `wf-${w.id}`,
+		label: w.name,
+		description: w.description ?? undefined,
+		category: 'Workflows' as TSearchCategory,
+		icon: <Workflow size={16} className='text-emerald-500' />,
+		iconBg: 'bg-emerald-500/10',
+		to: paths.editPlaybook(workspaceId, w.id),
+		badge: w.status,
+		keywords: [w.name, w.description ?? ''],
+	}));
 
-const MOCK_FILES: TSearchItem[] = [
-	{
-		id: 'file-1',
-		label: 'Sales Report Q2 2026',
-		description: 'PDF · 2.4 MB · Updated 2 days ago',
-		category: 'Files',
-		icon: <FileText size={16} className='text-cyan-500' />,
-		iconBg: 'bg-cyan-500/10',
-		to: '/files',
-		keywords: ['sales', 'report', 'q2', '2026', 'pdf'],
-	},
-	{
-		id: 'file-2',
-		label: 'API Documentation v3',
-		description: 'Markdown · 156 KB · Updated 5 hours ago',
-		category: 'Files',
-		icon: <FileText size={16} className='text-cyan-500' />,
-		iconBg: 'bg-cyan-500/10',
-		to: '/files',
-		keywords: ['api', 'documentation', 'v3', 'markdown'],
-	},
-	{
-		id: 'file-3',
-		label: 'Customer Feedback Analysis',
-		description: 'CSV · 892 KB · Updated 1 week ago',
-		category: 'Files',
-		icon: <FileText size={16} className='text-cyan-500' />,
-		iconBg: 'bg-cyan-500/10',
-		to: '/files',
-		keywords: ['customer', 'feedback', 'analysis', 'csv', 'data'],
-	},
-	{
-		id: 'file-4',
-		label: 'Skill Creator Research Brief',
-		description: 'PDF · 3.1 MB · Updated 3 days ago',
-		category: 'Files',
-		icon: <FileText size={16} className='text-cyan-500' />,
-		iconBg: 'bg-cyan-500/10',
-		to: '/files',
-		keywords: ['skill', 'creator', 'research', 'brief', 'pdf'],
-	},
-	{
-		id: 'file-5',
-		label: 'Deployment Runbook',
-		description: 'Markdown · 45 KB · Updated 1 day ago',
-		category: 'Files',
-		icon: <FileText size={16} className='text-cyan-500' />,
-		iconBg: 'bg-cyan-500/10',
-		to: '/files',
-		keywords: ['deployment', 'runbook', 'markdown', 'ops'],
-	},
-];
+const agentItems = (workspaceId: string, rows: TAgent[] = []): TSearchItem[] =>
+	rows.map((a) => ({
+		id: `agent-${a.id}`,
+		label: a.name,
+		description: a.description ?? undefined,
+		category: 'Agents' as TSearchCategory,
+		icon: <Bot size={16} className='text-primary-500' />,
+		iconBg: 'bg-primary-500/10',
+		to: paths.editAgent(workspaceId, a.id),
+		keywords: [a.name, a.description ?? ''],
+	}));
 
-const QUICK_ACTIONS: TSearchItem[] = [
+const templateItems = (workspaceId: string, rows: TWorkflowTemplate[] = []): TSearchItem[] =>
+	rows.map((t) => ({
+		id: `tpl-${t.id}`,
+		label: t.name,
+		description: t.description ?? undefined,
+		category: 'Templates' as TSearchCategory,
+		icon: <Layers size={16} className='text-violet-500' />,
+		iconBg: 'bg-violet-500/10',
+		to: buildPath(workspacePages.blueprints.to, { workspaceId }),
+		keywords: [t.name, t.category ?? ''],
+	}));
+
+const artifactItems = (workspaceId: string, rows: TArtifact[] = []): TSearchItem[] =>
+	rows.map((f) => ({
+		id: `file-${f.id}`,
+		label: f.filename,
+		description: f.agent?.name ? `Generated by ${f.agent.name}` : undefined,
+		category: 'Files' as TSearchCategory,
+		icon: <FileText size={16} className='text-blue-500' />,
+		iconBg: 'bg-blue-500/10',
+		to: buildPath(workspacePages.artifacts.to, { workspaceId }),
+		keywords: [f.filename, f.mime_type],
+	}));
+
+/** Quick actions are workspace-scoped, so they cannot be a module constant. */
+const getQuickActions = (workspaceId: string): TSearchItem[] => [
 	{
 		id: 'qa-create-workflow',
-		label: 'Create new workflow',
+		label: 'Create new playbook',
 		description: 'Start building a new automation from scratch',
 		category: 'Quick Actions',
 		icon: <Plus size={16} className='text-emerald-500' />,
 		iconBg: 'bg-emerald-500/10',
-		to: '/editor/add-workflow',
-		keywords: ['create', 'new', 'workflow', 'automation'],
+		to: paths.newPlaybook(workspaceId),
+		keywords: ['create', 'new', 'workflow', 'playbook', 'automation'],
 	},
 	{
 		id: 'qa-create-agent',
@@ -297,7 +224,7 @@ const QUICK_ACTIONS: TSearchItem[] = [
 		category: 'Quick Actions',
 		icon: <Bot size={16} className='text-primary-500' />,
 		iconBg: 'bg-primary-500/10',
-		to: '/agent/add',
+		to: paths.newAgent(workspaceId),
 		keywords: ['create', 'new', 'agent', 'ai', 'bot'],
 	},
 	{
@@ -307,18 +234,18 @@ const QUICK_ACTIONS: TSearchItem[] = [
 		category: 'Quick Actions',
 		icon: <UserPlus size={16} className='text-amber-500' />,
 		iconBg: 'bg-amber-500/10',
-		to: '/settings/members',
+		to: buildPath(settingsPages.members.to, { workspaceId }),
 		keywords: ['invite', 'team', 'members', 'collaborators', 'add'],
 	},
 	{
 		id: 'qa-upload-file',
-		label: 'Upload a file',
-		description: 'Import documents, CSVs, or images',
+		label: 'Browse generated files',
+		description: 'Documents, exports and images your agents produced',
 		category: 'Quick Actions',
-		icon: <Plus size={16} className='text-blue-500' />,
+		icon: <FileText size={16} className='text-blue-500' />,
 		iconBg: 'bg-blue-500/10',
-		to: '/files',
-		keywords: ['upload', 'file', 'import', 'document', 'csv'],
+		to: buildPath(workspacePages.artifacts.to, { workspaceId }),
+		keywords: ['file', 'artifact', 'document', 'export', 'download'],
 	},
 	{
 		id: 'qa-settings',
@@ -327,17 +254,8 @@ const QUICK_ACTIONS: TSearchItem[] = [
 		category: 'Quick Actions',
 		icon: <Settings size={16} className='text-zinc-500' />,
 		iconBg: 'bg-zinc-500/10',
-		to: '/settings/workspace',
+		to: buildPath(settingsPages.workspace.to, { workspaceId }),
 		keywords: ['settings', 'workspace', 'configure', 'preferences'],
-	},
-	{
-		id: 'qa-run-last',
-		label: 'Run last workflow',
-		description: 'Execute your most recently edited workflow',
-		category: 'Quick Actions',
-		icon: <Zap size={16} className='text-fuchsia-500' />,
-		iconBg: 'bg-fuchsia-500/10',
-		keywords: ['run', 'execute', 'last', 'workflow', 'recent'],
 	},
 ];
 
@@ -422,13 +340,13 @@ const CATEGORY_ICONS: Record<TSearchCategory, React.ReactNode> = {
 };
 
 // ─── Build all searchable items ───────────────────────────────────────────────
-const buildSearchItems = (workspaceId: string): TSearchItem[] => [
-	...QUICK_ACTIONS,
+const buildSearchItems = (workspaceId: string, live: TLiveRecords): TSearchItem[] => [
+	...getQuickActions(workspaceId),
 	...getFlattenedPageItems(workspaceId),
-	...MOCK_WORKFLOWS,
-	...MOCK_AGENTS,
-	...MOCK_TEMPLATES,
-	...MOCK_FILES,
+	...workflowItems(workspaceId, live.workflows),
+	...agentItems(workspaceId, live.agents),
+	...templateItems(workspaceId, live.templates),
+	...artifactItems(workspaceId, live.artifacts),
 ];
 
 const FUSE_OPTIONS = {
@@ -450,7 +368,26 @@ const GlobalSearch = () => {
 
 	// Page results are URL templates until the workspace id is substituted, so
 	// the index is rebuilt when the active workspace changes.
-	const allSearchItems = useMemo(() => buildSearchItems(workspaceId), [workspaceId]);
+	// Only the open dialog needs the index. These hooks take no options object -
+	// each one is `enabled: !!ws` internally - so passing an empty workspace id
+	// while the dialog is closed is what keeps them from firing on every page.
+	const searchWs = isOpen ? workspaceId : '';
+	const { data: workflows } = useWorkflows(searchWs);
+	const { data: agents } = useAgents(searchWs);
+	const { data: templates } = useWorkflowTemplates(searchWs);
+	// ArtifactService.list returns `{ artifacts, meta }`, not a bare array.
+	const { data: artifactPage } = useArtifacts(searchWs);
+
+	const allSearchItems = useMemo(
+		() =>
+			buildSearchItems(workspaceId, {
+				workflows,
+				agents,
+				templates,
+				artifacts: artifactPage?.artifacts,
+			}),
+		[workspaceId, workflows, agents, templates, artifactPage],
+	);
 	const fuse = useMemo(() => new Fuse(allSearchItems, FUSE_OPTIONS), [allSearchItems]);
 	const [query, setQuery] = useState('');
 	const [selectedIndex, setSelectedIndex] = useState(0);

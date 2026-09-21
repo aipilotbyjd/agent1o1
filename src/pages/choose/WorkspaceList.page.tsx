@@ -124,7 +124,8 @@ const mapApiWorkspaceToCard = (w: TWorkspace, currentUserId?: string): IWorkspac
 	let role: 'Owner' | 'Admin' | 'Member' = 'Member';
 	if (w.role === 'owner') role = 'Owner';
 	else if (w.role === 'admin') role = 'Admin';
-	else if (w.owner?.id && currentUserId && String(w.owner.id) === String(currentUserId)) role = 'Owner';
+	else if (w.owner?.id && currentUserId && String(w.owner.id) === String(currentUserId))
+		role = 'Owner';
 
 	const tier: TierName = role === 'Owner' ? 'Enterprise' : role === 'Admin' ? 'Pro' : 'Free';
 
@@ -174,7 +175,15 @@ const WorkspacesPage = () => {
 	const navigate = useNavigate();
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { isDarkTheme, setDarkModeStatus } = useDarkMode();
-	const { switchWorkspace } = useWorkspaceContext();
+	const { switchWorkspace, activeWorkspaceId } = useWorkspaceContext();
+	/** `/dashboard` matches no route. From the chooser, the brand goes to the
+	 *  active workspace's dashboard when there is one, otherwise it stays here. */
+	const brandHomePath = activeWorkspaceId
+		? (pages.workspace.subPages as TPages).dashboard.to.replace(
+				':workspaceId',
+				activeWorkspaceId,
+			)
+		: pages.choose.to;
 	const { userData } = useAuth();
 	const { confirm } = useConfirm();
 
@@ -230,7 +239,10 @@ const WorkspacesPage = () => {
 	}, []);
 
 	const workspaces = useMemo(
-		() => (workspacesResponse ?? []).map((w: TWorkspace) => mapApiWorkspaceToCard(w, userData?.id)),
+		() =>
+			(workspacesResponse ?? []).map((w: TWorkspace) =>
+				mapApiWorkspaceToCard(w, userData?.id),
+			),
 		[workspacesResponse, userData?.id],
 	);
 
@@ -240,9 +252,12 @@ const WorkspacesPage = () => {
 			const q = searchQuery.toLowerCase();
 			result = result.filter((w: IWorkspaceCard) => w.name.toLowerCase().includes(q));
 		}
-		if (selectedCategory === 'active') result = result.filter((w: IWorkspaceCard) => w.activeFlowsCount > 0);
+		if (selectedCategory === 'active')
+			result = result.filter((w: IWorkspaceCard) => w.activeFlowsCount > 0);
 		else if (selectedCategory === 'premium')
-			result = result.filter((w: IWorkspaceCard) => w.tier === 'Pro' || w.tier === 'Enterprise');
+			result = result.filter(
+				(w: IWorkspaceCard) => w.tier === 'Pro' || w.tier === 'Enterprise',
+			);
 		return result;
 	}, [workspaces, searchQuery, selectedCategory]);
 
@@ -270,7 +285,10 @@ const WorkspacesPage = () => {
 		const name = workspaces.find((w: IWorkspaceCard) => w.id === id)?.name ?? 'workspace';
 		triggerToast(`Entering workspace "${name}"...`, 'info');
 		await switchWorkspace(id);
-		const agentsPath = (pages.workspace.subPages as TPages).agents.to.replace(':workspaceId', id);
+		const agentsPath = (pages.workspace.subPages as TPages).agents.to.replace(
+			':workspaceId',
+			id,
+		);
 		setTimeout(() => navigate(agentsPath), 800);
 	};
 
@@ -354,7 +372,7 @@ const WorkspacesPage = () => {
 	const selectedTheme = THEME_OPTIONS[newWspThemeIdx];
 
 	return (
-		<div className='relative min-h-screen overflow-x-hidden font-sans bg-zinc-50 text-slate-800 transition-colors duration-500 dark:bg-[#070911] dark:text-zinc-150'>
+		<div className='dark:text-zinc-150 relative min-h-screen overflow-x-hidden bg-zinc-50 font-sans text-slate-800 transition-colors duration-500 dark:bg-[#070911]'>
 			<style>{`
 				@keyframes wsGrow { from { transform: scaleY(0); } }
 				@keyframes wsPulse {
@@ -370,8 +388,8 @@ const WorkspacesPage = () => {
 
 			{/* ── Background Patterns ── */}
 			<div className='pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(#e2e8f0_1.5px,transparent_1.5px)] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] [background-size:24px_24px] opacity-70 dark:bg-[radial-gradient(#161c2c_1.5px,transparent_1.5px)] dark:opacity-85' />
-			<div className='pointer-events-none absolute top-0 right-10 -z-10 h-[500px] w-[500px] rounded-full bg-gradient-to-tr from-primary-400/8 to-primary-500/0 blur-[120px]' />
-			<div className='pointer-events-none absolute bottom-10 left-1/4 -z-10 h-[400px] w-[400px] rounded-full bg-gradient-to-br from-primary-400/4 to-cyan-500/4 blur-[100px]' />
+			<div className='from-primary-400/8 to-primary-500/0 pointer-events-none absolute top-0 right-10 -z-10 h-[500px] w-[500px] rounded-full bg-gradient-to-tr blur-[120px]' />
+			<div className='from-primary-400/4 pointer-events-none absolute bottom-10 left-1/4 -z-10 h-[400px] w-[400px] rounded-full bg-gradient-to-br to-cyan-500/4 blur-[100px]' />
 
 			{/* ── Toast Notification ── */}
 			<AnimatePresence>
@@ -381,7 +399,7 @@ const WorkspacesPage = () => {
 						animate={{ opacity: 1, y: 0, scale: 1 }}
 						exit={{ opacity: 0, y: -20, scale: 0.95 }}
 						className='fixed top-6 right-6 z-[110] flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-xl dark:border-zinc-800 dark:bg-zinc-900'>
-						<div className='flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-950/50 dark:text-primary-400'>
+						<div className='bg-primary-100 text-primary-600 dark:bg-primary-950/50 dark:text-primary-400 flex h-6 w-6 items-center justify-center rounded-full'>
 							<Check size={13} strokeWidth={3} />
 						</div>
 						<span className='text-xs font-bold text-slate-800 dark:text-zinc-200'>
@@ -392,19 +410,19 @@ const WorkspacesPage = () => {
 			</AnimatePresence>
 
 			{/* ── Header Navigation ── */}
-			<div className='sticky top-6 z-30 mx-auto w-[calc(100%-2rem)] max-w-7xl px-4 py-3 sm:px-5 sm:py-3.5 flex items-center justify-between rounded-2xl border border-slate-200/60 bg-white/75 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/60 shadow-sm'>
+			<div className='sticky top-6 z-30 mx-auto flex w-[calc(100%-2rem)] max-w-7xl items-center justify-between rounded-2xl border border-slate-200/60 bg-white/75 px-4 py-3 shadow-sm backdrop-blur-md sm:px-5 sm:py-3.5 dark:border-zinc-800/80 dark:bg-zinc-900/60'>
 				{/* Brand Logo */}
 				<div
 					role='button'
 					tabIndex={0}
 					className='flex cursor-pointer items-center gap-3'
-					onClick={() => navigate('/dashboard')}>
+					onClick={() => navigate(brandHomePath)}>
 					<img
 						src={isDarkTheme ? LogoDark : LogoLight}
 						alt='agent1o1'
 						className='h-[30px] w-auto'
 					/>
-					<span className='rounded-full border border-slate-100 bg-slate-50 px-2.5 py-0.5 text-[10px] font-semibold text-slate-500 dark:border-zinc-850 dark:bg-zinc-950 dark:text-zinc-400'>
+					<span className='dark:border-zinc-850 rounded-full border border-slate-100 bg-slate-50 px-2.5 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-zinc-950 dark:text-zinc-400'>
 						v2.4
 					</span>
 				</div>
@@ -413,17 +431,23 @@ const WorkspacesPage = () => {
 				<div className='flex items-center gap-3.5'>
 					{/* Dark Mode Toggle */}
 					<button
-						onClick={() => setDarkModeStatus(isDarkTheme ? DARK_MODE.LIGHT : DARK_MODE.DARK)}
-						className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/60 dark:hover:text-zinc-200 transition-colors'>
-						{isDarkTheme ? <Sun size={16} className='text-amber-400' /> : <Moon size={16} />}
+						onClick={() =>
+							setDarkModeStatus(isDarkTheme ? DARK_MODE.LIGHT : DARK_MODE.DARK)
+						}
+						className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/60 dark:hover:text-zinc-200'>
+						{isDarkTheme ? (
+							<Sun size={16} className='text-amber-400' />
+						) : (
+							<Moon size={16} />
+						)}
 					</button>
 
 					{/* Profile / Account Indicator */}
 					<div className='flex cursor-pointer items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-900'>
-						<div className='flex h-7.5 w-7.5 items-center justify-center rounded-lg text-xs font-black text-primary-950 bg-gradient-to-tr from-primary-400 to-primary-400'>
+						<div className='text-primary-950 from-primary-400 to-primary-400 flex h-7.5 w-7.5 items-center justify-center rounded-lg bg-gradient-to-tr text-xs font-black'>
 							{userInitials}
 						</div>
-						<div className='hidden sm:block text-left'>
+						<div className='hidden text-left sm:block'>
 							<div className='text-xs leading-tight font-bold text-slate-800 dark:text-zinc-200'>
 								{userDisplayName}
 							</div>
@@ -440,21 +464,22 @@ const WorkspacesPage = () => {
 				{/* Hero Section */}
 				<section className='mt-12 mb-10 flex flex-wrap items-end justify-between gap-8'>
 					<div className='text-left'>
-						<div className='mb-3 inline-flex items-center gap-2 text-xs font-black tracking-widest text-primary-600 uppercase dark:text-primary-400'>
-							<span className='inline-block h-1.5 w-1.5 rounded-full bg-primary-400 dark:bg-primary-400 ring-2 ring-primary-500/30' />
+						<div className='text-primary-600 dark:text-primary-400 mb-3 inline-flex items-center gap-2 text-xs font-black tracking-widest uppercase'>
+							<span className='bg-primary-400 dark:bg-primary-400 ring-primary-500/30 inline-block h-1.5 w-1.5 rounded-full ring-2' />
 							Workspace Orchestration
 						</div>
-						<h1 className='text-3.5xl md:text-5xl font-black tracking-tight bg-gradient-to-r from-primary-400 via-primary-400 to-primary-600 dark:from-white dark:via-primary-300 dark:to-primary-400 bg-clip-text text-transparent leading-none'>
+						<h1 className='text-3.5xl from-primary-400 via-primary-400 to-primary-600 dark:via-primary-300 dark:to-primary-400 bg-gradient-to-r bg-clip-text leading-none font-black tracking-tight text-transparent md:text-5xl dark:from-white'>
 							Workspaces
 						</h1>
-						<p className='mt-3 max-w-xl text-xs sm:text-sm font-semibold text-slate-500 dark:text-zinc-400 leading-relaxed'>
-							Welcome back! Select a workspace to orchestrate AI workflows, monitor live agents, or wire up new integrations.
+						<p className='mt-3 max-w-xl text-xs leading-relaxed font-semibold text-slate-500 sm:text-sm dark:text-zinc-400'>
+							Welcome back! Select a workspace to orchestrate AI workflows, monitor
+							live agents, or wire up new integrations.
 						</p>
 					</div>
 
 					<button
 						onClick={() => setIsCreateModalOpen(true)}
-						className='ws-btn-sheen flex h-11 cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-primary-400 to-primary-400 px-6 text-xs font-bold text-primary-950 shadow-md shadow-primary-500/20 transition-all hover:brightness-110 active:scale-95'>
+						className='ws-btn-sheen from-primary-400 to-primary-400 text-primary-950 shadow-primary-500/20 flex h-11 cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r px-6 text-xs font-bold shadow-md transition-all hover:brightness-110 active:scale-95'>
 						<Plus size={16} strokeWidth={2.5} />
 						Create Workspace
 					</button>
@@ -472,11 +497,16 @@ const WorkspacesPage = () => {
 								{selectedCategory === tab.id && (
 									<motion.div
 										layoutId='activeTabBackground'
-										className='absolute inset-0 z-[-1] rounded-lg border border-slate-200/40 bg-white dark:border-zinc-700/30 dark:bg-zinc-800 shadow-sm'
+										className='absolute inset-0 z-[-1] rounded-lg border border-slate-200/40 bg-white shadow-sm dark:border-zinc-700/30 dark:bg-zinc-800'
 										transition={{ type: 'spring', stiffness: 380, damping: 30 }}
 									/>
 								)}
-								<span className={selectedCategory === tab.id ? 'text-primary-600 dark:text-primary-400' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'}>
+								<span
+									className={
+										selectedCategory === tab.id
+											? 'text-primary-600 dark:text-primary-400'
+											: 'text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200'
+									}>
 									{tab.label}
 								</span>
 							</button>
@@ -484,8 +514,8 @@ const WorkspacesPage = () => {
 					</div>
 
 					{/* Search Box */}
-					<div className='group relative min-w-[280px] w-full md:w-80'>
-						<Search className='absolute top-3 left-4 h-4 w-4 text-slate-400 transition-colors duration-200 group-focus-within:text-primary-500' />
+					<div className='group relative w-full min-w-[280px] md:w-80'>
+						<Search className='group-focus-within:text-primary-500 absolute top-3 left-4 h-4 w-4 text-slate-400 transition-colors duration-200' />
 						<input
 							ref={searchInputRef}
 							type='text'
@@ -493,12 +523,12 @@ const WorkspacesPage = () => {
 							placeholder='Search workspaces…'
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
-							className='block h-10.5 w-full rounded-xl border border-slate-200/80 bg-white/70 pr-4 pl-11 text-xs font-semibold text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-100 dark:focus:border-primary-500 dark:focus:bg-zinc-900'
+							className='focus:border-primary-500 focus:ring-primary-500/10 dark:focus:border-primary-500 block h-10.5 w-full rounded-xl border border-slate-200/80 bg-white/70 pr-4 pl-11 text-xs font-semibold text-slate-900 transition-all outline-none placeholder:text-slate-400 focus:bg-white focus:ring-4 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-100 dark:focus:bg-zinc-900'
 						/>
 						{searchQuery ? (
 							<button
 								onClick={() => setSearchQuery('')}
-								className='absolute top-3 right-4 text-slate-400 hover:text-rose-500 transition-colors'>
+								className='absolute top-3 right-4 text-slate-400 transition-colors hover:text-rose-500'>
 								<X size={14} />
 							</button>
 						) : (
@@ -519,7 +549,7 @@ const WorkspacesPage = () => {
 							className='mb-12'>
 							<div className='mb-4 flex items-center gap-3'>
 								<span className='ws-pulse-dot inline-block h-2 w-2 rounded-full bg-amber-500 shadow-sm' />
-								<span className='text-[10px] font-black tracking-widest text-slate-400 dark:text-zinc-500 uppercase'>
+								<span className='text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-zinc-500'>
 									Pending Invitations · {invitations.length}
 								</span>
 								<div className='h-px flex-1 bg-gradient-to-r from-slate-200 to-transparent dark:from-zinc-800' />
@@ -544,13 +574,13 @@ const WorkspacesPage = () => {
 											}}>
 											{invite.name.slice(0, 2).toUpperCase()}
 										</div>
-										<div className='flex-1 pl-2 sm:pl-0 text-left'>
+										<div className='flex-1 pl-2 text-left sm:pl-0'>
 											<div className='text-sm font-bold text-slate-800 dark:text-zinc-200'>
 												{invite.name}
 											</div>
-											<div className='mt-0.5 text-xs text-slate-400 dark:text-zinc-500 font-semibold'>
+											<div className='mt-0.5 text-xs font-semibold text-slate-400 dark:text-zinc-500'>
 												Invited by{' '}
-												<span className='font-bold text-primary-600 dark:text-primary-400'>
+												<span className='text-primary-600 dark:text-primary-400 font-bold'>
 													{invite.inviter}
 												</span>{' '}
 												• {invite.membersCount} members
@@ -558,13 +588,15 @@ const WorkspacesPage = () => {
 										</div>
 										<div className='z-10 flex items-center gap-2 pl-2 sm:pl-0'>
 											<button
-												onClick={() => handleDeclineInvite(invite.id, invite.name)}
+												onClick={() =>
+													handleDeclineInvite(invite.id, invite.name)
+												}
 												className='flex h-8.5 cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-600 transition-all hover:border-rose-500/50 hover:bg-rose-500/5 hover:text-rose-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-rose-950/20'>
 												<X size={13} strokeWidth={2.5} /> Decline
 											</button>
 											<button
 												onClick={() => handleAcceptInvite(invite)}
-												className='ws-btn-sheen flex h-8.5 cursor-pointer items-center gap-1.5 rounded-xl bg-gradient-to-r from-primary-400 to-primary-400 px-3.5 text-xs font-bold text-primary-950 shadow-sm transition-all hover:brightness-110'>
+												className='ws-btn-sheen from-primary-400 to-primary-400 text-primary-950 flex h-8.5 cursor-pointer items-center gap-1.5 rounded-xl bg-gradient-to-r px-3.5 text-xs font-bold shadow-sm transition-all hover:brightness-110'>
 												<Check size={13} strokeWidth={3} /> Accept
 											</button>
 										</div>
@@ -578,7 +610,7 @@ const WorkspacesPage = () => {
 				{/* Workspaces Grid Section */}
 				<div>
 					<div className='mb-6 flex items-center gap-3'>
-						<span className='text-[10px] font-black tracking-widest text-slate-400 dark:text-zinc-500 uppercase'>
+						<span className='text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-zinc-500'>
 							Available Workspaces · {filteredWorkspaces.length}
 						</span>
 						<div className='h-px flex-1 bg-gradient-to-r from-slate-200 to-transparent dark:from-zinc-800' />
@@ -586,8 +618,11 @@ const WorkspacesPage = () => {
 
 					{isLoading ? (
 						<div className='flex flex-col items-center justify-center rounded-3xl border border-slate-200/60 bg-white p-20 dark:border-zinc-800/80 dark:bg-zinc-900/20'>
-							<Spinner color='primary' className='h-8 w-8 text-primary-600 dark:text-primary-400' />
-							<span className='mt-3 text-xs font-black text-slate-450 dark:text-zinc-500 uppercase tracking-widest'>
+							<Spinner
+								color='primary'
+								className='text-primary-600 dark:text-primary-400 h-8 w-8'
+							/>
+							<span className='text-slate-450 mt-3 text-xs font-black tracking-widest uppercase dark:text-zinc-500'>
 								Loading workspaces...
 							</span>
 						</div>
@@ -599,7 +634,7 @@ const WorkspacesPage = () => {
 							</p>
 							<button
 								onClick={() => setSearchQuery('')}
-								className='mt-3 text-xs font-bold text-primary-600 dark:text-primary-400 hover:underline'>
+								className='text-primary-600 dark:text-primary-400 mt-3 text-xs font-bold hover:underline'>
 								Clear search
 							</button>
 						</div>
@@ -621,7 +656,12 @@ const WorkspacesPage = () => {
 										}}
 										onDelete={handleDeleteWorkspace}
 										onLeave={handleLeaveWorkspace}
-										onInvite={(name) => triggerToast(`Open members invite overlay for ${name}`, 'info')}
+										onInvite={(name) =>
+											triggerToast(
+												`Open members invite overlay for ${name}`,
+												'info',
+											)
+										}
 									/>
 								))}
 							</AnimatePresence>
@@ -631,9 +671,9 @@ const WorkspacesPage = () => {
 								key='add-ws'
 								whileHover={{ y: -5 }}
 								onClick={() => setIsCreateModalOpen(true)}
-								className='group cursor-pointer rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-5 dark:border-zinc-800 dark:bg-[#10131e]/10 hover:border-primary-500/55 hover:bg-primary-500/[0.02] transition-all duration-300'>
+								className='group hover:border-primary-500/55 hover:bg-primary-500/[0.02] cursor-pointer rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-5 transition-all duration-300 dark:border-zinc-800 dark:bg-[#10131e]/10'>
 								<div className='flex min-h-[260px] flex-col items-center justify-center text-center'>
-									<div className='mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-primary-400 to-primary-400 text-primary-950 shadow-md shadow-primary-500/20 group-hover:rotate-90 transition-all duration-300'>
+									<div className='from-primary-400 to-primary-400 text-primary-950 shadow-primary-500/20 mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r shadow-md transition-all duration-300 group-hover:rotate-90'>
 										<Plus size={20} strokeWidth={2.5} />
 									</div>
 									<b className='text-[15px] font-extrabold text-slate-800 dark:text-zinc-200'>
@@ -656,22 +696,22 @@ const WorkspacesPage = () => {
 						initial={{ opacity: 0 }}
 						animate={{ opacity: 1 }}
 						exit={{ opacity: 0 }}
-						className='fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs'
+						className='fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs'
 						onClick={closeCreateModal}>
 						<motion.div
 							initial={{ scale: 0.95, y: 15 }}
 							animate={{ scale: 1, y: 0 }}
 							exit={{ scale: 0.95, y: 15 }}
 							transition={{ duration: 0.2 }}
-							className='relative w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-2xl dark:border-zinc-800 dark:bg-[#0f111a]'
+							className='relative w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl sm:p-8 dark:border-zinc-800 dark:bg-[#0f111a]'
 							onClick={(e) => e.stopPropagation()}>
 							<button
 								onClick={closeCreateModal}
-								className='absolute top-6 right-6 cursor-pointer text-slate-400 hover:text-slate-650 dark:hover:text-zinc-200 transition-colors'>
+								className='hover:text-slate-650 absolute top-6 right-6 cursor-pointer text-slate-400 transition-colors dark:hover:text-zinc-200'>
 								<X size={18} />
 							</button>
 
-							<h3 className='mb-6 text-lg font-black text-slate-900 dark:text-white text-left'>
+							<h3 className='mb-6 text-left text-lg font-black text-slate-900 dark:text-white'>
 								Create New Workspace
 							</h3>
 
@@ -685,12 +725,12 @@ const WorkspacesPage = () => {
 										placeholder='e.g. Operations Department'
 										value={newWspName}
 										onChange={(e) => handleNameChange(e.target.value)}
-										className='block h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-semibold text-slate-900 outline-none focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-primary-500 dark:focus:bg-zinc-950 transition-all'
+										className='focus:border-primary-500 focus:ring-primary-500/10 dark:focus:border-primary-500 block h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-semibold text-slate-900 transition-all outline-none focus:bg-white focus:ring-4 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:bg-zinc-950'
 									/>
 								</div>
 
 								{/* Live preview */}
-								<div className='rounded-2xl border border-slate-150 bg-slate-50/50 p-4 dark:border-zinc-850 dark:bg-zinc-950/20'>
+								<div className='border-slate-150 dark:border-zinc-850 rounded-2xl border bg-slate-50/50 p-4 dark:bg-zinc-950/20'>
 									<ModalLabel>Live Preview</ModalLabel>
 									<div className='flex items-center gap-3'>
 										<div
@@ -722,7 +762,7 @@ const WorkspacesPage = () => {
 													key={tier.name}
 													type='button'
 													onClick={() => setNewWspTier(tier.name)}
-													className={`flex cursor-pointer flex-col items-start rounded-xl p-3 text-left transition-all duration-200 border ${
+													className={`flex cursor-pointer flex-col items-start rounded-xl border p-3 text-left transition-all duration-200 ${
 														isSelected
 															? tier.name === 'Enterprise'
 																? 'border-primary-500/50 bg-primary-400/[0.06] dark:border-primary-500/40 dark:bg-primary-950/20'
@@ -731,10 +771,10 @@ const WorkspacesPage = () => {
 																	: 'border-slate-350 bg-slate-100 dark:border-zinc-700 dark:bg-zinc-900'
 															: 'border-slate-200 bg-slate-50 dark:border-zinc-800 dark:bg-zinc-950'
 													}`}>
-													<span className='text-xs font-black tracking-wider uppercase text-slate-850 dark:text-zinc-200'>
+													<span className='text-slate-850 text-xs font-black tracking-wider uppercase dark:text-zinc-200'>
 														{tier.name}
 													</span>
-													<span className='mt-1 text-[10px] leading-normal font-semibold text-slate-400 dark:text-zinc-550'>
+													<span className='dark:text-zinc-550 mt-1 text-[10px] leading-normal font-semibold text-slate-400'>
 														{tier.desc}
 													</span>
 												</button>
@@ -756,7 +796,7 @@ const WorkspacesPage = () => {
 												title={item.label}
 												className={`h-10 w-full cursor-pointer rounded-xl border transition-transform duration-200 ${
 													newWspThemeIdx === i
-														? 'scale-105 border-transparent ring-2 ring-primary-500 ring-offset-2 dark:ring-offset-zinc-950'
+														? 'ring-primary-500 scale-105 border-transparent ring-2 ring-offset-2 dark:ring-offset-zinc-950'
 														: 'border-transparent hover:scale-105'
 												}`}
 												style={{
@@ -772,14 +812,16 @@ const WorkspacesPage = () => {
 									<button
 										type='button'
 										onClick={closeCreateModal}
-										className='cursor-pointer rounded-xl px-5 py-2.5 text-xs font-bold text-slate-400 hover:text-slate-650 dark:hover:text-zinc-200 transition-colors'>
+										className='hover:text-slate-650 cursor-pointer rounded-xl px-5 py-2.5 text-xs font-bold text-slate-400 transition-colors dark:hover:text-zinc-200'>
 										Cancel
 									</button>
 									<button
 										type='submit'
 										disabled={createWorkspaceMutation.isPending}
-										className='ws-btn-sheen flex h-9.5 cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-primary-400 to-primary-400 px-5 text-xs font-bold text-primary-950 shadow-md shadow-primary-500/20 transition-all hover:brightness-110 disabled:opacity-50'>
-										{createWorkspaceMutation.isPending ? 'Creating...' : 'Create Workspace'}
+										className='ws-btn-sheen from-primary-400 to-primary-400 text-primary-950 shadow-primary-500/20 flex h-9.5 cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r px-5 text-xs font-bold shadow-md transition-all hover:brightness-110 disabled:opacity-50'>
+										{createWorkspaceMutation.isPending
+											? 'Creating...'
+											: 'Create Workspace'}
 									</button>
 								</div>
 							</form>
@@ -795,22 +837,22 @@ const WorkspacesPage = () => {
 						initial={{ opacity: 0 }}
 						animate={{ opacity: 1 }}
 						exit={{ opacity: 0 }}
-						className='fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs'
+						className='fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs'
 						onClick={() => setIsRenameModalOpen(false)}>
 						<motion.div
 							initial={{ scale: 0.95, y: 15 }}
 							animate={{ scale: 1, y: 0 }}
 							exit={{ scale: 0.95, y: 15 }}
 							transition={{ duration: 0.2 }}
-							className='relative w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-2xl dark:border-zinc-800 dark:bg-[#0f111a]'
+							className='relative w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl sm:p-8 dark:border-zinc-800 dark:bg-[#0f111a]'
 							onClick={(e) => e.stopPropagation()}>
 							<button
 								onClick={() => setIsRenameModalOpen(false)}
-								className='absolute top-6 right-6 cursor-pointer text-slate-400 hover:text-slate-650 dark:hover:text-zinc-200 transition-colors'>
+								className='hover:text-slate-650 absolute top-6 right-6 cursor-pointer text-slate-400 transition-colors dark:hover:text-zinc-200'>
 								<X size={18} />
 							</button>
 
-							<h3 className='mb-6 text-lg font-black text-slate-900 dark:text-white text-left'>
+							<h3 className='mb-6 text-left text-lg font-black text-slate-900 dark:text-white'>
 								Rename Workspace
 							</h3>
 
@@ -824,12 +866,12 @@ const WorkspacesPage = () => {
 										placeholder='e.g. Sales Department'
 										value={renameWspName}
 										onChange={(e) => setRenameWspName(e.target.value)}
-										className='block h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-semibold text-slate-900 outline-none focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-primary-500 dark:focus:bg-zinc-950 transition-all'
+										className='focus:border-primary-500 focus:ring-primary-500/10 dark:focus:border-primary-500 block h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-semibold text-slate-900 transition-all outline-none focus:bg-white focus:ring-4 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:bg-zinc-950'
 									/>
 								</div>
 
 								{selectedWorkspace && (
-									<div className='rounded-2xl border border-slate-150 bg-slate-50/50 p-4 dark:border-zinc-850 dark:bg-zinc-950/20'>
+									<div className='border-slate-150 dark:border-zinc-850 rounded-2xl border bg-slate-50/50 p-4 dark:bg-zinc-950/20'>
 										<ModalLabel>Live Preview</ModalLabel>
 										<div className='flex items-center gap-3'>
 											<div
@@ -855,13 +897,13 @@ const WorkspacesPage = () => {
 									<button
 										type='button'
 										onClick={() => setIsRenameModalOpen(false)}
-										className='cursor-pointer rounded-xl px-5 py-2.5 text-xs font-bold text-slate-400 hover:text-slate-655 dark:hover:text-zinc-200 transition-colors'>
+										className='hover:text-slate-655 cursor-pointer rounded-xl px-5 py-2.5 text-xs font-bold text-slate-400 transition-colors dark:hover:text-zinc-200'>
 										Cancel
 									</button>
 									<button
 										type='submit'
 										disabled={updateWorkspaceMutation.isPending}
-										className='ws-btn-sheen flex h-9.5 cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-primary-400 to-primary-400 px-5 text-xs font-bold text-primary-950 shadow-md shadow-primary-500/20 transition-all hover:brightness-110 disabled:opacity-50'>
+										className='ws-btn-sheen from-primary-400 to-primary-400 text-primary-950 shadow-primary-500/20 flex h-9.5 cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r px-5 text-xs font-bold shadow-md transition-all hover:brightness-110 disabled:opacity-50'>
 										{updateWorkspaceMutation.isPending ? 'Saving...' : 'Save'}
 									</button>
 								</div>
@@ -876,7 +918,7 @@ const WorkspacesPage = () => {
 
 // ─── Modal Label Helper ────────────────────────────────────────────────────────
 const ModalLabel = ({ children }: { children: React.ReactNode }) => (
-	<label className='mb-2 block text-[10.5px] font-black tracking-wider uppercase text-slate-400 dark:text-zinc-500 text-left'>
+	<label className='mb-2 block text-left text-[10.5px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
 		{children}
 	</label>
 );
@@ -914,7 +956,7 @@ const WorkspaceCard = ({
 			transition={{ duration: 0.3, delay: index * 0.05 }}
 			whileHover={{ y: -5 }}
 			onClick={() => onSelect(wsp.id)}
-			className='group relative cursor-pointer overflow-hidden rounded-3xl border border-slate-200/60 bg-white p-5 shadow-[0_4px_25px_rgba(0,0,0,0.01)] transition-all duration-300 dark:border-zinc-800/80 dark:bg-[#10131e]/50 hover:border-primary-500/30 hover:shadow-md hover:shadow-primary-500/20/[0.02]'>
+			className='group hover:border-primary-500/30 hover:shadow-primary-500/20/[0.02] relative cursor-pointer overflow-hidden rounded-3xl border border-slate-200/60 bg-white p-5 shadow-[0_4px_25px_rgba(0,0,0,0.01)] transition-all duration-300 hover:shadow-md dark:border-zinc-800/80 dark:bg-[#10131e]/50'>
 			{/* Hover Accent Glow */}
 			<div
 				className='pointer-events-none absolute inset-[-30%] rounded-full opacity-0 transition-opacity duration-500 group-hover:opacity-[0.05] dark:group-hover:opacity-[0.08]'
@@ -933,7 +975,7 @@ const WorkspaceCard = ({
 			/>
 
 			{/* Top bar header */}
-			<div className='flex items-start justify-between mt-1'>
+			<div className='mt-1 flex items-start justify-between'>
 				{/* Avatar container */}
 				<div className='relative shrink-0'>
 					<div
@@ -954,7 +996,7 @@ const WorkspaceCard = ({
 
 				{/* Tier tag & option kebab menu */}
 				<div className='flex items-center gap-2'>
-					<span className='rounded-full border border-primary-100 bg-primary-50 px-2.5 py-0.5 text-[9px] font-black tracking-wide text-primary-600 uppercase dark:border-primary-900/30 dark:bg-primary-950/20 dark:text-primary-400 shadow-2xs'>
+					<span className='border-primary-100 bg-primary-50 text-primary-600 dark:border-primary-900/30 dark:bg-primary-950/20 dark:text-primary-400 rounded-full border px-2.5 py-0.5 text-[9px] font-black tracking-wide uppercase shadow-2xs'>
 						{wsp.tier}
 					</span>
 
@@ -966,7 +1008,7 @@ const WorkspaceCard = ({
 								e.stopPropagation();
 								onMenuToggle(activeMenuId === wsp.id ? null : wsp.id);
 							}}
-							className='flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-transparent text-slate-400 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-700 dark:hover:border-zinc-800 dark:hover:bg-zinc-900 dark:hover:text-zinc-200 transition-colors'>
+							className='flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-transparent text-slate-400 transition-colors hover:border-slate-200 hover:bg-slate-50 hover:text-slate-700 dark:hover:border-zinc-800 dark:hover:bg-zinc-900 dark:hover:text-zinc-200'>
 							<MoreVertical size={14} />
 						</button>
 
@@ -983,7 +1025,7 @@ const WorkspaceCard = ({
 											onMenuToggle(null);
 											onRename(wsp);
 										}}
-										className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-800 transition-colors'>
+										className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-800'>
 										<Edit2 size={12} className='text-primary-500' /> Rename
 									</button>
 									{wsp.role === 'Owner' ? (
@@ -993,7 +1035,7 @@ const WorkspaceCard = ({
 												onMenuToggle(null);
 												onDelete(wsp.id, wsp.name);
 											}}
-											className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-955 dark:hover:bg-rose-950/20 transition-colors'>
+											className='dark:hover:bg-rose-955 flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 dark:hover:bg-rose-950/20'>
 											<Trash2 size={12} /> Delete
 										</button>
 									) : (
@@ -1003,7 +1045,7 @@ const WorkspaceCard = ({
 												onMenuToggle(null);
 												onLeave(wsp.id, wsp.name);
 											}}
-											className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-955 dark:hover:bg-rose-950/20 transition-colors'>
+											className='dark:hover:bg-rose-955 flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 dark:hover:bg-rose-950/20'>
 											<LogOut size={12} /> Leave
 										</button>
 									)}
@@ -1016,39 +1058,41 @@ const WorkspaceCard = ({
 
 			{/* Title & Info */}
 			<div className='text-left'>
-				<h3 className='mt-5 text-lg font-black tracking-tight text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors'>
+				<h3 className='group-hover:text-primary-600 dark:group-hover:text-primary-400 mt-5 text-lg font-black tracking-tight text-slate-900 transition-colors dark:text-white'>
 					{wsp.name}
 				</h3>
 				<p className='mt-1 text-[11px] font-semibold text-slate-400 dark:text-zinc-500'>
-					Role: <span className='font-bold text-slate-650 dark:text-zinc-350'>{wsp.role}</span> • {wsp.lastActive}
+					Role:{' '}
+					<span className='text-slate-650 dark:text-zinc-350 font-bold'>{wsp.role}</span>{' '}
+					• {wsp.lastActive}
 				</p>
 			</div>
 
 			{/* Metrics block */}
-			<div className='my-5 grid grid-cols-2 gap-3.5 rounded-2xl border border-slate-150/60 bg-slate-50/50 p-3.5 dark:border-zinc-850 dark:bg-zinc-950/20'>
+			<div className='border-slate-150/60 dark:border-zinc-850 my-5 grid grid-cols-2 gap-3.5 rounded-2xl border bg-slate-50/50 p-3.5 dark:bg-zinc-950/20'>
 				<div className='flex items-center gap-2.5 text-left'>
-					<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-950/30 dark:text-primary-400 shadow-2xs'>
+					<div className='bg-primary-50 text-primary-600 dark:bg-primary-950/30 dark:text-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-2xs'>
 						<Layers size={15} />
 					</div>
 					<div className='min-w-0'>
 						<span className='block text-[9px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
 							Active Flows
 						</span>
-						<span className='block text-xs font-extrabold text-slate-700 dark:text-zinc-350 truncate'>
+						<span className='dark:text-zinc-350 block truncate text-xs font-extrabold text-slate-700'>
 							{wsp.activeFlowsCount} flows
 						</span>
 					</div>
 				</div>
 
 				<div className='flex items-center gap-2.5 text-left'>
-					<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-950/30 dark:text-primary-400 shadow-2xs'>
+					<div className='bg-primary-50 text-primary-600 dark:bg-primary-950/30 dark:text-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-2xs'>
 						<Cpu size={15} />
 					</div>
 					<div className='min-w-0'>
 						<span className='block text-[9px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
 							Deployments
 						</span>
-						<span className='block text-xs font-extrabold text-slate-700 dark:text-zinc-350 truncate'>
+						<span className='dark:text-zinc-350 block truncate text-xs font-extrabold text-slate-700'>
 							{wsp.activeAgentsCount} agent{wsp.activeAgentsCount !== 1 ? 's' : ''}
 						</span>
 					</div>
@@ -1063,7 +1107,7 @@ const WorkspaceCard = ({
 						<div
 							key={idx}
 							title={member.name}
-							className={`flex h-7.5 w-7.5 items-center justify-center rounded-full border border-white text-[9px] font-black text-primary-950 shadow-2xs ${member.color} dark:border-zinc-950`}>
+							className={`text-primary-950 flex h-7.5 w-7.5 items-center justify-center rounded-full border border-white text-[9px] font-black shadow-2xs ${member.color} dark:border-zinc-950`}>
 							{member.initials}
 						</div>
 					))}
@@ -1072,13 +1116,18 @@ const WorkspaceCard = ({
 							e.stopPropagation();
 							onInvite(wsp.name);
 						}}
-						className='flex h-7.5 w-7.5 items-center justify-center rounded-full border border-dashed border-slate-300 bg-slate-50 text-slate-555 hover:scale-105 hover:bg-primary-500 hover:text-primary-950 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 transition-all'>
+						className='text-slate-555 hover:bg-primary-500 hover:text-primary-950 flex h-7.5 w-7.5 items-center justify-center rounded-full border border-dashed border-slate-300 bg-slate-50 transition-all hover:scale-105 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'>
 						<UserPlus size={10} />
 					</button>
 				</div>
 
-				{/* Arrow enter button */}
-				<button className='flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white text-primary-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-primary-400 transition-all duration-300 group-hover:border-transparent group-hover:bg-gradient-to-r group-hover:from-primary-400 group-hover:to-primary-400 group-hover:text-primary-950 group-hover:shadow-md group-hover:shadow-primary-500/10 active:scale-95'>
+				{/* Arrow enter button. The card root owns the click; this is the
+					    affordance for it, so it only needs to not be a submit button. */}
+				<button
+					type='button'
+					tabIndex={-1}
+					aria-hidden
+					className='text-primary-600 dark:text-primary-400 group-hover:from-primary-400 group-hover:to-primary-400 group-hover:text-primary-950 group-hover:shadow-primary-500/10 flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white transition-all duration-300 group-hover:border-transparent group-hover:bg-gradient-to-r group-hover:shadow-md active:scale-95 dark:border-zinc-800 dark:bg-zinc-900'>
 					<ArrowRight
 						size={16}
 						strokeWidth={2.5}

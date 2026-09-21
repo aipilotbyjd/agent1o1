@@ -14,7 +14,4 @@ export const billingKeys = {
 		['billing', ws, 'invoices', params ?? {}] as const,
 	invoicesUpcoming: (ws: string) => ['billing', ws, 'invoices', 'upcoming'] as const,
 	invoice: (ws: string, invoiceId: string) => ['billing', ws, 'invoices', invoiceId] as const,
-
-	// ── Ported from the old frontend ──────────────────────────
-	packCatalog: (ws: string) => ['billing', ws, 'pack-catalog'] as const,
 };

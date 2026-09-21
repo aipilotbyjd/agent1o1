@@ -8,6 +8,8 @@ import Breadcrumb from '@/components/layout/Breadcrumb';
 import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
 import { useWorkspaceContext } from '@/context/workspace';
+import { ListSkeletonRows } from '@/parts/ListSkeleton.part';
+import { notify } from '@/api/core';
 import {
 	useKnowledgeChunks,
 	useKnowledgeCollections,
@@ -72,7 +74,9 @@ const KnowledgeListPage = () => {
 			),
 		});
 		if (!confirmed) return;
-		deleteChunkMutation.mutate(id);
+		deleteChunkMutation.mutate(id, {
+			onSuccess: () => notify.success('Removed from the knowledge base.'),
+		});
 	};
 
 	const handleDeleteCollection = async (collection: string) => {
@@ -237,9 +241,7 @@ const KnowledgeListPage = () => {
 						)}
 					</div>
 				) : isLoadingChunks ? (
-					<div className='flex items-center justify-center rounded-3xl border border-zinc-200 bg-white py-16 text-xs font-semibold text-slate-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-500'>
-						Loading documents…
-					</div>
+					<ListSkeletonRows count={5} />
 				) : chunks.length === 0 ? (
 					<div className='flex flex-col items-center justify-center gap-2 rounded-3xl border border-zinc-200 bg-white py-16 text-center dark:border-zinc-800 dark:bg-zinc-900'>
 						<BookOpen size={28} className='text-slate-300 dark:text-zinc-600' />
