@@ -69,6 +69,7 @@ import {
 	useCreateAgent,
 	useUpdateAgent,
 	useDeleteAgent,
+	useDuplicateAgent,
 	useAgentSkills,
 	useCreateAgentSkill,
 	useAttachAgentSkill,
@@ -300,6 +301,7 @@ const BuildPage = () => {
 	};
 
 	const { data: existingAgent } = useAgent(workspaceId, currentAgentId ?? '');
+	const duplicateAgentMutation = useDuplicateAgent(workspaceId);
 	const createAgentMutation = useCreateAgent(workspaceId);
 	const updateAgentMutation = useUpdateAgent(workspaceId);
 	const deleteAgentMutation = useDeleteAgent(workspaceId);
@@ -941,19 +943,6 @@ const BuildPage = () => {
 
 	// Action chip clicks in chat response
 	const handleActionClick = (action: { label: string; type: string }) => {
-		if (action.type === 'export_csv') {
-			toast.success('List exported as CSV successfully!');
-			return;
-		}
-		if (action.type === 'pdf_digest') {
-			toast.success('PDF digest report generated!');
-			return;
-		}
-		if (action.type === 'email_summary') {
-			toast.success('Summary emailed to the product team!');
-			return;
-		}
-
 		// Otherwise, send it as a user chat message
 		sendChatMessage(action.label);
 	};
@@ -1327,7 +1316,11 @@ const BuildPage = () => {
 
 						{/* Action Buttons Right */}
 						<div className='flex items-center gap-2'>
-							<MainAppBarPillButton onClick={() => toast.success('Share link copied!')}>
+							<MainAppBarPillButton
+								onClick={() => {
+									navigator.clipboard.writeText(window.location.href);
+									toast.success('Share link copied to clipboard!');
+								}}>
 								<Share2 size={14} />
 								<span>Share</span>
 							</MainAppBarPillButton>
@@ -1743,7 +1736,7 @@ const BuildPage = () => {
 										{/* Plus button */}
 										<button 
 											type='button'
-											onClick={() => toast.info('File attachment is not available in draft mode.')}
+											onClick={() => toast.info('File attachment is not supported yet.')}
 											className='flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-50 dark:text-zinc-500 dark:hover:bg-zinc-800'
 										>
 											<Plus size={18} />
@@ -1757,7 +1750,7 @@ const BuildPage = () => {
 											{/* Mic */}
 											<button 
 												type='button'
-												onClick={() => toast.info('Voice input is not available in draft mode.')}
+												onClick={() => toast.info('Voice input is not supported yet.')}
 												className='flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-50 dark:text-zinc-500 dark:hover:bg-zinc-800'
 											>
 												<Mic size={18} />
@@ -1784,7 +1777,13 @@ const BuildPage = () => {
 								<div className='flex items-center justify-center gap-1 text-[11px] font-bold text-zinc-400 dark:text-zinc-500 mt-1'>
 									<span>Having Trouble?</span>
 									<button 
-										onClick={() => toast.info('Thank you! Feedback reported.')}
+										onClick={() =>
+								window.open(
+									'https://docs.agent1o1.com',
+									'_blank',
+									'noopener,noreferrer',
+								)
+							}
 										className='underline hover:text-zinc-655 dark:hover:text-zinc-350'
 									>
 										Report an Issue or Bug
@@ -1799,8 +1798,10 @@ const BuildPage = () => {
 									{/* Left attachments & skill checkbox */}
 									<div className='flex items-center gap-1 px-1.5'>
 										<button
-											title='Attach files'
-											className='flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300'>
+											type='button'
+											disabled
+											title='File attachment is not supported yet'
+											className='flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-500'>
 											<Paperclip size={18} />
 										</button>
 
@@ -1859,8 +1860,10 @@ const BuildPage = () => {
 
 										{/* Mic icon */}
 										<button
-											title='Voice input'
-											className='flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300'>
+											type='button'
+											disabled
+											title='Voice input is not supported yet'
+											className='flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-500'>
 											<Mic size={18} />
 										</button>
 
@@ -2440,7 +2443,11 @@ const BuildPage = () => {
 												</div>
 												<h4 className='text-xs font-black text-zinc-900 dark:text-white'>Subagents</h4>
 											</div>
-											<button onClick={() => toast.info('Subagent creation dialog opened')} className='flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black text-primary-600 hover:bg-zinc-50 dark:border-primary-500/20 dark:bg-zinc-900 dark:text-primary-400 dark:hover:bg-zinc-800'>
+											<button
+							type='button'
+							disabled
+							title='Subagents are not available yet'
+							className='flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black text-primary-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-primary-500/20 dark:bg-zinc-900 dark:text-primary-400'>
 												<Plus size={10} />
 												<span>Subagent</span>
 											</button>
@@ -2633,9 +2640,16 @@ const BuildPage = () => {
 											<div className='flex items-center gap-2.5 shrink-0'>
 												<button
 													type='button'
+													disabled={!currentAgentId || duplicateAgentMutation.isPending}
 													onClick={(e) => {
 														e.stopPropagation();
-														toast.success('Agent copy created successfully!');
+														if (!currentAgentId) return;
+														duplicateAgentMutation.mutate(currentAgentId, {
+															onSuccess: (copy) => {
+																toast.success(`"${copy.name}" created.`);
+																navigate(paths.editAgent(workspaceId, copy.id));
+															},
+														});
 													}}
 													className='flex items-center gap-1.5 px-3 py-1 border border-zinc-200 text-zinc-700 bg-white hover:bg-zinc-50 text-[10px] font-black rounded-lg dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900'>
 													<Copy size={11} />
@@ -2712,11 +2726,9 @@ const BuildPage = () => {
 											</div>
 										</div>
 										<a
-											href='#'
-											onClick={(e) => {
-												e.preventDefault();
-												toast.info('Secure credentials document opened.');
-											}}
+											href='https://docs.agent1o1.com'
+											target='_blank'
+											rel='noopener noreferrer'
 											className='text-[10px] font-bold text-primary-600 hover:underline flex items-center gap-1 shrink-0 dark:text-primary-400'>
 											<span>Learn more</span>
 											<ExternalLink size={10} />
