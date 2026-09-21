@@ -1121,8 +1121,13 @@ const WorkspaceCard = ({
 					</button>
 				</div>
 
-				{/* Arrow enter button */}
-				<button className='text-primary-600 dark:text-primary-400 group-hover:from-primary-400 group-hover:to-primary-400 group-hover:text-primary-950 group-hover:shadow-primary-500/10 flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white transition-all duration-300 group-hover:border-transparent group-hover:bg-gradient-to-r group-hover:shadow-md active:scale-95 dark:border-zinc-800 dark:bg-zinc-900'>
+				{/* Arrow enter button. The card root owns the click; this is the
+					    affordance for it, so it only needs to not be a submit button. */}
+				<button
+					type='button'
+					tabIndex={-1}
+					aria-hidden
+					className='text-primary-600 dark:text-primary-400 group-hover:from-primary-400 group-hover:to-primary-400 group-hover:text-primary-950 group-hover:shadow-primary-500/10 flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white transition-all duration-300 group-hover:border-transparent group-hover:bg-gradient-to-r group-hover:shadow-md active:scale-95 dark:border-zinc-800 dark:bg-zinc-900'>
 					<ArrowRight
 						size={16}
 						strokeWidth={2.5}

@@ -10,7 +10,6 @@ import {
 	Globe,
 	Search,
 	ListFilter,
-	MoreVertical,
 	Bot,
 	Loader2,
 	Trash2,
@@ -29,6 +28,7 @@ import { useAgentSessions, useDeleteAgentSession } from '@/api/modules/agents';
 import type { TAgentSession } from '@/types/agent.type';
 import GlobalSearch from '@/templates/search/GlobalSearch.template';
 import { notify } from '@/api/core';
+import paths from '@/Routes/paths';
 
 /** A session is created untitled when the builder can't name it; the first
  *  message normally supplies the title. */
@@ -168,7 +168,11 @@ const AgentAsideTemplate = () => {
 
 				{/* Navigation Items */}
 				<div className='flex flex-col gap-1 px-3'>
-					<button className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50/80 dark:text-zinc-300 dark:hover:bg-zinc-900 ${asideStatus ? '' : 'w-full justify-center'}`}>
+					<button
+						type='button'
+						title='Files this workspace has generated'
+						onClick={() => navigate(`/${workspaceId}/artifacts`)}
+						className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50/80 dark:text-zinc-300 dark:hover:bg-zinc-900 ${asideStatus ? '' : 'w-full justify-center'}`}>
 						<span className='relative shrink-0'>
 							<Folder size={15} className='text-zinc-600 dark:text-zinc-400' />
 							{!asideStatus && (
@@ -200,7 +204,11 @@ const AgentAsideTemplate = () => {
 						</h4>
 					)}
 					<div className='mt-2 flex flex-col gap-1'>
-						<button className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50/80 dark:text-zinc-400 dark:hover:bg-zinc-900 ${asideStatus ? '' : 'w-full justify-center'}`}>
+						<button
+							type='button'
+							disabled
+							title='External channels are not available yet'
+							className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-600 transition disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-400 ${asideStatus ? '' : 'w-full justify-center'}`}>
 							<span className='relative shrink-0'>
 								<Mail size={15} className='text-zinc-600 dark:text-zinc-400' />
 								{!asideStatus && (
@@ -209,7 +217,11 @@ const AgentAsideTemplate = () => {
 							</span>
 							{asideStatus && <span className='truncate'>Email</span>}
 						</button>
-						<button className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50/80 dark:text-zinc-400 dark:hover:bg-zinc-900 ${asideStatus ? '' : 'w-full justify-center'}`}>
+						<button
+							type='button'
+							disabled
+							title='External channels are not available yet'
+							className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-600 transition disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-400 ${asideStatus ? '' : 'w-full justify-center'}`}>
 							<span className='relative shrink-0'>
 								<Icon icon='Slack' className='text-zinc-600 dark:text-zinc-400' style={{ fontSize: '15px' }} />
 								{!asideStatus && (
@@ -218,7 +230,11 @@ const AgentAsideTemplate = () => {
 							</span>
 							{asideStatus && <span className='truncate'>Slack</span>}
 						</button>
-						<button className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50/80 dark:text-zinc-400 dark:hover:bg-zinc-900 ${asideStatus ? '' : 'w-full justify-center'}`}>
+						<button
+							type='button'
+							disabled
+							title='External channels are not available yet'
+							className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-600 transition disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-400 ${asideStatus ? '' : 'w-full justify-center'}`}>
 							<span className='relative shrink-0'>
 								<MessageSquare size={15} className='text-zinc-600 dark:text-zinc-400' />
 								{!asideStatus && (
@@ -227,7 +243,11 @@ const AgentAsideTemplate = () => {
 							</span>
 							{asideStatus && <span className='truncate'>Microsoft Teams</span>}
 						</button>
-						<button className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50/80 dark:text-zinc-400 dark:hover:bg-zinc-900 ${asideStatus ? '' : 'w-full justify-center'}`}>
+						<button
+							type='button'
+							disabled
+							title='External channels are not available yet'
+							className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-600 transition disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-400 ${asideStatus ? '' : 'w-full justify-center'}`}>
 							<span className='relative shrink-0'>
 								<Globe size={15} className='text-zinc-600 dark:text-zinc-400' />
 								{!asideStatus && (
@@ -335,7 +355,7 @@ const AgentAsideTemplate = () => {
 						</div>
 						{/* Upgrade Plan Button */}
 						<button
-							onClick={() => navigate(`/${workspaceId}/settings/plan`)}
+							onClick={() => navigate(paths.billingPlans(workspaceId ?? ''))}
 							className='mt-1 flex w-full items-center justify-center rounded-xl bg-primary-400 py-2 text-xs font-black text-primary-950 shadow-md shadow-primary-500/20 transition hover:bg-primary-500 active:scale-95 dark:shadow-none'>
 							Upgrade Plan
 						</button>
@@ -360,12 +380,7 @@ const AgentAsideTemplate = () => {
 							</div>
 						)}
 					</div>
-					{asideStatus && (
-						<button className='text-zinc-400 hover:text-zinc-950 dark:hover:text-white'>
-							<MoreVertical size={15} />
-						</button>
-					)}
-				</div>
+									</div>
 			</AsideFooter>
 			<GlobalSearch />
 		</Aside>

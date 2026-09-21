@@ -14,7 +14,6 @@ import {
 	Terminal,
 	Megaphone,
 	Briefcase,
-	MoreHorizontal,
 	Copy,
 } from 'lucide-react';
 import { OutletContextType } from './_layouts/Agents.layout';
@@ -465,18 +464,12 @@ const AgentsListPage = () => {
 											<IconComponent className='h-5 w-5' />
 										</div>
 
-										{/* Options Menu. The old Active/Inactive switch is gone:
-										    this backend has no `is_active` column and
-										    UpdateAgentRequest has no rule for it, so the PATCH
-										    was silently discarded. */}
-										<div className='flex items-center gap-2'>
-											<button
-												className='dark:hover:bg-zinc-950/60 flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-border-main bg-bg-card text-slate-400 hover:bg-slate-50 dark:border-border-main dark:bg-bg-card'
-												title='More options'
-												aria-label='More options'>
-												<MoreHorizontal size={14} />
-											</button>
-										</div>
+										{/* The old Active/Inactive switch is gone: this backend has no
+										    `is_active` column and UpdateAgentRequest has no rule for it,
+										    so the PATCH was silently discarded. The "More options" button
+										    beside it opened nothing, and had nothing left to open -
+										    Configure, Run, Duplicate and Delete are already buttons in
+										    the card footer. */}
 									</div>
 
 									{/* Card Content */}
@@ -526,10 +519,10 @@ const AgentsListPage = () => {
 
 										<div className='flex items-center gap-2'>
 											<button
+												// The builder opens on its chat surface, which is where an agent is
+												// actually run; Configure lands on that same screen's settings panel.
 												onClick={() =>
-													alert(
-														`Starting interactive run with Agent: ${agent.name}`,
-													)
+													navigate(paths.editAgent(currentWorkspaceId, agent.id))
 												}
 												className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl bg-primary-400 text-primary-950 shadow-md shadow-primary-500/10 transition-transform hover:scale-105 hover:bg-primary-500 active:scale-95'
 												title='Run agent'>
