@@ -113,12 +113,14 @@ export const AuthService = {
 			.get<TApiResponse<TTwoFactorRecoveryCodes>>(AuthEndpoints.twoFactorRecoveryCodes)
 			.then(unwrap<TTwoFactorRecoveryCodes>),
 
+	// Regenerate hands back the new plaintext codes, unlike the GET above which
+	// only reports how many remain.
 	twoFactorRegenerateRecoveryCodes: () =>
 		axiosClient
 			.post<
-				TApiResponse<TTwoFactorRecoveryCodes>
+				TApiResponse<TTwoFactorConfirmResult>
 			>(AuthEndpoints.twoFactorRegenerateRecoveryCodes)
-			.then(unwrap<TTwoFactorRecoveryCodes>),
+			.then(unwrap<TTwoFactorConfirmResult>),
 
 	socialRedirectUrl: (provider: TSocialProvider) =>
 		axiosClient

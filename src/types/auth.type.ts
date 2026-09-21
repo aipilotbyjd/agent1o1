@@ -77,9 +77,15 @@ export type TDisableTwoFactorDto = {
 	current_password: string;
 };
 
-export type TTwoFactorEnableResult = { secret: string; qr_code_svg: string };
+/** `POST /auth/2fa/enable`. The backend returns the raw otpauth:// URL, not a
+ *  rendered image — the QR is drawn client-side so the TOTP secret never leaves
+ *  the browser. */
+export type TTwoFactorEnableResult = { secret: string; otpauth_url: string };
 export type TTwoFactorConfirmResult = { recovery_codes: string[] };
-export type TTwoFactorRecoveryCodes = { recovery_codes: string[] };
+/** `GET /auth/2fa/recovery-codes` only reports how many codes are left: they are
+ *  hashed at rest, so plaintext is returned once at confirm/regenerate time and
+ *  never again. */
+export type TTwoFactorRecoveryCodes = { recovery_codes_remaining: number };
 
 // ─── Social login ────────────────────────────────────────────
 
