@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Beaker, ChevronDown, ChevronUp, CheckCircle2, AlertCircle, Loader2, Clock } from 'lucide-react';
 import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
 import { useNodeTestRunner } from '../../../_hooks/useNodeTestRunner.hook';
@@ -32,6 +32,19 @@ const NodeInlineTest = ({
 		setExpanded(true);
 		runNodeTest();
 	};
+
+	// The T shortcut asks the selected node to test itself. The request is a counter
+	// so pressing T repeatedly re-runs, and the ref keeps the first render from
+	// firing a test nobody asked for.
+	const { nodeTestRequestId, nodeTestRequestNodeId } = state.ui;
+	const lastHandledRequest = useRef(nodeTestRequestId);
+	useEffect(() => {
+		if (nodeTestRequestId === lastHandledRequest.current) return;
+		lastHandledRequest.current = nodeTestRequestId;
+		if (nodeTestRequestNodeId !== nodeId) return;
+		setExpanded(true);
+		runNodeTest();
+	}, [nodeTestRequestId, nodeTestRequestNodeId, nodeId, runNodeTest]);
 
 	const statusIcon = {
 		idle: <Beaker size={11} />,

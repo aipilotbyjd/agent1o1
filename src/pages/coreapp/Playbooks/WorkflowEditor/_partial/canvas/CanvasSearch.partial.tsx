@@ -62,6 +62,7 @@ const CanvasSearch = () => {
 						className='flex-1 bg-transparent text-sm text-zinc-800 outline-none placeholder:text-zinc-400 dark:text-zinc-100'
 					/>
 					<button
+						aria-label='Close'
 						type='button'
 						onClick={() =>
 							dispatch({ type: 'SET_CANVAS_SEARCH', open: false, query: '' })

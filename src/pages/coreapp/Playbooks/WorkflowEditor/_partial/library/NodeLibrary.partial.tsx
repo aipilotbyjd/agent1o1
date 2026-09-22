@@ -86,6 +86,7 @@ const NodeLibrary = () => {
 				<div className='flex items-center justify-between px-5 pt-5 pb-2.5'>
 					<div className='flex min-w-0 items-center gap-2.5'>
 						<button
+							aria-label='Back'
 							type='button'
 							onClick={() => setSelected(null)}
 							className='flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg text-zinc-500 transition hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/10 dark:hover:text-primary-300'>
@@ -136,6 +137,7 @@ const NodeLibrary = () => {
 					<NodeLibrarySearch value={query} onChange={setQuery} />
 					{query && (
 						<button
+							aria-label='Close'
 							type='button'
 							onClick={() => setQuery('')}
 							className='cursor-pointer text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200'>

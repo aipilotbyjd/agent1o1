@@ -11,7 +11,6 @@ import {
 	Globe,
 	Search,
 	ListFilter,
-	Bot,
 	Loader2,
 	Trash2,
 	Pencil,
@@ -19,6 +18,7 @@ import {
 	ChevronsLeft,
 	ChevronsRight,
 } from 'lucide-react';
+import AppLogo from '@/components/AppLogo';
 import Icon from '@/components/icon/Icon';
 import Aside, { AsideBody, AsideFooter } from '@/components/layout/Aside';
 import useAsideStatus from '@/hooks/useAsideStatus';
@@ -146,9 +146,7 @@ const AgentAsideTemplate = () => {
 				}`}>
 				<div className='flex items-center gap-2'>
 					{/* Logo */}
-					<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-primary-400 text-primary-950'>
-						<Bot size={16} className='fill-current' />
-					</div>
+					<AppLogo className='size-8 ring-1 ring-primary-500/20 dark:ring-primary-400/20' />
 					{asideStatus && (
 						<span className='text-sm font-black tracking-tight text-zinc-950 dark:text-white'>
 							agent101
@@ -158,6 +156,7 @@ const AgentAsideTemplate = () => {
 				{asideStatus && (
 					<div className='flex items-center gap-2.5'>
 						<button
+							aria-label='Search'
 							onClick={() => useGlobalSearchStore.getState().open()}
 							className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'>
 							<Search size={15} />
@@ -187,6 +186,7 @@ const AgentAsideTemplate = () => {
 
 				{/* Go Back button */}
 				<button
+					aria-label='Back'
 					onClick={() => navigate(`/${workspaceId}/agents`)}
 					className={`flex items-center gap-2.5 py-1 text-xs font-bold text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white ${
 						asideStatus ? 'px-3' : 'w-full justify-center'

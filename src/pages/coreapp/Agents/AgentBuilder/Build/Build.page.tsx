@@ -271,6 +271,7 @@ const ArtifactCard = ({
 				</p>
 			</div>
 			<button
+				aria-label='Download'
 				onClick={() => downloadMutation.mutate({ artifactId: item.id, filename: item.filename })}
 				className='flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800'>
 				<Download size={13} />
@@ -1355,6 +1356,7 @@ const BuildPage = () => {
 										className='flex-1 bg-transparent px-2 text-sm font-semibold text-zinc-900 placeholder:text-zinc-400 outline-none border-none focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
 									/>
 									<button
+										aria-label='Send'
 										type='button'
 										onClick={handleSendMessage}
 										className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-400 text-primary-950 shadow-md transition hover:bg-primary-500 active:scale-95'>
@@ -1379,6 +1381,7 @@ const BuildPage = () => {
 					{/* Mobile Chat Header */}
 					<header className='flex h-14 shrink-0 items-center justify-between border-b border-zinc-150 bg-white px-4 md:hidden dark:border-zinc-800 dark:bg-zinc-900'>
 						<button
+							aria-label='Open menu'
 							onClick={toggleAside}
 							type='button'
 							className='flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
@@ -1387,6 +1390,7 @@ const BuildPage = () => {
 						</button>
 						<div className='flex items-center gap-3'>
 							<button
+								aria-label='Share'
 								onClick={() => {
 									navigator.clipboard.writeText(window.location.href);
 									toast.success('Share link copied to clipboard!');
@@ -1397,6 +1401,7 @@ const BuildPage = () => {
 								<Share size={18} />
 							</button>
 							<button
+								aria-label='Settings'
 								onClick={() => {
 									setActiveSidebarTab('agent');
 									setIsSettingsOpen(true);
@@ -1414,6 +1419,7 @@ const BuildPage = () => {
 						<div className='flex items-center gap-3 min-w-0'>
 							{/* Back button */}
 							<button
+								aria-label='Close'
 								onClick={() => setIsPreviewMode(false)}
 								className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-400 dark:hover:bg-white/[0.07] dark:hover:text-white'>
 								<X size={16} />
@@ -1607,6 +1613,7 @@ const BuildPage = () => {
 										<Globe size={18} />
 									</button>
 									<button
+										aria-label='Download'
 										type='button'
 										className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'
 									>
@@ -1619,6 +1626,7 @@ const BuildPage = () => {
 										<ImageIcon size={18} />
 									</button>
 									<button
+										aria-label='Retry'
 										type='button'
 										onClick={() => {
 											const greeting = `Hi! I'm your ${agentName}. How can I help you today?`;
@@ -1934,6 +1942,7 @@ const BuildPage = () => {
 									<div className='flex items-center justify-between mt-2 pt-2 border-t border-zinc-100/50 dark:border-zinc-800/50'>
 										{/* Plus button */}
 										<button 
+											aria-label='Add' 
 											type='button'
 											onClick={() => toast.info('File attachment is not supported yet.')}
 											className='flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-50 dark:text-zinc-500 dark:hover:bg-zinc-800'
@@ -1950,6 +1959,7 @@ const BuildPage = () => {
 
 											{/* Mic */}
 											<button 
+												aria-label='Voice input' 
 												type='button'
 												onClick={() => toast.info('Voice input is not supported yet.')}
 												className='flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-50 dark:text-zinc-500 dark:hover:bg-zinc-800'
@@ -2065,6 +2075,10 @@ const BuildPage = () => {
 										{/* Incognito toggle switch */}
 										<div className='flex items-center gap-2'>
 											<button
+												type='button'
+												role='switch'
+												aria-checked={incognito}
+												aria-label='Incognito mode'
 												onClick={() => setIncognito(!incognito)}
 												className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
 													incognito ? 'bg-primary-400 dark:bg-primary-400' : 'bg-zinc-200 dark:bg-zinc-800'
@@ -2332,6 +2346,10 @@ const BuildPage = () => {
 												</div>
 											</div>
 											<button
+												type='button'
+												role='switch'
+												aria-checked={allowSelfUpdates}
+												aria-label='Allow self updates'
 												onClick={() => setAllowSelfUpdates(!allowSelfUpdates)}
 												className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
 													allowSelfUpdates ? 'bg-primary-400 dark:bg-primary-400' : 'bg-zinc-200 dark:bg-zinc-800'
@@ -2383,6 +2401,10 @@ const BuildPage = () => {
 																	{trigger.type}
 																</span>
 																<button
+																	type='button'
+																	role='switch'
+																	aria-checked={trigger.is_active}
+																	aria-label='Trigger active'
 																	onClick={() => handleToggleTrigger(trigger.id, trigger.is_active)}
 																	className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
 																		trigger.is_active ? 'bg-primary-400' : 'bg-zinc-200 dark:bg-zinc-800'
@@ -2411,6 +2433,7 @@ const BuildPage = () => {
 														</div>
 														{trigger.token && (
 															<button
+																aria-label='Copy'
 																onClick={() => handleCopyWebhookUrl(webhookUrlFor(trigger))}
 																className='flex items-center gap-1.5 truncate text-left text-[10px] font-semibold text-zinc-400 hover:text-primary-600 dark:text-zinc-500 dark:hover:text-primary-400'>
 																<Copy size={10} className='shrink-0' />
@@ -3041,6 +3064,7 @@ const BuildPage = () => {
 							<div className='flex h-16 shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-5 dark:border-white/10 dark:bg-zinc-900'>
 								<h3 className='text-[16px] font-black text-zinc-900 dark:text-white'>Add a tool</h3>
 								<button
+									aria-label='Close'
 									onClick={() => setIsAddAppOpen(false)}
 									className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-500 dark:hover:bg-zinc-800'>
 									<X size={18} />
@@ -3117,6 +3141,7 @@ const BuildPage = () => {
 													</div>
 												</div>
 												<button
+													aria-label='Add'
 													onClick={() => handleAttachNode(node)}
 													disabled={createToolBindingMutation.isPending}
 													className='flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 active:scale-90 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white transition shadow-2xs'>
@@ -3144,6 +3169,7 @@ const BuildPage = () => {
 													</div>
 												</div>
 												<button
+													aria-label='Add'
 													onClick={() => handleAttachWorkflow(workflow)}
 													disabled={attachWorkflowMutation.isPending}
 													className='flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 active:scale-90 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white transition shadow-2xs'>

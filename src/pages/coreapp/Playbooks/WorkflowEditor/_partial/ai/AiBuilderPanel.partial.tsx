@@ -544,6 +544,7 @@ const AiBuilderPanel = () => {
 								</button>
 							) : (
 								<button
+									aria-label='Submit'
 									type='button'
 									onClick={handleSend}
 									disabled={!promptInput.trim()}

@@ -48,6 +48,7 @@ const ArtifactVersionsModal = ({ ws, artifactId, onClose }: IArtifactVersionsMod
 								</p>
 							</div>
 							<button
+								aria-label='Download'
 								onClick={() =>
 									downloadMutation.mutate({ artifactId: v.id, filename: artifact.filename })
 								}

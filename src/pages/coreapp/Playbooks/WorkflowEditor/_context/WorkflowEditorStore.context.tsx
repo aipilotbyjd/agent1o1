@@ -32,6 +32,7 @@ export type TWorkflowEditorAction =
 	  }
 	| { type: 'ADD_TEMPLATE'; defKeys: string[]; name: string }
 	| { type: 'MOVE_NODE'; id: string; position: TCanvasPosition }
+	| { type: 'REQUEST_NODE_TEST'; id: string }
 	| { type: 'SELECT_NODE'; id: string | null }
 	| { type: 'SELECT_NODES'; ids: string[] }
 	| { type: 'SELECT_ALL_NODES' }
@@ -176,6 +177,8 @@ export const initialWorkflowEditorState: TWorkflowEditorState = {
 		diffViewerOpen: false,
 		nodeDocOpen: false,
 		nodeDocNodeId: null,
+		nodeTestRequestId: 0,
+		nodeTestRequestNodeId: null,
 		nodeExpandedOpen: false,
 		nodeExpandedId: null,
 		stepMode: false,
@@ -293,6 +296,15 @@ export const workflowEditorReducer = (
 				},
 			};
 		}
+		case 'REQUEST_NODE_TEST':
+			return {
+				...state,
+				ui: {
+					...state.ui,
+					nodeTestRequestId: state.ui.nodeTestRequestId + 1,
+					nodeTestRequestNodeId: action.id,
+				},
+			};
 		case 'MOVE_NODE': {
 			const next = withHistory(state);
 			return {

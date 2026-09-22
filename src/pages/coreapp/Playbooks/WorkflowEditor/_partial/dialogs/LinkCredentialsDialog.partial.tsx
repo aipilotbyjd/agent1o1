@@ -206,6 +206,7 @@ const LinkCredentialsDialog = () => {
 				
 				{/* Top-Right Close Button */}
 				<button
+					aria-label='Close'
 					type='button'
 					onClick={handleClose}
 					className='absolute top-4 right-4 z-10 flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-800 dark:border-white/10 dark:text-zinc-500 dark:hover:bg-white/[0.06] dark:hover:text-white transition'>

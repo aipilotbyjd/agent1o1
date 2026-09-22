@@ -96,6 +96,7 @@ const NodeExpandedView = () => {
 						</div>
 
 						<button
+							aria-label='Close'
 							type='button'
 							onClick={() => dispatch({ type: 'SET_NODE_EXPANDED', open: false })}
 							className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/[0.07] dark:hover:text-white'>

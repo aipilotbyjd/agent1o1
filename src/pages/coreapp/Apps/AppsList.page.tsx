@@ -1750,6 +1750,7 @@ const DetailModalContent = ({
 				exit={{ opacity: 0, scale: 0.96, y: 15 }}
 				className='relative w-full max-w-md rounded-3xl border border-slate-200/80 bg-white p-6 shadow-2xl dark:border-zinc-800/80 dark:bg-[#11131c]'>
 				<button
+					aria-label='Close'
 					onClick={onClose}
 					className='hover:text-slate-650 absolute top-4 right-4 cursor-pointer rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300'>
 					<CloseIcon className='h-4.5 w-4.5' />

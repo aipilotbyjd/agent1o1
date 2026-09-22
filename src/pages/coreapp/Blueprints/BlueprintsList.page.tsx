@@ -664,6 +664,7 @@ const BlueprintsListPage = () => {
 							className='relative z-10 flex h-full w-full max-w-xl flex-col border-l border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950'>
 							{/* Close trigger button */}
 							<button
+								aria-label='Close'
 								onClick={() => setPreviewId(null)}
 								className='absolute top-4 right-4 rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-900'>
 								<X className='h-5 w-5' />

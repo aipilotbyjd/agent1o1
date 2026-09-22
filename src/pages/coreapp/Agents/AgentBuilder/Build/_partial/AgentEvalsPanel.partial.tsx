@@ -204,7 +204,7 @@ const SuiteDetail = ({
 			{/* Header */}
 			<div className='flex items-center justify-between gap-2'>
 				<div className='flex min-w-0 items-center gap-2'>
-					<button onClick={onBack} className='shrink-0 text-zinc-400 hover:text-zinc-600'>
+					<button aria-label='Previous' onClick={onBack} className='shrink-0 text-zinc-400 hover:text-zinc-600'>
 						<ChevronLeft size={14} />
 					</button>
 					<div className='min-w-0'>
@@ -248,7 +248,7 @@ const SuiteDetail = ({
 				<div className='space-y-2.5 rounded-xl border border-zinc-100 bg-zinc-50/40 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
 					<div className='flex items-center justify-between'>
 						<span className='text-[11px] font-black text-zinc-700 dark:text-zinc-300'>New case</span>
-						<button onClick={resetForm} className='text-zinc-400 hover:text-zinc-600'>
+						<button aria-label='Close' onClick={resetForm} className='text-zinc-400 hover:text-zinc-600'>
 							<X size={13} />
 						</button>
 					</div>
@@ -307,6 +307,7 @@ const SuiteDetail = ({
 								/>
 								{form.assertions.length > 1 && (
 									<button
+										aria-label='Close'
 										onClick={() =>
 											setForm((f) => ({
 												...f,
@@ -497,7 +498,7 @@ const AgentEvalsPanel = ({ ws, agentId }: TProps) => {
 				<div className='space-y-2.5 rounded-xl border border-zinc-100 bg-zinc-50/40 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
 					<div className='flex items-center justify-between'>
 						<span className='text-[11px] font-black text-zinc-700 dark:text-zinc-300'>New suite</span>
-						<button onClick={resetForm} className='text-zinc-400 hover:text-zinc-600'>
+						<button aria-label='Close' onClick={resetForm} className='text-zinc-400 hover:text-zinc-600'>
 							<X size={13} />
 						</button>
 					</div>

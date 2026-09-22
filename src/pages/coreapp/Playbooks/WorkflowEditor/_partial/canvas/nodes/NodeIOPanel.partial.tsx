@@ -107,6 +107,7 @@ const FilterBox = ({
 		/>
 		{value && (
 			<button
+				aria-label='Close'
 				type='button'
 				onClick={() => onChange('')}
 				className='absolute right-2 text-zinc-400 transition hover:text-zinc-600 dark:hover:text-zinc-200'>

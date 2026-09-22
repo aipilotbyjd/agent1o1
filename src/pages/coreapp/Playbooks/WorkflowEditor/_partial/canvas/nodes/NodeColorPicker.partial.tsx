@@ -41,6 +41,7 @@ const NodeColorPicker = ({ nodeId, currentColor }: { nodeId: string; currentColo
 					<div className='mb-2 flex items-center justify-between px-1'>
 						<span className='text-[11px] font-bold text-zinc-500'>Node color</span>
 						<button
+							aria-label='Close'
 							type='button'
 							onClick={() => setOpen(false)}
 							className='flex h-5 w-5 items-center justify-center rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-white'>

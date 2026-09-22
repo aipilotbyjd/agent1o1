@@ -71,6 +71,7 @@ const NodeFields = ({ nodeId, fields, values, forceExpanded }: Props) => {
 
 			{!forceExpanded && extra.length > 0 && (
 				<button
+					aria-label='Toggle sidebar'
 					type='button'
 					onClick={() => setExpanded((value) => !value)}
 					className='mt-0.5 flex cursor-pointer items-center gap-1.5 self-start rounded-md border border-zinc-200 bg-white px-2 py-1 text-[10px] font-semibold text-zinc-500 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'>

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useReactFlow } from '@xyflow/react';
 import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
 import { useRunWorkflow } from '../_hooks/useRunWorkflow.hook';
 
@@ -10,10 +11,21 @@ export const isTypingTarget = (target: EventTarget | null) => {
 export const useEditorHotkeys = () => {
 	const { dispatch, state } = useWorkflowEditor();
 	const { runWorkflow, stopRun } = useRunWorkflow();
+	// Safe here: WorkflowEditorLayout mounts ReactFlowProvider above this page.
+	const reactFlow = useReactFlow();
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			const mod = event.metaKey || event.ctrlKey;
+
+			// While the user is typing, the field owns the keyboard. Only Escape (close
+			// floating UI) and Cmd/Ctrl+Enter (run — an explicit gesture no input here
+			// binds) still reach the canvas. Everything else belongs to the input:
+			// ⌘Z has to undo the text rather than the graph, and ⌘⇧V is "paste without
+			// formatting" inside a field, not the version diff viewer.
+			if (isTypingTarget(event.target) && event.key !== 'Escape' && !(mod && event.key === 'Enter')) {
+				return;
+			}
 
 			// Undo/Redo
 			if (mod && event.key.toLowerCase() === 'z' && !event.shiftKey) {
@@ -144,6 +156,27 @@ export const useEditorHotkeys = () => {
 				return;
 			}
 
+			// Fit view (Cmd+Shift+F) — was advertised in the cheat sheet but never bound.
+			if (mod && event.shiftKey && event.key.toLowerCase() === 'f') {
+				event.preventDefault();
+				reactFlow.fitView({ padding: 0.18, duration: 240 });
+				return;
+			}
+
+			// Test the selected node inline (T). The cheat sheet used to promise Cmd+T,
+			// which the browser keeps for "new tab" and never delivers to the page, so
+			// this is a bare key like the other canvas actions (L, B).
+			if (
+				!isTypingTarget(event.target) &&
+				event.key.toLowerCase() === 't' &&
+				!mod &&
+				state.ui.selectedNodeId
+			) {
+				event.preventDefault();
+				dispatch({ type: 'REQUEST_NODE_TEST', id: state.ui.selectedNodeId });
+				return;
+			}
+
 			// Auto-layout
 			if (!isTypingTarget(event.target) && event.key.toLowerCase() === 'l') {
 				event.preventDefault();
@@ -193,6 +226,7 @@ export const useEditorHotkeys = () => {
 		state.ui.nodeDocOpen,
 		state.ui.stepMode,
 		state.ui.waitingForStep,
+		reactFlow,
 		runWorkflow,
 		stopRun,
 	]);

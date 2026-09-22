@@ -38,6 +38,7 @@ const Modal = ({
 							{title}
 						</div>
 						<button
+							aria-label='Close'
 							type='button'
 							onClick={onClose}
 							className='flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-800 dark:border-white/10 dark:text-zinc-500 dark:hover:bg-white/[0.06] dark:hover:text-white transition'>

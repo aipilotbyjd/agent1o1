@@ -155,6 +155,7 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose }: ISkillEditorDrawerP
 						</p>
 					</div>
 					<button
+						aria-label='Close'
 						onClick={onClose}
 						className='flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 dark:text-zinc-500 dark:hover:bg-zinc-900'>
 						<X size={16} />
@@ -229,6 +230,8 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose }: ISkillEditorDrawerP
 						<div className='flex flex-wrap gap-2'>
 							{SKILL_ICON_OPTIONS.map(({ name, Icon }) => (
 								<button
+									aria-label={name}
+									aria-pressed={form.icon === name}
 									key={name}
 									type='button'
 									onClick={() => setForm((f) => ({ ...f, icon: name }))}
@@ -309,6 +312,7 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose }: ISkillEditorDrawerP
 												</p>
 											</div>
 											<button
+												aria-label='Delete'
 												onClick={() => removeReferenceMutation.mutate(ref.id)}
 												className='shrink-0 cursor-pointer text-zinc-300 hover:text-rose-500 dark:text-zinc-600'>
 												<Trash2 size={13} />
@@ -371,6 +375,7 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose }: ISkillEditorDrawerP
 												</p>
 											</div>
 											<button
+												aria-label='Delete'
 												onClick={() => removeScriptMutation.mutate(script.id)}
 												className='shrink-0 cursor-pointer text-zinc-300 hover:text-rose-500 dark:text-zinc-600'>
 												<Trash2 size={13} />

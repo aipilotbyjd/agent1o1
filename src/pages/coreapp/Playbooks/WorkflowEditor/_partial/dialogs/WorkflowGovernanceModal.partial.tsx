@@ -489,6 +489,7 @@ const WorkflowGovernanceModal = () => {
 														className="flex-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs outline-none select-all dark:border-zinc-800 dark:bg-zinc-950"
 													/>
 													<button
+														aria-label='Copy'
 														type="button"
 														onClick={() => copyLink(share.id, share.share_url)}
 														className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:text-zinc-400 transition"

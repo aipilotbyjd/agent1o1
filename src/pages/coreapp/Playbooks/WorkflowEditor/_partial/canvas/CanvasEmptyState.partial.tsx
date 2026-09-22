@@ -310,6 +310,7 @@ const CanvasEmptyState = () => {
 																<span className='truncate max-w-40'>{file.name}</span>
 																<span className='text-[9px] text-zinc-400 font-medium'>({file.size})</span>
 																<button
+																	aria-label='Remove attached file'
 																	type='button'
 																	onClick={() => setAttachedFiles((prev) => prev.filter((_, i) => i !== idx))}
 																	className='hover:text-red-500 transition text-zinc-450 p-0.5 rounded'>
