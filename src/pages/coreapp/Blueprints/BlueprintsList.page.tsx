@@ -492,7 +492,7 @@ const BlueprintsListPage = () => {
 								<select
 									value={selectedCategory}
 									onChange={(e) => setSelectedCategory(e.target.value)}
-									className='shadow-3xs w-full cursor-pointer appearance-none rounded-xl border border-zinc-200/80 bg-white py-2 pr-8 pl-9 text-xs text-zinc-700 focus:ring-1 focus:ring-primary-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300'>
+									className='shadow-3xs w-full cursor-pointer appearance-none rounded-xl bg-none border border-zinc-200/80 bg-white py-2 pr-8 pl-9 text-xs text-zinc-700 focus:ring-1 focus:ring-primary-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300'>
 									<option value=''>All Categories</option>
 									{(activeTab === 'workflows' ? wfCategories : agentCategories).map((cat) => (
 										<option key={cat.category} value={cat.category}>
@@ -532,7 +532,7 @@ const BlueprintsListPage = () => {
 									}
 									aria-label='Sort templates'
 									style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
-									className='shadow-3xs cursor-pointer appearance-none rounded-xl border border-zinc-200/80 bg-white py-1.5 pr-8 pl-3 text-[11px] text-zinc-600 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400'>
+									className='shadow-3xs cursor-pointer appearance-none rounded-xl bg-none border border-zinc-200/80 bg-white py-1.5 pr-8 pl-3 text-[11px] text-zinc-600 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400'>
 									<option value='latest'>Latest Added</option>
 									<option value='popular'>Popularity</option>
 									<option value='alpha'>Alphabetical</option>

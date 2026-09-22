@@ -538,7 +538,7 @@ const UsagePage = () => {
 							<select
 								value={txType}
 								onChange={(e) => setTxType(e.target.value)}
-								className='cursor-pointer appearance-none rounded-xl border border-zinc-200 bg-white py-1.5 pr-8 pl-3 text-xs font-bold text-zinc-700 shadow-xs transition hover:border-zinc-300 focus:outline-hidden dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300'>
+								className='cursor-pointer appearance-none rounded-xl border border-zinc-200 bg-white bg-none py-1.5 pr-8 pl-3 text-xs font-bold text-zinc-700 shadow-xs transition hover:border-zinc-300 focus:outline-hidden dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300'>
 								<option value='all'>All types</option>
 								{Object.keys(SOURCE_TYPE_LABELS).map((t) => (
 									<option key={t} value={t}>

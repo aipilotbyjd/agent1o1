@@ -379,7 +379,7 @@ const ProfilePage = () => {
 								value={activeWorkspaceId}
 								disabled={isSwitching || workspaces.length === 0}
 								onChange={(e) => switchWorkspace(e.target.value)}
-								className={`${inputClass} appearance-none pr-11 disabled:cursor-not-allowed disabled:opacity-60`}>
+								className={`${inputClass} appearance-none bg-none pr-11 disabled:cursor-not-allowed disabled:opacity-60`}>
 								{workspaces.length === 0 && <option value=''>{workspaceName}</option>}
 								{workspaces.map((ws) => (
 									<option key={ws.id} value={ws.id}>
@@ -409,7 +409,7 @@ const ProfilePage = () => {
 								defaultValue='Asia/Kolkata'
 								disabled
 								title='Timezone cannot be saved yet'
-								className={`${inputClass} appearance-none pr-11 disabled:cursor-not-allowed disabled:opacity-60`}>
+								className={`${inputClass} appearance-none bg-none pr-11 disabled:cursor-not-allowed disabled:opacity-60`}>
 								<option value='Asia/Kolkata'>Asia/Kolkata</option>
 								<option value='America/New_York'>America/New_York</option>
 								<option value='Europe/London'>Europe/London</option>

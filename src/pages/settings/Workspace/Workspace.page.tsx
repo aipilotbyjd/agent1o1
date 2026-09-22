@@ -228,7 +228,7 @@ const WorkspacePage = () => {
 								aria-label='Timezone'
 								value={timezone}
 								onChange={(e) => setTimezone(e.target.value)}
-								className={`${inputClass} appearance-none pr-11`}>
+								className={`${inputClass} appearance-none bg-none pr-11`}>
 								<option value='Asia/Kolkata'>Asia/Kolkata</option>
 								<option value='America/New_York'>America/New_York</option>
 								<option value='Europe/London'>Europe/London</option>

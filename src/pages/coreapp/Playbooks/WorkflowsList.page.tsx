@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useOutletContext, useNavigate, useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -80,6 +81,7 @@ const ROOT_FOLDER_ID = '__root__';
 
 type TListTab = 'all' | 'starred' | 'published' | 'drafts';
 type TSortOption = 'updated' | 'name' | 'lastRun' | 'nodes';
+type TMenuAnchor = { top: number; left: number; flip: boolean };
 
 const LIST_TABS: { id: TListTab; label: string }[] = [
 	{ id: 'all', label: 'All Workflows' },
@@ -264,7 +266,8 @@ const WorkflowsListPage = () => {
 	const renameInputRef = useRef<HTMLInputElement>(null);
 
 	const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-	const [menuAnchor, setMenuAnchor] = useState<{ top: number; left: number } | null>(null);
+	const [menuAnchor, setMenuAnchor] = useState<TMenuAnchor | null>(null);
+	const menuAnchorRef = useRef<TMenuAnchor | null>(null);
 	const [activeFolderMenuId, setActiveFolderMenuId] = useState<string | null>(null);
 	const [activeTab, setActiveTab] = useState<TListTab>('all');
 	const [sortBy, setSortBy] = useState<TSortOption>('updated');
@@ -293,9 +296,23 @@ const WorkflowsListPage = () => {
 			setActiveFolderMenuId(null);
 			setMenuAnchor(null);
 		};
+		const handleReposition = () => {
+			setActiveMenuId((current) => (menuAnchorRef.current ? null : current));
+			setMenuAnchor(null);
+		};
 		window.addEventListener('click', handleGlobalClick);
-		return () => window.removeEventListener('click', handleGlobalClick);
+		window.addEventListener('scroll', handleReposition, true);
+		window.addEventListener('resize', handleReposition);
+		return () => {
+			window.removeEventListener('click', handleGlobalClick);
+			window.removeEventListener('scroll', handleReposition, true);
+			window.removeEventListener('resize', handleReposition);
+		};
 	}, []);
+
+	useEffect(() => {
+		menuAnchorRef.current = menuAnchor;
+	}, [menuAnchor]);
 
 	const triggerToast = (message: string, type: 'success' | 'info' = 'success') => {
 		setToast({ message, type });
@@ -590,13 +607,13 @@ const WorkflowsListPage = () => {
 	};
 
 	const menuItemClass =
-		'flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-800';
+		'text-text-main flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold transition-colors hover:bg-slate-50 dark:hover:bg-white/5';
 
 	const renderMoveWorkflowMenu = (workflow: IWorkflow) => {
 		if (!workflow.folderId && folders.length === 0) return null;
 		return (
-			<div className='my-1 max-h-44 overflow-y-auto border-y border-slate-100 py-1 dark:border-zinc-800/60'>
-				<p className='text-slate-450 px-3 py-1 text-[9px] font-black tracking-wider uppercase dark:text-zinc-500'>
+			<div className='border-border-main my-1 max-h-44 overflow-y-auto border-y py-1'>
+				<p className='text-text-muted px-3 py-1 text-[9px] font-black tracking-wider uppercase'>
 					Move to folder
 				</p>
 				{workflow.folderId && (
@@ -627,15 +644,14 @@ const WorkflowsListPage = () => {
 		);
 	};
 
-	const renderWorkflowMenu = (workflow: IWorkflow, anchor?: { top: number; left: number }) => (
+	const renderWorkflowMenu = (workflow: IWorkflow, portaled = false) => (
 		<motion.div
 			initial={{ opacity: 0, scale: 0.95, y: 5 }}
 			animate={{ opacity: 1, scale: 1, y: 0 }}
 			exit={{ opacity: 0, scale: 0.95, y: 5 }}
 			onClick={(e) => e.stopPropagation()}
-			style={anchor ? { position: 'fixed', top: anchor.top, left: anchor.left } : undefined}
-			className={`z-50 w-52 rounded-xl border border-slate-200/80 bg-white/95 p-1.5 text-left shadow-2xl backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/95 ${
-				anchor ? '' : 'absolute right-0 mt-2'
+			className={`border-border-main bg-bg-card z-50 w-52 rounded-xl border p-1.5 text-left shadow-2xl ${
+				portaled ? '' : 'absolute right-0 mt-2'
 			}`}>
 			<button
 				type='button'
@@ -708,7 +724,7 @@ const WorkflowsListPage = () => {
 					setActiveMenuId(null);
 					handleDelete(workflow.id, e);
 				}}
-				className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20'>
+				className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10'>
 				<Trash2 size={12} /> Delete
 			</button>
 		</motion.div>
@@ -730,26 +746,44 @@ const WorkflowsListPage = () => {
 					}
 					if (anchored) {
 						const rect = e.currentTarget.getBoundingClientRect();
+						const flip = window.innerHeight - rect.bottom < 280;
 						setMenuAnchor({
-							top: Math.min(rect.bottom + 6, window.innerHeight - 320),
-							left: Math.max(rect.right - 208, 12),
+							top: flip ? rect.top - 6 : rect.bottom + 6,
+							left: Math.min(rect.right, window.innerWidth - 12),
+							flip,
 						});
 					} else {
 						setMenuAnchor(null);
 					}
 					setActiveMenuId(workflow.id);
 				}}
-				className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-zinc-800 ${
+				className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white ${
 					activeMenuId === workflow.id
-						? 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-white'
+						? 'bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white'
 						: ''
 				}`}>
 				<MoreVertical size={16} />
 			</button>
-			<AnimatePresence>
-				{activeMenuId === workflow.id &&
-					renderWorkflowMenu(workflow, anchored ? (menuAnchor ?? undefined) : undefined)}
-			</AnimatePresence>
+			{anchored ? (
+				menuAnchor &&
+				activeMenuId === workflow.id &&
+				createPortal(
+					<div
+						className='fixed z-[120]'
+						style={{
+							top: menuAnchor.top,
+							left: menuAnchor.left,
+							transform: `translateX(-100%)${menuAnchor.flip ? ' translateY(-100%)' : ''}`,
+						}}>
+						<AnimatePresence>{renderWorkflowMenu(workflow, true)}</AnimatePresence>
+					</div>,
+					document.body,
+				)
+			) : (
+				<AnimatePresence>
+					{activeMenuId === workflow.id && renderWorkflowMenu(workflow)}
+				</AnimatePresence>
+			)}
 		</div>
 	);
 
@@ -763,7 +797,7 @@ const WorkflowsListPage = () => {
 			className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border transition-colors ${
 				workflow.starred
 					? 'shadow-3xs border-amber-500/10 bg-amber-500/5 text-amber-500'
-					: 'border-transparent text-slate-300 hover:bg-slate-100/80 hover:text-slate-500 dark:hover:bg-zinc-800'
+					: 'border-transparent text-slate-300 hover:bg-slate-100/80 hover:text-slate-500 dark:text-zinc-500 dark:hover:bg-white/10 dark:hover:text-white'
 			}`}>
 			<Star size={15} className={workflow.starred ? 'fill-amber-500' : ''} />
 		</motion.button>
@@ -1336,7 +1370,7 @@ const WorkflowsListPage = () => {
 								aria-label='Sort workflows'
 								value={sortBy}
 								onChange={(event) => setSortBy(event.target.value as TSortOption)}
-								className='border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card h-10 w-full cursor-pointer appearance-none rounded-xl border pr-8 pl-9 text-xs font-bold text-slate-700 shadow-2xs transition outline-none focus:border-[#CFF54A] dark:text-white'>
+								className='border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card h-10 w-full cursor-pointer appearance-none rounded-xl bg-none border pr-8 pl-9 text-xs font-bold text-slate-700 shadow-2xs transition outline-none focus:border-[#CFF54A] dark:text-white'>
 								{SORT_OPTIONS.map((option) => (
 									<option key={option.id} value={option.id}>
 										{option.label}
@@ -1516,9 +1550,9 @@ const WorkflowsListPage = () => {
 															: folder.id,
 													);
 												}}
-												className={`flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-zinc-800 dark:hover:text-white ${
+												className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white ${
 													activeFolderMenuId === folder.id
-														? 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-white'
+														? 'bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white'
 														: ''
 												}`}>
 												<MoreVertical size={14} />
@@ -1530,7 +1564,7 @@ const WorkflowsListPage = () => {
 														animate={{ opacity: 1, scale: 1, y: 0 }}
 														exit={{ opacity: 0, scale: 0.95, y: 5 }}
 														onClick={(e) => e.stopPropagation()}
-														className='absolute right-0 z-50 mt-2 w-52 rounded-xl border border-slate-200/80 bg-white/95 p-1.5 text-left shadow-2xl backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/95'>
+														className='border-border-main bg-bg-card absolute right-0 z-50 mt-2 w-52 rounded-xl border p-1.5 text-left shadow-2xl'>
 														<button
 															type='button'
 															onClick={() => {
@@ -1585,7 +1619,7 @@ const WorkflowsListPage = () => {
 															onClick={() =>
 																handleDeleteFolder(folder)
 															}
-															className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20'>
+															className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10'>
 															<Trash2 size={12} /> Delete folder
 														</button>
 													</motion.div>
@@ -1785,27 +1819,29 @@ const WorkflowsListPage = () => {
 												</div>
 											) : (
 												<div className='overflow-x-auto rounded-2xl border border-slate-200/60 bg-white/80 shadow-2xs backdrop-blur-md dark:border-zinc-800/60 dark:bg-zinc-950/40'>
-													<table className='w-full min-w-[920px] border-collapse text-left text-xs'>
+													<table className='w-full min-w-[640px] border-collapse text-left text-xs'>
 														<thead>
 															<tr className='border-b border-slate-200/60 bg-slate-50/50 text-[10px] font-black tracking-widest text-slate-400 uppercase dark:border-zinc-800/40 dark:bg-zinc-900/20 dark:text-zinc-500'>
 																<th className='w-10 px-3 py-4' />
-																<th className='px-6 py-4'>
+																<th className='px-4 py-4'>
 																	Workflow Name
 																</th>
-																<th className='px-6 py-4'>
+																<th className='hidden px-4 py-4 xl:table-cell'>
 																	Integrations
 																</th>
-																<th className='px-6 py-4'>Nodes</th>
-																<th className='px-6 py-4'>
+																<th className='hidden px-4 py-4 lg:table-cell'>
+																	Nodes
+																</th>
+																<th className='hidden px-4 py-4 lg:table-cell'>
 																	Updated
 																</th>
-																<th className='px-6 py-4'>
+																<th className='hidden px-4 py-4 xl:table-cell'>
 																	Last Run
 																</th>
-																<th className='px-6 py-4'>
+																<th className='px-4 py-4'>
 																	Status
 																</th>
-																<th className='px-6 py-4 text-right'>
+																<th className='px-4 py-4 text-right'>
 																	Actions
 																</th>
 															</tr>
@@ -1839,7 +1875,7 @@ const WorkflowsListPage = () => {
 																		}>
 																		{renderStarButton(wf)}
 																	</td>
-																	<td className='px-6 py-4 font-extrabold text-slate-800 dark:text-zinc-200'>
+																	<td className='max-w-[260px] px-4 py-4 font-extrabold text-slate-800 dark:text-zinc-200'>
 																		{renamingId === wf.id ? (
 																			renderRenameInput(wf)
 																		) : (
@@ -1853,7 +1889,7 @@ const WorkflowsListPage = () => {
 																			</div>
 																		)}
 																	</td>
-																	<td className='px-6 py-4'>
+																	<td className='hidden px-4 py-4 xl:table-cell'>
 																		<div className='flex items-center gap-1.5'>
 																			{wf.apps.length > 0 ? (
 																				wf.apps.map(
@@ -1875,16 +1911,16 @@ const WorkflowsListPage = () => {
 																			)}
 																		</div>
 																	</td>
-																	<td className='px-6 py-4 font-semibold text-slate-500 dark:text-zinc-400'>
+																	<td className='hidden px-4 py-4 font-semibold text-slate-500 lg:table-cell dark:text-zinc-400'>
 																		{wf.nodesCount}
 																	</td>
-																	<td className='px-6 py-4 font-semibold text-slate-500 dark:text-zinc-400'>
+																	<td className='hidden px-4 py-4 font-semibold text-slate-500 lg:table-cell dark:text-zinc-400'>
 																		{wf.lastEdited}
 																	</td>
-																	<td className='px-6 py-4 font-semibold text-slate-500 dark:text-zinc-400'>
+																	<td className='hidden px-4 py-4 font-semibold text-slate-500 xl:table-cell dark:text-zinc-400'>
 																		{wf.lastRun}
 																	</td>
-																	<td className='px-6 py-4'>
+																	<td className='px-4 py-4'>
 																		<div className='flex flex-col items-start gap-1'>
 																			<span
 																				className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black tracking-wider uppercase ${
@@ -1913,7 +1949,7 @@ const WorkflowsListPage = () => {
 																		</div>
 																	</td>
 																	<td
-																		className='px-6 py-4 text-right whitespace-nowrap'
+																		className='px-4 py-4 text-right whitespace-nowrap'
 																		onClick={(e) =>
 																			e.stopPropagation()
 																		}>
