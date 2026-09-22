@@ -11,21 +11,21 @@ import {
 	Trash2,
 	Edit2,
 	UserPlus,
+	Mail,
 	ArrowRight,
-	Zap,
-	Info,
 	Check,
 	X,
 	Layers,
 	Cpu,
-	Crown,
+	ChevronDown,
 } from 'lucide-react';
 import useDarkMode from '@/hooks/useDarkMode';
 import DARK_MODE from '@/constants/darkMode.constant';
-import { LogoLight, LogoDark } from '@/assets/images';
+import AppLogo from '@/components/AppLogo';
 import { useAuth } from '@/context/auth';
 import type { TWorkspace } from '@/types/workspace.type';
 import { useWorkspaceContext } from '@/context/workspace';
+import type { TAssignableWorkspaceRole } from '@/types/workspace.type';
 import pages, { TPages } from '@/Routes/pages';
 
 import {
@@ -35,6 +35,7 @@ import {
 	useDeleteWorkspace,
 	useLeaveWorkspace,
 } from '@/api/modules/workspaces';
+import { useInviteWorkspaceMember } from '@/api/modules/workspace-members';
 import Spinner from '@/components/ui/Spinner';
 import { useConfirm } from '@/context/confirm';
 
@@ -46,6 +47,15 @@ const getInitials = (name: string) =>
 		.join('')
 		.slice(0, 2)
 		.toUpperCase();
+
+/** Owner is derived from workspace ownership, so it is never offered here —
+ *  the same set the members settings screen grants. */
+const INVITE_ROLES: { value: TAssignableWorkspaceRole; label: string; hint: string }[] = [
+	{ value: 'admin', label: 'Admin', hint: 'Manage members, settings, and workflows.' },
+	{ value: 'editor', label: 'Editor', hint: 'Create and edit workflows and agents.' },
+	{ value: 'member', label: 'Member', hint: 'View and run workflows and agents.' },
+	{ value: 'viewer', label: 'Viewer', hint: 'Read-only access to workflows and runs.' },
+];
 
 // ─── types ─────────────────────────────────────────────────────────────────────
 interface ITeammate {
@@ -184,7 +194,7 @@ const WorkspacesPage = () => {
 				activeWorkspaceId,
 			)
 		: pages.choose.to;
-	const { userData } = useAuth();
+	const { userData, onLogout } = useAuth();
 	const { confirm } = useConfirm();
 
 	// API
@@ -198,10 +208,15 @@ const WorkspacesPage = () => {
 	const [searchQuery, setSearchQuery] = useState('');
 	const [selectedCategory, setSelectedCategory] = useState<TabId>('all');
 	const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+	const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(
 		() => searchParams.get('create') === 'true',
 	);
 	const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+	const [inviteWorkspace, setInviteWorkspace] = useState<IWorkspaceCard | null>(null);
+	const [inviteEmail, setInviteEmail] = useState('');
+	const [inviteRole, setInviteRole] = useState<TAssignableWorkspaceRole>('member');
+	const inviteMemberMutation = useInviteWorkspaceMember(inviteWorkspace?.id ?? '');
 	const [selectedWorkspace, setSelectedWorkspace] = useState<IWorkspaceCard | null>(null);
 
 	// Create form state
@@ -233,7 +248,10 @@ const WorkspacesPage = () => {
 	}, []);
 
 	useEffect(() => {
-		const handleGlobalClick = () => setActiveMenuId(null);
+		const handleGlobalClick = () => {
+			setActiveMenuId(null);
+			setIsAccountMenuOpen(false);
+		};
 		window.addEventListener('click', handleGlobalClick);
 		return () => window.removeEventListener('click', handleGlobalClick);
 	}, []);
@@ -322,6 +340,32 @@ const WorkspacesPage = () => {
 		}
 	};
 
+	const openInviteModal = (wsp: IWorkspaceCard) => {
+		setInviteWorkspace(wsp);
+		setInviteEmail('');
+		setInviteRole('member');
+	};
+
+	const closeInviteModal = () => {
+		setInviteWorkspace(null);
+		setInviteEmail('');
+		setInviteRole('member');
+	};
+
+	const handleInviteMember = async (e: React.FormEvent) => {
+		e.preventDefault();
+		const email = inviteEmail.trim();
+		if (!email || !inviteWorkspace) return;
+		try {
+			await inviteMemberMutation.mutateAsync({ email, role: inviteRole });
+			const name = inviteWorkspace.name;
+			closeInviteModal();
+			triggerToast(`Invitation sent to ${email} for "${name}"`);
+		} catch {
+			// handled by hook
+		}
+	};
+
 	const handleDeleteWorkspace = async (id: string, name: string) => {
 		const confirmed = await confirm({
 			title: 'Delete Workspace',
@@ -364,10 +408,7 @@ const WorkspacesPage = () => {
 		triggerToast(`Declined invitation from "${name}"`, 'info');
 	};
 
-	const userDisplayName =
-		(userData as { name?: string } | null)?.name ??
-		(userData as { email?: string } | null)?.email?.split('@')[0] ??
-		'User';
+	const userDisplayName = userData?.name ?? userData?.email?.split('@')[0] ?? 'User';
 	const userInitials = getInitials(userDisplayName);
 	const selectedTheme = THEME_OPTIONS[newWspThemeIdx];
 
@@ -417,11 +458,10 @@ const WorkspacesPage = () => {
 					tabIndex={0}
 					className='flex cursor-pointer items-center gap-3'
 					onClick={() => navigate(brandHomePath)}>
-					<img
-						src={isDarkTheme ? LogoDark : LogoLight}
-						alt='agent1o1'
-						className='h-[30px] w-auto'
-					/>
+					<AppLogo className='size-8' rounded='rounded-xl' alt='agent1o1' />
+					<span className='text-lg font-black tracking-tight text-zinc-950 dark:text-white'>
+						agent1o1
+					</span>
 					<span className='dark:border-zinc-850 rounded-full border border-slate-100 bg-slate-50 px-2.5 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-zinc-950 dark:text-zinc-400'>
 						v2.4
 					</span>
@@ -442,19 +482,84 @@ const WorkspacesPage = () => {
 						)}
 					</button>
 
-					{/* Profile / Account Indicator */}
-					<div className='flex cursor-pointer items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-900'>
-						<div className='text-primary-950 from-primary-400 to-primary-400 flex h-7.5 w-7.5 items-center justify-center rounded-lg bg-gradient-to-tr text-xs font-black'>
-							{userInitials}
-						</div>
-						<div className='hidden text-left sm:block'>
-							<div className='text-xs leading-tight font-bold text-slate-800 dark:text-zinc-200'>
-								{userDisplayName}
+					{/* Profile / Account Menu */}
+					<div className='relative'>
+						<button
+							type='button'
+							aria-haspopup='menu'
+							aria-expanded={isAccountMenuOpen}
+							onClick={(e) => {
+								e.stopPropagation();
+								setIsAccountMenuOpen((prev) => !prev);
+							}}
+							className='flex cursor-pointer items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 transition-colors hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/60'>
+							{userData?.avatar ? (
+								<img
+									src={userData.avatar}
+									alt=''
+									className='h-7.5 w-7.5 rounded-lg object-cover'
+								/>
+							) : (
+								<div className='text-primary-950 from-primary-400 to-primary-400 flex h-7.5 w-7.5 items-center justify-center rounded-lg bg-gradient-to-tr text-xs font-black'>
+									{userInitials}
+								</div>
+							)}
+							<div className='hidden text-left sm:block'>
+								<div className='text-xs leading-tight font-bold text-slate-800 dark:text-zinc-200'>
+									{userDisplayName}
+								</div>
+								<div className='text-[10px] font-medium text-slate-400 dark:text-zinc-500'>
+									Account
+								</div>
 							</div>
-							<div className='text-[10px] font-medium text-slate-400 dark:text-zinc-500'>
-								Account
-							</div>
-						</div>
+							<ChevronDown
+								size={14}
+								className={`text-slate-400 transition-transform dark:text-zinc-500 ${
+									isAccountMenuOpen ? 'rotate-180' : ''
+								}`}
+							/>
+						</button>
+
+						<AnimatePresence>
+							{isAccountMenuOpen && (
+								<motion.div
+									initial={{ opacity: 0, scale: 0.95, y: 5 }}
+									animate={{ opacity: 1, scale: 1, y: 0 }}
+									exit={{ opacity: 0, scale: 0.95, y: 5 }}
+									onClick={(e) => e.stopPropagation()}
+									className='absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
+									<div className='border-b border-slate-100 px-3 py-2.5 dark:border-zinc-800'>
+										<div className='truncate text-xs font-bold text-slate-800 dark:text-zinc-200'>
+											{userDisplayName}
+										</div>
+										{userData?.email && (
+											<div className='truncate text-[10px] font-medium text-slate-400 dark:text-zinc-500'>
+												{userData.email}
+											</div>
+										)}
+									</div>
+									<button
+										type='button'
+										onClick={() => {
+											setIsAccountMenuOpen(false);
+											setIsCreateModalOpen(true);
+										}}
+										className='mt-1 flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-800'>
+										<Plus size={12} className='text-primary-500' /> Create
+										workspace
+									</button>
+									<button
+										type='button'
+										onClick={() => {
+											setIsAccountMenuOpen(false);
+											onLogout(true);
+										}}
+										className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 dark:hover:bg-rose-950/20'>
+										<LogOut size={12} /> Log out
+									</button>
+								</motion.div>
+							)}
+						</AnimatePresence>
 					</div>
 				</div>
 			</div>
@@ -656,12 +761,7 @@ const WorkspacesPage = () => {
 										}}
 										onDelete={handleDeleteWorkspace}
 										onLeave={handleLeaveWorkspace}
-										onInvite={(name) =>
-											triggerToast(
-												`Open members invite overlay for ${name}`,
-												'info',
-											)
-										}
+										onInvite={openInviteModal}
 									/>
 								))}
 							</AnimatePresence>
@@ -830,6 +930,125 @@ const WorkspacesPage = () => {
 				)}
 			</AnimatePresence>
 
+			{/* ── Invite Member Modal ── */}
+			<AnimatePresence>
+				{inviteWorkspace && (
+					<motion.div
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						exit={{ opacity: 0 }}
+						className='fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs'
+						onClick={closeInviteModal}>
+						<motion.div
+							initial={{ scale: 0.95, y: 15 }}
+							animate={{ scale: 1, y: 0 }}
+							exit={{ scale: 0.95, y: 15 }}
+							transition={{ duration: 0.2 }}
+							className='relative w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl sm:p-8 dark:border-zinc-800 dark:bg-[#0f111a]'
+							onClick={(e) => e.stopPropagation()}>
+							<button
+								type='button'
+								aria-label='Close'
+								onClick={closeInviteModal}
+								className='hover:text-slate-650 absolute top-6 right-6 cursor-pointer text-slate-400 transition-colors dark:hover:text-zinc-200'>
+								<X size={18} />
+							</button>
+
+							<div className='mb-6 flex items-center gap-3 text-left'>
+								<div
+									className='flex h-11 w-11 items-center justify-center rounded-xl text-xs font-black text-white shadow-sm'
+									style={{
+										background: `linear-gradient(135deg, ${inviteWorkspace.gradientFrom}, ${inviteWorkspace.gradientTo})`,
+									}}>
+									{getInitials(inviteWorkspace.name)}
+								</div>
+								<div>
+									<h3 className='text-lg leading-tight font-black text-slate-900 dark:text-white'>
+										Invite a member
+									</h3>
+									<p className='mt-0.5 text-[11px] font-semibold text-slate-400 dark:text-zinc-500'>
+										to {inviteWorkspace.name}
+									</p>
+								</div>
+							</div>
+
+							<form onSubmit={handleInviteMember} className='space-y-5'>
+								<div>
+									<ModalLabel>Email Address</ModalLabel>
+									<div className='relative'>
+										<Mail
+											size={14}
+											className='absolute top-3.5 left-4 text-slate-400 dark:text-zinc-500'
+										/>
+										<input
+											type='email'
+											required
+											autoFocus
+											aria-label='Invitee email address'
+											placeholder='teammate@company.com'
+											value={inviteEmail}
+											onChange={(e) => setInviteEmail(e.target.value)}
+											className='focus:border-primary-500 focus:ring-primary-500/10 dark:focus:border-primary-500 block h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pr-4 pl-10 text-xs font-semibold text-slate-900 transition-all outline-none focus:bg-white focus:ring-4 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:bg-zinc-950'
+										/>
+									</div>
+								</div>
+
+								<div>
+									<ModalLabel>Role</ModalLabel>
+									<div className='grid grid-cols-2 gap-2'>
+										{INVITE_ROLES.map((role) => (
+											<button
+												key={role.value}
+												type='button'
+												onClick={() => setInviteRole(role.value)}
+												className={`cursor-pointer rounded-xl border p-3 text-left transition-all ${
+													inviteRole === role.value
+														? 'border-primary-500 bg-primary-500/5 dark:border-primary-500'
+														: 'border-slate-200 bg-slate-50/50 hover:border-slate-300 dark:border-zinc-800 dark:bg-zinc-950/20 dark:hover:border-zinc-700'
+												}`}>
+												<div className='flex items-center justify-between'>
+													<span className='text-xs font-black text-slate-800 dark:text-zinc-200'>
+														{role.label}
+													</span>
+													{inviteRole === role.value && (
+														<Check
+															size={12}
+															strokeWidth={3}
+															className='text-primary-500'
+														/>
+													)}
+												</div>
+												<p className='mt-1 text-[10px] leading-snug font-semibold text-slate-400 dark:text-zinc-500'>
+													{role.hint}
+												</p>
+											</button>
+										))}
+									</div>
+								</div>
+
+								<div className='flex items-center justify-end gap-2.5 pt-2'>
+									<button
+										type='button'
+										onClick={closeInviteModal}
+										className='hover:text-slate-655 cursor-pointer rounded-xl px-5 py-2.5 text-xs font-bold text-slate-400 transition-colors dark:hover:text-zinc-200'>
+										Cancel
+									</button>
+									<button
+										type='submit'
+										disabled={inviteMemberMutation.isPending}
+										className='ws-btn-sheen from-primary-400 to-primary-400 text-primary-950 shadow-primary-500/20 flex h-9.5 cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r px-5 text-xs font-bold shadow-md transition-all hover:brightness-110 disabled:opacity-50'>
+										<UserPlus size={14} strokeWidth={2.5} />
+										{inviteMemberMutation.isPending
+											? 'Sending...'
+											: 'Send Invitation'}
+									</button>
+								</div>
+							</form>
+						</motion.div>
+					</motion.div>
+				)}
+			</AnimatePresence>
+
 			{/* ── Rename Modal ── */}
 			<AnimatePresence>
 				{isRenameModalOpen && (
@@ -933,7 +1152,7 @@ interface WorkspaceCardProps {
 	onRename: (wsp: IWorkspaceCard) => void;
 	onDelete: (id: string, name: string) => void;
 	onLeave: (id: string, name: string) => void;
-	onInvite: (name: string) => void;
+	onInvite: (wsp: IWorkspaceCard) => void;
 }
 
 const WorkspaceCard = ({
@@ -1112,9 +1331,12 @@ const WorkspaceCard = ({
 						</div>
 					))}
 					<button
+						type='button'
+						aria-label={`Invite a member to ${wsp.name}`}
+						title={`Invite a member to ${wsp.name}`}
 						onClick={(e) => {
 							e.stopPropagation();
-							onInvite(wsp.name);
+							onInvite(wsp);
 						}}
 						className='text-slate-555 hover:bg-primary-500 hover:text-primary-950 flex h-7.5 w-7.5 items-center justify-center rounded-full border border-dashed border-slate-300 bg-slate-50 transition-all hover:scale-105 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'>
 						<UserPlus size={10} />

@@ -22,19 +22,25 @@ import {
 	Star,
 	Calendar,
 	Clock,
+	Rocket,
+	ArrowUpDown,
+	CheckCircle2,
+	AlertTriangle,
+	FolderOpen,
 } from 'lucide-react';
 import { OutletContextType } from './_layouts/Playbooks.layout';
 import { useConfirm } from '@/context/confirm';
 import Breadcrumb from '@/components/layout/Breadcrumb';
 import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
-import paths, { withWorkspace } from '@/Routes/paths';
+import paths from '@/Routes/paths';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import { useWorkspaceContext } from '@/context/workspace';
 import {
 	useFolders,
 	useCreateFolder,
 	useUpdateFolder,
+	useDeleteFolder,
 	useMoveWorkflows,
 } from '@/api/modules/folders';
 import {
@@ -45,7 +51,6 @@ import {
 	useDuplicateWorkflow,
 	useToggleFavorite,
 	useActivateWorkflow,
-	useDeactivateWorkflow,
 	useExecuteWorkflow,
 } from '@/api/modules/workflows';
 
@@ -54,11 +59,14 @@ interface IWorkflow {
 	title: string;
 	description: string;
 	status: 'active' | 'inactive';
+	hasUnpublishedChanges: boolean;
 	lastRun: string;
+	lastRunAt: number;
 	folderId: string | null;
 	apps: string[];
 	starred?: boolean;
 	lastEdited: string;
+	updatedAt: number;
 	nodesCount: number;
 }
 
@@ -69,6 +77,24 @@ interface IFolder {
 }
 
 const ROOT_FOLDER_ID = '__root__';
+
+type TListTab = 'all' | 'starred' | 'published' | 'drafts';
+type TSortOption = 'updated' | 'name' | 'lastRun' | 'nodes';
+
+const LIST_TABS: { id: TListTab; label: string }[] = [
+	{ id: 'all', label: 'All Workflows' },
+	{ id: 'starred', label: 'Starred Favorites' },
+	{ id: 'published', label: 'Published' },
+	{ id: 'drafts', label: 'Drafts' },
+];
+
+const SORT_OPTIONS: { id: TSortOption; label: string }[] = [
+	{ id: 'updated', label: 'Recently updated' },
+	{ id: 'lastRun', label: 'Recently run' },
+	{ id: 'name', label: 'Name (A–Z)' },
+	{ id: 'nodes', label: 'Most nodes' },
+];
+
 const FOLDER_COLOR_OPTIONS = [
 	{ label: 'Indigo', value: '#4f46e5' },
 	{ label: 'Rose', value: '#f43f5e' },
@@ -102,11 +128,18 @@ const formatDate = (value: number | string | null | undefined) => {
 	return date.toLocaleDateString();
 };
 
+const toTimestamp = (value: number | string | null | undefined) => {
+	if (!value) return 0;
+	if (typeof value === 'number') return value < 1_000_000_000_000 ? value * 1000 : value;
+	const parsed = new Date(value).getTime();
+	return Number.isNaN(parsed) ? 0 : parsed;
+};
+
 const getAppNames = (nodeTypes: string[] | undefined) =>
 	(nodeTypes ?? []).map((type) => type.toLowerCase()).slice(0, 4);
 
 const AppBadge = ({ name }: { name: string }) => (
-	<span className='text-primary-600 shadow-3xs rounded-full border border-primary-100/60 bg-primary-50/30 px-2.5 py-0.5 text-[10px] font-bold capitalize transition-all duration-200 hover:border-primary-200/50 hover:bg-primary-50 dark:border-zinc-800/80 dark:bg-zinc-800/20 dark:text-primary-400 dark:hover:bg-primary-950/20'>
+	<span className='text-primary-600 shadow-3xs border-primary-100/60 bg-primary-50/30 hover:border-primary-200/50 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-950/20 rounded-full border px-2.5 py-0.5 text-[10px] font-bold capitalize transition-all duration-200 dark:border-zinc-800/80 dark:bg-zinc-800/20'>
 		{name}
 	</span>
 );
@@ -117,12 +150,9 @@ const WorkflowsListPage = () => {
 	const { confirm } = useConfirm();
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { activeWorkspaceId: fallbackWorkspaceId } = useWorkflowShellStore();
-	const { workspaces, activeWorkspace, activeWorkspaceId, role } = useWorkspaceContext();
+	const { workspaces, activeWorkspace, activeWorkspaceId } = useWorkspaceContext();
 
 	const currentWorkspaceId = activeWorkspaceId || fallbackWorkspaceId;
-	// Paths in `@/Routes/pages` are workspace-scoped templates here, unlike old's
-	// flat `/editor/...`; same helper the ported Agents list uses.
-	const toWorkspacePath = (to: string) => withWorkspace(to, currentWorkspaceId);
 
 	const workspaceSummary = useMemo(
 		() => workspaces.find((workspace) => workspace.id === activeWorkspaceId),
@@ -131,7 +161,7 @@ const WorkflowsListPage = () => {
 
 	const workspaceName = activeWorkspace?.name ?? workspaceSummary?.name ?? 'Workspace';
 	const workspaceSlug = activeWorkspace?.slug ?? workspaceSummary?.slug;
-	const workspaceRole = role ?? workspaceSummary?.role ?? null;
+	const workspaceRole = activeWorkspace?.role ?? workspaceSummary?.role ?? null;
 	const hasWorkspace = Boolean(activeWorkspaceId);
 
 	// Fetch folders + workflows from the backend
@@ -145,10 +175,10 @@ const WorkflowsListPage = () => {
 	const duplicateWorkflowMutation = useDuplicateWorkflow(currentWorkspaceId);
 	const toggleFavoriteMutation = useToggleFavorite(currentWorkspaceId);
 	const activateWorkflowMutation = useActivateWorkflow(currentWorkspaceId);
-	const deactivateWorkflowMutation = useDeactivateWorkflow(currentWorkspaceId);
 	const executeWorkflowMutation = useExecuteWorkflow(currentWorkspaceId);
 	const createFolderMutation = useCreateFolder(currentWorkspaceId);
 	const updateFolderMutation = useUpdateFolder(currentWorkspaceId);
+	const deleteFolderMutation = useDeleteFolder(currentWorkspaceId);
 	const moveWorkflowsMutation = useMoveWorkflows(currentWorkspaceId);
 
 	// Map backend folders → view model
@@ -170,11 +200,14 @@ const WorkflowsListPage = () => {
 				title: w.name,
 				description: w.description || 'No description provided.',
 				status: w.is_published ? 'active' : 'inactive',
+				hasUnpublishedChanges: w.has_unpublished_changes ?? false,
 				lastRun: formatDate(w.last_run_at),
+				lastRunAt: toTimestamp(w.last_run_at),
 				folderId: w.folder_id || null,
 				apps: getAppNames(w.node_types),
 				starred: w.is_favorite ?? false,
 				lastEdited: formatDate(w.updated_at),
+				updatedAt: toTimestamp(w.updated_at),
 				nodesCount: w.nodes_count ?? 0,
 			};
 		});
@@ -231,7 +264,10 @@ const WorkflowsListPage = () => {
 	const renameInputRef = useRef<HTMLInputElement>(null);
 
 	const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-	const [activeTab, setActiveTab] = useState<'all' | 'starred'>('all');
+	const [menuAnchor, setMenuAnchor] = useState<{ top: number; left: number } | null>(null);
+	const [activeFolderMenuId, setActiveFolderMenuId] = useState<string | null>(null);
+	const [activeTab, setActiveTab] = useState<TListTab>('all');
+	const [sortBy, setSortBy] = useState<TSortOption>('updated');
 	const [searchQuery, setSearchQuery] = useState('');
 	const [isGridView, setIsGridView] = useState(true);
 	const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
@@ -254,6 +290,8 @@ const WorkflowsListPage = () => {
 	useEffect(() => {
 		const handleGlobalClick = () => {
 			setActiveMenuId(null);
+			setActiveFolderMenuId(null);
+			setMenuAnchor(null);
 		};
 		window.addEventListener('click', handleGlobalClick);
 		return () => window.removeEventListener('click', handleGlobalClick);
@@ -265,19 +303,38 @@ const WorkflowsListPage = () => {
 	};
 
 	const filteredWorkflows = useMemo(() => {
-		return workflows.filter((w) => {
+		const matched = workflows.filter((w) => {
 			if (activeTab === 'starred' && !w.starred) return false;
+			if (activeTab === 'published' && w.status !== 'active') return false;
+			if (activeTab === 'drafts' && w.status === 'active') return false;
 			if (searchQuery) {
 				const query = searchQuery.toLowerCase();
 				if (
 					!w.title.toLowerCase().includes(query) &&
-					!w.description.toLowerCase().includes(query)
+					!w.description.toLowerCase().includes(query) &&
+					!w.apps.some((app) => app.includes(query))
 				)
 					return false;
 			}
 			return true;
 		});
-	}, [workflows, activeTab, searchQuery]);
+
+		return [...matched].sort((a, b) => {
+			switch (sortBy) {
+				case 'name':
+					return a.title.localeCompare(b.title);
+				case 'lastRun':
+					return b.lastRunAt - a.lastRunAt;
+				case 'nodes':
+					return b.nodesCount - a.nodesCount;
+				case 'updated':
+				default:
+					return b.updatedAt - a.updatedAt;
+			}
+		});
+	}, [workflows, activeTab, searchQuery, sortBy]);
+
+	const matchCount = filteredWorkflows.length;
 
 	const folderGrouped = useMemo(() => {
 		const grouped: Record<string, IWorkflow[]> = { [ROOT_FOLDER_ID]: [] };
@@ -292,9 +349,10 @@ const WorkflowsListPage = () => {
 	}, [filteredWorkflows, folders]);
 
 	const workflowGroups = useMemo<IFolder[]>(() => {
+		if (filteredWorkflows.length === 0) return [];
 		if (folderGrouped[ROOT_FOLDER_ID].length === 0) return folders;
 		return [{ id: ROOT_FOLDER_ID, name: 'Root workflows', color: '#475569' }, ...folders];
-	}, [folderGrouped, folders]);
+	}, [filteredWorkflows, folderGrouped, folders]);
 
 	const handleCreateWorkflow = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -340,7 +398,7 @@ const WorkflowsListPage = () => {
 			});
 			setExpandedFolders((prev) => ({ ...prev, [res.id]: true }));
 			setNewFolderName('');
-			setNewFolderColor('bg-primary-400');
+			setNewFolderColor('#4f46e5');
 			setIsCreateFolderOpen(false);
 			triggerToast(`Folder "${res.name}" created successfully!`);
 		} catch {
@@ -372,14 +430,42 @@ const WorkflowsListPage = () => {
 		}
 	};
 
-	const handleToggleStatus = async (id: string, e: React.MouseEvent) => {
+	const handleDeleteFolder = async (folder: IFolder) => {
+		setActiveFolderMenuId(null);
+		const count = (folderGrouped[folder.id] || []).length;
+		const confirmed = await confirm({
+			title: 'Delete Folder',
+			message: (
+				<>
+					Are you sure you want to delete{' '}
+					<strong className='font-semibold text-zinc-800 dark:text-zinc-200'>
+						"{folder.name}"
+					</strong>
+					?{' '}
+					{count > 0
+						? `Its ${count} workflow${count === 1 ? '' : 's'} will move to root level.`
+						: 'This action cannot be undone.'}
+				</>
+			),
+		});
+		if (!confirmed) return;
+		try {
+			await deleteFolderMutation.mutateAsync(folder.id);
+			triggerToast(`Deleted folder "${folder.name}"`, 'info');
+		} catch {
+			// Error is surfaced by the mutation hook
+		}
+	};
+
+	// Publishing a version is what makes a workflow live; this backend has no
+	// unpublish counterpart, so the action is one-way by design.
+	const handlePublish = async (id: string, e: React.MouseEvent) => {
 		e.stopPropagation();
 		const wf = workflows.find((w) => w.id === id);
 		if (!wf) return;
 		try {
-			if (wf.status === 'active') await deactivateWorkflowMutation.mutateAsync(id);
-			else await activateWorkflowMutation.mutateAsync(id);
-			triggerToast('Workflow status updated!');
+			await activateWorkflowMutation.mutateAsync(id);
+			triggerToast(`Published "${wf.title}"`);
 		} catch {
 			// Error is surfaced by the mutation hook
 		}
@@ -481,7 +567,7 @@ const WorkflowsListPage = () => {
 		setDragOverFolderId(folderId);
 	};
 
-	const handleDragLeave = (e: React.DragEvent, folderId: string) => {
+	const handleDragLeave = (e: React.DragEvent) => {
 		// Only clear if we're leaving the folder entirely, not entering a child element
 		if (e.currentTarget === e.target) {
 			setDragOverFolderId(null);
@@ -496,11 +582,15 @@ const WorkflowsListPage = () => {
 		if (!workflowId || workflowId === '') return;
 
 		const workflow = workflows.find((w) => w.id === workflowId);
-		if (!workflow || workflow.folderId === folderId) return;
+		const targetFolderId = folderId === ROOT_FOLDER_ID ? null : folderId;
+		if (!workflow || workflow.folderId === targetFolderId) return;
 
 		setDragOverFolderId(null);
-		await handleMoveWorkflow(workflow, folderId === ROOT_FOLDER_ID ? null : folderId);
+		await handleMoveWorkflow(workflow, targetFolderId);
 	};
+
+	const menuItemClass =
+		'flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-800';
 
 	const renderMoveWorkflowMenu = (workflow: IWorkflow) => {
 		if (!workflow.folderId && folders.length === 0) return null;
@@ -511,9 +601,10 @@ const WorkflowsListPage = () => {
 				</p>
 				{workflow.folderId && (
 					<button
+						type='button'
 						onClick={() => handleMoveWorkflow(workflow, null)}
-						className='dark:hover:bg-zinc-800 flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-[11px] font-black text-slate-700 hover:bg-slate-50 dark:text-zinc-200'>
-						<Workflow size={11} className='text-primary-500' /> Root level
+						className={menuItemClass}>
+						<Workflow size={12} className='text-primary-500' /> Root level
 					</button>
 				)}
 				{folders
@@ -521,72 +612,216 @@ const WorkflowsListPage = () => {
 					.map((folder) => (
 						<button
 							key={folder.id}
+							type='button'
 							onClick={() => handleMoveWorkflow(workflow, folder.id)}
-							className='dark:hover:bg-zinc-800 flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-[11px] font-black text-slate-700 hover:bg-slate-50 dark:text-zinc-200'>
-							<Folder size={11} className='text-slate-400' /> {folder.name}
+							className={menuItemClass}>
+							<Folder
+								size={12}
+								style={{ color: folder.color }}
+								className='shrink-0'
+							/>{' '}
+							<span className='truncate'>{folder.name}</span>
 						</button>
 					))}
 			</div>
 		);
 	};
 
-	const renderMoveWorkflowSelect = (workflow: IWorkflow) => {
-		if (!workflow.folderId && folders.length === 0) return null;
-		return (
-			<select
-				aria-label={`Move ${workflow.title} to folder`}
-				value={workflow.folderId || ''}
-				onClick={(e) => e.stopPropagation()}
-				onChange={(e) => handleMoveWorkflow(workflow, e.target.value || null)}
-				className='dark:text-zinc-355 mr-3 max-w-32 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[10.5px] font-bold text-slate-600 transition outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 dark:border-zinc-800 dark:bg-zinc-900'>
-				<option value=''>Root level</option>
-				{folders.map((folder) => (
-					<option key={folder.id} value={folder.id}>
-						{folder.name}
-					</option>
-				))}
-			</select>
-		);
-	};
-
-	const renderWorkflowOrganizationActions = (workflow: IWorkflow) => (
-		<>
+	const renderWorkflowMenu = (workflow: IWorkflow, anchor?: { top: number; left: number }) => (
+		<motion.div
+			initial={{ opacity: 0, scale: 0.95, y: 5 }}
+			animate={{ opacity: 1, scale: 1, y: 0 }}
+			exit={{ opacity: 0, scale: 0.95, y: 5 }}
+			onClick={(e) => e.stopPropagation()}
+			style={anchor ? { position: 'fixed', top: anchor.top, left: anchor.left } : undefined}
+			className={`z-50 w-52 rounded-xl border border-slate-200/80 bg-white/95 p-1.5 text-left shadow-2xl backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/95 ${
+				anchor ? '' : 'absolute right-0 mt-2'
+			}`}>
 			<button
+				type='button'
+				onClick={() => {
+					setActiveMenuId(null);
+					navigate(paths.editPlaybook(currentWorkspaceId, workflow.id));
+				}}
+				className={menuItemClass}>
+				<Edit3 size={12} className='text-primary-500' /> Open editor
+			</button>
+			<button
+				type='button'
+				onClick={(e) => {
+					setActiveMenuId(null);
+					handleRunNow(workflow.id, e);
+				}}
+				className={menuItemClass}>
+				<Play size={12} className='fill-emerald-500/10 text-emerald-500' /> Run now
+			</button>
+			{(workflow.status !== 'active' || workflow.hasUnpublishedChanges) && (
+				<button
+					type='button'
+					onClick={(e) => {
+						setActiveMenuId(null);
+						handlePublish(workflow.id, e);
+					}}
+					className={menuItemClass}>
+					<Rocket size={12} className='text-violet-500' />{' '}
+					{workflow.status === 'active' ? 'Publish changes' : 'Publish'}
+				</button>
+			)}
+			<button
+				type='button'
+				onClick={(e) => {
+					setActiveMenuId(null);
+					handleToggleStar(workflow.id, e);
+				}}
+				className={menuItemClass}>
+				<Star
+					size={12}
+					className={
+						workflow.starred ? 'fill-amber-500 text-amber-500' : 'text-amber-500'
+					}
+				/>{' '}
+				{workflow.starred ? 'Remove from starred' : 'Add to starred'}
+			</button>
+			<button
+				type='button'
 				onClick={() => {
 					setRenameValue(workflow.title);
 					setRenamingId(workflow.id);
 					setActiveMenuId(null);
 				}}
-				className='flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-black text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-800'>
-				<Folder className='h-3 w-3 text-slate-400' /> Rename
+				className={menuItemClass}>
+				<Edit3 size={12} className='text-slate-400' /> Rename
 			</button>
 			{renderMoveWorkflowMenu(workflow)}
 			<button
+				type='button'
 				onClick={(e) => {
 					setActiveMenuId(null);
 					handleDuplicate(workflow, e);
 				}}
-				className='flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-black text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-800'>
-				<Copy size={11} className='text-slate-400' /> Duplicate
+				className={menuItemClass}>
+				<Copy size={12} className='text-blue-500' /> Duplicate
 			</button>
-		</>
+			<button
+				type='button'
+				onClick={(e) => {
+					setActiveMenuId(null);
+					handleDelete(workflow.id, e);
+				}}
+				className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20'>
+				<Trash2 size={12} /> Delete
+			</button>
+		</motion.div>
 	);
 
-	const renderWorkflowListActions = (workflow: IWorkflow) => (
-		<>
-			{renderMoveWorkflowSelect(workflow)}
+	// The list view lives inside a horizontally scrolling table, which would clip
+	// an absolutely positioned menu — so rows anchor theirs to the viewport.
+	const renderWorkflowMenuTrigger = (workflow: IWorkflow, anchored = false) => (
+		<div className='relative'>
 			<button
-				onClick={(e) => handleRunNow(workflow.id, e)}
-				className='hover:text-primary-500 mr-3 text-xs font-bold text-primary-600 dark:text-primary-400 dark:hover:text-primary-300'>
-				Run
+				type='button'
+				aria-label={`Open actions for ${workflow.title}`}
+				onClick={(e) => {
+					e.stopPropagation();
+					if (activeMenuId === workflow.id) {
+						setActiveMenuId(null);
+						setMenuAnchor(null);
+						return;
+					}
+					if (anchored) {
+						const rect = e.currentTarget.getBoundingClientRect();
+						setMenuAnchor({
+							top: Math.min(rect.bottom + 6, window.innerHeight - 320),
+							left: Math.max(rect.right - 208, 12),
+						});
+					} else {
+						setMenuAnchor(null);
+					}
+					setActiveMenuId(workflow.id);
+				}}
+				className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-zinc-800 ${
+					activeMenuId === workflow.id
+						? 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-white'
+						: ''
+				}`}>
+				<MoreVertical size={16} />
 			</button>
-			<button
-				onClick={(e) => handleDelete(workflow.id, e)}
-				className='text-rose-605 text-xs font-bold transition-colors hover:text-rose-500'>
-				Delete
-			</button>
-		</>
+			<AnimatePresence>
+				{activeMenuId === workflow.id &&
+					renderWorkflowMenu(workflow, anchored ? (menuAnchor ?? undefined) : undefined)}
+			</AnimatePresence>
+		</div>
 	);
+
+	const renderStarButton = (workflow: IWorkflow) => (
+		<motion.button
+			type='button'
+			whileHover={{ scale: 1.15 }}
+			whileTap={{ scale: 0.9 }}
+			aria-label={`${workflow.starred ? 'Remove' : 'Add'} ${workflow.title} ${workflow.starred ? 'from' : 'to'} starred workflows`}
+			onClick={(e) => handleToggleStar(workflow.id, e)}
+			className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border transition-colors ${
+				workflow.starred
+					? 'shadow-3xs border-amber-500/10 bg-amber-500/5 text-amber-500'
+					: 'border-transparent text-slate-300 hover:bg-slate-100/80 hover:text-slate-500 dark:hover:bg-zinc-800'
+			}`}>
+			<Star size={15} className={workflow.starred ? 'fill-amber-500' : ''} />
+		</motion.button>
+	);
+
+	const renderRenameInput = (workflow: IWorkflow) => (
+		<div
+			className='flex items-center gap-1.5'
+			onClick={(e) => e.stopPropagation()}
+			onKeyDown={(e) => e.stopPropagation()}>
+			<input
+				aria-label={`Rename ${workflow.title}`}
+				ref={renameInputRef}
+				value={renameValue}
+				onChange={(e) => setRenameValue(e.target.value)}
+				onKeyDown={(e) => {
+					if (e.key === 'Enter') handleRenameSubmit(workflow.id);
+					if (e.key === 'Escape') setRenamingId(null);
+				}}
+				onBlur={() => handleRenameSubmit(workflow.id)}
+				className='border-primary-500 h-8 w-full rounded-lg border bg-white px-2 text-xs font-semibold text-slate-900 transition outline-none dark:bg-zinc-950 dark:text-white'
+			/>
+			<button
+				type='button'
+				onClick={() => handleRenameSubmit(workflow.id)}
+				className='h-8 shrink-0 rounded-lg bg-slate-900 px-3 text-[10px] font-black text-white dark:bg-zinc-200 dark:text-slate-950'>
+				Save
+			</button>
+		</div>
+	);
+
+	const renderPublishControl = (workflow: IWorkflow) => {
+		if (workflow.status === 'active' && !workflow.hasUnpublishedChanges) {
+			return (
+				<span className='flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-black text-emerald-600 dark:text-emerald-400'>
+					<CheckCircle2 size={11} /> Published
+				</span>
+			);
+		}
+		return (
+			<button
+				type='button'
+				aria-label={`Publish ${workflow.title}`}
+				onClick={(e) => handlePublish(workflow.id, e)}
+				disabled={activateWorkflowMutation.isPending}
+				className='border-primary-300/70 bg-primary-100/50 text-primary-800 hover:bg-primary-100 dark:border-primary-500/20 dark:bg-primary-950/40 dark:text-primary-300 flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black transition disabled:cursor-not-allowed disabled:opacity-60'>
+				{workflow.hasUnpublishedChanges && workflow.status === 'active' ? (
+					<>
+						<AlertTriangle size={11} /> Publish changes
+					</>
+				) : (
+					<>
+						<Rocket size={11} /> Publish
+					</>
+				)}
+			</button>
+		);
+	};
 
 	const handleRenameSubmit = async (id: string) => {
 		const value = renameValue.trim();
@@ -602,13 +837,264 @@ const WorkflowsListPage = () => {
 		}
 	};
 
+	const modals = (
+		<AnimatePresence>
+			{isCreateWorkflowOpen && (
+				<motion.div
+					initial={{ opacity: 0 }}
+					animate={{ opacity: 1 }}
+					exit={{ opacity: 0 }}
+					className='fixed inset-0 z-100 flex items-center justify-center bg-black/60 p-4 font-sans backdrop-blur-md'
+					onClick={() => setIsCreateWorkflowOpen(false)}>
+					<motion.div
+						initial={{ scale: 0.95, y: 15 }}
+						animate={{ scale: 1, y: 0 }}
+						exit={{ scale: 0.95, y: 15 }}
+						transition={{ duration: 0.2 }}
+						className='relative max-h-[calc(100vh-2rem)] w-full max-w-md overflow-y-auto rounded-3xl border border-slate-200/50 bg-white/95 p-6 shadow-2xl backdrop-blur-xl dark:border-zinc-800/60 dark:bg-zinc-950/95'
+						onClick={(e) => e.stopPropagation()}>
+						<button
+							aria-label='Close create workflow dialog'
+							onClick={() => setIsCreateWorkflowOpen(false)}
+							className='absolute top-4.5 right-4.5 text-slate-400 transition hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300'>
+							<X size={18} />
+						</button>
+						<h3 className='mb-5 flex items-center gap-2 text-lg font-black text-slate-900 dark:text-white'>
+							<Workflow className='text-primary-600 h-5 w-5' /> Create Workflow
+						</h3>
+						<form onSubmit={handleCreateWorkflow} className='space-y-4'>
+							<div>
+								<label
+									htmlFor='new-workflow-name'
+									className='mb-1.5 block text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
+									Workflow Name
+								</label>
+								<input
+									id='new-workflow-name'
+									aria-label='Workflow name'
+									type='text'
+									required
+									placeholder='e.g. Lead Sync Manager'
+									value={newWfTitle}
+									onChange={(e) => setNewWfTitle(e.target.value)}
+									className='bg-slate-55/50 focus:border-primary-500 focus:ring-primary-500/10 h-10 w-full rounded-xl border border-slate-200 px-3.5 text-xs font-semibold text-slate-900 transition outline-none focus:bg-white focus:ring-2 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-white dark:focus:bg-zinc-900'
+								/>
+							</div>
+							<div>
+								<label
+									htmlFor='new-workflow-description'
+									className='mb-1.5 block text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
+									Description
+								</label>
+								<textarea
+									id='new-workflow-description'
+									aria-label='Workflow description'
+									placeholder='e.g. Syncs signup details to Slack...'
+									value={newWfDesc}
+									onChange={(e) => setNewWfDesc(e.target.value)}
+									rows={3}
+									className='bg-slate-55/50 focus:border-primary-500 focus:ring-primary-500/10 w-full resize-none rounded-xl border border-slate-200 p-3.5 text-xs font-semibold text-slate-900 transition outline-none focus:bg-white focus:ring-2 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-white dark:focus:bg-zinc-900'
+								/>
+							</div>
+							<div>
+								<label
+									htmlFor='new-workflow-folder'
+									className='mb-1.5 block text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
+									Assign to Folder
+								</label>
+								<select
+									id='new-workflow-folder'
+									value={newWfFolderId}
+									onChange={(e) => setNewWfFolderId(e.target.value)}
+									className='bg-slate-55/50 focus:border-primary-500 focus:ring-primary-500/25 h-10 w-full rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-900 transition outline-none focus:ring-1 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white'>
+									<option value=''>No Folder (Root level)</option>
+									{folders.map((f) => (
+										<option key={f.id} value={f.id}>
+											{f.name}
+										</option>
+									))}
+								</select>
+							</div>
+							<div className='flex flex-col-reverse gap-2.5 pt-2 sm:flex-row sm:justify-end'>
+								<button
+									type='button'
+									onClick={() => setIsCreateWorkflowOpen(false)}
+									className='h-9.5 cursor-pointer rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-500 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'>
+									Cancel
+								</button>
+								<button
+									type='submit'
+									className='from-primary-400 to-primary-400 text-primary-950 h-9.5 cursor-pointer rounded-xl bg-gradient-to-r px-5 text-xs font-bold shadow-sm shadow-[#7c3aed]/10 transition-all hover:brightness-110'>
+									Create Workflow
+								</button>
+							</div>
+						</form>
+					</motion.div>
+				</motion.div>
+			)}
+
+			{isCreateFolderOpen && (
+				<motion.div
+					initial={{ opacity: 0 }}
+					animate={{ opacity: 1 }}
+					exit={{ opacity: 0 }}
+					className='fixed inset-0 z-100 flex items-center justify-center bg-black/60 p-4 font-sans backdrop-blur-md'
+					onClick={() => setIsCreateFolderOpen(false)}>
+					<motion.div
+						initial={{ scale: 0.95, y: 15 }}
+						animate={{ scale: 1, y: 0 }}
+						exit={{ scale: 0.95, y: 15 }}
+						transition={{ duration: 0.2 }}
+						className='relative max-h-[calc(100vh-2rem)] w-full max-w-sm overflow-y-auto rounded-3xl border border-slate-200/50 bg-white/95 p-6 shadow-2xl backdrop-blur-xl dark:border-zinc-800/60 dark:bg-zinc-950/95'
+						onClick={(e) => e.stopPropagation()}>
+						<button
+							aria-label='Close create folder dialog'
+							onClick={() => setIsCreateFolderOpen(false)}
+							className='hover:text-slate-655 dark:text-zinc-550 absolute top-4.5 right-4.5 text-slate-400 transition dark:hover:text-zinc-300'>
+							<X size={18} />
+						</button>
+						<h3 className='mb-5 flex items-center gap-2 text-lg font-black text-slate-900 dark:text-white'>
+							<FolderPlus className='text-primary-600 h-5 w-5' /> Create Folder
+						</h3>
+						<form onSubmit={handleCreateFolder} className='space-y-4'>
+							<div>
+								<label
+									htmlFor='new-folder-name'
+									className='mb-1.5 block text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
+									Folder Name
+								</label>
+								<input
+									id='new-folder-name'
+									aria-label='Folder name'
+									type='text'
+									required
+									placeholder='e.g. Lead Processing'
+									value={newFolderName}
+									onChange={(e) => setNewFolderName(e.target.value)}
+									className='border-slate-205 bg-slate-55/50 focus:border-primary-500 focus:ring-primary-500/10 h-10 w-full rounded-xl border px-3.5 text-xs font-semibold text-slate-900 transition outline-none focus:bg-white focus:ring-2 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-white dark:focus:bg-zinc-900'
+								/>
+							</div>
+							<div>
+								<p className='mb-2.5 block text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
+									Select Theme Color
+								</p>
+								<div className='flex items-center gap-2.5'>
+									{FOLDER_COLOR_OPTIONS.map((color) => (
+										<button
+											aria-label={`Use ${color.label} folder color`}
+											key={color.value}
+											type='button'
+											title={color.label}
+											onClick={() => setNewFolderColor(color.value)}
+											style={{ backgroundColor: color.value }}
+											className={`h-7.5 w-7.5 cursor-pointer rounded-full border transition ${newFolderColor === color.value ? 'ring-primary-500 scale-110 border-slate-800 ring-2 dark:border-white' : 'border-slate-200/50 hover:scale-105'}`}
+										/>
+									))}
+								</div>
+							</div>
+							<div className='flex flex-col-reverse gap-2.5 pt-2 sm:flex-row sm:justify-end'>
+								<button
+									type='button'
+									onClick={() => setIsCreateFolderOpen(false)}
+									className='h-9.5 cursor-pointer rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-500 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'>
+									Cancel
+								</button>
+								<button
+									type='submit'
+									className='from-primary-400 to-primary-400 text-primary-950 shadow-primary-500/10 h-9.5 cursor-pointer rounded-xl bg-gradient-to-r px-5 text-xs font-bold shadow-sm transition-all hover:brightness-110'>
+									Create Folder
+								</button>
+							</div>
+						</form>
+					</motion.div>
+				</motion.div>
+			)}
+
+			{editingFolder && (
+				<motion.div
+					initial={{ opacity: 0 }}
+					animate={{ opacity: 1 }}
+					exit={{ opacity: 0 }}
+					className='fixed inset-0 z-100 flex items-center justify-center bg-black/60 p-4 font-sans backdrop-blur-md'
+					onClick={() => setEditingFolder(null)}>
+					<motion.div
+						initial={{ scale: 0.95, y: 15 }}
+						animate={{ scale: 1, y: 0 }}
+						exit={{ scale: 0.95, y: 15 }}
+						transition={{ duration: 0.2 }}
+						className='relative max-h-[calc(100vh-2rem)] w-full max-w-sm overflow-y-auto rounded-3xl border border-slate-200/50 bg-white/95 p-6 shadow-2xl backdrop-blur-xl dark:border-zinc-800/60 dark:bg-zinc-950/95'
+						onClick={(e) => e.stopPropagation()}>
+						<button
+							aria-label='Close edit folder dialog'
+							onClick={() => setEditingFolder(null)}
+							className='hover:text-slate-655 dark:text-zinc-550 absolute top-4.5 right-4.5 text-slate-400 transition dark:hover:text-zinc-300'>
+							<X size={18} />
+						</button>
+						<h3 className='mb-5 flex items-center gap-2 text-lg font-black text-slate-900 dark:text-white'>
+							<Edit3 className='text-primary-600 h-5 w-5' /> Edit Folder
+						</h3>
+						<form onSubmit={handleUpdateFolder} className='space-y-4'>
+							<div>
+								<label
+									htmlFor='edit-folder-name'
+									className='mb-1.5 block text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
+									Folder Name
+								</label>
+								<input
+									id='edit-folder-name'
+									aria-label='Edit folder name'
+									type='text'
+									required
+									value={editFolderName}
+									onChange={(e) => setEditFolderName(e.target.value)}
+									className='border-slate-205 bg-slate-55/50 focus:border-primary-500 focus:ring-primary-500/10 h-10 w-full rounded-xl border px-3.5 text-xs font-semibold text-slate-900 transition outline-none focus:bg-white focus:ring-2 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-white dark:focus:bg-zinc-900'
+								/>
+							</div>
+							<div>
+								<p className='mb-2.5 block text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
+									Select Theme Color
+								</p>
+								<div className='flex items-center gap-2.5'>
+									{FOLDER_COLOR_OPTIONS.map((color) => (
+										<button
+											aria-label={`Use ${color.label} folder color`}
+											key={color.value}
+											type='button'
+											title={color.label}
+											onClick={() => setEditFolderColor(color.value)}
+											style={{ backgroundColor: color.value }}
+											className={`h-7.5 w-7.5 cursor-pointer rounded-full border transition ${editFolderColor === color.value ? 'ring-primary-500 scale-110 border-slate-800 ring-2 dark:border-white' : 'border-slate-200/50 hover:scale-105'}`}
+										/>
+									))}
+								</div>
+							</div>
+							<div className='flex flex-col-reverse gap-2.5 pt-2 sm:flex-row sm:justify-end'>
+								<button
+									type='button'
+									onClick={() => setEditingFolder(null)}
+									className='h-9.5 cursor-pointer rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-500 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'>
+									Cancel
+								</button>
+								<button
+									type='submit'
+									className='from-primary-400 to-primary-400 text-primary-950 shadow-primary-500/10 h-9.5 cursor-pointer rounded-xl bg-gradient-to-r px-5 text-xs font-bold shadow-sm transition-all hover:brightness-110'>
+									Save Changes
+								</button>
+							</div>
+						</form>
+					</motion.div>
+				</motion.div>
+			)}
+		</AnimatePresence>
+	);
+
 	// ─── Empty state ────────────────────────────────────────────────────────────
-	if (workflows.length === 0) {
+	if (workflows.length === 0 && folders.length === 0) {
 		return (
 			<Container className='relative flex min-h-screen items-center justify-center overflow-x-hidden overflow-y-auto bg-[#fafbfe] !p-0 dark:bg-[#07090e]'>
 				<div className='pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] bg-[size:4rem_4rem] opacity-50 dark:bg-[linear-gradient(to_right,#161b26_1px,transparent_1px),linear-gradient(to_bottom,#161b26_1px,transparent_1px)] dark:opacity-80' />
 				<div className='z-10 mx-auto flex w-full max-w-xl flex-col items-center justify-center px-4 py-16 text-center sm:px-6'>
-					<div className='flex h-14 w-14 items-center justify-center rounded-2xl border border-primary-500/20 bg-primary-400/5 text-primary-600 shadow-md shadow-primary-500/5 dark:bg-primary-400/10 dark:text-primary-400'>
+					<div className='border-primary-500/20 bg-primary-400/5 text-primary-600 shadow-primary-500/5 dark:bg-primary-400/10 dark:text-primary-400 flex h-14 w-14 items-center justify-center rounded-2xl border shadow-md'>
 						<GitMerge size={24} className='rotate-90' />
 					</div>
 					<h1 className='mt-5 text-2xl font-black tracking-tight text-slate-900 dark:text-white'>
@@ -617,13 +1103,37 @@ const WorkflowsListPage = () => {
 					<p className='mt-2 max-w-md text-sm leading-relaxed font-semibold text-slate-500 dark:text-zinc-400'>
 						Build an automation, connect the steps, and run it when you are ready.
 					</p>
-					<button
-						onClick={() => navigate(paths.newPlaybook(currentWorkspaceId))}
-						className='mt-6 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-400 to-primary-400 px-5 text-xs font-black text-primary-950 shadow-md shadow-primary-500/15 transition hover:brightness-110 active:scale-[0.98] sm:w-auto'>
-						<Plus size={15} strokeWidth={3} />
-						Create Workflow
-					</button>
+					<div className='mt-6 flex w-full flex-col items-center gap-2.5 sm:w-auto sm:flex-row'>
+						<button
+							type='button'
+							onClick={() => {
+								setNewWfFolderId('');
+								setIsCreateWorkflowOpen(true);
+							}}
+							disabled={!hasWorkspace}
+							className='from-primary-400 to-primary-400 text-primary-950 shadow-primary-500/15 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r px-5 text-xs font-black shadow-md transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto'>
+							<Plus size={15} strokeWidth={3} />
+							Create Workflow
+						</button>
+						<button
+							type='button'
+							onClick={handleQuickCreateWorkflow}
+							disabled={!hasWorkspace || createWorkflowMutation.isPending}
+							className='dark:border-border-main dark:bg-bg-card flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto dark:text-white dark:hover:bg-zinc-950/20'>
+							<Workflow size={15} />
+							Start blank in editor
+						</button>
+						<button
+							type='button'
+							onClick={() => setIsCreateFolderOpen(true)}
+							disabled={!hasWorkspace}
+							className='dark:border-border-main dark:bg-bg-card flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto dark:text-white dark:hover:bg-zinc-950/20'>
+							<FolderPlus size={15} />
+							New Folder
+						</button>
+					</div>
 				</div>
+				{modals}
 			</Container>
 		);
 	}
@@ -637,7 +1147,7 @@ const WorkflowsListPage = () => {
 						initial={{ opacity: 0, y: -20, scale: 0.95 }}
 						animate={{ opacity: 1, y: 0, scale: 1 }}
 						exit={{ opacity: 0, y: -20, scale: 0.95 }}
-						className='fixed inset-x-4 top-4 z-[110] flex items-center gap-3 rounded-2xl border border-primary-500/20 bg-white/95 px-4.5 py-3 shadow-2xl backdrop-blur-md sm:inset-x-auto sm:top-6 sm:right-6 sm:max-w-sm dark:border-primary-500/15 dark:bg-zinc-900/95'>
+						className='border-primary-500/20 dark:border-primary-500/15 fixed inset-x-4 top-4 z-[110] flex items-center gap-3 rounded-2xl border bg-white/95 px-4.5 py-3 shadow-2xl backdrop-blur-md sm:inset-x-auto sm:top-6 sm:right-6 sm:max-w-sm dark:bg-zinc-900/95'>
 						{toast.type === 'success' ? (
 							<div className='flex h-6.5 w-6.5 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'>
 								<Check size={14} className='stroke-[3]' />
@@ -656,21 +1166,21 @@ const WorkflowsListPage = () => {
 
 			<div className='relative z-10 mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6 md:p-8'>
 				{/* Header */}
-				<header className='relative mt-4 sm:mt-0 flex flex-col justify-between gap-6 overflow-hidden rounded-3xl border border-border-main bg-bg-card p-6 shadow-sm transition-all duration-300 lg:flex-row lg:items-center dark:border-border-main dark:bg-bg-card'>
+				<header className='border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card relative mt-4 flex flex-col justify-between gap-6 overflow-hidden rounded-3xl border p-6 shadow-sm transition-all duration-300 sm:mt-0 lg:flex-row lg:items-center'>
 					{/* Banner background glow effect */}
-					<div className='absolute -top-24 -right-24 h-48 w-48 rounded-full bg-primary-400/5 blur-3xl' />
-					<div className='absolute -bottom-24 -left-24 h-48 w-48 rounded-full bg-primary-400/5 blur-3xl' />
+					<div className='bg-primary-400/5 absolute -top-24 -right-24 h-48 w-48 rounded-full blur-3xl' />
+					<div className='bg-primary-400/5 absolute -bottom-24 -left-24 h-48 w-48 rounded-full blur-3xl' />
 
 					<div className='relative z-10 flex min-w-0 items-center gap-4.5'>
 						<div className='group relative shrink-0'>
 							{/* Soft glowing ring */}
-							<div className='absolute -inset-0.5 rounded-full bg-primary-400/10 opacity-85 blur transition duration-300 group-hover:opacity-100' />
+							<div className='bg-primary-400/10 absolute -inset-0.5 rounded-full opacity-85 blur transition duration-300 group-hover:opacity-100' />
 							{/* Circular initials avatar */}
-							<div className='relative flex h-14 w-14 items-center justify-center rounded-full bg-primary-100/60 text-base font-black text-primary-900 shadow-sm dark:bg-primary-950/60 dark:text-white'>
+							<div className='bg-primary-100/60 text-primary-900 dark:bg-primary-950/60 relative flex h-14 w-14 items-center justify-center rounded-full text-base font-black shadow-sm dark:text-white'>
 								{getInitials(workspaceName)}
 							</div>
 							{/* Yellow status indicator dot */}
-							<span className='absolute -right-0.5 -bottom-0.5 flex h-4.5 w-4.5 rounded-full border-[3px] border-bg-card bg-[#CFF54A] shadow-xs' />
+							<span className='border-bg-card absolute -right-0.5 -bottom-0.5 flex h-4.5 w-4.5 rounded-full border-[3px] bg-[#CFF54A] shadow-xs' />
 						</div>
 						<div className='min-w-0'>
 							<div className='flex flex-wrap items-center gap-2.5'>
@@ -678,7 +1188,7 @@ const WorkflowsListPage = () => {
 									Workflows
 								</h1>
 								{workspaceRole && (
-									<span className='rounded-md bg-primary-100/70 px-2 py-0.5 text-[9px] font-black tracking-wide text-primary-900 uppercase dark:bg-primary-950/40 dark:text-primary-300'>
+									<span className='bg-primary-100/70 text-primary-900 dark:bg-primary-950/40 dark:text-primary-300 rounded-md px-2 py-0.5 text-[9px] font-black tracking-wide uppercase'>
 										{workspaceRole}
 									</span>
 								)}
@@ -698,7 +1208,7 @@ const WorkflowsListPage = () => {
 							whileTap={{ scale: 0.98 }}
 							onClick={() => setIsCreateFolderOpen(true)}
 							disabled={!hasWorkspace}
-							className='flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-border-main dark:bg-bg-card dark:text-white dark:hover:bg-zinc-950/20'>
+							className='dark:border-border-main dark:bg-bg-card flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-white dark:hover:bg-zinc-950/20'>
 							<Folder size={14} className='text-primary-450 dark:text-[#CFF54A]' />
 							New Folder
 						</motion.button>
@@ -706,9 +1216,12 @@ const WorkflowsListPage = () => {
 							type='button'
 							whileHover={{ scale: 1.02, y: -1 }}
 							whileTap={{ scale: 0.98 }}
-							onClick={handleQuickCreateWorkflow}
+							onClick={() => {
+								setNewWfFolderId('');
+								setIsCreateWorkflowOpen(true);
+							}}
 							disabled={!hasWorkspace || createWorkflowMutation.isPending}
-							className='flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#CFF54A] px-4.5 text-xs font-black text-black shadow-md shadow-primary-500/10 transition-all hover:bg-[#B7E52F] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#CFF54A] dark:text-black dark:hover:bg-[#B7E52F]'>
+							className='shadow-primary-500/10 flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#CFF54A] px-4.5 text-xs font-black text-black shadow-md transition-all hover:bg-[#B7E52F] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#CFF54A] dark:text-black dark:hover:bg-[#B7E52F]'>
 							<Plus size={15} strokeWidth={2.5} />
 							New Workflow
 						</motion.button>
@@ -749,10 +1262,9 @@ const WorkflowsListPage = () => {
 								key={stat.label}
 								whileHover={{ y: -4, scale: 1.01 }}
 								transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-								className='relative flex items-center justify-between overflow-hidden rounded-2xl border border-border-main bg-bg-card p-5 shadow-xs transition-all duration-300 dark:border-border-main dark:bg-bg-card group hover:shadow-sm hover:border-primary-300/60'
-							>
+								className='border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card group hover:border-primary-300/60 relative flex items-center justify-between overflow-hidden rounded-2xl border p-5 shadow-xs transition-all duration-300 hover:shadow-sm'>
 								<div>
-									<div className='text-[10px] font-black tracking-wider uppercase text-slate-800 dark:text-white'>
+									<div className='text-[10px] font-black tracking-wider text-slate-800 uppercase dark:text-white'>
 										{stat.label}
 									</div>
 									<div className='text-3.5xl mt-1 font-black tracking-tight text-slate-900 dark:text-white'>
@@ -762,7 +1274,7 @@ const WorkflowsListPage = () => {
 										{stat.desc}
 									</div>
 								</div>
-								<div className='flex h-12 w-12 items-center justify-center rounded-xl bg-primary-100/50 text-primary-800 dark:bg-primary-950/40 dark:text-primary-400 transition-all duration-300 group-hover:scale-105'>
+								<div className='bg-primary-100/50 text-primary-800 dark:bg-primary-950/40 dark:text-primary-400 flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-105'>
 									<IconComponent size={20} />
 								</div>
 							</motion.div>
@@ -772,55 +1284,39 @@ const WorkflowsListPage = () => {
 
 				{/* Controls */}
 				<section className='flex flex-col gap-4 pt-2 lg:flex-row lg:items-center lg:justify-between'>
-					<div className='flex items-center gap-6 border-b border-slate-200/40 pb-0.5 dark:border-zinc-800/40'>
-						<button
-							type='button'
-							onClick={() => setActiveTab('all')}
-							className={`relative pb-3 text-sm font-bold transition-colors duration-300 cursor-pointer ${
-								activeTab === 'all'
-									? 'text-slate-900 dark:text-white'
-									: 'text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300'
-							}`}
-						>
-							All Workflows
-							{activeTab === 'all' && (
-								<motion.div
-									layoutId='activeTabUnderline'
-									className='absolute bottom-0 left-0 right-0 h-[3px] rounded-full bg-[#CFF54A]'
-									transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-								/>
-							)}
-						</button>
-						<button
-							type='button'
-							onClick={() => setActiveTab('starred')}
-							className={`relative pb-3 text-sm font-bold transition-colors duration-300 cursor-pointer ${
-								activeTab === 'starred'
-									? 'text-slate-900 dark:text-white'
-									: 'text-slate-450 hover:text-slate-650 dark:text-zinc-550 dark:hover:text-zinc-350'
-							}`}
-						>
-							Starred Favorites
-							{activeTab === 'starred' && (
-								<motion.div
-									layoutId='activeTabUnderline'
-									className='absolute bottom-0 left-0 right-0 h-[3px] rounded-full bg-[#CFF54A]'
-									transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-								/>
-							)}
-						</button>
+					<div className='flex flex-wrap items-center gap-6 border-b border-slate-200/40 pb-0.5 dark:border-zinc-800/40'>
+						{LIST_TABS.map((tab) => (
+							<button
+								key={tab.id}
+								type='button'
+								onClick={() => setActiveTab(tab.id)}
+								className={`relative cursor-pointer pb-3 text-sm font-bold transition-colors duration-300 ${
+									activeTab === tab.id
+										? 'text-slate-900 dark:text-white'
+										: 'text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300'
+								}`}>
+								{tab.label}
+								{activeTab === tab.id && (
+									<motion.div
+										layoutId='activeTabUnderline'
+										className='absolute right-0 bottom-0 left-0 h-[3px] rounded-full bg-[#CFF54A]'
+										transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+									/>
+								)}
+							</button>
+						))}
 					</div>
 
 					<div className='flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center'>
 						{/* Search box */}
 						<div className='group relative w-full sm:w-80'>
-							<Search className='absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-primary-500 dark:text-zinc-500' />
+							<Search className='group-focus-within:text-primary-500 absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors dark:text-zinc-500' />
 							<input
 								aria-label='Search workspace workflows'
 								value={searchQuery}
 								onChange={(event) => setSearchQuery(event.target.value)}
 								placeholder='Search workflows by title or description...'
-								className='dark:placeholder-zinc-450 h-10 w-full rounded-xl border border-border-main bg-bg-card pr-9 pl-10 text-xs font-semibold text-slate-900 placeholder-slate-400 shadow-2xs transition-all outline-none focus:border-[#CFF54A] focus:ring-[4px] focus:ring-[rgba(207,245,74,0.18)] dark:border-border-main dark:bg-bg-card dark:text-white'
+								className='dark:placeholder-zinc-450 border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card h-10 w-full rounded-xl border pr-9 pl-10 text-xs font-semibold text-slate-900 placeholder-slate-400 shadow-2xs transition-all outline-none focus:border-[#CFF54A] focus:ring-[4px] focus:ring-[rgba(207,245,74,0.18)] dark:text-white'
 							/>
 							{searchQuery && (
 								<button
@@ -833,6 +1329,23 @@ const WorkflowsListPage = () => {
 							)}
 						</div>
 
+						{/* Sort selector */}
+						<div className='relative'>
+							<ArrowUpDown className='pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-zinc-500' />
+							<select
+								aria-label='Sort workflows'
+								value={sortBy}
+								onChange={(event) => setSortBy(event.target.value as TSortOption)}
+								className='border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card h-10 w-full cursor-pointer appearance-none rounded-xl border pr-8 pl-9 text-xs font-bold text-slate-700 shadow-2xs transition outline-none focus:border-[#CFF54A] dark:text-white'>
+								{SORT_OPTIONS.map((option) => (
+									<option key={option.id} value={option.id}>
+										{option.label}
+									</option>
+								))}
+							</select>
+							<ChevronDown className='pointer-events-none absolute top-1/2 right-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-zinc-500' />
+						</div>
+
 						{/* Grid / List toggle selector */}
 						<div className='flex items-center gap-1.5'>
 							<button
@@ -841,10 +1354,9 @@ const WorkflowsListPage = () => {
 								onClick={() => setIsGridView(true)}
 								className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border transition-all duration-300 ${
 									isGridView
-										? 'border-primary-400 bg-primary-100/10 text-slate-900 dark:border-primary-400 dark:bg-primary-950/20 dark:text-white'
-										: 'border-border-main bg-bg-card text-slate-400 hover:text-slate-655 dark:border-border-main dark:bg-bg-card dark:text-zinc-500'
-								}`}
-							>
+										? 'border-primary-400 bg-primary-100/10 dark:border-primary-400 dark:bg-primary-950/20 text-slate-900 dark:text-white'
+										: 'border-border-main bg-bg-card hover:text-slate-655 dark:border-border-main dark:bg-bg-card text-slate-400 dark:text-zinc-500'
+								}`}>
 								<LayoutGrid size={16} />
 							</button>
 							<button
@@ -853,15 +1365,48 @@ const WorkflowsListPage = () => {
 								onClick={() => setIsGridView(false)}
 								className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border transition-all duration-300 ${
 									!isGridView
-										? 'border-primary-400 bg-primary-100/10 text-slate-900 dark:border-primary-400 dark:bg-primary-950/20 dark:text-white'
-										: 'border-border-main bg-bg-card text-slate-400 hover:text-slate-[#655] dark:border-border-main dark:bg-bg-card dark:text-zinc-500'
-								}`}
-							>
+										? 'border-primary-400 bg-primary-100/10 dark:border-primary-400 dark:bg-primary-950/20 text-slate-900 dark:text-white'
+										: 'border-border-main bg-bg-card hover:text-slate-[#655] dark:border-border-main dark:bg-bg-card text-slate-400 dark:text-zinc-500'
+								}`}>
 								<List size={16} />
 							</button>
 						</div>
 					</div>
 				</section>
+
+				{matchCount === 0 && (
+					<div className='border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card flex flex-col items-center gap-3 rounded-2xl border border-dashed px-6 py-12 text-center'>
+						<div className='bg-primary-100/50 text-primary-800 dark:bg-primary-950/40 dark:text-primary-400 flex h-11 w-11 items-center justify-center rounded-xl'>
+							<Search size={18} />
+						</div>
+						<p className='text-sm font-black text-slate-800 dark:text-white'>
+							No workflows match these filters
+						</p>
+						<p className='max-w-sm text-xs font-semibold text-slate-500 dark:text-zinc-400'>
+							{searchQuery
+								? `Nothing found for "${searchQuery}".`
+								: 'Try a different tab to see more workflows.'}
+						</p>
+						<div className='flex flex-wrap items-center justify-center gap-2 pt-1'>
+							{searchQuery && (
+								<button
+									type='button'
+									onClick={() => setSearchQuery('')}
+									className='dark:border-border-main dark:bg-bg-card flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 dark:text-white dark:hover:bg-zinc-950/20'>
+									<X size={13} /> Clear search
+								</button>
+							)}
+							{activeTab !== 'all' && (
+								<button
+									type='button'
+									onClick={() => setActiveTab('all')}
+									className='dark:border-border-main dark:bg-bg-card flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 dark:text-white dark:hover:bg-zinc-950/20'>
+									<Workflow size={13} /> Show all workflows
+								</button>
+							)}
+						</div>
+					</div>
+				)}
 
 				{/* Workflow groups */}
 				<div className='space-y-6'>
@@ -872,9 +1417,18 @@ const WorkflowsListPage = () => {
 						return (
 							<div key={folder.id} className='space-y-3.5'>
 								{isRootGroup ? (
-									<div className='shadow-sm flex items-center justify-between gap-3 rounded-2xl border border-border-main bg-bg-card px-5 py-4 transition-all duration-300 dark:border-border-main dark:bg-bg-card'>
+									<div
+										onDragOver={handleDragOver}
+										onDragEnter={() => handleDragEnter(ROOT_FOLDER_ID)}
+										onDragLeave={handleDragLeave}
+										onDrop={(e) => handleDropOnFolder(e, ROOT_FOLDER_ID)}
+										className={`flex items-center justify-between gap-3 rounded-2xl border px-5 py-4 shadow-sm transition-all duration-300 ${
+											dragOverFolderId === ROOT_FOLDER_ID
+												? 'border-primary-400 bg-soft-accent-bg dark:border-primary-400 dark:bg-primary-400/10'
+												: 'border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card'
+										}`}>
 										<div className='flex min-w-0 items-center gap-3'>
-											<div className='text-primary-800 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-100/50 shadow-xs dark:bg-primary-950/40 dark:text-primary-400'>
+											<div className='text-primary-800 bg-primary-100/50 dark:bg-primary-950/40 dark:text-primary-400 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-xs'>
 												<Workflow size={17} />
 											</div>
 											<div className='min-w-0'>
@@ -887,7 +1441,7 @@ const WorkflowsListPage = () => {
 												</p>
 											</div>
 										</div>
-										<span className='shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-[#CFF54A] text-[10px] font-black text-black shadow-xs dark:bg-[#CFF54A] dark:text-black'>
+										<span className='flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#CFF54A] text-[10px] font-black text-black shadow-xs dark:bg-[#CFF54A] dark:text-black'>
 											{groupedItems.length}
 										</span>
 									</div>
@@ -895,7 +1449,7 @@ const WorkflowsListPage = () => {
 									<div
 										onDragOver={handleDragOver}
 										onDragEnter={() => handleDragEnter(folder.id)}
-										onDragLeave={(e) => handleDragLeave(e, folder.id)}
+										onDragLeave={handleDragLeave}
 										onDrop={(e) => handleDropOnFolder(e, folder.id)}
 										className={`group/folder relative flex items-center overflow-hidden rounded-2xl border shadow-xs transition-all duration-300 ${
 											dragOverFolderId === folder.id
@@ -903,7 +1457,8 @@ const WorkflowsListPage = () => {
 												: 'border-border-main bg-bg-card hover:border-primary-200 dark:border-border-main dark:bg-bg-card'
 										}`}>
 										<div
-											className='absolute top-0 bottom-0 left-0 w-1 bg-[#CFF54A]'
+											className='absolute top-0 bottom-0 left-0 w-1'
+											style={{ backgroundColor: folder.color }}
 										/>
 
 										<button
@@ -916,7 +1471,7 @@ const WorkflowsListPage = () => {
 											}
 											className='group/btn flex min-w-0 flex-1 cursor-pointer items-center justify-between py-4 pr-3.5 pl-6 text-left'>
 											<div className='flex min-w-0 items-center gap-3.5'>
-												<span className='dark:text-zinc-400 text-slate-400 transition-transform duration-300 group-hover/btn:translate-x-0.5'>
+												<span className='text-slate-400 transition-transform duration-300 group-hover/btn:translate-x-0.5 dark:text-zinc-400'>
 													{isExpanded ? (
 														<ChevronDown
 															size={14}
@@ -930,23 +1485,113 @@ const WorkflowsListPage = () => {
 													)}
 												</span>
 												<div
-													className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-100/50 text-primary-800 shadow-xs dark:bg-primary-950/40 dark:text-primary-400'>
-													<Folder size={16} />
+													className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-xs'
+													style={{
+														backgroundColor: `${folder.color}1a`,
+														color: folder.color,
+													}}>
+													{isExpanded ? (
+														<FolderOpen size={16} />
+													) : (
+														<Folder size={16} />
+													)}
 												</div>
 												<span className='truncate text-xs font-bold tracking-wide text-slate-800 dark:text-white'>
 													{folder.name}
 												</span>
 											</div>
-											<span className='shrink-0 rounded-full bg-slate-100 dark:bg-zinc-950/40 text-[10px] font-bold text-slate-500 h-6 w-6 flex items-center justify-center shadow-3xs dark:text-zinc-400'>
+											<span className='shadow-3xs flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-500 dark:bg-zinc-950/40 dark:text-zinc-400'>
 												{groupedItems.length}
 											</span>
 										</button>
-										<button
-											aria-label={`Edit ${folder.name}`}
-											onClick={() => openEditFolder(folder)}
-											className='mr-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-zinc-800 dark:hover:text-white'>
-											<Edit3 size={14} />
-										</button>
+										<div className='relative mr-4 shrink-0'>
+											<button
+												type='button'
+												aria-label={`Open actions for ${folder.name}`}
+												onClick={(e) => {
+													e.stopPropagation();
+													setActiveFolderMenuId(
+														activeFolderMenuId === folder.id
+															? null
+															: folder.id,
+													);
+												}}
+												className={`flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-zinc-800 dark:hover:text-white ${
+													activeFolderMenuId === folder.id
+														? 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-white'
+														: ''
+												}`}>
+												<MoreVertical size={14} />
+											</button>
+											<AnimatePresence>
+												{activeFolderMenuId === folder.id && (
+													<motion.div
+														initial={{ opacity: 0, scale: 0.95, y: 5 }}
+														animate={{ opacity: 1, scale: 1, y: 0 }}
+														exit={{ opacity: 0, scale: 0.95, y: 5 }}
+														onClick={(e) => e.stopPropagation()}
+														className='absolute right-0 z-50 mt-2 w-52 rounded-xl border border-slate-200/80 bg-white/95 p-1.5 text-left shadow-2xl backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/95'>
+														<button
+															type='button'
+															onClick={() => {
+																setActiveFolderMenuId(null);
+																setNewWfFolderId(folder.id);
+																setIsCreateWorkflowOpen(true);
+															}}
+															className={menuItemClass}>
+															<Plus
+																size={12}
+																className='text-primary-500'
+															/>{' '}
+															New workflow here
+														</button>
+														<button
+															type='button'
+															onClick={() => {
+																setActiveFolderMenuId(null);
+																openEditFolder(folder);
+															}}
+															className={menuItemClass}>
+															<Edit3
+																size={12}
+																className='text-slate-400'
+															/>{' '}
+															Rename / recolor
+														</button>
+														<button
+															type='button'
+															onClick={() =>
+																setExpandedFolders((prev) => ({
+																	...prev,
+																	[folder.id]: !isExpanded,
+																}))
+															}
+															className={menuItemClass}>
+															{isExpanded ? (
+																<ChevronRight
+																	size={12}
+																	className='text-slate-400'
+																/>
+															) : (
+																<ChevronDown
+																	size={12}
+																	className='text-slate-400'
+																/>
+															)}
+															{isExpanded ? 'Collapse' : 'Expand'}
+														</button>
+														<button
+															type='button'
+															onClick={() =>
+																handleDeleteFolder(folder)
+															}
+															className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20'>
+															<Trash2 size={12} /> Delete folder
+														</button>
+													</motion.div>
+												)}
+											</AnimatePresence>
+										</div>
 									</div>
 								)}
 
@@ -959,7 +1604,7 @@ const WorkflowsListPage = () => {
 											transition={{ duration: 0.2, ease: 'easeInOut' }}
 											className='overflow-visible'>
 											{groupedItems.length === 0 ? (
-												<div className='rounded-2xl border border-dashed border-border-main bg-bg-card p-8 text-center text-sm font-semibold text-text-muted dark:border-border-main dark:bg-bg-card'>
+												<div className='border-border-main bg-bg-card text-text-muted dark:border-border-main dark:bg-bg-card rounded-2xl border border-dashed p-8 text-center text-sm font-semibold'>
 													No workflows in this folder matching your
 													current filters.
 												</div>
@@ -970,93 +1615,51 @@ const WorkflowsListPage = () => {
 															key={wf.id}
 															role='link'
 															tabIndex={0}
-															draggable
-															onDragStart={(e) => handleDragStart(e, wf.id)}
+															draggable={renamingId !== wf.id}
+															onDragStart={(e) =>
+																handleDragStart(e, wf.id)
+															}
 															onDragEnd={handleDragEnd}
 															onClick={() =>
 																navigate(
-																	paths.editPlaybook(currentWorkspaceId, wf.id),
+																	paths.editPlaybook(
+																		currentWorkspaceId,
+																		wf.id,
+																	),
 																)
 															}
 															onKeyDown={(e) => {
 																if (e.key === 'Enter') {
 																	navigate(
-																		paths.editPlaybook(currentWorkspaceId, wf.id),
+																		paths.editPlaybook(
+																			currentWorkspaceId,
+																			wf.id,
+																		),
 																	);
 																}
 															}}
-															className='group relative flex min-h-[220px] cursor-pointer flex-col justify-between rounded-2xl border border-border-main bg-bg-card p-5.5 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-primary-300/85 hover:shadow-md dark:border-border-main dark:bg-bg-card'>
-															{/* Bottom interactive line */}
-															<div className='absolute right-0 bottom-0 left-0 h-1.5 rounded-b-2xl bg-primary-400 opacity-0 transition-opacity duration-300 group-hover:opacity-10' />
+															className={`group border-border-main bg-bg-card hover:border-primary-300/85 dark:border-border-main dark:bg-bg-card relative flex min-h-[220px] cursor-pointer flex-col justify-between rounded-2xl border p-5.5 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${
+																draggedWorkflowId === wf.id
+																	? 'opacity-50'
+																	: ''
+															}`}>
+															<div className='bg-primary-400 absolute right-0 bottom-0 left-0 h-1.5 rounded-b-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-10' />
 
 															<div className='flex flex-col gap-3.5'>
 																<div className='flex items-start justify-between gap-4'>
 																	<div className='flex min-w-0 items-center gap-3.5'>
-																		<div
-																			className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-100/50 text-primary-800 shadow-xs transition-all duration-300 group-hover:scale-105 dark:bg-primary-950/40 dark:text-primary-400'>
+																		<div className='bg-primary-100/50 text-primary-800 dark:bg-primary-950/40 dark:text-primary-400 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-xs transition-all duration-300 group-hover:scale-105'>
 																			<Workflow size={18} />
 																		</div>
 																		<div className='min-w-0'>
 																			<div className='flex flex-wrap items-center gap-2'>
 																				{renamingId ===
 																				wf.id ? (
-																					<div
-																						className='flex items-center gap-1.5'
-																						onClick={(
-																							e,
-																						) =>
-																							e.stopPropagation()
-																						}
-																						onKeyDown={(
-																							e,
-																						) =>
-																							e.stopPropagation()
-																						}>
-																						<input
-																							aria-label={`Rename ${wf.title}`}
-																							ref={
-																								renameInputRef
-																							}
-																							value={
-																								renameValue
-																							}
-																							onChange={(
-																								e,
-																							) =>
-																								setRenameValue(
-																									e
-																										.target
-																										.value,
-																								)
-																							}
-																							onKeyDown={(
-																								e,
-																							) =>
-																								e.key ===
-																									'Enter' &&
-																								handleRenameSubmit(
-																									wf.id,
-																								)
-																							}
-																							onBlur={() =>
-																								handleRenameSubmit(
-																									wf.id,
-																								)
-																							}
-																							className='h-8 w-full rounded-lg border border-primary-500 bg-white px-2 text-xs font-semibold text-slate-900 transition outline-none dark:bg-zinc-950 dark:text-white'
-																						/>
-																						<button
-																							onClick={() =>
-																								handleRenameSubmit(
-																									wf.id,
-																								)
-																							}
-																							className='h-8 shrink-0 rounded-lg bg-slate-900 px-3 text-[10px] font-black text-white dark:bg-zinc-200 dark:text-slate-950'>
-																							Save
-																						</button>
-																					</div>
+																					renderRenameInput(
+																						wf,
+																					)
 																				) : (
-																					<h3 className='truncate text-sm font-black tracking-wide text-slate-900 transition-colors duration-200 group-hover:text-primary-600 dark:text-white dark:group-hover:text-primary-400'>
+																					<h3 className='group-hover:text-primary-600 dark:group-hover:text-primary-400 truncate text-sm font-black tracking-wide text-slate-900 transition-colors duration-200 dark:text-white'>
 																						{wf.title}
 																					</h3>
 																				)}
@@ -1065,195 +1668,51 @@ const WorkflowsListPage = () => {
 																						wf.status ===
 																						'active'
 																							? 'border-primary-200 bg-primary-100/50 text-primary-800 dark:border-primary-500/20 dark:bg-primary-500/10 dark:text-primary-300'
-																							: 'border-slate-200 bg-slate-100 text-slate-500 dark:border-transparent dark:bg-border-main dark:text-zinc-300'
+																							: 'dark:bg-border-main border-slate-200 bg-slate-100 text-slate-500 dark:border-transparent dark:text-zinc-300'
 																					}`}>
 																					{wf.status ===
 																						'active' && (
 																						<span className='relative flex h-1.5 w-1.5'>
-																							<span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-400 opacity-75'></span>
-																							<span className='relative inline-flex h-1.5 w-1.5 rounded-full bg-primary-500'></span>
+																							<span className='bg-primary-400 absolute inline-flex h-full w-full animate-ping rounded-full opacity-75'></span>
+																							<span className='bg-primary-500 relative inline-flex h-1.5 w-1.5 rounded-full'></span>
 																						</span>
 																					)}
-																					{wf.status}
+																					{wf.status ===
+																					'active'
+																						? 'published'
+																						: 'draft'}
 																				</span>
+																				{wf.hasUnpublishedChanges && (
+																					<span className='shadow-3xs flex shrink-0 items-center gap-1 rounded-full border border-amber-300/60 bg-amber-50 px-2 py-0.5 text-[9px] font-black tracking-wider text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400'>
+																						<AlertTriangle
+																							size={9}
+																						/>{' '}
+																						Unpublished
+																					</span>
+																				)}
 																			</div>
-																			<p className='dark:text-zinc-400 mt-1 line-clamp-1 text-[10px] font-bold text-slate-400'>
-																				Created workspace
-																				workflow
+																			<p className='mt-1 line-clamp-1 text-[10px] font-bold text-slate-400 dark:text-zinc-400'>
+																				{wf.folderId
+																					? (folders.find(
+																							(f) =>
+																								f.id ===
+																								wf.folderId,
+																						)?.name ??
+																						'Workspace workflow')
+																					: 'Root level workflow'}
 																			</p>
 																		</div>
 																	</div>
 
-																	<div className='relative z-25 flex shrink-0 items-center gap-1'>
-																		<motion.button
-																			type='button'
-																			whileHover={{
-																				scale: 1.15,
-																			}}
-																			whileTap={{
-																				scale: 0.9,
-																			}}
-																			aria-label={`${wf.starred ? 'Remove' : 'Add'} ${wf.title} ${wf.starred ? 'from' : 'to'} starred workflows`}
-																			onClick={(e) =>
-																				handleToggleStar(
-																					wf.id,
-																					e,
-																				)
-																			}
-																			className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border transition-colors ${
-																				wf.starred
-																					? 'shadow-3xs border-amber-500/10 bg-amber-500/5 text-amber-500'
-																					: 'border-transparent text-slate-300 hover:bg-slate-100/80 hover:text-slate-500 dark:hover:bg-zinc-800'
-																			}`}>
-																			<Star
-																				size={15}
-																				className={
-																					wf.starred
-																						? 'fill-amber-500'
-																						: ''
-																				}
-																			/>
-																		</motion.button>
-																		<div className='relative'>
-																			<button
-																				type='button'
-																				aria-label={`Open actions for ${wf.title}`}
-																				onClick={(e) => {
-																					e.stopPropagation();
-																					setActiveMenuId(
-																						activeMenuId ===
-																							wf.id
-																							? null
-																							: wf.id,
-																					);
-																				}}
-																				className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-zinc-800 ${
-																					activeMenuId ===
-																					wf.id
-																						? 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-white'
-																						: ''
-																				}`}>
-																				<MoreVertical
-																					size={16}
-																				/>
-																			</button>
-																			<AnimatePresence>
-																				{activeMenuId ===
-																					wf.id && (
-																					<motion.div
-																						initial={{
-																							opacity: 0,
-																							scale: 0.95,
-																							y: 5,
-																						}}
-																						animate={{
-																							opacity: 1,
-																							scale: 1,
-																							y: 0,
-																						}}
-																						exit={{
-																							opacity: 0,
-																							scale: 0.95,
-																							y: 5,
-																						}}
-																						onClick={(
-																							e,
-																						) =>
-																							e.stopPropagation()
-																						}
-																						className='absolute right-0 z-50 mt-2 w-48 rounded-xl border border-slate-200/80 bg-white/95 p-1.5 text-left shadow-2xl backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/95'>
-																						<button
-																							type='button'
-																							onClick={(
-																								e,
-																							) => {
-																								setActiveMenuId(
-																									null,
-																								);
-																								handleRunNow(
-																									wf.id,
-																									e,
-																								);
-																							}}
-																							className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-800'>
-																							<Play
-																								size={
-																									12
-																								}
-																								className='fill-emerald-500/10 text-emerald-500'
-																							/>
-																							Run now
-																						</button>
-																						<button
-																							type='button'
-																							onClick={() => {
-																								setActiveMenuId(
-																									null,
-																								);
-																								navigate(
-																									paths.editPlaybook(currentWorkspaceId, wf.id),
-																								);
-																							}}
-																							className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-800'>
-																							<Edit3
-																								size={
-																									12
-																								}
-																								className='text-primary-500'
-																							/>
-																							Open
-																							editor
-																						</button>
-																						{renderWorkflowOrganizationActions(
-																							wf,
-																						)}
-																						<button
-																							type='button'
-																							onClick={(
-																								e,
-																							) => {
-																								setActiveMenuId(
-																									null,
-																								);
-																								handleDuplicate(
-																									wf,
-																									e,
-																								);
-																							}}
-																							className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-800'>
-																							<Copy
-																								size={
-																									12
-																								}
-																								className='text-blue-500'
-																							/>
-																							Duplicate
-																						</button>
-																						<button
-																							type='button'
-																							onClick={(
-																								e,
-																							) => {
-																								setActiveMenuId(
-																									null,
-																								);
-																								handleDelete(
-																									wf.id,
-																									e,
-																								);
-																							}}
-																							className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20'>
-																							<Trash2
-																								size={
-																									12
-																								}
-																							/>
-																							Delete
-																						</button>
-																					</motion.div>
-																				)}
-																			</AnimatePresence>
-																		</div>
+																	<div
+																		className='relative z-25 flex shrink-0 items-center gap-1'
+																		onClick={(e) =>
+																			e.stopPropagation()
+																		}>
+																		{renderStarButton(wf)}
+																		{renderWorkflowMenuTrigger(
+																			wf,
+																		)}
 																	</div>
 																</div>
 
@@ -1271,7 +1730,7 @@ const WorkflowsListPage = () => {
 																				/>
 																			))
 																		) : (
-																			<span className='inline-flex items-center gap-1.5 rounded-full bg-primary-100/50 px-2.5 py-0.5 text-[9px] font-bold text-primary-800 dark:bg-primary-950/40 dark:text-primary-400'>
+																			<span className='bg-primary-100/50 text-primary-800 dark:bg-primary-950/40 dark:text-primary-400 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[9px] font-bold'>
 																				<span className='h-1 w-1 rounded-full bg-[#CFF54A]' />
 																				Empty Workflow
 																			</span>
@@ -1280,13 +1739,13 @@ const WorkflowsListPage = () => {
 																</div>
 															</div>
 
-															<div className='mt-5 flex items-center justify-between gap-3 border-t border-border-main pt-4 dark:border-border-main'>
-																<div className='dark:text-zinc-400 flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-bold text-slate-400'>
+															<div className='border-border-main dark:border-border-main mt-5 flex items-center justify-between gap-3 border-t pt-4'>
+																<div className='flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-bold text-slate-400 dark:text-zinc-400'>
 																	<div className='flex items-center gap-1.5 truncate'>
 																		<Calendar
 																			size={12}
-																			className='dark:text-zinc-400 text-slate-400/80'
-										/>
+																			className='text-slate-400/80 dark:text-zinc-400'
+																		/>
 																		<span>
 																			Updated {wf.lastEdited}
 																		</span>
@@ -1294,7 +1753,7 @@ const WorkflowsListPage = () => {
 																	<div className='flex items-center gap-1.5 truncate'>
 																		<Clock
 																			size={12}
-																			className='dark:text-zinc-400 text-slate-400/80'
+																			className='text-slate-400/80 dark:text-zinc-400'
 																		/>
 																		<span>
 																			Run {wf.lastRun}
@@ -1302,14 +1761,14 @@ const WorkflowsListPage = () => {
 																	</div>
 																</div>
 																<div
-																	className='flex shrink-0 items-center gap-3'
+																	className='flex shrink-0 items-center gap-2'
 																	onClick={(e) =>
 																		e.stopPropagation()
 																	}>
-																	<span className='flex items-center gap-1.5 rounded-full bg-primary-100/50 px-2.5 py-0.75 text-[10px] font-black text-primary-800 dark:bg-primary-950/40 dark:text-primary-400'>
+																	<span className='bg-primary-100/50 text-primary-800 dark:bg-primary-950/40 dark:text-primary-400 flex items-center gap-1.5 rounded-full px-2.5 py-0.75 text-[10px] font-black'>
 																		<GitMerge
 																			size={11}
-																			className='rotate-90 text-primary-800 dark:text-primary-400'
+																			className='text-primary-800 dark:text-primary-400 rotate-90'
 																		/>
 																		<span>
 																			{wf.nodesCount}{' '}
@@ -1318,29 +1777,7 @@ const WorkflowsListPage = () => {
 																				: 'nodes'}
 																		</span>
 																	</span>
-
-																	<button
-																		aria-label={`${wf.status === 'active' ? 'Deactivate' : 'Activate'} ${wf.title}`}
-																		onClick={(e) =>
-																			handleToggleStatus(
-																				wf.id,
-																				e,
-																			)
-																		}
-																		className={`relative h-5 w-9 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-305 ${
-																			wf.status === 'active'
-																				? 'bg-primary-400 shadow-sm shadow-primary-500/20 dark:bg-primary-400'
-																				: 'bg-slate-200 dark:bg-zinc-800'
-																		}`}>
-																		<div
-																			className={`h-4 w-4 rounded-full bg-white shadow-xs transition-transform duration-300 ${
-																				wf.status ===
-																				'active'
-																					? 'translate-x-4'
-																					: 'translate-x-0'
-																			}`}
-																		/>
-																	</button>
+																	{renderPublishControl(wf)}
 																</div>
 															</div>
 														</div>
@@ -1348,15 +1785,17 @@ const WorkflowsListPage = () => {
 												</div>
 											) : (
 												<div className='overflow-x-auto rounded-2xl border border-slate-200/60 bg-white/80 shadow-2xs backdrop-blur-md dark:border-zinc-800/60 dark:bg-zinc-950/40'>
-													<table className='w-full min-w-[820px] border-collapse text-left text-xs'>
+													<table className='w-full min-w-[920px] border-collapse text-left text-xs'>
 														<thead>
-															<tr className='dark:border-zinc-800/40 border-b border-slate-200/60 bg-slate-50/50 text-[10px] font-black tracking-widest text-slate-400 uppercase dark:bg-zinc-900/20 dark:text-zinc-500'>
+															<tr className='border-b border-slate-200/60 bg-slate-50/50 text-[10px] font-black tracking-widest text-slate-400 uppercase dark:border-zinc-800/40 dark:bg-zinc-900/20 dark:text-zinc-500'>
+																<th className='w-10 px-3 py-4' />
 																<th className='px-6 py-4'>
 																	Workflow Name
 																</th>
 																<th className='px-6 py-4'>
 																	Integrations
 																</th>
+																<th className='px-6 py-4'>Nodes</th>
 																<th className='px-6 py-4'>
 																	Updated
 																</th>
@@ -1375,14 +1814,44 @@ const WorkflowsListPage = () => {
 															{groupedItems.map((wf) => (
 																<tr
 																	key={wf.id}
+																	draggable={renamingId !== wf.id}
+																	onDragStart={(e) =>
+																		handleDragStart(e, wf.id)
+																	}
+																	onDragEnd={handleDragEnd}
 																	onClick={() =>
 																		navigate(
-																			paths.editPlaybook(currentWorkspaceId, wf.id),
+																			paths.editPlaybook(
+																				currentWorkspaceId,
+																				wf.id,
+																			),
 																		)
 																	}
-																	className='cursor-pointer transition-colors duration-200 hover:bg-slate-50/50 dark:hover:bg-zinc-900/20'>
+																	className={`cursor-pointer transition-colors duration-200 hover:bg-slate-50/50 dark:hover:bg-zinc-900/20 ${
+																		draggedWorkflowId === wf.id
+																			? 'opacity-50'
+																			: ''
+																	}`}>
+																	<td
+																		className='px-3 py-4'
+																		onClick={(e) =>
+																			e.stopPropagation()
+																		}>
+																		{renderStarButton(wf)}
+																	</td>
 																	<td className='px-6 py-4 font-extrabold text-slate-800 dark:text-zinc-200'>
-																		{wf.title}
+																		{renamingId === wf.id ? (
+																			renderRenameInput(wf)
+																		) : (
+																			<div className='flex min-w-0 flex-col'>
+																				<span className='truncate'>
+																					{wf.title}
+																				</span>
+																				<span className='mt-0.5 truncate text-[10px] font-semibold text-slate-400 dark:text-zinc-500'>
+																					{wf.description}
+																				</span>
+																			</div>
+																		)}
 																	</td>
 																	<td className='px-6 py-4'>
 																		<div className='flex items-center gap-1.5'>
@@ -1407,33 +1876,68 @@ const WorkflowsListPage = () => {
 																		</div>
 																	</td>
 																	<td className='px-6 py-4 font-semibold text-slate-500 dark:text-zinc-400'>
+																		{wf.nodesCount}
+																	</td>
+																	<td className='px-6 py-4 font-semibold text-slate-500 dark:text-zinc-400'>
 																		{wf.lastEdited}
 																	</td>
 																	<td className='px-6 py-4 font-semibold text-slate-500 dark:text-zinc-400'>
 																		{wf.lastRun}
 																	</td>
 																	<td className='px-6 py-4'>
-																		<span
-																			className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black tracking-wider uppercase ${
-																				wf.status ===
-																				'active'
-																					? 'bg-emerald-500/5 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'
-																					: 'bg-slate-105 text-slate-450 dark:bg-zinc-900 dark:text-zinc-500'
-																			}`}>
+																		<div className='flex flex-col items-start gap-1'>
 																			<span
-																				className={`h-1.5 w-1.5 rounded-full ${wf.status === 'active' ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-slate-400 dark:bg-zinc-600'}`}
-																			/>
-																			{wf.status}
-																		</span>
+																				className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black tracking-wider uppercase ${
+																					wf.status ===
+																					'active'
+																						? 'bg-emerald-500/5 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'
+																						: 'bg-slate-105 text-slate-450 dark:bg-zinc-900 dark:text-zinc-500'
+																				}`}>
+																				<span
+																					className={`h-1.5 w-1.5 rounded-full ${wf.status === 'active' ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-slate-400 dark:bg-zinc-600'}`}
+																				/>
+																				{wf.status ===
+																				'active'
+																					? 'published'
+																					: 'draft'}
+																			</span>
+																			{wf.hasUnpublishedChanges && (
+																				<span className='inline-flex items-center gap-1 text-[9px] font-black tracking-wider text-amber-600 uppercase dark:text-amber-400'>
+																					<AlertTriangle
+																						size={9}
+																					/>{' '}
+																					Unpublished
+																					changes
+																				</span>
+																			)}
+																		</div>
 																	</td>
 																	<td
 																		className='px-6 py-4 text-right whitespace-nowrap'
 																		onClick={(e) =>
 																			e.stopPropagation()
 																		}>
-																		{renderWorkflowListActions(
-																			wf,
-																		)}
+																		<div className='flex items-center justify-end gap-2'>
+																			{renderPublishControl(
+																				wf,
+																			)}
+																			<button
+																				type='button'
+																				onClick={(e) =>
+																					handleRunNow(
+																						wf.id,
+																						e,
+																					)
+																				}
+																				className='flex cursor-pointer items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-2.5 py-1 text-[10px] font-black text-emerald-600 transition hover:bg-emerald-500/10 dark:text-emerald-400'>
+																				<Play size={11} />{' '}
+																				Run
+																			</button>
+																			{renderWorkflowMenuTrigger(
+																				wf,
+																				true,
+																			)}
+																		</div>
 																	</td>
 																</tr>
 															))}
@@ -1450,255 +1954,7 @@ const WorkflowsListPage = () => {
 				</div>
 			</div>
 
-			{/* Modals */}
-			<AnimatePresence>
-				{isCreateWorkflowOpen && (
-					<motion.div
-						initial={{ opacity: 0 }}
-						animate={{ opacity: 1 }}
-						exit={{ opacity: 0 }}
-						className='fixed inset-0 z-100 flex items-center justify-center bg-black/60 p-4 font-sans backdrop-blur-md'
-						onClick={() => setIsCreateWorkflowOpen(false)}>
-						<motion.div
-							initial={{ scale: 0.95, y: 15 }}
-							animate={{ scale: 1, y: 0 }}
-							exit={{ scale: 0.95, y: 15 }}
-							transition={{ duration: 0.2 }}
-							className='dark:border-zinc-800/60 relative max-h-[calc(100vh-2rem)] w-full max-w-md overflow-y-auto rounded-3xl border border-slate-200/50 bg-white/95 p-6 shadow-2xl backdrop-blur-xl dark:bg-zinc-950/95'
-							onClick={(e) => e.stopPropagation()}>
-							<button
-								aria-label='Close create workflow dialog'
-								onClick={() => setIsCreateWorkflowOpen(false)}
-								className='absolute top-4.5 right-4.5 text-slate-400 transition hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300'>
-								<X size={18} />
-							</button>
-							<h3 className='mb-5 flex items-center gap-2 text-lg font-black text-slate-900 dark:text-white'>
-								<Workflow className='h-5 w-5 text-primary-600' /> Create Workflow
-							</h3>
-							<form onSubmit={handleCreateWorkflow} className='space-y-4'>
-								<div>
-									<label
-										htmlFor='new-workflow-name'
-										className='mb-1.5 block text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
-										Workflow Name
-									</label>
-									<input
-										id='new-workflow-name'
-										aria-label='Workflow name'
-										type='text'
-										required
-										placeholder='e.g. Lead Sync Manager'
-										value={newWfTitle}
-										onChange={(e) => setNewWfTitle(e.target.value)}
-										className='bg-slate-55/50 h-10 w-full rounded-xl border border-slate-200 px-3.5 text-xs font-semibold text-slate-900 transition outline-none focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-500/10 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-white dark:focus:bg-zinc-900'
-									/>
-								</div>
-								<div>
-									<label
-										htmlFor='new-workflow-description'
-										className='mb-1.5 block text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
-										Description
-									</label>
-									<textarea
-										id='new-workflow-description'
-										aria-label='Workflow description'
-										placeholder='e.g. Syncs signup details to Slack...'
-										value={newWfDesc}
-										onChange={(e) => setNewWfDesc(e.target.value)}
-										rows={3}
-										className='bg-slate-55/50 w-full resize-none rounded-xl border border-slate-200 p-3.5 text-xs font-semibold text-slate-900 transition outline-none focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-500/10 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-white dark:focus:bg-zinc-900'
-									/>
-								</div>
-								<div>
-									<label
-										htmlFor='new-workflow-folder'
-										className='mb-1.5 block text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
-										Assign to Folder
-									</label>
-									<select
-										id='new-workflow-folder'
-										value={newWfFolderId}
-										onChange={(e) => setNewWfFolderId(e.target.value)}
-										className='bg-slate-55/50 h-10 w-full rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-900 transition outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/25 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white'>
-										<option value=''>No Folder (Root level)</option>
-										{folders.map((f) => (
-											<option key={f.id} value={f.id}>
-												{f.name}
-											</option>
-										))}
-									</select>
-								</div>
-								<div className='flex flex-col-reverse gap-2.5 pt-2 sm:flex-row sm:justify-end'>
-									<button
-										type='button'
-										onClick={() => setIsCreateWorkflowOpen(false)}
-										className='dark:hover:bg-zinc-800 h-9.5 cursor-pointer rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-500 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
-										Cancel
-									</button>
-									<button
-										type='submit'
-										className='h-9.5 cursor-pointer rounded-xl bg-gradient-to-r from-primary-400 to-primary-400 px-5 text-xs font-bold text-primary-950 shadow-sm shadow-[#7c3aed]/10 transition-all hover:brightness-110'>
-										Create Workflow
-									</button>
-								</div>
-							</form>
-						</motion.div>
-					</motion.div>
-				)}
-
-				{isCreateFolderOpen && (
-					<motion.div
-						initial={{ opacity: 0 }}
-						animate={{ opacity: 1 }}
-						exit={{ opacity: 0 }}
-						className='fixed inset-0 z-100 flex items-center justify-center bg-black/60 p-4 font-sans backdrop-blur-md'
-						onClick={() => setIsCreateFolderOpen(false)}>
-						<motion.div
-							initial={{ scale: 0.95, y: 15 }}
-							animate={{ scale: 1, y: 0 }}
-							exit={{ scale: 0.95, y: 15 }}
-							transition={{ duration: 0.2 }}
-							className='dark:border-zinc-800/60 relative max-h-[calc(100vh-2rem)] w-full max-w-sm overflow-y-auto rounded-3xl border border-slate-200/50 bg-white/95 p-6 shadow-2xl backdrop-blur-xl dark:bg-zinc-950/95'
-							onClick={(e) => e.stopPropagation()}>
-							<button
-								aria-label='Close create folder dialog'
-								onClick={() => setIsCreateFolderOpen(false)}
-								className='hover:text-slate-655 dark:text-zinc-550 absolute top-4.5 right-4.5 text-slate-400 transition dark:hover:text-zinc-300'>
-								<X size={18} />
-							</button>
-							<h3 className='mb-5 flex items-center gap-2 text-lg font-black text-slate-900 dark:text-white'>
-								<FolderPlus className='h-5 w-5 text-primary-600' /> Create Folder
-							</h3>
-							<form onSubmit={handleCreateFolder} className='space-y-4'>
-								<div>
-									<label
-										htmlFor='new-folder-name'
-										className='mb-1.5 block text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
-										Folder Name
-									</label>
-									<input
-										id='new-folder-name'
-										aria-label='Folder name'
-										type='text'
-										required
-										placeholder='e.g. Lead Processing'
-										value={newFolderName}
-										onChange={(e) => setNewFolderName(e.target.value)}
-										className='border-slate-205 bg-slate-55/50 h-10 w-full rounded-xl border px-3.5 text-xs font-semibold text-slate-900 transition outline-none focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-500/10 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-white dark:focus:bg-zinc-900'
-									/>
-								</div>
-								<div>
-									<p className='mb-2.5 block text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
-										Select Theme Color
-									</p>
-									<div className='flex items-center gap-2.5'>
-										{FOLDER_COLOR_OPTIONS.map((color) => (
-											<button
-												aria-label={`Use ${color.label} folder color`}
-												key={color.value}
-												type='button'
-												title={color.label}
-												onClick={() => setNewFolderColor(color.value)}
-												style={{ backgroundColor: color.value }}
-												className={`h-7.5 w-7.5 rounded-full cursor-pointer border transition ${newFolderColor === color.value ? 'scale-110 border-slate-800 ring-2 ring-primary-500 dark:border-white' : 'border-slate-200/50 hover:scale-105'}`}
-											/>
-										))}
-									</div>
-								</div>
-								<div className='flex flex-col-reverse gap-2.5 pt-2 sm:flex-row sm:justify-end'>
-									<button
-										type='button'
-										onClick={() => setIsCreateFolderOpen(false)}
-										className='dark:hover:bg-zinc-800 h-9.5 cursor-pointer rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-500 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
-										Cancel
-									</button>
-									<button
-										type='submit'
-										className='h-9.5 cursor-pointer rounded-xl bg-gradient-to-r from-primary-400 to-primary-400 px-5 text-xs font-bold text-primary-950 shadow-sm shadow-primary-500/10 transition-all hover:brightness-110'>
-										Create Folder
-									</button>
-								</div>
-							</form>
-						</motion.div>
-					</motion.div>
-				)}
-
-				{editingFolder && (
-					<motion.div
-						initial={{ opacity: 0 }}
-						animate={{ opacity: 1 }}
-						exit={{ opacity: 0 }}
-						className='fixed inset-0 z-100 flex items-center justify-center bg-black/60 p-4 font-sans backdrop-blur-md'
-						onClick={() => setEditingFolder(null)}>
-						<motion.div
-							initial={{ scale: 0.95, y: 15 }}
-							animate={{ scale: 1, y: 0 }}
-							exit={{ scale: 0.95, y: 15 }}
-							transition={{ duration: 0.2 }}
-							className='dark:border-zinc-800/60 relative max-h-[calc(100vh-2rem)] w-full max-w-sm overflow-y-auto rounded-3xl border border-slate-200/50 bg-white/95 p-6 shadow-2xl backdrop-blur-xl dark:bg-zinc-950/95'
-							onClick={(e) => e.stopPropagation()}>
-							<button
-								aria-label='Close edit folder dialog'
-								onClick={() => setEditingFolder(null)}
-								className='hover:text-slate-655 dark:text-zinc-550 absolute top-4.5 right-4.5 text-slate-400 transition dark:hover:text-zinc-300'>
-								<X size={18} />
-							</button>
-							<h3 className='mb-5 flex items-center gap-2 text-lg font-black text-slate-900 dark:text-white'>
-								<Edit3 className='h-5 w-5 text-primary-600' /> Edit Folder
-							</h3>
-							<form onSubmit={handleUpdateFolder} className='space-y-4'>
-								<div>
-									<label
-										htmlFor='edit-folder-name'
-										className='mb-1.5 block text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
-										Folder Name
-									</label>
-									<input
-										id='edit-folder-name'
-										aria-label='Edit folder name'
-										type='text'
-										required
-										value={editFolderName}
-										onChange={(e) => setEditFolderName(e.target.value)}
-										className='border-slate-205 bg-slate-55/50 h-10 w-full rounded-xl border px-3.5 text-xs font-semibold text-slate-900 transition outline-none focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-500/10 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-white dark:focus:bg-zinc-900'
-									/>
-								</div>
-								<div>
-									<p className='mb-2.5 block text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
-										Select Theme Color
-									</p>
-									<div className='flex items-center gap-2.5'>
-										{FOLDER_COLOR_OPTIONS.map((color) => (
-											<button
-												aria-label={`Use ${color.label} folder color`}
-												key={color.value}
-												type='button'
-												title={color.label}
-												onClick={() => setEditFolderColor(color.value)}
-												style={{ backgroundColor: color.value }}
-												className={`h-7.5 w-7.5 rounded-full cursor-pointer border transition ${editFolderColor === color.value ? 'scale-110 border-slate-800 ring-2 ring-primary-500 dark:border-white' : 'border-slate-200/50 hover:scale-105'}`}
-											/>
-										))}
-									</div>
-								</div>
-								<div className='flex flex-col-reverse gap-2.5 pt-2 sm:flex-row sm:justify-end'>
-									<button
-										type='button'
-										onClick={() => setEditingFolder(null)}
-										className='dark:hover:bg-zinc-800 h-9.5 cursor-pointer rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-500 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
-										Cancel
-									</button>
-									<button
-										type='submit'
-										className='h-9.5 cursor-pointer rounded-xl bg-gradient-to-r from-primary-400 to-primary-400 px-5 text-xs font-bold text-primary-950 shadow-sm shadow-primary-500/10 transition-all hover:brightness-110'>
-										Save Changes
-									</button>
-								</div>
-							</form>
-						</motion.div>
-					</motion.div>
-				)}
-			</AnimatePresence>
+			{modals}
 		</Container>
 	);
 };

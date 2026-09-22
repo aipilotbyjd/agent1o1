@@ -371,14 +371,14 @@ const BlueprintsListPage = () => {
 							<h1 className='mb-3 text-3xl font-extrabold tracking-tight text-[#101828] sm:text-4xl dark:text-white'>
 								Blueprints
 							</h1>
-							<p className='mb-6 max-w-2xl text-xs leading-relaxed text-zinc-850 sm:text-sm dark:text-zinc-400'>
+							<p className='mb-6 max-w-2xl text-xs leading-relaxed text-zinc-700 sm:text-sm dark:text-zinc-400'>
 								Turn any workflow, agent, or bundle of both into a reusable template - then spin
 								up new ones from it in one click.
 							</p>
 
 							<div className='mt-6 flex flex-wrap items-center gap-4'>
 								<div className='flex items-center gap-3 rounded-2xl border border-white/20 bg-white/40 px-4 py-2.5 shadow-xs backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/60'>
-									<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-white/50 dark:bg-zinc-850'>
+									<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-white/50 dark:bg-zinc-800'>
 										<Workflow className='h-4.5 w-4.5 text-[#101828] dark:text-primary-400' />
 									</div>
 									<div>
@@ -392,7 +392,7 @@ const BlueprintsListPage = () => {
 								</div>
 
 								<div className='flex items-center gap-3 rounded-2xl border border-white/20 bg-white/40 px-4 py-2.5 shadow-xs backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/60'>
-									<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-white/50 dark:bg-zinc-850'>
+									<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-white/50 dark:bg-zinc-800'>
 										<Layers className='h-4.5 w-4.5 text-[#101828] dark:text-primary-400' />
 									</div>
 									<div>
@@ -406,7 +406,7 @@ const BlueprintsListPage = () => {
 								</div>
 
 								<div className='flex items-center gap-3 rounded-2xl border border-white/20 bg-white/40 px-4 py-2.5 shadow-xs backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/60'>
-									<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-white/50 dark:bg-zinc-850'>
+									<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-white/50 dark:bg-zinc-800'>
 										<Sparkles className='h-4.5 w-4.5 text-[#101828] dark:text-primary-400' />
 									</div>
 									<div>
@@ -541,7 +541,7 @@ const BlueprintsListPage = () => {
 							</div>
 
 							{/* Layout Switcher */}
-							<div className='flex items-center rounded-lg border border-zinc-200/20 bg-zinc-200/55 p-0.5 dark:bg-zinc-900'>
+							<div className='flex items-center rounded-lg border border-zinc-200/20 bg-zinc-200/55 p-0.5 dark:border-zinc-800 dark:bg-zinc-900'>
 								<button
 									type='button'
 									onClick={() => setViewMode('grid')}
@@ -699,7 +699,7 @@ const BlueprintsListPage = () => {
 															<span className='text-xs text-zinc-400 capitalize'>
 																{wfDetail.category ?? 'uncategorized'}
 															</span>
-															<span className='text-zinc-300'>•</span>
+															<span className='text-zinc-300 dark:text-zinc-700'>•</span>
 															<span className='text-[10px] text-zinc-400'>
 																{wfDetail.usage_count || 0} active deployments
 															</span>
@@ -777,7 +777,7 @@ const BlueprintsListPage = () => {
 															<span className='text-xs text-zinc-400 capitalize'>
 																{agentDetail.category ?? 'uncategorized'}
 															</span>
-															<span className='text-zinc-300'>•</span>
+															<span className='text-zinc-300 dark:text-zinc-700'>•</span>
 															<span className='text-[10px] text-zinc-400'>
 																{agentDetail.usage_count || 0} deploys
 															</span>
@@ -919,7 +919,7 @@ const BlueprintsListPage = () => {
 														</h2>
 														<div className='mt-1 flex items-center gap-2'>
 															<span className='text-xs text-zinc-400'>Template Stack</span>
-															<span className='text-zinc-300'>•</span>
+															<span className='text-zinc-300 dark:text-zinc-700'>•</span>
 															<span className='text-[10px] text-zinc-400'>
 																{collectionDetail.items?.length ?? 0} assets included
 															</span>
@@ -954,7 +954,7 @@ const BlueprintsListPage = () => {
 															return (
 																<div
 																	key={item.id ?? idx}
-																	className='flex gap-3.5 rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900'>
+																	className='flex gap-3.5 rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700'>
 																	<div
 																		style={{ backgroundColor: `${color}15` }}
 																		className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-100 dark:border-zinc-800'>
@@ -969,7 +969,7 @@ const BlueprintsListPage = () => {
 																			<h4 className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
 																				{name}
 																			</h4>
-																			<span className='rounded border border-zinc-200/40 bg-zinc-50 px-1.5 py-0.5 text-[9px] font-bold text-zinc-400 uppercase dark:bg-zinc-950'>
+																			<span className='rounded border border-zinc-200/40 bg-zinc-50 px-1.5 py-0.5 text-[9px] font-bold text-zinc-400 uppercase dark:border-zinc-800 dark:bg-zinc-950'>
 																				{isAgent ? 'agent' : 'workflow'}
 																			</span>
 																		</div>
