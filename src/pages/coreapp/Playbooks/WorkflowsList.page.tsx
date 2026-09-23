@@ -1341,16 +1341,16 @@ const WorkflowsListPage = () => {
 						))}
 					</div>
 
-					<div className='flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center'>
+					<div className='border-border-main bg-bg-card dark:bg-bg-card grid grid-cols-[minmax(0,1fr)_auto] gap-2 rounded-2xl border p-2.5 shadow-sm sm:flex sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:dark:bg-transparent'>
 						{/* Search box */}
-						<div className='group relative w-full sm:w-80'>
+						<div className='group relative col-span-2 w-full sm:w-80'>
 							<Search className='group-focus-within:text-primary-500 absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors dark:text-zinc-500' />
 							<input
 								aria-label='Search workspace workflows'
 								value={searchQuery}
 								onChange={(event) => setSearchQuery(event.target.value)}
 								placeholder='Search workflows by title or description...'
-								className='dark:placeholder-zinc-450 border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card h-10 w-full rounded-xl border pr-9 pl-10 text-xs font-semibold text-slate-900 placeholder-slate-400 shadow-2xs transition-all outline-none focus:border-[#CFF54A] focus:ring-[4px] focus:ring-[rgba(207,245,74,0.18)] dark:text-white'
+								className='dark:placeholder-zinc-450 border-border-main sm:bg-bg-card dark:border-border-main sm:dark:bg-bg-card h-11 w-full rounded-xl border bg-slate-50/70 pr-9 pl-10 text-xs font-semibold text-slate-900 placeholder-slate-400 transition-all outline-none focus:border-[#CFF54A] focus:bg-white focus:ring-[3px] focus:ring-[rgba(207,245,74,0.14)] sm:h-10 sm:shadow-2xs dark:bg-zinc-950/50 dark:text-white'
 							/>
 							{searchQuery && (
 								<button
@@ -1364,13 +1364,13 @@ const WorkflowsListPage = () => {
 						</div>
 
 						{/* Sort selector */}
-						<div className='relative'>
+						<div className='relative min-w-0'>
 							<ArrowUpDown className='pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-zinc-500' />
 							<select
 								aria-label='Sort workflows'
 								value={sortBy}
 								onChange={(event) => setSortBy(event.target.value as TSortOption)}
-								className='border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card h-10 w-full cursor-pointer appearance-none rounded-xl bg-none border pr-8 pl-9 text-xs font-bold text-slate-700 shadow-2xs transition outline-none focus:border-[#CFF54A] dark:text-white'>
+								className='border-border-main sm:bg-bg-card dark:border-border-main sm:dark:bg-bg-card h-10 w-full cursor-pointer appearance-none truncate rounded-xl border bg-slate-50/70 pr-8 pl-9 text-xs font-bold text-slate-700 transition outline-none focus:border-[#CFF54A] sm:shadow-2xs dark:bg-zinc-950/50 dark:text-white'>
 								{SORT_OPTIONS.map((option) => (
 									<option key={option.id} value={option.id}>
 										{option.label}
@@ -1381,15 +1381,15 @@ const WorkflowsListPage = () => {
 						</div>
 
 						{/* Grid / List toggle selector */}
-						<div className='flex items-center gap-1.5'>
+						<div className='border-border-main dark:border-border-main flex h-10 items-center gap-1 rounded-xl border bg-slate-50/70 p-1 sm:h-auto sm:gap-1.5 sm:border-0 sm:bg-transparent sm:p-0 dark:bg-zinc-950/50 sm:dark:bg-transparent'>
 							<button
 								type='button'
 								aria-label='Grid view'
 								onClick={() => setIsGridView(true)}
-								className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border transition-all duration-300 ${
+								className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-transparent transition-all duration-300 sm:h-10 sm:w-10 sm:rounded-xl ${
 									isGridView
-										? 'border-primary-400 bg-primary-100/10 dark:border-primary-400 dark:bg-primary-950/20 text-slate-900 dark:text-white'
-										: 'border-border-main bg-bg-card hover:text-slate-655 dark:border-border-main dark:bg-bg-card text-slate-400 dark:text-zinc-500'
+										? 'bg-primary-400 text-primary-950 sm:border-primary-400 sm:bg-primary-100/10 dark:bg-primary-400 dark:text-primary-950 sm:dark:border-primary-400 sm:dark:bg-primary-950/20 shadow-sm sm:text-slate-900 sm:dark:text-white'
+										: 'sm:border-border-main sm:bg-bg-card sm:dark:border-border-main sm:dark:bg-bg-card text-slate-400 hover:bg-slate-200/60 hover:text-slate-700 dark:text-zinc-500 dark:hover:bg-white/10 dark:hover:text-white'
 								}`}>
 								<LayoutGrid size={16} />
 							</button>
@@ -1397,10 +1397,10 @@ const WorkflowsListPage = () => {
 								type='button'
 								aria-label='List view'
 								onClick={() => setIsGridView(false)}
-								className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border transition-all duration-300 ${
+								className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-transparent transition-all duration-300 sm:h-10 sm:w-10 sm:rounded-xl ${
 									!isGridView
-										? 'border-primary-400 bg-primary-100/10 dark:border-primary-400 dark:bg-primary-950/20 text-slate-900 dark:text-white'
-										: 'border-border-main bg-bg-card hover:text-slate-[#655] dark:border-border-main dark:bg-bg-card text-slate-400 dark:text-zinc-500'
+										? 'bg-primary-400 text-primary-950 sm:border-primary-400 sm:bg-primary-100/10 dark:bg-primary-400 dark:text-primary-950 sm:dark:border-primary-400 sm:dark:bg-primary-950/20 shadow-sm sm:text-slate-900 sm:dark:text-white'
+										: 'sm:border-border-main sm:bg-bg-card sm:dark:border-border-main sm:dark:bg-bg-card text-slate-400 hover:bg-slate-200/60 hover:text-slate-700 dark:text-zinc-500 dark:hover:bg-white/10 dark:hover:text-white'
 								}`}>
 								<List size={16} />
 							</button>
@@ -1456,18 +1456,24 @@ const WorkflowsListPage = () => {
 										onDragEnter={() => handleDragEnter(ROOT_FOLDER_ID)}
 										onDragLeave={handleDragLeave}
 										onDrop={(e) => handleDropOnFolder(e, ROOT_FOLDER_ID)}
-										className={`flex items-center justify-between gap-3 rounded-2xl border px-5 py-4 shadow-sm transition-all duration-300 ${
+										className={`relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl border px-3.5 py-3 shadow-sm transition-all duration-300 sm:px-5 sm:py-4 ${
 											dragOverFolderId === ROOT_FOLDER_ID
 												? 'border-primary-400 bg-soft-accent-bg dark:border-primary-400 dark:bg-primary-400/10'
 												: 'border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card'
 										}`}>
-										<div className='flex min-w-0 items-center gap-3'>
-											<div className='text-primary-800 bg-primary-100/50 dark:bg-primary-950/40 dark:text-primary-400 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-xs'>
+										<div className='bg-primary-400 absolute top-0 bottom-0 left-0 w-1 sm:hidden' />
+										<div className='flex min-w-0 items-center gap-2.5 sm:gap-3'>
+											<div className='text-primary-800 bg-primary-100/50 dark:bg-primary-950/40 dark:text-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-xs sm:h-10 sm:w-10'>
 												<Workflow size={17} />
 											</div>
 											<div className='min-w-0'>
 												<h2 className='text-xs font-extrabold text-slate-800 dark:text-white'>
-													Workflows without folders
+													<span className='sm:hidden'>
+														Unfiled workflows
+													</span>
+													<span className='hidden sm:inline'>
+														Workflows without folders
+													</span>
 												</h2>
 												<p className='mt-0.5 hidden text-[10px] font-semibold text-slate-400 sm:block dark:text-zinc-400'>
 													Move these into folders when you need more

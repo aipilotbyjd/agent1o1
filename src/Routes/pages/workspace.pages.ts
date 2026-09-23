@@ -131,5 +131,11 @@ export const agentEditor: TPage = {
 			text: 'Edit Agent',
 			icon: 'Robot01',
 		},
+		reflections: {
+			id: 'agentReflections',
+			to: ws('agents/:agentId/reflections'),
+			text: 'Agent Reflections',
+			icon: 'Sparkles',
+		},
 	},
 };

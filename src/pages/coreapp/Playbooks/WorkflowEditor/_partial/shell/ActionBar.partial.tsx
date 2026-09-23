@@ -29,10 +29,12 @@ const ToolButton = ({
 			danger && active
 				? 'bg-rose-50 text-rose-600 ring-1 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:ring-rose-500/20'
 				: active
-					? 'bg-primary-50 text-primary-600 ring-1 ring-primary-200 dark:bg-primary-400/10 dark:text-primary-400 dark:ring-primary-500/20'
+					? 'bg-primary-50 text-primary-600 ring-primary-200 dark:bg-primary-400/10 dark:text-primary-400 dark:ring-primary-500/20 ring-1'
 					: 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/[0.04] dark:hover:text-white',
 			className,
-		].filter(Boolean).join(' ')}>
+		]
+			.filter(Boolean)
+			.join(' ')}>
 		{children}
 	</button>
 );
@@ -45,7 +47,7 @@ const ActionBar = () => {
 		<motion.div
 			initial={{ y: 16, opacity: 0 }}
 			animate={{ y: 0, opacity: 1 }}
-			className='dark:border-zinc-800 absolute right-5 bottom-5 z-10 flex items-center gap-0.5 rounded-xl border border-zinc-200 bg-white p-1.5 shadow-md shadow-zinc-200/50 dark:bg-[#07080b] dark:shadow-none max-w-[calc(100vw-40px)]'>
+			className='absolute top-3 right-3 z-10 flex max-w-[calc(100vw-24px)] items-center gap-0.5 rounded-xl border border-zinc-200 bg-white p-1 shadow-md shadow-zinc-200/50 sm:top-auto sm:right-5 sm:bottom-5 sm:p-1.5 dark:border-zinc-800 dark:bg-[#07080b] dark:shadow-none'>
 			<ToolButton title='Zoom out' onClick={() => reactFlow.zoomOut({ duration: 150 })}>
 				<Minus size={14} />
 			</ToolButton>
@@ -73,7 +75,7 @@ const ActionBar = () => {
 				className='hidden sm:flex'>
 				<LayoutGrid size={13} />
 			</ToolButton>
-			<div className='hidden sm:block mx-1 h-4 w-px bg-zinc-200 dark:bg-zinc-800' />
+			<div className='mx-1 hidden h-4 w-px bg-zinc-200 sm:block dark:bg-zinc-800' />
 			<ToolButton
 				title='Search canvas (⌘F)'
 				active={state.ui.canvasSearchOpen}

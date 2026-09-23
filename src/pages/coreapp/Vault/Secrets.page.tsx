@@ -65,7 +65,7 @@ const SecretModal = ({ open, target, isPending, onClose, onSubmit }: SecretModal
 		<Modal isOpen={open} setIsOpen={onClose} size='sm'>
 			<ModalHeader setIsOpen={onClose}>
 				<div className='flex items-center gap-3'>
-					<div className='flex h-9 w-9 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400'>
+					<div className='bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400 flex h-9 w-9 items-center justify-center rounded-xl'>
 						<Lock size={16} />
 					</div>
 					<div className='flex flex-col'>
@@ -128,7 +128,7 @@ const SecretModal = ({ open, target, isPending, onClose, onSubmit }: SecretModal
 												isSecret && !showValue ? 'disc' : 'none',
 										} as React.CSSProperties
 									}
-									className='w-full resize-none rounded-xl border border-zinc-200 bg-white p-4 pr-10 text-sm font-semibold text-zinc-800 shadow-xs outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/25 dark:border-zinc-700 dark:bg-zinc-700 dark:text-zinc-200'
+									className='focus:border-primary-500 focus:ring-primary-500/25 w-full resize-none rounded-xl border border-zinc-200 bg-white p-4 pr-10 text-sm font-semibold text-zinc-800 shadow-xs outline-none focus:ring-2 dark:border-zinc-700 dark:bg-zinc-700 dark:text-zinc-200'
 								/>
 								{isSecret && (
 									<button
@@ -190,16 +190,10 @@ const SecretModal = ({ open, target, isPending, onClose, onSubmit }: SecretModal
 
 				<ModalFooter>
 					<ModalFooterChild className='flex w-full justify-end gap-3'>
-						<button
-							type='button'
-							onClick={onClose}
-							className={secondaryBtn}>
+						<button type='button' onClick={onClose} className={secondaryBtn}>
 							Cancel
 						</button>
-						<button
-							type='submit'
-							disabled={isPending}
-							className={primaryBtn}>
+						<button type='submit' disabled={isPending} className={primaryBtn}>
 							{isPending
 								? isEdit
 									? 'Saving…'
@@ -301,7 +295,8 @@ const SecretsPage = () => {
 	const toggleVisibility = (id: string) => {
 		setVisibleIds((prev) => {
 			const next = new Set(prev);
-			next.has(id) ? next.delete(id) : next.add(id);
+			if (next.has(id)) next.delete(id);
+			else next.add(id);
 			return next;
 		});
 	};
@@ -325,13 +320,16 @@ const SecretsPage = () => {
 	const noResults = !isLoading && secrets.length === 0 && !!searchQuery;
 
 	return (
-		<div className='mx-auto w-full max-w-[1180px] px-6 py-8 text-zinc-950 sm:px-10 lg:px-14 dark:text-zinc-50'>
+		<div className='mx-auto w-full max-w-[1180px] min-w-0 px-4 py-6 text-zinc-950 sm:px-10 sm:py-8 lg:px-14 dark:text-zinc-50'>
 			{/* Header */}
-			<div className='mb-8 flex items-center justify-between gap-4'>
+			<div className='mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between'>
 				<h1 className='text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-50'>
 					Your Secrets
 				</h1>
-				<button type='button' onClick={openAdd} className={primaryBtn}>
+				<button
+					type='button'
+					onClick={openAdd}
+					className={`${primaryBtn} w-full justify-center sm:w-auto`}>
 					<Plus size={15} />
 					Add Secret
 				</button>
@@ -339,14 +337,14 @@ const SecretsPage = () => {
 
 			{/* Search */}
 			<div className='mb-6'>
-				<div className='relative w-full max-w-sm'>
+				<div className='relative w-full sm:max-w-sm'>
 					<Search className='pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-400' />
 					<input
 						type='text'
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
 						placeholder='Search secrets'
-						className='h-10 w-full rounded-xl border border-border-main bg-bg-card pr-8 pl-10 text-sm font-medium text-zinc-800 shadow-xs outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/25 dark:border-border-main dark:bg-bg-card dark:text-zinc-100'
+						className='border-border-main bg-bg-card focus:border-primary-500 focus:ring-primary-500/25 dark:border-border-main dark:bg-bg-card h-10 w-full rounded-xl border pr-8 pl-10 text-sm font-medium text-zinc-800 shadow-xs outline-none focus:ring-2 dark:text-zinc-100'
 					/>
 					{searchQuery && (
 						<button
@@ -362,14 +360,14 @@ const SecretsPage = () => {
 
 			{/* Loading */}
 			{isLoading && (
-				<div className='overflow-hidden rounded-2xl border border-border-main bg-bg-card shadow-sm dark:border-border-main dark:bg-bg-card'>
+				<div className='border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card overflow-hidden rounded-2xl border shadow-sm'>
 					{Array.from({ length: 4 }).map((_, i) => (
 						<div
 							key={i}
-							className='flex items-center gap-4 border-b border-border-main p-4 last:border-0 dark:border-border-main'>
-							<div className='h-8 w-8 animate-pulse rounded-lg bg-zinc-150 dark:bg-zinc-950/40' />
-							<div className='h-4 w-36 animate-pulse rounded-md bg-zinc-150 dark:bg-zinc-950/40' />
-							<div className='ml-auto h-4 w-32 animate-pulse rounded-md bg-zinc-150 dark:bg-zinc-950/40' />
+							className='border-border-main dark:border-border-main flex items-center gap-4 border-b p-4 last:border-0'>
+							<div className='bg-zinc-150 h-8 w-8 animate-pulse rounded-lg dark:bg-zinc-950/40' />
+							<div className='bg-zinc-150 h-4 w-36 animate-pulse rounded-md dark:bg-zinc-950/40' />
+							<div className='bg-zinc-150 ml-auto h-4 w-32 animate-pulse rounded-md dark:bg-zinc-950/40' />
 						</div>
 					))}
 				</div>
@@ -377,9 +375,9 @@ const SecretsPage = () => {
 
 			{/* Empty — no secrets yet */}
 			{isEmpty && (
-				<div className='rounded-2xl border border-dashed border-border-main bg-bg-card px-4 py-20 text-center dark:border-border-main dark:bg-bg-card/20'>
+				<div className='border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card/20 rounded-2xl border border-dashed px-4 py-20 text-center'>
 					<div className='mx-auto flex max-w-sm flex-col items-center'>
-						<div className='mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400'>
+						<div className='bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400 mb-6 flex h-14 w-14 items-center justify-center rounded-2xl'>
 							<Key size={24} />
 						</div>
 						<h3 className='mb-1.5 text-lg font-bold text-zinc-900 dark:text-zinc-50'>
@@ -388,10 +386,7 @@ const SecretsPage = () => {
 						<p className='mb-6 text-sm leading-relaxed font-medium text-zinc-500 dark:text-zinc-400'>
 							Create your first secret to get started
 						</p>
-						<button
-							type='button'
-							onClick={openAdd}
-							className={primaryBtn}>
+						<button type='button' onClick={openAdd} className={primaryBtn}>
 							<Plus size={16} />
 							Add Secret
 						</button>
@@ -401,7 +396,7 @@ const SecretsPage = () => {
 
 			{/* Empty — no search results */}
 			{noResults && (
-				<div className='rounded-2xl border border-dashed border-border-main bg-bg-card px-4 py-16 text-center dark:border-border-main dark:bg-bg-card/20'>
+				<div className='border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card/20 rounded-2xl border border-dashed px-4 py-16 text-center'>
 					<div className='mx-auto flex max-w-sm flex-col items-center'>
 						<div className='mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-400 dark:bg-zinc-800'>
 							<Search size={20} />
@@ -416,124 +411,223 @@ const SecretsPage = () => {
 				</div>
 			)}
 
-			{/* Table */}
+			{/* Mobile cards + desktop table */}
 			{!isLoading && secrets.length > 0 && (
-				<div className='overflow-x-auto rounded-2xl border border-border-main bg-bg-card shadow-sm dark:border-border-main dark:bg-bg-card'>
-					<Table>
-						<THead>
-							<Tr>
-								<Th className='border-b border-border-main bg-bg-card/50 p-4 text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:border-border-main dark:bg-bg-sidebar/40 dark:text-zinc-400'>
-									Name
-								</Th>
-								<Th className='border-b border-border-main bg-bg-card/50 p-4 text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:border-border-main dark:bg-bg-sidebar/40 dark:text-zinc-400'>
-									Value
-								</Th>
-								<Th className='border-b border-border-main bg-bg-card/50 p-4 text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:border-border-main dark:bg-bg-sidebar/40 dark:text-zinc-400'>
-									Description
-								</Th>
-								<Th className='border-b border-border-main bg-bg-card/50 p-4 text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:border-border-main dark:bg-bg-sidebar/40 dark:text-zinc-400'>
-									Created
-								</Th>
-								<Th className='w-[180px] border-b border-border-main bg-bg-card/50 p-4 text-right text-xs font-bold tracking-wider text-zinc-500 uppercase dark:border-border-main dark:bg-bg-sidebar/40 dark:text-zinc-400'>
-									Actions
-								</Th>
-							</Tr>
-						</THead>
-						<TBody>
-							{secrets.map((secret) => {
-								// `value` is only returned for non-secrets — a secret's is
-								// write-only, so it can never be revealed or copied here.
-								const isVisible = visibleIds.has(secret.id);
-								const isRevealable = !secret.is_secret && secret.value !== null;
-								const masked = !isRevealable || !isVisible;
-								return (
-									<Tr
-										key={secret.id}
-										className='group border-b border-border-main last:border-0 dark:border-border-main'>
-										{/* Name */}
-										<Td className='p-4'>
-											<div className='flex items-center gap-2.5'>
-												<span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 dark:bg-bg-sidebar dark:text-zinc-400'>
-													<Key size={14} />
-												</span>
-												<span className='truncate font-mono text-sm font-bold text-zinc-900 dark:text-zinc-100'>
+				<>
+					<div className='space-y-3 md:hidden'>
+						{secrets.map((secret) => {
+							const isVisible = visibleIds.has(secret.id);
+							const isRevealable = !secret.is_secret && secret.value !== null;
+							const masked = !isRevealable || !isVisible;
+
+							return (
+								<article
+									key={secret.id}
+									className='border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card overflow-hidden rounded-2xl border shadow-xs'>
+									<div className='flex min-w-0 items-start gap-3 p-4'>
+										<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl'>
+											<Key size={18} />
+										</div>
+										<div className='min-w-0 flex-1'>
+											<div className='flex min-w-0 items-center gap-2'>
+												<h2 className='truncate font-mono text-sm font-black text-zinc-900 dark:text-zinc-100'>
 													{secret.key}
-												</span>
+												</h2>
 												{secret.is_secret && (
-													<span className='hidden shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 sm:inline-flex dark:bg-amber-950/50 dark:text-amber-400'>
-														<Lock size={9} />
-														secret
+													<span className='inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-black text-amber-700 uppercase dark:bg-amber-950/50 dark:text-amber-400'>
+														<Lock size={9} /> Secret
 													</span>
 												)}
 											</div>
-										</Td>
+											<p className='mt-1 line-clamp-2 text-xs font-medium text-zinc-500 dark:text-zinc-400'>
+												{secret.description || 'No description'}
+											</p>
+										</div>
+									</div>
 
-										{/* Value */}
-										<Td className='p-4'>
-											<div className='flex items-center gap-2'>
-												<span className='font-mono text-xs text-zinc-500 dark:text-zinc-400'>
-													{masked ? '••••••••••••••••' : secret.value}
-												</span>
-												{isRevealable && (
-													<button
-														type='button'
-														onClick={() => toggleVisibility(secret.id)}
-														className='shrink-0 text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-zinc-600 dark:hover:text-zinc-200'
-														title={isVisible ? 'Hide' : 'Reveal'}>
-														{isVisible ? (
-															<EyeOff size={13} />
-														) : (
-															<Eye size={13} />
-														)}
-													</button>
-												)}
-											</div>
-										</Td>
-
-										{/* Description */}
-										<Td className='p-4 text-sm text-zinc-400 dark:text-zinc-500'>
-											{secret.description || '-'}
-										</Td>
-
-										{/* Created */}
-										<Td className='p-4 text-xs font-semibold text-zinc-500 dark:text-zinc-400'>
-											{formatDate(secret.created_at)}
-										</Td>
-
-										{/* Actions */}
-										<Td className='p-4 text-right'>
-											<div className='flex items-center justify-end gap-1'>
-												{isRevealable && (
+									<div className='mx-4 flex min-w-0 items-center gap-2 rounded-xl border border-zinc-100 bg-zinc-50 px-3 py-2.5 dark:border-zinc-800 dark:bg-zinc-950/40'>
+										<code className='min-w-0 flex-1 truncate text-xs font-bold tracking-wider text-zinc-500 dark:text-zinc-400'>
+											{masked ? '••••••••••••••••' : secret.value}
+										</code>
+										{isRevealable && (
+											<>
+												<button
+													type='button'
+													onClick={() => toggleVisibility(secret.id)}
+													aria-label={
+														isVisible
+															? `Hide ${secret.key}`
+															: `Reveal ${secret.key}`
+													}
+													className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition active:bg-zinc-200 dark:text-zinc-400 dark:active:bg-zinc-800'>
+													{isVisible ? (
+														<EyeOff size={16} />
+													) : (
+														<Eye size={16} />
+													)}
+												</button>
 												<button
 													type='button'
 													onClick={() => handleCopy(secret.value!)}
-													className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-700 dark:hover:text-zinc-200'
-													title='Copy value'>
-													<Copy size={14} />
+													aria-label={`Copy ${secret.key}`}
+													className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition active:bg-zinc-200 dark:text-zinc-400 dark:active:bg-zinc-800'>
+													<Copy size={16} />
 												</button>
-												)}
-												<button
-													type='button'
-													onClick={() => openEdit(secret)}
-													className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-700 dark:hover:text-zinc-200'
-													title='Edit'>
-													<Pencil size={13} />
-												</button>
-												<button
-													type='button'
-													onClick={() => setDeleteTarget(secret)}
-													className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400'
-													title='Delete'>
-													<Trash2 size={14} />
-												</button>
-											</div>
-										</Td>
-									</Tr>
-								);
-							})}
-						</TBody>
-					</Table>
-				</div>
+											</>
+										)}
+									</div>
+
+									<div className='border-border-main dark:border-border-main mt-4 flex items-center justify-between gap-3 border-t px-4 py-3'>
+										<div>
+											<p className='text-[9px] font-black tracking-wider text-zinc-400 uppercase'>
+												Created
+											</p>
+											<p className='mt-0.5 text-xs font-bold text-zinc-600 dark:text-zinc-300'>
+												{formatDate(secret.created_at)}
+											</p>
+										</div>
+										<div className='flex items-center gap-2'>
+											<button
+												type='button'
+												onClick={() => openEdit(secret)}
+												className='flex h-10 items-center gap-2 rounded-xl border border-zinc-200 px-3 text-xs font-bold text-zinc-600 transition active:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:active:bg-zinc-800'>
+												<Pencil size={14} /> Edit
+											</button>
+											<button
+												type='button'
+												onClick={() => setDeleteTarget(secret)}
+												aria-label={`Delete ${secret.key}`}
+												className='flex h-10 w-10 items-center justify-center rounded-xl border border-red-100 text-red-500 transition active:bg-red-50 dark:border-red-500/20 dark:active:bg-red-950/30'>
+												<Trash2 size={15} />
+											</button>
+										</div>
+									</div>
+								</article>
+							);
+						})}
+					</div>
+
+					<div className='border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card hidden overflow-x-auto rounded-2xl border shadow-sm md:block'>
+						<Table>
+							<THead>
+								<Tr>
+									<Th className='border-border-main bg-bg-card/50 dark:border-border-main dark:bg-bg-sidebar/40 border-b p-4 text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
+										Name
+									</Th>
+									<Th className='border-border-main bg-bg-card/50 dark:border-border-main dark:bg-bg-sidebar/40 border-b p-4 text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
+										Value
+									</Th>
+									<Th className='border-border-main bg-bg-card/50 dark:border-border-main dark:bg-bg-sidebar/40 border-b p-4 text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
+										Description
+									</Th>
+									<Th className='border-border-main bg-bg-card/50 dark:border-border-main dark:bg-bg-sidebar/40 border-b p-4 text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
+										Created
+									</Th>
+									<Th className='border-border-main bg-bg-card/50 dark:border-border-main dark:bg-bg-sidebar/40 w-[180px] border-b p-4 text-right text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
+										Actions
+									</Th>
+								</Tr>
+							</THead>
+							<TBody>
+								{secrets.map((secret) => {
+									// `value` is only returned for non-secrets — a secret's is
+									// write-only, so it can never be revealed or copied here.
+									const isVisible = visibleIds.has(secret.id);
+									const isRevealable = !secret.is_secret && secret.value !== null;
+									const masked = !isRevealable || !isVisible;
+									return (
+										<Tr
+											key={secret.id}
+											className='group border-border-main dark:border-border-main border-b last:border-0'>
+											{/* Name */}
+											<Td className='p-4'>
+												<div className='flex items-center gap-2.5'>
+													<span className='dark:bg-bg-sidebar flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 dark:text-zinc-400'>
+														<Key size={14} />
+													</span>
+													<span className='truncate font-mono text-sm font-bold text-zinc-900 dark:text-zinc-100'>
+														{secret.key}
+													</span>
+													{secret.is_secret && (
+														<span className='hidden shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 sm:inline-flex dark:bg-amber-950/50 dark:text-amber-400'>
+															<Lock size={9} />
+															secret
+														</span>
+													)}
+												</div>
+											</Td>
+
+											{/* Value */}
+											<Td className='p-4'>
+												<div className='flex items-center gap-2'>
+													<span className='font-mono text-xs text-zinc-500 dark:text-zinc-400'>
+														{masked ? '••••••••••••••••' : secret.value}
+													</span>
+													{isRevealable && (
+														<button
+															type='button'
+															onClick={() =>
+																toggleVisibility(secret.id)
+															}
+															className='shrink-0 text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-zinc-600 dark:hover:text-zinc-200'
+															title={isVisible ? 'Hide' : 'Reveal'}>
+															{isVisible ? (
+																<EyeOff size={13} />
+															) : (
+																<Eye size={13} />
+															)}
+														</button>
+													)}
+												</div>
+											</Td>
+
+											{/* Description */}
+											<Td className='p-4 text-sm text-zinc-400 dark:text-zinc-500'>
+												{secret.description || '-'}
+											</Td>
+
+											{/* Created */}
+											<Td className='p-4 text-xs font-semibold text-zinc-500 dark:text-zinc-400'>
+												{formatDate(secret.created_at)}
+											</Td>
+
+											{/* Actions */}
+											<Td className='p-4 text-right'>
+												<div className='flex items-center justify-end gap-1'>
+													{isRevealable && (
+														<button
+															type='button'
+															onClick={() =>
+																handleCopy(secret.value!)
+															}
+															className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-700 dark:hover:text-zinc-200'
+															title='Copy value'>
+															<Copy size={14} />
+														</button>
+													)}
+													<button
+														type='button'
+														onClick={() => openEdit(secret)}
+														className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-700 dark:hover:text-zinc-200'
+														title='Edit'>
+														<Pencil size={13} />
+													</button>
+													<button
+														type='button'
+														onClick={() => setDeleteTarget(secret)}
+														className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400'
+														title='Delete'>
+														<Trash2 size={14} />
+													</button>
+												</div>
+											</Td>
+										</Tr>
+									);
+								})}
+							</TBody>
+						</Table>
+					</div>
+				</>
 			)}
 
 			{/* Add / Edit modal */}

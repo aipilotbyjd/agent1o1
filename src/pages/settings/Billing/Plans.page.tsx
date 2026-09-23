@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router';
-import { Check, X, Zap } from 'lucide-react';
+import { Check, ChevronDown, X, Zap } from 'lucide-react';
 import { useBillingOverview, useCheckoutSubscription, usePlans } from '@/api/modules/billing';
 import type { TBillingInterval } from '@/types/billing.type';
 
@@ -45,6 +45,7 @@ const BillingPlansPage = () => {
 	const { data: overview } = useBillingOverview(workspaceId!);
 	const checkout = useCheckoutSubscription(workspaceId!);
 	const [interval, setInterval] = useState<TBillingInterval>('monthly');
+	const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
 
 	const currentSlug = overview?.current_plan?.slug;
 
@@ -69,7 +70,7 @@ const BillingPlansPage = () => {
 	}
 
 	return (
-		<div className='space-y-8 text-zinc-950 dark:text-zinc-50'>
+		<div className='min-w-0 space-y-7 text-zinc-950 sm:space-y-8 dark:text-zinc-50'>
 			<div className='text-center'>
 				<h1 className='text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-50'>
 					Choose a Plan
@@ -78,14 +79,14 @@ const BillingPlansPage = () => {
 					Upgrade or downgrade at any time. Cancel anytime.
 				</p>
 
-				<div className='mt-6 inline-flex flex-wrap items-center gap-1 rounded-2xl border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-700 dark:bg-zinc-800'>
+				<div className='mt-6 grid w-full grid-cols-2 items-center gap-1 rounded-2xl border border-zinc-200 bg-zinc-50 p-1 sm:inline-flex sm:w-auto sm:grid-cols-none sm:flex-wrap dark:border-zinc-700 dark:bg-zinc-800'>
 					{(Object.keys(INTERVAL_LABELS) as TBillingInterval[]).map((opt) => (
 						<button
 							key={opt}
 							type='button'
 							onClick={() => setInterval(opt)}
 							className={[
-								'rounded-xl px-5 py-2 text-sm font-bold transition-all',
+								'rounded-xl px-3 py-2 text-xs font-bold transition-all sm:px-5 sm:text-sm',
 								interval === opt
 									? 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-900 dark:text-zinc-50'
 									: 'text-zinc-500 hover:text-zinc-700',
@@ -106,7 +107,7 @@ const BillingPlansPage = () => {
 						<div
 							key={plan.id}
 							className={[
-								'relative flex flex-col rounded-2xl border p-6 shadow-sm transition',
+								'relative flex flex-col rounded-2xl border p-5 shadow-sm transition sm:p-6',
 								isCurrent
 									? 'border-zinc-900 bg-zinc-950 text-white dark:border-zinc-200 dark:bg-white dark:text-zinc-950'
 									: 'border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900',
@@ -188,7 +189,7 @@ const BillingPlansPage = () => {
 								</li>
 							</ul>
 
-							<div className='mt-6'>
+							<div className='mt-auto pt-6'>
 								{isCurrent ? (
 									<div className='flex w-full items-center justify-center rounded-xl border border-white/20 py-2.5 text-sm font-bold dark:border-black/20'>
 										Current plan
@@ -220,7 +221,68 @@ const BillingPlansPage = () => {
 			{plans && plans.length > 0 && (
 				<section>
 					<h3 className='mb-4 text-lg font-black'>Full Feature Comparison</h3>
-					<div className='overflow-x-auto rounded-2xl border border-zinc-200 dark:border-zinc-700'>
+					<div className='space-y-2 md:hidden'>
+						{plans.map((plan) => {
+							const isOpen = expandedPlan === plan.id;
+							const isCurrent = plan.slug === currentSlug;
+							return (
+								<article
+									key={plan.id}
+									className={`overflow-hidden rounded-2xl border bg-white dark:bg-zinc-900 ${isCurrent ? 'border-primary-400' : 'border-zinc-200 dark:border-zinc-700'}`}>
+									<button
+										type='button'
+										onClick={() => setExpandedPlan(isOpen ? null : plan.id)}
+										aria-expanded={isOpen}
+										className='flex min-h-14 w-full items-center justify-between gap-3 px-4 py-3 text-left'>
+										<div className='min-w-0'>
+											<div className='flex items-center gap-2'>
+												<h4 className='font-black text-zinc-900 dark:text-white'>
+													{plan.name}
+												</h4>
+												{isCurrent && (
+													<span className='bg-primary-400/15 text-primary-700 dark:text-primary-400 rounded-full px-2 py-0.5 text-[9px] font-black uppercase'>
+														Current
+													</span>
+												)}
+											</div>
+											<p className='truncate text-xs font-medium text-zinc-400'>
+												{plan.description}
+											</p>
+										</div>
+										<ChevronDown
+											size={18}
+											className={`shrink-0 text-zinc-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+										/>
+									</button>
+									{isOpen && (
+										<div className='border-t border-zinc-100 px-4 py-2 dark:border-zinc-800'>
+											{Object.entries(FEATURE_LABELS).map(([key, label]) => (
+												<div
+													key={key}
+													className='flex items-center justify-between gap-3 border-b border-zinc-100 py-3 last:border-0 dark:border-zinc-800'>
+													<span className='text-xs font-semibold text-zinc-600 dark:text-zinc-300'>
+														{label}
+													</span>
+													{plan.features?.[key] ? (
+														<Check
+															size={16}
+															className='shrink-0 text-emerald-500'
+														/>
+													) : (
+														<X
+															size={16}
+															className='shrink-0 text-zinc-300 dark:text-zinc-600'
+														/>
+													)}
+												</div>
+											))}
+										</div>
+									)}
+								</article>
+							);
+						})}
+					</div>
+					<div className='hidden overflow-x-auto rounded-2xl border border-zinc-200 md:block dark:border-zinc-700'>
 						<table className='w-full min-w-[640px] text-sm'>
 							<thead>
 								<tr className='border-b border-zinc-100 dark:border-zinc-800'>

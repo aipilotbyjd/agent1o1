@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Resizable } from 're-resizable';
+import { useReactFlow } from '@xyflow/react';
 import AiBuilderPanel from '../_partial/ai/AiBuilderPanel.partial';
 import Canvas from '../_partial/canvas/Canvas.partial';
 import CommandPalette from '../_partial/dialogs/CommandPalette.partial';
@@ -31,11 +32,11 @@ import { useWorkflowApiLoader } from '../_hooks/useWorkflowApiLoader.hook';
 import { useWorkflowRouteParams } from '../_hooks/useWorkflowRouteParams.hook';
 import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
-import { useAiChatStore } from '@/store/aiChat.store';
+import { Boxes, Maximize2, PlaySquare, Sparkles } from 'lucide-react';
 
 const BuildPage = () => {
-	const isChatActive = useAiChatStore((store) => store.isChatActive);
 	const { state, dispatch } = useWorkflowEditor();
+	const reactFlow = useReactFlow();
 	const { width } = useDeviceScreen();
 	const isMobile = width !== undefined && width < 768;
 	const activeWorkspaceView = useWorkflowShellStore((store) => store.activeWorkspaceView);
@@ -50,6 +51,24 @@ const BuildPage = () => {
 	const [leftPanelWidth, setLeftPanelWidth] = useState(320);
 	const [aiPanelWidth, setAiPanelWidth] = useState(400);
 	const [runPanelHeight, setRunPanelHeight] = useState(300);
+
+	const openMobileNodes = () => {
+		if (state.ui.runPanelOpen) dispatch({ type: 'TOGGLE_RUN_PANEL' });
+		if (state.ui.aiPanelOpen) dispatch({ type: 'TOGGLE_AI_PANEL' });
+		dispatch({ type: 'TOGGLE_LEFT_PANEL', intent: 'home' });
+	};
+
+	const openMobileAi = () => {
+		if (state.ui.runPanelOpen) dispatch({ type: 'TOGGLE_RUN_PANEL' });
+		if (state.ui.leftPanelOpen) dispatch({ type: 'TOGGLE_LEFT_PANEL' });
+		dispatch({ type: 'TOGGLE_AI_PANEL' });
+	};
+
+	const openMobileRuns = () => {
+		if (state.ui.leftPanelOpen) dispatch({ type: 'TOGGLE_LEFT_PANEL' });
+		if (state.ui.aiPanelOpen) dispatch({ type: 'TOGGLE_AI_PANEL' });
+		dispatch({ type: 'TOGGLE_RUN_PANEL' });
+	};
 
 	useAutosave();
 	useEditorHotkeys();
@@ -70,7 +89,7 @@ const BuildPage = () => {
 	}
 
 	return (
-		<div className='flex h-full min-h-0 bg-zinc-50 dark:bg-[#07080b] flex-col'>
+		<div className='flex h-full min-h-0 flex-col bg-zinc-50 dark:bg-[#07080b]'>
 			{apiState.isError && (
 				<div className='absolute top-0 right-0 left-0 z-50 flex items-center justify-center gap-2 bg-rose-500 px-4 py-1 text-xs font-bold text-white'>
 					API unavailable - running in local mode.
@@ -125,17 +144,33 @@ const BuildPage = () => {
 					<div className={state.ui.aiPanelOpen ? 'hidden md:contents' : 'contents'}>
 						<Topbar />
 					</div>
-					<div className='relative flex flex-1 min-h-0'>
+					<div className='relative flex min-h-0 flex-1'>
 						<AnimatePresence initial={false}>
 							{state.ui.aiPanelOpen && (
 								<motion.div
-									initial={{ width: 0, opacity: 0 }}
-									animate={{ width: isMobile ? (width || '100%') : aiPanelWidth, opacity: 1 }}
-									exit={{ width: 0, opacity: 0 }}
+									initial={
+										isMobile
+											? { y: '100%', opacity: 0 }
+											: { width: 0, opacity: 0 }
+									}
+									animate={
+										isMobile
+											? { y: 0, opacity: 1 }
+											: { width: aiPanelWidth, opacity: 1 }
+									}
+									exit={
+										isMobile
+											? { y: '100%', opacity: 0 }
+											: { width: 0, opacity: 0 }
+									}
 									transition={{ duration: 0.2 }}
-									className={isMobile ? 'absolute inset-y-0 left-0 z-50 bg-zinc-50 dark:bg-zinc-950 shadow-2xl min-h-0 w-full' : 'min-h-0 shrink-0 overflow-hidden'}>
+									className={
+										isMobile
+											? 'absolute inset-0 z-50 min-h-0 w-full overflow-hidden bg-zinc-50 shadow-2xl dark:bg-zinc-950'
+											: 'min-h-0 shrink-0 overflow-hidden'
+									}>
 									{isMobile ? (
-										<div className="w-full h-full overflow-y-auto">
+										<div className='h-full w-full overflow-y-auto pb-[env(safe-area-inset-bottom)]'>
 											<AiBuilderPanel />
 										</div>
 									) : (
@@ -147,7 +182,9 @@ const BuildPage = () => {
 											onResize={(e, direction, ref) => {
 												setAiPanelWidth(ref.offsetWidth);
 											}}
-											onResizeStop={(_, __, ref) => setAiPanelWidth(ref.offsetWidth)}
+											onResizeStop={(_, __, ref) =>
+												setAiPanelWidth(ref.offsetWidth)
+											}
 											className='min-h-0 shrink-0'>
 											<AiBuilderPanel />
 										</Resizable>
@@ -157,68 +194,133 @@ const BuildPage = () => {
 						</AnimatePresence>
 						<div className='flex min-w-0 flex-1 flex-col overflow-hidden rounded-l-2xl border-l border-zinc-200 bg-white dark:border-white/10 dark:bg-zinc-950'>
 							<div className='relative flex min-h-0 flex-1'>
-							<AnimatePresence initial={false}>
-								{state.ui.leftPanelOpen && (
+								<AnimatePresence initial={false}>
+									{state.ui.leftPanelOpen && (
+										<motion.div
+											initial={
+												isMobile
+													? { y: '100%', opacity: 0 }
+													: { width: 0, opacity: 0 }
+											}
+											animate={
+												isMobile
+													? { y: 0, opacity: 1 }
+													: { width: leftPanelWidth, opacity: 1 }
+											}
+											exit={
+												isMobile
+													? { y: '100%', opacity: 0 }
+													: { width: 0, opacity: 0 }
+											}
+											transition={{ duration: 0.2 }}
+											className={
+												isMobile
+													? 'absolute inset-x-0 top-3 bottom-0 z-40 min-h-0 overflow-hidden rounded-t-3xl border-t border-zinc-200 bg-white shadow-2xl dark:border-white/10 dark:bg-zinc-950'
+													: 'min-h-0 shrink-0 overflow-hidden'
+											}>
+											{isMobile ? (
+												<div className='h-full w-full overflow-y-auto pb-[env(safe-area-inset-bottom)]'>
+													<NodeLibrary />
+												</div>
+											) : (
+												<Resizable
+													size={{ width: leftPanelWidth, height: '100%' }}
+													minWidth={260}
+													maxWidth={460}
+													enable={{ right: true }}
+													onResize={(e, direction, ref) => {
+														setLeftPanelWidth(ref.offsetWidth);
+													}}
+													onResizeStop={(_, __, ref) =>
+														setLeftPanelWidth(ref.offsetWidth)
+													}
+													className='min-h-0 shrink-0'>
+													<NodeLibrary />
+												</Resizable>
+											)}
+										</motion.div>
+									)}
+								</AnimatePresence>
+								<div className='relative flex min-w-0 flex-1 flex-col'>
+									{!state.ui.leftPanelOpen && (
+										<button
+											type='button'
+											onClick={() => dispatch({ type: 'TOGGLE_LEFT_PANEL' })}
+											className='absolute top-1/2 left-0 z-10 flex h-10 w-4 -translate-y-1/2 cursor-pointer items-center justify-center rounded-r-md border border-l-0 border-zinc-200 bg-white text-zinc-400 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900'>
+											<span className='text-[10px] font-bold'>&gt;</span>
+										</button>
+									)}
+									<Canvas />
+									<ActionBar />
+								</div>
+							</div>
+							{state.ui.runPanelOpen &&
+								(isMobile ? (
 									<motion.div
-										initial={{ width: 0, opacity: 0 }}
-										animate={{ width: isMobile ? 320 : leftPanelWidth, opacity: 1 }}
-										exit={{ width: 0, opacity: 0 }}
+										initial={{ y: '100%', opacity: 0 }}
+										animate={{ y: 0, opacity: 1 }}
+										exit={{ y: '100%', opacity: 0 }}
 										transition={{ duration: 0.2 }}
-										className={isMobile ? 'absolute inset-y-0 left-0 z-40 bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-white/10 shadow-2xl min-h-0' : 'min-h-0 shrink-0 overflow-hidden'}>
-										{isMobile ? (
-											<div className="w-[320px] max-w-[100vw] h-full overflow-y-auto">
-												<NodeLibrary />
-											</div>
-										) : (
-											<Resizable
-												size={{ width: leftPanelWidth, height: '100%' }}
-												minWidth={260}
-												maxWidth={460}
-												enable={{ right: true }}
-												onResize={(e, direction, ref) => {
-													setLeftPanelWidth(ref.offsetWidth);
-												}}
-												onResizeStop={(_, __, ref) =>
-													setLeftPanelWidth(ref.offsetWidth)
-												}
-												className='min-h-0 shrink-0'>
-												<NodeLibrary />
-											</Resizable>
-										)}
+										className='absolute inset-x-0 top-[18%] bottom-0 z-50 overflow-hidden rounded-t-3xl border-t border-white/10 bg-zinc-950 shadow-2xl'>
+										<RunPanel />
 									</motion.div>
-								)}
-							</AnimatePresence>
-							<div className='relative flex min-w-0 flex-1 flex-col'>
-								{!state.ui.leftPanelOpen && (
+								) : (
+									<Resizable
+										size={{ width: '100%', height: runPanelHeight }}
+										minHeight={180}
+										maxHeight='58vh'
+										enable={{ top: true }}
+										onResize={(e, direction, ref) => {
+											setRunPanelHeight(ref.offsetHeight);
+										}}
+										onResizeStop={(_, __, ref) =>
+											setRunPanelHeight(ref.offsetHeight)
+										}
+										className='shrink-0'>
+										<RunPanel />
+									</Resizable>
+								))}
+						</div>
+
+						{/* Mobile editor dock: the four most-used canvas actions stay reachable
+					    without competing with the workflow title and Run button above. */}
+						{!state.ui.aiPanelOpen &&
+							!state.ui.leftPanelOpen &&
+							!state.ui.runPanelOpen && (
+								<nav
+									aria-label='Editor tools'
+									className='absolute right-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-3 z-30 flex h-14 items-center justify-around rounded-2xl border border-zinc-200 bg-white/95 px-2 shadow-2xl backdrop-blur-xl md:hidden dark:border-white/10 dark:bg-zinc-950/95'>
 									<button
 										type='button'
-										onClick={() => dispatch({ type: 'TOGGLE_LEFT_PANEL' })}
-										className='absolute top-1/2 left-0 z-10 flex h-10 w-4 -translate-y-1/2 cursor-pointer items-center justify-center rounded-r-md border border-l-0 border-zinc-200 bg-white text-zinc-400 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900'>
-										<span className='text-[10px] font-bold'>&gt;</span>
+										onClick={openMobileNodes}
+										className='flex min-w-16 flex-col items-center gap-0.5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400'>
+										<Boxes size={18} /> Nodes
 									</button>
-								)}
-								<Canvas />
-								<ActionBar />
-							</div>
-						</div>
-						{state.ui.runPanelOpen && (
-							<Resizable
-								size={{ width: '100%', height: runPanelHeight }}
-								minHeight={180}
-								maxHeight='58vh'
-								enable={{ top: true }}
-								onResize={(e, direction, ref) => {
-									setRunPanelHeight(ref.offsetHeight);
-								}}
-								onResizeStop={(_, __, ref) => setRunPanelHeight(ref.offsetHeight)}
-								className='shrink-0'>
-								<RunPanel />
-							</Resizable>
-						)}
+									<button
+										type='button'
+										onClick={openMobileAi}
+										className='text-primary-700 dark:text-primary-400 flex min-w-16 flex-col items-center gap-0.5 text-[10px] font-bold'>
+										<Sparkles size={18} /> Ask AI
+									</button>
+									<button
+										type='button'
+										onClick={openMobileRuns}
+										className='flex min-w-16 flex-col items-center gap-0.5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400'>
+										<PlaySquare size={18} /> Runs
+									</button>
+									<button
+										type='button'
+										onClick={() =>
+											reactFlow.fitView({ padding: 0.2, duration: 240 })
+										}
+										className='flex min-w-16 flex-col items-center gap-0.5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400'>
+										<Maximize2 size={18} /> Fit view
+									</button>
+								</nav>
+							)}
 					</div>
-				</div>
-			</>
-		)}
+				</>
+			)}
 			<CommandPalette />
 			<QuickAddNodeDialog />
 			<ImportExportDialog />

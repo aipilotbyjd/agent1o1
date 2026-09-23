@@ -49,18 +49,23 @@ import {
 	RotateCcw,
 	FileJson,
 	Trash2,
-	Menu,
 	Share,
 	ImageIcon,
 } from 'lucide-react';
 import AgentTemplateCard from '../_partial/AgentTemplateCard.partial';
-import { agentTemplateTabs, agentTemplates, agentModelOptions } from '../_helper/agentBuilder.constants';
-import MainAppBar, { MainAppBarPillButton, MainAppBarIconButton } from '@/pages/coreapp/_partial/MainAppBar.partial';
+import {
+	agentTemplateTabs,
+	agentTemplates,
+	agentModelOptions,
+} from '../_helper/agentBuilder.constants';
+import MainAppBar, {
+	MainAppBarPillButton,
+	MainAppBarIconButton,
+} from '@/pages/coreapp/_partial/MainAppBar.partial';
 import { toast } from 'react-toastify';
 import useDarkMode from '@/hooks/useDarkMode';
 import DARK_MODE from '@/constants/darkMode.constant';
 import { LogoFyr } from '@/assets/images';
-import useAsideStatus from '@/hooks/useAsideStatus';
 import pages from '@/Routes/pages';
 import paths, { withWorkspace } from '@/Routes/paths';
 import { useWorkspaceContext } from '@/context/workspace';
@@ -106,8 +111,6 @@ import { XCircle, Wrench, FileDown, GitMerge } from 'lucide-react';
 import AgentDataPanel from './_partial/AgentDataPanel.partial';
 import AgentTagsPanel from './_partial/AgentTagsPanel.partial';
 
-
-
 const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 	messages
 		.filter((message) => message.role === 'user' || message.role === 'assistant')
@@ -125,9 +128,7 @@ const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 			type: 'text' as const,
 		}));
 
-
 const EXPORT_ARTIFACT_TOOL = 'ExportArtifactTool';
-
 
 const webhookUrlFor = (trigger: TTrigger) =>
 	`${import.meta.env.VITE_API_URL ?? ''}/triggers/${trigger.id}/${trigger.token ?? ''}`;
@@ -196,29 +197,35 @@ const autoSizeComposer = (el: HTMLTextAreaElement) => {
 };
 
 const mdComponents: Components = {
-	p: ({ children }) => <p className='mb-2 last:mb-0 whitespace-pre-line'>{children}</p>,
-	strong: ({ children }) => <strong className='font-black text-zinc-900 dark:text-white'>{children}</strong>,
+	p: ({ children }) => <p className='mb-2 whitespace-pre-line last:mb-0'>{children}</p>,
+	strong: ({ children }) => (
+		<strong className='font-black text-zinc-900 dark:text-white'>{children}</strong>
+	),
 	em: ({ children }) => <em className='italic'>{children}</em>,
 	ul: ({ children }) => <ul className='mb-2 ml-4 list-disc space-y-1 last:mb-0'>{children}</ul>,
-	ol: ({ children }) => <ol className='mb-2 ml-4 list-decimal space-y-1 last:mb-0'>{children}</ol>,
+	ol: ({ children }) => (
+		<ol className='mb-2 ml-4 list-decimal space-y-1 last:mb-0'>{children}</ol>
+	),
 	li: ({ children }) => <li className='pl-0.5'>{children}</li>,
 	h1: ({ children }) => <h1 className='mb-1.5 text-base font-black'>{children}</h1>,
 	h2: ({ children }) => <h2 className='mb-1.5 text-sm font-black'>{children}</h2>,
 	h3: ({ children }) => <h3 className='mb-1 text-sm font-bold'>{children}</h3>,
 	code: ({ children }) => (
-		<code className='rounded bg-zinc-100 px-1 py-0.5 font-mono text-[12px] text-primary-700 dark:bg-zinc-800 dark:text-primary-400'>
+		<code className='text-primary-700 dark:text-primary-400 rounded bg-zinc-100 px-1 py-0.5 font-mono text-[12px] dark:bg-zinc-800'>
 			{children}
 		</code>
 	),
 	pre: ({ children }) => (
-		<pre className='mb-2 overflow-x-auto rounded-lg bg-zinc-100 p-3 text-[12px] dark:bg-zinc-950'>{children}</pre>
+		<pre className='mb-2 overflow-x-auto rounded-lg bg-zinc-100 p-3 text-[12px] dark:bg-zinc-950'>
+			{children}
+		</pre>
 	),
 	a: ({ children, href }) => (
 		<a
 			href={href}
 			target='_blank'
 			rel='noreferrer'
-			className='underline underline-offset-2 hover:text-primary-600 dark:hover:text-primary-400'>
+			className='hover:text-primary-600 dark:hover:text-primary-400 underline underline-offset-2'>
 			{children}
 		</a>
 	),
@@ -228,13 +235,11 @@ const prettifyToolName = (raw: string) =>
 	raw.replace(/[_-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 /** One tool-call line in the live scratchpad or a finished message's collapsed steps. */
-const ToolStepLine = ({
-	item,
-}: {
-	item: Extract<TChatTimelineItem, { kind: 'tool' }>;
-}) => (
+const ToolStepLine = ({ item }: { item: Extract<TChatTimelineItem, { kind: 'tool' }> }) => (
 	<div className='flex items-center gap-1.5 text-[12.5px] font-semibold text-zinc-500 dark:text-zinc-400'>
-		{item.status === 'running' && <Loader2 size={12} className='shrink-0 animate-spin text-primary-500' />}
+		{item.status === 'running' && (
+			<Loader2 size={12} className='text-primary-500 shrink-0 animate-spin' />
+		)}
 		{item.status === 'done' && <CheckCircle2 size={12} className='shrink-0 text-emerald-500' />}
 		{item.status === 'error' && <XCircle size={12} className='shrink-0 text-rose-500' />}
 		<Wrench size={12} className='shrink-0 opacity-60' />
@@ -261,18 +266,22 @@ const ArtifactCard = ({
 
 	return (
 		<div className='flex items-center gap-3 rounded-2xl border border-zinc-200/80 bg-white px-4 py-3 shadow-2xs dark:border-zinc-800/85 dark:bg-zinc-900/60'>
-			<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-400/10 text-primary-600 dark:text-primary-400'>
+			<div className='bg-primary-400/10 text-primary-600 dark:text-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl'>
 				<FileDown size={16} />
 			</div>
 			<div className='min-w-0 flex-1'>
-				<p className='truncate text-xs font-bold text-zinc-800 dark:text-zinc-200'>{item.filename}</p>
+				<p className='truncate text-xs font-bold text-zinc-800 dark:text-zinc-200'>
+					{item.filename}
+				</p>
 				<p className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
 					v{item.version} · {formatArtifactSize(item.size)}
 				</p>
 			</div>
 			<button
 				aria-label='Download'
-				onClick={() => downloadMutation.mutate({ artifactId: item.id, filename: item.filename })}
+				onClick={() =>
+					downloadMutation.mutate({ artifactId: item.id, filename: item.filename })
+				}
 				className='flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800'>
 				<Download size={13} />
 			</button>
@@ -280,7 +289,13 @@ const ArtifactCard = ({
 	);
 };
 
-const TimelineSteps = ({ items, className = '' }: { items: TChatTimelineItem[]; className?: string }) => {
+const TimelineSteps = ({
+	items,
+	className = '',
+}: {
+	items: TChatTimelineItem[];
+	className?: string;
+}) => {
 	const [expanded, setExpanded] = useState(false);
 	const toolCount = items.filter((item) => item.kind === 'tool').length;
 
@@ -292,12 +307,17 @@ const TimelineSteps = ({ items, className = '' }: { items: TChatTimelineItem[]; 
 				type='button'
 				onClick={() => setExpanded((v) => !v)}
 				className='flex w-fit items-center gap-1 text-[11px] font-bold text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'>
-				<ChevronRight size={11} className={`transition-transform ${expanded ? 'rotate-90' : ''}`} />
+				<ChevronRight
+					size={11}
+					className={`transition-transform ${expanded ? 'rotate-90' : ''}`}
+				/>
 				{toolCount} step{toolCount === 1 ? '' : 's'}
 			</button>
 			{expanded && (
 				<div className='flex flex-col gap-1'>
-					{items.map((item) => (item.kind === 'tool' ? <ToolStepLine key={item.id} item={item} /> : null))}
+					{items.map((item) =>
+						item.kind === 'tool' ? <ToolStepLine key={item.id} item={item} /> : null,
+					)}
 				</div>
 			)}
 		</div>
@@ -360,12 +380,13 @@ const BuildPage = () => {
 	const fireTriggerMutation = useFireAgentTrigger(workspaceId, currentAgentId ?? '');
 	const [isTriggerPanelOpen, setIsTriggerPanelOpen] = useState(false);
 
-
 	const { data: metaModelGroups } = useAgentMetaModels(workspaceId);
 	const modelOptions = useMemo(() => {
-		
 		const liveIds = (metaModelGroups ?? [])
-			.map((entry) => (entry as { slug?: string; id?: string }).slug ?? (entry as { id?: string }).id)
+			.map(
+				(entry) =>
+					(entry as { slug?: string; id?: string }).slug ?? (entry as { id?: string }).id,
+			)
 			.filter((id): id is string => typeof id === 'string');
 		if (liveIds.length === 0) return agentModelOptions;
 		return liveIds.map((id) => {
@@ -391,10 +412,9 @@ const BuildPage = () => {
 	const [promptText, setPromptText] = useState('');
 	const { isDarkTheme, setDarkModeStatus } = useDarkMode();
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const heroPromptRef = useRef<HTMLInputElement>(null);
+	const templatesSectionRef = useRef<HTMLElement>(null);
 	const chatEndRef = useRef<HTMLDivElement>(null);
-	const { asideStatus, setAsideStatus } = useAsideStatus();
-	const toggleAside = () => setAsideStatus(!asideStatus);
-
 	// Screen size state
 	const [isMobile, setIsMobile] = useState(false);
 
@@ -421,12 +441,10 @@ const BuildPage = () => {
 	const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
 	const composerRef = useRef<HTMLTextAreaElement | null>(null);
 
-
 	useEffect(() => {
 		setChatAgentId(currentAgentId ?? null);
 	}, [currentAgentId, setChatAgentId]);
 
-	
 	const loadedSessionRef = useRef<string | null>(null);
 
 	const { data: openedSession } = useAgentSession(
@@ -445,7 +463,10 @@ const BuildPage = () => {
 					id: 'init-' + Date.now(),
 					sender: 'agent',
 					text: `Hi! I'm your ${agentName}. How can I help you today?`,
-					timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+					timestamp: new Date().toLocaleTimeString([], {
+						hour: '2-digit',
+						minute: '2-digit',
+					}),
 					type: 'text',
 				},
 			]);
@@ -505,7 +526,7 @@ const BuildPage = () => {
 	const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
 	const [allowSelfUpdates, setAllowSelfUpdates] = useState(true);
 	const [agentDescription, setAgentDescription] = useState(
-		'An agent that helps me research competitors, analyze their strategies, products, pricing, marketing, reviews, and overall market positioning.'
+		'An agent that helps me research competitors, analyze their strategies, products, pricing, marketing, reviews, and overall market positioning.',
 	);
 
 	const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
@@ -543,11 +564,16 @@ const BuildPage = () => {
 	}, [existingAgent]);
 
 	// Returns the persisted agent's id so callers (chat, settings) can use it immediately.
-	const ensureAgentPersisted = async (): Promise<string> => {
+	const ensureAgentPersisted = async (overrides?: {
+		name?: string;
+		description?: string;
+		instructions?: string;
+	}): Promise<string> => {
 		const payload = {
-			name: agentName.trim() || 'Untitled Agent',
-			description: agentDescription,
-			instructions: agentInstructions || 'You are a helpful assistant.',
+			name: overrides?.name?.trim() || agentName.trim() || 'Untitled Agent',
+			description: overrides?.description ?? agentDescription,
+			instructions:
+				(overrides?.instructions ?? agentInstructions) || 'You are a helpful assistant.',
 			model: agentModel,
 			provider: agentModelOptions.find((m) => m.id === agentModel)?.provider ?? 'anyapi',
 		};
@@ -559,6 +585,7 @@ const BuildPage = () => {
 
 		const created = await createAgentMutation.mutateAsync(payload);
 		setCurrentAgentId(created.id);
+		setChatAgentId(created.id);
 		navigate(paths.editAgent(workspaceId, created.id), { replace: true });
 		return created.id;
 	};
@@ -569,7 +596,11 @@ const BuildPage = () => {
 		setSaveStatus('Saving changes...');
 		try {
 			await ensureAgentPersisted();
-			const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+			const now = new Date().toLocaleTimeString([], {
+				hour: '2-digit',
+				minute: '2-digit',
+				second: '2-digit',
+			});
 			setSaveStatus(`Saved at ${now}`);
 			toast.success('Agent saved successfully!');
 		} catch {
@@ -599,7 +630,9 @@ const BuildPage = () => {
 	};
 
 	const attachedSkillIds = new Set((attachedSkills ?? []).map((s) => s.id));
-	const availableSkillsToAttach = (workspaceSkills ?? []).filter((s) => !attachedSkillIds.has(s.id));
+	const availableSkillsToAttach = (workspaceSkills ?? []).filter(
+		(s) => !attachedSkillIds.has(s.id),
+	);
 
 	const handleAttachSkill = (skillId: string) => {
 		if (!currentAgentId) return;
@@ -702,9 +735,11 @@ const BuildPage = () => {
 		{ value: 'teal', bgClass: 'bg-teal-500' },
 		{ value: 'orange', bgClass: 'bg-amber-500' },
 		{ value: 'red', bgClass: 'bg-rose-500' },
-		{ value: 'rainbow', bgClass: 'bg-gradient-to-tr from-primary-400 via-emerald-500 to-rose-500' },
+		{
+			value: 'rainbow',
+			bgClass: 'bg-gradient-to-tr from-primary-400 via-emerald-500 to-rose-500',
+		},
 	];
-
 
 	const getIconColorClass = (color: string) => {
 		switch (color) {
@@ -745,16 +780,20 @@ const BuildPage = () => {
 				id: 'init-' + Date.now(),
 				sender: 'agent',
 				text: greeting,
-				timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+				timestamp: new Date().toLocaleTimeString([], {
+					hour: '2-digit',
+					minute: '2-digit',
+				}),
 				type: 'text',
 			},
 		]);
 	};
 
 	// Handle Generate agent click from main builder prompt
-	const handleSendMessage = () => {
+	const handleSendMessage = async () => {
 		if (!promptText.trim()) {
 			startPreview('Lead Generation Agent', Bot, 'purple');
+			await ensureAgentPersisted({ name: 'Lead Generation Agent' });
 			toast.info('Starting default Lead Generation Agent preview.');
 			return;
 		}
@@ -765,17 +804,29 @@ const BuildPage = () => {
 		let greeting = `Hi! I'm your Lead Generation Agent. How can I help you today?`;
 
 		const promptLower = promptText.toLowerCase();
-		if (promptLower.includes('recruit') || promptLower.includes('job') || promptLower.includes('candidate')) {
+		if (
+			promptLower.includes('recruit') ||
+			promptLower.includes('job') ||
+			promptLower.includes('candidate')
+		) {
 			matchedName = 'Recruiting Sourcer Agent';
 			matchedIcon = Users;
 			matchedColor = 'purple';
 			greeting = `Hi! I'm your Recruiting Sourcer Agent. How can I help you today?`;
-		} else if (promptLower.includes('feedback') || promptLower.includes('ticket') || promptLower.includes('support')) {
+		} else if (
+			promptLower.includes('feedback') ||
+			promptLower.includes('ticket') ||
+			promptLower.includes('support')
+		) {
 			matchedName = 'Feedback Digest Agent';
 			matchedIcon = Bot;
 			matchedColor = 'green';
 			greeting = `Hi! I'm your Feedback Digest Agent. How can I help you today?`;
-		} else if (promptLower.includes('sql') || promptLower.includes('database') || promptLower.includes('query')) {
+		} else if (
+			promptLower.includes('sql') ||
+			promptLower.includes('database') ||
+			promptLower.includes('query')
+		) {
 			matchedName = 'Database SQL Analyst Agent';
 			matchedIcon = Database;
 			matchedColor = 'purple';
@@ -783,6 +834,7 @@ const BuildPage = () => {
 		}
 
 		startPreview(matchedName, matchedIcon, matchedColor, greeting);
+		await ensureAgentPersisted({ name: matchedName });
 
 		const userMsg = promptText;
 		setPromptText('');
@@ -922,9 +974,15 @@ const BuildPage = () => {
 					setTimeline((prev) => {
 						const last = prev[prev.length - 1];
 						if (last && last.kind === 'text') {
-							return [...prev.slice(0, -1), { ...last, text: last.text + event.delta }];
+							return [
+								...prev.slice(0, -1),
+								{ ...last, text: last.text + event.delta },
+							];
 						}
-						return [...prev, { kind: 'text', id: `text-${prev.length}`, text: event.delta }];
+						return [
+							...prev,
+							{ kind: 'text', id: `text-${prev.length}`, text: event.delta },
+						];
 					});
 					continue;
 				}
@@ -952,7 +1010,9 @@ const BuildPage = () => {
 					// turn with `error` instead, so reaching here means success.
 					setTimeline((prev) =>
 						prev.map((item) =>
-							item.kind === 'tool' && item.id === event.id ? { ...item, status: 'done' } : item,
+							item.kind === 'tool' && item.id === event.id
+								? { ...item, status: 'done' }
+								: item,
 						),
 					);
 					continue;
@@ -989,7 +1049,10 @@ const BuildPage = () => {
 				id: 'agent-' + Date.now(),
 				sender: 'agent',
 				text: replyText || streamedText,
-				timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+				timestamp: new Date().toLocaleTimeString([], {
+					hour: '2-digit',
+					minute: '2-digit',
+				}),
 				type: 'text',
 				timeline: finishedTimeline.length > 0 ? finishedTimeline : undefined,
 			};
@@ -1009,7 +1072,10 @@ const BuildPage = () => {
 						id: 'agent-stopped-' + Date.now(),
 						sender: 'agent',
 						text: partialText || '_Stopped before the agent replied._',
-						timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+						timestamp: new Date().toLocaleTimeString([], {
+							hour: '2-digit',
+							minute: '2-digit',
+						}),
 						type: 'text',
 						timeline: partial.length > 0 ? partial : undefined,
 						stopped: true,
@@ -1022,7 +1088,10 @@ const BuildPage = () => {
 						id: 'agent-error-' + Date.now(),
 						sender: 'agent',
 						text: "Sorry, I couldn't process that - please try again.",
-						timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+						timestamp: new Date().toLocaleTimeString([], {
+							hour: '2-digit',
+							minute: '2-digit',
+						}),
 						type: 'text',
 					},
 				]);
@@ -1138,14 +1207,15 @@ const BuildPage = () => {
 	);
 
 	/** Node metadata for an attached binding, so a row can show a real name. */
-	const nodeFor = (nodeType: string) => (nodeCatalog ?? []).find((node) => node.type === nodeType);
+	const nodeFor = (nodeType: string) =>
+		(nodeCatalog ?? []).find((node) => node.type === nodeType);
 
 	const AgentIconComponent = agentIcon;
 
 	return (
-		<div className='dark:text-zinc-500 relative flex min-w-0 flex-1 flex-col overflow-hidden bg-zinc-50/50 text-zinc-950 transition-colors duration-300 dark:bg-zinc-950'>
+		<div className='relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-zinc-50/50 text-zinc-950 transition-colors duration-300 dark:bg-zinc-950 dark:text-zinc-500'>
 			{/* Ambient Lighting Gradients */}
-			<div className='pointer-events-none absolute top-[-100px] left-1/4 -z-10 h-[380px] w-[380px] rounded-full bg-primary-400/8 blur-[120px] dark:bg-primary-400/12' />
+			<div className='bg-primary-400/8 dark:bg-primary-400/12 pointer-events-none absolute top-[-100px] left-1/4 -z-10 h-[380px] w-[380px] rounded-full blur-[120px]' />
 			<div className='pointer-events-none absolute right-1/4 bottom-1/4 -z-10 h-[450px] w-[450px] rounded-full bg-emerald-500/8 blur-[140px] dark:bg-emerald-600/12' />
 
 			{!isPreviewMode ? (
@@ -1163,21 +1233,28 @@ const BuildPage = () => {
 						toggleClassName='md:hidden'
 						onPrimaryAction={handleSendMessage}>
 						{/* Share button */}
-						<MainAppBarPillButton onClick={() => {
-							navigator.clipboard.writeText(window.location.href);
-							toast.success('Share link copied to clipboard!');
-						}}>
+						<MainAppBarPillButton
+							onClick={() => {
+								navigator.clipboard.writeText(window.location.href);
+								toast.success('Share link copied to clipboard!');
+							}}>
 							<Share2 size={15} />
 							Share
 						</MainAppBarPillButton>
 						{/* Theme Toggle button (Moon/Sun) */}
-						<MainAppBarIconButton title='Toggle theme' onClick={toggleDarkMode} className='border border-zinc-200 bg-white dark:border-white/10 dark:bg-white/[0.03]'>
+						<MainAppBarIconButton
+							title='Toggle theme'
+							onClick={toggleDarkMode}
+							className='border border-zinc-200 bg-white dark:border-white/10 dark:bg-white/[0.03]'>
 							{isDarkTheme ? <Sun size={15} /> : <Moon size={15} />}
 						</MainAppBarIconButton>
 						{/* Save button with loading feedback */}
 						<MainAppBarPillButton onClick={handleSaveAgent}>
 							{isSaving ? (
-								<Loader2 size={15} className='animate-spin text-primary-600 dark:text-primary-400' />
+								<Loader2
+									size={15}
+									className='text-primary-600 dark:text-primary-400 animate-spin'
+								/>
 							) : (
 								<CheckCircle2 size={15} />
 							)}
@@ -1198,31 +1275,35 @@ const BuildPage = () => {
 							animate={{ y: 0, opacity: 1 }}
 							transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
 							className='mx-auto flex min-h-full w-full max-w-[1120px] flex-col px-5 pt-10 pb-5 sm:px-8 sm:pt-12 lg:px-10 lg:pt-14'>
-							
 							{/* Hero Banner Section */}
-							<section className='relative z-10 overflow-hidden rounded-3xl border border-primary-100/50 bg-linear-to-tr from-primary-400/5 via-primary-400/5 to-primary-400/5 p-6 sm:p-8 lg:p-10 dark:border-border-main dark:from-bg-card dark:to-bg-card'>
+							<section className='border-primary-100/50 from-primary-400/5 via-primary-400/5 to-primary-400/5 dark:border-border-main dark:from-bg-card dark:to-bg-card relative z-10 overflow-hidden rounded-3xl border bg-linear-to-tr p-6 sm:p-8 lg:p-10'>
 								{/* Background glow overlay */}
-								<div className='pointer-events-none absolute -right-20 -top-20 h-52 w-52 rounded-full bg-primary-400/10 blur-3xl dark:bg-primary-400/5' />
+								<div className='bg-primary-400/10 dark:bg-primary-400/5 pointer-events-none absolute -top-20 -right-20 h-52 w-52 rounded-full blur-3xl' />
 
 								{/* Robot badge */}
-								<div className='relative mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-950 text-white shadow-lg dark:bg-bg-sidebar dark:border dark:border-white/10'>
+								<div className='dark:bg-bg-sidebar relative mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-950 text-white shadow-lg dark:border dark:border-white/10'>
 									<Bot size={28} strokeWidth={2} />
 								</div>
 
 								{/* Title */}
 								<h1 className='text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl lg:text-5xl dark:text-white'>
-									Build your <span className='bg-gradient-to-r from-primary-400 to-primary-400 bg-clip-text text-transparent dark:from-primary-400 dark:to-primary-300'>agent</span>
+									Build your{' '}
+									<span className='from-primary-400 to-primary-400 dark:from-primary-400 dark:to-primary-300 bg-gradient-to-r bg-clip-text text-transparent'>
+										agent
+									</span>
 								</h1>
 
 								{/* Description */}
-								<p className='mt-3 max-w-2xl text-xs font-semibold text-zinc-500 sm:text-sm lg:text-md dark:text-zinc-400'>
-									Choose an agent template or simply describe what you need to get started.
+								<p className='lg:text-md mt-3 max-w-2xl text-xs font-semibold text-zinc-500 sm:text-sm dark:text-zinc-400'>
+									Choose an agent template or simply describe what you need to get
+									started.
 								</p>
 
 								{/* Describe Agent Input Box */}
 								<div className='mt-8 max-w-2xl'>
-									<div className='relative flex items-center rounded-full border border-zinc-200/80 bg-white p-1.5 shadow-sm transition-all focus-within:border-primary-500/50 focus-within:ring-4 focus-within:ring-primary-500/5 dark:border-border-main dark:bg-zinc-950/40'>
+									<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 dark:border-border-main relative flex items-center rounded-full border border-zinc-200/80 bg-white p-1.5 shadow-sm transition-all focus-within:ring-4 dark:bg-zinc-950/40'>
 										<input
+											ref={heroPromptRef}
 											type='text'
 											placeholder='Describe what your agent should do...'
 											value={promptText}
@@ -1233,12 +1314,12 @@ const BuildPage = () => {
 													handleSendMessage();
 												}
 											}}
-											className='flex-1 bg-transparent px-4 py-2 text-sm font-semibold text-zinc-900 placeholder:text-zinc-400 outline-none border-none focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
+											className='flex-1 border-none bg-transparent px-4 py-2 text-sm font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
 										/>
 										<button
 											type='button'
 											onClick={handleSendMessage}
-											className='flex items-center gap-1.5 rounded-full bg-primary-400 px-5 py-2 text-xs font-bold text-primary-950 shadow-md shadow-primary-500/25 transition hover:bg-primary-500 active:scale-95 dark:shadow-none'>
+											className='bg-primary-400 text-primary-950 shadow-primary-500/25 hover:bg-primary-500 flex items-center gap-1.5 rounded-full px-5 py-2 text-xs font-bold shadow-md transition active:scale-95 dark:shadow-none'>
 											<Sparkles size={13} />
 											Generate agent
 										</button>
@@ -1247,13 +1328,15 @@ const BuildPage = () => {
 							</section>
 
 							{/* Templates Section */}
-							<section className='relative z-10 mt-12 sm:mt-14 lg:mt-16'>
+							<section
+								ref={templatesSectionRef}
+								className='relative z-10 mt-8 scroll-mt-4 sm:mt-14 lg:mt-16'>
 								<div className='mb-5 flex items-center justify-between gap-4'>
 									<div className='flex items-center gap-2.5'>
 										<h2 className='text-lg font-black tracking-tight sm:text-xl dark:text-zinc-50'>
 											Templates
 										</h2>
-										<span className='text-zinc-600 inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-[11px] font-black dark:bg-zinc-950/60 dark:text-zinc-400'>
+										<span className='inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-[11px] font-black text-zinc-600 dark:bg-zinc-950/60 dark:text-zinc-400'>
 											{filteredTemplates.length} Available
 										</span>
 									</div>
@@ -1265,7 +1348,7 @@ const BuildPage = () => {
 								</div>
 
 								{/* Categories Tab Bar */}
-								<div className='text-zinc-400 flex gap-5 overflow-x-auto border-b border-zinc-200/80 text-[13px] font-black whitespace-nowrap sm:gap-6 sm:text-sm dark:border-border-main dark:text-zinc-500'>
+								<div className='dark:border-border-main flex gap-5 overflow-x-auto border-b border-zinc-200/80 text-[13px] font-black whitespace-nowrap text-zinc-400 sm:gap-6 sm:text-sm dark:text-zinc-500'>
 									{agentTemplateTabs.map((tab) => {
 										const isActive = tab === activeTab;
 										return (
@@ -1282,7 +1365,7 @@ const BuildPage = () => {
 												{isActive && (
 													<motion.div
 														layoutId='activeTabUnderline'
-														className='absolute right-0 bottom-0 left-0 h-0.5 bg-primary-400 dark:bg-primary-400'
+														className='bg-primary-400 dark:bg-primary-400 absolute right-0 bottom-0 left-0 h-0.5'
 														transition={{
 															type: 'spring',
 															stiffness: 380,
@@ -1308,7 +1391,9 @@ const BuildPage = () => {
 												transition={{ duration: 0.2 }}>
 												<AgentTemplateCard
 													template={template}
-													onClick={() => handleTemplateClick(template.title)}
+													onClick={() =>
+														handleTemplateClick(template.title)
+													}
 												/>
 											</motion.div>
 										))}
@@ -1320,7 +1405,9 @@ const BuildPage = () => {
 							<section className='relative z-10 mt-12 lg:mt-14'>
 								{/* Prompt Suggestions */}
 								<div className='mb-4 flex flex-wrap items-center gap-3'>
-									<span className='text-xs font-semibold text-zinc-400 dark:text-zinc-500'>Quick starters</span>
+									<span className='text-xs font-semibold text-zinc-400 dark:text-zinc-500'>
+										Quick starters
+									</span>
 									{suggestionChips.map((chip) => {
 										const ChipIcon = chip.icon;
 										return (
@@ -1328,7 +1415,7 @@ const BuildPage = () => {
 												key={chip.label}
 												type='button'
 												onClick={() => handleChipClick(chip.text)}
-												className='text-zinc-600 hover:text-zinc-950 inline-flex items-center gap-1.5 rounded-full border border-zinc-200/80 bg-white/70 px-4 py-1.5 text-[11px] font-black shadow-2xs backdrop-blur-xs transition-all hover:bg-zinc-50/50 dark:border-border-main dark:bg-zinc-950/40 dark:text-zinc-400 dark:hover:border-border-main dark:hover:bg-bg-card'>
+												className='dark:border-border-main dark:hover:border-border-main dark:hover:bg-bg-card inline-flex items-center gap-1.5 rounded-full border border-zinc-200/80 bg-white/70 px-4 py-1.5 text-[11px] font-black text-zinc-600 shadow-2xs backdrop-blur-xs transition-all hover:bg-zinc-50/50 hover:text-zinc-950 dark:bg-zinc-950/40 dark:text-zinc-400'>
 												<ChipIcon size={12} className='text-primary-500' />
 												{chip.label}
 											</button>
@@ -1337,8 +1424,8 @@ const BuildPage = () => {
 								</div>
 
 								{/* Cockpit Shell */}
-								<div className='relative flex items-center rounded-2xl border border-zinc-200 bg-white p-2 shadow-sm focus-within:border-primary-500/50 focus-within:ring-4 focus-within:ring-primary-500/5 dark:border-border-main dark:bg-zinc-950/40'>
-									<div className='flex h-10 w-10 shrink-0 items-center justify-center text-primary-500'>
+								<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 dark:border-border-main relative flex items-center rounded-2xl border border-zinc-200 bg-white p-2 shadow-sm focus-within:ring-4 dark:bg-zinc-950/40'>
+									<div className='text-primary-500 flex h-10 w-10 shrink-0 items-center justify-center'>
 										<Sparkles size={18} />
 									</div>
 									<input
@@ -1353,13 +1440,13 @@ const BuildPage = () => {
 											}
 										}}
 										placeholder='Send a message to your agent...'
-										className='flex-1 bg-transparent px-2 text-sm font-semibold text-zinc-900 placeholder:text-zinc-400 outline-none border-none focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
+										className='flex-1 border-none bg-transparent px-2 text-sm font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
 									/>
 									<button
 										aria-label='Send'
 										type='button'
 										onClick={handleSendMessage}
-										className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-400 text-primary-950 shadow-md transition hover:bg-primary-500 active:scale-95'>
+										className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-md transition active:scale-95'>
 										<Send size={15} />
 									</button>
 								</div>
@@ -1368,6 +1455,46 @@ const BuildPage = () => {
 							<div className='pointer-events-none mt-auto h-6' />
 						</motion.div>
 					</main>
+
+					{/* Mobile builder controls stay reachable while the content scrolls. */}
+					<nav className='grid shrink-0 grid-cols-4 border-t border-zinc-200 bg-white/95 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:hidden dark:border-white/10 dark:bg-zinc-950/95'>
+						<button
+							type='button'
+							onClick={() => heroPromptRef.current?.focus()}
+							className='text-primary-600 active:bg-primary-50 dark:text-primary-400 dark:active:bg-primary-950/30 flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold transition'>
+							<Sparkles size={18} />
+							Describe
+						</button>
+						<button
+							type='button'
+							onClick={() =>
+								templatesSectionRef.current?.scrollIntoView({
+									behavior: 'smooth',
+									block: 'start',
+								})
+							}
+							className='flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold text-zinc-500 transition active:bg-zinc-100 dark:text-zinc-400 dark:active:bg-zinc-900'>
+							<Layers size={18} />
+							Templates
+						</button>
+						<button
+							type='button'
+							onClick={() => startPreview(agentName, agentIcon, agentIconColor)}
+							className='flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold text-zinc-500 transition active:bg-zinc-100 dark:text-zinc-400 dark:active:bg-zinc-900'>
+							<Play size={18} />
+							Preview
+						</button>
+						<button
+							type='button'
+							onClick={() => {
+								setActiveSidebarTab('agent');
+								setIsSettingsOpen(true);
+							}}
+							className='flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold text-zinc-500 transition active:bg-zinc-100 dark:text-zinc-400 dark:active:bg-zinc-900'>
+							<SlidersHorizontal size={18} />
+							Configure
+						</button>
+					</nav>
 
 					<div className='pointer-events-none absolute right-10 bottom-8 hidden items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700 xl:flex dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400'>
 						<Sparkles size={16} />
@@ -1379,16 +1506,32 @@ const BuildPage = () => {
 				<div className='flex min-h-0 flex-1 flex-col bg-zinc-50/20 dark:bg-zinc-950/80'>
 					{/* Responsive Chat Header */}
 					{/* Mobile Chat Header */}
-					<header className='flex h-14 shrink-0 items-center justify-between border-b border-zinc-150 bg-white px-4 md:hidden dark:border-zinc-800 dark:bg-zinc-900'>
+					<header className='border-zinc-150 flex min-h-14 shrink-0 items-center justify-between gap-2 border-b bg-white px-3 md:hidden dark:border-zinc-800 dark:bg-zinc-900'>
 						<button
-							aria-label='Open menu'
-							onClick={toggleAside}
+							aria-label='Back to agent builder'
+							onClick={() => setIsPreviewMode(false)}
 							type='button'
-							className='flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
-						>
-							<Menu size={20} />
+							className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-zinc-500 active:bg-zinc-100 dark:text-zinc-400 dark:active:bg-zinc-800'>
+							<ChevronRight size={20} className='rotate-180' />
 						</button>
-						<div className='flex items-center gap-3'>
+						<div className='flex min-w-0 flex-1 items-center gap-2'>
+							<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white dark:border dark:border-white/10 dark:bg-zinc-900'>
+								<AgentIconComponent
+									size={17}
+									className={getIconColorClass(agentIconColor)}
+								/>
+							</div>
+							<div className='min-w-0'>
+								<p className='truncate text-sm font-black text-zinc-900 dark:text-white'>
+									{agentName}
+								</p>
+								<p className='flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400'>
+									<span className='h-1.5 w-1.5 rounded-full bg-emerald-500' />{' '}
+									Active
+								</p>
+							</div>
+						</div>
+						<div className='flex shrink-0 items-center gap-1'>
 							<button
 								aria-label='Share'
 								onClick={() => {
@@ -1396,8 +1539,7 @@ const BuildPage = () => {
 									toast.success('Share link copied to clipboard!');
 								}}
 								type='button'
-								className='flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
-							>
+								className='flex h-10 w-10 items-center justify-center rounded-xl text-zinc-500 active:bg-zinc-100 dark:text-zinc-400 dark:active:bg-zinc-800'>
 								<Share size={18} />
 							</button>
 							<button
@@ -1407,16 +1549,15 @@ const BuildPage = () => {
 									setIsSettingsOpen(true);
 								}}
 								type='button'
-								className='flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
-							>
+								className='text-primary-600 active:bg-primary-50 dark:text-primary-400 dark:active:bg-primary-950/30 flex h-10 w-10 items-center justify-center rounded-xl'>
 								<SlidersHorizontal size={18} />
 							</button>
 						</div>
 					</header>
 
 					{/* Desktop Chat Header */}
-					<header className='hidden md:flex h-16 shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-4 shadow-2xs backdrop-blur-md dark:border-white/10 dark:bg-zinc-950/90'>
-						<div className='flex items-center gap-3 min-w-0'>
+					<header className='hidden h-16 shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-4 shadow-2xs backdrop-blur-md md:flex dark:border-white/10 dark:bg-zinc-950/90'>
+						<div className='flex min-w-0 items-center gap-3'>
 							{/* Back button */}
 							<button
 								aria-label='Close'
@@ -1426,12 +1567,16 @@ const BuildPage = () => {
 							</button>
 
 							{/* Agent Avatar */}
-							<div className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white shadow-md dark:bg-zinc-900 dark:border dark:border-white/10`}>
-								<AgentIconComponent size={20} className={getIconColorClass(agentIconColor)} />
+							<div
+								className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white shadow-md dark:border dark:border-white/10 dark:bg-zinc-900`}>
+								<AgentIconComponent
+									size={20}
+									className={getIconColorClass(agentIconColor)}
+								/>
 							</div>
 
 							{/* Agent name & status */}
-							<div className='flex flex-col min-w-0'>
+							<div className='flex min-w-0 flex-col'>
 								<div className='flex items-center gap-1.5'>
 									<span className='truncate text-[14px] font-black tracking-tight text-zinc-900 dark:text-white'>
 										{agentName}
@@ -1466,28 +1611,38 @@ const BuildPage = () => {
 								<Share2 size={14} />
 								<span>Share</span>
 							</MainAppBarPillButton>
-							
-							<MainAppBarIconButton title='Settings' onClick={() => { setActiveSidebarTab('agent'); setIsSettingsOpen(true); }}>
+
+							<MainAppBarIconButton
+								title='Settings'
+								onClick={() => {
+									setActiveSidebarTab('agent');
+									setIsSettingsOpen(true);
+								}}>
 								<SlidersHorizontal size={14} />
 							</MainAppBarIconButton>
 
 							<div className='relative'>
-								<MainAppBarIconButton title='More options' onClick={() => setIsMoreDropdownOpen(!isMoreDropdownOpen)}>
+								<MainAppBarIconButton
+									title='More options'
+									onClick={() => setIsMoreDropdownOpen(!isMoreDropdownOpen)}>
 									<MoreHorizontal size={14} />
 								</MainAppBarIconButton>
 								<AnimatePresence>
 									{isMoreDropdownOpen && (
 										<>
 											{/* Click outside backdrop */}
-											<div className='fixed inset-0 z-40' onClick={() => setIsMoreDropdownOpen(false)} />
-											
+											<div
+												className='fixed inset-0 z-40'
+												onClick={() => setIsMoreDropdownOpen(false)}
+											/>
+
 											{/* Dropdown Menu */}
 											<motion.div
 												initial={{ opacity: 0, y: 8, scale: 0.95 }}
 												animate={{ opacity: 1, y: 0, scale: 1 }}
 												exit={{ opacity: 0, y: 8, scale: 0.95 }}
 												transition={{ duration: 0.15, ease: 'easeOut' }}
-												className='absolute right-0 mt-2 w-52 rounded-xl border border-zinc-200 bg-white p-1.5 shadow-lg z-50 dark:border-white/10 dark:bg-zinc-900'>
+												className='absolute right-0 z-50 mt-2 w-52 rounded-xl border border-zinc-200 bg-white p-1.5 shadow-lg dark:border-white/10 dark:bg-zinc-900'>
 												<button
 													onClick={() => {
 														setIsMoreDropdownOpen(false);
@@ -1501,17 +1656,24 @@ const BuildPage = () => {
 																id: 'init-' + Date.now(),
 																sender: 'agent',
 																text: greeting,
-																timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+																timestamp:
+																	new Date().toLocaleTimeString(
+																		[],
+																		{
+																			hour: '2-digit',
+																			minute: '2-digit',
+																		},
+																	),
 																type: 'text',
 															},
 														]);
 														toast.success('Chat history cleared!');
 													}}
-													className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-white/[0.04] transition-colors'>
+													className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-white/[0.04]'>
 													<RotateCcw size={13} />
 													Reset Chat History
 												</button>
-												
+
 												<button
 													onClick={() => {
 														setIsMoreDropdownOpen(false);
@@ -1521,29 +1683,52 @@ const BuildPage = () => {
 															instructions: agentInstructions,
 															color: agentIconColor,
 															tools: [
-																...(toolBindings ?? []).map((b) => nodeFor(b.node_type)?.name ?? b.node_type),
-																...(workflowTools ?? []).map((w) => w.name),
+																...(toolBindings ?? []).map(
+																	(b) =>
+																		nodeFor(b.node_type)
+																			?.name ?? b.node_type,
+																),
+																...(workflowTools ?? []).map(
+																	(w) => w.name,
+																),
 															],
 														};
-														const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(agentConfig, null, 2));
-														const downloadAnchor = document.createElement('a');
-														downloadAnchor.setAttribute("href", dataStr);
-														downloadAnchor.setAttribute("download", `${agentName.toLowerCase().replace(/\s+/g, '-')}-config.json`);
+														const dataStr =
+															'data:text/json;charset=utf-8,' +
+															encodeURIComponent(
+																JSON.stringify(
+																	agentConfig,
+																	null,
+																	2,
+																),
+															);
+														const downloadAnchor =
+															document.createElement('a');
+														downloadAnchor.setAttribute(
+															'href',
+															dataStr,
+														);
+														downloadAnchor.setAttribute(
+															'download',
+															`${agentName.toLowerCase().replace(/\s+/g, '-')}-config.json`,
+														);
 														document.body.appendChild(downloadAnchor);
 														downloadAnchor.click();
 														downloadAnchor.remove();
-														toast.success('Agent configuration exported!');
+														toast.success(
+															'Agent configuration exported!',
+														);
 													}}
-													className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-white/[0.04] transition-colors'>
+													className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-white/[0.04]'>
 													<FileJson size={13} />
 													Export Agent JSON
 												</button>
-												
+
 												<div className='my-1 border-t border-zinc-100 dark:border-white/5' />
-												
+
 												<button
 													onClick={handleDeleteAgent}
-													className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/20 transition-colors'>
+													className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/20'>
 													<Trash2 size={13} />
 													Delete Agent
 												</button>
@@ -1555,7 +1740,7 @@ const BuildPage = () => {
 
 							<button
 								onClick={() => setIsPreviewMode(false)}
-								className='flex h-9 items-center gap-1.5 rounded-lg bg-primary-400 px-4 text-xs font-bold text-primary-950 shadow-md shadow-primary-500/20 hover:bg-primary-500 transition active:scale-95 dark:shadow-none'>
+								className='bg-primary-400 text-primary-950 shadow-primary-500/20 hover:bg-primary-500 flex h-9 items-center gap-1.5 rounded-lg px-4 text-xs font-bold shadow-md transition active:scale-95 dark:shadow-none'>
 								<SquarePen size={13} />
 								<span>Edit Draft</span>
 							</button>
@@ -1563,11 +1748,11 @@ const BuildPage = () => {
 					</header>
 
 					{/* Chat Message Box */}
-					<div className='flex-1 overflow-y-auto px-4 py-6 md:px-8 max-w-4xl w-full mx-auto space-y-6'>
+					<div className='mx-auto w-full max-w-4xl flex-1 space-y-6 overflow-y-auto px-4 py-6 md:px-8'>
 						{isMobile && chatHistory.filter((m) => m.sender === 'user').length === 0 ? (
-							<div className='flex flex-col items-center justify-center pt-8 pb-4 px-2 select-none'>
+							<div className='flex flex-col items-center justify-center px-2 pt-8 pb-4 select-none'>
 								{/* Centered Fire/Flame Logo */}
-								<div className='flex items-center justify-center mb-6'>
+								<div className='mb-6 flex items-center justify-center'>
 									<img
 										src={LogoFyr}
 										alt='Fyr Logo'
@@ -1576,53 +1761,51 @@ const BuildPage = () => {
 								</div>
 
 								{/* Centered Title */}
-								<h2 className='text-[22px] font-black tracking-tight text-zinc-900 text-center dark:text-white mb-6 px-4'>
+								<h2 className='mb-6 px-4 text-center text-[22px] font-black tracking-tight text-zinc-900 dark:text-white'>
 									{agentName}
 								</h2>
 
 								{/* Row of circular buttons */}
-								<div className='flex items-center justify-center gap-3.5 w-full max-w-sm flex-wrap px-4'>
+								<div className='flex w-full max-w-sm flex-wrap items-center justify-center gap-3.5 px-4'>
 									<button
 										type='button'
 										onClick={() => {
-											updateChatInput('Research top competitor strategies...');
+											updateChatInput(
+												'Research top competitor strategies...',
+											);
 										}}
-										className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-orange-50/60 text-orange-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-orange-500/20 dark:bg-orange-500/10'
-									>
+										className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-orange-50/60 text-orange-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-orange-500/20 dark:bg-orange-500/10'>
 										<Flame size={18} />
 									</button>
 									<button
 										type='button'
 										onClick={() => {
-											updateChatInput('Generate competitor comparison matrix...');
+											updateChatInput(
+												'Generate competitor comparison matrix...',
+											);
 										}}
-										className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50/60 text-blue-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-blue-500/20 dark:bg-blue-500/10'
-									>
+										className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50/60 text-blue-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-blue-500/20 dark:bg-blue-500/10'>
 										<FileText size={18} />
 									</button>
 									<button
 										type='button'
-										className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'
-									>
+										className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
 										<Layers size={18} />
 									</button>
 									<button
 										type='button'
-										className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'
-									>
+										className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
 										<Globe size={18} />
 									</button>
 									<button
 										aria-label='Download'
 										type='button'
-										className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'
-									>
+										className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
 										<Download size={18} />
 									</button>
 									<button
 										type='button'
-										className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'
-									>
+										className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
 										<ImageIcon size={18} />
 									</button>
 									<button
@@ -1635,22 +1818,26 @@ const BuildPage = () => {
 													id: 'init-' + Date.now(),
 													sender: 'agent',
 													text: greeting,
-													timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+													timestamp: new Date().toLocaleTimeString([], {
+														hour: '2-digit',
+														minute: '2-digit',
+													}),
 													type: 'text',
 												},
 											]);
 										}}
-										className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'
-									>
+										className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
 										<RotateCcw size={18} />
 									</button>
 								</div>
 
 								{/* Get started section */}
 								{showGetStarted && (
-									<div className='w-full mt-12 px-4'>
-										<div className='flex items-center justify-between mb-4'>
-											<span className='text-[15px] font-black text-zinc-800 dark:text-zinc-100'>Get started</span>
+									<div className='mt-12 w-full px-4'>
+										<div className='mb-4 flex items-center justify-between'>
+											<span className='text-[15px] font-black text-zinc-800 dark:text-zinc-100'>
+												Get started
+											</span>
 											<button
 												type='button'
 												onClick={() => setShowGetStarted(false)}
@@ -1660,21 +1847,29 @@ const BuildPage = () => {
 										</div>
 
 										{/* Horizontal scrolling grid container */}
-										<div className='flex gap-4 overflow-x-auto pb-4 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
+										<div className='flex [scrollbar-width:none] gap-4 overflow-x-auto scroll-smooth pb-4 [&::-webkit-scrollbar]:hidden'>
 											{/* Card 1 */}
 											<button
 												type='button'
 												onClick={() => {
-													sendChatMessage('Set up a trigger for Competitor Research Agent');
+													sendChatMessage(
+														'Set up a trigger for Competitor Research Agent',
+													);
 												}}
-												className='flex min-w-[270px] max-w-[270px] flex-col rounded-2xl border border-zinc-150 bg-white p-5 text-left shadow-2xs hover:bg-zinc-50/30 transition dark:border-zinc-800/80 dark:bg-zinc-900'
-											>
-												<div className='flex items-center gap-2 mb-2 text-zinc-800 dark:text-zinc-200'>
-													<Zap size={16} className='text-zinc-450 dark:text-zinc-400' />
-													<span className='text-xs font-black'>Set up a trigger</span>
+												className='border-zinc-150 flex max-w-[270px] min-w-[270px] flex-col rounded-2xl border bg-white p-5 text-left shadow-2xs transition hover:bg-zinc-50/30 dark:border-zinc-800/80 dark:bg-zinc-900'>
+												<div className='mb-2 flex items-center gap-2 text-zinc-800 dark:text-zinc-200'>
+													<Zap
+														size={16}
+														className='text-zinc-450 dark:text-zinc-400'
+													/>
+													<span className='text-xs font-black'>
+														Set up a trigger
+													</span>
 												</div>
-												<p className='text-[11px] font-semibold text-zinc-500 leading-relaxed dark:text-zinc-400'>
-													I want you to start doing things without me having to ask. Help me set up a trigger so you can run on a schedule or...
+												<p className='text-[11px] leading-relaxed font-semibold text-zinc-500 dark:text-zinc-400'>
+													I want you to start doing things without me
+													having to ask. Help me set up a trigger so you
+													can run on a schedule or...
 												</p>
 											</button>
 
@@ -1682,16 +1877,24 @@ const BuildPage = () => {
 											<button
 												type='button'
 												onClick={() => {
-													sendChatMessage('Build a competitor marketing analysis dashboard');
+													sendChatMessage(
+														'Build a competitor marketing analysis dashboard',
+													);
 												}}
-												className='flex min-w-[270px] max-w-[270px] flex-col rounded-2xl border border-zinc-150 bg-white p-5 text-left shadow-2xs hover:bg-zinc-50/30 transition dark:border-zinc-800/80 dark:bg-zinc-900'
-											>
-												<div className='flex items-center gap-2 mb-2 text-zinc-800 dark:text-zinc-200'>
-													<Layers size={16} className='text-zinc-455 dark:text-zinc-400' />
-													<span className='text-xs font-black'>Build widgets</span>
+												className='border-zinc-150 flex max-w-[270px] min-w-[270px] flex-col rounded-2xl border bg-white p-5 text-left shadow-2xs transition hover:bg-zinc-50/30 dark:border-zinc-800/80 dark:bg-zinc-900'>
+												<div className='mb-2 flex items-center gap-2 text-zinc-800 dark:text-zinc-200'>
+													<Layers
+														size={16}
+														className='text-zinc-455 dark:text-zinc-400'
+													/>
+													<span className='text-xs font-black'>
+														Build widgets
+													</span>
 												</div>
-												<p className='text-[11px] font-semibold text-zinc-500 leading-relaxed dark:text-zinc-400'>
-													Build me a fresh copy of your application or customize your views to match your design system and preferences.
+												<p className='text-[11px] leading-relaxed font-semibold text-zinc-500 dark:text-zinc-400'>
+													Build me a fresh copy of your application or
+													customize your views to match your design system
+													and preferences.
 												</p>
 											</button>
 										</div>
@@ -1705,71 +1908,118 @@ const BuildPage = () => {
 								// re-running an older turn would strand everything after it.
 								const isLastMessage = messageIdx === chatHistory.length - 1;
 								return (
-									<div key={message.id} className={`group flex w-full ${isUser ? 'justify-end' : 'justify-start'}`}>
-										<div className={`flex gap-3 max-w-[90%] sm:max-w-[80%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+									<div
+										key={message.id}
+										className={`group flex w-full ${isUser ? 'justify-end' : 'justify-start'}`}>
+										<div
+											className={`flex max-w-[90%] gap-3 sm:max-w-[80%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
 											{/* Agent Avatar in body */}
 											{!isUser && (
-												<div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white border dark:border-white/10 dark:bg-zinc-900`}>
-													<AgentIconComponent size={16} className={getIconColorClass(agentIconColor)} />
+												<div
+													className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-zinc-950 text-white dark:border-white/10 dark:bg-zinc-900`}>
+													<AgentIconComponent
+														size={16}
+														className={getIconColorClass(
+															agentIconColor,
+														)}
+													/>
 												</div>
 											)}
 
-											<div className='flex flex-col min-w-0'>
+											<div className='flex min-w-0 flex-col'>
 												{/* What the agent did to produce this reply — collapsible steps */}
-												{!isUser && message.timeline && message.timeline.length > 0 && (
-													<TimelineSteps items={message.timeline} className='mb-1.5' />
-												)}
+												{!isUser &&
+													message.timeline &&
+													message.timeline.length > 0 && (
+														<TimelineSteps
+															items={message.timeline}
+															className='mb-1.5'
+														/>
+													)}
 
 												{/* Files the agent exported — always shown, never collapsed */}
-												{!isUser && message.timeline && message.timeline.length > 0 && (
-													<div className='mb-1.5 flex flex-col gap-1.5'>
-														{message.timeline.map((item) =>
-															item.kind === 'artifact' ? (
-																<ArtifactCard key={item.id} item={item} ws={workspaceId} />
-															) : null,
-														)}
-													</div>
-												)}
+												{!isUser &&
+													message.timeline &&
+													message.timeline.length > 0 && (
+														<div className='mb-1.5 flex flex-col gap-1.5'>
+															{message.timeline.map((item) =>
+																item.kind === 'artifact' ? (
+																	<ArtifactCard
+																		key={item.id}
+																		item={item}
+																		ws={workspaceId}
+																	/>
+																) : null,
+															)}
+														</div>
+													)}
 
 												{/* Chat bubble */}
-												<div className={`rounded-2xl px-4 py-3 text-sm font-semibold leading-relaxed ${
-													isUser
-														? 'bg-primary-400/10 text-zinc-950 dark:bg-primary-400/25 dark:text-zinc-100 rounded-tr-none'
-														: 'bg-white text-zinc-800 border border-zinc-200/80 dark:bg-zinc-900/60 dark:text-zinc-200 dark:border-zinc-800/85 rounded-tl-none shadow-2xs'
-												}`}>
+												<div
+													className={`rounded-2xl px-4 py-3 text-sm leading-relaxed font-semibold ${
+														isUser
+															? 'bg-primary-400/10 dark:bg-primary-400/25 rounded-tr-none text-zinc-950 dark:text-zinc-100'
+															: 'rounded-tl-none border border-zinc-200/80 bg-white text-zinc-800 shadow-2xs dark:border-zinc-800/85 dark:bg-zinc-900/60 dark:text-zinc-200'
+													}`}>
 													{isUser ? (
-														<p className='whitespace-pre-line'>{message.text}</p>
+														<p className='whitespace-pre-line'>
+															{message.text}
+														</p>
 													) : (
-														<ReactMarkdown components={mdComponents}>{message.text}</ReactMarkdown>
+														<ReactMarkdown components={mdComponents}>
+															{message.text}
+														</ReactMarkdown>
 													)}
 
 													{/* Structured Table for data responses */}
-													{message.type === 'table' && message.headers && message.data && (
-														<div className='mt-4 overflow-hidden rounded-xl border border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950'>
-															<div className='overflow-x-auto'>
-																<table className='w-full text-left text-xs font-semibold text-zinc-600 dark:text-zinc-400'>
-																	<thead className='bg-zinc-50/50 text-[11px] font-black uppercase tracking-wider text-zinc-600 border-b border-zinc-200 dark:bg-zinc-900/40 dark:text-zinc-400 dark:border-zinc-800'>
-																		<tr>
-																			{message.headers.map((h) => (
-																				<th key={h} className='px-4 py-2.5 font-bold'>{h}</th>
-																			))}
-																		</tr>
-																	</thead>
-																	<tbody className='divide-y divide-zinc-200/80 dark:divide-zinc-800'>
-																		{message.data.map((row, rIdx) => (
-																			<tr key={rIdx} className='hover:bg-zinc-50/40 dark:hover:bg-zinc-900/20'>
-																				{message.headers!.map((h) => (
-																					<td key={h} className='px-4 py-2.5 text-zinc-900 dark:text-zinc-100 whitespace-nowrap'>
-																						{row[h]}
-																					</td>
-																				))}
+													{message.type === 'table' &&
+														message.headers &&
+														message.data && (
+															<div className='mt-4 overflow-hidden rounded-xl border border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950'>
+																<div className='overflow-x-auto'>
+																	<table className='w-full text-left text-xs font-semibold text-zinc-600 dark:text-zinc-400'>
+																		<thead className='border-b border-zinc-200 bg-zinc-50/50 text-[11px] font-black tracking-wider text-zinc-600 uppercase dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400'>
+																			<tr>
+																				{message.headers.map(
+																					(h) => (
+																						<th
+																							key={h}
+																							className='px-4 py-2.5 font-bold'>
+																							{h}
+																						</th>
+																					),
+																				)}
 																			</tr>
-																		))}
-																	</tbody>
-																</table>
+																		</thead>
+																		<tbody className='divide-y divide-zinc-200/80 dark:divide-zinc-800'>
+																			{message.data.map(
+																				(row, rIdx) => (
+																					<tr
+																						key={rIdx}
+																						className='hover:bg-zinc-50/40 dark:hover:bg-zinc-900/20'>
+																						{message.headers!.map(
+																							(h) => (
+																								<td
+																									key={
+																										h
+																									}
+																									className='px-4 py-2.5 whitespace-nowrap text-zinc-900 dark:text-zinc-100'>
+																									{
+																										row[
+																											h
+																										]
+																									}
+																								</td>
+																							),
+																						)}
+																					</tr>
+																				),
+																			)}
+																		</tbody>
+																	</table>
+																</div>
 															</div>
-														</div>
-													)}
+														)}
 
 													{/* Follow up text */}
 													{message.followUp && (
@@ -1780,34 +2030,52 @@ const BuildPage = () => {
 												</div>
 
 												{/* Action Buttons for agent messages */}
-												{!isUser && message.actions && message.actions.length > 0 && (
-													<div className='mt-3.5 flex flex-wrap gap-2.5'>
-														{message.actions.map((act) => {
-															let IconComp = Sparkles;
-															if (act.type === 'export_csv' || act.type === 'pdf_digest') IconComp = Download;
-															if (act.type === 'refine' || act.type === 'set_alert') IconComp = SlidersHorizontal;
+												{!isUser &&
+													message.actions &&
+													message.actions.length > 0 && (
+														<div className='mt-3.5 flex flex-wrap gap-2.5'>
+															{message.actions.map((act) => {
+																let IconComp = Sparkles;
+																if (
+																	act.type === 'export_csv' ||
+																	act.type === 'pdf_digest'
+																)
+																	IconComp = Download;
+																if (
+																	act.type === 'refine' ||
+																	act.type === 'set_alert'
+																)
+																	IconComp = SlidersHorizontal;
 
-															return (
-																<button
-																	key={act.label}
-																	onClick={() => handleActionClick(act)}
-																	className='inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-4 py-1.5 text-xs font-black text-zinc-700 shadow-2xs hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/80 transition active:scale-95'>
-																	<IconComp size={12} className='text-primary-500' />
-																	<span>{act.label}</span>
-																</button>
-															);
-														})}
-													</div>
-												)}
+																return (
+																	<button
+																		key={act.label}
+																		onClick={() =>
+																			handleActionClick(act)
+																		}
+																		className='inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-4 py-1.5 text-xs font-black text-zinc-700 shadow-2xs transition hover:bg-zinc-50 active:scale-95 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/80'>
+																		<IconComp
+																			size={12}
+																			className='text-primary-500'
+																		/>
+																		<span>{act.label}</span>
+																	</button>
+																);
+															})}
+														</div>
+													)}
 
 												{/* Timestamp + per-message actions. The toolbar rides the row's
 												    hover; on touch there is none, so tapping the timestamp pins it. */}
-												<div className={`mt-1.5 flex items-center gap-1.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+												<div
+													className={`mt-1.5 flex items-center gap-1.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
 													<button
 														type='button'
 														onClick={() =>
 															setActiveMessageId((current) =>
-																current === message.id ? null : message.id,
+																current === message.id
+																	? null
+																	: message.id,
 															)
 														}
 														className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
@@ -1815,7 +2083,7 @@ const BuildPage = () => {
 													</button>
 
 													{message.stopped && (
-														<span className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'>
+														<span className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[9px] font-black tracking-wide text-zinc-500 uppercase dark:bg-zinc-800 dark:text-zinc-400'>
 															Stopped
 														</span>
 													)}
@@ -1828,7 +2096,9 @@ const BuildPage = () => {
 														}`}>
 														<button
 															type='button'
-															onClick={() => copyMessage(message.text)}
+															onClick={() =>
+																copyMessage(message.text)
+															}
 															title='Copy message'
 															className='rounded-md p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
 															<Copy size={11} />
@@ -1837,7 +2107,9 @@ const BuildPage = () => {
 														{isUser && (
 															<button
 																type='button'
-																onClick={() => editUserMessage(message)}
+																onClick={() =>
+																	editUserMessage(message)
+																}
 																disabled={isTyping}
 																title='Edit and resend'
 																className='rounded-md p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
@@ -1867,40 +2139,57 @@ const BuildPage = () => {
 						{/* Live scratchpad — reasoning + tool calls as they stream in, Gumloop-style */}
 						{isTyping && (
 							<div className='flex w-full justify-start'>
-								<div className='flex gap-3 max-w-[90%] sm:max-w-[80%] flex-row'>
-									<div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white border dark:border-white/10 dark:bg-zinc-900`}>
-										<AgentIconComponent size={16} className={getIconColorClass(agentIconColor)} />
+								<div className='flex max-w-[90%] flex-row gap-3 sm:max-w-[80%]'>
+									<div
+										className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-zinc-950 text-white dark:border-white/10 dark:bg-zinc-900`}>
+										<AgentIconComponent
+											size={16}
+											className={getIconColorClass(agentIconColor)}
+										/>
 									</div>
 									<div className='min-w-0 flex-1'>
 										{streamTimeline.length === 0 ? (
-											<div className='inline-flex items-center gap-1.5 rounded-2xl rounded-tl-none border border-zinc-200/80 bg-white px-4 py-3 dark:border-zinc-800/85 dark:bg-zinc-900/60 shadow-2xs'>
-												<div className='w-2.5 h-2.5 rounded-full bg-primary-400 animate-bounce [animation-delay:-0.3s]' />
-												<div className='w-2.5 h-2.5 rounded-full bg-primary-400 animate-bounce [animation-delay:-0.15s]' />
-												<div className='w-2.5 h-2.5 rounded-full bg-primary-400 animate-bounce' />
+											<div className='inline-flex items-center gap-1.5 rounded-2xl rounded-tl-none border border-zinc-200/80 bg-white px-4 py-3 shadow-2xs dark:border-zinc-800/85 dark:bg-zinc-900/60'>
+												<div className='bg-primary-400 h-2.5 w-2.5 animate-bounce rounded-full [animation-delay:-0.3s]' />
+												<div className='bg-primary-400 h-2.5 w-2.5 animate-bounce rounded-full [animation-delay:-0.15s]' />
+												<div className='bg-primary-400 h-2.5 w-2.5 animate-bounce rounded-full' />
 											</div>
 										) : (
 											<>
-												<div className='flex flex-col gap-1.5 rounded-2xl rounded-tl-none border border-zinc-200/80 bg-white px-4 py-3 text-sm leading-relaxed dark:border-zinc-800/85 dark:bg-zinc-900/60 shadow-2xs'>
+												<div className='flex flex-col gap-1.5 rounded-2xl rounded-tl-none border border-zinc-200/80 bg-white px-4 py-3 text-sm leading-relaxed shadow-2xs dark:border-zinc-800/85 dark:bg-zinc-900/60'>
 													{streamTimeline.map((item) => {
 														if (item.kind === 'text') {
 															return (
-																<span key={item.id} className='whitespace-pre-line text-zinc-700 dark:text-zinc-300'>
+																<span
+																	key={item.id}
+																	className='whitespace-pre-line text-zinc-700 dark:text-zinc-300'>
 																	{item.text}
 																	<span className='ml-0.5 inline-block h-3.5 w-[2px] animate-pulse bg-current align-middle' />
 																</span>
 															);
 														}
 														if (item.kind === 'tool') {
-															return <ToolStepLine key={item.id} item={item} />;
+															return (
+																<ToolStepLine
+																	key={item.id}
+																	item={item}
+																/>
+															);
 														}
 														return null;
 													})}
 												</div>
-												{streamTimeline.some((item) => item.kind === 'artifact') && (
+												{streamTimeline.some(
+													(item) => item.kind === 'artifact',
+												) && (
 													<div className='mt-1.5 flex flex-col gap-1.5'>
 														{streamTimeline.map((item) =>
 															item.kind === 'artifact' ? (
-																<ArtifactCard key={item.id} item={item} ws={workspaceId} />
+																<ArtifactCard
+																	key={item.id}
+																	item={item}
+																	ws={workspaceId}
+																/>
 															) : null,
 														)}
 													</div>
@@ -1917,8 +2206,8 @@ const BuildPage = () => {
 
 					{/* Chat Footer Input Area */}
 					{isMobile ? (
-						<footer className='border-t border-zinc-150 bg-zinc-50/50 px-4 py-4 dark:border-zinc-850 dark:bg-zinc-950/90'>
-							<div className='mx-auto max-w-4xl w-full flex flex-col gap-3'>
+						<footer className='border-zinc-150 dark:border-zinc-850 border-t bg-zinc-50/95 px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl dark:bg-zinc-950/95'>
+							<div className='mx-auto flex w-full max-w-4xl flex-col gap-3'>
 								{/* Chat Input Container */}
 								<div className='flex flex-col rounded-2xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/60'>
 									{/* Input Text Area */}
@@ -1936,34 +2225,42 @@ const BuildPage = () => {
 											}
 										}}
 										placeholder='Send a message to your agent'
-										className='w-full resize-none bg-transparent px-1 text-sm font-semibold text-zinc-800 placeholder:text-zinc-450 outline-none border-none focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
+										className='placeholder:text-zinc-450 w-full resize-none border-none bg-transparent px-1 text-sm font-semibold text-zinc-800 outline-none focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
 									/>
 									{/* Bottom Controls Row */}
-									<div className='flex items-center justify-between mt-2 pt-2 border-t border-zinc-100/50 dark:border-zinc-800/50'>
+									<div className='mt-2 flex items-center justify-between border-t border-zinc-100/50 pt-2 dark:border-zinc-800/50'>
 										{/* Plus button */}
-										<button 
-											aria-label='Add' 
+										<button
+											aria-label='Add'
 											type='button'
-											onClick={() => toast.info('File attachment is not supported yet.')}
-											className='flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-50 dark:text-zinc-500 dark:hover:bg-zinc-800'
-										>
+											onClick={() =>
+												toast.info('File attachment is not supported yet.')
+											}
+											className='flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-50 dark:text-zinc-500 dark:hover:bg-zinc-800'>
 											<Plus size={18} />
 										</button>
-										
+
 										{/* Right controls: Loader, Mic, Send */}
 										<div className='flex items-center gap-2.5'>
 											{/* Loading spinner — only while a turn is actually in flight */}
 											{isTyping && (
-												<div className='flex h-4 w-4 items-center justify-center rounded-full border border-zinc-200 border-t-zinc-400 animate-spin size-4 shrink-0' style={{ borderTopColor: '#3b82f6', borderWidth: '1.5px' }} />
+												<div
+													className='flex size-4 h-4 w-4 shrink-0 animate-spin items-center justify-center rounded-full border border-zinc-200 border-t-zinc-400'
+													style={{
+														borderTopColor: '#3b82f6',
+														borderWidth: '1.5px',
+													}}
+												/>
 											)}
 
 											{/* Mic */}
-											<button 
-												aria-label='Voice input' 
+											<button
+												aria-label='Voice input'
 												type='button'
-												onClick={() => toast.info('Voice input is not supported yet.')}
-												className='flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-50 dark:text-zinc-500 dark:hover:bg-zinc-800'
-											>
+												onClick={() =>
+													toast.info('Voice input is not supported yet.')
+												}
+												className='flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-50 dark:text-zinc-500 dark:hover:bg-zinc-800'>
 												<Mic size={18} />
 											</button>
 
@@ -1980,15 +2277,20 @@ const BuildPage = () => {
 														updateChatInput('');
 													}
 												}}
-												title={isTyping ? 'Stop generating' : 'Send message'}
+												title={
+													isTyping ? 'Stop generating' : 'Send message'
+												}
 												className={`flex h-8 w-8 items-center justify-center rounded-full shadow-2xs transition hover:opacity-90 active:scale-95 ${
 													isTyping
 														? 'bg-zinc-900 text-white dark:bg-zinc-200 dark:text-zinc-900'
-														: 'bg-linear-to-tr from-primary-400 to-primary-400 text-primary-950'
-												}`}
-											>
+														: 'from-primary-400 to-primary-400 text-primary-950 bg-linear-to-tr'
+												}`}>
 												{isTyping ? (
-													<Square size={12} strokeWidth={3} className='fill-current' />
+													<Square
+														size={12}
+														strokeWidth={3}
+														className='fill-current'
+													/>
 												) : (
 													<ArrowUp size={16} strokeWidth={2.5} />
 												)}
@@ -1998,18 +2300,17 @@ const BuildPage = () => {
 								</div>
 
 								{/* Footer link */}
-								<div className='flex items-center justify-center gap-1 text-[11px] font-bold text-zinc-400 dark:text-zinc-500 mt-1'>
+								<div className='mt-1 flex items-center justify-center gap-1 text-[11px] font-bold text-zinc-400 dark:text-zinc-500'>
 									<span>Having Trouble?</span>
-									<button 
+									<button
 										onClick={() =>
-								window.open(
-									'https://docs.agent1o1.com',
-									'_blank',
-									'noopener,noreferrer',
-								)
-							}
-										className='underline hover:text-zinc-655 dark:hover:text-zinc-350'
-									>
+											window.open(
+												'https://docs.agent1o1.com',
+												'_blank',
+												'noopener,noreferrer',
+											)
+										}
+										className='hover:text-zinc-655 dark:hover:text-zinc-350 underline'>
 										Report an Issue or Bug
 									</button>
 								</div>
@@ -2017,8 +2318,8 @@ const BuildPage = () => {
 						</footer>
 					) : (
 						<footer className='border-t border-zinc-200 bg-white px-4 py-4 dark:border-white/10 dark:bg-zinc-950/90'>
-							<div className='mx-auto max-w-4xl w-full flex flex-col gap-3'>
-								<div className='relative flex items-center rounded-2xl border border-zinc-200 bg-white p-2 shadow-2xs focus-within:border-primary-500/50 focus-within:ring-4 focus-within:ring-primary-500/5 dark:border-zinc-800 dark:bg-zinc-900/60'>
+							<div className='mx-auto flex w-full max-w-4xl flex-col gap-3'>
+								<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 relative flex items-center rounded-2xl border border-zinc-200 bg-white p-2 shadow-2xs focus-within:ring-4 dark:border-zinc-800 dark:bg-zinc-900/60'>
 									{/* Left attachments & skill checkbox */}
 									<div className='flex items-center gap-1 px-1.5'>
 										<button
@@ -2035,7 +2336,10 @@ const BuildPage = () => {
 											title='Toggle Skills'
 											className='flex h-9 items-center gap-1.5 rounded-lg border border-zinc-100 bg-zinc-50/50 px-2.5 text-xs font-bold text-zinc-500 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-400 dark:hover:bg-zinc-800'>
 											{skillEnabled ? (
-												<CheckSquare size={14} className='text-primary-600 dark:text-primary-400' />
+												<CheckSquare
+													size={14}
+													className='text-primary-600 dark:text-primary-400'
+												/>
 											) : (
 												<Square size={14} />
 											)}
@@ -2061,13 +2365,14 @@ const BuildPage = () => {
 													updateChatInput('');
 													// The box grew with the draft — put it back to one row.
 													requestAnimationFrame(() => {
-														if (composerRef.current) autoSizeComposer(composerRef.current);
+														if (composerRef.current)
+															autoSizeComposer(composerRef.current);
 													});
 												}
 											}
 										}}
 										placeholder='Send a message to your agent...'
-										className='max-h-[9rem] flex-1 resize-none self-center bg-transparent px-3 py-1.5 text-sm font-semibold text-zinc-900 placeholder:text-zinc-400 outline-none border-none focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
+										className='max-h-[9rem] flex-1 resize-none self-center border-none bg-transparent px-3 py-1.5 text-sm font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
 									/>
 
 									{/* Right features: Incognito & Send */}
@@ -2081,18 +2386,26 @@ const BuildPage = () => {
 												aria-label='Incognito mode'
 												onClick={() => setIncognito(!incognito)}
 												className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-													incognito ? 'bg-primary-400 dark:bg-primary-400' : 'bg-zinc-200 dark:bg-zinc-800'
+													incognito
+														? 'bg-primary-400 dark:bg-primary-400'
+														: 'bg-zinc-200 dark:bg-zinc-800'
 												}`}>
 												<span
 													className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-														incognito ? 'translate-x-4' : 'translate-x-0'
+														incognito
+															? 'translate-x-4'
+															: 'translate-x-0'
 													}`}
 												/>
 											</button>
 											<div className='flex items-center gap-1 text-[11px] font-black text-zinc-400 dark:text-zinc-500'>
 												<Ghost
 													size={12}
-													className={incognito ? 'text-primary-600 dark:text-primary-400' : ''}
+													className={
+														incognito
+															? 'text-primary-600 dark:text-primary-400'
+															: ''
+													}
 												/>
 												<span>Incognito</span>
 											</div>
@@ -2126,20 +2439,31 @@ const BuildPage = () => {
 													: 'bg-primary-400 text-primary-950 hover:bg-primary-500'
 											}`}>
 											{isTyping ? (
-												<Square size={13} strokeWidth={3} className='fill-current' />
+												<Square
+													size={13}
+													strokeWidth={3}
+													className='fill-current'
+												/>
 											) : (
 												<ArrowUp size={16} strokeWidth={2.5} />
 											)}
 										</button>
 									</div>
 								</div>
-								
+
 								<div className='flex items-center justify-center gap-1.5 text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
-									<span>Agent can make mistakes. Please verify important information.</span>
+									<span>
+										Agent can make mistakes. Please verify important
+										information.
+									</span>
 									<button
 										type='button'
 										onClick={() =>
-											window.open('https://docs.agent1o1.com', '_blank', 'noopener,noreferrer')
+											window.open(
+												'https://docs.agent1o1.com',
+												'_blank',
+												'noopener,noreferrer',
+											)
 										}
 										className='underline hover:text-zinc-700 dark:hover:text-zinc-300'>
 										Report an issue
@@ -2170,56 +2494,51 @@ const BuildPage = () => {
 							animate={{ x: 0 }}
 							exit={{ x: '100%' }}
 							transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-							className='fixed right-0 top-0 bottom-0 z-55 flex w-full max-w-[480px] flex-col border-l border-zinc-200 bg-white shadow-2xl dark:border-white/10 dark:bg-zinc-900 overflow-hidden'
-						>
+							className='fixed top-0 right-0 bottom-0 z-55 flex w-full max-w-[480px] flex-col overflow-hidden border-l border-zinc-200 bg-white shadow-2xl dark:border-white/10 dark:bg-zinc-900'>
 							{/* Header Tabs */}
 							<div className='flex h-16 shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-4 dark:border-white/10 dark:bg-zinc-900'>
-								<div className='flex gap-2 h-full items-end'>
+								<div className='flex h-full items-end gap-2'>
 									{/* Tab: Agent */}
-									<button 
+									<button
 										onClick={() => setActiveSidebarTab('agent')}
-										className={`flex items-center gap-1.5 px-3 pb-4 text-xs font-bold transition-all border-b-2 ${
+										className={`flex items-center gap-1.5 border-b-2 px-3 pb-4 text-xs font-bold transition-all ${
 											activeSidebarTab === 'agent'
 												? 'text-primary-600 border-primary-600 dark:text-primary-400 dark:border-primary-400'
-												: 'text-zinc-400 border-transparent hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
-										}`}
-									>
+												: 'border-transparent text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
+										}`}>
 										<Bot size={14} />
 										<span>Agent</span>
 									</button>
 									{/* Tab: Settings */}
-									<button 
+									<button
 										onClick={() => setActiveSidebarTab('settings')}
-										className={`flex items-center gap-1.5 px-3 pb-4 text-xs font-bold transition-all border-b-2 ${
+										className={`flex items-center gap-1.5 border-b-2 px-3 pb-4 text-xs font-bold transition-all ${
 											activeSidebarTab === 'settings'
 												? 'text-primary-600 border-primary-600 dark:text-primary-400 dark:border-primary-400'
-												: 'text-zinc-400 border-transparent hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
-										}`}
-									>
+												: 'border-transparent text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
+										}`}>
 										<SlidersHorizontal size={14} />
 										<span>Settings</span>
 									</button>
 									{/* Tab: Chat Details */}
-									<button 
+									<button
 										onClick={() => setActiveSidebarTab('chatDetails')}
-										className={`flex items-center gap-1.5 px-3 pb-4 text-xs font-bold transition-all border-b-2 ${
+										className={`flex items-center gap-1.5 border-b-2 px-3 pb-4 text-xs font-bold transition-all ${
 											activeSidebarTab === 'chatDetails'
 												? 'text-primary-600 border-primary-600 dark:text-primary-400 dark:border-primary-400'
-												: 'text-zinc-400 border-transparent hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
-										}`}
-									>
+												: 'border-transparent text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
+										}`}>
 										<MessageSquare size={14} />
 										<span>Chat Details</span>
 									</button>
 									{/* Tab: Data (knowledge / memory / runs / analytics) */}
 									<button
 										onClick={() => setActiveSidebarTab('data')}
-										className={`flex items-center gap-1.5 px-3 pb-4 text-xs font-bold transition-all border-b-2 ${
+										className={`flex items-center gap-1.5 border-b-2 px-3 pb-4 text-xs font-bold transition-all ${
 											activeSidebarTab === 'data'
 												? 'text-primary-600 border-primary-600 dark:text-primary-400 dark:border-primary-400'
-												: 'text-zinc-400 border-transparent hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
-										}`}
-									>
+												: 'border-transparent text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
+										}`}>
 										<Database size={14} />
 										<span>Data</span>
 									</button>
@@ -2227,9 +2546,9 @@ const BuildPage = () => {
 
 								{/* Top Right Action (Back/Undo & Save) */}
 								<div className='flex items-center gap-2'>
-									<button 
+									<button
 										onClick={() => setIsSettingsOpen(false)}
-										title="Go back"
+										title='Go back'
 										className='flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'>
 										<Undo2 size={14} />
 									</button>
@@ -2238,7 +2557,7 @@ const BuildPage = () => {
 											await handleSaveAgent();
 											setIsSettingsOpen(false);
 										}}
-										className='flex h-8 items-center gap-1 rounded-lg bg-primary-400 px-3 text-[11px] font-bold text-primary-950 shadow-md shadow-primary-500/20 hover:bg-primary-500 transition active:scale-95 dark:shadow-none'>
+										className='bg-primary-400 text-primary-950 shadow-primary-500/20 hover:bg-primary-500 flex h-8 items-center gap-1 rounded-lg px-3 text-[11px] font-bold shadow-md transition active:scale-95 dark:shadow-none'>
 										<CheckCircle2 size={13} />
 										<span>Save</span>
 									</button>
@@ -2247,15 +2566,16 @@ const BuildPage = () => {
 
 							{/* Settings Body - Render conditionally based on activeSidebarTab */}
 							{activeSidebarTab === 'agent' && (
-								<div className='flex-1 overflow-y-auto p-4 space-y-4 bg-zinc-50/40 dark:bg-zinc-950/20'>
-									
+								<div className='flex-1 space-y-4 overflow-y-auto bg-zinc-50/40 p-4 dark:bg-zinc-950/20'>
 									{/* Agent Preferences Section */}
-									<div className='rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40 space-y-4'>
+									<div className='space-y-4 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
 										{/* Preferences Header */}
 										<div className='flex items-center justify-between'>
-											<div className='flex items-center gap-1.5 cursor-pointer'>
+											<div className='flex cursor-pointer items-center gap-1.5'>
 												<ChevronDown size={16} className='text-zinc-500' />
-												<h3 className='text-sm font-black text-zinc-900 dark:text-white'>Agent Preferences</h3>
+												<h3 className='text-sm font-black text-zinc-900 dark:text-white'>
+													Agent Preferences
+												</h3>
 											</div>
 											<button
 												type='button'
@@ -2272,25 +2592,35 @@ const BuildPage = () => {
 											<button
 												type='button'
 												onClick={() => setIsModelPickerOpen((v) => !v)}
-												className='flex w-full items-center justify-between rounded-xl border border-zinc-100 p-3 bg-zinc-50/20 dark:border-zinc-800 dark:bg-zinc-950/20 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700 transition'>
+												className='flex w-full cursor-pointer items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950/20 dark:hover:border-zinc-700'>
 												<div className='flex items-center gap-3'>
 													<div className='flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:bg-blue-500/5 dark:text-blue-400'>
 														<Sparkles size={16} fill='currentColor' />
 													</div>
 													<div className='flex flex-col text-left'>
-														<span className='text-[10px] font-black tracking-wide text-zinc-400 uppercase'>Model</span>
+														<span className='text-[10px] font-black tracking-wide text-zinc-400 uppercase'>
+															Model
+														</span>
 														<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
-															{modelOptions.find((m) => m.id === agentModel)?.label ?? agentModel}
+															{modelOptions.find(
+																(m) => m.id === agentModel,
+															)?.label ?? agentModel}
 														</span>
 													</div>
 												</div>
-												<ChevronDown size={14} className={`text-zinc-400 transition-transform ${isModelPickerOpen ? 'rotate-180' : ''}`} />
+												<ChevronDown
+													size={14}
+													className={`text-zinc-400 transition-transform ${isModelPickerOpen ? 'rotate-180' : ''}`}
+												/>
 											</button>
 
 											{isModelPickerOpen && (
 												<>
-													<div className='fixed inset-0 z-10' onClick={() => setIsModelPickerOpen(false)} />
-													<div className='absolute left-0 right-0 z-20 mt-1.5 rounded-xl border border-zinc-200 bg-white p-1.5 shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
+													<div
+														className='fixed inset-0 z-10'
+														onClick={() => setIsModelPickerOpen(false)}
+													/>
+													<div className='absolute right-0 left-0 z-20 mt-1.5 rounded-xl border border-zinc-200 bg-white p-1.5 shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
 														{modelOptions.map((option) => (
 															<button
 																key={option.id}
@@ -2305,7 +2635,9 @@ const BuildPage = () => {
 																		: 'hover:bg-zinc-50 dark:hover:bg-zinc-800'
 																}`}>
 																<div className='flex w-full items-center justify-between'>
-																	<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>{option.label}</span>
+																	<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
+																		{option.label}
+																	</span>
 																	<span className='rounded-full bg-zinc-100 px-2 py-0.5 text-[9px] font-bold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'>
 																		{option.tier}
 																	</span>
@@ -2325,24 +2657,33 @@ const BuildPage = () => {
 											<textarea
 												rows={3}
 												value={agentInstructions}
-												onChange={(e) => setAgentInstructions(e.target.value.substring(0, 4000))}
+												onChange={(e) =>
+													setAgentInstructions(
+														e.target.value.substring(0, 4000),
+													)
+												}
 												placeholder='Add instructions for the agent...'
-												className='w-full rounded-xl border border-zinc-200 bg-white p-3 text-xs font-semibold text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-primary-500/50 focus:ring-4 focus:ring-primary-500/5 dark:border-zinc-800 dark:bg-zinc-950/25 dark:text-zinc-200 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-0 focus:ring-offset-50'
+												className='focus:border-primary-500/50 focus:ring-primary-500/5 w-full rounded-xl border border-zinc-200 bg-white p-3 text-xs font-semibold text-zinc-800 outline-none placeholder:text-zinc-400 focus:ring-0 focus:ring-4 focus:ring-offset-50 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950/25 dark:text-zinc-200 dark:placeholder:text-zinc-500'
 											/>
-											<span className='text-[10px] font-bold text-zinc-400 dark:text-zinc-500 text-right mt-1.5'>
+											<span className='mt-1.5 text-right text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
 												{agentInstructions.length} / 4000
 											</span>
 										</div>
 
 										{/* Allow Self-Updates Row */}
-										<div className='flex items-center justify-between rounded-xl border border-zinc-100 p-3 bg-zinc-50/20 dark:border-zinc-800 dark:bg-zinc-950/20'>
+										<div className='flex items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
 											<div className='flex items-center gap-3'>
-												<div className='flex h-9 w-9 items-center justify-center rounded-xl bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400'>
+												<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-9 w-9 items-center justify-center rounded-xl'>
 													<SquarePen size={16} />
 												</div>
 												<div className='flex flex-col pr-4'>
-													<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>Allow Self-Updates</span>
-													<span className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-400 mt-0.5 leading-normal'>Let the agent improve its knowledge and instructions automatically.</span>
+													<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
+														Allow Self-Updates
+													</span>
+													<span className='mt-0.5 text-[10px] leading-normal font-semibold text-zinc-400 dark:text-zinc-400'>
+														Let the agent improve its knowledge and
+														instructions automatically.
+													</span>
 												</div>
 											</div>
 											<button
@@ -2350,13 +2691,19 @@ const BuildPage = () => {
 												role='switch'
 												aria-checked={allowSelfUpdates}
 												aria-label='Allow self updates'
-												onClick={() => setAllowSelfUpdates(!allowSelfUpdates)}
+												onClick={() =>
+													setAllowSelfUpdates(!allowSelfUpdates)
+												}
 												className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-													allowSelfUpdates ? 'bg-primary-400 dark:bg-primary-400' : 'bg-zinc-200 dark:bg-zinc-800'
+													allowSelfUpdates
+														? 'bg-primary-400 dark:bg-primary-400'
+														: 'bg-zinc-200 dark:bg-zinc-800'
 												}`}>
 												<span
 													className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-														allowSelfUpdates ? 'translate-x-4' : 'translate-x-0'
+														allowSelfUpdates
+															? 'translate-x-4'
+															: 'translate-x-0'
 													}`}
 												/>
 											</button>
@@ -2367,27 +2714,31 @@ const BuildPage = () => {
 									<AgentTagsPanel ws={workspaceId} agentId={currentAgentId} />
 
 									{/* Triggers Section */}
-									<div className='rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40 space-y-3'>
+									<div className='space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
 										<div className='flex items-center justify-between'>
 											<div className='flex items-center gap-2'>
-												<div className='flex h-7 w-7 items-center justify-center rounded-lg bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400'>
-													<Zap size={14} fill="currentColor" />
+												<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-7 w-7 items-center justify-center rounded-lg'>
+													<Zap size={14} fill='currentColor' />
 												</div>
-												<h4 className='text-xs font-black text-zinc-900 dark:text-white'>Triggers</h4>
+												<h4 className='text-xs font-black text-zinc-900 dark:text-white'>
+													Triggers
+												</h4>
 											</div>
 											<button
 												onClick={openTriggerPanel}
-												className='flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black text-primary-600 hover:bg-zinc-50 dark:border-primary-500/20 dark:bg-zinc-900 dark:text-primary-400 dark:hover:bg-zinc-800'>
+												className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
 												<Plus size={10} />
 												<span>Trigger</span>
 											</button>
 										</div>
 
-										{(agentTriggers ?? []).length === 0 && !isTriggerPanelOpen && (
-											<p className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 pl-9'>
-												Define events or conditions that activate this agent.
-											</p>
-										)}
+										{(agentTriggers ?? []).length === 0 &&
+											!isTriggerPanelOpen && (
+												<p className='pl-9 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+													Define events or conditions that activate this
+													agent.
+												</p>
+											)}
 
 										{(agentTriggers ?? []).length > 0 && (
 											<div className='space-y-2 pl-9'>
@@ -2397,7 +2748,7 @@ const BuildPage = () => {
 														className='flex flex-col gap-1.5 rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
 														<div className='flex items-center justify-between'>
 															<div className='flex items-center gap-2'>
-																<span className='rounded-full bg-zinc-100 px-2 py-0.5 text-[9px] font-black uppercase text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'>
+																<span className='rounded-full bg-zinc-100 px-2 py-0.5 text-[9px] font-black text-zinc-600 uppercase dark:bg-zinc-800 dark:text-zinc-400'>
 																	{trigger.type}
 																</span>
 																<button
@@ -2405,26 +2756,43 @@ const BuildPage = () => {
 																	role='switch'
 																	aria-checked={trigger.is_active}
 																	aria-label='Trigger active'
-																	onClick={() => handleToggleTrigger(trigger.id, trigger.is_active)}
+																	onClick={() =>
+																		handleToggleTrigger(
+																			trigger.id,
+																			trigger.is_active,
+																		)
+																	}
 																	className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-																		trigger.is_active ? 'bg-primary-400' : 'bg-zinc-200 dark:bg-zinc-800'
+																		trigger.is_active
+																			? 'bg-primary-400'
+																			: 'bg-zinc-200 dark:bg-zinc-800'
 																	}`}>
 																	<span
 																		className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow-sm transition duration-200 ${
-																			trigger.is_active ? 'translate-x-3' : 'translate-x-0'
+																			trigger.is_active
+																				? 'translate-x-3'
+																				: 'translate-x-0'
 																		}`}
 																	/>
 																</button>
 															</div>
 															<div className='flex items-center gap-2'>
 																<button
-																	onClick={() => handleFireTrigger(trigger.id)}
+																	onClick={() =>
+																		handleFireTrigger(
+																			trigger.id,
+																		)
+																	}
 																	title='Fire now'
-																	className='text-zinc-400 hover:text-primary-600 dark:hover:text-primary-400'>
+																	className='hover:text-primary-600 dark:hover:text-primary-400 text-zinc-400'>
 																	<Play size={12} />
 																</button>
 																<button
-																	onClick={() => handleDeleteTrigger(trigger.id)}
+																	onClick={() =>
+																		handleDeleteTrigger(
+																			trigger.id,
+																		)
+																	}
 																	title='Delete trigger'
 																	className='text-zinc-400 hover:text-rose-500'>
 																	<Trash2 size={12} />
@@ -2434,10 +2802,19 @@ const BuildPage = () => {
 														{trigger.token && (
 															<button
 																aria-label='Copy'
-																onClick={() => handleCopyWebhookUrl(webhookUrlFor(trigger))}
-																className='flex items-center gap-1.5 truncate text-left text-[10px] font-semibold text-zinc-400 hover:text-primary-600 dark:text-zinc-500 dark:hover:text-primary-400'>
-																<Copy size={10} className='shrink-0' />
-																<span className='truncate'>{webhookUrlFor(trigger)}</span>
+																onClick={() =>
+																	handleCopyWebhookUrl(
+																		webhookUrlFor(trigger),
+																	)
+																}
+																className='hover:text-primary-600 dark:hover:text-primary-400 flex items-center gap-1.5 truncate text-left text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+																<Copy
+																	size={10}
+																	className='shrink-0'
+																/>
+																<span className='truncate'>
+																	{webhookUrlFor(trigger)}
+																</span>
 															</button>
 														)}
 													</div>
@@ -2446,9 +2823,15 @@ const BuildPage = () => {
 										)}
 
 										{isTriggerPanelOpen && (
-											<div className='space-y-2.5 rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20 ml-9'>
+											<div className='ml-9 space-y-2.5 rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
 												<div className='flex gap-1.5'>
-													{(['schedule', 'webhook', 'event'] as TAgentTriggerType[]).map((t) => (
+													{(
+														[
+															'schedule',
+															'webhook',
+															'event',
+														] as TAgentTriggerType[]
+													).map((t) => (
 														<button
 															key={t}
 															type='button'
@@ -2466,26 +2849,32 @@ const BuildPage = () => {
 													<input
 														type='text'
 														value={newTriggerCron}
-														onChange={(e) => setNewTriggerCron(e.target.value)}
+														onChange={(e) =>
+															setNewTriggerCron(e.target.value)
+														}
 														placeholder='Cron expression (0 9 * * *)'
-														className='w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] font-mono text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+														className='focus:border-primary-500/50 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-[11px] text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 													/>
 												)}
 												{newTriggerType === 'event' && (
 													<input
 														type='text'
 														value={newTriggerEventName}
-														onChange={(e) => setNewTriggerEventName(e.target.value)}
+														onChange={(e) =>
+															setNewTriggerEventName(e.target.value)
+														}
 														placeholder='Event name'
-														className='w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+														className='focus:border-primary-500/50 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 													/>
 												)}
 												<input
 													type='text'
 													value={newTriggerInitialMessage}
-													onChange={(e) => setNewTriggerInitialMessage(e.target.value)}
+													onChange={(e) =>
+														setNewTriggerInitialMessage(e.target.value)
+													}
 													placeholder='Initial message (optional)'
-													className='w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+													className='focus:border-primary-500/50 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 												/>
 												<div className='flex justify-end gap-2'>
 													<button
@@ -2498,7 +2887,7 @@ const BuildPage = () => {
 															handleCreateTrigger();
 															setIsTriggerPanelOpen(false);
 														}}
-														className='rounded-lg bg-primary-400 px-3 py-1 text-[10px] font-black text-primary-950 hover:bg-primary-500'>
+														className='bg-primary-400 text-primary-950 hover:bg-primary-500 rounded-lg px-3 py-1 text-[10px] font-black'>
 														Create
 													</button>
 												</div>
@@ -2507,33 +2896,41 @@ const BuildPage = () => {
 									</div>
 
 									{/* Apps Section */}
-									<div className='rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40 space-y-3'>
+									<div className='space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
 										<div className='flex items-center justify-between'>
 											<div className='flex items-center gap-2'>
 												<div className='flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:bg-blue-500/5 dark:text-blue-400'>
 													<Layers size={14} />
 												</div>
 												<div className='flex items-center gap-2'>
-													<h4 className='text-xs font-black text-zinc-900 dark:text-white'>Tools</h4>
-													<span className='inline-flex items-center gap-1 text-[9px] font-bold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800/60 px-2 py-0.5 rounded-full'>
-														<span>{(toolBindings ?? []).length + (workflowTools ?? []).length} attached</span>
+													<h4 className='text-xs font-black text-zinc-900 dark:text-white'>
+														Tools
+													</h4>
+													<span className='inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-0.5 text-[9px] font-bold text-zinc-500 dark:bg-zinc-800/60 dark:text-zinc-400'>
+														<span>
+															{(toolBindings ?? []).length +
+																(workflowTools ?? []).length}{' '}
+															attached
+														</span>
 													</span>
 												</div>
 											</div>
 											<button
 												onClick={openToolDrawer}
-												className='flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black text-primary-600 hover:bg-zinc-50 dark:border-primary-500/20 dark:bg-zinc-900 dark:text-primary-400 dark:hover:bg-zinc-800'>
+												className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
 												<Plus size={10} />
 												<span>Tool</span>
 											</button>
 										</div>
 
 										{/* Attached tools — node bindings first, then whole workflows */}
-										{(toolBindings ?? []).length === 0 && (workflowTools ?? []).length === 0 && (
-											<p className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 pl-9'>
-												Attach nodes or workflows to let this agent act outside the chat.
-											</p>
-										)}
+										{(toolBindings ?? []).length === 0 &&
+											(workflowTools ?? []).length === 0 && (
+												<p className='pl-9 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+													Attach nodes or workflows to let this agent act
+													outside the chat.
+												</p>
+											)}
 
 										<div className='space-y-2 pl-9'>
 											{(toolBindings ?? []).map((binding) => {
@@ -2541,17 +2938,19 @@ const BuildPage = () => {
 												return (
 													<div
 														key={binding.id}
-														className='flex items-center justify-between py-2 border-b border-zinc-100 dark:border-zinc-800/80 last:border-0'>
+														className='flex items-center justify-between border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-800/80'>
 														<div className='flex items-center gap-3'>
 															<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500 text-white'>
 																<Wrench size={15} />
 															</div>
 															<div className='flex flex-col'>
 																<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
-																	{node?.name ?? binding.node_type}
+																	{node?.name ??
+																		binding.node_type}
 																</span>
-																<span className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 leading-tight mt-0.5'>
-																	{node?.description ?? binding.node_type}
+																<span className='mt-0.5 text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
+																	{node?.description ??
+																		binding.node_type}
 																</span>
 																{/* A node that talks to a third party is inert until the
 																    workspace has credentials for it. */}
@@ -2563,7 +2962,11 @@ const BuildPage = () => {
 															</div>
 														</div>
 														<button
-															onClick={() => deleteToolBindingMutation.mutate(String(binding.id))}
+															onClick={() =>
+																deleteToolBindingMutation.mutate(
+																	String(binding.id),
+																)
+															}
 															title='Remove tool'
 															className='cursor-pointer p-1 text-zinc-400 hover:text-red-500 dark:hover:text-red-400'>
 															<Trash2 size={14} />
@@ -2575,22 +2978,27 @@ const BuildPage = () => {
 											{(workflowTools ?? []).map((workflow) => (
 												<div
 													key={workflow.id}
-													className='flex items-center justify-between py-2 border-b border-zinc-100 dark:border-zinc-800/80 last:border-0'>
+													className='flex items-center justify-between border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-800/80'>
 													<div className='flex items-center gap-3'>
-														<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-primary-500 text-white'>
+														<div className='bg-primary-500 flex h-8 w-8 items-center justify-center rounded-lg text-white'>
 															<GitMerge size={15} />
 														</div>
 														<div className='flex flex-col'>
 															<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
 																{workflow.name}
 															</span>
-															<span className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 leading-tight mt-0.5'>
-																{workflow.description || 'Workflow, callable as one tool.'}
+															<span className='mt-0.5 text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
+																{workflow.description ||
+																	'Workflow, callable as one tool.'}
 															</span>
 														</div>
 													</div>
 													<button
-														onClick={() => detachWorkflowMutation.mutate(String(workflow.id))}
+														onClick={() =>
+															detachWorkflowMutation.mutate(
+																String(workflow.id),
+															)
+														}
 														title='Remove tool'
 														className='cursor-pointer p-1 text-zinc-400 hover:text-red-500 dark:hover:text-red-400'>
 														<Trash2 size={14} />
@@ -2601,36 +3009,42 @@ const BuildPage = () => {
 									</div>
 
 									{/* Skills Section */}
-									<div className='rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40 space-y-3'>
+									<div className='space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
 										<div className='flex items-center justify-between'>
 											<div className='flex items-center gap-2'>
-												<div className='flex h-7 w-7 items-center justify-center rounded-lg bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400'>
+												<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-7 w-7 items-center justify-center rounded-lg'>
 													<Cpu size={14} />
 												</div>
-												<h4 className='text-xs font-black text-zinc-900 dark:text-white'>Skills</h4>
+												<h4 className='text-xs font-black text-zinc-900 dark:text-white'>
+													Skills
+												</h4>
 											</div>
 											<button
 												onClick={openSkillPanel}
-												className='flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black text-primary-600 hover:bg-zinc-50 dark:border-primary-500/20 dark:bg-zinc-900 dark:text-primary-400 dark:hover:bg-zinc-800'>
+												className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
 												<Plus size={10} />
 												<span>Skill</span>
 											</button>
 										</div>
 
-										{(attachedSkills ?? []).length === 0 && !isSkillPanelOpen && (
-											<p className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 pl-9'>
-												Add custom skills to extend your agent's abilities.
-											</p>
-										)}
+										{(attachedSkills ?? []).length === 0 &&
+											!isSkillPanelOpen && (
+												<p className='pl-9 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+													Add custom skills to extend your agent's
+													abilities.
+												</p>
+											)}
 
 										{(attachedSkills ?? []).length > 0 && (
 											<div className='space-y-2 pl-9'>
 												{(attachedSkills ?? []).map((skill) => (
 													<div
 														key={skill.id}
-														className='flex items-center justify-between py-1.5 border-b border-zinc-100 dark:border-zinc-800/80 last:border-0'>
-														<div className='flex flex-col min-w-0'>
-															<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>{skill.name}</span>
+														className='flex items-center justify-between border-b border-zinc-100 py-1.5 last:border-0 dark:border-zinc-800/80'>
+														<div className='flex min-w-0 flex-col'>
+															<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
+																{skill.name}
+															</span>
 															{skill.description && (
 																<span className='truncate text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
 																	{skill.description}
@@ -2638,7 +3052,9 @@ const BuildPage = () => {
 															)}
 														</div>
 														<button
-															onClick={() => handleDetachSkill(skill.id)}
+															onClick={() =>
+																handleDetachSkill(skill.id)
+															}
 															title='Remove skill'
 															className='shrink-0 text-zinc-400 hover:text-rose-500'>
 															<X size={13} />
@@ -2649,41 +3065,52 @@ const BuildPage = () => {
 										)}
 
 										{isSkillPanelOpen && (
-											<div className='space-y-3 rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20 ml-9'>
+											<div className='ml-9 space-y-3 rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
 												{availableSkillsToAttach.length > 0 && (
 													<div className='space-y-1.5'>
-														<span className='text-[10px] font-black text-zinc-400 uppercase tracking-wider'>
+														<span className='text-[10px] font-black tracking-wider text-zinc-400 uppercase'>
 															Attach existing
 														</span>
 														{availableSkillsToAttach.map((skill) => (
 															<button
 																key={skill.id}
-																onClick={() => handleAttachSkill(skill.id)}
+																onClick={() =>
+																	handleAttachSkill(skill.id)
+																}
 																className='flex w-full items-center justify-between rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-left hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
-																<span className='text-[11px] font-bold text-zinc-700 dark:text-zinc-300'>{skill.name}</span>
-																<Plus size={11} className='text-primary-500' />
+																<span className='text-[11px] font-bold text-zinc-700 dark:text-zinc-300'>
+																	{skill.name}
+																</span>
+																<Plus
+																	size={11}
+																	className='text-primary-500'
+																/>
 															</button>
 														))}
 													</div>
 												)}
 
 												<div className='space-y-1.5'>
-													<span className='text-[10px] font-black text-zinc-400 uppercase tracking-wider'>
+													<span className='text-[10px] font-black tracking-wider text-zinc-400 uppercase'>
 														Create new
 													</span>
 													<input
 														type='text'
 														value={newSkillName}
-														onChange={(e) => setNewSkillName(e.target.value)}
+														onChange={(e) =>
+															setNewSkillName(e.target.value)
+														}
 														placeholder='Skill name'
-														className='w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+														className='focus:border-primary-500/50 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 													/>
 													<textarea
 														rows={2}
 														value={newSkillInstructions}
-														onChange={(e) => setNewSkillInstructions(e.target.value)}
+														onChange={(e) =>
+															setNewSkillInstructions(e.target.value)
+														}
 														placeholder='Instructions for this skill...'
-														className='w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+														className='focus:border-primary-500/50 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 													/>
 												</div>
 
@@ -2698,8 +3125,11 @@ const BuildPage = () => {
 															await handleCreateAndAttachSkill();
 															setIsSkillPanelOpen(false);
 														}}
-														disabled={!newSkillName.trim() || !newSkillInstructions.trim()}
-														className='rounded-lg bg-primary-400 px-3 py-1 text-[10px] font-black text-primary-950 hover:bg-primary-500 disabled:opacity-40'>
+														disabled={
+															!newSkillName.trim() ||
+															!newSkillInstructions.trim()
+														}
+														className='bg-primary-400 text-primary-950 hover:bg-primary-500 rounded-lg px-3 py-1 text-[10px] font-black disabled:opacity-40'>
 														Create & Attach
 													</button>
 												</div>
@@ -2708,94 +3138,121 @@ const BuildPage = () => {
 									</div>
 
 									{/* Subagents Section */}
-									<div className='rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40 space-y-3'>
+									<div className='space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
 										<div className='flex items-center justify-between'>
 											<div className='flex items-center gap-2'>
-												<div className='flex h-7 w-7 items-center justify-center rounded-lg bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400'>
+												<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-7 w-7 items-center justify-center rounded-lg'>
 													<Users size={14} />
 												</div>
-												<h4 className='text-xs font-black text-zinc-900 dark:text-white'>Subagents</h4>
+												<h4 className='text-xs font-black text-zinc-900 dark:text-white'>
+													Subagents
+												</h4>
 											</div>
 											<button
-							type='button'
-							disabled
-							title='Subagents are not available yet'
-							className='flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black text-primary-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-primary-500/20 dark:bg-zinc-900 dark:text-primary-400'>
+												type='button'
+												disabled
+												title='Subagents are not available yet'
+												className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-900'>
 												<Plus size={10} />
 												<span>Subagent</span>
 											</button>
 										</div>
-										<p className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 pl-9'>
+										<p className='pl-9 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
 											Delegate tasks to specialized subagents.
 										</p>
 
 										{/* Subagent Item */}
-										<div className='flex items-center justify-between py-2 border border-zinc-100 rounded-xl p-3 bg-zinc-50/20 dark:border-zinc-800 dark:bg-zinc-950/20 pl-9'>
+										<div className='flex items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 py-2 pl-9 dark:border-zinc-800 dark:bg-zinc-950/20'>
 											<div className='flex items-center gap-3'>
-												<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-950 text-white dark:bg-zinc-800 dark:border dark:border-zinc-700'>
+												<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-950 text-white dark:border dark:border-zinc-700 dark:bg-zinc-800'>
 													<Bot size={15} />
 												</div>
 												<div className='flex flex-col'>
-													<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>Competitor Research Agent (Me)</span>
-													<span className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 leading-tight mt-0.5'>Enables me to clone myself as a subagent to research competitors.</span>
+													<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
+														Competitor Research Agent (Me)
+													</span>
+													<span className='mt-0.5 text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
+														Enables me to clone myself as a subagent to
+														research competitors.
+													</span>
 												</div>
 											</div>
 											<button
-											type='button'
-											disabled
-											title='Subagents are not available yet'
-											className='text-zinc-400 p-1 disabled:cursor-not-allowed disabled:opacity-50'>
-											<MoreHorizontal size={14} />
-										</button>
+												type='button'
+												disabled
+												title='Subagents are not available yet'
+												className='p-1 text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50'>
+												<MoreHorizontal size={14} />
+											</button>
 										</div>
 									</div>
 
 									{/* Bottom Autosave footer banner */}
-									<div className='flex gap-3 rounded-xl bg-primary-400/5 border border-primary-500/10 p-3.5 dark:bg-primary-400/5 dark:border-primary-500/10'>
-										<Sparkles size={16} className='text-primary-500 shrink-0 mt-0.5' />
+									<div className='bg-primary-400/5 border-primary-500/10 dark:bg-primary-400/5 dark:border-primary-500/10 flex gap-3 rounded-xl border p-3.5'>
+										<Sparkles
+											size={16}
+											className='text-primary-500 mt-0.5 shrink-0'
+										/>
 										<div className='flex flex-col'>
-											<span className='text-xs font-bold text-primary-700 dark:text-primary-400'>Changes are saved automatically</span>
-											<span className='text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 mt-1 leading-normal'>Your agent will use the latest configuration for all new conversations.</span>
+											<span className='text-primary-700 dark:text-primary-400 text-xs font-bold'>
+												Changes are saved automatically
+											</span>
+											<span className='mt-1 text-[10px] leading-normal font-semibold text-zinc-500 dark:text-zinc-400'>
+												Your agent will use the latest configuration for all
+												new conversations.
+											</span>
 										</div>
 									</div>
-
 								</div>
 							)}
 
 							{/* Settings Tab Layout */}
 							{activeSidebarTab === 'settings' && (
-								<div className='flex-1 overflow-y-auto p-4 space-y-4 bg-zinc-50/40 dark:bg-zinc-950/20'>
-									
+								<div className='flex-1 space-y-4 overflow-y-auto bg-zinc-50/40 p-4 dark:bg-zinc-950/20'>
 									{/* Personalization Section */}
-									<div className='rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/40 space-y-4 shadow-2xs'>
+									<div className='space-y-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900/40'>
 										{/* Section Header */}
-										<div className='flex items-center gap-2.5 pb-2 border-b border-zinc-100 dark:border-zinc-800/80'>
-											<ChevronDown size={18} className='text-zinc-500 cursor-pointer' />
-											<div className='flex h-8 w-8 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-400/10 dark:text-primary-400'>
+										<div className='flex items-center gap-2.5 border-b border-zinc-100 pb-2 dark:border-zinc-800/80'>
+											<ChevronDown
+												size={18}
+												className='cursor-pointer text-zinc-500'
+											/>
+											<div className='bg-primary-100 text-primary-600 dark:bg-primary-400/10 dark:text-primary-400 flex h-8 w-8 items-center justify-center rounded-xl'>
 												<Users size={16} />
 											</div>
-											<h3 className='text-sm font-black text-zinc-950 dark:text-white'>Personalization</h3>
+											<h3 className='text-sm font-black text-zinc-950 dark:text-white'>
+												Personalization
+											</h3>
 										</div>
 
 										{/* Content Layout */}
-										<div className='grid grid-cols-1 md:grid-cols-12 gap-6 items-start'>
-											
+										<div className='grid grid-cols-1 items-start gap-6 md:grid-cols-12'>
 											{/* Left side: Avatar and Popover Icon Selector Grid */}
-											<div className='md:col-span-5 flex flex-col items-start space-y-3 relative'>
+											<div className='relative flex flex-col items-start space-y-3 md:col-span-5'>
 												{/* Subheader Title */}
 												<div className='space-y-0.5'>
-													<h4 className='text-xs font-black text-zinc-950 dark:text-white'>Icon & Name</h4>
-													<p className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>Choose an icon and give your agent a name.</p>
+													<h4 className='text-xs font-black text-zinc-950 dark:text-white'>
+														Icon & Name
+													</h4>
+													<p className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+														Choose an icon and give your agent a name.
+													</p>
 												</div>
 
 												{/* Large Chosen Icon Avatar Box */}
-												<div 
-													onClick={() => setIsIconPickerOpen(!isIconPickerOpen)}
-													className='relative flex h-24 w-24 items-center justify-center rounded-2xl border border-zinc-200 bg-white p-2.5 dark:border-zinc-700 dark:bg-zinc-950/45 shadow-2xs cursor-pointer select-none'
-												>
-													<AgentIconComponent size={44} className={getIconColorClass(agentIconColor)} />
+												<div
+													onClick={() =>
+														setIsIconPickerOpen(!isIconPickerOpen)
+													}
+													className='relative flex h-24 w-24 cursor-pointer items-center justify-center rounded-2xl border border-zinc-200 bg-white p-2.5 shadow-2xs select-none dark:border-zinc-700 dark:bg-zinc-950/45'>
+													<AgentIconComponent
+														size={44}
+														className={getIconColorClass(
+															agentIconColor,
+														)}
+													/>
 													{/* Pencil edit badge overlay */}
-													<div className='absolute -bottom-1 -right-1 flex h-6.5 w-6.5 items-center justify-center rounded-full bg-primary-400 text-primary-950 border border-white dark:border-zinc-900 shadow-md shadow-primary-500/10 cursor-pointer'>
+													<div className='bg-primary-400 text-primary-950 shadow-primary-500/10 absolute -right-1 -bottom-1 flex h-6.5 w-6.5 cursor-pointer items-center justify-center rounded-full border border-white shadow-md dark:border-zinc-900'>
 														<SquarePen size={11} />
 													</div>
 												</div>
@@ -2808,49 +3265,66 @@ const BuildPage = () => {
 															animate={{ opacity: 1, y: 0 }}
 															exit={{ opacity: 0, y: -10 }}
 															transition={{ duration: 0.15 }}
-															className='relative w-full max-w-[280px] border border-zinc-200 bg-white p-4 shadow-sm rounded-2xl space-y-4 dark:border-zinc-800 dark:bg-zinc-900/60 mt-1.5'
-														>
+															className='relative mt-1.5 w-full max-w-[280px] space-y-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60'>
 															{/* Top pointer speech-bubble triangle */}
-															<div className='absolute -top-1.5 left-9 w-3 h-3 bg-white border-t border-l border-zinc-200 rotate-45 dark:bg-zinc-900 dark:border-zinc-800' />
-															
+															<div className='absolute -top-1.5 left-9 h-3 w-3 rotate-45 border-t border-l border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900' />
+
 															{/* Icons Grid (10 icons) */}
-															<div className='grid grid-cols-5 gap-2 relative z-10'>
-																{selectableIcons.map((item, idx) => {
-																	const Icon = item.Icon;
-																	const isSelected = agentIcon === Icon;
-																	return (
-																		<button
-																			key={idx}
-																			type='button'
-																			onClick={() => setAgentIcon(() => Icon)}
-																			className={`flex h-9 w-9 items-center justify-center rounded-xl border transition active:scale-95 ${
-																				isSelected
-																					? 'border-primary-600 bg-primary-50 text-primary-600 dark:border-primary-400 dark:bg-primary-400/10 dark:text-primary-400'
-																					: 'border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'
-																			}`}>
-																			<Icon size={16} />
-																		</button>
-																	);
-																})}
+															<div className='relative z-10 grid grid-cols-5 gap-2'>
+																{selectableIcons.map(
+																	(item, idx) => {
+																		const Icon = item.Icon;
+																		const isSelected =
+																			agentIcon === Icon;
+																		return (
+																			<button
+																				key={idx}
+																				type='button'
+																				onClick={() =>
+																					setAgentIcon(
+																						() => Icon,
+																					)
+																				}
+																				className={`flex h-9 w-9 items-center justify-center rounded-xl border transition active:scale-95 ${
+																					isSelected
+																						? 'border-primary-600 bg-primary-50 text-primary-600 dark:border-primary-400 dark:bg-primary-400/10 dark:text-primary-400'
+																						: 'border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'
+																				}`}>
+																				<Icon size={16} />
+																			</button>
+																		);
+																	},
+																)}
 															</div>
 
 															{/* Colors Selector */}
-															<div className='space-y-1.5 relative z-10'>
-																<span className='text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-wider'>Color</span>
+															<div className='relative z-10 space-y-1.5'>
+																<span className='text-[10px] font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
+																	Color
+																</span>
 																<div className='flex items-center gap-2.5'>
 																	{colorsList.map((col) => {
-																		const isSelected = agentIconColor === col.value;
+																		const isSelected =
+																			agentIconColor ===
+																			col.value;
 																		return (
 																			<button
 																				key={col.value}
 																				type='button'
-																				onClick={() => setAgentIconColor(col.value)}
-																				className={`h-5 w-5 rounded-full border transition flex items-center justify-center ${col.bgClass} ${
-																					isSelected ? 'ring-2 ring-primary-500 ring-offset-50 dark:ring-offset-zinc-900 bg-clip-content p-[1px]' : 'border-zinc-200 dark:border-zinc-700'
+																				onClick={() =>
+																					setAgentIconColor(
+																						col.value,
+																					)
+																				}
+																				className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${col.bgClass} ${
+																					isSelected
+																						? 'ring-primary-500 bg-clip-content p-[1px] ring-2 ring-offset-50 dark:ring-offset-zinc-900'
+																						: 'border-zinc-200 dark:border-zinc-700'
 																				}`}
 																				title={col.value}>
-																				{col.value === 'rainbow' && (
-																					<div className='h-full w-full rounded-full bg-gradient-to-tr from-primary-400 via-emerald-500 to-rose-500' />
+																				{col.value ===
+																					'rainbow' && (
+																					<div className='from-primary-400 h-full w-full rounded-full bg-gradient-to-tr via-emerald-500 to-rose-500' />
 																				)}
 																			</button>
 																		);
@@ -2863,38 +3337,58 @@ const BuildPage = () => {
 											</div>
 
 											{/* Right side: Input text name & description */}
-											<div className='md:col-span-7 space-y-4 w-full pt-12 md:pt-0'>
+											<div className='w-full space-y-4 pt-12 md:col-span-7 md:pt-0'>
 												{/* Agent Name input field */}
-												<div className='space-y-1.5 w-full'>
-													<label className='text-[11px] font-black text-zinc-500 dark:text-zinc-400'>Agent Name</label>
-													<div className='relative flex items-center rounded-xl border border-zinc-200 bg-white px-3.5 py-3 shadow-2xs focus-within:border-primary-500/50 focus-within:ring-4 focus-within:ring-primary-500/5 dark:border-zinc-800 dark:bg-zinc-950/20'>
+												<div className='w-full space-y-1.5'>
+													<label className='text-[11px] font-black text-zinc-500 dark:text-zinc-400'>
+														Agent Name
+													</label>
+													<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 relative flex items-center rounded-xl border border-zinc-200 bg-white px-3.5 py-3 shadow-2xs focus-within:ring-4 dark:border-zinc-800 dark:bg-zinc-950/20'>
 														<input
 															type='text'
 															value={agentName}
-															onChange={(e) => setAgentName(e.target.value.substring(0, 50))}
-															className='flex-1 bg-transparent text-xs font-semibold text-zinc-900 placeholder:text-zinc-400 outline-none border-none focus:ring-0 p-0 dark:text-zinc-100'
+															onChange={(e) =>
+																setAgentName(
+																	e.target.value.substring(0, 50),
+																)
+															}
+															className='flex-1 border-none bg-transparent p-0 text-xs font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-0 dark:text-zinc-100'
 															placeholder='Name your agent...'
 														/>
-														<span className='text-[10px] font-bold text-zinc-400 dark:text-zinc-500 shrink-0'>{agentName.length} / 50</span>
+														<span className='shrink-0 text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
+															{agentName.length} / 50
+														</span>
 													</div>
 												</div>
 
 												{/* Description textarea box */}
-												<div className='space-y-1.5 w-full'>
+												<div className='w-full space-y-1.5'>
 													<div className='flex flex-col'>
-														<label className='text-[11px] font-black text-zinc-600 dark:text-zinc-300'>Description</label>
-														<span className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 mt-0.5'>Describe what your agent does and how it helps you.</span>
+														<label className='text-[11px] font-black text-zinc-600 dark:text-zinc-300'>
+															Description
+														</label>
+														<span className='mt-0.5 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+															Describe what your agent does and how it
+															helps you.
+														</span>
 													</div>
 													{/* Border wrapping both textarea and character count at bottom right */}
-													<div className='relative flex flex-col rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs focus-within:border-primary-500/50 focus-within:ring-4 focus-within:ring-primary-500/5 dark:border-zinc-800 dark:bg-zinc-950/20'>
+													<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 relative flex flex-col rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs focus-within:ring-4 dark:border-zinc-800 dark:bg-zinc-950/20'>
 														<textarea
 															rows={4}
 															value={agentDescription}
-															onChange={(e) => setAgentDescription(e.target.value.substring(0, 500))}
-															className='w-full bg-transparent resize-none border-none outline-none focus:ring-0 p-0 text-xs font-semibold text-zinc-800 dark:text-zinc-200 dark:placeholder:text-zinc-500 focus:outline-none'
+															onChange={(e) =>
+																setAgentDescription(
+																	e.target.value.substring(
+																		0,
+																		500,
+																	),
+																)
+															}
+															className='w-full resize-none border-none bg-transparent p-0 text-xs font-semibold text-zinc-800 outline-none focus:ring-0 focus:outline-none dark:text-zinc-200 dark:placeholder:text-zinc-500'
 															placeholder='Describe agent capability...'
 														/>
-														<span className='text-[10px] font-bold text-zinc-400 dark:text-zinc-500 text-right mt-2 self-end'>
+														<span className='mt-2 self-end text-right text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
 															{agentDescription.length} / 500
 														</span>
 													</div>
@@ -2906,31 +3400,49 @@ const BuildPage = () => {
 									{/* List of sub-setting options rows */}
 									<div className='space-y-2.5'>
 										{/* Agent Details */}
-										<div className='flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs hover:bg-zinc-50/40 dark:border-zinc-800 dark:bg-zinc-900/40 transition cursor-pointer'>
-											<div className='flex items-center gap-3 min-w-0'>
-												<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400'>
+										<div className='flex cursor-pointer items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs transition hover:bg-zinc-50/40 dark:border-zinc-800 dark:bg-zinc-900/40'>
+											<div className='flex min-w-0 items-center gap-3'>
+												<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl'>
 													<Zap size={16} />
 												</div>
-												<div className='flex flex-col min-w-0'>
-													<span className='text-xs font-black text-zinc-900 dark:text-zinc-200'>Agent Details</span>
-													<span className='truncate text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 leading-tight mt-0.5'>Configure core information and capabilities of your agent.</span>
+												<div className='flex min-w-0 flex-col'>
+													<span className='text-xs font-black text-zinc-900 dark:text-zinc-200'>
+														Agent Details
+													</span>
+													<span className='mt-0.5 truncate text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
+														Configure core information and capabilities
+														of your agent.
+													</span>
 												</div>
 											</div>
-											<div className='flex items-center gap-2.5 shrink-0'>
+											<div className='flex shrink-0 items-center gap-2.5'>
 												<button
 													type='button'
-													disabled={!currentAgentId || duplicateAgentMutation.isPending}
+													disabled={
+														!currentAgentId ||
+														duplicateAgentMutation.isPending
+													}
 													onClick={(e) => {
 														e.stopPropagation();
 														if (!currentAgentId) return;
-														duplicateAgentMutation.mutate(currentAgentId, {
-															onSuccess: (copy) => {
-																toast.success(`"${copy.name}" created.`);
-																navigate(paths.editAgent(workspaceId, copy.id));
+														duplicateAgentMutation.mutate(
+															currentAgentId,
+															{
+																onSuccess: (copy) => {
+																	toast.success(
+																		`"${copy.name}" created.`,
+																	);
+																	navigate(
+																		paths.editAgent(
+																			workspaceId,
+																			copy.id,
+																		),
+																	);
+																},
 															},
-														});
+														);
 													}}
-													className='flex items-center gap-1.5 px-3 py-1 border border-zinc-200 text-zinc-700 bg-white hover:bg-zinc-50 text-[10px] font-black rounded-lg dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900'>
+													className='flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1 text-[10px] font-black text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900'>
 													<Copy size={11} />
 													<span>Make a Copy</span>
 												</button>
@@ -2939,56 +3451,75 @@ const BuildPage = () => {
 										</div>
 
 										{/* Chat Preferences */}
-										<div className='flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs hover:bg-zinc-50/40 dark:border-zinc-800 dark:bg-zinc-900/40 transition cursor-pointer'>
-											<div className='flex items-center gap-3 min-w-0'>
+										<div className='flex cursor-pointer items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs transition hover:bg-zinc-50/40 dark:border-zinc-800 dark:bg-zinc-900/40'>
+											<div className='flex min-w-0 items-center gap-3'>
 												<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:bg-blue-500/5 dark:text-blue-400'>
 													<MessageSquare size={16} />
 												</div>
-												<div className='flex flex-col min-w-0'>
-													<span className='text-xs font-black text-zinc-900 dark:text-zinc-200'>Chat Preferences</span>
-													<span className='truncate text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 leading-tight mt-0.5'>Customize how your agent communicates and responds.</span>
+												<div className='flex min-w-0 flex-col'>
+													<span className='text-xs font-black text-zinc-900 dark:text-zinc-200'>
+														Chat Preferences
+													</span>
+													<span className='mt-0.5 truncate text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
+														Customize how your agent communicates and
+														responds.
+													</span>
 												</div>
 											</div>
 											<ChevronRight size={14} className='text-zinc-400' />
 										</div>
 
 										{/* Slack Preferences */}
-										<div className='flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs hover:bg-zinc-50/40 dark:border-zinc-800 dark:bg-zinc-900/40 transition cursor-pointer'>
-											<div className='flex items-center gap-3 min-w-0'>
+										<div className='flex cursor-pointer items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs transition hover:bg-zinc-50/40 dark:border-zinc-800 dark:bg-zinc-900/40'>
+											<div className='flex min-w-0 items-center gap-3'>
 												<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/5 dark:text-emerald-400'>
 													<Layers size={16} />
 												</div>
-												<div className='flex flex-col min-w-0'>
-													<span className='text-xs font-black text-zinc-900 dark:text-zinc-200'>Slack Preferences</span>
-													<span className='truncate text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 leading-tight mt-0.5'>Configure how your agent interacts in Slack.</span>
+												<div className='flex min-w-0 flex-col'>
+													<span className='text-xs font-black text-zinc-900 dark:text-zinc-200'>
+														Slack Preferences
+													</span>
+													<span className='mt-0.5 truncate text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
+														Configure how your agent interacts in Slack.
+													</span>
 												</div>
 											</div>
 											<ChevronRight size={14} className='text-zinc-400' />
 										</div>
 
 										{/* Secrets */}
-										<div className='flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs hover:bg-zinc-50/40 dark:border-zinc-800 dark:bg-zinc-900/40 transition cursor-pointer'>
-											<div className='flex items-center gap-3 min-w-0'>
+										<div className='flex cursor-pointer items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs transition hover:bg-zinc-50/40 dark:border-zinc-800 dark:bg-zinc-900/40'>
+											<div className='flex min-w-0 items-center gap-3'>
 												<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/5 dark:text-amber-400'>
 													<Lock size={16} />
 												</div>
-												<div className='flex flex-col min-w-0'>
-													<span className='text-xs font-black text-zinc-900 dark:text-zinc-200'>Secrets</span>
-													<span className='truncate text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 leading-tight mt-0.5'>Manage API keys, tokens, and other sensitive information.</span>
+												<div className='flex min-w-0 flex-col'>
+													<span className='text-xs font-black text-zinc-900 dark:text-zinc-200'>
+														Secrets
+													</span>
+													<span className='mt-0.5 truncate text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
+														Manage API keys, tokens, and other sensitive
+														information.
+													</span>
 												</div>
 											</div>
 											<ChevronRight size={14} className='text-zinc-400' />
 										</div>
 
 										{/* Danger Zone */}
-										<div className='flex items-center justify-between rounded-xl border border-rose-200 bg-white p-3.5 shadow-2xs hover:bg-rose-50/20 dark:border-rose-950/40 dark:bg-zinc-900/40 transition cursor-pointer'>
-											<div className='flex items-center gap-3 min-w-0'>
+										<div className='flex cursor-pointer items-center justify-between rounded-xl border border-rose-200 bg-white p-3.5 shadow-2xs transition hover:bg-rose-50/20 dark:border-rose-950/40 dark:bg-zinc-900/40'>
+											<div className='flex min-w-0 items-center gap-3'>
 												<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600 dark:bg-rose-500/5 dark:text-rose-400'>
 													<AlertTriangle size={16} />
 												</div>
-												<div className='flex flex-col min-w-0'>
-													<span className='text-xs font-black text-rose-600 dark:text-rose-400'>Danger Zone</span>
-													<span className='truncate text-[10px] font-semibold text-zinc-400 dark:text-rose-950/40 leading-tight mt-0.5'>Irreversible actions that can affect your agent.</span>
+												<div className='flex min-w-0 flex-col'>
+													<span className='text-xs font-black text-rose-600 dark:text-rose-400'>
+														Danger Zone
+													</span>
+													<span className='mt-0.5 truncate text-[10px] leading-tight font-semibold text-zinc-400 dark:text-rose-950/40'>
+														Irreversible actions that can affect your
+														agent.
+													</span>
 												</div>
 											</div>
 											<ChevronRight size={14} className='text-rose-400' />
@@ -2996,36 +3527,47 @@ const BuildPage = () => {
 									</div>
 
 									{/* Bottom secure banner */}
-									<div className='flex items-center justify-between rounded-xl bg-primary-400/5 border border-primary-500/10 p-3.5 dark:bg-primary-400/5 dark:border-primary-500/10'>
+									<div className='bg-primary-400/5 border-primary-500/10 dark:bg-primary-400/5 dark:border-primary-500/10 flex items-center justify-between rounded-xl border p-3.5'>
 										<div className='flex gap-3'>
-											<Shield size={16} className='text-primary-500 shrink-0 mt-0.5' />
+											<Shield
+												size={16}
+												className='text-primary-500 mt-0.5 shrink-0'
+											/>
 											<div className='flex flex-col'>
-												<span className='text-xs font-bold text-primary-700 dark:text-primary-400'>Your settings are secure</span>
-												<span className='text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 mt-1 leading-normal'>All changes are saved automatically and encrypted.</span>
+												<span className='text-primary-700 dark:text-primary-400 text-xs font-bold'>
+													Your settings are secure
+												</span>
+												<span className='mt-1 text-[10px] leading-normal font-semibold text-zinc-500 dark:text-zinc-400'>
+													All changes are saved automatically and
+													encrypted.
+												</span>
 											</div>
 										</div>
 										<a
 											href='https://docs.agent1o1.com'
 											target='_blank'
 											rel='noopener noreferrer'
-											className='text-[10px] font-bold text-primary-600 hover:underline flex items-center gap-1 shrink-0 dark:text-primary-400'>
+											className='text-primary-600 dark:text-primary-400 flex shrink-0 items-center gap-1 text-[10px] font-bold hover:underline'>
 											<span>Learn more</span>
 											<ExternalLink size={10} />
 										</a>
 									</div>
-
 								</div>
 							)}
 
 							{/* Chat Details Tab */}
 							{activeSidebarTab === 'chatDetails' && (
-								<div className='flex-1 overflow-y-auto p-4 bg-zinc-50/40 dark:bg-zinc-950/20 flex flex-col items-center justify-center text-center space-y-3'>
+								<div className='flex flex-1 flex-col items-center justify-center space-y-3 overflow-y-auto bg-zinc-50/40 p-4 text-center dark:bg-zinc-950/20'>
 									<div className='flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-400 dark:bg-zinc-900 dark:text-zinc-500'>
 										<MessageSquare size={22} />
 									</div>
-									<h4 className='text-sm font-black text-zinc-800 dark:text-zinc-100'>No Active Chat History Details</h4>
-									<p className='text-xs font-semibold text-zinc-400 dark:text-zinc-500 max-w-[280px] leading-relaxed'>
-										Once this agent runs inside a production environment, conversation logs, token usage, and execution stats will be displayed here.
+									<h4 className='text-sm font-black text-zinc-800 dark:text-zinc-100'>
+										No Active Chat History Details
+									</h4>
+									<p className='max-w-[280px] text-xs leading-relaxed font-semibold text-zinc-400 dark:text-zinc-500'>
+										Once this agent runs inside a production environment,
+										conversation logs, token usage, and execution stats will be
+										displayed here.
 									</p>
 								</div>
 							)}
@@ -3033,7 +3575,6 @@ const BuildPage = () => {
 							{activeSidebarTab === 'data' && (
 								<AgentDataPanel ws={workspaceId} agentId={currentAgentId} />
 							)}
-
 						</motion.div>
 					</>
 				)}
@@ -3058,11 +3599,12 @@ const BuildPage = () => {
 							animate={{ x: 0 }}
 							exit={{ x: '100%' }}
 							transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-							className='fixed right-0 top-0 bottom-0 z-65 flex w-full max-w-[440px] flex-col border-l border-zinc-200 bg-white shadow-3xl dark:border-white/10 dark:bg-zinc-900 overflow-hidden'
-						>
+							className='shadow-3xl fixed top-0 right-0 bottom-0 z-65 flex w-full max-w-[440px] flex-col overflow-hidden border-l border-zinc-200 bg-white dark:border-white/10 dark:bg-zinc-900'>
 							{/* Drawer Header */}
 							<div className='flex h-16 shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-5 dark:border-white/10 dark:bg-zinc-900'>
-								<h3 className='text-[16px] font-black text-zinc-900 dark:text-white'>Add a tool</h3>
+								<h3 className='text-[16px] font-black text-zinc-900 dark:text-white'>
+									Add a tool
+								</h3>
 								<button
 									aria-label='Close'
 									onClick={() => setIsAddAppOpen(false)}
@@ -3072,11 +3614,14 @@ const BuildPage = () => {
 							</div>
 
 							{/* Search & Tabs Filter Box */}
-							<div className='p-4 border-b border-zinc-100 dark:border-white/10 space-y-3 dark:bg-zinc-900'>
-								<div className='flex gap-3 items-center'>
+							<div className='space-y-3 border-b border-zinc-100 p-4 dark:border-white/10 dark:bg-zinc-900'>
+								<div className='flex items-center gap-3'>
 									{/* Search Input */}
-									<div className='flex-1 relative flex items-center rounded-xl border border-zinc-200 bg-zinc-50/50 p-2 focus-within:border-primary-500/50 focus-within:ring-4 focus-within:ring-primary-500/5 dark:border-zinc-800 dark:bg-zinc-950/20'>
-										<Search size={15} className='text-zinc-400 shrink-0 ml-1.5' />
+									<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 relative flex flex-1 items-center rounded-xl border border-zinc-200 bg-zinc-50/50 p-2 focus-within:ring-4 dark:border-zinc-800 dark:bg-zinc-950/20'>
+										<Search
+											size={15}
+											className='ml-1.5 shrink-0 text-zinc-400'
+										/>
 										<input
 											type='text'
 											value={appSearchQuery}
@@ -3086,15 +3631,15 @@ const BuildPage = () => {
 													? `Search ${(nodeCatalog ?? []).length} nodes`
 													: `Search ${(workspaceWorkflows ?? []).length} workflows`
 											}
-											className='flex-1 bg-transparent px-2.5 text-xs font-semibold text-zinc-900 placeholder:text-zinc-400 outline-none border-none focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
+											className='flex-1 border-none bg-transparent px-2.5 text-xs font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
 										/>
 									</div>
 
 									{/* The two kinds of tool this backend supports */}
-									<div className='flex bg-zinc-100 rounded-lg p-0.5 dark:bg-zinc-950/45 shrink-0'>
+									<div className='flex shrink-0 rounded-lg bg-zinc-100 p-0.5 dark:bg-zinc-950/45'>
 										<button
 											onClick={() => setToolTab('nodes')}
-											className={`px-3 py-1.5 text-[10px] font-black rounded-md transition ${
+											className={`rounded-md px-3 py-1.5 text-[10px] font-black transition ${
 												toolTab === 'nodes'
 													? 'bg-white text-zinc-900 shadow-2xs dark:bg-zinc-800 dark:text-white'
 													: 'text-zinc-400 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-300'
@@ -3103,7 +3648,7 @@ const BuildPage = () => {
 										</button>
 										<button
 											onClick={() => setToolTab('workflows')}
-											className={`px-3 py-1.5 text-[10px] font-black rounded-md transition ${
+											className={`rounded-md px-3 py-1.5 text-[10px] font-black transition ${
 												toolTab === 'workflows'
 													? 'bg-white text-zinc-900 shadow-2xs dark:bg-zinc-800 dark:text-white'
 													: 'text-zinc-400 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-300'
@@ -3116,9 +3661,11 @@ const BuildPage = () => {
 
 							{/* Attachable tools. Each row attaches on click — there is no
 							    staged selection to save, so the drawer has no footer. */}
-							<div className='flex-1 overflow-y-auto p-4 space-y-3 dark:bg-zinc-950/10'>
-								<h4 className='text-[10px] font-black text-zinc-400 uppercase tracking-widest pl-1'>
-									{toolTab === 'nodes' ? 'Available nodes' : 'Workspace workflows'}
+							<div className='flex-1 space-y-3 overflow-y-auto p-4 dark:bg-zinc-950/10'>
+								<h4 className='pl-1 text-[10px] font-black tracking-widest text-zinc-400 uppercase'>
+									{toolTab === 'nodes'
+										? 'Available nodes'
+										: 'Workspace workflows'}
 								</h4>
 
 								<div className='space-y-1.5'>
@@ -3126,7 +3673,7 @@ const BuildPage = () => {
 										attachableNodes.map((node) => (
 											<div
 												key={node.type}
-												className='flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/40 transition'>
+												className='flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/40'>
 												<div className='flex items-center gap-3'>
 													<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500 text-white shadow-2xs'>
 														<Wrench size={16} />
@@ -3135,7 +3682,7 @@ const BuildPage = () => {
 														<span className='text-xs font-black text-zinc-900 dark:text-zinc-100'>
 															{node.name}
 														</span>
-														<span className='text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 mt-0.5 leading-tight'>
+														<span className='mt-0.5 text-[9px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
 															{node.description}
 														</span>
 													</div>
@@ -3144,7 +3691,7 @@ const BuildPage = () => {
 													aria-label='Add'
 													onClick={() => handleAttachNode(node)}
 													disabled={createToolBindingMutation.isPending}
-													className='flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 active:scale-90 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white transition shadow-2xs'>
+													className='flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 shadow-2xs transition hover:bg-zinc-50 hover:text-zinc-900 active:scale-90 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white'>
 													<Plus size={14} />
 												</button>
 											</div>
@@ -3154,17 +3701,18 @@ const BuildPage = () => {
 										attachableWorkflows.map((workflow) => (
 											<div
 												key={workflow.id}
-												className='flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/40 transition'>
+												className='flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/40'>
 												<div className='flex items-center gap-3'>
-													<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-primary-500 text-white shadow-2xs'>
+													<div className='bg-primary-500 flex h-8 w-8 items-center justify-center rounded-lg text-white shadow-2xs'>
 														<GitMerge size={16} />
 													</div>
 													<div className='flex flex-col'>
 														<span className='text-xs font-black text-zinc-900 dark:text-zinc-100'>
 															{workflow.name}
 														</span>
-														<span className='text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 mt-0.5 leading-tight'>
-															{workflow.description || 'No description provided.'}
+														<span className='mt-0.5 text-[9px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
+															{workflow.description ||
+																'No description provided.'}
 														</span>
 													</div>
 												</div>
@@ -3172,15 +3720,16 @@ const BuildPage = () => {
 													aria-label='Add'
 													onClick={() => handleAttachWorkflow(workflow)}
 													disabled={attachWorkflowMutation.isPending}
-													className='flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 active:scale-90 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white transition shadow-2xs'>
+													className='flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 shadow-2xs transition hover:bg-zinc-50 hover:text-zinc-900 active:scale-90 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white'>
 													<Plus size={14} />
 												</button>
 											</div>
 										))}
 
 									{((toolTab === 'nodes' && attachableNodes.length === 0) ||
-										(toolTab === 'workflows' && attachableWorkflows.length === 0)) && (
-										<div className='text-center py-8 text-xs font-bold text-zinc-400 dark:text-zinc-500'>
+										(toolTab === 'workflows' &&
+											attachableWorkflows.length === 0)) && (
+										<div className='py-8 text-center text-xs font-bold text-zinc-400 dark:text-zinc-500'>
 											{appSearchQuery.trim()
 												? `Nothing matches "${appSearchQuery}"`
 												: 'Everything here is already attached.'}

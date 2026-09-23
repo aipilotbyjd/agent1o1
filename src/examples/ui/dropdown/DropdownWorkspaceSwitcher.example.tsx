@@ -124,25 +124,24 @@ const DropdownWorkspaceSwitcherExample = () => {
 		);
 	};
 
-	const activeColorGradient = getWorkspaceColor(activeWorkspace?.name || 'agent1o1');
-
 	return (
 		<Dropdown>
 			<DropdownToggle>
 				<button
 					type='button'
-					className='group hover:border-primary-500/40 hover:text-primary-600 dark:hover:border-primary-500/30 dark:hover:text-primary-400 flex h-9 cursor-pointer items-center gap-2 rounded-full border border-slate-200 bg-white pr-3.5 pl-2 text-xs font-extrabold text-slate-700 shadow-xs transition-all duration-300 select-none hover:bg-white dark:border-zinc-800 dark:bg-zinc-950 dark:text-white dark:hover:bg-zinc-900'>
-					{/* Circular initials avatar with a premium dynamic gradient background */}
-					<div
-						className={`relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr ${activeColorGradient} text-[10px] font-black text-white shadow-2xs transition-transform duration-300 group-hover:scale-105`}>
+					aria-label={`Switch workspace. Current workspace: ${activeWorkspace?.name || 'agent1o1'}`}
+					title={activeWorkspace?.name || 'agent1o1'}
+					className='group hover:border-primary-500/40 hover:text-primary-600 dark:hover:border-primary-500/30 dark:hover:text-primary-400 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-xs font-extrabold text-slate-700 shadow-xs transition-all duration-300 select-none hover:bg-white sm:w-auto sm:justify-start sm:gap-2 sm:pr-3.5 sm:pl-2 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white dark:hover:bg-zinc-900'>
+					{/* Circular initials avatar using the product primary color */}
+					<div className='bg-primary-400 text-primary-950 relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-black shadow-2xs transition-transform duration-300 group-hover:scale-105'>
 						{getInitials(activeWorkspace?.name || 'agent1o1')}
 					</div>
-					<span className='max-w-[100px] truncate font-extrabold tracking-wide'>
+					<span className='hidden max-w-[100px] truncate font-extrabold tracking-wide sm:inline'>
 						{activeWorkspace?.name || 'agent1o1'}
 					</span>
 					<ChevronDown
 						size={12}
-						className='group-hover:text-primary-500 dark:group-hover:text-primary-400 ml-0.5 shrink-0 text-slate-400 transition-transform duration-300 group-aria-expanded:rotate-180 group-[.show]:rotate-180 dark:text-white'
+						className='group-hover:text-primary-500 dark:group-hover:text-primary-400 ml-0.5 hidden shrink-0 text-slate-400 transition-transform duration-300 group-aria-expanded:rotate-180 group-[.show]:rotate-180 sm:block dark:text-white'
 					/>
 				</button>
 			</DropdownToggle>

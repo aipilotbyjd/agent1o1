@@ -158,10 +158,10 @@ const MembersPage = () => {
 	};
 
 	return (
-		<div className='mx-auto w-full max-w-[1180px] px-6 py-8 sm:px-10 lg:px-14'>
+		<div className='mx-auto w-full max-w-[1180px] min-w-0 px-4 py-6 sm:px-10 sm:py-8 lg:px-14'>
 			{/* Page Header */}
-			<div className='mb-10 flex flex-col justify-between gap-5 sm:flex-row sm:items-center'>
-				<div>
+			<div className='mb-7 flex flex-col justify-between gap-5 sm:mb-10 sm:flex-row sm:items-center'>
+				<div className='w-full sm:w-auto'>
 					<h1 className='text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-50'>
 						Members & Access
 					</h1>
@@ -175,18 +175,18 @@ const MembersPage = () => {
 						color='primary'
 						icon='UserAdd01'
 						onClick={() => setIsInviteModalOpen(true)}
-						className='shadow-primary-500/10 h-12 font-bold text-zinc-950 shadow-md'>
+						className='shadow-primary-500/10 h-12 w-full justify-center font-bold text-zinc-950 shadow-md sm:w-auto'>
 						Invite member
 					</Button>
 				</div>
 			</div>
 
 			{/* Tabs & Filter Bar */}
-			<div className='mb-6 flex border-b border-zinc-200 dark:border-zinc-700'>
+			<div className='no-scrollbar mb-6 flex max-w-full overflow-x-auto border-b border-zinc-200 dark:border-zinc-700'>
 				<button
 					type='button'
 					onClick={() => setActiveTab('members')}
-					className={`flex items-center gap-2 border-b-2 px-4 py-3.5 text-sm font-bold transition-all ${
+					className={`flex shrink-0 items-center gap-2 border-b-2 px-3 py-3.5 text-xs font-bold transition-all sm:px-4 sm:text-sm ${
 						activeTab === 'members'
 							? 'border-primary-500 text-primary-600 dark:text-primary-400'
 							: 'border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
@@ -205,7 +205,7 @@ const MembersPage = () => {
 				<button
 					type='button'
 					onClick={() => setActiveTab('invitations')}
-					className={`flex items-center gap-2 border-b-2 px-4 py-3.5 text-sm font-bold transition-all ${
+					className={`flex shrink-0 items-center gap-2 border-b-2 px-3 py-3.5 text-xs font-bold transition-all sm:px-4 sm:text-sm ${
 						activeTab === 'invitations'
 							? 'border-primary-500 text-primary-600 dark:text-primary-400'
 							: 'border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
@@ -226,7 +226,7 @@ const MembersPage = () => {
 			</div>
 
 			{/* Main Tables Content */}
-			<div className='overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-800'>
+			<div className='min-w-0 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-800'>
 				{!hasWorkspace && !isResolvingWorkspace ? (
 					<div className='flex flex-col items-center justify-center py-16 text-center'>
 						<div className='flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-100 text-zinc-400 dark:bg-zinc-700'>
@@ -272,69 +272,71 @@ const MembersPage = () => {
 							</p>
 						</div>
 					) : (
-						<div className='overflow-x-auto'>
-							<Table className='min-w-full divide-y divide-zinc-200 dark:divide-zinc-800'>
-								<THead className='bg-zinc-50 dark:bg-zinc-700/40'>
-									<Tr>
-										<Th className='border-0 !bg-transparent text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
-											Teammate
-										</Th>
-										<Th className='border-0 !bg-transparent text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
-											Joined
-										</Th>
-										<Th className='w-[180px] border-0 !bg-transparent text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
-											Access Role
-										</Th>
-										<Th className='w-[80px] border-0 !bg-transparent text-right text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
-											Actions
-										</Th>
-									</Tr>
-								</THead>
-								<TBody className='divide-y divide-zinc-200 bg-white dark:divide-zinc-700 dark:bg-zinc-800'>
-									{members.map((member) => (
-										<Tr key={member.id} className='transition-colors'>
-											<Td className='flex items-center gap-3 border-0 py-4'>
-												{member.user?.avatar ? (
-													<img
-														src={member.user.avatar}
-														alt={member.user?.name ?? ''}
-														className='h-10 w-10 shrink-0 rounded-full object-cover'
-													/>
-												) : (
-													<div
-														className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-inner ${getAvatarBg(member.id)}`}>
-														{getInitials(member.user?.name ?? '')}
-													</div>
-												)}
-												<div className='min-w-0'>
-													<div className='truncate text-sm font-bold text-zinc-900 dark:text-white'>
-														{member.user?.name ?? 'Unknown'}
-													</div>
-													<div className='truncate text-xs font-medium text-zinc-500 dark:text-zinc-400'>
-														{member.user?.email}
-													</div>
+						<>
+							<div className='space-y-3 bg-zinc-50/70 p-3 md:hidden dark:bg-zinc-900/40'>
+								{members.map((member) => (
+									<article
+										key={member.id}
+										className='rounded-2xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-700 dark:bg-zinc-800'>
+										<div className='flex min-w-0 items-start gap-3'>
+											{member.user?.avatar ? (
+												<img
+													src={member.user.avatar}
+													alt={member.user?.name ?? ''}
+													className='h-11 w-11 shrink-0 rounded-full object-cover'
+												/>
+											) : (
+												<div
+													className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-inner ${getAvatarBg(member.id)}`}>
+													{getInitials(member.user?.name ?? '')}
 												</div>
-											</Td>
-											<Td className='border-0 text-sm font-semibold text-zinc-600 dark:text-zinc-300'>
-												{member.joined_at
-													? new Date(member.joined_at).toLocaleDateString(
-															'en-US',
-															{
-																year: 'numeric',
+											)}
+											<div className='min-w-0 flex-1'>
+												<h2 className='truncate text-sm font-black text-zinc-900 dark:text-white'>
+													{member.user?.name ?? 'Unknown'}
+												</h2>
+												<p className='truncate text-xs font-medium text-zinc-500 dark:text-zinc-400'>
+													{member.user?.email}
+												</p>
+											</div>
+											{member.role !== 'owner' && (
+												<button
+													type='button'
+													aria-label={`Remove ${member.user?.name ?? 'member'}`}
+													onClick={() => setMemberToRemove(member)}
+													className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-100 text-red-500 transition active:bg-red-50 dark:border-red-500/20 dark:active:bg-red-500/10'>
+													<Trash2 size={16} />
+												</button>
+											)}
+										</div>
+
+										<div className='mt-4 grid grid-cols-2 gap-3 border-t border-zinc-100 pt-4 dark:border-zinc-700'>
+											<div>
+												<p className='text-[10px] font-black tracking-wider text-zinc-400 uppercase'>
+													Joined
+												</p>
+												<p className='mt-1 text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+													{member.joined_at
+														? new Date(
+																member.joined_at,
+															).toLocaleDateString('en-US', {
 																month: 'short',
 																day: 'numeric',
-															},
-														)
-													: 'Just now'}
-											</Td>
-											<Td className='border-0'>
+																year: 'numeric',
+															})
+														: 'Just now'}
+												</p>
+											</div>
+											<div>
+												<p className='text-[10px] font-black tracking-wider text-zinc-400 uppercase'>
+													Access role
+												</p>
 												{member.role === 'owner' ? (
-													<div className='text-primary-600 dark:text-primary-400 flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold'>
-														<Shield size={15} />
-														Owner
+													<div className='text-primary-600 dark:text-primary-400 mt-1 flex items-center gap-1.5 text-xs font-black'>
+														<Shield size={14} /> Owner
 													</div>
 												) : (
-													<div className='relative w-full max-w-[140px]'>
+													<div className='relative mt-1'>
 														<select
 															aria-label={`Change role for ${member.user?.name ?? 'member'}`}
 															value={member.role}
@@ -345,7 +347,7 @@ const MembersPage = () => {
 																		.value as TAssignableWorkspaceRole,
 																)
 															}
-															className='focus:border-primary-300 focus:ring-primary-100/50 h-9 w-full cursor-pointer appearance-none rounded-lg border border-zinc-200 bg-white bg-none px-2.5 pr-8 text-xs font-bold text-zinc-800 shadow-xs outline-none focus:ring-2 dark:border-zinc-700 dark:bg-zinc-700 dark:text-zinc-200'>
+															className='focus:border-primary-400 focus:ring-primary-100 h-10 w-full appearance-none rounded-xl border border-zinc-200 bg-white px-3 pr-8 text-xs font-bold text-zinc-800 outline-none focus:ring-2 dark:border-zinc-700 dark:bg-zinc-700 dark:text-zinc-200'>
 															{roleOptions
 																.filter(
 																	(option) =>
@@ -359,30 +361,130 @@ const MembersPage = () => {
 																	</option>
 																))}
 														</select>
-														<div className='pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[8px] font-bold text-zinc-400 dark:text-zinc-600'>
+														<span className='pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[9px] text-zinc-400'>
 															▼
-														</div>
+														</span>
 													</div>
 												)}
-											</Td>
-											<Td className='border-0 text-right'>
-												{member.role !== 'owner' ? (
-													<button
-														type='button'
-														aria-label={`Remove ${member.user?.name ?? 'member'}`}
-														onClick={() => setMemberToRemove(member)}
-														className='rounded-lg p-2 text-zinc-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10'>
-														<Trash2 size={16} />
-													</button>
-												) : (
-													<span className='inline-block w-8' />
-												)}
-											</Td>
+											</div>
+										</div>
+									</article>
+								))}
+							</div>
+							<div className='hidden overflow-x-auto md:block'>
+								<Table className='min-w-full divide-y divide-zinc-200 dark:divide-zinc-800'>
+									<THead className='bg-zinc-50 dark:bg-zinc-700/40'>
+										<Tr>
+											<Th className='border-0 !bg-transparent text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
+												Teammate
+											</Th>
+											<Th className='border-0 !bg-transparent text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
+												Joined
+											</Th>
+											<Th className='w-[180px] border-0 !bg-transparent text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
+												Access Role
+											</Th>
+											<Th className='w-[80px] border-0 !bg-transparent text-right text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
+												Actions
+											</Th>
 										</Tr>
-									))}
-								</TBody>
-							</Table>
-						</div>
+									</THead>
+									<TBody className='divide-y divide-zinc-200 bg-white dark:divide-zinc-700 dark:bg-zinc-800'>
+										{members.map((member) => (
+											<Tr key={member.id} className='transition-colors'>
+												<Td className='flex items-center gap-3 border-0 py-4'>
+													{member.user?.avatar ? (
+														<img
+															src={member.user.avatar}
+															alt={member.user?.name ?? ''}
+															className='h-10 w-10 shrink-0 rounded-full object-cover'
+														/>
+													) : (
+														<div
+															className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-inner ${getAvatarBg(member.id)}`}>
+															{getInitials(member.user?.name ?? '')}
+														</div>
+													)}
+													<div className='min-w-0'>
+														<div className='truncate text-sm font-bold text-zinc-900 dark:text-white'>
+															{member.user?.name ?? 'Unknown'}
+														</div>
+														<div className='truncate text-xs font-medium text-zinc-500 dark:text-zinc-400'>
+															{member.user?.email}
+														</div>
+													</div>
+												</Td>
+												<Td className='border-0 text-sm font-semibold text-zinc-600 dark:text-zinc-300'>
+													{member.joined_at
+														? new Date(
+																member.joined_at,
+															).toLocaleDateString('en-US', {
+																year: 'numeric',
+																month: 'short',
+																day: 'numeric',
+															})
+														: 'Just now'}
+												</Td>
+												<Td className='border-0'>
+													{member.role === 'owner' ? (
+														<div className='text-primary-600 dark:text-primary-400 flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold'>
+															<Shield size={15} />
+															Owner
+														</div>
+													) : (
+														<div className='relative w-full max-w-[140px]'>
+															<select
+																aria-label={`Change role for ${member.user?.name ?? 'member'}`}
+																value={member.role}
+																onChange={(e) =>
+																	handleRoleChange(
+																		member.user_id,
+																		e.target
+																			.value as TAssignableWorkspaceRole,
+																	)
+																}
+																className='focus:border-primary-300 focus:ring-primary-100/50 h-9 w-full cursor-pointer appearance-none rounded-lg border border-zinc-200 bg-white bg-none px-2.5 pr-8 text-xs font-bold text-zinc-800 shadow-xs outline-none focus:ring-2 dark:border-zinc-700 dark:bg-zinc-700 dark:text-zinc-200'>
+																{roleOptions
+																	.filter(
+																		(option) =>
+																			option.value !==
+																			'owner',
+																	)
+																	.map((option) => (
+																		<option
+																			key={option.value}
+																			value={option.value}>
+																			{option.label}
+																		</option>
+																	))}
+															</select>
+															<div className='pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[8px] font-bold text-zinc-400 dark:text-zinc-600'>
+																▼
+															</div>
+														</div>
+													)}
+												</Td>
+												<Td className='border-0 text-right'>
+													{member.role !== 'owner' ? (
+														<button
+															type='button'
+															aria-label={`Remove ${member.user?.name ?? 'member'}`}
+															onClick={() =>
+																setMemberToRemove(member)
+															}
+															className='rounded-lg p-2 text-zinc-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10'>
+															<Trash2 size={16} />
+														</button>
+													) : (
+														<span className='inline-block w-8' />
+													)}
+												</Td>
+											</Tr>
+										))}
+									</TBody>
+								</Table>
+							</div>
+						</>
 					)
 				) : isInvitationsLoading ? (
 					<div className='flex flex-col items-center justify-center py-20'>
@@ -416,71 +518,128 @@ const MembersPage = () => {
 						</p>
 					</div>
 				) : (
-					<div className='overflow-x-auto'>
-						<Table className='min-w-full divide-y divide-zinc-200 dark:divide-zinc-800'>
-							<THead className='bg-zinc-50 dark:bg-zinc-700/40'>
-								<Tr>
-									<Th className='border-0 !bg-transparent text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
-										Email
-									</Th>
-									<Th className='border-0 !bg-transparent text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
-										Role
-									</Th>
-									<Th className='border-0 !bg-transparent text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
-										Invited By
-									</Th>
-									<Th className='border-0 !bg-transparent text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
-										Expires
-									</Th>
-									<Th className='w-[120px] border-0 !bg-transparent text-right text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
-										Action
-									</Th>
-								</Tr>
-							</THead>
-							<TBody className='divide-y divide-zinc-200 bg-white dark:divide-zinc-700 dark:bg-zinc-800'>
-								{invitations.map((inv) => (
-									<Tr key={inv.id} className='transition-colors'>
-										<Td className='border-0 py-4 text-sm font-bold text-zinc-900 dark:text-white'>
-											{inv.email}
-										</Td>
-										<Td className='border-0'>
-											<Badge
-												color='violet'
-												variant='soft'
-												className='rounded-md px-2 py-0.5 text-xs font-bold uppercase'>
-												{inv.role}
-											</Badge>
-										</Td>
-										<Td className='border-0 text-sm font-semibold text-zinc-500 dark:text-zinc-400'>
-											{inv.invited_by}
-										</Td>
-										<Td className='border-0 text-sm font-semibold text-zinc-500 dark:text-zinc-400'>
-											{inv.expires_at
-												? new Date(inv.expires_at).toLocaleDateString(
-														'en-US',
-														{
-															month: 'short',
-															day: 'numeric',
-															year: 'numeric',
-														},
-													)
-												: 'In 30 days'}
-										</Td>
-										<Td className='border-0 text-right'>
-											<Button
-												variant='outline'
-												color='red'
-												dimension='sm'
-												onClick={() => handleCancelInvitation(inv.id)}
-												className='h-8 border-red-500/25 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10'>
-												Revoke
-											</Button>
-										</Td>
+					<>
+						<div className='space-y-3 bg-zinc-50/70 p-3 md:hidden dark:bg-zinc-900/40'>
+							{invitations.map((inv) => (
+								<article
+									key={inv.id}
+									className='rounded-2xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-700 dark:bg-zinc-800'>
+									<div className='flex min-w-0 items-start gap-3'>
+										<div className='bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400 flex h-11 w-11 shrink-0 items-center justify-center rounded-full'>
+											<Mail size={18} />
+										</div>
+										<div className='min-w-0 flex-1'>
+											<h2 className='text-sm font-black break-all text-zinc-900 dark:text-white'>
+												{inv.email}
+											</h2>
+											<p className='mt-1 text-xs font-semibold text-zinc-500 dark:text-zinc-400'>
+												Invited by {inv.invited_by}
+											</p>
+										</div>
+										<Badge
+											color='violet'
+											variant='soft'
+											className='shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase'>
+											{inv.role}
+										</Badge>
+									</div>
+
+									<div className='mt-4 flex items-center justify-between gap-3 border-t border-zinc-100 pt-4 dark:border-zinc-700'>
+										<div>
+											<p className='text-[10px] font-black tracking-wider text-zinc-400 uppercase'>
+												Expires
+											</p>
+											<p className='mt-1 text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+												{inv.expires_at
+													? new Date(inv.expires_at).toLocaleDateString(
+															'en-US',
+															{
+																month: 'short',
+																day: 'numeric',
+																year: 'numeric',
+															},
+														)
+													: 'In 30 days'}
+											</p>
+										</div>
+										<Button
+											variant='outline'
+											color='red'
+											dimension='sm'
+											onClick={() => handleCancelInvitation(inv.id)}
+											className='h-10 border-red-500/25 px-4 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10'>
+											Revoke
+										</Button>
+									</div>
+								</article>
+							))}
+						</div>
+						<div className='hidden overflow-x-auto md:block'>
+							<Table className='min-w-full divide-y divide-zinc-200 dark:divide-zinc-800'>
+								<THead className='bg-zinc-50 dark:bg-zinc-700/40'>
+									<Tr>
+										<Th className='border-0 !bg-transparent text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
+											Email
+										</Th>
+										<Th className='border-0 !bg-transparent text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
+											Role
+										</Th>
+										<Th className='border-0 !bg-transparent text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
+											Invited By
+										</Th>
+										<Th className='border-0 !bg-transparent text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
+											Expires
+										</Th>
+										<Th className='w-[120px] border-0 !bg-transparent text-right text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
+											Action
+										</Th>
 									</Tr>
-								))}
-							</TBody>
-						</Table>
-					</div>
+								</THead>
+								<TBody className='divide-y divide-zinc-200 bg-white dark:divide-zinc-700 dark:bg-zinc-800'>
+									{invitations.map((inv) => (
+										<Tr key={inv.id} className='transition-colors'>
+											<Td className='border-0 py-4 text-sm font-bold text-zinc-900 dark:text-white'>
+												{inv.email}
+											</Td>
+											<Td className='border-0'>
+												<Badge
+													color='violet'
+													variant='soft'
+													className='rounded-md px-2 py-0.5 text-xs font-bold uppercase'>
+													{inv.role}
+												</Badge>
+											</Td>
+											<Td className='border-0 text-sm font-semibold text-zinc-500 dark:text-zinc-400'>
+												{inv.invited_by}
+											</Td>
+											<Td className='border-0 text-sm font-semibold text-zinc-500 dark:text-zinc-400'>
+												{inv.expires_at
+													? new Date(inv.expires_at).toLocaleDateString(
+															'en-US',
+															{
+																month: 'short',
+																day: 'numeric',
+																year: 'numeric',
+															},
+														)
+													: 'In 30 days'}
+											</Td>
+											<Td className='border-0 text-right'>
+												<Button
+													variant='outline'
+													color='red'
+													dimension='sm'
+													onClick={() => handleCancelInvitation(inv.id)}
+													className='h-8 border-red-500/25 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10'>
+													Revoke
+												</Button>
+											</Td>
+										</Tr>
+									))}
+								</TBody>
+							</Table>
+						</div>
+					</>
 				)}
 			</div>
 
