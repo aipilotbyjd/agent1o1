@@ -185,7 +185,7 @@ const BillingOverviewPage = () => {
 	return (
 		<div className='space-y-8 text-zinc-950 dark:text-zinc-50'>
 			{dunning && (
-				<div className='flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800/40 dark:bg-amber-950/20'>
+				<div className='flex flex-col items-stretch gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 sm:flex-row sm:items-center dark:border-amber-800/40 dark:bg-amber-950/20'>
 					<AlertTriangle
 						size={18}
 						className='shrink-0 text-amber-600 dark:text-amber-400'
@@ -198,13 +198,13 @@ const BillingOverviewPage = () => {
 						type='button'
 						onClick={() => portal.mutate()}
 						disabled={portal.isPending}
-						className='ml-auto shrink-0 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-md shadow-amber-500/10 transition hover:bg-amber-600 disabled:opacity-60'>
+						className='flex h-10 w-full shrink-0 items-center justify-center rounded-lg bg-amber-500 px-3 text-xs font-bold text-white shadow-md shadow-amber-500/10 transition hover:bg-amber-600 disabled:opacity-60 sm:ml-auto sm:h-auto sm:w-auto sm:py-1.5'>
 						{portal.isPending ? 'Opening…' : 'Fix payment'}
 					</button>
 				</div>
 			)}
 			{canResume && (
-				<div className='flex flex-wrap items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800/40 dark:bg-amber-950/20'>
+				<div className='flex flex-col items-stretch gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center dark:border-amber-800/40 dark:bg-amber-950/20'>
 					<AlertTriangle
 						size={18}
 						className='shrink-0 text-amber-600 dark:text-amber-400'
@@ -218,7 +218,7 @@ const BillingOverviewPage = () => {
 						type='button'
 						onClick={() => resumeSubscription.mutate()}
 						disabled={resumeSubscription.isPending}
-						className='ml-auto flex shrink-0 items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-md shadow-amber-500/10 transition hover:bg-amber-600 disabled:opacity-60'>
+						className='flex h-10 w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-amber-500 px-3 text-xs font-bold text-white shadow-md shadow-amber-500/10 transition hover:bg-amber-600 disabled:opacity-60 sm:ml-auto sm:h-auto sm:w-auto sm:py-1.5'>
 						<RotateCcw size={13} />
 						{resumeSubscription.isPending ? 'Resuming…' : 'Resume subscription'}
 					</button>
@@ -235,18 +235,18 @@ const BillingOverviewPage = () => {
 						Your plan, credits, and payment settings - all in one place.
 					</p>
 				</div>
-				<div className='flex flex-wrap items-center gap-3'>
+				<div className='grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:gap-3'>
 					<button
 						type='button'
 						onClick={() => portal.mutate()}
 						disabled={portal.isPending}
-						className='flex h-10 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900'>
+						className='flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:opacity-60 sm:h-10 sm:w-auto dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900'>
 						<ExternalLink size={14} />
 						{portal.isPending ? 'Opening…' : 'Manage billing'}
 					</button>
 					<Link
 						to={toWorkspacePath(billingPages.plans.to)}
-						className='bg-primary-400 text-primary-950 shadow-primary-500/15 hover:bg-primary-500 flex h-10 items-center gap-2 rounded-xl px-5 text-sm font-bold shadow-md transition'>
+						className='bg-primary-400 text-primary-950 shadow-primary-500/15 hover:bg-primary-500 flex h-11 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold shadow-md transition sm:h-10 sm:w-auto'>
 						<Zap size={14} />
 						Upgrade plan
 					</Link>
@@ -255,7 +255,7 @@ const BillingOverviewPage = () => {
 							type='button'
 							onClick={handleCancel}
 							disabled={cancelSubscription.isPending}
-							className='flex h-10 items-center gap-2 rounded-xl border border-red-200 bg-white px-4 text-sm font-bold text-red-600 shadow-sm transition hover:bg-red-50 disabled:opacity-60 dark:border-red-900/40 dark:bg-zinc-950 dark:text-red-400 dark:hover:bg-red-950/20'>
+							className='flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 text-sm font-bold text-red-600 shadow-sm transition hover:bg-red-50 disabled:opacity-60 sm:h-10 sm:w-auto dark:border-red-900/40 dark:bg-zinc-950 dark:text-red-400 dark:hover:bg-red-950/20'>
 							<XCircle size={14} />
 							{cancelSubscription.isPending ? 'Canceling…' : 'Cancel plan'}
 						</button>

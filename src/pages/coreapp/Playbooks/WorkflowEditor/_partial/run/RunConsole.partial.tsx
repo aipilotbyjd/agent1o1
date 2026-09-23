@@ -15,7 +15,7 @@ const levelBadge: Record<string, string> = {
 };
 
 const RunConsole = ({ logs }: { logs: TRunLog[] }) => (
-	<div className='flex h-64 flex-col overflow-y-auto rounded-lg bg-zinc-950 p-3 font-mono text-xs dark:bg-zinc-950'>
+	<div className='flex h-52 flex-col overflow-y-auto rounded-lg bg-black/35 p-2.5 font-mono text-[11px] sm:h-64 sm:p-3 sm:text-xs dark:bg-zinc-950'>
 		{logs.length ? (
 			logs.map((log) => (
 				<div
@@ -26,7 +26,7 @@ const RunConsole = ({ logs }: { logs: TRunLog[] }) => (
 						{log.level}
 					</span>
 					<span className='min-w-0 flex-1 break-words'>{log.message}</span>
-					<span className='shrink-0 text-zinc-500 dark:text-zinc-500'>
+					<span className='hidden shrink-0 text-zinc-500 sm:inline dark:text-zinc-500'>
 						{new Date(log.at).toLocaleTimeString()}
 					</span>
 				</div>

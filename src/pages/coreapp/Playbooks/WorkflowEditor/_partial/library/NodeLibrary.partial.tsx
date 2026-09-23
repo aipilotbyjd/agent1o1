@@ -56,6 +56,9 @@ const NodeLibrary = () => {
 			position: { x: 120, y: 120 },
 		});
 		setQuery('');
+		if (window.matchMedia('(max-width: 767px)').matches) {
+			dispatch({ type: 'TOGGLE_LEFT_PANEL' });
+		}
 	};
 
 	if (!state.ui.leftPanelOpen) return null;
@@ -89,7 +92,7 @@ const NodeLibrary = () => {
 							aria-label='Back'
 							type='button'
 							onClick={() => setSelected(null)}
-							className='flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg text-zinc-500 transition hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/10 dark:hover:text-primary-300'>
+							className='hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/10 dark:hover:text-primary-300 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg text-zinc-500 transition'>
 							<ArrowLeft size={16} />
 						</button>
 						<span
@@ -110,8 +113,7 @@ const NodeLibrary = () => {
 						type='button'
 						onClick={() => dispatch({ type: 'TOGGLE_LEFT_PANEL' })}
 						aria-label='Close node library'
-						className='flex h-6 w-6 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900'
-					>
+						className='flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 sm:h-6 sm:w-6 sm:rounded-lg dark:border-zinc-800 dark:bg-zinc-900'>
 						<X size={13} />
 					</button>
 				</div>
@@ -124,16 +126,18 @@ const NodeLibrary = () => {
 						type='button'
 						onClick={() => dispatch({ type: 'TOGGLE_LEFT_PANEL' })}
 						aria-label='Close node library'
-						className='flex h-6 w-6 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900'
-					>
+						className='flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 sm:h-6 sm:w-6 sm:rounded-lg dark:border-zinc-800 dark:bg-zinc-900'>
 						<X size={13} />
 					</button>
 				</div>
 			)}
 
 			<div className='px-5 pb-3'>
-				<div className='group flex h-11 items-center gap-2.5 rounded-xl border border-zinc-200 bg-zinc-50/50 px-3.5 text-zinc-400 transition focus-within:border-primary-300 focus-within:bg-white focus-within:ring-2 focus-within:ring-primary-100 dark:border-white/10 dark:bg-white/[0.02] dark:focus-within:border-primary-500/40 dark:focus-within:bg-transparent dark:focus-within:ring-primary-500/10'>
-					<Search size={16} className='text-zinc-400 transition group-focus-within:text-primary-500 dark:text-zinc-500' />
+				<div className='group focus-within:border-primary-300 focus-within:ring-primary-100 dark:focus-within:border-primary-500/40 dark:focus-within:ring-primary-500/10 flex h-11 items-center gap-2.5 rounded-xl border border-zinc-200 bg-zinc-50/50 px-3.5 text-zinc-400 transition focus-within:bg-white focus-within:ring-2 dark:border-white/10 dark:bg-white/[0.02] dark:focus-within:bg-transparent'>
+					<Search
+						size={16}
+						className='group-focus-within:text-primary-500 text-zinc-400 transition dark:text-zinc-500'
+					/>
 					<NodeLibrarySearch value={query} onChange={setQuery} />
 					{query && (
 						<button
@@ -153,7 +157,7 @@ const NodeLibrary = () => {
 				<button
 					type='button'
 					onClick={() => dispatch({ type: 'TOGGLE_AI_PANEL' })}
-					className='flex h-9 w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50/60 px-4 py-1.5 text-xs font-bold text-primary-700 shadow-xs transition hover:border-primary-300 hover:bg-primary-50 dark:border-primary-500/20 dark:bg-primary-400/[0.08] dark:text-primary-300 dark:hover:bg-primary-500/[0.14]'>
+					className='border-primary-200 bg-primary-50/60 text-primary-700 hover:border-primary-300 hover:bg-primary-50 dark:border-primary-500/20 dark:bg-primary-400/[0.08] dark:text-primary-300 dark:hover:bg-primary-500/[0.14] flex h-9 w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-4 py-1.5 text-xs font-bold shadow-xs transition'>
 					<Sparkles
 						size={13}
 						className='fill-primary-500/20 text-primary-600 dark:fill-primary-400/20 dark:text-primary-400'

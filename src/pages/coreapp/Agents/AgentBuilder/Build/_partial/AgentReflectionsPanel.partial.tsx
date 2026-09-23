@@ -35,6 +35,7 @@ import type {
 type TProps = {
 	ws: string;
 	agentId?: string;
+	displayMode?: 'panel' | 'page';
 };
 
 const TYPE_STYLE: Record<TReflectionType, { icon: typeof SquarePen; label: string }> = {
@@ -75,7 +76,7 @@ const ToggleRow = ({
 		<div className='flex min-w-0 flex-col'>
 			<span className='text-[11px] font-black text-zinc-800 dark:text-zinc-200'>{label}</span>
 			{hint && (
-				<span className='mt-0.5 text-[10px] font-semibold leading-normal text-zinc-400 dark:text-zinc-400'>
+				<span className='mt-0.5 text-[10px] leading-normal font-semibold text-zinc-400 dark:text-zinc-400'>
 					{hint}
 				</span>
 			)}
@@ -135,7 +136,7 @@ const ReflectionSettingsForm = ({
 
 			{/* Apply behaviour */}
 			<div>
-				<span className='text-[9px] font-black uppercase tracking-wide text-zinc-400'>
+				<span className='text-[9px] font-black tracking-wide text-zinc-400 uppercase'>
 					Apply behaviour
 				</span>
 				<div className='mt-1.5 flex gap-1.5'>
@@ -143,7 +144,9 @@ const ReflectionSettingsForm = ({
 						<button
 							key={behavior}
 							type='button'
-							onClick={() => updateMutation.mutate(patch({ apply_behavior: behavior }))}
+							onClick={() =>
+								updateMutation.mutate(patch({ apply_behavior: behavior }))
+							}
 							className={`rounded-lg px-2.5 py-1 text-[10px] font-black capitalize transition ${
 								form.apply_behavior === behavior
 									? 'bg-primary-400 text-primary-950'
@@ -158,7 +161,7 @@ const ReflectionSettingsForm = ({
 			{/* Schedule + threshold */}
 			<div className='grid grid-cols-2 gap-2'>
 				<div>
-					<span className='text-[9px] font-black uppercase tracking-wide text-zinc-400'>
+					<span className='text-[9px] font-black tracking-wide text-zinc-400 uppercase'>
 						Schedule (cron)
 					</span>
 					<input
@@ -166,11 +169,11 @@ const ReflectionSettingsForm = ({
 						value={form.schedule_cron}
 						onChange={(e) => setForm((f) => ({ ...f, schedule_cron: e.target.value }))}
 						placeholder='0 3 * * *'
-						className='mt-1 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-[11px] text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+						className='focus:border-primary-500/50 mt-1 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-[11px] text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 					/>
 				</div>
 				<div>
-					<span className='text-[9px] font-black uppercase tracking-wide text-zinc-400'>
+					<span className='text-[9px] font-black tracking-wide text-zinc-400 uppercase'>
 						Min chats
 					</span>
 					<input
@@ -180,13 +183,13 @@ const ReflectionSettingsForm = ({
 						onChange={(e) =>
 							setForm((f) => ({ ...f, min_chats_threshold: Number(e.target.value) }))
 						}
-						className='mt-1 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+						className='focus:border-primary-500/50 mt-1 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 					/>
 				</div>
 			</div>
 
 			<div>
-				<span className='text-[9px] font-black uppercase tracking-wide text-zinc-400'>
+				<span className='text-[9px] font-black tracking-wide text-zinc-400 uppercase'>
 					Extra instructions
 				</span>
 				<textarea
@@ -194,7 +197,7 @@ const ReflectionSettingsForm = ({
 					onChange={(e) => setForm((f) => ({ ...f, extra_instructions: e.target.value }))}
 					placeholder='What the reviewer should pay attention to (optional)'
 					rows={2}
-					className='mt-1 w-full resize-none rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+					className='focus:border-primary-500/50 mt-1 w-full resize-none rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 				/>
 			</div>
 
@@ -207,8 +210,12 @@ const ReflectionSettingsForm = ({
 
 			<div className='flex items-center justify-between gap-2 border-t border-zinc-100 pt-2.5 dark:border-zinc-800'>
 				<div className='min-w-0 text-[9px] font-semibold text-zinc-400'>
-					<span className='block truncate'>Last run: {fmtDate(settings.last_run_at)}</span>
-					<span className='block truncate'>Next run: {fmtDate(settings.next_run_at)}</span>
+					<span className='block truncate'>
+						Last run: {fmtDate(settings.last_run_at)}
+					</span>
+					<span className='block truncate'>
+						Next run: {fmtDate(settings.next_run_at)}
+					</span>
 				</div>
 				<button
 					onClick={() =>
@@ -219,7 +226,7 @@ const ReflectionSettingsForm = ({
 						})
 					}
 					disabled={updateMutation.isPending}
-					className='flex shrink-0 items-center gap-1 rounded-lg bg-primary-400 px-3 py-1 text-[10px] font-black text-primary-950 hover:bg-primary-500 disabled:opacity-50'>
+					className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex shrink-0 items-center gap-1 rounded-lg px-3 py-1 text-[10px] font-black disabled:opacity-50'>
 					{updateMutation.isPending && <Loader2 size={11} className='animate-spin' />}
 					Save
 				</button>
@@ -250,7 +257,7 @@ const ReflectionCard = ({
 	return (
 		<div className='space-y-2 rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
 			<div className='flex items-start gap-3'>
-				<div className='mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400'>
+				<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg'>
 					<TypeIcon size={13} />
 				</div>
 				<div className='min-w-0 flex-1'>
@@ -261,13 +268,13 @@ const ReflectionCard = ({
 						<StatusIcon size={11} className={`shrink-0 ${status.className}`} />
 					</div>
 					<div className='mt-0.5 flex flex-wrap items-center gap-1'>
-						<span className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[8px] font-black uppercase text-zinc-500 dark:bg-zinc-800'>
+						<span className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[8px] font-black text-zinc-500 uppercase dark:bg-zinc-800'>
 							{type.label}
 						</span>
-						<span className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[8px] font-black uppercase text-zinc-500 dark:bg-zinc-800'>
+						<span className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[8px] font-black text-zinc-500 uppercase dark:bg-zinc-800'>
 							{confidencePct}% confident
 						</span>
-						<span className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[8px] font-black uppercase text-zinc-500 dark:bg-zinc-800'>
+						<span className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[8px] font-black text-zinc-500 uppercase dark:bg-zinc-800'>
 							{reflection.support_count} chats
 						</span>
 					</div>
@@ -279,7 +286,7 @@ const ReflectionCard = ({
 
 			{reflection.proposed_prompt && (
 				<div className='rounded-lg bg-white p-2 dark:bg-zinc-900/40'>
-					<span className='text-[9px] font-black uppercase tracking-wide text-zinc-400'>
+					<span className='text-[9px] font-black tracking-wide text-zinc-400 uppercase'>
 						Proposed prompt
 					</span>
 					<p className='mt-0.5 line-clamp-4 text-[10px] font-semibold text-zinc-600 dark:text-zinc-300'>
@@ -299,7 +306,7 @@ const ReflectionCard = ({
 					<button
 						onClick={() => applyMutation.mutate(reflection.id)}
 						disabled={applyMutation.isPending}
-						className='flex items-center gap-1 rounded-lg bg-primary-400 px-3 py-1 text-[10px] font-black text-primary-950 hover:bg-primary-500 disabled:opacity-50'>
+						className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex items-center gap-1 rounded-lg px-3 py-1 text-[10px] font-black disabled:opacity-50'>
 						{applyMutation.isPending && <Loader2 size={11} className='animate-spin' />}
 						Apply
 					</button>
@@ -327,7 +334,7 @@ const ReflectionRunRow = ({ run }: { run: TReflectionRun }) => {
 				)}
 				<Icon size={14} className={`shrink-0 ${style.className}`} />
 				<div className='min-w-0 flex-1'>
-					<span className='truncate text-[11px] font-black capitalize text-zinc-800 dark:text-zinc-200'>
+					<span className='truncate text-[11px] font-black text-zinc-800 capitalize dark:text-zinc-200'>
 						{run.status}
 					</span>
 					<span className='block text-[9px] font-semibold text-zinc-400 dark:text-zinc-600'>
@@ -353,7 +360,7 @@ const ReflectionRunRow = ({ run }: { run: TReflectionRun }) => {
 					)}
 					<div className='grid grid-cols-2 gap-2'>
 						<div className='rounded-lg bg-white p-2 dark:bg-zinc-900/40'>
-							<span className='text-[9px] font-black uppercase tracking-wide text-zinc-400'>
+							<span className='text-[9px] font-black tracking-wide text-zinc-400 uppercase'>
 								Started
 							</span>
 							<p className='mt-0.5 text-[10px] font-semibold text-zinc-600 dark:text-zinc-300'>
@@ -361,7 +368,7 @@ const ReflectionRunRow = ({ run }: { run: TReflectionRun }) => {
 							</p>
 						</div>
 						<div className='rounded-lg bg-white p-2 dark:bg-zinc-900/40'>
-							<span className='text-[9px] font-black uppercase tracking-wide text-zinc-400'>
+							<span className='text-[9px] font-black tracking-wide text-zinc-400 uppercase'>
 								Finished
 							</span>
 							<p className='mt-0.5 text-[10px] font-semibold text-zinc-600 dark:text-zinc-300'>
@@ -375,11 +382,11 @@ const ReflectionRunRow = ({ run }: { run: TReflectionRun }) => {
 								<div
 									key={reflection.id}
 									className='flex items-center gap-2 rounded-lg bg-white p-2 dark:bg-zinc-900/40'>
-									<Sparkles size={11} className='shrink-0 text-primary-500' />
+									<Sparkles size={11} className='text-primary-500 shrink-0' />
 									<span className='min-w-0 flex-1 truncate text-[10px] font-black text-zinc-700 dark:text-zinc-300'>
 										{reflection.title}
 									</span>
-									<span className='shrink-0 text-[9px] font-bold capitalize text-zinc-400'>
+									<span className='shrink-0 text-[9px] font-bold text-zinc-400 capitalize'>
 										{reflection.status}
 									</span>
 								</div>
@@ -397,7 +404,7 @@ const ReflectionRunRow = ({ run }: { run: TReflectionRun }) => {
  * prompt changes, new skills, and insights for review.
  * Backed by {agent}/reflections — see AgentReflectionController.
  */
-const AgentReflectionsPanel = ({ ws, agentId }: TProps) => {
+const AgentReflectionsPanel = ({ ws, agentId, displayMode = 'panel' }: TProps) => {
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 	const [statusFilter, setStatusFilter] = useState<TReflectionStatus | undefined>(undefined);
 
@@ -421,12 +428,16 @@ const AgentReflectionsPanel = ({ ws, agentId }: TProps) => {
 	const items = reflections ?? [];
 
 	return (
-		<div className='space-y-3'>
+		<div className={displayMode === 'page' ? 'space-y-5' : 'space-y-3'}>
 			{/* Header */}
 			<div className='flex items-center justify-between gap-2'>
 				<div className='min-w-0'>
-					<h4 className='text-xs font-black text-zinc-900 dark:text-white'>Reflections</h4>
-					<p className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+					<h4
+						className={`${displayMode === 'page' ? 'text-lg' : 'text-xs'} font-black text-zinc-900 dark:text-white`}>
+						Reflections
+					</h4>
+					<p
+						className={`${displayMode === 'page' ? 'text-sm' : 'text-[10px]'} font-semibold text-zinc-400 dark:text-zinc-500`}>
 						Periodic self-review of past chats.
 					</p>
 				</div>
@@ -444,7 +455,7 @@ const AgentReflectionsPanel = ({ ws, agentId }: TProps) => {
 					<button
 						onClick={() => runMutation.mutate()}
 						disabled={runMutation.isPending}
-						className='flex items-center gap-1 rounded-lg bg-primary-400 px-2.5 py-1 text-[10px] font-black text-primary-950 hover:bg-primary-500 disabled:opacity-50'>
+						className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-black disabled:opacity-50'>
 						{runMutation.isPending ? (
 							<Loader2 size={10} className='animate-spin' />
 						) : (
@@ -458,7 +469,12 @@ const AgentReflectionsPanel = ({ ws, agentId }: TProps) => {
 			{/* Settings */}
 			{isSettingsOpen &&
 				(settings ? (
-					<ReflectionSettingsForm key={settings.id} ws={ws} agentId={agentId} settings={settings} />
+					<ReflectionSettingsForm
+						key={settings.id}
+						ws={ws}
+						agentId={agentId}
+						settings={settings}
+					/>
 				) : (
 					<p className='py-4 text-center text-[11px] font-semibold text-zinc-400'>
 						Loading settings…
@@ -466,22 +482,25 @@ const AgentReflectionsPanel = ({ ws, agentId }: TProps) => {
 				))}
 
 			{/* Suggestion filter */}
-			<div className='flex gap-1.5'>
-				{([undefined, 'pending', 'applied', 'dismissed'] as (TReflectionStatus | undefined)[]).map(
-					(s) => (
-						<button
-							key={s ?? 'all'}
-							type='button'
-							onClick={() => setStatusFilter(s)}
-							className={`rounded-lg px-2.5 py-1 text-[10px] font-black capitalize transition ${
-								statusFilter === s
-									? 'bg-primary-400 text-primary-950'
-									: 'border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'
-							}`}>
-							{s ?? 'All'}
-						</button>
-					),
-				)}
+			<div className='no-scrollbar flex max-w-full gap-1.5 overflow-x-auto pb-1'>
+				{(
+					[undefined, 'pending', 'applied', 'dismissed'] as (
+						| TReflectionStatus
+						| undefined
+					)[]
+				).map((s) => (
+					<button
+						key={s ?? 'all'}
+						type='button'
+						onClick={() => setStatusFilter(s)}
+						className={`rounded-lg px-2.5 py-1 text-[10px] font-black capitalize transition ${
+							statusFilter === s
+								? 'bg-primary-400 text-primary-950'
+								: 'border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'
+						}`}>
+						{s ?? 'All'}
+					</button>
+				))}
 			</div>
 
 			{/* Suggestions */}
@@ -506,7 +525,7 @@ const AgentReflectionsPanel = ({ ws, agentId }: TProps) => {
 
 			{/* Run history */}
 			<div className='pt-1'>
-				<span className='text-[9px] font-black uppercase tracking-wide text-zinc-400'>
+				<span className='text-[9px] font-black tracking-wide text-zinc-400 uppercase'>
 					Reflection runs
 				</span>
 			</div>

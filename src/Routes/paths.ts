@@ -43,6 +43,8 @@ const paths = {
 	newAgent: (workspaceId: string) => buildPath(agentEditorPages.add.to, { workspaceId }),
 	editAgent: (workspaceId: string, agentId: string | number) =>
 		buildPath(agentEditorPages.edit.to, { workspaceId, agentId }),
+	agentReflections: (workspaceId: string, agentId: string | number) =>
+		buildPath(agentEditorPages.reflections.to, { workspaceId, agentId }),
 
 	settings: (workspaceId: string) => buildPath(pages.settings.to, { workspaceId }),
 	billing: (workspaceId: string) => buildPath(settingsPages.billing.to, { workspaceId }),

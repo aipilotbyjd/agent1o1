@@ -6,7 +6,7 @@ const WorkflowEditorLayout = ({ children }: { children: ReactNode }) => {
 	return (
 		<WorkflowEditorProvider>
 			<ReactFlowProvider>
-				<div className='flex h-screen w-screen flex-col overflow-hidden bg-zinc-50 text-zinc-950 dark:bg-[#07080b] dark:text-zinc-100'>
+				<div className='flex h-dvh w-screen flex-col overflow-hidden bg-zinc-50 text-zinc-950 dark:bg-[#07080b] dark:text-zinc-100'>
 					{children}
 				</div>
 			</ReactFlowProvider>

@@ -1,13 +1,6 @@
 import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import {
-	AlertTriangle,
-	Bell,
-	CheckCheck,
-	CheckCircle2,
-	CreditCard,
-	Trash2,
-} from 'lucide-react';
+import { AlertTriangle, Bell, CheckCheck, CheckCircle2, CreditCard, Trash2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Dropdown, { DropdownMenu, DropdownToggle } from '@/components/ui/Dropdown';
 import Tooltip from '@/components/ui/Tooltip';
@@ -129,11 +122,11 @@ const NotificationsDropdown = () => {
 							aria-label='Notifications'
 							icon='Notification03'
 							variant='link'
-							className='!p-0 text-zinc-500 hover:text-zinc-800 dark:!text-white dark:hover:!text-primary-400'
+							className='!text-primary-400 hover:!text-primary-500 dark:!text-primary-400 dark:hover:!text-primary-300 !p-0'
 						/>
 					</Tooltip>
 					{unreadCount > 0 && (
-						<span className='pointer-events-none absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-400 px-1 text-[10px] font-bold text-primary-950'>
+						<span className='bg-primary-400 text-primary-950 pointer-events-none absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold'>
 							{unreadCount > 99 ? '99+' : unreadCount}
 						</span>
 					)}
@@ -181,9 +174,7 @@ const NotificationsDropdown = () => {
 						<div className='flex flex-col items-center justify-center gap-2 px-4 py-12 text-center'>
 							<Bell size={28} className='text-zinc-300 dark:text-zinc-600' />
 							<p className='text-sm font-semibold text-zinc-400 dark:text-zinc-500'>
-								{tab === 'unread'
-									? "You're all caught up"
-									: 'No notifications yet'}
+								{tab === 'unread' ? "You're all caught up" : 'No notifications yet'}
 							</p>
 						</div>
 					)}

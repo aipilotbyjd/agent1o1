@@ -80,9 +80,9 @@ const RunPanel = () => {
 
 	return (
 		<section className='flex h-full flex-col overflow-y-auto border-t border-white/10 bg-zinc-950 text-zinc-100'>
-			<div className='flex-shrink-0 border-b border-white/10 bg-white/[0.025] p-4'>
-				<div className='flex items-center justify-between'>
-					<div className='flex flex-col gap-1'>
+			<div className='flex-shrink-0 border-b border-white/10 bg-white/[0.025] p-3 sm:p-4'>
+				<div className='flex items-start justify-between gap-2'>
+					<div className='flex min-w-0 flex-col gap-1'>
 						<div className='flex items-center gap-2'>
 							<div className='text-sm font-semibold text-white'>
 								Execution console
@@ -100,7 +100,9 @@ const RunPanel = () => {
 								<button
 									key={value}
 									type='button'
-									onClick={() => dispatch({ type: 'SET_RUN_PANEL_TAB', tab: value })}
+									onClick={() =>
+										dispatch({ type: 'SET_RUN_PANEL_TAB', tab: value })
+									}
 									className={`rounded-md px-2.5 py-1 text-[11px] font-bold capitalize transition ${
 										tab === value
 											? 'bg-white/10 text-white'
@@ -116,14 +118,14 @@ const RunPanel = () => {
 							))}
 						</div>
 					</div>
-					<div className='flex items-center gap-2'>
+					<div className='flex shrink-0 items-center gap-1.5 sm:gap-2'>
 						{run.status === 'running' && run.currentNodeId && (
 							<button
 								type='button'
 								onClick={zoomToCurrentNode}
 								className='flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-300 hover:bg-emerald-500/20'>
 								<ChevronRight size={12} />
-								Zoom to active
+								<span className='hidden sm:inline'>Zoom to active</span>
 							</button>
 						)}
 						{state.ui.stepMode && state.ui.waitingForStep && (
@@ -132,7 +134,7 @@ const RunPanel = () => {
 								onClick={() => dispatch({ type: 'STEP_NEXT' })}
 								className='flex animate-pulse items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-300 hover:bg-amber-500/20'>
 								<ChevronRight size={12} />
-								Step (Space)
+								<span className='hidden sm:inline'>Step (Space)</span>
 							</button>
 						)}
 						<button
@@ -147,29 +149,29 @@ const RunPanel = () => {
 			</div>
 
 			{tab === 'history' ? (
-				<div className='flex-1 p-4'>
+				<div className='flex-1 overflow-y-auto p-3 sm:p-4'>
 					<RunHistory />
 				</div>
 			) : (
-			<div className='flex-1 space-y-6 p-4'>
-				{hasOutput && (
-					<div>
-						<div className='mb-2 text-xs font-semibold tracking-[0.16em] text-zinc-600 uppercase'>
-							Node Outputs
+				<div className='flex-1 space-y-5 overflow-y-auto p-3 sm:space-y-6 sm:p-4'>
+					{hasOutput && (
+						<div>
+							<div className='mb-2 text-xs font-semibold tracking-[0.16em] text-zinc-600 uppercase'>
+								Node Outputs
+							</div>
+							<NodeRunOutput nodes={state.nodes} />
 						</div>
-						<NodeRunOutput nodes={state.nodes} />
-					</div>
-				)}
+					)}
 
-				{timedNodes.length > 0 && <ProfilerSummary nodes={timedNodes} />}
+					{timedNodes.length > 0 && <ProfilerSummary nodes={timedNodes} />}
 
-				<div className='flex-1'>
-					<div className='mb-2 text-xs font-semibold tracking-[0.16em] text-zinc-600 uppercase'>
-						Logs
+					<div className='flex-1'>
+						<div className='mb-2 text-xs font-semibold tracking-[0.16em] text-zinc-600 uppercase'>
+							Logs
+						</div>
+						<RunConsole logs={run.logs} />
 					</div>
-					<RunConsole logs={run.logs} />
 				</div>
-			</div>
 			)}
 		</section>
 	);

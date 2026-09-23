@@ -26,6 +26,7 @@ const AgentsListPage = lazy(() => import('@/pages/coreapp/Agents/AgentsList.page
 const AgentBuilderPage = lazy(
 	() => import('@/pages/coreapp/Agents/AgentBuilder/AgentBuilder.page'),
 );
+const AgentReflectionsPage = lazy(() => import('@/pages/coreapp/Agents/AgentReflections.page'));
 const TrailLayout = lazy(() => import('@/pages/coreapp/Trail/_layouts/Trail.layout'));
 const TrailListPage = lazy(() => import('@/pages/coreapp/Trail/TrailList.page'));
 const SkillsLayout = lazy(() => import('@/pages/coreapp/Skills/_layouts/Skills.layout'));
@@ -89,6 +90,7 @@ const editorRoutes: RouteObject[] = [
 		children: [
 			{ path: rel(agentEditorPages.add.to), element: <AgentBuilderPage /> },
 			{ path: rel(agentEditorPages.edit.to), element: <AgentBuilderPage /> },
+			{ path: rel(agentEditorPages.reflections.to), element: <AgentReflectionsPage /> },
 		],
 	},
 	// Pre-normalisation editor URLs (`playbooks/edit/:id`), kept resolvable.

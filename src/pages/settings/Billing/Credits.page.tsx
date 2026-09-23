@@ -69,7 +69,7 @@ const CreditsPage = () => {
 	};
 
 	return (
-		<div className='text-zinc-950 dark:text-zinc-50'>
+		<div className='min-w-0 text-zinc-950 dark:text-zinc-50'>
 			<div>
 				<h1 className='text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-50'>
 					Buy Credits
@@ -137,7 +137,7 @@ const CreditsPage = () => {
 
 					{/* Checkout summary */}
 					{selectedPack && (
-						<div className='mt-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900'>
+						<div className='sticky bottom-2 z-20 mt-4 rounded-2xl border border-zinc-200 bg-white/95 p-4 shadow-xl backdrop-blur-xl sm:p-5 lg:static lg:bg-white lg:shadow-sm lg:backdrop-blur-none dark:border-zinc-700 dark:bg-zinc-900/95 dark:lg:bg-zinc-900'>
 							<div className='flex items-center justify-between'>
 								<div>
 									<p className='text-sm font-black'>Order summary</p>
@@ -235,7 +235,7 @@ const CreditsPage = () => {
 						Active packs
 					</h2>
 				</div>
-				<div className='px-5'>
+				<div className='px-3 sm:px-5'>
 					{packsLoading ? (
 						<div className='flex flex-col gap-3 py-6'>
 							{[1, 2].map((i) => (
@@ -256,52 +256,98 @@ const CreditsPage = () => {
 							</p>
 						</div>
 					) : (
-						<table className='w-full'>
-							<thead>
-								<tr className='text-left text-xs font-black text-zinc-400 dark:text-zinc-500'>
-									<th className='py-3 pr-4 font-black'>Pack</th>
-									<th className='py-3 pr-4 font-black'>Status</th>
-									<th className='py-3 font-black'>Purchased</th>
-								</tr>
-							</thead>
-							<tbody>
+						<>
+							<div className='space-y-3 py-3 sm:hidden'>
 								{activePacks.map((pack) => {
 									const badge = packStatusBadge[pack.status];
 									return (
-										<tr
+										<article
 											key={pack.id}
-											className='border-b border-zinc-100 last:border-none dark:border-zinc-800'>
-											<td className='py-3 pr-4'>
-												<p className='text-sm font-bold'>
-													{pack.credits_amount.toLocaleString()} credits
-												</p>
-												<p className='text-xs text-zinc-400 dark:text-zinc-500'>
-													{formatPrice(pack.price_cents)} ·{' '}
-													{pack.currency.toUpperCase()}
-												</p>
-											</td>
-											<td className='py-3 pr-4'>
+											className='rounded-xl border border-zinc-200 bg-zinc-50/60 p-4 dark:border-zinc-700 dark:bg-zinc-950/40'>
+											<div className='flex items-start justify-between gap-3'>
+												<div>
+													<p className='text-base font-black'>
+														{pack.credits_amount.toLocaleString()}{' '}
+														credits
+													</p>
+													<p className='mt-0.5 text-xs font-semibold text-zinc-400 dark:text-zinc-500'>
+														{formatPrice(pack.price_cents)} ·{' '}
+														{pack.currency.toUpperCase()}
+													</p>
+												</div>
 												<span
-													className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${badge.bg} ${badge.text}`}>
+													className={`inline-block shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold ${badge.bg} ${badge.text}`}>
 													{badge.label}
 												</span>
-											</td>
-											<td className='py-3 text-xs text-zinc-500 dark:text-zinc-400'>
-												{pack.purchased_at
-													? new Date(
-															pack.purchased_at,
-														).toLocaleDateString(undefined, {
-															month: 'short',
-															day: 'numeric',
-															year: 'numeric',
-														})
-													: '-'}
-											</td>
-										</tr>
+											</div>
+											<div className='mt-3 border-t border-zinc-200 pt-3 dark:border-zinc-700'>
+												<p className='text-[9px] font-black tracking-wider text-zinc-400 uppercase'>
+													Purchased
+												</p>
+												<p className='mt-0.5 text-xs font-bold text-zinc-600 dark:text-zinc-300'>
+													{pack.purchased_at
+														? new Date(
+																pack.purchased_at,
+															).toLocaleDateString(undefined, {
+																month: 'short',
+																day: 'numeric',
+																year: 'numeric',
+															})
+														: '-'}
+												</p>
+											</div>
+										</article>
 									);
 								})}
-							</tbody>
-						</table>
+							</div>
+							<table className='hidden w-full sm:table'>
+								<thead>
+									<tr className='text-left text-xs font-black text-zinc-400 dark:text-zinc-500'>
+										<th className='py-3 pr-4 font-black'>Pack</th>
+										<th className='py-3 pr-4 font-black'>Status</th>
+										<th className='py-3 font-black'>Purchased</th>
+									</tr>
+								</thead>
+								<tbody>
+									{activePacks.map((pack) => {
+										const badge = packStatusBadge[pack.status];
+										return (
+											<tr
+												key={pack.id}
+												className='border-b border-zinc-100 last:border-none dark:border-zinc-800'>
+												<td className='py-3 pr-4'>
+													<p className='text-sm font-bold'>
+														{pack.credits_amount.toLocaleString()}{' '}
+														credits
+													</p>
+													<p className='text-xs text-zinc-400 dark:text-zinc-500'>
+														{formatPrice(pack.price_cents)} ·{' '}
+														{pack.currency.toUpperCase()}
+													</p>
+												</td>
+												<td className='py-3 pr-4'>
+													<span
+														className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${badge.bg} ${badge.text}`}>
+														{badge.label}
+													</span>
+												</td>
+												<td className='py-3 text-xs text-zinc-500 dark:text-zinc-400'>
+													{pack.purchased_at
+														? new Date(
+																pack.purchased_at,
+															).toLocaleDateString(undefined, {
+																month: 'short',
+																day: 'numeric',
+																year: 'numeric',
+															})
+														: '-'}
+												</td>
+											</tr>
+										);
+									})}
+								</tbody>
+							</table>
+						</>
 					)}
 				</div>
 			</section>

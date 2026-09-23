@@ -116,7 +116,7 @@ export const EditorTooltip = ({
 						transition={{ duration: 0.12 }}
 						role='tooltip'
 						className={[
-							'pointer-events-none absolute z-50 flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-zinc-900/95 px-2 py-1 text-[11px] font-medium text-white shadow-xl backdrop-blur-xs ring-1 ring-primary-500/25 dark:bg-zinc-100 dark:text-zinc-900 dark:ring-primary-700/25',
+							'ring-primary-500/25 dark:ring-primary-700/25 pointer-events-none absolute z-50 flex items-center gap-1.5 rounded-lg bg-zinc-900/95 px-2 py-1 text-[11px] font-medium whitespace-nowrap text-white shadow-xl ring-1 backdrop-blur-xs dark:bg-zinc-100 dark:text-zinc-900',
 							placement === 'bottom' ? 'top-full mt-1.5' : 'bottom-full mb-1.5',
 							// Right-hand controls anchor right so the tooltip cannot run off
 							// the edge of the viewport.
@@ -124,7 +124,7 @@ export const EditorTooltip = ({
 						].join(' ')}>
 						<span>{label}</span>
 						{shortcut && (
-							<kbd className='rounded bg-primary-400/20 px-1 py-0.2 text-[10px] font-semibold text-primary-200 dark:bg-primary-700/25 dark:text-primary-900'>
+							<kbd className='bg-primary-400/20 py-0.2 text-primary-200 dark:bg-primary-700/25 dark:text-primary-900 rounded px-1 text-[10px] font-semibold'>
 								{shortcut}
 							</kbd>
 						)}
@@ -191,7 +191,7 @@ export const EditableWorkflowName = ({
 				}}
 				className={
 					inputClassName ??
-					'h-7 max-w-[220px] rounded-lg border border-primary-500 bg-white px-2 py-0.5 text-xs font-bold text-zinc-900 shadow-xs outline-none ring-2 ring-primary-500/30 dark:border-primary-400 dark:bg-zinc-900 dark:text-zinc-100'
+					'border-primary-500 ring-primary-500/30 dark:border-primary-400 h-7 max-w-[220px] rounded-lg border bg-white px-2 py-0.5 text-xs font-bold text-zinc-900 shadow-xs ring-2 outline-none dark:bg-zinc-900 dark:text-zinc-100'
 				}
 			/>
 		);
@@ -204,12 +204,12 @@ export const EditableWorkflowName = ({
 				onClick={() => setIsEditing(true)}
 				className={
 					className ??
-					`group flex max-w-[170px] sm:max-w-[220px] items-center gap-1.5 rounded-lg px-2 py-1 text-left text-xs font-bold text-zinc-900 transition hover:bg-primary-100/70 hover:text-primary-900 dark:text-zinc-100 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 ${FOCUS_RING}`
+					`group hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex max-w-[170px] items-center gap-1.5 rounded-lg px-2 py-1 text-left text-xs font-bold text-zinc-900 transition sm:max-w-[220px] dark:text-zinc-100 ${FOCUS_RING}`
 				}>
 				<span className='truncate'>{name}</span>
 				<Pencil
 					size={11}
-					className='shrink-0 text-primary-700 opacity-0 transition-opacity duration-150 group-hover:opacity-100 dark:text-primary-400'
+					className='text-primary-700 dark:text-primary-400 shrink-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100'
 				/>
 			</button>
 		</EditorTooltip>
@@ -246,8 +246,8 @@ const TopbarIconButton = ({
 				'flex h-8 w-8 items-center justify-center rounded-lg border text-xs transition duration-150',
 				FOCUS_RING,
 				active
-					? 'border-primary-400/70 bg-primary-100 text-primary-800 shadow-xs dark:border-primary-400/40 dark:bg-primary-400/15 dark:text-primary-300'
-					: 'border-zinc-200/80 bg-white text-primary-700 hover:border-primary-300 hover:bg-primary-100/70 hover:text-primary-900 dark:border-white/10 dark:bg-zinc-900/60 dark:text-primary-400/85 dark:hover:border-primary-400/30 dark:hover:bg-primary-400/10 dark:hover:text-primary-300',
+					? 'border-primary-400/70 bg-primary-100 text-primary-800 dark:border-primary-400/40 dark:bg-primary-400/15 dark:text-primary-300 shadow-xs'
+					: 'text-primary-700 hover:border-primary-300 hover:bg-primary-100/70 hover:text-primary-900 dark:text-primary-400/85 dark:hover:border-primary-400/30 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 border-zinc-200/80 bg-white dark:border-white/10 dark:bg-zinc-900/60',
 				disabled
 					? 'cursor-not-allowed opacity-35 hover:border-zinc-200/80 hover:bg-white dark:hover:border-white/10 dark:hover:bg-zinc-900/60'
 					: '',
@@ -270,25 +270,25 @@ const SaveStatusBadge = ({
 	const [isOpen, setIsOpen] = useState(false);
 
 	let content = (
-		<div
-			className='flex items-center gap-1.5 rounded-full border border-primary-400/50 bg-primary-100/70 px-2 py-0.5 text-[10px] font-semibold text-primary-800 transition hover:bg-primary-100 dark:border-primary-400/30 dark:bg-primary-400/10 dark:text-primary-300 dark:hover:bg-primary-400/20'>
-			<span className='h-1.5 w-1.5 rounded-full bg-primary-500'></span>
+		<div className='border-primary-400/50 bg-primary-100/70 text-primary-800 hover:bg-primary-100 dark:border-primary-400/30 dark:bg-primary-400/10 dark:text-primary-300 dark:hover:bg-primary-400/20 flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold transition'>
+			<span className='bg-primary-500 h-1.5 w-1.5 rounded-full'></span>
 			<span>Saved</span>
 		</div>
 	);
 
 	if (savingState === 'saving') {
 		content = (
-			<div
-				className='flex items-center gap-1.5 rounded-full border border-primary-200/70 bg-primary-50/80 px-2 py-0.5 text-[10px] font-semibold text-primary-700 dark:border-primary-800/60 dark:bg-primary-950/40 dark:text-primary-300'>
-				<Loader2 size={10} className='animate-spin text-primary-600 dark:text-primary-400' />
+			<div className='border-primary-200/70 bg-primary-50/80 text-primary-700 dark:border-primary-800/60 dark:bg-primary-950/40 dark:text-primary-300 flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold'>
+				<Loader2
+					size={10}
+					className='text-primary-600 dark:text-primary-400 animate-spin'
+				/>
 				<span>Saving...</span>
 			</div>
 		);
 	} else if (savingState === 'dirty') {
 		content = (
-			<div
-				className='flex items-center gap-1.5 rounded-full border border-amber-200/70 bg-amber-50/80 px-2 py-0.5 text-[10px] font-semibold text-amber-700 transition hover:bg-amber-100/80 dark:border-amber-800/50 dark:bg-amber-950/40 dark:text-amber-400'>
+			<div className='flex items-center gap-1.5 rounded-full border border-amber-200/70 bg-amber-50/80 px-2 py-0.5 text-[10px] font-semibold text-amber-700 transition hover:bg-amber-100/80 dark:border-amber-800/50 dark:bg-amber-950/40 dark:text-amber-400'>
 				<span className='relative flex h-1.5 w-1.5'>
 					<span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75'></span>
 					<span className='relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-500'></span>
@@ -298,8 +298,7 @@ const SaveStatusBadge = ({
 		);
 	} else if (savingState === 'error') {
 		content = (
-			<div
-				className='flex items-center gap-1.5 rounded-full border border-rose-200/80 bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700 transition hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-950/50 dark:text-rose-400'>
+			<div className='flex items-center gap-1.5 rounded-full border border-rose-200/80 bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700 transition hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-950/50 dark:text-rose-400'>
 				<AlertCircle size={10} className='text-rose-500' />
 				<span>Save failed (Retry)</span>
 			</div>
@@ -332,19 +331,23 @@ const SaveStatusBadge = ({
 							initial={{ opacity: 0, y: 4, scale: 0.96 }}
 							animate={{ opacity: 1, y: 0, scale: 1 }}
 							exit={{ opacity: 0, y: 4, scale: 0.96 }}
-							className='absolute top-8 left-0 z-50 w-60 rounded-xl border border-primary-500/20 bg-white p-3 shadow-xl ring-1 ring-black/5 dark:border-primary-400/20 dark:bg-zinc-950 dark:ring-white/5'>
-							<div className='flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800'>
+							className='border-primary-500/20 dark:border-primary-400/20 absolute top-8 left-0 z-50 w-60 rounded-xl border bg-white p-3 shadow-xl ring-1 ring-black/5 dark:bg-zinc-950 dark:ring-white/5'>
+							<div className='flex items-center justify-between border-b border-zinc-100 pb-2 dark:border-zinc-800'>
 								<span className='text-xs font-bold text-zinc-900 dark:text-zinc-100'>
 									Cloud Sync Status
 								</span>
-								<span className='rounded-full bg-primary-500/15 px-2 py-0.5 text-[10px] font-bold text-primary-800 dark:text-primary-300'>
+								<span className='bg-primary-500/15 text-primary-800 dark:text-primary-300 rounded-full px-2 py-0.5 text-[10px] font-bold'>
 									Connected
 								</span>
 							</div>
 							<div className='mt-2 space-y-1.5 text-[11px] text-zinc-600 dark:text-zinc-400'>
 								<p>Autosave keeps your canvas drafts locally preserved.</p>
-								<p className='text-zinc-400 dark:text-zinc-500 text-[10px]'>
-									Press <kbd className='px-1 py-0.5 bg-primary-100/80 text-primary-900 dark:bg-primary-400/15 dark:text-primary-300 rounded font-mono'>⌘S</kbd> to publish a permanent version.
+								<p className='text-[10px] text-zinc-400 dark:text-zinc-500'>
+									Press{' '}
+									<kbd className='bg-primary-100/80 text-primary-900 dark:bg-primary-400/15 dark:text-primary-300 rounded px-1 py-0.5 font-mono'>
+										⌘S
+									</kbd>{' '}
+									to publish a permanent version.
 								</p>
 							</div>
 						</motion.div>
@@ -483,15 +486,15 @@ const Topbar = () => {
 			{/* Primary accent hairline tying the bar to the brand colour. */}
 			<span
 				aria-hidden
-				className='pointer-events-none absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-primary-500/45 to-transparent'
+				className='via-primary-500/45 pointer-events-none absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent to-transparent'
 			/>
 			{/* Left Section: Back, Breadcrumb, Title, Version & Status */}
-			<div className='flex items-center gap-1.5 sm:gap-2.5 min-w-0'>
+			<div className='flex min-w-0 items-center gap-1.5 sm:gap-2.5'>
 				<EditorTooltip label='Back to Workflows'>
 					<Link
 						to={playbooksPath}
 						aria-label='Back to Workflows'
-						className={`flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-primary-100/70 hover:text-primary-900 dark:text-zinc-400 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 ${FOCUS_RING}`}>
+						className={`hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition dark:text-zinc-400 ${FOCUS_RING}`}>
 						<ChevronLeft size={18} />
 					</Link>
 				</EditorTooltip>
@@ -499,8 +502,8 @@ const Topbar = () => {
 				<EditorTooltip label='Agent1o1 Dashboard'>
 					<Link
 						to={dashboardPath}
-						className={`group flex items-center gap-1.5 rounded-lg px-0.5 text-primary-700 transition hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 ${FOCUS_RING}`}>
-						<AppLogo className='size-7 ring-1 ring-primary-500/20 dark:ring-primary-400/20' />
+						className={`group text-primary-700 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 hidden items-center gap-1.5 rounded-lg px-0.5 transition sm:flex ${FOCUS_RING}`}>
+						<AppLogo className='ring-primary-500/20 dark:ring-primary-400/20 size-7 ring-1' />
 						<span className='hidden text-sm font-extrabold tracking-tight sm:inline'>
 							agent101
 						</span>
@@ -519,10 +522,7 @@ const Topbar = () => {
 				)}
 
 				{/* Editable Workflow Title */}
-				<EditableWorkflowName
-					name={state.workflow.name}
-					onSave={handleRenameWorkflow}
-				/>
+				<EditableWorkflowName name={state.workflow.name} onSave={handleRenameWorkflow} />
 
 				{/* Version Pill */}
 				<EditorTooltip label='Open Version History'>
@@ -533,31 +533,28 @@ const Topbar = () => {
 							setGovModalTab('versions');
 							setGovModalOpen(true);
 						}}
-						className={`hidden rounded-md border border-primary-400/40 bg-primary-100/60 px-2 py-0.5 text-[10px] font-bold text-primary-800 transition hover:border-primary-400/70 hover:bg-primary-100 sm:inline-flex dark:border-primary-400/25 dark:bg-primary-400/10 dark:text-primary-300 dark:hover:bg-primary-400/20 ${FOCUS_RING}`}>
+						className={`border-primary-400/40 bg-primary-100/60 text-primary-800 hover:border-primary-400/70 hover:bg-primary-100 dark:border-primary-400/25 dark:bg-primary-400/10 dark:text-primary-300 dark:hover:bg-primary-400/20 hidden rounded-md border px-2 py-0.5 text-[10px] font-bold transition sm:inline-flex ${FOCUS_RING}`}>
 						v{state.workflow.currentVersionNumber || 1}
 					</button>
 				</EditorTooltip>
 
 				{/* Node Count Chip */}
 				<EditorTooltip label='Canvas nodes and connections'>
-					<div className='hidden items-center gap-1 rounded-md bg-primary-100/50 px-2 py-0.5 text-[10px] font-medium text-primary-800 xl:flex dark:bg-primary-400/10 dark:text-primary-300/90'>
+					<div className='bg-primary-100/50 text-primary-800 dark:bg-primary-400/10 dark:text-primary-300/90 hidden items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-medium xl:flex'>
 						<Layers size={11} className='text-primary-700 dark:text-primary-400' />
 						<span>{state.nodes.length} nodes</span>
 					</div>
 				</EditorTooltip>
 
 				{/* Live Save Status */}
-				<SaveStatusBadge
-					savingState={state.workflow.savingState}
-					onRetry={handleSave}
-				/>
+				<SaveStatusBadge savingState={state.workflow.savingState} onRetry={handleSave} />
 			</div>
 
 			{/* Center Section: Smooth Segmented Studio Control (Apps, Triggers, AI Chat) */}
 			<div
 				role='group'
 				aria-label='Editor panels'
-				className='hidden items-center rounded-xl border border-primary-500/15 bg-zinc-100/80 p-0.5 shadow-xs md:flex dark:border-primary-400/15 dark:bg-zinc-900/80'>
+				className='border-primary-500/15 dark:border-primary-400/15 hidden items-center rounded-xl border bg-zinc-100/80 p-0.5 shadow-xs md:flex dark:bg-zinc-900/80'>
 				<button
 					type='button'
 					aria-pressed={state.ui.leftPanelOpen && state.ui.leftPanelIntent === 'home'}
@@ -566,8 +563,8 @@ const Topbar = () => {
 						'relative flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition duration-150',
 						FOCUS_RING,
 						state.ui.leftPanelOpen && state.ui.leftPanelIntent === 'home'
-							? 'bg-white text-primary-800 shadow-xs ring-1 ring-primary-500/25 dark:bg-zinc-800 dark:text-primary-300 dark:ring-primary-400/25'
-							: 'text-zinc-600 hover:bg-primary-100/60 hover:text-primary-900 dark:text-zinc-400 dark:hover:bg-primary-400/10 dark:hover:text-primary-300',
+							? 'text-primary-800 ring-primary-500/25 dark:text-primary-300 dark:ring-primary-400/25 bg-white shadow-xs ring-1 dark:bg-zinc-800'
+							: 'hover:bg-primary-100/60 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 text-zinc-600 dark:text-zinc-400',
 					].join(' ')}>
 					<Boxes size={13} />
 					<span>Apps</span>
@@ -581,14 +578,14 @@ const Topbar = () => {
 						'relative flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition duration-150',
 						FOCUS_RING,
 						state.ui.leftPanelOpen && state.ui.leftPanelIntent === 'trigger'
-							? 'bg-white text-primary-800 shadow-xs ring-1 ring-primary-500/25 dark:bg-zinc-800 dark:text-primary-300 dark:ring-primary-400/25'
-							: 'text-zinc-600 hover:bg-primary-100/60 hover:text-primary-900 dark:text-zinc-400 dark:hover:bg-primary-400/10 dark:hover:text-primary-300',
+							? 'text-primary-800 ring-primary-500/25 dark:text-primary-300 dark:ring-primary-400/25 bg-white shadow-xs ring-1 dark:bg-zinc-800'
+							: 'hover:bg-primary-100/60 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 text-zinc-600 dark:text-zinc-400',
 					].join(' ')}>
 					<Rocket size={13} />
 					<span>Triggers</span>
 				</button>
 
-				<div className='mx-0.5 h-3.5 w-px bg-primary-500/20 dark:bg-primary-400/20' />
+				<div className='bg-primary-500/20 dark:bg-primary-400/20 mx-0.5 h-3.5 w-px' />
 
 				<button
 					type='button'
@@ -598,13 +595,10 @@ const Topbar = () => {
 						'relative flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition duration-150',
 						FOCUS_RING,
 						state.ui.aiPanelOpen
-							? 'bg-primary-500/15 text-primary-800 shadow-xs ring-1 ring-primary-500/35 dark:bg-primary-400/15 dark:text-primary-300 dark:ring-primary-400/40'
-							: 'text-zinc-600 hover:bg-primary-100/60 hover:text-primary-900 dark:text-zinc-400 dark:hover:bg-primary-400/10 dark:hover:text-primary-300',
+							? 'bg-primary-500/15 text-primary-800 ring-primary-500/35 dark:bg-primary-400/15 dark:text-primary-300 dark:ring-primary-400/40 shadow-xs ring-1'
+							: 'hover:bg-primary-100/60 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 text-zinc-600 dark:text-zinc-400',
 					].join(' ')}>
-					<Sparkles
-						size={13}
-						className='text-primary-700 dark:text-primary-400'
-					/>
+					<Sparkles size={13} className='text-primary-700 dark:text-primary-400' />
 					<span>AI Chat</span>
 				</button>
 			</div>
@@ -621,7 +615,7 @@ const Topbar = () => {
 								aria-label='Undo'
 								disabled={!state.history.past.length}
 								onClick={() => dispatch({ type: 'UNDO' })}
-								className={`flex h-7 w-7 items-center justify-center rounded-md text-primary-700 transition hover:bg-primary-100/70 hover:text-primary-900 disabled:cursor-not-allowed disabled:text-zinc-400 disabled:opacity-30 disabled:hover:bg-transparent dark:text-primary-400/85 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 dark:disabled:text-zinc-500 ${FOCUS_RING}`}>
+								className={`text-primary-700 hover:bg-primary-100/70 hover:text-primary-900 dark:text-primary-400/85 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 flex h-7 w-7 items-center justify-center rounded-md transition disabled:cursor-not-allowed disabled:text-zinc-400 disabled:opacity-30 disabled:hover:bg-transparent dark:disabled:text-zinc-500 ${FOCUS_RING}`}>
 								<RotateCcw size={13} />
 							</button>
 						</EditorTooltip>
@@ -631,18 +625,18 @@ const Topbar = () => {
 								aria-label='Redo'
 								disabled={!state.history.future.length}
 								onClick={() => dispatch({ type: 'REDO' })}
-								className={`flex h-7 w-7 items-center justify-center rounded-md text-primary-700 transition hover:bg-primary-100/70 hover:text-primary-900 disabled:cursor-not-allowed disabled:text-zinc-400 disabled:opacity-30 disabled:hover:bg-transparent dark:text-primary-400/85 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 dark:disabled:text-zinc-500 ${FOCUS_RING}`}>
+								className={`text-primary-700 hover:bg-primary-100/70 hover:text-primary-900 dark:text-primary-400/85 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 flex h-7 w-7 items-center justify-center rounded-md transition disabled:cursor-not-allowed disabled:text-zinc-400 disabled:opacity-30 disabled:hover:bg-transparent dark:disabled:text-zinc-500 ${FOCUS_RING}`}>
 								<RotateCw size={13} />
 							</button>
 						</EditorTooltip>
-						<div className='mx-0.5 h-3.5 w-px bg-primary-500/20 dark:bg-primary-400/20' />
+						<div className='bg-primary-500/20 dark:bg-primary-400/20 mx-0.5 h-3.5 w-px' />
 						<EditorTooltip label='Version Diff' shortcut='⌘⇧V'>
 							<button
 								type='button'
 								aria-label='Version diff'
 								disabled={!state.history.past.length}
 								onClick={() => dispatch({ type: 'SET_DIFF_VIEWER', open: true })}
-								className={`flex h-7 w-7 items-center justify-center rounded-md text-primary-700 transition hover:bg-primary-100/70 hover:text-primary-900 disabled:cursor-not-allowed disabled:text-zinc-400 disabled:opacity-30 disabled:hover:bg-transparent dark:text-primary-400/85 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 dark:disabled:text-zinc-500 ${FOCUS_RING}`}>
+								className={`text-primary-700 hover:bg-primary-100/70 hover:text-primary-900 dark:text-primary-400/85 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 flex h-7 w-7 items-center justify-center rounded-md transition disabled:cursor-not-allowed disabled:text-zinc-400 disabled:opacity-30 disabled:hover:bg-transparent dark:disabled:text-zinc-500 ${FOCUS_RING}`}>
 								<GitCompare size={13} />
 							</button>
 						</EditorTooltip>
@@ -679,7 +673,7 @@ const Topbar = () => {
 					<button
 						type='button'
 						onClick={() => dispatch({ type: 'SET_TEMPLATE_LIBRARY', open: true })}
-						className={`hidden h-8 items-center gap-1.5 rounded-lg border border-zinc-200/80 bg-white px-2.5 text-xs font-semibold text-zinc-700 shadow-xs transition hover:border-primary-400/60 hover:bg-primary-100/60 hover:text-primary-900 md:flex dark:border-white/10 dark:bg-zinc-900/60 dark:text-zinc-300 dark:hover:border-primary-400/30 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 ${FOCUS_RING}`}>
+						className={`hover:border-primary-400/60 hover:bg-primary-100/60 hover:text-primary-900 dark:hover:border-primary-400/30 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 hidden h-8 items-center gap-1.5 rounded-lg border border-zinc-200/80 bg-white px-2.5 text-xs font-semibold text-zinc-700 shadow-xs transition md:flex dark:border-white/10 dark:bg-zinc-900/60 dark:text-zinc-300 ${FOCUS_RING}`}>
 						<Library size={13} className='text-primary-700 dark:text-primary-400' />
 						<span>Templates</span>
 					</button>
@@ -697,7 +691,7 @@ const Topbar = () => {
 							FOCUS_RING,
 							isShareDropdownOpen
 								? 'border-primary-400/70 bg-primary-100 text-primary-900 dark:border-primary-400/40 dark:bg-primary-400/15 dark:text-primary-300'
-								: 'border-zinc-200/80 bg-white text-zinc-700 hover:border-primary-400/60 hover:bg-primary-100/60 hover:text-primary-900 dark:border-white/10 dark:bg-zinc-900/60 dark:text-zinc-300 dark:hover:border-primary-400/30 dark:hover:bg-primary-400/10 dark:hover:text-primary-300',
+								: 'hover:border-primary-400/60 hover:bg-primary-100/60 hover:text-primary-900 dark:hover:border-primary-400/30 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 border-zinc-200/80 bg-white text-zinc-700 dark:border-white/10 dark:bg-zinc-900/60 dark:text-zinc-300',
 						].join(' ')}>
 						<Share2 size={13} className='text-primary-700 dark:text-primary-400' />
 						<span>Share</span>
@@ -716,18 +710,26 @@ const Topbar = () => {
 									animate={{ opacity: 1, y: 0, scale: 1 }}
 									exit={{ opacity: 0, y: 4, scale: 0.96 }}
 									role='menu'
-									className='absolute top-10 right-0 z-50 w-56 origin-top-right rounded-xl border border-primary-500/20 bg-white p-1.5 shadow-xl ring-1 ring-black/5 dark:border-primary-400/20 dark:bg-zinc-950 dark:ring-white/5'>
+									className='border-primary-500/20 dark:border-primary-400/20 absolute top-10 right-0 z-50 w-56 origin-top-right rounded-xl border bg-white p-1.5 shadow-xl ring-1 ring-black/5 dark:bg-zinc-950 dark:ring-white/5'>
 									<button
 										type='button'
 										onClick={handleCopyShareLink}
-										className='flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition hover:bg-primary-100/70 hover:text-primary-900 dark:text-zinc-300 dark:hover:bg-primary-400/10 dark:hover:text-primary-200'>
+										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
 										<div className='flex items-center gap-2'>
 											{copiedLink ? (
-												<Check size={14} className='text-primary-700 dark:text-primary-400' />
+												<Check
+													size={14}
+													className='text-primary-700 dark:text-primary-400'
+												/>
 											) : (
-												<Copy size={14} className='text-primary-700 dark:text-primary-400' />
+												<Copy
+													size={14}
+													className='text-primary-700 dark:text-primary-400'
+												/>
 											)}
-											<span>{copiedLink ? 'Link Copied!' : 'Copy Workflow URL'}</span>
+											<span>
+												{copiedLink ? 'Link Copied!' : 'Copy Workflow URL'}
+											</span>
 										</div>
 									</button>
 
@@ -737,12 +739,15 @@ const Topbar = () => {
 											closeMenu();
 											dispatch({ type: 'SET_IMPORT_EXPORT', open: true });
 										}}
-										className='flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition hover:bg-primary-100/70 hover:text-primary-900 dark:text-zinc-300 dark:hover:bg-primary-400/10 dark:hover:text-primary-200'>
-										<Download size={14} className='text-primary-700 dark:text-primary-400' />
+										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
+										<Download
+											size={14}
+											className='text-primary-700 dark:text-primary-400'
+										/>
 										<span>Export JSON Blueprint</span>
 									</button>
 
-									<div className='my-1 h-px bg-primary-500/15 dark:bg-primary-400/15' />
+									<div className='bg-primary-500/15 dark:bg-primary-400/15 my-1 h-px' />
 
 									<button
 										type='button'
@@ -751,8 +756,11 @@ const Topbar = () => {
 											setGovModalTab('sharing');
 											setGovModalOpen(true);
 										}}
-										className='flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition hover:bg-primary-100/70 hover:text-primary-900 dark:text-zinc-300 dark:hover:bg-primary-400/10 dark:hover:text-primary-200'>
-										<ShieldCheck size={14} className='text-primary-700 dark:text-primary-400' />
+										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
+										<ShieldCheck
+											size={14}
+											className='text-primary-700 dark:text-primary-400'
+										/>
 										<span>Access & Governance</span>
 									</button>
 								</motion.div>
@@ -784,16 +792,22 @@ const Topbar = () => {
 							onClick={handleSave}
 							disabled={saveVersion.isPending}
 							className={[
-								'flex h-8 items-center gap-1.5 rounded-l-lg px-2.5 text-xs font-bold transition hover:bg-primary-100/70 disabled:cursor-not-allowed disabled:opacity-40 sm:px-3 dark:hover:bg-primary-400/10',
+								'hover:bg-primary-100/70 dark:hover:bg-primary-400/10 flex h-8 items-center gap-1.5 rounded-l-lg px-2.5 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-40 sm:px-3',
 								FOCUS_RING,
 								isDirty
 									? 'text-primary-900 dark:text-primary-300'
-									: 'text-zinc-700 hover:text-primary-900 dark:text-zinc-200 dark:hover:text-primary-300',
+									: 'hover:text-primary-900 dark:hover:text-primary-300 text-zinc-700 dark:text-zinc-200',
 							].join(' ')}>
 							{saveVersion.isPending ? (
-								<Loader2 size={13} className='animate-spin text-primary-600 dark:text-primary-400' />
+								<Loader2
+									size={13}
+									className='text-primary-600 dark:text-primary-400 animate-spin'
+								/>
 							) : (
-								<Save size={13} className='text-primary-700 dark:text-primary-400' />
+								<Save
+									size={13}
+									className='text-primary-700 dark:text-primary-400'
+								/>
 							)}
 							<span>{saveVersion.isPending ? 'Saving...' : 'Save'}</span>
 						</button>
@@ -805,7 +819,7 @@ const Topbar = () => {
 						aria-haspopup='menu'
 						aria-expanded={isSaveDropdownOpen}
 						onClick={() => toggleMenu('save')}
-						className={`flex h-8 items-center justify-center rounded-r-lg border-l border-zinc-200/80 px-1.5 text-primary-700 transition hover:bg-primary-100/70 hover:text-primary-900 dark:border-white/10 dark:text-primary-400 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 ${FOCUS_RING}`}>
+						className={`text-primary-700 hover:bg-primary-100/70 hover:text-primary-900 dark:text-primary-400 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 flex h-8 items-center justify-center rounded-r-lg border-l border-zinc-200/80 px-1.5 transition dark:border-white/10 ${FOCUS_RING}`}>
 						<ChevronDown
 							size={13}
 							className={`transition-transform duration-150 ${isSaveDropdownOpen ? 'rotate-180' : ''}`}
@@ -815,18 +829,15 @@ const Topbar = () => {
 					<AnimatePresence>
 						{isSaveDropdownOpen && (
 							<>
-								<div
-									className='fixed inset-0 z-40'
-									onClick={() => closeMenu()}
-								/>
+								<div className='fixed inset-0 z-40' onClick={() => closeMenu()} />
 								<motion.div
 									initial={{ opacity: 0, y: 4, scale: 0.96 }}
 									animate={{ opacity: 1, y: 0, scale: 1 }}
 									exit={{ opacity: 0, y: 4, scale: 0.96 }}
 									transition={{ duration: 0.12 }}
 									role='menu'
-									className='absolute top-10 right-0 z-50 w-56 origin-top-right rounded-xl border border-primary-500/20 bg-white p-1.5 shadow-xl ring-1 ring-black/5 dark:border-primary-400/20 dark:bg-zinc-950 dark:ring-white/5'>
-									<div className='px-2 py-1 text-[10px] font-bold tracking-wider text-primary-800/70 uppercase dark:text-primary-400/70'>
+									className='border-primary-500/20 dark:border-primary-400/20 absolute top-10 right-0 z-50 w-56 origin-top-right rounded-xl border bg-white p-1.5 shadow-xl ring-1 ring-black/5 dark:bg-zinc-950 dark:ring-white/5'>
+									<div className='text-primary-800/70 dark:text-primary-400/70 px-2 py-1 text-[10px] font-bold tracking-wider uppercase'>
 										Governance & Versions
 									</div>
 									<button
@@ -836,8 +847,11 @@ const Topbar = () => {
 											setGovModalTab('versions');
 											setGovModalOpen(true);
 										}}
-										className='flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition hover:bg-primary-100/70 hover:text-primary-900 dark:text-zinc-300 dark:hover:bg-primary-400/10 dark:hover:text-primary-200'>
-										<GitCompare size={14} className='text-primary-700 dark:text-primary-400' />
+										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
+										<GitCompare
+											size={14}
+											className='text-primary-700 dark:text-primary-400'
+										/>
 										<span>Version History</span>
 									</button>
 									<button
@@ -847,8 +861,11 @@ const Topbar = () => {
 											setGovModalTab('approvals');
 											setGovModalOpen(true);
 										}}
-										className='flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition hover:bg-primary-100/70 hover:text-primary-900 dark:text-zinc-300 dark:hover:bg-primary-400/10 dark:hover:text-primary-200'>
-										<ShieldCheck size={14} className='text-primary-700 dark:text-primary-400' />
+										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
+										<ShieldCheck
+											size={14}
+											className='text-primary-700 dark:text-primary-400'
+										/>
 										<span>Request Approval</span>
 									</button>
 									<button
@@ -858,8 +875,11 @@ const Topbar = () => {
 											setGovModalTab('releases');
 											setGovModalOpen(true);
 										}}
-										className='flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition hover:bg-primary-100/70 hover:text-primary-900 dark:text-zinc-300 dark:hover:bg-primary-400/10 dark:hover:text-primary-200'>
-										<Rocket size={14} className='text-primary-700 dark:text-primary-400' />
+										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
+										<Rocket
+											size={14}
+											className='text-primary-700 dark:text-primary-400'
+										/>
 										<span>Deploy Release</span>
 									</button>
 									<button
@@ -869,12 +889,15 @@ const Topbar = () => {
 											setGovModalTab('contracts');
 											setGovModalOpen(true);
 										}}
-										className='flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition hover:bg-primary-100/70 hover:text-primary-900 dark:text-zinc-300 dark:hover:bg-primary-400/10 dark:hover:text-primary-200'>
-										<FileCheck size={14} className='text-primary-700 dark:text-primary-400' />
+										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
+										<FileCheck
+											size={14}
+											className='text-primary-700 dark:text-primary-400'
+										/>
 										<span>Contracts Verification</span>
 									</button>
 
-									<div className='my-1 h-px bg-primary-500/15 dark:bg-primary-400/15' />
+									<div className='bg-primary-500/15 dark:bg-primary-400/15 my-1 h-px' />
 
 									<button
 										type='button'
@@ -882,8 +905,11 @@ const Topbar = () => {
 											closeMenu();
 											dispatch({ type: 'SET_IMPORT_EXPORT', open: true });
 										}}
-										className='flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition hover:bg-primary-100/70 hover:text-primary-900 dark:text-zinc-300 dark:hover:bg-primary-400/10 dark:hover:text-primary-200'>
-										<Download size={14} className='text-primary-700 dark:text-primary-400' />
+										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
+										<Download
+											size={14}
+											className='text-primary-700 dark:text-primary-400'
+										/>
 										<span>Export Workflow JSON</span>
 									</button>
 								</motion.div>
@@ -894,7 +920,13 @@ const Topbar = () => {
 
 				{/* Primary Run Action */}
 				<EditorTooltip
-					label={isRunning ? 'Stop Execution' : isRunDisabled ? 'Add nodes to run' : 'Run Workflow'}
+					label={
+						isRunning
+							? 'Stop Execution'
+							: isRunDisabled
+								? 'Add nodes to run'
+								: 'Run Workflow'
+					}
 					shortcut='⌘↵'
 					align='right'>
 					<motion.button
@@ -908,7 +940,7 @@ const Topbar = () => {
 							isRunDisabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer',
 							isRunning
 								? 'bg-rose-600 text-white shadow-rose-950/20 hover:bg-rose-500'
-								: 'bg-gradient-to-r from-primary-400 to-primary-500 text-primary-foreground shadow-primary-500/30 hover:from-primary-500 hover:to-primary-600 hover:shadow-primary-500/40 active:shadow-none',
+								: 'from-primary-400 to-primary-500 text-primary-foreground shadow-primary-500/30 hover:from-primary-500 hover:to-primary-600 hover:shadow-primary-500/40 bg-gradient-to-r active:shadow-none',
 						].join(' ')}>
 						{isRunning ? (
 							<>
@@ -937,16 +969,13 @@ const Topbar = () => {
 					<AnimatePresence>
 						{isMobileMenuOpen && (
 							<>
-								<div
-									className='fixed inset-0 z-40'
-									onClick={() => closeMenu()}
-								/>
+								<div className='fixed inset-0 z-40' onClick={() => closeMenu()} />
 								<motion.div
 									initial={{ opacity: 0, y: 4, scale: 0.96 }}
 									animate={{ opacity: 1, y: 0, scale: 1 }}
 									exit={{ opacity: 0, y: 4, scale: 0.96 }}
 									role='menu'
-									className='absolute top-10 right-0 z-50 w-56 origin-top-right rounded-xl border border-primary-500/20 bg-white p-1.5 shadow-xl ring-1 ring-black/5 dark:border-primary-400/20 dark:bg-zinc-950 dark:ring-white/5'>
+									className='border-primary-500/20 dark:border-primary-400/20 absolute top-10 right-0 z-50 w-56 origin-top-right rounded-xl border bg-white p-1.5 shadow-xl ring-1 ring-black/5 dark:bg-zinc-950 dark:ring-white/5'>
 									<button
 										type='button'
 										onClick={() => {
@@ -956,8 +985,11 @@ const Topbar = () => {
 												intent: 'home',
 											});
 										}}
-										className='flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-primary-100/70 hover:text-primary-900 dark:text-zinc-300 dark:hover:bg-primary-400/10 dark:hover:text-primary-200'>
-										<Boxes size={14} className='text-primary-700 dark:text-primary-400' />
+										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
+										<Boxes
+											size={14}
+											className='text-primary-700 dark:text-primary-400'
+										/>
 										<span>Apps & Nodes</span>
 									</button>
 									<button
@@ -969,8 +1001,11 @@ const Topbar = () => {
 												intent: 'trigger',
 											});
 										}}
-										className='flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-primary-100/70 hover:text-primary-900 dark:text-zinc-300 dark:hover:bg-primary-400/10 dark:hover:text-primary-200'>
-										<Rocket size={14} className='text-primary-700 dark:text-primary-400' />
+										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
+										<Rocket
+											size={14}
+											className='text-primary-700 dark:text-primary-400'
+										/>
 										<span>Triggers</span>
 									</button>
 									<button
@@ -979,12 +1014,15 @@ const Topbar = () => {
 											closeMenu();
 											dispatch({ type: 'TOGGLE_AI_PANEL' });
 										}}
-										className='flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-primary-100/70 hover:text-primary-900 dark:text-zinc-300 dark:hover:bg-primary-400/10 dark:hover:text-primary-200'>
-										<Sparkles size={14} className='text-primary-700 dark:text-primary-400' />
+										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
+										<Sparkles
+											size={14}
+											className='text-primary-700 dark:text-primary-400'
+										/>
 										<span>AI Assistant</span>
 									</button>
 
-									<div className='my-1 h-px bg-primary-500/15 dark:bg-primary-400/15' />
+									<div className='bg-primary-500/15 dark:bg-primary-400/15 my-1 h-px' />
 
 									<button
 										type='button'
@@ -992,8 +1030,11 @@ const Topbar = () => {
 											closeMenu();
 											dispatch({ type: 'SET_TEMPLATE_LIBRARY', open: true });
 										}}
-										className='flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-primary-100/70 hover:text-primary-900 dark:text-zinc-300 dark:hover:bg-primary-400/10 dark:hover:text-primary-200'>
-										<Library size={14} className='text-primary-700 dark:text-primary-400' />
+										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
+										<Library
+											size={14}
+											className='text-primary-700 dark:text-primary-400'
+										/>
 										<span>Templates</span>
 									</button>
 									<button
@@ -1002,8 +1043,11 @@ const Topbar = () => {
 											closeMenu();
 											handleCopyShareLink();
 										}}
-										className='flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-primary-100/70 hover:text-primary-900 dark:text-zinc-300 dark:hover:bg-primary-400/10 dark:hover:text-primary-200'>
-										<Share2 size={14} className='text-primary-700 dark:text-primary-400' />
+										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
+										<Share2
+											size={14}
+											className='text-primary-700 dark:text-primary-400'
+										/>
 										<span>Share Workflow</span>
 									</button>
 									<button
@@ -1013,12 +1057,15 @@ const Topbar = () => {
 											setGovModalTab('versions');
 											setGovModalOpen(true);
 										}}
-										className='flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-primary-100/70 hover:text-primary-900 dark:text-zinc-300 dark:hover:bg-primary-400/10 dark:hover:text-primary-200'>
-										<GitCompare size={14} className='text-primary-700 dark:text-primary-400' />
+										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
+										<GitCompare
+											size={14}
+											className='text-primary-700 dark:text-primary-400'
+										/>
 										<span>Version History</span>
 									</button>
 
-									<div className='my-1 h-px bg-primary-500/15 dark:bg-primary-400/15' />
+									<div className='bg-primary-500/15 dark:bg-primary-400/15 my-1 h-px' />
 
 									<button
 										type='button'
@@ -1026,8 +1073,11 @@ const Topbar = () => {
 											closeMenu();
 											dispatch({ type: 'SET_SHORTCUTS_OPEN', open: true });
 										}}
-										className='flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-primary-100/70 hover:text-primary-900 dark:text-zinc-300 dark:hover:bg-primary-400/10 dark:hover:text-primary-200'>
-										<Keyboard size={14} className='text-primary-700 dark:text-primary-400' />
+										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
+										<Keyboard
+											size={14}
+											className='text-primary-700 dark:text-primary-400'
+										/>
 										<span>Keyboard Shortcuts</span>
 									</button>
 
@@ -1038,11 +1088,17 @@ const Topbar = () => {
 												isDarkTheme ? DARK_MODE.LIGHT : DARK_MODE.DARK,
 											);
 										}}
-										className='flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-primary-100/70 hover:text-primary-900 dark:text-zinc-300 dark:hover:bg-primary-400/10 dark:hover:text-primary-200'>
+										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
 										{isDarkTheme ? (
-											<Sun size={14} className='text-primary-700 dark:text-primary-400' />
+											<Sun
+												size={14}
+												className='text-primary-700 dark:text-primary-400'
+											/>
 										) : (
-											<Moon size={14} className='text-primary-700 dark:text-primary-400' />
+											<Moon
+												size={14}
+												className='text-primary-700 dark:text-primary-400'
+											/>
 										)}
 										<span>{isDarkTheme ? 'Light Mode' : 'Dark Mode'}</span>
 									</button>

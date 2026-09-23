@@ -26,7 +26,6 @@ import { useAuth } from '@/context/auth';
 import { useConfirm } from '@/context/confirm';
 import { useGlobalSearchStore } from '@/store/globalSearch.store';
 import { useAgentChatStore } from '@/store/agentChat.store';
-import { useAgentBuilderStore } from '@/store/agentBuilder.store';
 import {
 	agentSessionKeys,
 	useAgentSessions,
@@ -70,7 +69,6 @@ const AgentAsideTemplate = () => {
 	// The builder publishes which agent (and chat) is on screen — see
 	// store/agentChat.store.ts.
 	const { agentId, sessionId, openSession, newSession } = useAgentChatStore();
-	const requestDataSection = useAgentBuilderStore((state) => state.requestDataSection);
 	const { data: sessions, isLoading: isLoadingSessions } = useAgentSessions(
 		workspaceId ?? '',
 		agentId ?? '',
@@ -146,7 +144,7 @@ const AgentAsideTemplate = () => {
 				}`}>
 				<div className='flex items-center gap-2'>
 					{/* Logo */}
-					<AppLogo className='size-8 ring-1 ring-primary-500/20 dark:ring-primary-400/20' />
+					<AppLogo className='ring-primary-500/20 dark:ring-primary-400/20 size-8 ring-1' />
 					{asideStatus && (
 						<span className='text-sm font-black tracking-tight text-zinc-950 dark:text-white'>
 							agent101
@@ -204,7 +202,7 @@ const AgentAsideTemplate = () => {
 						className={`flex w-full items-center gap-2.5 rounded-xl border border-zinc-200 bg-white py-2 text-xs font-black text-zinc-700 shadow-2xs transition hover:border-zinc-300 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 ${
 							asideStatus ? 'px-3' : 'justify-center'
 						}`}>
-						<span className='flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary-400 text-primary-950'>
+						<span className='bg-primary-400 text-primary-950 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg'>
 							<Plus size={14} strokeWidth={2.5} />
 						</span>
 						{asideStatus && <span>New Chat</span>}
@@ -227,7 +225,11 @@ const AgentAsideTemplate = () => {
 						{asideStatus && <span className='truncate'>Files Generated</span>}
 					</button>
 					<button
-						onClick={() => requestDataSection('reflections')}
+						onClick={() => {
+							if (!agentId || !workspaceId) return;
+							navigate(paths.agentReflections(workspaceId, agentId));
+							closeAside();
+						}}
 						disabled={!agentId}
 						title={agentId ? 'Open reflections' : 'Open an agent to see reflections'}
 						className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50/80 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-zinc-900 ${asideStatus ? '' : 'w-full justify-center'}`}>
@@ -268,7 +270,11 @@ const AgentAsideTemplate = () => {
 							title='External channels are not available yet'
 							className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-600 transition disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-400 ${asideStatus ? '' : 'w-full justify-center'}`}>
 							<span className='relative shrink-0'>
-								<Icon icon='Slack' className='text-zinc-600 dark:text-zinc-400' style={{ fontSize: '15px' }} />
+								<Icon
+									icon='Slack'
+									className='text-zinc-600 dark:text-zinc-400'
+									style={{ fontSize: '15px' }}
+								/>
 								{!asideStatus && (
 									<span className='absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-zinc-400 ring-2 ring-white dark:bg-zinc-500 dark:ring-zinc-950' />
 								)}
@@ -281,7 +287,10 @@ const AgentAsideTemplate = () => {
 							title='External channels are not available yet'
 							className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-600 transition disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-400 ${asideStatus ? '' : 'w-full justify-center'}`}>
 							<span className='relative shrink-0'>
-								<MessageSquare size={15} className='text-zinc-600 dark:text-zinc-400' />
+								<MessageSquare
+									size={15}
+									className='text-zinc-600 dark:text-zinc-400'
+								/>
 								{!asideStatus && (
 									<span className='absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-zinc-400 ring-2 ring-white dark:bg-zinc-500 dark:ring-zinc-950' />
 								)}
@@ -319,7 +328,7 @@ const AgentAsideTemplate = () => {
 									placeholder='Search'
 									value={recentSearch}
 									onChange={(e) => setRecentSearch(e.target.value)}
-									className='w-full bg-transparent text-xs font-semibold text-zinc-900 placeholder:text-zinc-400 outline-none border-none focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
+									className='w-full border-none bg-transparent text-xs font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
 								/>
 								<ListFilter size={13} className='text-zinc-400' />
 							</div>
@@ -341,7 +350,9 @@ const AgentAsideTemplate = () => {
 
 							{agentId && !isLoadingSessions && recentSessions.length === 0 && (
 								<p className='rounded-xl border border-dashed border-zinc-200 px-3 py-4 text-center text-[10px] font-bold text-zinc-400 dark:border-zinc-800 dark:text-zinc-500'>
-									{recentSearch.trim() ? 'No chats match that search.' : 'No chats yet.'}
+									{recentSearch.trim()
+										? 'No chats match that search.'
+										: 'No chats yet.'}
 								</p>
 							)}
 
@@ -371,7 +382,7 @@ const AgentAsideTemplate = () => {
 														// Escape drops the edit without touching the server.
 														if (e.key === 'Escape') setRenamingId(null);
 													}}
-													className='min-w-0 flex-1 rounded-lg border border-primary-500/40 bg-white px-2 py-1 text-xs font-bold text-zinc-800 outline-none dark:border-primary-400/40 dark:bg-zinc-900 dark:text-zinc-100'
+													className='border-primary-500/40 dark:border-primary-400/40 min-w-0 flex-1 rounded-lg border bg-white px-2 py-1 text-xs font-bold text-zinc-800 outline-none dark:bg-zinc-900 dark:text-zinc-100'
 												/>
 											) : (
 												<button
@@ -387,7 +398,10 @@ const AgentAsideTemplate = () => {
 														{sessionTitle(session)}
 													</p>
 													<p className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-														{relativeDay(session.last_activity_at ?? session.created_at)}
+														{relativeDay(
+															session.last_activity_at ??
+																session.created_at,
+														)}
 													</p>
 												</button>
 											)}
@@ -437,12 +451,15 @@ const AgentAsideTemplate = () => {
 						</div>
 						{/* Progress bar */}
 						<div className='h-2 w-full rounded-full bg-zinc-100 dark:bg-zinc-800'>
-							<div className='h-2 rounded-full bg-primary-400' style={{ width: '100%' }} />
+							<div
+								className='bg-primary-400 h-2 rounded-full'
+								style={{ width: '100%' }}
+							/>
 						</div>
 						{/* Upgrade Plan Button */}
 						<button
 							onClick={() => navigate(paths.billingPlans(workspaceId ?? ''))}
-							className='mt-1 flex w-full items-center justify-center rounded-xl bg-primary-400 py-2 text-xs font-black text-primary-950 shadow-md shadow-primary-500/20 transition hover:bg-primary-500 active:scale-95 dark:shadow-none'>
+							className='bg-primary-400 text-primary-950 shadow-primary-500/20 hover:bg-primary-500 mt-1 flex w-full items-center justify-center rounded-xl py-2 text-xs font-black shadow-md transition active:scale-95 dark:shadow-none'>
 							Upgrade Plan
 						</button>
 					</div>
@@ -450,9 +467,9 @@ const AgentAsideTemplate = () => {
 
 				{/* Profile Panel */}
 				<div className='flex items-center justify-between rounded-xl bg-zinc-50/50 p-2.5 dark:bg-zinc-900/40'>
-					<div className='flex items-center gap-3 min-w-0'>
+					<div className='flex min-w-0 items-center gap-3'>
 						{/* User avatar */}
-						<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-400 text-xs font-black text-primary-950'>
+						<div className='bg-primary-400 text-primary-950 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-black'>
 							{userData?.name ? userData.name.charAt(0).toUpperCase() : 'A'}
 						</div>
 						{asideStatus && (
@@ -466,7 +483,7 @@ const AgentAsideTemplate = () => {
 							</div>
 						)}
 					</div>
-									</div>
+				</div>
 			</AsideFooter>
 			<GlobalSearch />
 		</Aside>
