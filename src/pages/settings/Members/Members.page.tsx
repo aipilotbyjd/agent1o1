@@ -345,7 +345,7 @@ const MembersPage = () => {
 																		.value as TAssignableWorkspaceRole,
 																)
 															}
-															className='focus:border-primary-300 focus:ring-primary-100/50 h-9 w-full cursor-pointer appearance-none rounded-lg border border-zinc-200 bg-white px-2.5 pr-8 text-xs font-bold text-zinc-800 shadow-xs outline-none focus:ring-2 dark:border-zinc-700 dark:bg-zinc-700 dark:text-zinc-200'>
+															className='focus:border-primary-300 focus:ring-primary-100/50 h-9 w-full cursor-pointer appearance-none rounded-lg border border-zinc-200 bg-white bg-none px-2.5 pr-8 text-xs font-bold text-zinc-800 shadow-xs outline-none focus:ring-2 dark:border-zinc-700 dark:bg-zinc-700 dark:text-zinc-200'>
 															{roleOptions
 																.filter(
 																	(option) =>

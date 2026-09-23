@@ -185,7 +185,7 @@ const InviteTeamPage = () => {
 											value={formik.values.role}
 											onChange={formik.handleChange}
 											onBlur={formik.handleBlur}
-											className='block min-h-14 w-full appearance-none rounded-2xl border border-slate-200 bg-white px-5 text-base font-bold text-slate-700 shadow-sm outline-none focus:border-slate-300'>
+											className='block min-h-14 w-full appearance-none rounded-2xl border border-slate-200 bg-white bg-none px-5 text-base font-bold text-slate-700 shadow-sm outline-none focus:border-slate-300'>
 											<option value='admin'>Admin</option>
 											<option value='editor'>Editor</option>
 											<option value='member'>Member</option>

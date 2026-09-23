@@ -132,6 +132,7 @@ const SecretModal = ({ open, target, isPending, onClose, onSubmit }: SecretModal
 								/>
 								{isSecret && (
 									<button
+										aria-label='Toggle value visibility'
 										type='button'
 										onClick={() => setShowValue((v) => !v)}
 										className='absolute top-3 right-3 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'>
@@ -159,6 +160,9 @@ const SecretModal = ({ open, target, isPending, onClose, onSubmit }: SecretModal
 						{/* Secret toggle */}
 						<label className='flex cursor-pointer items-center gap-3 rounded-xl border border-zinc-200 p-3 dark:border-zinc-700'>
 							<button
+								role='switch'
+								aria-checked={isSecret}
+								aria-label='Store as a secret'
 								type='button'
 								onClick={() => setIsSecret((v) => !v)}
 								className={[
@@ -346,6 +350,7 @@ const SecretsPage = () => {
 					/>
 					{searchQuery && (
 						<button
+							aria-label='Close'
 							type='button'
 							onClick={() => setSearchQuery('')}
 							className='absolute top-1/2 right-3 -translate-y-1/2 text-zinc-400 hover:text-zinc-600'>

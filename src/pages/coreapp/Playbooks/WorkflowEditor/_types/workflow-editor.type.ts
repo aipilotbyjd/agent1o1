@@ -35,6 +35,9 @@ export type TEditorUiState = {
 	templateLibraryOpen: boolean;
 	diffViewerOpen: boolean;
 	nodeDocOpen: boolean;
+	/** Bumped to ask the selected node to run its inline test (keyboard shortcut). */
+	nodeTestRequestId: number;
+	nodeTestRequestNodeId: string | null;
 	nodeDocNodeId: string | null;
 	nodeExpandedOpen: boolean;
 	nodeExpandedId: string | null;

@@ -84,6 +84,7 @@ const IngestKnowledgeDialog = ({
 						</p>
 					</div>
 					<button
+						aria-label='Close'
 						onClick={handleClose}
 						className='flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 dark:text-zinc-500 dark:hover:bg-zinc-900'>
 						<X size={16} />

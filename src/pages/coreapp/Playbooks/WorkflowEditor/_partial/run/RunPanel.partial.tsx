@@ -136,6 +136,7 @@ const RunPanel = () => {
 							</button>
 						)}
 						<button
+							aria-label='Close'
 							type='button'
 							onClick={() => dispatch({ type: 'TOGGLE_RUN_PANEL' })}
 							className='flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-zinc-500 hover:bg-white/[0.06] hover:text-white'>

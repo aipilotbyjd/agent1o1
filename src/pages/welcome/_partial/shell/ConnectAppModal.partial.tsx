@@ -132,6 +132,7 @@ const ConnectAppModal = () => {
 						exit={{ opacity: 0, scale: 0.95, y: 15 }}
 						className='relative w-full max-w-sm overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 text-center shadow-2xl dark:border-zinc-800/80 dark:bg-zinc-900'>
 						<button
+							aria-label='Close'
 							onClick={close}
 							className='absolute top-4 right-4 rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-zinc-800'>
 							<X className='h-4 w-4' />

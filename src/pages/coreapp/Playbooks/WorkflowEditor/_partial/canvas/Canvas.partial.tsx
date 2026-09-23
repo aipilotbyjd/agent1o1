@@ -1,4 +1,5 @@
 import {
+	applyNodeChanges,
 	Background,
 	BackgroundVariant,
 	MiniMap,
@@ -90,7 +91,6 @@ const Canvas = () => {
 	const { userData } = useAuth();
 	const { zoom } = useViewport();
 	const didDragNodeRef = useRef(false);
-	const [isDraggingExistingNode, setIsDraggingExistingNode] = useState(false);
 	const [contextMenu, setContextMenu] = useState<{
 		x: number;
 		y: number;
@@ -134,26 +134,83 @@ const Canvas = () => {
 		return result;
 	}, [validationIssues]);
 
-	// Create the nodes array that ReactFlow will use
-	// During drag, we need to update positions locally, but sync back to store on drag end
-	const storeNodes = useMemo(
-		() =>
-			state.nodes.map((node) => ({
+	// The nodes React Flow renders, derived from the store.
+	//
+	// Identity matters here: React Flow re-measures any node whose object it has not
+	// seen before, and an unmeasured node is rendered with `visibility: hidden` until
+	// the ResizeObserver reports back. Rebuilding every node object on each selection
+	// change or drag frame therefore made the whole canvas blink out for ~120ms.
+	// Each node keeps its previous object unless one of its own inputs changed.
+	const nodeIdentityCache = useRef(new Map<string, TCanvasNode>());
+	const nodeSourceCache = useRef(new Map<string, TCanvasNode>());
+	const storeNodes = useMemo(() => {
+		const cache = nodeIdentityCache.current;
+		const seen = new Set<string>();
+		const result = state.nodes.map((node) => {
+			seen.add(node.id);
+			const selected = state.ui.selectedNodeIds.includes(node.id);
+			const draggable = !node.data.locked;
+			const validationIssues = issuesByNode.get(node.id) ?? [];
+			const isActiveRunNode = state.run.currentNodeId === node.id;
+			const cached = cache.get(node.id);
+			if (
+				cached &&
+				cached.selected === selected &&
+				cached.draggable === draggable &&
+				cached.position === node.position &&
+				cached.data.isActiveRunNode === isActiveRunNode &&
+				cached.data.validationIssues === validationIssues &&
+				nodeSourceCache.current.get(node.id) === node
+			) {
+				return cached;
+			}
+			const next = {
 				...node,
-				selected: state.ui.selectedNodeIds.includes(node.id),
-				draggable: !node.data.locked,
+				selected,
+				draggable,
 				data: {
 					...node.data,
-					validationIssues: issuesByNode.get(node.id) ?? [],
-					isActiveRunNode: state.run.currentNodeId === node.id,
+					validationIssues,
+					isActiveRunNode,
 				},
-			})),
-		[issuesByNode, state.nodes, state.run.currentNodeId, state.ui.selectedNodeIds],
-	);
+			} as TCanvasNode;
+			cache.set(node.id, next);
+			nodeSourceCache.current.set(node.id, node);
+			return next;
+		});
+		cache.forEach((_, id) => {
+			if (!seen.has(id)) {
+				cache.delete(id);
+				nodeSourceCache.current.delete(id);
+			}
+		});
+		return result;
+	}, [issuesByNode, state.nodes, state.run.currentNodeId, state.ui.selectedNodeIds]);
 
-	const [dragPositions, setDragPositions] = useState<Map<string, { x: number; y: number }>>(
-		() => new Map(),
-	);
+	// React Flow owns node positions while the user is interacting; the reducer store
+	// stays the source of truth and receives the move once the drag ends. Feeding
+	// React Flow its own applied changes keeps node objects stable mid-drag, which is
+	// what stops the canvas from blinking.
+	const [flowNodes, setFlowNodes] = useState<TCanvasNode[]>(() => storeNodes);
+	const flowNodesRef = useRef(flowNodes);
+	flowNodesRef.current = flowNodes;
+	const isDraggingRef = useRef(false);
+
+	// Re-seed from the store whenever it changes for a reason other than an in-flight
+	// drag: AI builder mutations, undo/redo, auto-layout, loading a version. A change
+	// that lands mid-drag is remembered and applied once the drag finishes, so an AI
+	// builder edit during a drag is not silently dropped.
+	const storeNodesRef = useRef(storeNodes);
+	storeNodesRef.current = storeNodes;
+	const pendingReseedRef = useRef(false);
+	useEffect(() => {
+		if (isDraggingRef.current) {
+			pendingReseedRef.current = true;
+			return;
+		}
+		pendingReseedRef.current = false;
+		setFlowNodes(storeNodes);
+	}, [storeNodes]);
 
 	// Mirrors the current selection so onNodesChange can apply select-diffs without
 	// depending on (and re-creating the callback on) selection state itself.
@@ -162,19 +219,17 @@ const Canvas = () => {
 
 	const onNodesChange = useCallback(
 		(changes: NodeChange<TCanvasNode>[]) => {
-			const nextPositions = new Map<string, { x: number; y: number }>();
+			// Hand React Flow's own changes straight back. applyNodeChanges mutates only
+			// the nodes a change names, so every other node keeps its object — and its
+			// measurement — instead of being rebuilt and hidden while it is re-measured.
+			setFlowNodes((previous) => applyNodeChanges(changes, previous));
+
 			const selectChanges: { id: string; selected: boolean }[] = [];
 			changes.forEach((change) => {
-				if (change.type === 'position' && 'position' in change && change.position) {
-					nextPositions.set(change.id, change.position);
-				}
 				if (change.type === 'select') {
 					selectChanges.push({ id: change.id, selected: change.selected });
 				}
 			});
-			if (nextPositions.size) {
-				setDragPositions((previous) => new Map([...previous, ...nextPositions]));
-			}
 			if (selectChanges.length) {
 				const next = new Set(selectionRef.current);
 				selectChanges.forEach(({ id, selected }) => {
@@ -187,20 +242,7 @@ const Canvas = () => {
 		[dispatch],
 	);
 
-	// Create the nodes array that includes drag positions during active drag
-	const nodes = useMemo(() => {
-		return storeNodes.map((node) => {
-			// Use drag position if available, otherwise use store position
-			const dragPos = dragPositions.get(node.id);
-			if (isDraggingExistingNode && dragPos) {
-				return {
-					...node,
-					position: dragPos,
-				};
-			}
-			return node;
-		});
-	}, [storeNodes, isDraggingExistingNode, dragPositions]);
+	const nodes = flowNodes;
 
 	const edges = useMemo(
 		() =>
@@ -313,16 +355,29 @@ const Canvas = () => {
 	// together and each one needs its own MOVE_NODE, not just the node the mouse
 	// grabbed.
 	const handleDragStop = useCallback(() => {
-		setIsDraggingExistingNode(false);
+		isDraggingRef.current = false;
 		didDragNodeRef.current = false;
 
-		setDragPositions((previous) => {
-			previous.forEach((position, id) => {
-				dispatch({ type: 'MOVE_NODE', id, position });
-			});
-			return new Map();
+		// Write the moved nodes back to the store. Reading from a ref keeps these
+		// dispatches out of a state updater — doing it inside one fired every move
+		// twice under StrictMode, which React double-invokes.
+		const storePositions = new Map(state.nodes.map((node) => [node.id, node.position]));
+		let movedAny = false;
+		flowNodesRef.current.forEach((node) => {
+			const previous = storePositions.get(node.id);
+			if (!previous || previous.x !== node.position.x || previous.y !== node.position.y) {
+				movedAny = true;
+				dispatch({ type: 'MOVE_NODE', id: node.id, position: node.position });
+			}
 		});
-	}, [dispatch]);
+
+		// A move re-seeds via the storeNodes effect. If nothing moved, that effect will
+		// not fire, so apply any store change that arrived during the drag by hand.
+		if (!movedAny && pendingReseedRef.current) {
+			setFlowNodes(storeNodesRef.current);
+		}
+		pendingReseedRef.current = false;
+	}, [dispatch, state.nodes]);
 
 	return (
 		<section
@@ -351,7 +406,7 @@ const Canvas = () => {
 				isValidConnection={isValidConnection}
 				onNodeDragStart={(_, node) => {
 					didDragNodeRef.current = true;
-					setIsDraggingExistingNode(true);
+					isDraggingRef.current = true;
 					// Dragging a node already inside a multi-selection moves the whole
 					// group — only collapse to a single selection when grabbing a node
 					// that isn't part of the current selection.
@@ -484,6 +539,7 @@ const Canvas = () => {
 						{/* Zoom Panel */}
 						<div className='flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-2 py-1 shadow-xs dark:border-zinc-800 dark:bg-zinc-900'>
 							<button
+								aria-label='Remove'
 								type='button'
 								onClick={() => reactFlow.zoomOut({ duration: 150 })}
 								className='text-zinc-450 hover:text-zinc-800 p-1 dark:hover:text-zinc-200'
@@ -494,6 +550,7 @@ const Canvas = () => {
 								{Math.round(zoom * 100)}%
 							</span>
 							<button
+								aria-label='Add'
 								type='button'
 								onClick={() => reactFlow.zoomIn({ duration: 150 })}
 								className='text-zinc-450 hover:text-zinc-800 p-1 dark:hover:text-zinc-200'
@@ -502,6 +559,7 @@ const Canvas = () => {
 							</button>
 							<span className='h-3 w-[1px] bg-zinc-200 dark:bg-zinc-800 mx-1' />
 							<button
+								aria-label='Expand'
 								type='button'
 								onClick={() => reactFlow.fitView({ padding: 0.18, duration: 240 })}
 								className='text-zinc-455 hover:text-zinc-700 p-1 dark:hover:text-zinc-300'

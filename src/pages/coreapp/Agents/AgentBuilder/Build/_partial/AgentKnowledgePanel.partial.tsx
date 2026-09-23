@@ -128,7 +128,7 @@ const AgentKnowledgePanel = ({ ws, agentId }: TProps) => {
 						<span className='text-[11px] font-black text-zinc-700 dark:text-zinc-300'>
 							{editingId ? 'Edit entry' : 'New entry'}
 						</span>
-						<button onClick={resetForm} className='text-zinc-400 hover:text-zinc-600'>
+						<button aria-label='Close' onClick={resetForm} className='text-zinc-400 hover:text-zinc-600'>
 							<X size={13} />
 						</button>
 					</div>

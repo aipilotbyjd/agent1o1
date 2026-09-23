@@ -74,6 +74,7 @@ const HistoryPagination = ({
 			{/* Center: page buttons */}
 			<div className='flex items-center gap-1.5'>
 				<button
+					aria-label='Previous'
 					disabled={currentPage === 1}
 					onClick={() => onPageChange(currentPage - 1)}
 					className='text-slate-550 dark:hover:bg-zinc-800 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white shadow-xs transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'>
@@ -81,6 +82,7 @@ const HistoryPagination = ({
 				</button>
 				{renderPageNumbers()}
 				<button
+					aria-label='Next'
 					disabled={currentPage === totalPages}
 					onClick={() => onPageChange(currentPage + 1)}
 					className='text-slate-550 dark:hover:bg-zinc-800 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white shadow-xs transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'>

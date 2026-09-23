@@ -32,7 +32,6 @@ import { useWorkflowRouteParams } from '../_hooks/useWorkflowRouteParams.hook';
 import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import { useAiChatStore } from '@/store/aiChat.store';
-import { CanvasTopbar } from '../_partial/shell/CanvasTopbar.partial';
 
 const BuildPage = () => {
 	const isChatActive = useAiChatStore((store) => store.isChatActive);
@@ -190,18 +189,16 @@ const BuildPage = () => {
 								)}
 							</AnimatePresence>
 							<div className='relative flex min-w-0 flex-1 flex-col'>
-								{isChatActive && <CanvasTopbar />}
 								{!state.ui.leftPanelOpen && (
 									<button
 										type='button'
 										onClick={() => dispatch({ type: 'TOGGLE_LEFT_PANEL' })}
-										className='absolute top-1/2 left-0 z-10 flex h-10 w-4 -translate-y-1/2 cursor-pointer items-center justify-center rounded-r-md border border-l-0 border-zinc-200 bg-white text-zinc-400 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900'
-										style={{ top: isChatActive ? 'calc(50% + 28px)' : '50%' }}>
+										className='absolute top-1/2 left-0 z-10 flex h-10 w-4 -translate-y-1/2 cursor-pointer items-center justify-center rounded-r-md border border-l-0 border-zinc-200 bg-white text-zinc-400 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900'>
 										<span className='text-[10px] font-bold'>&gt;</span>
 									</button>
 								)}
 								<Canvas />
-								{!isChatActive && <ActionBar />}
+								<ActionBar />
 							</div>
 						</div>
 						{state.ui.runPanelOpen && (

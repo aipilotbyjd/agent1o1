@@ -198,8 +198,13 @@ layer(base);
 		@apply flex h-full flex-col scroll-smooth bg-zinc-100 text-zinc-800 dark:bg-zinc-950 dark:text-zinc-200;
 	}
 
+	html {
+		color-scheme: light;
+	}
+
 	html.dark {
 		@apply bg-zinc-950;
+		color-scheme: dark;
 	}
 
 	#root {

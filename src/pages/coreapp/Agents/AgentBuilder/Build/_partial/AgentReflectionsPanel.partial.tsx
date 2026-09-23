@@ -81,6 +81,10 @@ const ToggleRow = ({
 			)}
 		</div>
 		<button
+			type='button'
+			role='switch'
+			aria-checked={value}
+			aria-label={label}
 			onClick={() => onChange(!value)}
 			className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
 				value ? 'bg-primary-400 dark:bg-primary-400' : 'bg-zinc-200 dark:bg-zinc-800'

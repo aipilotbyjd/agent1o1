@@ -28,6 +28,7 @@ const NodeDocumentationPanel = () => {
 						Node Docs
 					</div>
 					<button
+						aria-label='Close'
 						type='button'
 						onClick={() => dispatch({ type: 'SET_NODE_DOC', open: false })}
 						className='flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/[0.07] dark:hover:text-white'>

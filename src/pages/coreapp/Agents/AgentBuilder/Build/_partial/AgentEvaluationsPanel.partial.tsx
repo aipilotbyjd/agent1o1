@@ -77,6 +77,10 @@ const ToggleRow = ({
 			)}
 		</div>
 		<button
+			type='button'
+			role='switch'
+			aria-checked={value}
+			aria-label={label}
 			onClick={() => onChange(!value)}
 			className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
 				value ? 'bg-primary-400 dark:bg-primary-400' : 'bg-zinc-200 dark:bg-zinc-800'
@@ -230,6 +234,7 @@ const EvaluationSettingsForm = ({
 								className={`min-w-0 flex-1 ${fieldClass}`}
 							/>
 							<button
+								aria-label='Close'
 								onClick={() =>
 									setForm((f) => ({ ...f, criteria: f.criteria.filter((_, i) => i !== index) }))
 								}
@@ -332,6 +337,7 @@ const EvaluationSettingsForm = ({
 							className={`min-w-0 flex-1 ${fieldClass}`}
 						/>
 						<button
+							aria-label='Close'
 							onClick={() => setForm((f) => ({ ...f, tags: f.tags.filter((_, i) => i !== index) }))}
 							className='shrink-0 text-zinc-400 hover:text-rose-500'>
 							<X size={12} />
@@ -405,6 +411,7 @@ const EvaluationSettingsForm = ({
 							className={`min-w-0 flex-1 ${fieldClass}`}
 						/>
 						<button
+							aria-label='Close'
 							onClick={() =>
 								setForm((f) => ({
 									...f,

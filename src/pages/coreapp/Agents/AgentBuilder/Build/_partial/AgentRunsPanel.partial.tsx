@@ -38,6 +38,7 @@ const ArtifactStepRow = ({ ws, output }: { ws: string; output: TArtifactStepOutp
 				{output.filename} <span className='font-semibold text-zinc-400'>v{output.version}</span>
 			</span>
 			<button
+				aria-label='Download'
 				onClick={() => downloadMutation.mutate({ artifactId: output.id, filename: output.filename })}
 				className='shrink-0 cursor-pointer text-zinc-400 hover:text-primary-500'>
 				<Download size={12} />

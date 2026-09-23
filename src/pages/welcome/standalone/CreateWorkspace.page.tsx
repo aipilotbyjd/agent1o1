@@ -145,6 +145,7 @@ const CreateWorkspacePage = () => {
 
 					{/* Theme Toggle Button */}
 					<button
+						aria-label='Toggle theme'
 						onClick={() =>
 							setDarkModeStatus(isDarkTheme ? DARK_MODE.LIGHT : DARK_MODE.DARK)
 						}

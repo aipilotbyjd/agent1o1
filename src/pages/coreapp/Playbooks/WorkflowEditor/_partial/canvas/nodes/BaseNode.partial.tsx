@@ -126,7 +126,7 @@ export const PortHandles = ({
 	);
 };
 
-const BaseNode = ({ id, data, selected }: NodeProps<TCanvasNode>) => {
+const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 	const { state, dispatch } = useWorkflowEditor();
 	const def = getNodeDefinition(data.defKey, data.definition);
 
@@ -202,9 +202,12 @@ const BaseNode = ({ id, data, selected }: NodeProps<TCanvasNode>) => {
 
 	return (
 		<motion.div
-			animate={{ boxShadow: baseShadow }}
-			whileHover={{ y: -2, boxShadow: hoverShadow }}
-			transition={{ duration: 0.18 }}
+			// While dragging, the node is pinned flat: snapToGrid makes it lag the
+			// cursor, so the pointer keeps crossing its edge and the hover lift would
+			// otherwise fire on and off, jittering the card under the mouse.
+			animate={dragging ? { boxShadow: baseShadow, y: 0 } : { boxShadow: baseShadow }}
+			whileHover={dragging ? undefined : { y: -2, boxShadow: hoverShadow }}
+			transition={{ duration: dragging ? 0 : 0.18 }}
 			className={[
 				'group relative w-[320px] rounded-[26px] border p-1.5 text-left ring-1 ring-inset ring-white/60 dark:ring-white/[0.03]',
 				'bg-white text-zinc-950 dark:bg-zinc-950 dark:text-zinc-100',
@@ -429,13 +432,17 @@ const BaseNode = ({ id, data, selected }: NodeProps<TCanvasNode>) => {
 				{nodeIndex}
 			</div>
 
-			{/* Toolbar + IO panels: always shown while selected, revealed on hover otherwise */}
+			{/* Toolbar + IO panels: always shown while selected or dragging, revealed on
+			    hover otherwise. Dragging holds them at full opacity and drops the
+			    transition, so a hover that flickers mid-drag cannot fade them in and out. */}
 			<div
 				className={[
-					'transition-opacity duration-150',
-					selected
+					dragging ? '' : 'transition-opacity duration-150',
+					selected || dragging
 						? 'opacity-100'
 						: 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100',
+					// Panels must not swallow the pointer that is driving the drag.
+					dragging ? 'pointer-events-none' : '',
 				].join(' ')}>
 				<NodeToolbar
 					nodeId={id}

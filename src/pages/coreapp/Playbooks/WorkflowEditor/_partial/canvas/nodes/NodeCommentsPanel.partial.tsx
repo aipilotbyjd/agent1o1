@@ -70,6 +70,7 @@ const NodeCommentsPanel = ({
 											</div>
 										</div>
 										<button
+											aria-label='Delete'
 											type='button'
 											onClick={() =>
 												dispatch({
@@ -102,6 +103,7 @@ const NodeCommentsPanel = ({
 								className='flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1.5 text-xs text-zinc-700 outline-none placeholder:text-zinc-400 focus:border-primary-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200'
 							/>
 							<button
+								aria-label='Send'
 								type='button'
 								onClick={submit}
 								disabled={!text.trim()}

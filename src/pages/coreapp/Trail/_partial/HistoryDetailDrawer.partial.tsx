@@ -49,6 +49,7 @@ const HistoryDetailDrawer = ({
 								</h2>
 							</div>
 							<button
+								aria-label='Close'
 								onClick={onClose}
 								className='hover:text-slate-655 dark:hover:bg-zinc-800 cursor-pointer rounded-xl p-2 text-slate-400 transition hover:bg-slate-100'>
 								<X size={18} />

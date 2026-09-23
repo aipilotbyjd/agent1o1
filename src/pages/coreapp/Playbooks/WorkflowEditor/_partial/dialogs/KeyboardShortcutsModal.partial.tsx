@@ -8,6 +8,7 @@ const SHORTCUTS = [
 			{ keys: ['⌘', 'Enter'], label: 'Run / Stop workflow' },
 			{ keys: ['⌘', 'S'], label: 'Save workflow' },
 			{ keys: ['⌘', 'Shift', 'E'], label: 'Import / Export' },
+			{ keys: ['⌘', 'Shift', 'V'], label: 'Version diff viewer' },
 		],
 	},
 	{
@@ -21,11 +22,12 @@ const SHORTCUTS = [
 		group: 'Nodes',
 		items: [
 			{ keys: ['⌘', 'K'], label: 'Quick add node' },
+			{ keys: ['⌘', 'A'], label: 'Select all nodes' },
 			{ keys: ['⌘', 'D'], label: 'Duplicate selected node' },
 			{ keys: ['Del'], label: 'Delete selected node' },
 			{ keys: ['B'], label: 'Toggle breakpoint on selected node' },
 			{ keys: ['⌘', 'I'], label: 'Inspect node docs' },
-			{ keys: ['⌘', 'T'], label: 'Test selected node inline' },
+			{ keys: ['T'], label: 'Test selected node inline' },
 		],
 	},
 	{
@@ -42,6 +44,7 @@ const SHORTCUTS = [
 			{ keys: ['⌘', 'P'], label: 'Command palette' },
 			{ keys: ['⌘', 'J'], label: 'AI Builder panel' },
 			{ keys: ['⌘', 'Shift', 'L'], label: 'Toggle node library' },
+			{ keys: ['⌘', 'Shift', 'T'], label: 'Template library' },
 			{ keys: ['⌘', 'Shift', 'R'], label: 'Toggle run console' },
 			{ keys: ['?'], label: 'Keyboard shortcuts' },
 		],

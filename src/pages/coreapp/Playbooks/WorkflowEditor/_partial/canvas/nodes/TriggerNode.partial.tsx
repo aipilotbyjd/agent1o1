@@ -102,7 +102,7 @@ const brandNameMap: Record<string, string> = {
 	'trigger.airtable_reader': 'Airtable',
 };
 
-const TriggerNode = ({ id, data, selected }: NodeProps<TCanvasNode>) => {
+const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 	const { state, dispatch } = useWorkflowEditor();
 	const def = getNodeDefinition(data.defKey, data.definition);
 
@@ -184,9 +184,10 @@ const TriggerNode = ({ id, data, selected }: NodeProps<TCanvasNode>) => {
 
 	return (
 		<motion.div
-			animate={{ boxShadow: baseShadow }}
-			whileHover={{ y: -2, boxShadow: hoverShadow }}
-			transition={{ duration: 0.18 }}
+			// Pinned flat while dragging — see BaseNode for why the hover lift has to go.
+			animate={dragging ? { boxShadow: baseShadow, y: 0 } : { boxShadow: baseShadow }}
+			whileHover={dragging ? undefined : { y: -2, boxShadow: hoverShadow }}
+			transition={{ duration: dragging ? 0 : 0.18 }}
 			className={[
 				'group relative w-[320px] rounded-[26px] border p-1.5 text-left ring-1 ring-inset ring-white/60 dark:ring-white/[0.03]',
 				'bg-white text-zinc-950 dark:bg-zinc-950 dark:text-zinc-100',
