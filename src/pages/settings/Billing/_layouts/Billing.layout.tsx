@@ -1,4 +1,4 @@
-import { Outlet, NavLink } from 'react-router';
+import { Outlet, NavLink, useParams } from 'react-router';
 import { Activity, CreditCard, FileText, Layers, LayoutGrid } from 'lucide-react';
 import { useWorkspaceContext } from '@/context/workspace';
 import pages from '@/Routes/pages';
@@ -16,8 +16,9 @@ const tabs = [
 ];
 
 const BillingLayout = () => {
+	const { workspaceId } = useParams<{ workspaceId: string }>();
 	const { activeWorkspaceId } = useWorkspaceContext();
-	const toWorkspacePath = (to: string) => withWorkspace(to, activeWorkspaceId);
+	const toWorkspacePath = (to: string) => withWorkspace(to, workspaceId || activeWorkspaceId);
 
 	return (
 		<div className='mx-auto w-full max-w-[1180px] min-w-0 px-4 py-6 sm:px-10 sm:py-8 lg:px-14'>

@@ -113,7 +113,7 @@ const NodeLibrary = () => {
 						type='button'
 						onClick={() => dispatch({ type: 'TOGGLE_LEFT_PANEL' })}
 						aria-label='Close node library'
-						className='flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 sm:h-6 sm:w-6 sm:rounded-lg dark:border-zinc-800 dark:bg-zinc-900'>
+						className='flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-200 sm:h-6 sm:w-6 sm:rounded-lg dark:border-zinc-800 dark:bg-zinc-900'>
 						<X size={13} />
 					</button>
 				</div>
@@ -126,7 +126,7 @@ const NodeLibrary = () => {
 						type='button'
 						onClick={() => dispatch({ type: 'TOGGLE_LEFT_PANEL' })}
 						aria-label='Close node library'
-						className='flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 sm:h-6 sm:w-6 sm:rounded-lg dark:border-zinc-800 dark:bg-zinc-900'>
+						className='flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-200 sm:h-6 sm:w-6 sm:rounded-lg dark:border-zinc-800 dark:bg-zinc-900'>
 						<X size={13} />
 					</button>
 				</div>

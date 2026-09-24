@@ -19,6 +19,7 @@ import { useWorkspaceContext } from '@/context/workspace';
 import { useBillingOverview, useCredits } from '@/api/modules/billing';
 import { useCreditUsage } from '@/api/modules/dashboard';
 import pages from '@/Routes/pages';
+import { withWorkspace } from '@/Routes/paths';
 
 const billingPages = pages.settings.subPages!.billing.subPages!;
 
@@ -226,7 +227,7 @@ const UsagePage = () => {
 				</div>
 
 				<Link
-					to={billingPages.credits.to.replace(':workspaceId', ws ?? '')}
+					to={withWorkspace(billingPages.credits.to, ws)}
 					className='border-primary-500/20 bg-primary-400 text-primary-950 shadow-primary-500/15 hover:shadow-primary-500/25 flex h-10 items-center gap-2 rounded-xl border px-5 text-sm font-bold shadow-md transition-all duration-200'>
 					<CreditCard size={15} />
 					<span>Buy credits</span>
@@ -237,7 +238,7 @@ const UsagePage = () => {
 			{overviewLoading ? (
 				<div className='h-40 animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-800/60' />
 			) : (
-				<div className='relative overflow-hidden rounded-2xl border border-zinc-100 bg-white p-6 shadow-xs backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/60'>
+				<div className='relative isolate overflow-hidden rounded-2xl border border-zinc-100 bg-white p-6 shadow-xs backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/60'>
 					<div className='bg-primary-400/10 dark:bg-primary-400/5 absolute -top-10 -right-10 -z-10 h-40 w-40 rounded-full blur-3xl' />
 					<div className='bg-primary-400/10 dark:bg-primary-400/5 absolute -bottom-10 -left-10 -z-10 h-40 w-40 rounded-full blur-3xl' />
 
@@ -317,7 +318,7 @@ const UsagePage = () => {
 						{/* Credit-usage chart (last 30 days) */}
 						<div className='relative hidden pr-2 md:block'>
 							{hoveredPoint && (
-								<div className='border-zinc-150 pointer-events-none absolute -top-12 right-2 z-10 rounded-lg border bg-white p-2 text-[9px] font-bold shadow-md select-none dark:border-zinc-800 dark:bg-zinc-900'>
+								<div className='border-zinc-200 pointer-events-none absolute -top-12 right-2 z-10 rounded-lg border bg-white p-2 text-[9px] font-bold shadow-md select-none dark:border-zinc-800 dark:bg-zinc-900'>
 									<div className='text-[8px] text-zinc-400 uppercase'>
 										{new Date(hoveredPoint.date).toLocaleDateString(undefined, {
 											month: 'short',
@@ -330,7 +331,7 @@ const UsagePage = () => {
 								</div>
 							)}
 
-							<div className='border-zinc-150/45 relative rounded-xl border bg-zinc-50/50 p-3.5 dark:border-zinc-800/60 dark:bg-zinc-900/40'>
+							<div className='border-zinc-200/45 relative rounded-xl border bg-zinc-50/50 p-3.5 dark:border-zinc-800/60 dark:bg-zinc-900/40'>
 								{chart ? (
 									<svg
 										className='h-28 w-60 overflow-visible'
@@ -418,10 +419,13 @@ const UsagePage = () => {
 												x2='120'
 												y2={CHART_HEIGHT}
 												gradientUnits='userSpaceOnUse'>
-												<stop stopColor='#6366f1' stopOpacity='0.22' />
+												<stop
+													style={{ stopColor: 'var(--color-primary-400)' }}
+													stopOpacity='0.3'
+												/>
 												<stop
 													offset='1'
-													stopColor='#6366f1'
+													style={{ stopColor: 'var(--color-primary-400)' }}
 													stopOpacity='0'
 												/>
 											</linearGradient>
@@ -432,9 +436,11 @@ const UsagePage = () => {
 												x2={CHART_WIDTH}
 												y2='0'
 												gradientUnits='userSpaceOnUse'>
-												<stop stopColor='#6366f1' />
-												<stop offset='0.55' stopColor='#8b5cf6' />
-												<stop offset='1' stopColor='#ec4899' />
+												<stop style={{ stopColor: 'var(--color-primary-400)' }} />
+												<stop
+													offset='1'
+													style={{ stopColor: 'var(--color-primary-500)' }}
+												/>
 											</linearGradient>
 										</defs>
 									</svg>
@@ -457,11 +463,16 @@ const UsagePage = () => {
 
 			{/* Breakdown by source type — whole-period totals */}
 			<section>
-				<h3 className='mb-4 text-xs font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
-					Usage Breakdown
-					<span className='ml-2 font-bold normal-case'>(last 30 days)</span>
-				</h3>
-				<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+				<div className='mb-4 flex flex-wrap items-center justify-between gap-3'>
+					<h3 className='text-xs font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
+						Usage Breakdown
+					</h3>
+					<span className='flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-bold text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400'>
+						<Calendar size={11} />
+						Last 30 days
+					</span>
+				</div>
+				<div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
 					{BREAKDOWN_CARDS.map((item) => {
 						const credits = bySource[item.type] ?? 0;
 						const isSelected = txType === item.type;
@@ -477,15 +488,15 @@ const UsagePage = () => {
 									setTxType((prev) => (prev === item.type ? 'all' : item.type))
 								}
 								className={[
-									'relative flex h-32 cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border bg-white p-5 text-left shadow-xs transition-all duration-350 dark:bg-zinc-950',
+									'relative flex min-h-32 cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border bg-white p-5 text-left shadow-xs transition-all duration-300 dark:bg-zinc-950',
 									isSelected
 										? 'border-primary-500/80 ring-primary-500/15 dark:border-primary-400/80 shadow-md ring-2'
-										: 'hover:border-zinc-350/80 border-zinc-100 hover:shadow-sm dark:border-zinc-800 dark:hover:border-zinc-700/80',
+										: 'hover:border-zinc-300/80 border-zinc-100 hover:shadow-sm dark:border-zinc-800 dark:hover:border-zinc-700/80',
 								].join(' ')}>
 								<div className='flex w-full items-start justify-between'>
 									<div className='flex items-center gap-3.5'>
 										<div
-											className={`border-zinc-150/15 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border shadow-xs ${item.iconBg}`}>
+											className={`border-zinc-200/15 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border shadow-xs ${item.iconBg}`}>
 											<item.icon size={18} />
 										</div>
 										<div>
@@ -498,7 +509,7 @@ const UsagePage = () => {
 										</div>
 									</div>
 									<span
-										className={`border-zinc-150/15 rounded-full border px-2 py-0.5 text-[10px] font-bold ${item.iconBg}`}>
+										className={`border-zinc-200/15 rounded-full border px-2 py-0.5 text-[10px] font-bold ${item.iconBg}`}>
 										{categoryPct}%
 									</span>
 								</div>
@@ -556,8 +567,7 @@ const UsagePage = () => {
 
 				{txType !== 'all' && (
 					<p className='mb-3 text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
-						Filtering the current page only - the backend does not filter this list
-						server-side.
+						Showing matching activity from this page only.
 					</p>
 				)}
 
@@ -600,7 +610,7 @@ const UsagePage = () => {
 											animate={{ opacity: 1, y: 0 }}
 											exit={{ opacity: 0, y: -4 }}
 											key={tx.id}
-											className='flex items-center gap-4 px-5 py-3.5 transition-all duration-200 hover:translate-x-0.5 hover:bg-zinc-50/45 dark:hover:bg-zinc-800/10'>
+											className='flex items-center gap-4 px-5 py-3.5 transition-all duration-200 hover:bg-zinc-50 dark:hover:bg-zinc-800/40'>
 											<span
 												className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wide ${cfg.color}`}>
 												{cfg.label}
@@ -656,7 +666,7 @@ const UsagePage = () => {
 							type='button'
 							onClick={() => setPage((p) => Math.max(1, p - 1))}
 							disabled={page === 1}
-							className='rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'>
+							className='rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'>
 							← Previous
 						</button>
 						<span className='text-sm font-semibold text-zinc-400'>
@@ -666,7 +676,7 @@ const UsagePage = () => {
 							type='button'
 							onClick={() => setPage((p) => Math.min(lastPage, p + 1))}
 							disabled={page === lastPage}
-							className='rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'>
+							className='rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'>
 							Next →
 						</button>
 					</div>

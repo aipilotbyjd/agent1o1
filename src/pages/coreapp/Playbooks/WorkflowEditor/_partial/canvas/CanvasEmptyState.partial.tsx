@@ -331,7 +331,7 @@ const CanvasEmptyState = () => {
 																type='button'
 																onClick={() => setActiveDropdown(prev => prev === 'files' ? null : 'files')}
 																aria-label='Attach files'
-																className='text-zinc-400 transition hover:text-zinc-650 dark:hover:text-zinc-200 flex items-center justify-center p-1 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-900'>
+																className='text-zinc-400 transition hover:text-zinc-700 dark:hover:text-zinc-200 flex items-center justify-center p-1 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-900'>
 																<Paperclip size={18} />
 															</button>
 															{activeDropdown === 'files' && (
@@ -376,7 +376,7 @@ const CanvasEmptyState = () => {
 																type='button'
 																onClick={() => setActiveDropdown(prev => prev === 'config' ? null : 'config')}
 																aria-label='Configurations'
-																className='text-zinc-400 transition hover:text-zinc-650 dark:hover:text-zinc-200 flex items-center justify-center p-1 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-900'>
+																className='text-zinc-400 transition hover:text-zinc-700 dark:hover:text-zinc-200 flex items-center justify-center p-1 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-900'>
 																<Sliders size={18} />
 															</button>
 															{activeDropdown === 'config' && (
@@ -945,7 +945,7 @@ const CanvasEmptyState = () => {
 										</div>
 
 										{/* Handle right port */}
-										<span aria-hidden className='absolute -right-2 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-white border border-emerald-400 text-[10px] text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 dark:bg-zinc-900 dark:border-emerald-800 shadow-xs z-20 font-bold'>+</span>
+										<span aria-hidden className='absolute -right-2 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-white border border-emerald-400 text-[10px] text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 dark:bg-zinc-900 dark:border-emerald-800 shadow-xs z-20 font-bold'>+</span>
 									</motion.div>
 								)}
 							</AnimatePresence>
@@ -1050,8 +1050,8 @@ const CanvasEmptyState = () => {
 										</div>
 
 										{/* Handle left & right ports */}
-										<span aria-hidden className='absolute -left-2 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-white border border-primary-400 text-[10px] text-primary-505 hover:text-primary-700 hover:bg-primary-50 dark:bg-zinc-900 dark:border-primary-800 shadow-xs z-20 font-bold'>+</span>
-										<span aria-hidden className='absolute -right-2 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-white border border-primary-400 text-[10px] text-primary-505 hover:text-primary-700 hover:bg-primary-50 dark:bg-zinc-900 dark:border-primary-800 shadow-xs z-20 font-bold'>+</span>
+										<span aria-hidden className='absolute -left-2 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-white border border-primary-400 text-[10px] text-primary-505 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-950/30 dark:bg-zinc-900 dark:border-primary-800 shadow-xs z-20 font-bold'>+</span>
+										<span aria-hidden className='absolute -right-2 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-white border border-primary-400 text-[10px] text-primary-505 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-950/30 dark:bg-zinc-900 dark:border-primary-800 shadow-xs z-20 font-bold'>+</span>
 									</motion.div>
 								)}
 							</AnimatePresence>
@@ -1131,7 +1131,7 @@ const CanvasEmptyState = () => {
 										</div>
 
 										{/* Handle left port */}
-										<span aria-hidden className='absolute -left-2 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-white border border-blue-400 text-[10px] text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:bg-zinc-900 dark:border-blue-800 shadow-xs z-20 font-bold'>+</span>
+										<span aria-hidden className='absolute -left-2 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full bg-white border border-blue-400 text-[10px] text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/30 dark:bg-zinc-900 dark:border-blue-800 shadow-xs z-20 font-bold'>+</span>
 									</motion.div>
 								)}
 							</AnimatePresence>

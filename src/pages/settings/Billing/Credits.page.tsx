@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router';
 import { AlertTriangle, CreditCard, Package, Sparkles } from 'lucide-react';
 import { useWorkspaceContext } from '@/context/workspace';
 import {
@@ -9,6 +10,8 @@ import {
 } from '@/api/modules/billing';
 import type { TCreditPack } from '@/types/billing.type';
 import { primaryBtn } from '@/pages/settings/_shared/buttons';
+import pages from '@/Routes/pages';
+import { withWorkspace } from '@/Routes/paths';
 
 const formatPrice = (cents: number) =>
 	new Intl.NumberFormat('en-US', {
@@ -37,18 +40,20 @@ const packStatusBadge: Record<TCreditPack['status'], { bg: string; text: string;
 	};
 
 const CreditsPage = () => {
+	const { workspaceId } = useParams<{ workspaceId: string }>();
 	const { activeWorkspaceId } = useWorkspaceContext();
-	const { data: overview, isLoading: overviewLoading } = useBillingOverview(activeWorkspaceId);
-	const { data: activePacks, isLoading: packsLoading } =
-		usePurchasedCreditPacks(activeWorkspaceId);
-	const { data: catalog, isLoading: catalogLoading } = useCreditPackCatalog(activeWorkspaceId);
-	const buyCredits = useCheckoutCreditPack(activeWorkspaceId);
+	const ws = workspaceId || activeWorkspaceId;
+	const { data: overview, isLoading: overviewLoading } = useBillingOverview(ws);
+	const { data: activePacks, isLoading: packsLoading } = usePurchasedCreditPacks(ws);
+	const { data: catalog, isLoading: catalogLoading } = useCreditPackCatalog(ws);
+	const buyCredits = useCheckoutCreditPack(ws);
 
 	const [selected, setSelected] = useState<string | null>(null);
 
 	useEffect(() => {
-		if (!selected && catalog && catalog.length > 0) {
-			setSelected(catalog[Math.min(1, catalog.length - 1)].key);
+		const available = catalog?.filter((p) => p.available) ?? [];
+		if (!selected && available.length > 0) {
+			setSelected(available[Math.min(1, available.length - 1)].key);
 		}
 	}, [catalog, selected]);
 
@@ -56,16 +61,18 @@ const CreditsPage = () => {
 	const remaining = overview?.credits_available ?? total;
 	const topupCredits = overview?.topup_credits ?? 0;
 	const usedPct = total > 0 ? Math.min(100, Math.round(((total - remaining) / total) * 100)) : 0;
-	const barColor =
-		usedPct >= 80 ? 'bg-red-500' : usedPct >= 60 ? 'bg-yellow-500' : 'bg-emerald-500';
+	const barColor = usedPct >= 80 ? 'bg-rose-500' : 'bg-primary-400';
 
 	const packs = catalog ?? [];
-	const selectedPack = packs.find((p) => p.key === selected);
+	const selectedPack = packs.find((p) => p.key === selected && p.available);
+	const noPacksAvailable = !catalogLoading && packs.length > 0 && !packs.some((p) => p.available);
 
-	const handleBuy = async () => {
+	const handleBuy = () => {
 		if (!selectedPack) return;
-		const { checkout_url } = await buyCredits.mutateAsync({ pack_key: selectedPack.key });
-		window.location.href = checkout_url;
+		buyCredits.mutate(
+			{ pack_key: selectedPack.key },
+			{ onSuccess: ({ checkout_url }) => (window.location.href = checkout_url) },
+		);
 	};
 
 	return (
@@ -132,6 +139,22 @@ const CreditsPage = () => {
 									)}
 								</button>
 							))}
+						</div>
+					)}
+
+					{noPacksAvailable && (
+						<div className='mt-4 flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-700 dark:bg-zinc-800/50'>
+							<p className='text-sm font-semibold text-zinc-600 dark:text-zinc-300'>
+								Credit packs are not available on your current plan.
+							</p>
+							<Link
+								to={withWorkspace(
+									pages.settings.subPages!.billing.subPages!.plans.to,
+									ws,
+								)}
+								className={`${primaryBtn} shrink-0`}>
+								View plans
+							</Link>
 						</div>
 					)}
 

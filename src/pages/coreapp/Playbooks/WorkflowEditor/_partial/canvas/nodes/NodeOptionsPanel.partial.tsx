@@ -93,7 +93,7 @@ const NodeOptionsPanel = ({ nodeId, fields, credentialField, credentialId }: Pro
 										event.stopPropagation();
 										if (credentialId) refreshToken.mutate(credentialId);
 									}}
-									className='nodrag flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:bg-zinc-50 hover:text-zinc-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:hover:bg-zinc-800'>
+									className='nodrag flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:bg-zinc-50 hover:text-zinc-600 dark:hover:text-zinc-300 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:hover:bg-zinc-800'>
 									<RefreshCw
 										size={12}
 										className={refreshToken.isPending ? 'animate-spin' : ''}

@@ -83,7 +83,7 @@ const NodeInlineTest = ({
 							setExpanded((prev) => !prev);
 						}}
 						aria-label={expanded ? 'Collapse test result' : 'Expand test result'}
-						className='flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 hover:text-zinc-600 dark:border-zinc-700'>
+						className='flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 dark:border-zinc-700'>
 						{expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
 					</button>
 				)}

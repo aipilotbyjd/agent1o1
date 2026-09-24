@@ -301,7 +301,7 @@ const WorkflowGovernanceModal = () => {
 																})
 															}
 															disabled={publishVersion.isPending}
-															className="rounded-lg border border-zinc-200 hover:bg-zinc-50 hover:text-zinc-950 px-2.5 py-1.5 text-[10px] font-bold text-zinc-600 dark:border-zinc-800 dark:hover:bg-white/[0.04] dark:text-zinc-300 transition"
+															className="rounded-lg border border-zinc-200 hover:bg-zinc-50 hover:text-zinc-950 dark:hover:text-white px-2.5 py-1.5 text-[10px] font-bold text-zinc-600 dark:border-zinc-800 dark:hover:bg-white/[0.04] dark:text-zinc-300 transition"
 														>
 															Publish
 														</button>
@@ -316,7 +316,7 @@ const WorkflowGovernanceModal = () => {
 																})
 															}
 															disabled={rollbackVersion.isPending}
-															className="rounded-lg border border-zinc-200 hover:bg-zinc-50 hover:text-zinc-950 px-2.5 py-1.5 text-[10px] font-bold text-zinc-650 dark:border-zinc-800 dark:hover:bg-white/[0.04] dark:text-zinc-300 transition"
+															className="rounded-lg border border-zinc-200 hover:bg-zinc-50 hover:text-zinc-950 dark:hover:text-white px-2.5 py-1.5 text-[10px] font-bold text-zinc-650 dark:border-zinc-800 dark:hover:bg-white/[0.04] dark:text-zinc-300 transition"
 														>
 															Rollback
 														</button>
@@ -492,7 +492,7 @@ const WorkflowGovernanceModal = () => {
 														aria-label='Copy'
 														type="button"
 														onClick={() => copyLink(share.id, share.share_url)}
-														className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:text-zinc-400 transition"
+														className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:text-zinc-400 transition"
 													>
 														{copiedShareId === share.id ? (
 															<Check size={12} className="text-emerald-500" />
@@ -856,7 +856,7 @@ const WorkflowGovernanceModal = () => {
 									type="button"
 									onClick={() => generateContract.mutate()}
 									disabled={generateContract.isPending}
-									className="flex items-center gap-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-850 text-white px-3.5 py-2 text-xs font-bold dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 transition"
+									className="flex items-center gap-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white px-3.5 py-2 text-xs font-bold dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 transition"
 								>
 									<Plus size={13} />
 									Generate Snapshot
@@ -920,7 +920,7 @@ const WorkflowGovernanceModal = () => {
 																type="button"
 																onClick={() => handleRunVerification(contract.id)}
 																disabled={isRunning}
-																className="flex items-center gap-1 rounded-lg border border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 px-3 py-1.5 text-xs font-bold text-zinc-655 dark:border-zinc-850 dark:hover:bg-white/[0.04] dark:text-zinc-400 transition"
+																className="flex items-center gap-1 rounded-lg border border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 dark:hover:text-zinc-200 px-3 py-1.5 text-xs font-bold text-zinc-600 dark:border-zinc-800 dark:hover:bg-white/[0.04] dark:text-zinc-400 transition"
 															>
 																{isRunning ? (
 																	<Loader2 size={11} className="animate-spin text-zinc-500" />

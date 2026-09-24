@@ -111,7 +111,7 @@ const ImportExportDialog = () => {
 										'rounded-lg px-3 py-1 text-xs font-bold uppercase transition',
 										format === fmt
 											? 'bg-primary-400 text-primary-950'
-											: 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300',
+											: 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:hover:bg-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
 									].join(' ')}>
 									{fmt}
 								</button>
@@ -131,7 +131,7 @@ const ImportExportDialog = () => {
 								onClick={() => {
 									navigator.clipboard.writeText(displayValue);
 								}}
-								className='flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300'>
+								className='flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300'>
 								Copy to clipboard
 							</button>
 							<button

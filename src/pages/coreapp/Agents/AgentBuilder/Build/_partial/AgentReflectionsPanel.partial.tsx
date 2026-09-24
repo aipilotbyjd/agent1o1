@@ -300,7 +300,7 @@ const ReflectionCard = ({
 					<button
 						onClick={() => dismissMutation.mutate(reflection.id)}
 						disabled={dismissMutation.isPending}
-						className='rounded-lg border border-zinc-200 bg-white px-3 py-1 text-[10px] font-bold text-zinc-500 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
+						className='rounded-lg border border-zinc-200 bg-white px-3 py-1 text-[10px] font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
 						Dismiss
 					</button>
 					<button
@@ -448,7 +448,7 @@ const AgentReflectionsPanel = ({ ws, agentId, displayMode = 'panel' }: TProps) =
 						className={`rounded-lg border px-2 py-1 transition ${
 							isSettingsOpen
 								? 'border-primary-500/20 bg-primary-400/10 text-primary-600 dark:text-primary-400'
-								: 'border-zinc-200 bg-white text-zinc-400 hover:text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900'
+								: 'border-zinc-200 bg-white text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 dark:border-zinc-800 dark:bg-zinc-900'
 						}`}>
 						<Settings2 size={12} />
 					</button>

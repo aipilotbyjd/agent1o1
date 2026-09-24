@@ -17,6 +17,7 @@ import {
 	Zap,
 } from 'lucide-react';
 import { useWorkspace } from '@/api/modules/workspaces';
+import { useConfirm } from '@/context/confirm';
 import {
 	useBillingOverview,
 	useCancelSubscription,
@@ -112,6 +113,7 @@ const BillingOverviewPage = () => {
 	const portal = useCreateBillingPortalSession(workspaceId!);
 	const cancelSubscription = useCancelSubscription(workspaceId!);
 	const resumeSubscription = useResumeSubscription(workspaceId!);
+	const { confirm } = useConfirm();
 
 	const toWorkspacePath = (to: string) => withWorkspace(to, workspaceId!);
 
@@ -174,14 +176,13 @@ const BillingOverviewPage = () => {
 	const creditsUsedPct =
 		total && total > 0 ? Math.min(100, Math.round(((total - remaining) / total) * 100)) : 0;
 
-	const handleCancel = () => {
-		if (
-			window.confirm(
-				'Cancel your subscription? You will keep access until the end of the current billing period.',
-			)
-		) {
-			cancelSubscription.mutate();
-		}
+	const handleCancel = async () => {
+		const confirmed = await confirm({
+			title: 'Cancel subscription',
+			confirmText: 'Cancel plan',
+			message: 'You will keep access until the end of the current billing period.',
+		});
+		if (confirmed) cancelSubscription.mutate();
 	};
 
 	return (
@@ -362,7 +363,7 @@ const BillingOverviewPage = () => {
 
 			{/* Credit controls */}
 			<section>
-				<h3 className='mt-8 mb-4 text-xs font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
+				<h3 className='mb-4 text-xs font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
 					Credit Controls
 				</h3>
 				<div className='grid gap-4 lg:grid-cols-2'>
@@ -373,7 +374,7 @@ const BillingOverviewPage = () => {
 
 			{/* Limits */}
 			<section>
-				<h3 className='mt-8 mb-4 text-xs font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
+				<h3 className='mb-4 text-xs font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
 					Your Limits
 				</h3>
 				<div className='grid gap-4 sm:grid-cols-3'>
@@ -404,7 +405,7 @@ const BillingOverviewPage = () => {
 
 			{/* Features */}
 			<section>
-				<h3 className='mt-8 mb-4 text-xs font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
+				<h3 className='mb-4 text-xs font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
 					Included Features
 				</h3>
 				<div className='rounded-2xl border border-zinc-100 bg-white/50 p-5 dark:border-zinc-800 dark:bg-zinc-950/20'>

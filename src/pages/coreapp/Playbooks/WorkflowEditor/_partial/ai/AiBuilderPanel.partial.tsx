@@ -275,7 +275,7 @@ const AiBuilderPanel = () => {
 							onClick={() => setShowHistory(true)}
 							title='Chat history'
 							aria-label='Chat history'
-							className='flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 shadow-xs hover:bg-zinc-50 hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
+							className='flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 shadow-xs hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
 						>
 							<History size={14} />
 						</button>
@@ -299,7 +299,7 @@ const AiBuilderPanel = () => {
 							type='button'
 							onClick={handleNewChat}
 							title='New chat'
-							className='flex h-7 items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2 text-[11px] font-bold text-zinc-600 shadow-xs hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'
+							className='flex h-7 items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2 text-[11px] font-bold text-zinc-600 shadow-xs hover:bg-zinc-50 dark:hover:bg-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'
 						>
 							<Plus size={12} />
 							<span>New Chat</span>
@@ -307,7 +307,7 @@ const AiBuilderPanel = () => {
 						<button
 							type='button'
 							onClick={handleExit}
-							className='flex h-7 items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2 text-[11px] font-bold text-zinc-600 shadow-xs hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'
+							className='flex h-7 items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2 text-[11px] font-bold text-zinc-600 shadow-xs hover:bg-zinc-50 dark:hover:bg-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'
 						>
 							<svg className='h-3 w-3' fill='none' stroke='currentColor' viewBox='0 0 24 24' strokeWidth='2.5'>
 								<path strokeLinecap='round' strokeLinejoin='round' d='M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75' />
@@ -512,7 +512,7 @@ const AiBuilderPanel = () => {
 									className={`flex items-center gap-1 rounded-md px-2.5 py-1 transition disabled:cursor-not-allowed ${
 										mode === 'build'
 											? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-700 dark:text-white'
-											: 'text-zinc-400 hover:text-zinc-700 dark:text-zinc-500'
+											: 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 dark:text-zinc-500'
 									}`}
 								>
 									<Sparkles size={10} className={mode === 'build' ? 'text-primary-500' : ''} />
@@ -525,7 +525,7 @@ const AiBuilderPanel = () => {
 									className={`rounded-md px-2.5 py-1 transition disabled:cursor-not-allowed ${
 										mode === 'ask'
 											? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-700 dark:text-white'
-											: 'text-zinc-400 hover:text-zinc-700 dark:text-zinc-500'
+											: 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 dark:text-zinc-500'
 									}`}
 								>
 									<span>Ask</span>

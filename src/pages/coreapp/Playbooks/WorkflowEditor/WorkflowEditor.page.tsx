@@ -19,6 +19,7 @@ const WorkflowEditorPage = () => {
 	const activeWorkspaceId = routeWorkspaceId || contextWorkspaceId;
 	const navigate = useNavigate();
 	const [error, setError] = useState<string | null>(null);
+	const [attempt, setAttempt] = useState(0);
 	const createStarted = useRef(false);
 
 	useEffect(() => {
@@ -27,11 +28,7 @@ const WorkflowEditorPage = () => {
 		createStarted.current = true;
 		setError(null);
 
-		WorkflowService.create(activeWorkspaceId, {
-			name: 'Untitled Workflow',
-			nodes: [],
-			connections: [],
-		})
+		WorkflowService.create(activeWorkspaceId, { name: 'Untitled Workflow' })
 			.then((res) => {
 				navigate(paths.editPlaybook(activeWorkspaceId, res.id), { replace: true });
 			})
@@ -40,7 +37,7 @@ const WorkflowEditorPage = () => {
 				setError('Failed to create a new workflow. Please try again.');
 				createStarted.current = false;
 			});
-	}, [isAddWorkflow, activeWorkspaceId, navigate]);
+	}, [isAddWorkflow, activeWorkspaceId, navigate, attempt]);
 
 	if (isAddWorkflow) {
 		if (error) {
@@ -48,10 +45,7 @@ const WorkflowEditorPage = () => {
 				<div className='flex h-screen flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-950 px-4 text-center'>
 					<p className='text-sm font-semibold text-rose-500 mb-4'>{error}</p>
 					<button
-						onClick={() => {
-							createStarted.current = false;
-							setError(null);
-						}}
+						onClick={() => setAttempt((n) => n + 1)}
 						className='flex h-10 items-center justify-center rounded-xl bg-primary-400 px-5 text-xs font-black text-primary-950 shadow-md transition hover:brightness-110 active:scale-[0.98]'
 					>
 						Retry

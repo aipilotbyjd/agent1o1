@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useOutletContext, useNavigate } from 'react-router';
+import { useOutletContext, useNavigate, useParams } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
 	GitMerge,
@@ -31,9 +31,9 @@ import pages from '@/Routes/pages';
 import paths, { withWorkspace } from '@/Routes/paths';
 import { useAuth } from '@/context/auth';
 import { useOnboardingState, useDismissOnboarding } from '@/api/modules/onboarding';
+import { useCreateWorkflow } from '@/api/modules/workflows';
 import type { TOnboardingStepKey } from '@/types/onboarding.type';
 import { useWorkspaceContext } from '@/context/workspace';
-import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import { useDashboard } from './_helper/dashboard.adapter';
 import PendingApprovalsCard from './_partial/PendingApprovalsCard.partial';
 import { STATUS_BADGE_COLORS, type TExecutionStatus } from './_types/dashboard.type';
@@ -105,13 +105,28 @@ const DashboardPage = () => {
 	const { setHeaderLeft } = useOutletContext<OutletContextType>();
 	const navigate = useNavigate();
 	const { userData } = useAuth();
+	const { workspaceId } = useParams<{ workspaceId: string }>();
 	const { workspaces: apiWorkspaces, activeWorkspaceId } = useWorkspaceContext();
-	const { activeWorkspaceId: fallbackWorkspaceId } = useWorkflowShellStore();
+	const currentWorkspaceId = workspaceId || activeWorkspaceId;
 
-	const currentWorkspaceId = activeWorkspaceId || fallbackWorkspaceId;
-	// Paths in `@/Routes/pages` are workspace-scoped templates here, unlike old's flat
-	// `/editor/...`; same helper the ported Agents and Playbooks lists use.
 	const toWorkspacePath = (to: string) => withWorkspace(to, currentWorkspaceId);
+
+	const createWorkflowMutation = useCreateWorkflow(currentWorkspaceId);
+
+	const handleQuickCreateWorkflow = () => {
+		if (!currentWorkspaceId || createWorkflowMutation.isPending) return;
+		createWorkflowMutation.mutate(
+			{ name: 'Untitled Workflow' },
+			{ onSuccess: (res) => navigate(paths.editPlaybook(currentWorkspaceId, res.id)) },
+		);
+	};
+
+	const openRun = (runId: string, workflowId: string) =>
+		navigate(
+			workflowId
+				? paths.editPlaybook(currentWorkspaceId, workflowId)
+				: `${toWorkspacePath(workspacePages.trail.to)}?run=${encodeURIComponent(runId)}`,
+		);
 
 	const { data: dashboard, isLoading } = useDashboard(currentWorkspaceId);
 	const summary = dashboard?.summary;
@@ -219,7 +234,8 @@ const DashboardPage = () => {
 		...ws,
 		color: colorList[index % colorList.length],
 	}));
-	const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId) || workspaces[0];
+	const activeWorkspace =
+		workspaces.find((w) => String(w.id) === String(currentWorkspaceId)) || workspaces[0];
 	const userName = userData?.firstName || userData?.name?.split(' ')[0] || 'there';
 
 	useEffect(() => {
@@ -233,7 +249,7 @@ const DashboardPage = () => {
 			label: 'New Workflow',
 			description: 'Build a new automation',
 			icon: Plus,
-			onClick: () => navigate(paths.newPlaybook(currentWorkspaceId)),
+			onClick: handleQuickCreateWorkflow,
 		},
 		{
 			label: 'Browse Templates',
@@ -449,7 +465,7 @@ const DashboardPage = () => {
 									boxShadow: '0 0 20px rgba(15, 23, 42, 0.15)',
 								}}
 								whileTap={{ scale: 0.98 }}
-								onClick={() => navigate(paths.newPlaybook(currentWorkspaceId))}
+								onClick={handleQuickCreateWorkflow}
 								className='dark:from-primary-400 dark:to-primary-400 dark:text-primary-950 dark:shadow-primary-500/10 flex h-10.5 cursor-pointer items-center gap-2 rounded-xl bg-[#101828] px-6 text-xs font-bold text-white shadow-md shadow-slate-950/15 transition-all hover:bg-[#1e293b] active:scale-95 dark:bg-gradient-to-r dark:hover:brightness-110'>
 								<Plus size={14} strokeWidth={3} />
 								<span>New Workflow</span>
@@ -636,14 +652,7 @@ const DashboardPage = () => {
 													{formatRelativeTime(f.failed_at)}
 												</span>
 												<button
-													onClick={() =>
-														navigate(
-															paths.editPlaybook(
-																currentWorkspaceId,
-																f.workflow_id,
-															),
-														)
-													}
+													onClick={() => openRun(f.id, f.workflow_id)}
 													className='flex h-7.5 items-center gap-1 rounded-lg border border-rose-500/25 bg-rose-500/5 px-2.5 text-[10px] font-black text-rose-600 transition hover:bg-rose-500 hover:text-white dark:text-rose-400'>
 													Fix <ArrowUpRight size={11} />
 												</button>
@@ -682,9 +691,7 @@ const DashboardPage = () => {
 									</div>
 									<p className='text-text-main text-xs font-bold'>No runs yet</p>
 									<button
-										onClick={() =>
-											navigate(paths.newPlaybook(currentWorkspaceId))
-										}
+										onClick={handleQuickCreateWorkflow}
 										className='bg-primary-400 text-primary-950 mt-1 flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-[11px] font-black transition hover:brightness-110'>
 										<Plus size={12} strokeWidth={3} /> Create Workflow
 									</button>
@@ -698,14 +705,7 @@ const DashboardPage = () => {
 										return (
 											<div
 												key={run.id}
-												onClick={() =>
-													navigate(
-														paths.editPlaybook(
-															currentWorkspaceId,
-															run.workflow_id,
-														),
-													)
-												}
+												onClick={() => openRun(run.id, run.workflow_id)}
 												className='group flex cursor-pointer items-center justify-between gap-3 px-5 py-3.5 transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-800/15'>
 												<div className='flex min-w-0 items-center gap-3'>
 													<div className='border-primary-500/15 bg-primary-400/10 text-primary-500 dark:text-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border'>

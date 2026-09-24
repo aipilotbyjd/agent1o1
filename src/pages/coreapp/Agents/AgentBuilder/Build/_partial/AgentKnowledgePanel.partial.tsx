@@ -154,7 +154,7 @@ const AgentKnowledgePanel = ({ ws, agentId }: TProps) => {
 						<button
 							aria-label='Close'
 							onClick={resetForm}
-							className='text-zinc-400 hover:text-zinc-600'>
+							className='text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
 							<X size={13} />
 						</button>
 					</div>
@@ -208,7 +208,7 @@ const AgentKnowledgePanel = ({ ws, agentId }: TProps) => {
 					<div className='flex justify-end gap-2'>
 						<button
 							onClick={resetForm}
-							className='rounded-lg border border-zinc-200 bg-white px-3 py-1 text-[10px] font-bold text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
+							className='rounded-lg border border-zinc-200 bg-white px-3 py-1 text-[10px] font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
 							Cancel
 						</button>
 						<button

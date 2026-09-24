@@ -157,12 +157,12 @@ const CreditAlertsCard = ({ ws }: { ws: string }) => {
 										? `Up to ${settings.maximum_thresholds} alerts`
 										: 'Add a percentage, e.g. 90'
 								}
-								className='focus:border-primary-400 focus:ring-primary-200 h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-800 outline-none focus:ring-4 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100'
+								className='focus:border-primary-400 focus:ring-primary-200 h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-800 outline-none focus:ring-4 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:ring-primary-500/20'
 							/>
 							<button
 								type='submit'
 								disabled={!isValid || isFull || update.isPending}
-								className='h-10 shrink-0 rounded-xl border border-zinc-200 bg-white px-4 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200'>
+								className='h-10 shrink-0 rounded-xl border border-zinc-200 bg-white px-4 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700'>
 								Add
 							</button>
 						</form>

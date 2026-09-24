@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useOutletContext, useNavigate, useSearchParams } from 'react-router';
+import { useOutletContext, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
 	Search,
@@ -150,7 +150,6 @@ const WorkflowsListPage = () => {
 	const { setHeaderLeft } = useOutletContext<OutletContextType>();
 	const navigate = useNavigate();
 	const { confirm } = useConfirm();
-	const [searchParams, setSearchParams] = useSearchParams();
 	const { activeWorkspaceId: fallbackWorkspaceId } = useWorkflowShellStore();
 	const { workspaces, activeWorkspace, activeWorkspaceId } = useWorkspaceContext();
 
@@ -239,21 +238,7 @@ const WorkflowsListPage = () => {
 		didInitExpand.current = true;
 	}, [folders]);
 
-	const [isCreateWorkflowOpen, setIsCreateWorkflowOpen] = useState(
-		() => searchParams.get('create') === 'true',
-	);
 	const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
-
-	const [newWfTitle, setNewWfTitle] = useState('');
-	const [newWfDesc, setNewWfDesc] = useState('');
-	const [newWfFolderId, setNewWfFolderId] = useState<string>('');
-
-	useEffect(() => {
-		if (searchParams.get('create') !== 'true') return;
-		const nextParams = new URLSearchParams(searchParams);
-		nextParams.delete('create');
-		setSearchParams(nextParams, { replace: true });
-	}, [searchParams, setSearchParams]);
 
 	const [newFolderName, setNewFolderName] = useState('');
 	const [newFolderColor, setNewFolderColor] = useState('#4f46e5');
@@ -371,37 +356,12 @@ const WorkflowsListPage = () => {
 		return [{ id: ROOT_FOLDER_ID, name: 'Root workflows', color: '#475569' }, ...folders];
 	}, [filteredWorkflows, folderGrouped, folders]);
 
-	const handleCreateWorkflow = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!newWfTitle.trim()) return;
-		try {
-			const res = await createWorkflowMutation.mutateAsync({
-				name: newWfTitle.trim(),
-				description: newWfDesc.trim() || undefined,
-				folder_id: newWfFolderId || undefined,
-			});
-			if (newWfFolderId) setExpandedFolders((prev) => ({ ...prev, [newWfFolderId]: true }));
-			setNewWfTitle('');
-			setNewWfDesc('');
-			setNewWfFolderId('');
-			setIsCreateWorkflowOpen(false);
-			triggerToast(`Workflow "${res.name}" created successfully!`);
-			navigate(paths.editPlaybook(currentWorkspaceId, res.id));
-		} catch {
-			// Error is surfaced by the mutation hook
-		}
-	};
-
-	const handleQuickCreateWorkflow = async () => {
+	const handleQuickCreateWorkflow = (folderId?: string) => {
 		if (!hasWorkspace || createWorkflowMutation.isPending) return;
-		try {
-			const res = await createWorkflowMutation.mutateAsync({
-				name: 'Untitled Workflow',
-			});
-			navigate(paths.editPlaybook(currentWorkspaceId, res.id));
-		} catch {
-			// Error is surfaced by the mutation hook
-		}
+		createWorkflowMutation.mutate(
+			{ name: 'Untitled Workflow', folder_id: folderId },
+			{ onSuccess: (res) => navigate(paths.editPlaybook(currentWorkspaceId, res.id)) },
+		);
 	};
 
 	const handleCreateFolder = async (e: React.FormEvent) => {
@@ -873,100 +833,6 @@ const WorkflowsListPage = () => {
 
 	const modals = (
 		<AnimatePresence>
-			{isCreateWorkflowOpen && (
-				<motion.div
-					initial={{ opacity: 0 }}
-					animate={{ opacity: 1 }}
-					exit={{ opacity: 0 }}
-					className='fixed inset-0 z-100 flex items-center justify-center bg-black/60 p-4 font-sans backdrop-blur-md'
-					onClick={() => setIsCreateWorkflowOpen(false)}>
-					<motion.div
-						initial={{ scale: 0.95, y: 15 }}
-						animate={{ scale: 1, y: 0 }}
-						exit={{ scale: 0.95, y: 15 }}
-						transition={{ duration: 0.2 }}
-						className='relative max-h-[calc(100vh-2rem)] w-full max-w-md overflow-y-auto rounded-3xl border border-slate-200/50 bg-white/95 p-6 shadow-2xl backdrop-blur-xl dark:border-zinc-800/60 dark:bg-zinc-950/95'
-						onClick={(e) => e.stopPropagation()}>
-						<button
-							aria-label='Close create workflow dialog'
-							onClick={() => setIsCreateWorkflowOpen(false)}
-							className='absolute top-4.5 right-4.5 text-slate-400 transition hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300'>
-							<X size={18} />
-						</button>
-						<h3 className='mb-5 flex items-center gap-2 text-lg font-black text-slate-900 dark:text-white'>
-							<Workflow className='text-primary-600 h-5 w-5' /> Create Workflow
-						</h3>
-						<form onSubmit={handleCreateWorkflow} className='space-y-4'>
-							<div>
-								<label
-									htmlFor='new-workflow-name'
-									className='mb-1.5 block text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
-									Workflow Name
-								</label>
-								<input
-									id='new-workflow-name'
-									aria-label='Workflow name'
-									type='text'
-									required
-									placeholder='e.g. Lead Sync Manager'
-									value={newWfTitle}
-									onChange={(e) => setNewWfTitle(e.target.value)}
-									className='bg-slate-55/50 focus:border-primary-500 focus:ring-primary-500/10 h-10 w-full rounded-xl border border-slate-200 px-3.5 text-xs font-semibold text-slate-900 transition outline-none focus:bg-white focus:ring-2 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-white dark:focus:bg-zinc-900'
-								/>
-							</div>
-							<div>
-								<label
-									htmlFor='new-workflow-description'
-									className='mb-1.5 block text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
-									Description
-								</label>
-								<textarea
-									id='new-workflow-description'
-									aria-label='Workflow description'
-									placeholder='e.g. Syncs signup details to Slack...'
-									value={newWfDesc}
-									onChange={(e) => setNewWfDesc(e.target.value)}
-									rows={3}
-									className='bg-slate-55/50 focus:border-primary-500 focus:ring-primary-500/10 w-full resize-none rounded-xl border border-slate-200 p-3.5 text-xs font-semibold text-slate-900 transition outline-none focus:bg-white focus:ring-2 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-white dark:focus:bg-zinc-900'
-								/>
-							</div>
-							<div>
-								<label
-									htmlFor='new-workflow-folder'
-									className='mb-1.5 block text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
-									Assign to Folder
-								</label>
-								<select
-									id='new-workflow-folder'
-									value={newWfFolderId}
-									onChange={(e) => setNewWfFolderId(e.target.value)}
-									className='bg-slate-55/50 focus:border-primary-500 focus:ring-primary-500/25 h-10 w-full rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-900 transition outline-none focus:ring-1 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white'>
-									<option value=''>No Folder (Root level)</option>
-									{folders.map((f) => (
-										<option key={f.id} value={f.id}>
-											{f.name}
-										</option>
-									))}
-								</select>
-							</div>
-							<div className='flex flex-col-reverse gap-2.5 pt-2 sm:flex-row sm:justify-end'>
-								<button
-									type='button'
-									onClick={() => setIsCreateWorkflowOpen(false)}
-									className='h-9.5 cursor-pointer rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-500 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'>
-									Cancel
-								</button>
-								<button
-									type='submit'
-									className='from-primary-400 to-primary-400 text-primary-950 h-9.5 cursor-pointer rounded-xl bg-gradient-to-r px-5 text-xs font-bold shadow-sm shadow-[#7c3aed]/10 transition-all hover:brightness-110'>
-									Create Workflow
-								</button>
-							</div>
-						</form>
-					</motion.div>
-				</motion.div>
-			)}
-
 			{isCreateFolderOpen && (
 				<motion.div
 					initial={{ opacity: 0 }}
@@ -1140,22 +1006,11 @@ const WorkflowsListPage = () => {
 					<div className='mt-6 flex w-full flex-col items-center gap-2.5 sm:w-auto sm:flex-row'>
 						<button
 							type='button'
-							onClick={() => {
-								setNewWfFolderId('');
-								setIsCreateWorkflowOpen(true);
-							}}
-							disabled={!hasWorkspace}
+							onClick={() => handleQuickCreateWorkflow()}
+							disabled={!hasWorkspace || createWorkflowMutation.isPending}
 							className='from-primary-400 to-primary-400 text-primary-950 shadow-primary-500/15 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r px-5 text-xs font-black shadow-md transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto'>
 							<Plus size={15} strokeWidth={3} />
 							Create Workflow
-						</button>
-						<button
-							type='button'
-							onClick={handleQuickCreateWorkflow}
-							disabled={!hasWorkspace || createWorkflowMutation.isPending}
-							className='dark:border-border-main dark:bg-bg-card flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto dark:text-white dark:hover:bg-zinc-950/20'>
-							<Workflow size={15} />
-							Start blank in editor
 						</button>
 						<button
 							type='button'
@@ -1250,10 +1105,7 @@ const WorkflowsListPage = () => {
 							type='button'
 							whileHover={{ scale: 1.02, y: -1 }}
 							whileTap={{ scale: 0.98 }}
-							onClick={() => {
-								setNewWfFolderId('');
-								setIsCreateWorkflowOpen(true);
-							}}
+							onClick={() => handleQuickCreateWorkflow()}
 							disabled={!hasWorkspace || createWorkflowMutation.isPending}
 							className='shadow-primary-500/10 flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#CFF54A] px-4.5 text-xs font-black text-black shadow-md transition-all hover:bg-[#B7E52F] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#CFF54A] dark:text-black dark:hover:bg-[#B7E52F]'>
 							<Plus size={15} strokeWidth={2.5} />
@@ -1575,8 +1427,9 @@ const WorkflowsListPage = () => {
 															type='button'
 															onClick={() => {
 																setActiveFolderMenuId(null);
-																setNewWfFolderId(folder.id);
-																setIsCreateWorkflowOpen(true);
+																handleQuickCreateWorkflow(
+																	folder.id,
+																);
 															}}
 															className={menuItemClass}>
 															<Plus

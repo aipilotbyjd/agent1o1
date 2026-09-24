@@ -25,7 +25,7 @@ const fmtDate = (value: string | null) =>
 		: '—';
 
 const linkBtn =
-	'inline-flex h-8 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2.5 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700';
+	'inline-flex h-8 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2.5 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-white';
 
 const InvoiceLinks = ({ invoice }: { invoice: TInvoice }) => (
 	<div className='flex items-center gap-2'>
@@ -168,7 +168,7 @@ const BillingInvoicesPage = () => {
 										</p>
 									</div>
 								</div>
-								<div className='flex items-center gap-4 pl-13 sm:pl-0'>
+								<div className='flex flex-wrap items-center gap-x-4 gap-y-2 pl-13 sm:pl-0'>
 									<span className='text-sm font-black'>{invoice.total}</span>
 									{invoice.status && (
 										<span

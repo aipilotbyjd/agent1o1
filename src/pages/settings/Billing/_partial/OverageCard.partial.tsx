@@ -52,7 +52,7 @@ const LimitForm = ({ ws, overage }: { ws: string; overage: TCreditOverage }) => 
 							? `Default: ${overage.effective_limit.toLocaleString()}`
 							: 'No cap'
 					}
-					className='focus:border-primary-400 focus:ring-primary-200 h-11 w-full rounded-xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-800 outline-none focus:ring-4 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100'
+					className='focus:border-primary-400 focus:ring-primary-200 h-11 w-full rounded-xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-800 outline-none focus:ring-4 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:ring-primary-500/20'
 				/>
 				<p
 					className={`mt-1.5 text-xs font-semibold ${isInvalid ? 'text-red-500' : 'text-zinc-400'}`}>

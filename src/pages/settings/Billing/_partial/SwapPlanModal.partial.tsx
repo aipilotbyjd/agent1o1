@@ -86,7 +86,7 @@ const SwapPlanModal = ({
 						variant='outline'
 						color='zinc'
 						onClick={onClose}
-						className='h-11 border-zinc-200 font-bold text-zinc-500 hover:bg-zinc-50'>
+						className='h-11 border-zinc-200 font-bold text-zinc-500 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800'>
 						Cancel
 					</Button>
 					<Button

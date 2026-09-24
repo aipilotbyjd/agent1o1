@@ -1796,7 +1796,7 @@ const BuildPage = () => {
 												key={chip.label}
 												type='button'
 												onClick={() => handleChipClick(chip.text)}
-												className='dark:border-border-main dark:hover:border-border-main dark:hover:bg-bg-card inline-flex items-center gap-1.5 rounded-full border border-zinc-200/80 bg-white/70 px-4 py-1.5 text-[11px] font-black text-zinc-600 shadow-2xs backdrop-blur-xs transition-all hover:bg-zinc-50/50 hover:text-zinc-950 dark:bg-zinc-950/40 dark:text-zinc-400'>
+												className='dark:border-border-main dark:hover:border-border-main dark:hover:bg-bg-card inline-flex items-center gap-1.5 rounded-full border border-zinc-200/80 bg-white/70 px-4 py-1.5 text-[11px] font-black text-zinc-600 shadow-2xs backdrop-blur-xs transition-all hover:bg-zinc-50/50 hover:text-zinc-950 dark:hover:text-white dark:bg-zinc-950/40 dark:text-zinc-400'>
 												<ChipIcon size={12} className='text-primary-500' />
 												{chip.label}
 											</button>
@@ -2299,7 +2299,7 @@ const BuildPage = () => {
 												<button
 													type='button'
 													onClick={openGetStartedTrigger}
-													className='border-zinc-150 flex max-w-[270px] min-w-[270px] flex-col rounded-2xl border bg-white p-5 text-left shadow-2xs transition hover:bg-zinc-50/30 dark:border-zinc-800/80 dark:bg-zinc-900'>
+													className='border-zinc-150 flex max-w-[270px] min-w-[270px] flex-col rounded-2xl border bg-white p-5 text-left shadow-2xs transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:border-zinc-800/80 dark:bg-zinc-900'>
 													<div className='mb-2 flex items-center gap-2 text-zinc-800 dark:text-zinc-200'>
 														<Zap
 															size={16}
@@ -2319,7 +2319,7 @@ const BuildPage = () => {
 												<button
 													type='button'
 													onClick={openGetStartedTool}
-													className='border-zinc-150 flex max-w-[270px] min-w-[270px] flex-col rounded-2xl border bg-white p-5 text-left shadow-2xs transition hover:bg-zinc-50/30 dark:border-zinc-800/80 dark:bg-zinc-900'>
+													className='border-zinc-150 flex max-w-[270px] min-w-[270px] flex-col rounded-2xl border bg-white p-5 text-left shadow-2xs transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:border-zinc-800/80 dark:bg-zinc-900'>
 													<div className='mb-2 flex items-center gap-2 text-zinc-800 dark:text-zinc-200'>
 														<Layers
 															size={16}
@@ -2814,7 +2814,7 @@ const BuildPage = () => {
 												'noopener,noreferrer',
 											)
 										}
-										className='hover:text-zinc-655 dark:hover:text-zinc-350 underline'>
+										className='hover:text-zinc-700 dark:hover:text-zinc-300 underline'>
 										Report an Issue or Bug
 									</button>
 								</div>
@@ -3101,7 +3101,7 @@ const BuildPage = () => {
 									<button
 										onClick={() => closeSettingsDrawer()}
 										title='Go back'
-										className='flex h-11 w-11 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 md:h-8 md:w-8 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'>
+										className='flex h-11 w-11 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 dark:hover:text-white md:h-8 md:w-8 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'>
 										<Undo2 size={14} />
 									</button>
 									<button
@@ -3214,7 +3214,7 @@ const BuildPage = () => {
 													)
 												}
 												placeholder='Add instructions for the agent...'
-												className='focus:border-primary-500/50 focus:ring-primary-500/5 w-full rounded-xl border border-zinc-200 bg-white p-3 text-xs font-semibold text-zinc-800 outline-none placeholder:text-zinc-400 focus:ring-0 focus:ring-4 focus:ring-offset-50 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950/25 dark:text-zinc-200 dark:placeholder:text-zinc-500'
+												className='focus:border-primary-500/50 focus:ring-primary-500/5 w-full rounded-xl border border-zinc-200 bg-white p-3 text-xs font-semibold text-zinc-800 outline-none placeholder:text-zinc-400 focus:ring-4 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950/25 dark:text-zinc-200 dark:placeholder:text-zinc-500'
 											/>
 											<span className='mt-1.5 text-right text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
 												{agentInstructions.length} / 4000
@@ -3911,7 +3911,7 @@ const BuildPage = () => {
 																				}
 																				className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${col.bgClass} ${
 																					isSelected
-																						? 'ring-primary-500 bg-clip-content p-[1px] ring-2 ring-offset-50 dark:ring-offset-zinc-900'
+																						? 'ring-primary-500 bg-clip-content p-[1px] ring-2 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900'
 																						: 'border-zinc-200 dark:border-zinc-700'
 																				}`}
 																				title={col.value}>
@@ -3993,7 +3993,7 @@ const BuildPage = () => {
 									{/* List of sub-setting options rows */}
 									<div className='space-y-2.5'>
 										{/* Agent Details */}
-										<div className='flex cursor-pointer items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs transition hover:bg-zinc-50/40 dark:border-zinc-800 dark:bg-zinc-900/40'>
+										<div className='flex cursor-pointer items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:border-zinc-800 dark:bg-zinc-900/40'>
 											<div className='flex min-w-0 items-center gap-3'>
 												<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl'>
 													<Zap size={16} />
@@ -4044,7 +4044,7 @@ const BuildPage = () => {
 										</div>
 
 										{/* Chat Preferences */}
-										<div className='flex cursor-pointer items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs transition hover:bg-zinc-50/40 dark:border-zinc-800 dark:bg-zinc-900/40'>
+										<div className='flex cursor-pointer items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:border-zinc-800 dark:bg-zinc-900/40'>
 											<div className='flex min-w-0 items-center gap-3'>
 												<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:bg-blue-500/5 dark:text-blue-400'>
 													<MessageSquare size={16} />
@@ -4063,7 +4063,7 @@ const BuildPage = () => {
 										</div>
 
 										{/* Slack Preferences */}
-										<div className='flex cursor-pointer items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs transition hover:bg-zinc-50/40 dark:border-zinc-800 dark:bg-zinc-900/40'>
+										<div className='flex cursor-pointer items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:border-zinc-800 dark:bg-zinc-900/40'>
 											<div className='flex min-w-0 items-center gap-3'>
 												<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/5 dark:text-emerald-400'>
 													<Layers size={16} />
@@ -4081,7 +4081,7 @@ const BuildPage = () => {
 										</div>
 
 										{/* Secrets */}
-										<div className='flex cursor-pointer items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs transition hover:bg-zinc-50/40 dark:border-zinc-800 dark:bg-zinc-900/40'>
+										<div className='flex cursor-pointer items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:border-zinc-800 dark:bg-zinc-900/40'>
 											<div className='flex min-w-0 items-center gap-3'>
 												<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/5 dark:text-amber-400'>
 													<Lock size={16} />
@@ -4100,7 +4100,7 @@ const BuildPage = () => {
 										</div>
 
 										{/* Danger Zone */}
-										<div className='flex cursor-pointer items-center justify-between rounded-xl border border-rose-200 bg-white p-3.5 shadow-2xs transition hover:bg-rose-50/20 dark:border-rose-950/40 dark:bg-zinc-900/40'>
+										<div className='flex cursor-pointer items-center justify-between rounded-xl border border-rose-200 bg-white p-3.5 shadow-2xs transition hover:bg-rose-50/60 dark:hover:bg-rose-950/20 dark:border-rose-950/40 dark:bg-zinc-900/40'>
 											<div className='flex min-w-0 items-center gap-3'>
 												<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600 dark:bg-rose-500/5 dark:text-rose-400'>
 													<AlertTriangle size={16} />
@@ -4205,7 +4205,7 @@ const BuildPage = () => {
 								<button
 									aria-label='Close'
 									onClick={() => closeToolDrawer()}
-									className='flex h-11 w-11 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 md:h-8 md:w-8 dark:text-zinc-500 dark:hover:bg-zinc-800'>
+									className='flex h-11 w-11 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:text-zinc-200 md:h-8 md:w-8 dark:text-zinc-500 dark:hover:bg-zinc-800'>
 									<X size={18} />
 								</button>
 							</div>

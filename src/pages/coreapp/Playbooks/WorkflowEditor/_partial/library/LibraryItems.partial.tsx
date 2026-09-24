@@ -146,7 +146,7 @@ export const RetryButton = ({ onClick }: { onClick: () => void }) => (
 	<button
 		type='button'
 		onClick={onClick}
-		className='rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold text-primary-600 transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-primary-400'>
+		className='rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold text-primary-600 transition hover:bg-zinc-50 dark:hover:bg-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-primary-400'>
 		Try again
 	</button>
 );

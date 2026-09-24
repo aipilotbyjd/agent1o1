@@ -111,7 +111,7 @@ const BillingPlansPage = () => {
 								'rounded-xl px-3 py-2 text-xs font-bold transition-all sm:px-5 sm:text-sm',
 								interval === opt
 									? 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-900 dark:text-zinc-50'
-									: 'text-zinc-500 hover:text-zinc-700',
+									: 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200',
 							].join(' ')}>
 							{INTERVAL_LABELS[opt]}
 						</button>
@@ -134,17 +134,18 @@ const BillingPlansPage = () => {
 									? 'border-zinc-900 bg-zinc-950 text-white dark:border-zinc-200 dark:bg-white dark:text-zinc-950'
 									: 'border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900',
 							].join(' ')}>
-							{isCurrent && (
-								<span className='absolute top-4 right-4 rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-black dark:bg-black/20'>
-									Current plan
-								</span>
-							)}
-
 							<p
 								className={`text-xs font-bold tracking-widest uppercase ${isCurrent ? 'text-white/60 dark:text-black/60' : 'text-zinc-400'}`}>
 								{plan.description}
 							</p>
-							<h3 className='mt-1 text-xl font-black'>{plan.name}</h3>
+							<div className='mt-1 flex items-center gap-2'>
+								<h3 className='text-xl font-black text-inherit'>{plan.name}</h3>
+								{isCurrent && (
+									<span className='rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-black dark:bg-black/10'>
+										Current plan
+									</span>
+								)}
+							</div>
 							<div className='mt-3'>
 								{price === 0 ? (
 									<span className='text-3xl font-black'>Free</span>
@@ -227,7 +228,8 @@ const BillingPlansPage = () => {
 										disabled={checkout.isPending}
 										className='flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-950 py-2.5 text-sm font-black text-white transition hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200'>
 										<Zap size={14} />
-										{checkout.isPending
+										{checkout.isPending &&
+										checkout.variables?.plan_id === plan.id
 											? 'Processing…'
 											: price === 0
 												? 'Downgrade'
