@@ -15,9 +15,11 @@ const BillingOverviewPage = lazy(() => import('@/pages/settings/Billing/Overview
 const BillingPlansPage = lazy(() => import('@/pages/settings/Billing/Plans.page'));
 const BillingCreditsPage = lazy(() => import('@/pages/settings/Billing/Credits.page'));
 const BillingUsagePage = lazy(() => import('@/pages/settings/Billing/Usage.page'));
+const BillingInvoicesPage = lazy(() => import('@/pages/settings/Billing/Invoices.page'));
 
 const WorkspacePage = lazy(() => import('@/pages/settings/Workspace/Workspace.page'));
 const ProfilePage = lazy(() => import('@/pages/settings/Profile/Profile.page'));
+const SecurityPage = lazy(() => import('@/pages/settings/Security/Security.page'));
 const MembersPage = lazy(() => import('@/pages/settings/Members/Members.page'));
 const ApiKeysPage = lazy(() => import('@/pages/settings/ApiKeys/ApiKeys.page'));
 const NotificationsPage = lazy(() => import('@/pages/settings/Notifications/Notifications.page'));
@@ -36,6 +38,7 @@ const SettingsPages: RouteObject[] = [
 				element: <Navigate to={rel(settingsPages.profile.to)} replace />,
 			},
 			{ path: rel(settingsPages.profile.to), element: <ProfilePage /> },
+			{ path: rel(settingsPages.security.to), element: <SecurityPage /> },
 			{ path: rel(settingsPages.notifications.to), element: <NotificationsPage /> },
 			{ path: rel(settingsPages.workspace.to), element: <WorkspacePage /> },
 			{ path: rel(settingsPages.members.to), element: <MembersPage /> },
@@ -60,6 +63,10 @@ const SettingsPages: RouteObject[] = [
 					{
 						path: relativeTo(settingsPages.billing.to, billingPages.usage.to),
 						element: <BillingUsagePage />,
+					},
+					{
+						path: relativeTo(settingsPages.billing.to, billingPages.invoices.to),
+						element: <BillingInvoicesPage />,
 					},
 				],
 			},

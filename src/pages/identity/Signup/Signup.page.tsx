@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, Navigate } from 'react-router';
+import { Link, Navigate, useLocation } from 'react-router';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import classNames from 'classnames';
@@ -48,8 +48,13 @@ const validationSchema = Yup.object().shape({
 });
 
 const RegisterPage = () => {
+	const location = useLocation();
 	const { isAuthenticated, isLoading } = useAuth();
 	const redirectAfterAuth = useAfterAuthRedirect();
+
+	// Same contract as Login: a page that bounced the user here (an invitation
+	// link, say) passes itself as `state.from` and gets them back after signup.
+	const from = (location.state as { from?: string } | null)?.from ?? AFTER_AUTH_PATH;
 
 	const register = useRegister();
 
@@ -62,7 +67,7 @@ const RegisterPage = () => {
 		onSubmit: async (values) => {
 			try {
 				await register.mutateAsync(values);
-				await redirectAfterAuth();
+				await redirectAfterAuth(from);
 			} catch (error) {
 				applyApiFieldErrors(error, formik);
 			}
@@ -80,7 +85,7 @@ const RegisterPage = () => {
 	};
 	const passwordStrengthColor: TColors = colorMap[passedCount] ?? 'violet';
 
-	if (!isLoading && isAuthenticated) return <Navigate to={AFTER_AUTH_PATH} replace />;
+	if (!isLoading && isAuthenticated) return <Navigate to={from} replace />;
 
 	return (
 		<AuthLayout badge='GET STARTED WITH AGENT1O1'>
@@ -90,6 +95,7 @@ const RegisterPage = () => {
 						Have an account?{' '}
 						<Link
 							to={pages.identity.login.to}
+							state={location.state}
 							className='text-primary-600 hover:text-primary-700 font-semibold hover:underline'>
 							Sign in
 						</Link>
@@ -321,6 +327,7 @@ const RegisterPage = () => {
 				Already have an account?{' '}
 				<Link
 					to={pages.identity.login.to}
+					state={location.state}
 					className='text-primary-600 hover:text-primary-700 font-bold transition-colors'>
 					Sign in
 				</Link>

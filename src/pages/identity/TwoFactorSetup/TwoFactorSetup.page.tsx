@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ClipboardEvent, FormEvent, KeyboardEvent } from 'react';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { motion } from 'framer-motion';
 import QRCode from 'qrcode';
 import { useEnableTwoFactor, useConfirmTwoFactor } from '@/api/modules/auth';
@@ -20,6 +20,10 @@ const STEPS = [
 ];
 
 const TwoFactorSetupPage = () => {
+	// Opened from Settings → Security, the page returns there; reached any other
+	// way it keeps its original exit to the sign-in page.
+	const location = useLocation();
+	const returnTo = (location.state as { from?: string } | null)?.from ?? pages.identity.login.to;
 	const [step, setStep] = useState(1);
 	const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
 	const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
@@ -121,9 +125,9 @@ const TwoFactorSetupPage = () => {
 						<span className='font-semibold text-zinc-500'>Step 3 of 3</span>
 					) : (
 						<Link
-							to={pages.identity.login.to}
+							to={returnTo}
 							className='text-primary-600 hover:text-primary-700 font-semibold hover:underline'>
-							Skip for now
+							{returnTo === pages.identity.login.to ? 'Skip for now' : 'Cancel'}
 						</Link>
 					)
 				}
@@ -319,7 +323,7 @@ const TwoFactorSetupPage = () => {
 							<Icon icon={copied ? 'Tick02' : 'Copy01'} className='size-4' />
 							{copied ? 'COPIED' : 'COPY CODES'}
 						</button>
-						<Link to={pages.identity.login.to}>
+						<Link to={returnTo}>
 							<button
 								type='button'
 								className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-md transition-all'>

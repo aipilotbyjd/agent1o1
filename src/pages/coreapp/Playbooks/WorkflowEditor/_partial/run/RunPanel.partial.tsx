@@ -88,9 +88,11 @@ const RunPanel = () => {
 								Execution console
 							</div>
 							{state.ui.stepMode && (
-								<span className='flex items-center gap-1 rounded-full bg-rose-500/20 px-2 py-0.5 text-[10px] font-bold text-rose-300'>
+								<span
+									title='Step mode runs a local simulation. Nothing is executed on the server.'
+									className='flex items-center gap-1 rounded-full bg-rose-500/20 px-2 py-0.5 text-[10px] font-bold text-rose-300'>
 									<Bug size={10} />
-									Step mode
+									Step mode · simulated
 								</span>
 							)}
 						</div>

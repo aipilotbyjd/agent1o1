@@ -1,14 +1,14 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useOutletContext } from 'react-router';
+import { useLocation, useOutletContext, useSearchParams } from 'react-router';
+import { AlertTriangle, History } from 'lucide-react';
 import { OutletContextType } from './_layouts/Trail.layout';
 import Breadcrumb from '@/components/layout/Breadcrumb';
 import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
 import { useWorkspaceContext } from '@/context/workspace';
-import { useRuns } from '@/api/modules/runs';
-import type { TRun } from '@/types/run.type';
-import type { IHistoryItem } from './_types/history.type';
-import { mockHistoryData } from './_helper/mockData';
+import { notify } from '@/api/core';
+import { useRun, useRuns } from '@/api/modules/runs';
+import { useWorkflows } from '@/api/modules/workflows';
 import { mapToDisplayItem } from './_helper/mapExecution';
 
 // Sub-components
@@ -35,58 +35,99 @@ const TrailListPage = () => {
 	// ─── State ─────────────────────────────────────────────────────────────────
 	const [searchQuery, setSearchQuery] = useState('');
 	const [selectedType, setSelectedType] = useState<'All' | 'Chat' | 'Workflow run'>('All');
-	const [selectedItem, setSelectedItem] = useState<TRun | IHistoryItem | null>(null);
 	const [showFilters, setShowFilters] = useState(false);
 	const [currentPage, setCurrentPage] = useState(1);
 	const [rowsPerPage, setRowsPerPage] = useState(10);
 	const [copied, setCopied] = useState(false);
 
+	// The open run lives in the URL (`?run=<id>`), so "Copy URL" hands out a
+	// link that reopens this drawer — even for a run on another page.
+	const [searchParams, setSearchParams] = useSearchParams();
+	const { pathname } = useLocation();
+	const selectedRunId = searchParams.get('run') ?? '';
+
 	// ─── Data fetching ──────────────────────────────────────────────────────────
-	const { data, isLoading, isError } = useRuns(activeWorkspaceId, {
+	// Single-node tests from the editor are real runs; the dashboard leaves
+	// them out of its counts, and so does this list.
+	const { data, isLoading, isError, refetch, isFetching } = useRuns(activeWorkspaceId, {
 		page: currentPage,
 		per_page: rowsPerPage,
+		exclude_trigger_type: 'node_test',
 	});
+	const { data: workflows } = useWorkflows(activeWorkspaceId);
 
-	const useMock = isError || !data?.runs?.length;
+	const runs = useMemo(() => data?.runs ?? [], [data]);
+	const selectedOnPage = runs.find((run) => String(run.id) === selectedRunId);
+	const { data: selectedFetched } = useRun(
+		activeWorkspaceId,
+		selectedOnPage ? '' : selectedRunId,
+	);
+	const selectedItem = selectedOnPage ?? (selectedRunId ? selectedFetched : undefined) ?? null;
+
+	const workflowNames = useMemo(
+		() => new Map((workflows ?? []).map((wf) => [String(wf.id), wf.name])),
+		[workflows],
+	);
+	const toDisplay = (run: (typeof runs)[number]) =>
+		mapToDisplayItem(
+			run,
+			run.workflow_id ? workflowNames.get(String(run.workflow_id)) : undefined,
+		);
 
 	// ─── Derived: item lists ────────────────────────────────────────────────────
-	const executions = useMemo(() => {
-		if (useMock) {
-			return mockHistoryData.filter((item) => {
-				const q = searchQuery.toLowerCase();
-				const matchesSearch =
-					item.title.toLowerCase().includes(q) ||
-					item.type.toLowerCase().includes(q) ||
-					item.timestamp.toLowerCase().includes(q);
-				const matchesType = selectedType === 'All' || item.type === selectedType;
-				return matchesSearch && matchesType;
-			});
-		}
-		return data!.runs;
-	}, [data, useMock, searchQuery, selectedType]);
-
-	const totalItems = useMemo(() => {
-		if (useMock) return executions.length;
-		return data?.meta?.total ?? data?.runs?.length ?? 0;
-	}, [data, useMock, executions.length]);
-
+	// The runs endpoint takes no search term and cannot tell agent runs from
+	// workflow runs, so both filters narrow the page the server returned.
+	const isFiltering = searchQuery.trim() !== '' || selectedType !== 'All';
 	const paginatedItems = useMemo(() => {
-		if (useMock) {
-			const startIndex = (currentPage - 1) * rowsPerPage;
-			return executions.slice(startIndex, startIndex + rowsPerPage);
-		}
-		return executions;
-	}, [executions, useMock, currentPage, rowsPerPage]);
+		if (!isFiltering) return runs;
+		const q = searchQuery.trim().toLowerCase();
+		return runs.filter((run) => {
+			const item = mapToDisplayItem(
+				run,
+				run.workflow_id ? workflowNames.get(String(run.workflow_id)) : undefined,
+			);
+			const matchesSearch =
+				!q ||
+				item.title.toLowerCase().includes(q) ||
+				item.type.toLowerCase().includes(q) ||
+				item.status.toLowerCase().includes(q) ||
+				item.timestamp.toLowerCase().includes(q) ||
+				String(run.id).toLowerCase().includes(q);
+			const matchesType = selectedType === 'All' || item.type === selectedType;
+			return matchesSearch && matchesType;
+		});
+	}, [runs, isFiltering, searchQuery, selectedType, workflowNames]);
 
+	const totalItems = data?.meta?.total ?? runs.length;
 	const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
 	const itemStart = totalItems === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
 	const itemEnd = Math.min(currentPage * rowsPerPage, totalItems);
 
 	// ─── Selected details ───────────────────────────────────────────────────────
 	const selectedDetails = useMemo(
-		() => (selectedItem ? mapToDisplayItem(selectedItem) : null),
-		[selectedItem],
+		() =>
+			selectedItem
+				? mapToDisplayItem(
+						selectedItem,
+						selectedItem.workflow_id
+							? workflowNames.get(String(selectedItem.workflow_id))
+							: undefined,
+					)
+				: null,
+		[selectedItem, workflowNames],
 	);
+
+	const setSelectedRun = (id: string | null) => {
+		setSearchParams(
+			(prev) => {
+				const next = new URLSearchParams(prev);
+				if (id) next.set('run', id);
+				else next.delete('run');
+				return next;
+			},
+			{ replace: true },
+		);
+	};
 
 	// ─── Handlers ──────────────────────────────────────────────────────────────
 	const handleTypeChange = (type: 'All' | 'Chat' | 'Workflow run') => {
@@ -101,9 +142,13 @@ const TrailListPage = () => {
 	};
 
 	const handleCopyUrl = (id: string) => {
-		navigator.clipboard.writeText(`${window.location.origin}/history?chat_id=${id}`);
-		setCopied(true);
-		setTimeout(() => setCopied(false), 2000);
+		navigator.clipboard
+			.writeText(`${window.location.origin}${pathname}?run=${encodeURIComponent(id)}`)
+			.then(() => {
+				setCopied(true);
+				setTimeout(() => setCopied(false), 2000);
+			})
+			.catch(() => notify.error('Could not copy the link'));
 	};
 
 	// ─── Render ─────────────────────────────────────────────────────────────────
@@ -125,14 +170,44 @@ const TrailListPage = () => {
 					onToggleFilters={() => setShowFilters((prev) => !prev)}
 				/>
 
-				<HistoryStatsCards />
+				{isFiltering && totalPages > 1 && (
+					<p className='-mt-3 px-1 text-xs text-slate-400'>
+						Filtering this page only — search and type are not applied across all{' '}
+						{totalItems.toLocaleString()} runs.
+					</p>
+				)}
+
+				<HistoryStatsCards ws={activeWorkspaceId} />
 
 				{/* History list / table */}
 				<div className='overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.015)] backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/40 dark:shadow-none'>
 					{isLoading ? (
 						<HistorySkeletonLoader />
+					) : isError ? (
+						<HistoryEmptyState
+							icon={AlertTriangle}
+							title='Could not load runs'
+							description='The run history did not load. Check your connection and try again.'
+							action={
+								<button
+									type='button'
+									onClick={() => refetch()}
+									disabled={isFetching}
+									className='flex h-10 cursor-pointer items-center rounded-xl border border-slate-200 bg-white px-4 text-xs font-black text-slate-700 shadow-xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800'>
+									{isFetching ? 'Retrying…' : 'Retry'}
+								</button>
+							}
+						/>
 					) : paginatedItems.length === 0 ? (
-						<HistoryEmptyState />
+						isFiltering ? (
+							<HistoryEmptyState />
+						) : (
+							<HistoryEmptyState
+								icon={History}
+								title='No runs yet'
+								description='Workflow and agent runs in this workspace will appear here.'
+							/>
+						)
 					) : (
 						<div className='no-scrollbar flex flex-col'>
 							{/* Desktop table */}
@@ -149,14 +224,16 @@ const TrailListPage = () => {
 									{/* Table rows */}
 									<div className='divide-y divide-slate-100 dark:divide-zinc-800/60'>
 										{paginatedItems.map((item) => {
-											const displayItem = mapToDisplayItem(item);
+											const displayItem = toDisplay(item);
 											return (
 												<HistoryTableRow
 													key={displayItem.id}
 													item={item}
 													displayItem={displayItem}
-													isSelected={selectedItem?.id === displayItem.id}
-													onSelect={() => setSelectedItem(item)}
+													isSelected={
+														selectedRunId === String(displayItem.id)
+													}
+													onSelect={() => setSelectedRun(String(item.id))}
 												/>
 											);
 										})}
@@ -167,13 +244,13 @@ const TrailListPage = () => {
 							{/* Mobile card list */}
 							<div className='block md:hidden divide-y divide-slate-100 dark:divide-zinc-800/60'>
 								{paginatedItems.map((item) => {
-									const displayItem = mapToDisplayItem(item);
+									const displayItem = toDisplay(item);
 									return (
 										<HistoryMobileCard
 											key={displayItem.id}
 											displayItem={displayItem}
-											isSelected={selectedItem?.id === displayItem.id}
-											onSelect={() => setSelectedItem(item)}
+											isSelected={selectedRunId === String(displayItem.id)}
+											onSelect={() => setSelectedRun(String(item.id))}
 										/>
 									);
 								})}
@@ -203,10 +280,12 @@ const TrailListPage = () => {
 			{/* Detail drawer */}
 			<HistoryDetailDrawer
 				selectedDetails={selectedDetails}
+				run={selectedItem}
 				activeWorkspaceId={activeWorkspaceId}
+				onRetried={(runId) => setSelectedRun(runId)}
 				copied={copied}
 				onCopyUrl={handleCopyUrl}
-				onClose={() => setSelectedItem(null)}
+				onClose={() => setSelectedRun(null)}
 			/>
 		</Container>
 	);

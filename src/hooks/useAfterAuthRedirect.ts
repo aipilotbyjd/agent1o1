@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router';
+import { matchPath, useNavigate } from 'react-router';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { OnboardingService, onboardingKeys } from '@/api/modules/onboarding';
 import { UserService, userKeys } from '@/api/modules/user';
@@ -57,7 +57,14 @@ export const useAfterAuthRedirect = () => {
 
 	return useCallback(
 		async (fallback: string = AFTER_AUTH_PATH) => {
-			const welcomePath = await resolveWelcomePath(queryClient);
+			// An invitation link outranks onboarding: the invitee came to join a
+			// workspace, and the wizard's create-workspace step would push them
+			// into making their own before they ever saw the invite.
+			const isInvitation = !!matchPath(
+				pages.identity.acceptInvitation.to,
+				fallback.split('?')[0],
+			);
+			const welcomePath = isInvitation ? null : await resolveWelcomePath(queryClient);
 			if (welcomePath) {
 				navigate(welcomePath, { replace: true });
 				return;

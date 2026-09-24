@@ -7,13 +7,14 @@ import UnderConstructionPage from '@/pages/UnderConstruction.page';
 import IdentityPages from '@/Routes/appPages/identityPages';
 import WelcomePages from '@/Routes/appPages/welcomePages';
 import CoreAppPages from '@/Routes/appPages/coreappPages';
-import pages, { billingCallbacks } from '@/Routes/pages';
+import pages, { accountCallbacks, billingCallbacks } from '@/Routes/pages';
 
 const WorkspaceListPage = lazy(() => import('@/pages/choose/WorkspaceList.page'));
 const BillingSuccessPage = lazy(() => import('@/pages/settings/Billing/BillingSuccess.page'));
 const BillingCancelPage = lazy(() => import('@/pages/settings/Billing/BillingCancel.page'));
 const BillingReturnPage = lazy(() => import('@/pages/settings/Billing/BillingReturn.page'));
 const PricingPage = lazy(() => import('@/pages/welcome/Pricing.page'));
+const AccountReturnPage = lazy(() => import('@/pages/settings/Profile/AccountReturn.page'));
 
 const router = createBrowserRouter([
 	{
@@ -45,6 +46,12 @@ const router = createBrowserRouter([
 					{
 						path: billingCallbacks.stripeReturn,
 						element: <BillingReturnPage />,
+					},
+					// Email-change confirmation lands here (see AccountReturn.page.tsx);
+					// same reason as above - it would otherwise hit `/:workspaceId`.
+					{
+						path: accountCallbacks.emailChange,
+						element: <AccountReturnPage />,
 					},
 					// Welcome / onboarding routes — must come before the workspace routes
 					// below, or static paths like `/onboarding` fall through to

@@ -61,14 +61,26 @@ const AgentAsideTemplate = () => {
 	const { workspaceId } = useParams<{ workspaceId: string }>();
 	// useAsideStatus exposes a setter, not a closeAside helper.
 	const { asideStatus, setAsideStatus } = useAsideStatus();
+	// The builder publishes which agent and chat is on screen.
+	const { agentId, sessionId, openSession, newSession, isSending } = useAgentChatStore();
 	const closeAside = () => setAsideStatus(false);
+	const closeMobileAside = () => {
+		if (window.matchMedia('(max-width: 767px)').matches) closeAside();
+	};
+	const openChat = (id: string) => {
+		if (isSending) return;
+		openSession(id);
+		closeMobileAside();
+	};
+	const startNewChat = () => {
+		if (isSending) return;
+		newSession();
+		closeMobileAside();
+	};
 	const { userData } = useAuth();
 	const { confirm } = useConfirm();
 	const [recentSearch, setRecentSearch] = useState('');
 
-	// The builder publishes which agent (and chat) is on screen — see
-	// store/agentChat.store.ts.
-	const { agentId, sessionId, openSession, newSession } = useAgentChatStore();
 	const { data: sessions, isLoading: isLoadingSessions } = useAgentSessions(
 		workspaceId ?? '',
 		agentId ?? '',
@@ -89,6 +101,7 @@ const AgentAsideTemplate = () => {
 	}, [sessions, recentSearch]);
 
 	const handleDeleteSession = async (session: TAgentSession) => {
+		if (isSending) return;
 		const confirmed = await confirm({
 			title: 'Delete chat',
 			message: `"${sessionTitle(session)}" and its messages will be permanently deleted.`,
@@ -119,6 +132,7 @@ const AgentAsideTemplate = () => {
 	};
 
 	const startRename = (session: TAgentSession) => {
+		if (isSending) return;
 		setRenamingId(String(session.id));
 		setRenameDraft(sessionTitle(session));
 	};
@@ -196,9 +210,15 @@ const AgentAsideTemplate = () => {
 				{/* New Chat Button — the session itself is created by the first message */}
 				<div className={asideStatus ? 'px-3' : 'px-2'}>
 					<button
-						onClick={newSession}
-						disabled={!agentId}
-						title={agentId ? 'Start a new chat' : 'Open an agent to start a chat'}
+						onClick={startNewChat}
+						disabled={!agentId || isSending}
+						title={
+							isSending
+								? 'Wait for the current reply to finish'
+								: agentId
+									? 'Start a new chat'
+									: 'Open an agent to start a chat'
+						}
 						className={`flex w-full items-center gap-2.5 rounded-xl border border-zinc-200 bg-white py-2 text-xs font-black text-zinc-700 shadow-2xs transition hover:border-zinc-300 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 ${
 							asideStatus ? 'px-3' : 'justify-center'
 						}`}>
@@ -386,9 +406,10 @@ const AgentAsideTemplate = () => {
 												/>
 											) : (
 												<button
-													onClick={() => openSession(String(session.id))}
+													onClick={() => openChat(String(session.id))}
+													disabled={isSending}
 													onDoubleClick={() => startRename(session)}
-													className='min-w-0 flex-1 text-left'>
+													className='min-w-0 flex-1 text-left disabled:cursor-not-allowed disabled:opacity-50'>
 													<p
 														className={`truncate text-xs font-bold ${
 															isOpen
@@ -408,26 +429,28 @@ const AgentAsideTemplate = () => {
 											{isRenaming ? (
 												<button
 													// Fires before blur would, so the save is not lost to it.
-													onMouseDown={(e) => {
+													onPointerDown={(e) => {
 														e.preventDefault();
 														commitRename(session);
 													}}
 													title='Save title'
-													className='shrink-0 cursor-pointer rounded-lg p-1 text-zinc-400 transition hover:text-emerald-500'>
+													className='flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-zinc-400 transition hover:text-emerald-500 md:h-7 md:w-7'>
 													<Check size={12} />
 												</button>
 											) : (
 												<>
 													<button
 														onClick={() => startRename(session)}
+														disabled={isSending}
 														title='Rename chat'
-														className='shrink-0 cursor-pointer rounded-lg p-1 text-zinc-400 opacity-0 transition group-hover:opacity-100 hover:text-zinc-700 dark:hover:text-zinc-200'>
+														className='flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-zinc-400 transition hover:text-zinc-700 md:h-7 md:w-7 md:opacity-0 md:group-hover:opacity-100 dark:hover:text-zinc-200'>
 														<Pencil size={12} />
 													</button>
 													<button
 														onClick={() => handleDeleteSession(session)}
+														disabled={isSending}
 														title='Delete chat'
-														className='shrink-0 cursor-pointer rounded-lg p-1 text-zinc-400 opacity-0 transition group-hover:opacity-100 hover:text-red-500'>
+														className='flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-zinc-400 transition hover:text-red-500 md:h-7 md:w-7 md:opacity-0 md:group-hover:opacity-100'>
 														<Trash2 size={12} />
 													</button>
 												</>

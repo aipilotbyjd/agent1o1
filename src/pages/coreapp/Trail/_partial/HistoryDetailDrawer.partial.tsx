@@ -1,21 +1,28 @@
 import { Activity, Check, Clock, Coins, Copy, ExternalLink, MessageSquare, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import ExecutionLogsViewer from './ExecutionLogsViewer.partial';
+import RunActions from './RunActions.partial';
 import type { DisplayItem } from '../_types/history.type';
+import type { TRun } from '@/types/run.type';
 
 interface HistoryDetailDrawerProps {
 	selectedDetails: DisplayItem | null;
+	/** The raw run behind `selectedDetails`, for the actions it allows. */
+	run?: TRun | null;
 	activeWorkspaceId: string;
 	copied: boolean;
 	onCopyUrl: (id: string) => void;
+	onRetried?: (runId: string) => void;
 	onClose: () => void;
 }
 
 const HistoryDetailDrawer = ({
 	selectedDetails,
+	run,
 	activeWorkspaceId,
 	copied,
 	onCopyUrl,
+	onRetried,
 	onClose,
 }: HistoryDetailDrawerProps) => {
 	return (
@@ -47,6 +54,9 @@ const HistoryDetailDrawer = ({
 								<h2 className='text-lg font-black text-slate-900 dark:text-white'>
 									{selectedDetails.type} Details
 								</h2>
+								<span className='rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-black tracking-wider text-slate-600 uppercase dark:bg-zinc-800 dark:text-zinc-300'>
+									{selectedDetails.status}
+								</span>
 							</div>
 							<button
 								aria-label='Close'
@@ -132,7 +142,16 @@ const HistoryDetailDrawer = ({
 						</div>
 
 						{/* Drawer footer */}
-						<div className='flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/50 p-6 dark:border-zinc-800/80 dark:bg-zinc-950/40'>
+						<div className='flex flex-wrap items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/50 p-6 dark:border-zinc-800/80 dark:bg-zinc-950/40'>
+							{run && (
+								<div className='mr-auto'>
+									<RunActions
+										ws={activeWorkspaceId}
+										run={run}
+										onRetried={onRetried}
+									/>
+								</div>
+							)}
 							<button
 								onClick={() => onCopyUrl(selectedDetails.id)}
 								className='dark:hover:bg-zinc-800 flex h-11 cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4.5 text-xs font-black text-slate-700 shadow-xs transition hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'>

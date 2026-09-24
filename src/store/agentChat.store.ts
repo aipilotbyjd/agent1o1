@@ -14,6 +14,9 @@ type TAgentChatState = {
 	agentId: string | null;
 	/** Session on screen. Null for a chat whose first message hasn't been sent. */
 	sessionId: string | null;
+	/** A turn is running; switching sessions would mix two transcripts. */
+	isSending: boolean;
+	setIsSending: (sending: boolean) => void;
 	/** Set by the builder on load, and again when a draft agent is first saved. */
 	setAgentId: (id: string | null) => void;
 	/** Open an existing session; the builder replaces the transcript with it. */
@@ -25,6 +28,8 @@ type TAgentChatState = {
 export const useAgentChatStore = create<TAgentChatState>((set) => ({
 	agentId: null,
 	sessionId: null,
+	isSending: false,
+	setIsSending: (isSending) => set({ isSending }),
 	// Switching agents abandons the open session — a session belongs to one agent.
 	setAgentId: (agentId) =>
 		set((state) => (state.agentId === agentId ? state : { agentId, sessionId: null })),

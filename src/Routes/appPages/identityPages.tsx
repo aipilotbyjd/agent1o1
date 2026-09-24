@@ -17,6 +17,9 @@ const SessionExpiredPage = lazy(
 	() => import('@/pages/identity/SessionExpired/SessionExpired.page'),
 );
 const ConnectorOAuthCompletePage = lazy(() => import('@/pages/coreapp/Apps/OAuthComplete.page'));
+const AcceptInvitationPage = lazy(
+	() => import('@/pages/identity/AcceptInvitation/AcceptInvitation.page'),
+);
 
 const IdentityPages = [
 	{
@@ -58,6 +61,10 @@ const IdentityPages = [
 	{
 		path: pages.identity.connectorOAuthComplete.to,
 		element: <ConnectorOAuthCompletePage />,
+	},
+	{
+		path: pages.identity.acceptInvitation.to,
+		element: <AcceptInvitationPage />,
 	},
 ];
 
