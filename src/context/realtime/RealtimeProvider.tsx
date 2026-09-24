@@ -78,7 +78,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
 			wssPort: reverbPort,
 			forceTLS: reverbScheme === 'https',
 			enabledTransports: ['ws', 'wss'],
-			authEndpoint: `${apiBase}/broadcasting/auth`,
+			authEndpoint: `${apiBase}/api/broadcasting/auth`,
 			auth: {
 				headers: {
 					Authorization: `Bearer ${token}`,

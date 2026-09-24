@@ -54,11 +54,7 @@ import {
 	ImageIcon,
 } from 'lucide-react';
 import AgentTemplateCard from '../_partial/AgentTemplateCard.partial';
-import {
-	agentTemplateTabs,
-	agentTemplates,
-	agentModelOptions,
-} from '../_helper/agentBuilder.constants';
+import { agentTemplateTabs, agentTemplates } from '../_helper/agentBuilder.constants';
 import MainAppBar, {
 	MainAppBarPillButton,
 	MainAppBarIconButton,
@@ -464,27 +460,17 @@ const BuildPage = () => {
 	const [isTriggerPanelOpen, setIsTriggerPanelOpen] = useState(false);
 
 	const { data: metaModelGroups } = useAgentMetaModels(workspaceId);
-	const modelOptions = useMemo(() => {
-		const liveIds = (metaModelGroups ?? [])
-			.map(
-				(entry) =>
-					(entry as { slug?: string; id?: string }).slug ?? (entry as { id?: string }).id,
-			)
-			.filter((id): id is string => typeof id === 'string');
-		if (liveIds.length === 0) return agentModelOptions;
-		return liveIds.map((id) => {
-			const known = agentModelOptions.find((m) => m.id === id);
-			return (
-				known ?? {
-					id,
-					provider: 'anyapi' as const,
-					label: id.includes('/') ? id.split('/').slice(1).join('/') : id,
-					tier: 'Available',
-					description: id,
-				}
-			);
-		});
-	}, [metaModelGroups]);
+	const modelOptions = useMemo(
+		() =>
+			(metaModelGroups ?? []).map((entry) => ({
+				id: entry.id,
+				slug: entry.slug,
+				label: entry.display_name,
+				tier: entry.brand,
+				description: entry.slug,
+			})),
+		[metaModelGroups],
+	);
 
 	const [newTriggerType, setNewTriggerType] = useState<TAgentTriggerType>('schedule');
 	const [newTriggerCron, setNewTriggerCron] = useState('0 9 * * *');
@@ -679,9 +665,14 @@ const BuildPage = () => {
 		setIsSettingsOpen(true);
 	}, [requestedDataSection]);
 	const [agentInstructions, setAgentInstructions] = useState('');
-	const [agentModel, setAgentModel] = useState(
-		agentModelOptions.find((m) => m.label === 'Sonnet 5')?.id ?? agentModelOptions[0].id,
-	);
+	const [agentModel, setAgentModel] = useState('');
+
+	useEffect(() => {
+		if (agentModel || modelOptions.length === 0) return;
+		setAgentModel(
+			(modelOptions.find((m) => m.slug === 'claude-sonnet-5') ?? modelOptions[0]).id,
+		);
+	}, [agentModel, modelOptions]);
 	const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
 	const [allowSelfUpdates, setAllowSelfUpdates] = useState(true);
 	const [agentDescription, setAgentDescription] = useState(
@@ -788,8 +779,8 @@ const BuildPage = () => {
 		setAgentName(existingAgent.name);
 		setAgentDescription(existingAgent.description ?? '');
 		setAgentInstructions(existingAgent.instructions ?? '');
-		if (existingAgent.model && agentModelOptions.some((m) => m.id === existingAgent.model)) {
-			setAgentModel(existingAgent.model);
+		if (existingAgent.model_catalog_id) {
+			setAgentModel(existingAgent.model_catalog_id);
 		}
 	}, [existingAgent]);
 
@@ -804,8 +795,7 @@ const BuildPage = () => {
 			description: overrides?.description ?? agentDescription,
 			instructions:
 				(overrides?.instructions ?? agentInstructions) || 'You are a helpful assistant.',
-			model: agentModel,
-			provider: agentModelOptions.find((m) => m.id === agentModel)?.provider ?? 'anyapi',
+			model_catalog_id: agentModel || null,
 		};
 
 		if (currentAgentId) {
@@ -3155,7 +3145,7 @@ const BuildPage = () => {
 														<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
 															{modelOptions.find(
 																(m) => m.id === agentModel,
-															)?.label ?? agentModel}
+															)?.label ?? 'Select a model'}
 														</span>
 													</div>
 												</div>
