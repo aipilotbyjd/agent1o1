@@ -3,6 +3,7 @@ export { WORKSPACE_ROOT, ws, relativeTo, relativeToWorkspace } from './types';
 export { settingsRedirects } from './settings.pages';
 export { editorRedirects } from './workspace.pages';
 export { billingCallbacks } from './welcome.pages';
+export { accountCallbacks } from './settings.pages';
 
 import { workspace, playbookEditor, agentEditor } from './workspace.pages';
 import { settings } from './settings.pages';

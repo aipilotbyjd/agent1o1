@@ -13,9 +13,12 @@ import {
 	Calendar,
 	Camera,
 	AlertCircle,
+	CheckCircle2,
 } from 'lucide-react';
 import { ApiError, notify } from '@/api/core';
+import { useResendVerificationEmail } from '@/api/modules/auth';
 import {
+	useCancelEmailChange,
 	useCurrentUser,
 	useDeleteAccount,
 	useDeleteAvatar,
@@ -110,6 +113,8 @@ const ProfilePage = () => {
 	const uploadAvatar = useUploadAvatar();
 	const deleteAvatar = useDeleteAvatar();
 	const deleteAccount = useDeleteAccount();
+	const resendVerification = useResendVerificationEmail();
+	const cancelEmailChange = useCancelEmailChange();
 
 	const [isDangerZoneOpen, setIsDangerZoneOpen] = useState(false);
 
@@ -141,10 +146,16 @@ const ProfilePage = () => {
 			const nextEmail = values.email.trim();
 
 			try {
-				await updateProfile.mutateAsync({
+				const updated = await updateProfile.mutateAsync({
 					name: nextName,
 					email: nextEmail,
 				});
+				// A new email is not applied until it is confirmed from that inbox.
+				notify.success(
+					updated.pending_email
+						? `Check ${updated.pending_email} to confirm the new address.`
+						: 'Profile saved.',
+				);
 			} catch (error) {
 				if (ApiError.is(error)) {
 					const fieldErrors = error.fieldErrors();
@@ -166,10 +177,23 @@ const ProfilePage = () => {
 	const joinedAt = userData?.created_at ? formatDate(userData.created_at) : '';
 	const workspaceName = userData?.current_workspace?.name ?? '';
 	const workspaceRole = formatRole(userData?.current_workspace?.role);
-	const emailStatus = userData?.email_verified_at ? 'Email verified' : 'Email not verified';
+	const isEmailVerified = !!userData?.email_verified_at;
+	const emailStatus = isEmailVerified ? 'Email verified' : 'Email not verified';
+	const pendingEmail = userData?.pending_email ?? null;
 	const isProfileDirty = Boolean(
 		userData && (fullName !== userData.name || formik.values.email.trim() !== userData.email),
 	);
+
+	const handleResendVerification = () =>
+		resendVerification.mutate(undefined, {
+			onSuccess: () =>
+				notify.success(`Verification email sent to ${userData?.email ?? 'your inbox'}.`),
+		});
+
+	const handleCancelEmailChange = () =>
+		cancelEmailChange.mutate(undefined, {
+			onSuccess: () => notify.success('Email change cancelled.'),
+		});
 
 	const resetForm = () => {
 		formik.resetForm();
@@ -226,15 +250,24 @@ const ProfilePage = () => {
 
 			{/* Email verification status bar */}
 			<div className='mb-6 flex justify-end gap-3'>
-				<div className='flex items-center gap-1.5 rounded-xl border border-orange-100 bg-orange-50 px-3 py-1.5 text-xs font-bold text-orange-800 shadow-xs dark:border-orange-950/20 dark:bg-orange-950/10 dark:text-orange-400'>
-					<AlertCircle size={14} className='text-orange-500' />
-					<span>{emailStatus}</span>
-				</div>
-				{!userData?.email_verified_at && (
+				{isEmailVerified ? (
+					<div className='flex items-center gap-1.5 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 shadow-xs dark:border-emerald-950/20 dark:bg-emerald-950/10 dark:text-emerald-400'>
+						<CheckCircle2 size={14} className='text-emerald-500' />
+						<span>{emailStatus}</span>
+					</div>
+				) : (
+					<div className='flex items-center gap-1.5 rounded-xl border border-orange-100 bg-orange-50 px-3 py-1.5 text-xs font-bold text-orange-800 shadow-xs dark:border-orange-950/20 dark:bg-orange-950/10 dark:text-orange-400'>
+						<AlertCircle size={14} className='text-orange-500' />
+						<span>{emailStatus}</span>
+					</div>
+				)}
+				{userData && !isEmailVerified && (
 					<button
 						type='button'
-						className='border-primary-400 text-primary-800 hover:bg-primary-50 dark:border-primary-800 dark:text-primary-400 rounded-xl border bg-white px-4 py-1.5 text-xs font-bold shadow-xs transition dark:bg-zinc-900 dark:hover:bg-zinc-800'>
-						Verify Email
+						disabled={resendVerification.isPending}
+						onClick={handleResendVerification}
+						className='border-primary-400 text-primary-800 hover:bg-primary-50 dark:border-primary-800 dark:text-primary-400 rounded-xl border bg-white px-4 py-1.5 text-xs font-bold shadow-xs transition disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
+						{resendVerification.isPending ? 'Sending...' : 'Verify Email'}
 					</button>
 				)}
 			</div>
@@ -364,6 +397,24 @@ const ProfilePage = () => {
 							/>
 							{showError('email') && (
 								<p className={errorClass}>{formik.errors.email}</p>
+							)}
+							{pendingEmail && (
+								<div className='mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-zinc-500 dark:text-zinc-400'>
+									<span>
+										Waiting for confirmation at{' '}
+										<span className='font-bold text-zinc-800 dark:text-zinc-200'>
+											{pendingEmail}
+										</span>
+										. Check that inbox for the link.
+									</span>
+									<button
+										type='button'
+										disabled={cancelEmailChange.isPending}
+										onClick={handleCancelEmailChange}
+										className='font-bold text-red-500 hover:underline disabled:opacity-60'>
+										{cancelEmailChange.isPending ? 'Cancelling...' : 'Cancel change'}
+									</button>
+								</div>
 							)}
 						</div>
 					</SettingsFieldRow>

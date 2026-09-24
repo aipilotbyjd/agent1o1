@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useParams } from 'react-router';
 import { Check, ChevronDown, X, Zap } from 'lucide-react';
+import { notify } from '@/api/core';
 import { useBillingOverview, useCheckoutSubscription, usePlans } from '@/api/modules/billing';
 import type { TBillingInterval } from '@/types/billing.type';
+import SwapPlanModal from './_partial/SwapPlanModal.partial';
 
 const FEATURE_LABELS: Record<string, string> = {
 	credit_packs: 'Credit pack top-ups',
@@ -46,14 +48,34 @@ const BillingPlansPage = () => {
 	const checkout = useCheckoutSubscription(workspaceId!);
 	const [interval, setInterval] = useState<TBillingInterval>('monthly');
 	const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
+	const [swapTarget, setSwapTarget] = useState<{ id: string; name: string } | null>(null);
 
 	const currentSlug = overview?.current_plan?.slug;
 
-	const handleCheckout = async (planId: string) => {
-		const result = await checkout.mutateAsync({ plan_id: planId, interval });
-		if ('checkout_url' in result) {
-			window.location.href = result.checkout_url;
+	const runCheckout = async (planId: string, planName: string) => {
+		try {
+			const result = await checkout.mutateAsync({ plan_id: planId, interval });
+			if ('checkout_url' in result) {
+				window.location.href = result.checkout_url;
+				return;
+			}
+			setSwapTarget(null);
+			notify.success(`Switched to ${planName}.`);
+		} catch {
+			// Toast is handled by the API hook.
 		}
+	};
+
+	// An existing subscription is swapped in place and charged immediately,
+	// so a recurring choice goes through the proration preview first.
+	const handleCheckout = (planId: string) => {
+		const plan = plans?.find((p) => p.id === planId);
+		if (!plan) return;
+		if (overview?.subscription && interval !== 'lifetime') {
+			setSwapTarget({ id: plan.id, name: plan.name });
+			return;
+		}
+		void runCheckout(plan.id, plan.name);
 	};
 
 	if (isLoading) {
@@ -328,6 +350,14 @@ const BillingPlansPage = () => {
 					</div>
 				</section>
 			)}
+			<SwapPlanModal
+				ws={workspaceId!}
+				plan={swapTarget}
+				interval={interval}
+				isPending={checkout.isPending}
+				onClose={() => setSwapTarget(null)}
+				onConfirm={() => swapTarget && runCheckout(swapTarget.id, swapTarget.name)}
+			/>
 		</div>
 	);
 };

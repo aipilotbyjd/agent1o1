@@ -14,6 +14,9 @@ export type TUser = {
 	name: string;
 	email: string;
 	email_verified_at: string | null;
+	/** Set while an email change awaits confirmation from the new address. */
+	pending_email: string | null;
+	two_factor_enabled: boolean;
 	avatar: string | null;
 	current_workspace_id: string | null;
 	current_workspace: TWorkspace | null;
@@ -77,6 +80,11 @@ export type TDisableTwoFactorDto = {
 	current_password: string;
 };
 
+/** Regenerating recovery codes re-checks the password, same as disabling. */
+export type TRegenerateRecoveryCodesDto = {
+	current_password: string;
+};
+
 /** `POST /auth/2fa/enable`. The backend returns the raw otpauth:// URL, not a
  *  rendered image — the QR is drawn client-side so the TOTP secret never leaves
  *  the browser. */
@@ -102,8 +110,14 @@ export type TExchangeSocialCodeDto = {
 export type TAuthSession = {
 	id: string;
 	name: string | null;
+	client_name?: string | null;
 	scopes: string[];
 	revoked: boolean;
+	ip_address: string | null;
+	user_agent: string | null;
+	last_used_at: string | null;
+	/** The token this request was made with - revoking it signs you out here. */
+	is_current: boolean;
 	expires_at: string | null;
 	created_at: string;
 };

@@ -46,10 +46,13 @@ export const AgentSessionService = {
 		signal?: AbortSignal,
 	) =>
 		axiosClient
-			.get<TApiResponse<TAgentMessage[]> & { meta: TPaginationMeta }>(E.messages(ws, agentId, id), {
-				params,
-				signal,
-			})
+			.get<TApiResponse<TAgentMessage[]> & { meta: TPaginationMeta }>(
+				E.messages(ws, agentId, id),
+				{
+					params,
+					signal,
+				},
+			)
 			.then((r) => ({ messages: r.data.data, meta: r.data.meta })),
 
 	sendMessage: (ws: string, agentId: string, id: string, payload: TSendAgentMessageDto) =>
@@ -60,7 +63,7 @@ export const AgentSessionService = {
 	/** Streams one turn over server-sent events — see `TAgentSessionStreamEvent`
 	 *  for the event names on the wire. Uses `fetch` directly since axios has
 	 *  no native SSE support. */
-	streamMessage: async function* (
+	async *streamMessage(
 		ws: string,
 		agentId: string,
 		id: string,
@@ -79,7 +82,11 @@ export const AgentSessionService = {
 			signal,
 		});
 
-		if (!response.body) return;
+		if (!response.ok) {
+			const body = (await response.json().catch(() => null)) as { message?: string } | null;
+			throw new Error(body?.message ?? `Agent request failed (${response.status}).`);
+		}
+		if (!response.body) throw new Error('The agent returned an empty stream.');
 
 		const reader = response.body.getReader();
 		const decoder = new TextDecoder();
@@ -89,7 +96,7 @@ export const AgentSessionService = {
 			const { done, value } = await reader.read();
 			if (done) break;
 
-			buffer += decoder.decode(value, { stream: true });
+			buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
 			const chunks = buffer.split('\n\n');
 			buffer = chunks.pop() ?? '';
 

@@ -7,7 +7,7 @@ import type { TRun } from '@/types/run.type';
  * Normalises both mock IHistoryItem and real TRun into a single
  * DisplayItem shape so the UI never has to branch on the type.
  */
-export function mapToDisplayItem(item: IHistoryItem | TRun): DisplayItem {
+export function mapToDisplayItem(item: IHistoryItem | TRun, workflowName?: string): DisplayItem {
 	if ('timestamp' in item) {
 		// Mock history item
 		const mock = item as IHistoryItem;
@@ -25,7 +25,8 @@ export function mapToDisplayItem(item: IHistoryItem | TRun): DisplayItem {
 
 	// Real TRun from API. The new backend describes what ran through the
 	// polymorphic `runnable_type` (e.g. `App\Models\Agent`) rather than the
-	// old flat `type` field, and carries no display name for it.
+	// old flat `type` field, and carries no display name for it — the caller
+	// passes the workflow's name when it can resolve `workflow_id`.
 	const real = item as TRun;
 	const isAgent = real.runnable_type.toLowerCase().includes('agent');
 
@@ -39,7 +40,7 @@ export function mapToDisplayItem(item: IHistoryItem | TRun): DisplayItem {
 
 	return {
 		id: real.id,
-		title: isAgent ? 'Agent Run' : 'Workflow Run',
+		title: isAgent ? 'Agent Run' : (workflowName ?? 'Workflow Run'),
 		type: (isAgent ? 'Chat' : 'Workflow run') as 'Chat' | 'Workflow run',
 		timestamp: real.started_at ? dayjs(real.started_at).format('MMM D, YYYY • h:mm A') : 'Pending',
 		credits: real.total_credits_used ?? 0,

@@ -89,7 +89,7 @@ const ActionBar = () => {
 				<Search size={13} />
 			</ToolButton>
 			<ToolButton
-				title='Step-through debug mode (⌘⇧D)'
+				title='Step-through debug mode, simulated in the browser (⌘⇧D)'
 				active={state.ui.stepMode}
 				danger={state.ui.stepMode}
 				onClick={() => dispatch({ type: 'SET_STEP_MODE', enabled: !state.ui.stepMode })}

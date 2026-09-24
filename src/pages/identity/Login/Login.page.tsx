@@ -105,6 +105,7 @@ const LoginPage = () => {
 					) : (
 						<Link
 							to={pages.identity.signup.to}
+							state={location.state}
 							className='text-primary-600 hover:text-primary-700 font-semibold hover:underline'>
 							Create account
 						</Link>

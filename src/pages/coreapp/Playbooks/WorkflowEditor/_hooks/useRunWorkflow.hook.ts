@@ -455,13 +455,36 @@ export const useRunWorkflow = () => {
 		const runId = createId('run');
 		const runStartedAt = Date.now();
 
-		if (ws && wfId && !isApiError) {
-			await runRemoteWorkflow(ws, wfId);
+		// Step-through is a local debugger: the backend cannot pause between
+		// nodes, so step mode runs the in-browser simulation — and says so.
+		if (state.ui.stepMode) {
+			dispatch({ type: 'RUN_START', id: runId });
+			dispatch({
+				type: 'APPEND_LOG',
+				log: {
+					level: 'warn',
+					message:
+						'Step mode runs a local simulation. Nothing is executed on the server.',
+				},
+			});
+			await runLocalWorkflow(runId, runStartedAt);
 			return;
 		}
 
-		dispatch({ type: 'RUN_START', id: runId });
-		await runLocalWorkflow(runId, runStartedAt);
+		// Every other run goes to the server. When that is not possible, fail
+		// loudly: a simulated "success" here would look like the workflow ran.
+		if (!ws || !wfId) {
+			notify.error('This workflow is not saved to the server yet, so it cannot run.');
+			return;
+		}
+		if (isApiError) {
+			notify.error(
+				'Could not load this workflow from the server, so the run was not started. Reload and try again.',
+			);
+			return;
+		}
+
+		await runRemoteWorkflow(ws, wfId);
 	};
 
 	const stopRun = () => {

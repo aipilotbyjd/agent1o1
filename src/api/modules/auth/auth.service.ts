@@ -13,6 +13,7 @@ import type {
 	TVerifyTwoFactorDto,
 	TConfirmTwoFactorDto,
 	TDisableTwoFactorDto,
+	TRegenerateRecoveryCodesDto,
 	TTwoFactorEnableResult,
 	TTwoFactorConfirmResult,
 	TTwoFactorRecoveryCodes,
@@ -115,11 +116,11 @@ export const AuthService = {
 
 	// Regenerate hands back the new plaintext codes, unlike the GET above which
 	// only reports how many remain.
-	twoFactorRegenerateRecoveryCodes: () =>
+	twoFactorRegenerateRecoveryCodes: (payload: TRegenerateRecoveryCodesDto) =>
 		axiosClient
 			.post<
 				TApiResponse<TTwoFactorConfirmResult>
-			>(AuthEndpoints.twoFactorRegenerateRecoveryCodes)
+			>(AuthEndpoints.twoFactorRegenerateRecoveryCodes, payload)
 			.then(unwrap<TTwoFactorConfirmResult>),
 
 	socialRedirectUrl: (provider: TSocialProvider) =>

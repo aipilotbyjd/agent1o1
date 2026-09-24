@@ -26,6 +26,8 @@ import {
 import pages from '@/Routes/pages';
 import { withWorkspace } from '@/Routes/paths';
 import type { TSubscription } from '@/types/billing.type';
+import OverageCard from './_partial/OverageCard.partial';
+import CreditAlertsCard from './_partial/CreditAlertsCard.partial';
 
 const billingPages = pages.settings.subPages!.billing.subPages!;
 
@@ -357,6 +359,17 @@ const BillingOverviewPage = () => {
 					</Link>
 				</div>
 			</div>
+
+			{/* Credit controls */}
+			<section>
+				<h3 className='mt-8 mb-4 text-xs font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
+					Credit Controls
+				</h3>
+				<div className='grid gap-4 lg:grid-cols-2'>
+					<OverageCard ws={workspaceId!} />
+					<CreditAlertsCard ws={workspaceId!} />
+				</div>
+			</section>
 
 			{/* Limits */}
 			<section>

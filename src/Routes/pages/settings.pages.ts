@@ -12,6 +12,12 @@ export const settings: TPage = {
 			text: 'Profile',
 			icon: 'UserCircle',
 		},
+		security: {
+			id: 'securitySettings',
+			to: ws('settings/security'),
+			text: 'Security',
+			icon: 'Shield01',
+		},
 		notifications: {
 			id: 'notificationsSettings',
 			to: ws('settings/notifications'),
@@ -72,9 +78,24 @@ export const settings: TPage = {
 					text: 'Usage',
 					icon: 'Clock01',
 				},
+				invoices: {
+					id: 'billingInvoices',
+					to: ws('settings/billing/invoices'),
+					text: 'Invoices',
+					icon: 'Invoice01',
+				},
 			},
 		},
 	},
+};
+
+/**
+ * The backend's email-change confirmation link ends here. It predates
+ * workspace-scoped settings, so it carries no workspace id; the page
+ * resolves one and forwards to Profile.
+ */
+export const accountCallbacks = {
+	emailChange: '/settings/account',
 };
 
 /**

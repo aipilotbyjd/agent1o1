@@ -48,7 +48,7 @@ export const coreAppNavigation: TNavSection[] = [
 export const settingsNavigation: TNavSection[] = [
 	{
 		title: 'Account',
-		items: [settingsPages.profile, settingsPages.notifications],
+		items: [settingsPages.profile, settingsPages.security, settingsPages.notifications],
 	},
 	{
 		title: 'Workspace',

@@ -61,4 +61,12 @@ export const identity: TPages = {
 		text: 'Completing connection',
 		icon: 'Plug01',
 	},
+	// The emailed invitation link. The backend signs its own accept URL; this
+	// page carries that signature (`expires` + `signature`) through unchanged.
+	acceptInvitation: {
+		id: 'acceptInvitation',
+		to: '/invitations/:invitationId/accept',
+		text: 'Accept invitation',
+		icon: 'AddTeam',
+	},
 };
