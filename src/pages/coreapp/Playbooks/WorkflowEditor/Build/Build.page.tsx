@@ -23,7 +23,6 @@ import HistoryPage from '@/pages/UnderConstruction.page';
 import Topbar from '../_partial/shell/Topbar.partial';
 import WorkflowsPage from '@/pages/coreapp/Playbooks/WorkflowsList.page';
 import WorkspaceSidebar from '@/templates/asides/AgentAside.template';
-import useAsideStatus from '@/hooks/useAsideStatus';
 import useDeviceScreen from '@/hooks/useDeviceScreen';
 import { useAiBuilderBridge } from '../_hooks/useAiBuilderBridge.hook';
 import { useAutosave } from '../_hooks/useAutosave.hook';
@@ -45,7 +44,7 @@ const BuildPage = () => {
 		: activeWorkspaceView;
 	const setActiveWorkspaceView = useWorkflowShellStore((store) => store.setActiveWorkspaceView);
 	const mobileSidebarOpen = useWorkflowShellStore((store) => store.mobileSidebarOpen);
-	const { closeAside } = useAsideStatus();
+	const closeAside = useWorkflowShellStore((store) => store.closeMobileSidebar);
 	const { workspaceId, workflowId } = useWorkflowRouteParams();
 	const apiState = useWorkflowApiLoader(workspaceId, workflowId);
 	const [leftPanelWidth, setLeftPanelWidth] = useState(320);
@@ -179,7 +178,7 @@ const BuildPage = () => {
 											minWidth={360}
 											maxWidth='45vw'
 											enable={{ right: true }}
-											onResize={(e, direction, ref) => {
+											onResize={(_e, _direction, ref) => {
 												setAiPanelWidth(ref.offsetWidth);
 											}}
 											onResizeStop={(_, __, ref) =>
@@ -228,7 +227,7 @@ const BuildPage = () => {
 													minWidth={260}
 													maxWidth={460}
 													enable={{ right: true }}
-													onResize={(e, direction, ref) => {
+													onResize={(_e, _direction, ref) => {
 														setLeftPanelWidth(ref.offsetWidth);
 													}}
 													onResizeStop={(_, __, ref) =>
@@ -270,7 +269,7 @@ const BuildPage = () => {
 										minHeight={180}
 										maxHeight='58vh'
 										enable={{ top: true }}
-										onResize={(e, direction, ref) => {
+										onResize={(_e, _direction, ref) => {
 											setRunPanelHeight(ref.offsetHeight);
 										}}
 										onResizeStop={(_, __, ref) =>

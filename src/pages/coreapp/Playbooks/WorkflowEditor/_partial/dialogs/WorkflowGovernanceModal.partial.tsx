@@ -27,7 +27,7 @@ import { notify } from '@/api/core';
 import Modal from './Modal.partial';
 import {
 	useWorkflowVersions,
-	usePublishWorkflowVersion,
+	useRepublishWorkflowVersion,
 	useRollbackWorkflowVersion,
 	useWorkflowShares,
 	useCreateWorkflowShare,
@@ -61,7 +61,7 @@ const WorkflowGovernanceModal = () => {
 		workspaceId,
 		workflowId
 	);
-	const publishVersion = usePublishWorkflowVersion(workspaceId);
+	const publishVersion = useRepublishWorkflowVersion(workspaceId);
 	const rollbackVersion = useRollbackWorkflowVersion(workspaceId);
 
 	// ── 2. Sharing Tab Data & Mutations ───────────────────
@@ -83,7 +83,7 @@ const WorkflowGovernanceModal = () => {
 		workspaceId,
 		workflowId
 	);
-	const approvals = approvalsRes?.data || [];
+	const approvals = approvalsRes ?? [];
 	const requestApproval = useRequestApproval(workspaceId, workflowId);
 	const approveRequest = useApproveRequest(workspaceId, workflowId);
 	const rejectRequest = useRejectRequest(workspaceId, workflowId);
@@ -96,7 +96,7 @@ const WorkflowGovernanceModal = () => {
 		workspaceId,
 		workflowId
 	);
-	const releases = releasesRes?.data || [];
+	const releases = releasesRes ?? [];
 	const deployRelease = useDeployRelease(workspaceId, workflowId);
 
 	const [releaseVersion, setReleaseVersion] = useState('');
@@ -108,7 +108,7 @@ const WorkflowGovernanceModal = () => {
 		workspaceId,
 		workflowId
 	);
-	const contracts = contractsRes?.data || [];
+	const contracts = contractsRes ?? [];
 	const generateContract = useGenerateContract(workspaceId, workflowId);
 	const runContractTest = useRunContractTest(workspaceId, workflowId);
 
@@ -243,8 +243,9 @@ const WorkflowGovernanceModal = () => {
 							) : (
 								<div className="space-y-3">
 									{versions.map((version) => {
-										const isCurrent = version.version_number === state.workflow.currentVersionNumber;
-										const isPublished = version.is_published;
+										const isCurrent = version.version === state.workflow.currentVersionNumber;
+										// The live version is the workflow's `current_version_id`; there is no per-version flag.
+										const isPublished = String(version.id) === String(state.workflow.currentVersionId);
 
 										return (
 											<div
@@ -258,7 +259,7 @@ const WorkflowGovernanceModal = () => {
 												<div className="space-y-1">
 													<div className="flex items-center gap-2">
 														<span className="text-[13px] font-bold text-zinc-800 dark:text-zinc-200">
-															v{version.version_number}
+															v{version.version}
 														</span>
 														{isPublished && (
 															<span className="rounded-full bg-emerald-100 border border-emerald-200 text-emerald-700 px-2 py-0.5 text-[9px] font-bold dark:bg-emerald-950/30 dark:border-emerald-900/50 dark:text-emerald-400">
@@ -272,7 +273,7 @@ const WorkflowGovernanceModal = () => {
 														)}
 													</div>
 													<p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
-														{version.change_summary || 'No description provided'}
+														{version.notes || 'No description provided'}
 													</p>
 													<div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
 														<Clock size={10} />
@@ -281,10 +282,10 @@ const WorkflowGovernanceModal = () => {
 																? new Date(version.created_at).toLocaleString()
 																: 'Unknown date'}
 														</span>
-														{version.created_by && (
+														{version.published_by && (
 															<>
 																<span className="text-zinc-300 dark:text-zinc-700">•</span>
-																<span>by {version.created_by}</span>
+																<span>by {version.published_by}</span>
 															</>
 														)}
 													</div>
@@ -295,10 +296,7 @@ const WorkflowGovernanceModal = () => {
 														<button
 															type="button"
 															onClick={() =>
-																publishVersion.mutate({
-																	id: workflowId,
-																	version: version.id,
-																})
+																publishVersion.mutate(version.id)
 															}
 															disabled={publishVersion.isPending}
 															className="rounded-lg border border-zinc-200 hover:bg-zinc-50 hover:text-zinc-950 dark:hover:text-white px-2.5 py-1.5 text-[10px] font-bold text-zinc-600 dark:border-zinc-800 dark:hover:bg-white/[0.04] dark:text-zinc-300 transition"
@@ -727,7 +725,8 @@ const WorkflowGovernanceModal = () => {
 											<option value="">Choose version snapshot...</option>
 											{versions?.map((v) => (
 												<option key={v.id} value={v.id}>
-													Version {v.version_number} {v.is_published ? '(Published)' : ''}
+													Version {v.version}{' '}
+													{String(v.id) === String(state.workflow.currentVersionId) ? '(Published)' : ''}
 												</option>
 											))}
 										</select>

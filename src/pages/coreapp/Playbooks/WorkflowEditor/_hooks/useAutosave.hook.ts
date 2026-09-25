@@ -2,10 +2,14 @@ import { useCallback, useEffect, useRef } from 'react';
 import { AUTOSAVE_DEBOUNCE_MS } from '../_helper/builder.constants';
 import { exportWorkflow } from '../_helper/importExport.helper';
 import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
-import { WorkflowService } from '@/api/modules/workflows';
+import { useQueryClient } from '@tanstack/react-query';
+import { WorkflowService, workflowKeys } from '@/api/modules/workflows';
+import { WorkflowDiagnosticsService } from '@/api/modules/workflow-builder';
+import { buildGraphPayload } from '../_helper/workflowApiTransform.helper';
 
 export const useAutosave = () => {
 	const { state, dispatch } = useWorkflowEditor();
+	const queryClient = useQueryClient();
 	const timer = useRef<number | null>(null);
 
 	// The save reads the latest state through a ref, so the debounce effect below
@@ -44,23 +48,19 @@ export const useAutosave = () => {
 
 			if (workspaceId && apiId) {
 				try {
+					// Name/description and the graph are separate resources on this
+					// backend: PATCH ignores nodes/edges, the draft lives behind PUT /graph.
 					await WorkflowService.update(workspaceId, apiId, {
 						name: current.workflow.name,
 						description: current.workflow.description || undefined,
-						nodes: savedNodes.map((node) => ({
-							id: node.id,
-							type: node.data.defKey,
-							position: node.position,
-							data: node.data,
-						})),
-						edges: savedEdges.map((edge) => ({
-							id: edge.id,
-							source: edge.source,
-							target: edge.target,
-							sourceHandle: edge.sourceHandle,
-							targetHandle: edge.targetHandle,
-						})),
 					});
+					const saved = await WorkflowDiagnosticsService.replaceGraph(
+						workspaceId,
+						apiId,
+						buildGraphPayload(savedNodes, savedEdges),
+					);
+					// Reopening the editor reads the cached detail — keep it on the saved draft.
+					queryClient.setQueryData(workflowKeys.detail(workspaceId, apiId), saved);
 					const stale =
 						stateRef.current.nodes !== savedNodes || stateRef.current.edges !== savedEdges;
 					setState(stale ? 'dirty' : 'saved');
@@ -77,7 +77,7 @@ export const useAutosave = () => {
 				}
 			}
 		},
-		[dispatch],
+		[dispatch, queryClient],
 	);
 
 	const saveRef = useRef(save);

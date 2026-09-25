@@ -37,7 +37,13 @@ export const useSyncWorkflowTags = (ws: string, id: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (payload: TSyncWorkflowTagsDto) => WorkflowService.syncTags(ws, id, payload),
-		onSuccess: () => qc.invalidateQueries({ queryKey: workflowKeys.detail(ws, id) }),
+		// The list is the only read that carries tags (`show` doesn't load them),
+		// so it has to refetch along with the detail.
+		onSuccess: () =>
+			Promise.all([
+				qc.invalidateQueries({ queryKey: workflowKeys.detail(ws, id) }),
+				qc.invalidateQueries({ queryKey: workflowKeys.lists(ws) }),
+			]),
 		meta: { errorMessage: 'Failed to update workflow tags' },
 	});
 };
@@ -191,6 +197,40 @@ export const useDeleteWorkflowTrigger = (ws: string) => useDeleteTrigger(ws);
 // backend-adaptation pass's call.
 
 /** Reads with no counterpart: always empty, never fetched. */
+// Shapes the ported modal reads. Nothing on this backend returns them.
+type TIsoDate = string;
+export type TLegacyWorkflowShare = {
+	id: string;
+	is_public: boolean;
+	allow_clone: boolean;
+	has_password: boolean;
+	share_url: string;
+	view_count: number;
+	clone_count: number;
+	expires_at: TIsoDate | null;
+};
+export type TLegacyApprovalRequest = {
+	id: string;
+	status: 'pending' | 'approved' | 'rejected';
+	notes: string | null;
+	requested_by: { name: string };
+	reviewed_by: { name: string } | null;
+	reviewed_at: TIsoDate | null;
+	created_at: TIsoDate;
+};
+export type TLegacyRelease = {
+	id: string;
+	version_id: string;
+	environment_id: string;
+	notes: string | null;
+	created_at: TIsoDate;
+};
+export type TLegacyContract = {
+	id: string;
+	status: string;
+	created_at: TIsoDate;
+};
+
 const useMissingCollection = <T,>() =>
 	useQuery<T[]>({ queryKey: ['unsupported'], queryFn: () => Promise.resolve([]), enabled: false, initialData: [] });
 
@@ -203,14 +243,14 @@ const useMissingMutation = (what: string) =>
 	});
 
 export const useWorkflowShares = (_ws: string, _workflowId?: string, _enabled?: boolean) =>
-	useMissingCollection<never>();
+	useMissingCollection<TLegacyWorkflowShare>();
 export const useCreateWorkflowShare = (_ws: string, _workflowId: string) =>
 	useMissingMutation('Sharing a workflow');
 export const useDeleteWorkflowShare = (_ws: string, _workflowId: string) =>
 	useMissingMutation('Removing a workflow share');
 
 export const useWorkflowApprovals = (_ws: string, _workflowId?: string, _enabled?: boolean) =>
-	useMissingCollection<never>();
+	useMissingCollection<TLegacyApprovalRequest>();
 export const useRequestApproval = (_ws: string, _workflowId: string) =>
 	useMissingMutation('Requesting workflow approval');
 export const useApproveRequest = (_ws: string, _workflowId: string) =>
@@ -219,12 +259,12 @@ export const useRejectRequest = (_ws: string, _workflowId: string) =>
 	useMissingMutation('Rejecting a workflow request');
 
 export const useWorkflowReleases = (_ws: string, _workflowId?: string, _enabled?: boolean) =>
-	useMissingCollection<never>();
+	useMissingCollection<TLegacyRelease>();
 export const useDeployRelease = (_ws: string, _workflowId: string) =>
 	useMissingMutation('Deploying a workflow release');
 
 export const useWorkflowContracts = (_ws: string, _workflowId?: string, _enabled?: boolean) =>
-	useMissingCollection<never>();
+	useMissingCollection<TLegacyContract>();
 export const useGenerateContract = (_ws: string, _workflowId: string) =>
 	useMissingMutation('Generating a workflow contract');
 export const useRunContractTest = (_ws: string, _workflowId: string) =>
@@ -246,3 +286,7 @@ export const useCreateWorkflowVersion = (ws: string) => {
 /** Versions are immutable snapshots here with no rollback endpoint. */
 export const useRollbackWorkflowVersion = (_ws: string) =>
 	useMissingMutation('Rolling a workflow back to an earlier version');
+
+/** Publishing snapshots the current draft; an older version can't be re-published. */
+export const useRepublishWorkflowVersion = (_ws: string) =>
+	useMissingMutation('Publishing an earlier workflow version');

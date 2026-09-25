@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GitBranch, X, Plus, Minus, Circle } from 'lucide-react';
+import { Plus, Minus, Circle } from 'lucide-react';
 import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
 import Modal from './Modal.partial';
 import type { TCanvasNode } from '../../_types/canvas.type';

@@ -8,6 +8,7 @@ import { withWorkspace } from '@/Routes/paths';
 
 
 const settingsPages = pages.settings.subPages!;
+const billingPages = settingsPages.billing.subPages!;
 const playbooksPath = pages.workspace.subPages!.playbooks.to;
 const dashboardPath = pages.workspace.subPages!.dashboard.to;
 
@@ -23,7 +24,7 @@ const NEXT_STEPS = [
 		icon: Zap,
 		title: 'View your plan & limits',
 		desc: "See everything that's now unlocked on your new plan.",
-		to: settingsPages.plan.to,
+		to: billingPages.plans.to,
 		cta: 'View plan',
 	},
 	{
@@ -59,9 +60,8 @@ const BillingSuccessPage = () => {
 
 	// Invalidate subscription + balance so they're fresh when the user navigates away
 	useEffect(() => {
-		queryClient.invalidateQueries({ queryKey: ['plans'] });
-		queryClient.invalidateQueries({ queryKey: ['credits'] });
-	}, [queryClient]);
+		queryClient.invalidateQueries({ queryKey: ['billing', workspaceId] });
+	}, [queryClient, workspaceId]);
 
 	return (
 		<div className='flex min-h-screen flex-col items-center justify-center bg-zinc-50 px-4 py-16 dark:bg-zinc-950'>

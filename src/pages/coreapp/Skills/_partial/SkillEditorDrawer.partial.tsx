@@ -113,7 +113,7 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose }: ISkillEditorDrawerP
 	};
 
 	const handleAddReference = () => {
-		if (!newReference.title.trim() || !activeSkillId) return;
+		if (!newReference.title.trim() || !activeSkillId || addReferenceMutation.isPending) return;
 		addReferenceMutation.mutate(
 			{ title: newReference.title.trim(), content: newReference.content, sort_order: 0 },
 			{ onSuccess: () => setNewReference({ title: '', content: '' }) },
@@ -122,6 +122,7 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose }: ISkillEditorDrawerP
 
 	const handleAddScript = () => {
 		if (!newScript.name.trim() || !newScript.code.trim() || !activeSkillId) return;
+		if (addScriptMutation.isPending) return;
 		addScriptMutation.mutate(
 			{ ...newScript, is_enabled: true },
 			{ onSuccess: () => setNewScript(emptyScript) },

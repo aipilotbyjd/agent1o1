@@ -1,8 +1,16 @@
-import {forwardRef, HTMLAttributes, memo, ReactNode} from 'react';
+import {
+	ComponentType,
+	forwardRef,
+	HTMLAttributes,
+	memo,
+	ReactNode,
+	useEffect,
+	useReducer,
+} from 'react';
 import classNames from 'classnames';
 import pascalcase from 'pascalcase';
 import * as SvgIcon from './svg-icons';
-import * as Huge from './huge';
+import * as UsedHuge from './huge/used';
 import {TIcons} from '@/types/icons.type';
 import {TColors} from '@/types/colors.type';
 import {TFontSizes} from '@/types/font-sizes.type';
@@ -25,6 +33,16 @@ const RefWrapper = forwardRef<HTMLSpanElement, IRefWrapperProps>(({ children }, 
 });
 RefWrapper.displayName = 'RefWrapper';
 
+// Looked up by name at runtime, like `SvgIcon` below — the props are not checked.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type THugeSet = Record<string, ComponentType<any> | undefined>;
+let allHuge: THugeSet | null = null;
+let allHugeLoading: Promise<void> | null = null;
+const loadAllHuge = () =>
+	(allHugeLoading ??= import('./huge').then((module) => {
+		allHuge = module as unknown as THugeSet;
+	}));
+
 export interface IIconProps extends HTMLAttributes<HTMLSpanElement> {
 	icon: TIcons;
 	className?: string;
@@ -39,10 +57,22 @@ const Icon = forwardRef<HTMLSpanElement, IIconProps>((props, ref) => {
 	// @ts-ignore
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 	const SvgIconWrapper = SvgIcon[IconName];
-	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-	// @ts-ignore
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-	const HugeWrapper = Huge[IconName];
+	const HugeWrapper = (UsedHuge as THugeSet)[IconName] ?? allHuge?.[IconName];
+
+	// A name missing from `huge/used.ts` renders once the full set has loaded.
+	const [, rerender] = useReducer((count: number) => count + 1, 0);
+	const needsFullSet =
+		typeof SvgIconWrapper !== 'function' && typeof HugeWrapper !== 'function' && !allHuge;
+	useEffect(() => {
+		if (!needsFullSet) return;
+		if (import.meta.env.DEV)
+			console.warn(`Icon "${icon}" is not in huge/used.ts — run \`yarn icons:used\`.`);
+		let active = true;
+		void loadAllHuge().then(() => active && rerender());
+		return () => {
+			active = false;
+		};
+	}, [needsFullSet, icon]);
 
 	const colorClass: Record<TColors, string> = {
 		primary: 'text-primary-500',

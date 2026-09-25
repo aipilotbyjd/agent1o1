@@ -14,7 +14,18 @@ type Props = {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const CategoryPanel = ({ categoryId, workspaceId: _workspaceId, onAdd }: Props) => {
 	const { data, isLoading, isError, refetch } = useNodeCategory(categoryId);
-	const group = useMemo(() => (data ? mapApiCategoryToGroup(data) : null), [data]);
+	// The detail endpoint returns the category and its nodes side by side.
+	const group = useMemo(
+		() =>
+			data
+				? mapApiCategoryToGroup({
+						...data.category,
+						nodes: data.nodes,
+						nodes_count: data.nodes_count,
+					})
+				: null,
+		[data],
+	);
 
 	if (isLoading) return <PanelLoader />;
 

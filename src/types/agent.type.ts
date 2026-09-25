@@ -8,6 +8,7 @@
 // settings. `TAgentSessionStreamEvent` documents the SSE wire
 // format for `POST .../sessions/{session}/messages/stream`.
 // ============================================================
+import type { TArtifact } from './artifact.type';
 import type { TTag } from './tag.type';
 
 export type TAgent = {
@@ -64,6 +65,9 @@ export type TAgentMessage = {
 	agent_session_id: string;
 	role: TAgentMessageRole;
 	content: unknown;
+	/** Files a member sent with this (user) message. Present whenever the
+	 *  backend eager-loads them — session detail and the paged transcript. */
+	attachments?: TArtifact[];
 	usage: { prompt_tokens?: number; completion_tokens?: number } | null;
 	created_at: string;
 };
@@ -91,6 +95,8 @@ export type TUpdateAgentSessionDto = {
 
 export type TSendAgentMessageDto = {
 	message: string;
+	/** Sent as multipart `attachments[]` — the service builds the `FormData`. */
+	attachments?: File[];
 };
 
 /** SSE event names on `POST .../messages/stream`. `delta` chunks concatenate

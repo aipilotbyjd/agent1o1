@@ -48,7 +48,6 @@ import {
 } from 'lucide-react';
 import { ComponentType } from 'react';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
-import useAsideStatus from '@/hooks/useAsideStatus';
 
 interface ILaunchTrigger {
 	label: string;
@@ -374,7 +373,7 @@ const mockIntegrations = [
 ];
 
 const WorkflowLaunchSurface = () => {
-	const { toggleAside } = useAsideStatus();
+	const toggleAside = useWorkflowShellStore((store) => store.toggleMobileSidebar);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [mode, setMode] = useState<'build' | 'ask'>('ask');
 	const [exampleIndex, setExampleIndex] = useState(0);

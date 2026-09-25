@@ -13,7 +13,8 @@ type Props = {
 const CustomNodesPanel = ({ workspaceId, onAdd }: Props) => {
 	const { data, isLoading, isError, refetch } = useCustomNodes(workspaceId);
 	const nodes = useMemo(
-		() => (data?.nodes ?? []).map((node) => mapApiNodeToDefinition(node)),
+		// The service already unwraps `{ nodes }` to the array.
+		() => (data ?? []).map((node) => mapApiNodeToDefinition(node)),
 		[data],
 	);
 

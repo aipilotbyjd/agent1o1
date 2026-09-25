@@ -139,7 +139,7 @@ const CountBadge = ({ count, tone }: { count: number; tone: 'in' | 'out' | 'mute
  * draggable tokens tinted by port type. Each section filters and scrolls
  * independently so a long list never floods the canvas.
  */
-const NodeIOPanel = ({ nodeId, nodeColor, incoming, outputs }: Props) => {
+const NodeIOPanel = ({ nodeColor, incoming, outputs }: Props) => {
 	const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 	const [inputQuery, setInputQuery] = useState('');
 	const [outputQuery, setOutputQuery] = useState('');

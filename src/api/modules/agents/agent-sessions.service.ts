@@ -12,6 +12,16 @@ import type {
 } from '@/types/agent.type';
 import { AgentSessionEndpoints as E } from './agents.endpoints';
 
+/** JSON, unless files ride along — then multipart, with each file under
+ *  `attachments[]`. */
+const messageBody = (payload: TSendAgentMessageDto): TSendAgentMessageDto | FormData => {
+	if (!payload.attachments?.length) return { message: payload.message };
+	const form = new FormData();
+	form.append('message', payload.message);
+	payload.attachments.forEach((file) => form.append('attachments[]', file));
+	return form;
+};
+
 export const AgentSessionService = {
 	list: (ws: string, agentId: string, signal?: AbortSignal) =>
 		axiosClient
@@ -55,10 +65,16 @@ export const AgentSessionService = {
 			)
 			.then((r) => ({ messages: r.data.data, meta: r.data.meta })),
 
-	sendMessage: (ws: string, agentId: string, id: string, payload: TSendAgentMessageDto) =>
-		axiosClient
-			.post<TApiResponse<{ message: TAgentMessage }>>(E.sendMessage(ws, agentId, id), payload)
-			.then(unwrapKey<TAgentMessage>('message')),
+	sendMessage: (ws: string, agentId: string, id: string, payload: TSendAgentMessageDto) => {
+		const body = messageBody(payload);
+		const config =
+			body instanceof FormData ? { headers: { 'Content-Type': undefined } } : undefined;
+		return axiosClient
+			.post<
+				TApiResponse<{ message: TAgentMessage }>
+			>(E.sendMessage(ws, agentId, id), body, config)
+			.then(unwrapKey<TAgentMessage>('message'));
+	},
 
 	/** Streams one turn over server-sent events — see `TAgentSessionStreamEvent`
 	 *  for the event names on the wire. Uses `fetch` directly since axios has
@@ -70,15 +86,17 @@ export const AgentSessionService = {
 		payload: TSendAgentMessageDto,
 		signal?: AbortSignal,
 	): AsyncGenerator<TAgentSessionStreamEvent> {
+		const body = messageBody(payload);
 		const response = await fetch(`${apiConfig.baseUrl}${E.streamMessage(ws, agentId, id)}`, {
 			method: 'POST',
 			credentials: 'include',
 			headers: {
-				'Content-Type': 'application/json',
+				// Left unset for multipart so the browser adds the boundary.
+				...(body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
 				Accept: 'text/event-stream',
 				Authorization: `Bearer ${getAccessToken() ?? ''}`,
 			},
-			body: JSON.stringify(payload),
+			body: body instanceof FormData ? body : JSON.stringify(body),
 			signal,
 		});
 

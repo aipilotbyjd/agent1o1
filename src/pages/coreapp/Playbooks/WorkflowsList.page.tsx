@@ -28,6 +28,7 @@ import {
 	CheckCircle2,
 	AlertTriangle,
 	FolderOpen,
+	Tag,
 } from 'lucide-react';
 import { OutletContextType } from './_layouts/Playbooks.layout';
 import { useConfirm } from '@/context/confirm';
@@ -54,6 +55,9 @@ import {
 	useActivateWorkflow,
 	useExecuteWorkflow,
 } from '@/api/modules/workflows';
+import { useTags } from '@/api/modules/tags';
+import type { TTag } from '@/types/tag.type';
+import WorkflowTagsModal from './_partial/WorkflowTagsModal.partial';
 
 interface IWorkflow {
 	id: string;
@@ -69,6 +73,7 @@ interface IWorkflow {
 	lastEdited: string;
 	updatedAt: number;
 	nodesCount: number;
+	tags: TTag[];
 }
 
 interface IFolder {
@@ -146,6 +151,20 @@ const AppBadge = ({ name }: { name: string }) => (
 	</span>
 );
 
+const TagChip = ({ tag, onClick }: { tag: TTag; onClick?: (e: React.MouseEvent) => void }) => (
+	<button
+		type='button'
+		onClick={onClick}
+		title={`Show workflows tagged "${tag.name}"`}
+		className='flex cursor-pointer items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-600 transition hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'>
+		<span
+			className='h-1.5 w-1.5 shrink-0 rounded-full'
+			style={{ backgroundColor: tag.color || '#94a3b8' }}
+		/>
+		{tag.name}
+	</button>
+);
+
 const WorkflowsListPage = () => {
 	const { setHeaderLeft } = useOutletContext<OutletContextType>();
 	const navigate = useNavigate();
@@ -168,6 +187,7 @@ const WorkflowsListPage = () => {
 	// Fetch folders + workflows from the backend
 	const { data: apiFolders } = useFolders(currentWorkspaceId);
 	const { data: apiWorkflowsResponse } = useWorkflows(currentWorkspaceId);
+	const { data: workspaceTags } = useTags(currentWorkspaceId);
 
 	// Mutations
 	const createWorkflowMutation = useCreateWorkflow(currentWorkspaceId);
@@ -210,6 +230,7 @@ const WorkflowsListPage = () => {
 				lastEdited: formatDate(w.updated_at),
 				updatedAt: toTimestamp(w.updated_at),
 				nodesCount: w.nodes_count ?? 0,
+				tags: w.tags ?? [],
 			};
 		});
 	}, [apiWorkflowsResponse]);
@@ -257,6 +278,9 @@ const WorkflowsListPage = () => {
 	const [activeTab, setActiveTab] = useState<TListTab>('all');
 	const [sortBy, setSortBy] = useState<TSortOption>('updated');
 	const [searchQuery, setSearchQuery] = useState('');
+	// The backend's workflow list takes no filters, so tag filtering is page-side.
+	const [tagFilter, setTagFilter] = useState<string>('');
+	const [taggingWorkflowId, setTaggingWorkflowId] = useState<string | null>(null);
 	const [isGridView, setIsGridView] = useState(true);
 	const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
 	const [draggedWorkflowId, setDraggedWorkflowId] = useState<string | null>(null);
@@ -309,12 +333,14 @@ const WorkflowsListPage = () => {
 			if (activeTab === 'starred' && !w.starred) return false;
 			if (activeTab === 'published' && w.status !== 'active') return false;
 			if (activeTab === 'drafts' && w.status === 'active') return false;
+			if (tagFilter && !w.tags.some((tag) => String(tag.id) === tagFilter)) return false;
 			if (searchQuery) {
 				const query = searchQuery.toLowerCase();
 				if (
 					!w.title.toLowerCase().includes(query) &&
 					!w.description.toLowerCase().includes(query) &&
-					!w.apps.some((app) => app.includes(query))
+					!w.apps.some((app) => app.includes(query)) &&
+					!w.tags.some((tag) => tag.name.toLowerCase().includes(query))
 				)
 					return false;
 			}
@@ -334,7 +360,7 @@ const WorkflowsListPage = () => {
 					return b.updatedAt - a.updatedAt;
 			}
 		});
-	}, [workflows, activeTab, searchQuery, sortBy]);
+	}, [workflows, activeTab, tagFilter, searchQuery, sortBy]);
 
 	const matchCount = filteredWorkflows.length;
 
@@ -366,7 +392,8 @@ const WorkflowsListPage = () => {
 
 	const handleCreateFolder = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!newFolderName.trim()) return;
+		// Guarded here rather than via `disabled`, so the buttons look unchanged.
+		if (!newFolderName.trim() || createFolderMutation.isPending) return;
 		try {
 			const res = await createFolderMutation.mutateAsync({
 				type: 'workflow',
@@ -391,7 +418,7 @@ const WorkflowsListPage = () => {
 
 	const handleUpdateFolder = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!editingFolder || !editFolderName.trim()) return;
+		if (!editingFolder || !editFolderName.trim() || updateFolderMutation.isPending) return;
 		try {
 			const res = await updateFolderMutation.mutateAsync({
 				id: editingFolder.id,
@@ -461,6 +488,7 @@ const WorkflowsListPage = () => {
 
 	const handleRunNow = async (id: string, e: React.MouseEvent) => {
 		e.stopPropagation();
+		if (executeWorkflowMutation.isPending) return;
 		const wf = workflows.find((w) => w.id === id);
 		try {
 			await executeWorkflowMutation.mutateAsync({ id });
@@ -472,6 +500,7 @@ const WorkflowsListPage = () => {
 
 	const handleDuplicate = async (workflow: IWorkflow, e: React.MouseEvent) => {
 		e.stopPropagation();
+		if (duplicateWorkflowMutation.isPending) return;
 		try {
 			await duplicateWorkflowMutation.mutateAsync(workflow.id);
 			triggerToast(`Duplicated "${workflow.title}"`);
@@ -668,6 +697,15 @@ const WorkflowsListPage = () => {
 				className={menuItemClass}>
 				<Edit3 size={12} className='text-slate-400' /> Rename
 			</button>
+			<button
+				type='button'
+				onClick={() => {
+					setActiveMenuId(null);
+					setTaggingWorkflowId(workflow.id);
+				}}
+				className={menuItemClass}>
+				<Tag size={12} className='text-fuchsia-500' /> Manage tags
+			</button>
 			{renderMoveWorkflowMenu(workflow)}
 			<button
 				type='button'
@@ -746,6 +784,18 @@ const WorkflowsListPage = () => {
 			)}
 		</div>
 	);
+
+	const renderTagChips = (workflow: IWorkflow) =>
+		workflow.tags.map((tag) => (
+			<TagChip
+				key={tag.id}
+				tag={tag}
+				onClick={(e) => {
+					e.stopPropagation();
+					setTagFilter(String(tag.id));
+				}}
+			/>
+		));
 
 	const renderStarButton = (workflow: IWorkflow) => (
 		<motion.button
@@ -830,6 +880,9 @@ const WorkflowsListPage = () => {
 			// Error is surfaced by the mutation hook
 		}
 	};
+
+	// Looked up live so the modal's chips follow the list refetch after each sync.
+	const taggingWorkflow = workflows.find((w) => w.id === taggingWorkflowId);
 
 	const modals = (
 		<AnimatePresence>
@@ -984,6 +1037,16 @@ const WorkflowsListPage = () => {
 						</form>
 					</motion.div>
 				</motion.div>
+			)}
+
+			{taggingWorkflow && (
+				<WorkflowTagsModal
+					ws={currentWorkspaceId}
+					workflowId={taggingWorkflow.id}
+					workflowTitle={taggingWorkflow.title}
+					attached={taggingWorkflow.tags}
+					onClose={() => setTaggingWorkflowId(null)}
+				/>
 			)}
 		</AnimatePresence>
 	);
@@ -1257,6 +1320,26 @@ const WorkflowsListPage = () => {
 								<List size={16} />
 							</button>
 						</div>
+
+						{/* Tag filter — only once the workspace has tags */}
+						{(workspaceTags ?? []).length > 0 && (
+							<div className='relative col-span-2 min-w-0 sm:col-auto'>
+								<Tag className='pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-zinc-500' />
+								<select
+									aria-label='Filter workflows by tag'
+									value={tagFilter}
+									onChange={(event) => setTagFilter(event.target.value)}
+									className='border-border-main sm:bg-bg-card dark:border-border-main sm:dark:bg-bg-card h-10 w-full cursor-pointer appearance-none truncate rounded-xl border bg-slate-50/70 pr-8 pl-9 text-xs font-bold text-slate-700 transition outline-none focus:border-[#CFF54A] sm:shadow-2xs dark:bg-zinc-950/50 dark:text-white'>
+									<option value=''>All tags</option>
+									{(workspaceTags ?? []).map((tag) => (
+										<option key={tag.id} value={String(tag.id)}>
+											{tag.name}
+										</option>
+									))}
+								</select>
+								<ChevronDown className='pointer-events-none absolute top-1/2 right-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-zinc-500' />
+							</div>
+						)}
 					</div>
 				</section>
 
@@ -1271,7 +1354,9 @@ const WorkflowsListPage = () => {
 						<p className='max-w-sm text-xs font-semibold text-slate-500 dark:text-zinc-400'>
 							{searchQuery
 								? `Nothing found for "${searchQuery}".`
-								: 'Try a different tab to see more workflows.'}
+								: tagFilter
+									? 'No workflow in this tab has that tag.'
+									: 'Try a different tab to see more workflows.'}
 						</p>
 						<div className='flex flex-wrap items-center justify-center gap-2 pt-1'>
 							{searchQuery && (
@@ -1280,6 +1365,14 @@ const WorkflowsListPage = () => {
 									onClick={() => setSearchQuery('')}
 									className='dark:border-border-main dark:bg-bg-card flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 dark:text-white dark:hover:bg-zinc-950/20'>
 									<X size={13} /> Clear search
+								</button>
+							)}
+							{tagFilter && (
+								<button
+									type='button'
+									onClick={() => setTagFilter('')}
+									className='dark:border-border-main dark:bg-bg-card flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 dark:text-white dark:hover:bg-zinc-950/20'>
+									<Tag size={13} /> Clear tag filter
 								</button>
 							)}
 							{activeTab !== 'all' && (
@@ -1629,6 +1722,11 @@ const WorkflowsListPage = () => {
 																			</span>
 																		)}
 																	</div>
+																	{wf.tags.length > 0 && (
+																		<div className='flex flex-wrap gap-1.5'>
+																			{renderTagChips(wf)}
+																		</div>
+																	)}
 																</div>
 															</div>
 
@@ -1745,6 +1843,11 @@ const WorkflowsListPage = () => {
 																				<span className='mt-0.5 truncate text-[10px] font-semibold text-slate-400 dark:text-zinc-500'>
 																					{wf.description}
 																				</span>
+																				{wf.tags.length > 0 && (
+																					<div className='mt-1.5 flex flex-wrap gap-1'>
+																						{renderTagChips(wf)}
+																					</div>
+																				)}
 																			</div>
 																		)}
 																	</td>
