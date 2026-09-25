@@ -1,15 +1,7 @@
 import { create } from 'zustand';
 
 /** Sections of the builder's Data tab, in the order its sub-nav lists them. */
-export type TAgentDataSection =
-	| 'knowledge'
-	| 'memory'
-	| 'runs'
-	| 'analytics'
-	| 'evals'
-	| 'versions'
-	| 'reflections'
-	| 'grading';
+export type TAgentDataSection = 'knowledge' | 'memory' | 'versions';
 
 /**
  * A panel the aside has asked the Agent Builder to reveal.

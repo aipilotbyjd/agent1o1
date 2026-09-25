@@ -11,6 +11,32 @@
 import type { TArtifact } from './artifact.type';
 import type { TTag } from './tag.type';
 
+export const AGENT_ICONS = [
+	'bot',
+	'brain',
+	'sparkles',
+	'search',
+	'target',
+	'shield',
+	'rocket',
+	'layers',
+	'flame',
+	'sliders-horizontal',
+	'users',
+	'database',
+	'calendar-days',
+	'file-text',
+	'mail',
+	'megaphone',
+	'chart-line',
+	'headphones',
+	'code',
+] as const;
+export type TAgentIcon = (typeof AGENT_ICONS)[number];
+
+export const AGENT_COLORS = ['purple', 'green', 'blue', 'teal', 'orange', 'red', 'rainbow'] as const;
+export type TAgentColor = (typeof AGENT_COLORS)[number];
+
 export type TAgent = {
 	id: string;
 	workspace_id: string;
@@ -18,6 +44,8 @@ export type TAgent = {
 	name: string;
 	slug: string;
 	description: string | null;
+	icon: TAgentIcon | null;
+	color: TAgentColor | null;
 	instructions: string;
 	provider: string | null;
 	model: string | null;
@@ -25,7 +53,10 @@ export type TAgent = {
 	model_catalog_slug?: string | null;
 	temperature: number | null;
 	settings: Record<string, unknown> | null;
+	allow_self_updates: boolean;
 	tags?: TTag[];
+	sessions_count?: number;
+	last_used_at?: string | null;
 	created_by: string;
 	created_at: string;
 	updated_at: string;
@@ -36,15 +67,31 @@ export type TCreateAgentDto = {
 	slug?: string;
 	description?: string | null;
 	folder_id?: string | null;
+	icon?: TAgentIcon | null;
+	color?: TAgentColor | null;
 	instructions: string;
 	provider?: string | null;
 	model?: string | null;
 	model_catalog_id?: string | null;
 	temperature?: number | null;
 	settings?: Record<string, unknown> | null;
+	allow_self_updates?: boolean;
 };
 
 export type TUpdateAgentDto = Partial<TCreateAgentDto>;
+
+export type TDraftAgentDto = {
+	prompt: string;
+	model_catalog_id: string;
+};
+
+export type TAgentDraft = {
+	name: string;
+	description: string;
+	instructions: string;
+	icon: TAgentIcon;
+	color: TAgentColor;
+};
 
 export type TDuplicateAgentDto = {
 	name?: string;
@@ -80,6 +127,7 @@ export type TAgentSession = {
 	title: string | null;
 	status: TAgentSessionStatus;
 	last_activity_at: string;
+	messages_count?: number;
 	messages?: TAgentMessage[];
 	created_at: string;
 };

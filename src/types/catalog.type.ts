@@ -43,4 +43,5 @@ export type TModelCatalogEntry = {
 	display_name: string;
 	brand: string;
 	capabilities: unknown;
+	is_available: boolean;
 };

@@ -11,7 +11,8 @@ import useAsideStatus from '@/hooks/useAsideStatus';
 import { useAuth } from '@/context/auth';
 import useDarkMode from '@/hooks/useDarkMode';
 import useResolvePath from '@/hooks/useResolvePath';
-import { useNavigate } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
+import { useWorkspaceContext } from '@/context/workspace';
 
 const AsideFooterPart = () => {
 	const { asideStatus } = useAsideStatus();
@@ -23,6 +24,11 @@ const AsideFooterPart = () => {
 	const { onLogout } = useAuth();
 
 	const { userData, tokenStorage } = useAuth();
+
+	const { workspaceId } = useParams<{ workspaceId: string }>();
+	const { workspaces, activeWorkspace } = useWorkspaceContext();
+	const workspaceRole =
+		workspaces.find((workspace) => workspace.id === workspaceId)?.role ?? activeWorkspace?.role;
 
 	return (
 		<AsideFooter>
@@ -70,7 +76,11 @@ const AsideFooterPart = () => {
 			)}
 			<User
 				name={userData ? `${userData?.firstName} ${userData?.lastName}` : undefined}
-				position={userData?.role}
+				position={
+					workspaceRole
+						? workspaceRole.charAt(0).toUpperCase() + workspaceRole.slice(1)
+						: undefined
+				}
 				nameSuffix={userData?.isVerified && <Icon icon='CheckmarkBadge02' color='blue' />}
 				src={userData?.image.org}>
 				<NavSeparator />

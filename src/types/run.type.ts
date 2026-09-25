@@ -80,6 +80,7 @@ export type TRun = {
 export type TRunListParams = {
 	status?: TRunStatus;
 	workflow_id?: string;
+	agent_id?: string;
 	trigger_type?: string;
 	exclude_trigger_type?: string;
 	per_page?: number;

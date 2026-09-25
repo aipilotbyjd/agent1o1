@@ -111,6 +111,7 @@ export const editorRedirects: { from: string; to: string }[] = [
 	{ from: ws('playbooks/edit/:workflowId'), to: ws('playbooks/:workflowId/edit') },
 	{ from: ws('playbooks/view/:workflowId'), to: ws('playbooks/:workflowId') },
 	{ from: ws('agents/edit/:agentId'), to: ws('agents/:agentId/edit') },
+	{ from: ws('agents/:agentId/reflections'), to: ws('agents/:agentId/insights?tab=reflections') },
 ];
 
 export const agentEditor: TPage = {
@@ -131,10 +132,10 @@ export const agentEditor: TPage = {
 			text: 'Edit Agent',
 			icon: 'Robot01',
 		},
-		reflections: {
-			id: 'agentReflections',
-			to: ws('agents/:agentId/reflections'),
-			text: 'Agent Reflections',
+		insights: {
+			id: 'agentInsights',
+			to: ws('agents/:agentId/insights'),
+			text: 'Agent Insights',
 			icon: 'Sparkles',
 		},
 	},

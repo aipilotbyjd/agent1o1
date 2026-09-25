@@ -1,7 +1,14 @@
 import { axiosClient } from '@/api/client';
 import { unwrapKey } from '@/api/core';
 import type { TApiResponse, TListParams } from '@/api/core';
-import type { TAgent, TCreateAgentDto, TUpdateAgentDto, TSyncAgentTagsDto } from '@/types/agent.type';
+import type {
+	TAgent,
+	TAgentDraft,
+	TCreateAgentDto,
+	TDraftAgentDto,
+	TUpdateAgentDto,
+	TSyncAgentTagsDto,
+} from '@/types/agent.type';
 import { AgentEndpoints as E } from './agents.endpoints';
 
 export const AgentService = {
@@ -19,6 +26,11 @@ export const AgentService = {
 		axiosClient
 			.post<TApiResponse<{ agent: TAgent }>>(E.create(ws), payload)
 			.then(unwrapKey<TAgent>('agent')),
+
+	draft: (ws: string, payload: TDraftAgentDto) =>
+		axiosClient
+			.post<TApiResponse<{ draft: TAgentDraft }>>(E.draft(ws), payload)
+			.then(unwrapKey<TAgentDraft>('draft')),
 
 	update: (ws: string, id: string, payload: TUpdateAgentDto) =>
 		axiosClient

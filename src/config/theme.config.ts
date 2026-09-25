@@ -38,8 +38,8 @@ type TThemeConfigs = {
 };
 
 const themeConfig: TThemeConfigs = {
-	projectTitle: 'Bolt',
-	projectName: 'React TypeScript Tailwind Admin',
+	projectTitle: 'Agent1o1',
+	projectName: 'Agent1o1',
 	language: 'en',
 	theme: DARK_MODE.SYSTEM,
 	themeColor: 'blue',

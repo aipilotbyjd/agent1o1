@@ -134,7 +134,7 @@ export const useDeleteAgentTemplate = (ws: string) => {
 export const useUseAgentTemplate = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: ({ id, body }: { id: string; body?: TUseAgentTemplateDto }) =>
+		mutationFn: ({ id, body }: { id: string; body: TUseAgentTemplateDto }) =>
 			AgentTemplateService.use(ws, id, body),
 		onSuccess: () => qc.invalidateQueries({ queryKey: agentKeys.lists(ws) }),
 		meta: { errorMessage: 'Failed to create agent from template' },

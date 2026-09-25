@@ -5,7 +5,7 @@ import {
 	ArrowLeft,
 	Plus,
 	Folder,
-	Sparkles,
+	LineChart,
 	Mail,
 	MessageSquare,
 	Globe,
@@ -23,6 +23,8 @@ import Icon from '@/components/icon/Icon';
 import Aside, { AsideBody, AsideFooter } from '@/components/layout/Aside';
 import useAsideStatus from '@/hooks/useAsideStatus';
 import { useAuth } from '@/context/auth';
+import { useWorkspaceContext } from '@/context/workspace';
+import { useBillingOverview, usePlans } from '@/api/modules/billing';
 import { useConfirm } from '@/context/confirm';
 import { useGlobalSearchStore } from '@/store/globalSearch.store';
 import { useAgentChatStore } from '@/store/agentChat.store';
@@ -36,6 +38,8 @@ import type { TAgentSession } from '@/types/agent.type';
 import GlobalSearch from '@/templates/search/GlobalSearch.template';
 import { notify } from '@/api/core';
 import paths from '@/Routes/paths';
+
+const formatCredits = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
 
 /** A session is created untitled when the builder can't name it; the first
  *  message normally supplies the title. */
@@ -78,7 +82,24 @@ const AgentAsideTemplate = () => {
 		closeMobileAside();
 	};
 	const { userData } = useAuth();
+	const { workspaces } = useWorkspaceContext();
+	const workspaceRole = workspaces.find((workspace) => workspace.id === workspaceId)?.role;
 	const { confirm } = useConfirm();
+	const { data: billing } = useBillingOverview(workspaceId ?? '');
+	const { data: plans } = usePlans(workspaceId ?? '');
+	const creditsTotal = (billing?.usage_period.credits_limit ?? 0) + (billing?.topup_credits ?? 0);
+	const creditsRemaining = billing?.credits_available ?? null;
+	const creditsLeftPct =
+		creditsRemaining === null || creditsTotal === 0
+			? 100
+			: Math.max(0, Math.min(100, (creditsRemaining / creditsTotal) * 100));
+	const topPlanCredits = Math.max(0, ...(plans ?? []).map((plan) => plan.credits_monthly));
+	const canManageBilling = workspaceRole === 'owner' || workspaceRole === 'admin';
+	const canUpgrade =
+		canManageBilling &&
+		!!billing?.current_plan &&
+		!!plans?.length &&
+		billing.current_plan.credits_monthly < topPlanCredits;
 	const [recentSearch, setRecentSearch] = useState('');
 
 	const { data: sessions, isLoading: isLoadingSessions } = useAgentSessions(
@@ -247,19 +268,19 @@ const AgentAsideTemplate = () => {
 					<button
 						onClick={() => {
 							if (!agentId || !workspaceId) return;
-							navigate(paths.agentReflections(workspaceId, agentId));
+							navigate(paths.agentInsights(workspaceId, agentId));
 							closeAside();
 						}}
 						disabled={!agentId}
-						title={agentId ? 'Open reflections' : 'Open an agent to see reflections'}
+						title={agentId ? 'Runs, analytics, evals, grading and reflections' : 'Open an agent to see its insights'}
 						className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50/80 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-zinc-900 ${asideStatus ? '' : 'w-full justify-center'}`}>
 						<span className='relative shrink-0'>
-							<Sparkles size={15} className='text-zinc-600 dark:text-zinc-400' />
+							<LineChart size={15} className='text-zinc-600 dark:text-zinc-400' />
 							{!asideStatus && (
 								<span className='absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-zinc-400 ring-2 ring-white dark:bg-zinc-500 dark:ring-zinc-950' />
 							)}
 						</span>
-						{asideStatus && <span className='truncate'>Reflections</span>}
+						{asideStatus && <span className='truncate'>Insights</span>}
 					</button>
 				</div>
 
@@ -466,25 +487,29 @@ const AgentAsideTemplate = () => {
 
 			{/* Sidebar Footer */}
 			<AsideFooter className='border-t border-zinc-100 p-4 dark:border-zinc-800/80'>
-				{asideStatus && (
+				{asideStatus && billing && (
 					<div className='mb-4 flex flex-col gap-2'>
 						<div className='flex items-center justify-between text-[10px] font-black text-zinc-600 dark:text-zinc-400'>
 							<span>Credits Remaining</span>
-							<span>5.0k of 5.0k</span>
+							<span>
+								{creditsRemaining === null
+									? 'Unlimited'
+									: `${formatCredits.format(creditsRemaining)} of ${formatCredits.format(creditsTotal)}`}
+							</span>
 						</div>
-						{/* Progress bar */}
 						<div className='h-2 w-full rounded-full bg-zinc-100 dark:bg-zinc-800'>
 							<div
-								className='bg-primary-400 h-2 rounded-full'
-								style={{ width: '100%' }}
+								className={`h-2 rounded-full ${creditsLeftPct <= 20 ? 'bg-rose-500' : 'bg-primary-400'}`}
+								style={{ width: `${creditsLeftPct}%` }}
 							/>
 						</div>
-						{/* Upgrade Plan Button */}
-						<button
-							onClick={() => navigate(paths.billingPlans(workspaceId ?? ''))}
-							className='bg-primary-400 text-primary-950 shadow-primary-500/20 hover:bg-primary-500 mt-1 flex w-full items-center justify-center rounded-xl py-2 text-xs font-black shadow-md transition active:scale-95 dark:shadow-none'>
-							Upgrade Plan
-						</button>
+						{canUpgrade && (
+							<button
+								onClick={() => navigate(paths.billingPlans(workspaceId ?? ''))}
+								className='bg-primary-400 text-primary-950 shadow-primary-500/20 hover:bg-primary-500 mt-1 flex w-full items-center justify-center rounded-xl py-2 text-xs font-black shadow-md transition active:scale-95 dark:shadow-none'>
+								Upgrade Plan
+							</button>
+						)}
 					</div>
 				)}
 
@@ -493,16 +518,18 @@ const AgentAsideTemplate = () => {
 					<div className='flex min-w-0 items-center gap-3'>
 						{/* User avatar */}
 						<div className='bg-primary-400 text-primary-950 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-black'>
-							{userData?.name ? userData.name.charAt(0).toUpperCase() : 'A'}
+							{userData?.name?.charAt(0).toUpperCase()}
 						</div>
 						{asideStatus && (
 							<div className='truncate text-left'>
 								<div className='truncate text-xs font-bold text-zinc-950 dark:text-white'>
-									{userData?.name || 'Amaan'}
+									{userData?.name}
 								</div>
-								<div className='text-[10px] text-zinc-400 dark:text-zinc-500'>
-									{userData?.role || 'Member'}
-								</div>
+								{workspaceRole && (
+									<div className='text-[10px] text-zinc-400 capitalize dark:text-zinc-500'>
+										{workspaceRole}
+									</div>
+								)}
 							</div>
 						)}
 					</div>

@@ -16,6 +16,7 @@ import {
 	Megaphone,
 	Briefcase,
 	Copy,
+	Clock,
 } from 'lucide-react';
 import { OutletContextType } from './_layouts/Agents.layout';
 import { useConfirm } from '@/context/confirm';
@@ -25,6 +26,8 @@ import pages from '@/Routes/pages';
 import paths from '@/Routes/paths';
 import { useWorkspaceContext } from '@/context/workspace';
 import { agentKeys, useAgents, useDeleteAgent, useDuplicateAgent } from '@/api/modules/agents';
+import { useModelCatalog } from '@/api/modules/catalog';
+import { agentColorTileClass, agentIconFor } from './_helper/agentAppearance';
 import ListSkeletonPart from '@/parts/ListSkeleton.part';
 import type { TAgent } from '@/types/agent.type';
 import { notify } from '@/api/core';
@@ -33,8 +36,12 @@ interface IAgentItem {
 	id: string;
 	name: string;
 	description: string;
+	icon: TAgent['icon'];
+	color: TAgent['color'];
 	model: string;
 	tags: string[];
+	chats: number;
+	lastUsedAt: string | null;
 }
 
 const getModelColor = (model: string) => {
@@ -45,20 +52,28 @@ const getModelColor = (model: string) => {
 	return '#6366F1'; // Default indigo
 };
 
-const getAgentHeaderIcon = (id: string) => {
-	if (id === 'agent-2') {
-		return {
-			IconComponent: Cpu,
-			bgClass: 'bg-primary-400 text-primary-950 shadow-primary-500/20',
-		};
-	}
-	if (id === 'agent-3') {
-		return { IconComponent: Briefcase, bgClass: 'bg-amber-600 text-white shadow-amber-600/20' };
-	}
-	return {
-		IconComponent: Briefcase,
-		bgClass: 'bg-primary-400 text-primary-950 shadow-primary-500/20',
-	};
+const relativeTime = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+const TIME_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
+	['year', 365 * 24 * 60 * 60],
+	['month', 30 * 24 * 60 * 60],
+	['week', 7 * 24 * 60 * 60],
+	['day', 24 * 60 * 60],
+	['hour', 60 * 60],
+	['minute', 60],
+];
+
+/** "3 hours ago", "yesterday", "just now". */
+const timeAgo = (iso: string): string => {
+	const seconds = (new Date(iso).getTime() - Date.now()) / 1000;
+	const match = TIME_UNITS.find(([, size]) => Math.abs(seconds) >= size);
+	return match ? relativeTime.format(Math.round(seconds / match[1]), match[0]) : 'just now';
+};
+
+/** How many agents use each value, most common first. */
+const countBy = (values: string[]): [string, number][] => {
+	const counts = new Map<string, number>();
+	values.forEach((value) => counts.set(value, (counts.get(value) ?? 0) + 1));
+	return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
 };
 
 const getCategoryIcon = (category: string) => {
@@ -92,20 +107,34 @@ const AgentsListPage = () => {
 	const currentWorkspaceId = workspaceId || activeWorkspaceId;
 
 	const { data: apiAgents, isLoading } = useAgents(currentWorkspaceId);
+	const { data: modelCatalog } = useModelCatalog();
 	const deleteAgentMutation = useDeleteAgent(currentWorkspaceId);
 	const duplicateAgentMutation = useDuplicateAgent(currentWorkspaceId);
 	const queryClient = useQueryClient();
 
 	const agents = useMemo<IAgentItem[]>(() => {
 		if (!apiAgents || apiAgents.length === 0) return [];
+		const catalogNames = new Map(
+			(modelCatalog ?? []).map((entry) => [entry.id, entry.display_name]),
+		);
 		return apiAgents.map((a) => ({
 			id: a.id,
 			name: a.name,
 			description: a.description || 'No description provided.',
-			model: a.model ?? 'No model set',
+			icon: a.icon,
+			color: a.color,
+			model:
+				(a.model_catalog_id && catalogNames.get(a.model_catalog_id)) ||
+				a.model ||
+				'No model set',
 			tags: a.tags?.map((t) => t.name) ?? [],
+			chats: a.sessions_count ?? 0,
+			lastUsedAt: a.last_used_at ?? null,
 		}));
-	}, [apiAgents]);
+	}, [apiAgents, modelCatalog]);
+
+	const totalChats = agents.reduce((sum, agent) => sum + agent.chats, 0);
+	const topModel = useMemo(() => countBy(agents.map((a) => a.model))[0]?.[0], [agents]);
 
 	const categories = useMemo(() => {
 		const seen = new Set<string>();
@@ -210,184 +239,28 @@ const AgentsListPage = () => {
 					</div>
 				</div>
 
-				{/* Stats overview row */}
-				<div className='grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-3'>
-					{/* Card 1: Total Agents */}
-					<div className='group border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card relative min-w-0 overflow-hidden rounded-2xl border p-4 shadow-xs backdrop-blur-md sm:p-5'>
-						<div className='flex items-center gap-3'>
-							<div className='border-primary-500/20 bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border'>
-								<Briefcase size={16} />
-							</div>
-							<span className='text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
-								Total Agents
-							</span>
-						</div>
-						<div className='mt-3.5 flex items-center justify-between'>
-							<div className='flex items-baseline gap-1.5'>
-								<span className='text-3xl font-black text-slate-900 dark:text-white'>
-									{agents.length}
+				{agents.length > 0 && (
+					<p className='-mt-2 text-xs font-semibold text-slate-500 dark:text-zinc-400'>
+						<span className='font-black text-slate-900 dark:text-white'>
+							{agents.length}
+						</span>{' '}
+						{agents.length === 1 ? 'agent' : 'agents'}
+						<span className='mx-2 text-slate-300 dark:text-zinc-700'>·</span>
+						<span className='font-black text-slate-900 dark:text-white'>
+							{totalChats}
+						</span>{' '}
+						{totalChats === 1 ? 'chat' : 'chats'}
+						{topModel && (
+							<>
+								<span className='mx-2 text-slate-300 dark:text-zinc-700'>·</span>
+								Most used model:{' '}
+								<span className='font-black text-slate-900 dark:text-white'>
+									{topModel}
 								</span>
-								<span className='text-xs font-semibold text-slate-400 dark:text-zinc-500'>
-									agents
-								</span>
-							</div>
-
-							{/* Custom green SVG sparkline */}
-							<div className='h-8 w-20 shrink-0 sm:w-24'>
-								<svg
-									className='text-primary-500 h-full w-full'
-									viewBox='0 0 100 30'
-									fill='none'
-									xmlns='http://www.w3.org/2000/svg'>
-									<defs>
-										<linearGradient id='green-grad' x1='0' y1='0' x2='0' y2='1'>
-											<stop
-												offset='0%'
-												stopColor='#C4EE3D'
-												stopOpacity='0.2'
-											/>
-											<stop
-												offset='100%'
-												stopColor='#C4EE3D'
-												stopOpacity='0'
-											/>
-										</linearGradient>
-									</defs>
-									<path
-										d='M 0 25 C 15 25, 20 15, 35 18 C 50 21, 55 28, 65 18 C 75 8, 80 5, 90 12 C 95 16, 98 10, 100 8'
-										fill='none'
-										stroke='currentColor'
-										strokeWidth='1.8'
-										strokeLinecap='round'
-										strokeLinejoin='round'
-									/>
-									<path
-										d='M 0 25 C 15 25, 20 15, 35 18 C 50 21, 55 28, 65 18 C 75 8, 80 5, 90 12 C 95 16, 98 10, 100 8 L 100 30 L 0 30 Z'
-										fill='url(#green-grad)'
-									/>
-								</svg>
-							</div>
-						</div>
-						<div className='mt-3 flex items-center gap-1.5'>
-							<span className='relative flex h-1.5 w-1.5'>
-								<span className='bg-primary-400 absolute inline-flex h-full w-full animate-ping rounded-full opacity-75'></span>
-								<span className='bg-primary-500 relative inline-flex h-1.5 w-1.5 rounded-full'></span>
-							</span>
-							<span className='text-primary-600 dark:text-primary-400 text-[10px] font-black'>
-								In this workspace
-							</span>
-						</div>
-					</div>
-
-					{/* Card 2: Tagged Agents */}
-					<div className='group border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card relative min-w-0 overflow-hidden rounded-2xl border p-4 shadow-xs backdrop-blur-md sm:p-5'>
-						<div className='flex items-center gap-3'>
-							<div className='border-primary-500/20 bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border'>
-								<MessageSquare size={16} />
-							</div>
-							<span className='text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
-								Tagged Agents
-							</span>
-						</div>
-						<div className='mt-3.5 flex items-center justify-between'>
-							<div className='flex items-baseline gap-1.5'>
-								<span className='text-3xl font-black text-slate-900 dark:text-white'>
-									{agents.filter((a) => a.tags.length > 0).length}
-								</span>
-								<span className='text-xs font-semibold text-slate-400 dark:text-zinc-500'>
-									tagged
-								</span>
-							</div>
-
-							{/* Custom purple SVG bar chart */}
-							<div className='flex h-8 items-end justify-end gap-1'>
-								<div className='bg-primary-300 dark:bg-primary-800/60 h-[35%] w-1.5 rounded-t-sm' />
-								<div className='bg-primary-400 dark:bg-primary-700/80 h-[55%] w-1.5 rounded-t-sm' />
-								<div className='bg-primary-300 dark:bg-primary-400/70 h-[40%] w-1.5 rounded-t-sm' />
-								<div className='bg-primary-400 h-[80%] w-1.5 rounded-t-sm' />
-								<div className='bg-primary-400 h-[65%] w-1.5 rounded-t-sm' />
-								<div className='bg-primary-700 h-[100%] w-1.5 rounded-t-sm' />
-							</div>
-						</div>
-						<div className='text-slate-450 mt-3.5 text-[10px] font-bold dark:text-zinc-500'>
-							Agents grouped by tag
-						</div>
-					</div>
-
-					{/* Card 3: Active Models */}
-					<div className='group border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card relative min-w-0 overflow-hidden rounded-2xl border p-4 shadow-xs backdrop-blur-md sm:p-5'>
-						<div className='flex items-center gap-3'>
-							<div className='border-primary-500/20 bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border'>
-								<Cpu size={16} />
-							</div>
-							<span className='text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
-								Active Models
-							</span>
-						</div>
-						<div className='mt-3.5 flex items-center justify-between'>
-							<div className='flex items-baseline gap-1.5'>
-								<span className='text-3xl font-black text-slate-900 dark:text-white'>
-									{new Set(agents.map((a) => a.model)).size}
-								</span>
-								<span className='text-xs font-semibold text-slate-400 dark:text-zinc-500'>
-									LLM engines
-								</span>
-							</div>
-
-							{/* Custom blue radar waves SVG */}
-							<div className='relative flex h-8 w-20 items-center justify-end overflow-hidden'>
-								<svg
-									className='text-primary-500/30 h-12 w-16'
-									viewBox='0 0 100 100'
-									fill='none'
-									xmlns='http://www.w3.org/2000/svg'>
-									<circle
-										cx='90'
-										cy='50'
-										r='15'
-										stroke='currentColor'
-										strokeWidth='1.5'
-										strokeDasharray='3 3'
-									/>
-									<circle
-										cx='90'
-										cy='50'
-										r='30'
-										stroke='currentColor'
-										strokeWidth='1.5'
-									/>
-									<circle
-										cx='90'
-										cy='50'
-										r='45'
-										stroke='currentColor'
-										strokeWidth='1.5'
-										strokeDasharray='4 4'
-									/>
-									<circle
-										cx='90'
-										cy='50'
-										r='60'
-										stroke='currentColor'
-										strokeWidth='1.5'
-									/>
-									<circle
-										cx='90'
-										cy='50'
-										r='75'
-										stroke='currentColor'
-										strokeWidth='1.5'
-										strokeDasharray='5 5'
-									/>
-								</svg>
-							</div>
-						</div>
-						<div className='text-primary-600 dark:text-primary-400 mt-3 flex items-center gap-1.5 text-[10px] font-black'>
-							<span className='bg-primary-500 h-1.5 w-1.5 rounded-full' />
-							<span>Multi-model cognitive pipelines</span>
-						</div>
-					</div>
-				</div>
+							</>
+						)}
+					</p>
+				)}
 
 				{/* Search & Categories Bar */}
 				<div className='flex min-w-0 flex-col gap-4 sm:gap-5 xl:flex-row xl:items-center'>
@@ -460,9 +333,8 @@ const AgentsListPage = () => {
 						<AnimatePresence mode='popLayout'>
 							{filteredAgents.map((agent) => {
 								const modelColor = getModelColor(agent.model);
-								const { IconComponent, bgClass } = getAgentHeaderIcon(agent.id);
-								const primaryTag = agent.tags[0];
-								const CategoryIcon = getCategoryIcon(primaryTag ?? '');
+								const AgentIcon = agentIconFor(agent.icon);
+
 								return (
 									<motion.article
 										key={agent.id}
@@ -484,8 +356,8 @@ const AgentsListPage = () => {
 										{/* Brand Top Row */}
 										<div className='flex items-start justify-between gap-4'>
 											<div
-												className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-md transition-transform duration-300 group-hover:scale-105 group-hover:rotate-2 ${bgClass}`}>
-												<IconComponent className='h-5 w-5' />
+												className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border shadow-md transition-transform duration-300 group-hover:scale-105 group-hover:rotate-2 ${agentColorTileClass(agent.color)}`}>
+												<AgentIcon className='h-5 w-5' />
 											</div>
 
 											{/* The old Active/Inactive switch is gone: this backend has no
@@ -517,16 +389,41 @@ const AgentsListPage = () => {
 													size={11}
 													className='text-primary-500'
 												/>
-												{agent.tags.length}{' '}
-												{agent.tags.length === 1 ? 'tag' : 'tags'}
+												{agent.chats} {agent.chats === 1 ? 'chat' : 'chats'}
 											</span>
-											<span className='inline-flex items-center gap-1 rounded-lg border border-slate-200/50 bg-slate-50/50 px-2 py-1 text-[10px] font-semibold text-slate-600 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-400'>
-												<CategoryIcon
-													size={11}
-													className='text-primary-500'
-												/>
-												{primaryTag ?? 'Untagged'}
+											<span
+												className='inline-flex items-center gap-1 rounded-lg border border-slate-200/50 bg-slate-50/50 px-2 py-1 text-[10px] font-semibold text-slate-600 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-400'
+												title={
+													agent.lastUsedAt
+														? new Date(
+																agent.lastUsedAt,
+															).toLocaleString()
+														: undefined
+												}>
+												<Clock size={11} className='text-primary-500' />
+												{agent.lastUsedAt
+													? `Used ${timeAgo(agent.lastUsedAt)}`
+													: 'Never used'}
 											</span>
+											{agent.tags.slice(0, 2).map((tag) => {
+												const TagIcon = getCategoryIcon(tag);
+												return (
+													<span
+														key={tag}
+														className='inline-flex items-center gap-1 rounded-lg border border-slate-200/50 bg-slate-50/50 px-2 py-1 text-[10px] font-semibold text-slate-600 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-400'>
+														<TagIcon
+															size={11}
+															className='text-primary-500'
+														/>
+														{tag}
+													</span>
+												);
+											})}
+											{agent.tags.length > 2 && (
+												<span className='inline-flex items-center gap-1 rounded-lg border border-slate-200/50 bg-slate-50/50 px-2 py-1 text-[10px] font-semibold text-slate-600 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-400'>
+													+{agent.tags.length - 2}
+												</span>
+											)}
 										</div>
 
 										{/* Divider */}

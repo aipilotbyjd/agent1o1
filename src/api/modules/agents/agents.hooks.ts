@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createResource } from '@/api/core';
-import type { TSyncAgentTagsDto } from '@/types/agent.type';
+import type { TDraftAgentDto, TSyncAgentTagsDto } from '@/types/agent.type';
 import type { TRunListParams } from '@/types/run.type';
 import type { TCreateTriggerDto, TUpdateTriggerDto } from '@/types/trigger.type';
 import type { TModelCatalogEntry } from '@/types/catalog.type';
@@ -29,6 +29,12 @@ export const useAgent = Agents.useDetail;
 export const useCreateAgent = Agents.useCreate;
 export const useUpdateAgent = Agents.useUpdate;
 export const useDeleteAgent = Agents.useDelete;
+
+export const useDraftAgent = (ws: string) =>
+	useMutation({
+		mutationFn: (payload: TDraftAgentDto) => AgentService.draft(ws, payload),
+		meta: { errorMessage: 'Failed to draft the agent' },
+	});
 
 export const useDuplicateAgent = (ws: string) => {
 	const qc = useQueryClient();
@@ -119,16 +125,8 @@ export const useFireAgentTrigger = (ws: string, _agentId: string) => {
 };
 
 export const useAgentRuns = (ws: string, agentId: string, filters?: TRunListParams) => {
-	const query = useRuns(ws, filters);
-	// `runs.index` filters by status/workflow/trigger_type only — not by runnable.
-	const data = useMemo(
-		() =>
-			(query.data?.runs ?? []).filter(
-				(r) => r.runnable_type === AGENT_MORPH && String(r.runnable_id) === String(agentId),
-			),
-		[query.data, agentId],
-	);
-	return { ...query, data };
+	const query = useRuns(agentId ? ws : '', { ...filters, agent_id: agentId, per_page: 100 });
+	return { ...query, data: query.data?.runs ?? [] };
 };
 
 export const useAgentRun = (ws: string, _agentId: string, runId: string | null | undefined) =>

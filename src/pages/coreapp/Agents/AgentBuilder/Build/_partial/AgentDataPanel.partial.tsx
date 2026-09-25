@@ -1,22 +1,8 @@
 import { useState, useEffect } from 'react';
-import {
-	Database,
-	Brain,
-	History,
-	BarChart2,
-	FlaskConical,
-	GitBranch,
-	Sparkles,
-	Gauge,
-} from 'lucide-react';
+import { Database, Brain, GitBranch } from 'lucide-react';
 import AgentKnowledgePanel from './AgentKnowledgePanel.partial';
 import AgentMemoryPanel from './AgentMemoryPanel.partial';
-import AgentRunsPanel from './AgentRunsPanel.partial';
-import AgentAnalyticsPanel from './AgentAnalyticsPanel.partial';
-import AgentEvalsPanel from './AgentEvalsPanel.partial';
 import AgentVersionsPanel from './AgentVersionsPanel.partial';
-import AgentReflectionsPanel from './AgentReflectionsPanel.partial';
-import AgentEvaluationsPanel from './AgentEvaluationsPanel.partial';
 import { useAgentBuilderStore, type TAgentDataSection } from '@/store/agentBuilder.store';
 
 type TProps = {
@@ -27,18 +13,12 @@ type TProps = {
 const SECTIONS: { id: TAgentDataSection; label: string; icon: typeof Database }[] = [
 	{ id: 'knowledge', label: 'Knowledge', icon: Database },
 	{ id: 'memory', label: 'Memory', icon: Brain },
-	{ id: 'runs', label: 'Runs', icon: History },
-	{ id: 'analytics', label: 'Analytics', icon: BarChart2 },
-	{ id: 'evals', label: 'Evals', icon: FlaskConical },
 	{ id: 'versions', label: 'Versions', icon: GitBranch },
-	{ id: 'reflections', label: 'Reflect', icon: Sparkles },
-	{ id: 'grading', label: 'Grading', icon: Gauge },
 ];
 
 /**
- * Container for the agent's data-layer features — knowledge base, persistent
- * memory, run history, usage analytics, eval suites, version history, and
- * reflections, and chat grading — behind a compact segmented nav.
+ * What the agent knows and has been: its knowledge base, persistent memory
+ * and version history. How it is performing lives on the Insights page.
  */
 const AgentDataPanel = ({ ws, agentId }: TProps) => {
 	const [section, setSection] = useState<TAgentDataSection>('knowledge');
@@ -56,7 +36,7 @@ const AgentDataPanel = ({ ws, agentId }: TProps) => {
 	return (
 		<div className='flex-1 overflow-y-auto bg-zinc-50/40 dark:bg-zinc-950/20'>
 			{/* Segmented sub-nav */}
-			<div className='sticky top-0 z-10 grid grid-cols-4 gap-1 border-b border-zinc-200 bg-white/90 p-2 backdrop-blur dark:border-white/10 dark:bg-zinc-900/90'>
+			<div className='sticky top-0 z-10 grid grid-cols-3 gap-1 border-b border-zinc-200 bg-white/90 p-2 backdrop-blur dark:border-white/10 dark:bg-zinc-900/90'>
 				{SECTIONS.map(({ id, label, icon: Icon }) => (
 					<button
 						key={id}
@@ -75,12 +55,7 @@ const AgentDataPanel = ({ ws, agentId }: TProps) => {
 			<div className='p-4'>
 				{section === 'knowledge' && <AgentKnowledgePanel ws={ws} agentId={agentId} />}
 				{section === 'memory' && <AgentMemoryPanel ws={ws} agentId={agentId} />}
-				{section === 'runs' && <AgentRunsPanel ws={ws} agentId={agentId} />}
-				{section === 'analytics' && <AgentAnalyticsPanel ws={ws} agentId={agentId} />}
-				{section === 'evals' && <AgentEvalsPanel ws={ws} agentId={agentId} />}
 				{section === 'versions' && <AgentVersionsPanel ws={ws} agentId={agentId} />}
-				{section === 'reflections' && <AgentReflectionsPanel ws={ws} agentId={agentId} />}
-				{section === 'grading' && <AgentEvaluationsPanel ws={ws} agentId={agentId} />}
 			</div>
 		</div>
 	);

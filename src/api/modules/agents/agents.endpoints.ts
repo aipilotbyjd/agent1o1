@@ -4,6 +4,7 @@ const agent = (ws: string, id: string) => `${base(ws)}/${id}`;
 export const AgentEndpoints = {
 	list: base,
 	create: base,
+	draft: (ws: string) => `${base(ws)}/draft`,
 	detail: agent,
 	update: agent,
 	delete: agent,

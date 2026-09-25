@@ -300,7 +300,7 @@ const BlueprintsListPage = () => {
 
 	const handleUseAgent = (template: TAgentTemplate) => {
 		useAgentTemplateMutation.mutate(
-			{ id: template.id },
+			{ id: template.id, body: { name: template.name } },
 			{
 				onSuccess: (agent) => {
 					notify.success(`Created "${agent.name}" from template.`);

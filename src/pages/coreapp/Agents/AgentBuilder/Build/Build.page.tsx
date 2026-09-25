@@ -18,7 +18,6 @@ import {
 	Send,
 	Database,
 	Users,
-	Ghost,
 	Mic,
 	CheckSquare,
 	Download,
@@ -36,16 +35,9 @@ import {
 	Flame,
 	Layers,
 	MessageSquare,
-	Brain,
-	Target,
-	Shield,
 	Copy,
 	RefreshCw,
-	Lock,
-	AlertTriangle,
-	ExternalLink,
 	Search,
-	Rocket,
 	Loader2,
 	RotateCcw,
 	FileJson,
@@ -54,7 +46,13 @@ import {
 	ImageIcon,
 } from 'lucide-react';
 import AgentTemplateCard from '../_partial/AgentTemplateCard.partial';
-import { agentTemplateTabs, agentTemplates } from '../_helper/agentBuilder.constants';
+import {
+	AGENT_COLOR_SWATCHES,
+	AGENT_ICON_COMPONENTS,
+	agentColorTextClass,
+	agentIconFor,
+} from '../../_helper/agentAppearance';
+import { useAgentTemplates, useUseAgentTemplate } from '@/api/modules/templates';
 import MainAppBar, {
 	MainAppBarPillButton,
 	MainAppBarIconButton,
@@ -83,6 +81,7 @@ import {
 	useDeleteAgentTrigger,
 	useFireAgentTrigger,
 	useAgentMetaModels,
+	useDraftAgent,
 	useAgentSkillAttachments,
 	useAgentToolBindings,
 	useCreateAgentToolBinding,
@@ -95,7 +94,9 @@ import { useGlobalNodeCatalog } from '@/api/modules/nodes';
 import { useWorkflows } from '@/api/modules/workflows';
 import type { TNode } from '@/types/node.type';
 import type { TTrigger } from '@/types/trigger.type';
-import type { TAgentTriggerType } from '@/types/agent.type';
+import { AGENT_COLORS, AGENT_ICONS } from '@/types/agent.type';
+import type { TAgentColor, TAgentIcon, TAgentTriggerType } from '@/types/agent.type';
+import type { TAgentTemplate } from '@/types/template.type';
 import { useAgentSession } from '@/api/modules/agents';
 import { AgentSessionService } from '@/api/modules/agents/agent-sessions.service';
 import { useDownloadArtifact, ArtifactService } from '@/api/modules/artifacts';
@@ -107,6 +108,7 @@ import { useAgentBuilderStore } from '@/store/agentBuilder.store';
 import { XCircle, Wrench, FileDown, GitMerge } from 'lucide-react';
 import AgentDataPanel from './_partial/AgentDataPanel.partial';
 import AgentTagsPanel from './_partial/AgentTagsPanel.partial';
+import AgentChatsPanel from './_partial/AgentChatsPanel.partial';
 
 const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 	messages
@@ -539,6 +541,7 @@ const BuildPage = () => {
 				label: entry.display_name,
 				tier: entry.brand,
 				description: entry.slug,
+				isAvailable: entry.is_available,
 			})),
 		[metaModelGroups],
 	);
@@ -571,10 +574,10 @@ const BuildPage = () => {
 		return () => window.removeEventListener('resize', checkMobile);
 	}, []);
 
-	const [isPreviewMode, setIsPreviewMode] = useState(false);
-	const [agentName, setAgentName] = useState('Lead Generation Agent');
-	const [agentIcon, setAgentIcon] = useState<any>(Bot);
-	const [agentIconColor, setAgentIconColor] = useState('purple');
+		const [isPreviewMode, setIsPreviewMode] = useState(Boolean(routeAgentId));
+	const [agentName, setAgentName] = useState('');
+	const [agentIcon, setAgentIcon] = useState<TAgentIcon>('bot');
+	const [agentIconColor, setAgentIconColor] = useState<TAgentColor>('purple');
 	const [chatHistory, setChatHistory] = useState<TMessage[]>([]);
 	const [chatInput, setChatInput] = useState('');
 	const [chatAttachments, setChatAttachments] = useState<File[]>([]);
@@ -629,18 +632,7 @@ const BuildPage = () => {
 			if (loadedSessionRef.current === null) return;
 
 			loadedSessionRef.current = null;
-			setChatHistory([
-				{
-					id: 'init-' + Date.now(),
-					sender: 'agent',
-					text: `Hi! I'm your ${agentName}. How can I help you today?`,
-					timestamp: new Date().toLocaleTimeString([], {
-						hour: '2-digit',
-						minute: '2-digit',
-					}),
-					type: 'text',
-				},
-			]);
+			setChatHistory([]);
 			return;
 		}
 
@@ -718,13 +710,13 @@ const BuildPage = () => {
 		setChatAttachments((current) => current.filter((item) => item !== file));
 	};
 
-	const [incognito, setIncognito] = useState(false);
+	
 	const [skillEnabled, setSkillEnabled] = useState(true);
 
 	// Sidebar settings panel states
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 	const [activeSidebarTab, setActiveSidebarTab] = useState<
-		'agent' | 'settings' | 'chatDetails' | 'data'
+				'agent' | 'chatDetails' | 'data'
 	>('agent');
 
 	const requestedDataSection = useAgentBuilderStore((state) => state.requestedDataSection);
@@ -738,15 +730,11 @@ const BuildPage = () => {
 
 	useEffect(() => {
 		if (agentModel || modelOptions.length === 0) return;
-		setAgentModel(
-			(modelOptions.find((m) => m.slug === 'claude-sonnet-5') ?? modelOptions[0]).id,
-		);
+		setAgentModel((modelOptions.find((m) => m.isAvailable) ?? modelOptions[0]).id);
 	}, [agentModel, modelOptions]);
 	const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
-	const [allowSelfUpdates, setAllowSelfUpdates] = useState(true);
-	const [agentDescription, setAgentDescription] = useState(
-		'An agent that helps me research competitors, analyze their strategies, products, pricing, marketing, reviews, and overall market positioning.',
-	);
+	const [allowSelfUpdates, setAllowSelfUpdates] = useState(false);
+	const [agentDescription, setAgentDescription] = useState('');
 
 	const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
 
@@ -836,7 +824,7 @@ const BuildPage = () => {
 	};
 
 	const [isSaving, setIsSaving] = useState(false);
-	const [saveStatus, setSaveStatus] = useState('Agent draft autosaved');
+	const [saveStatus, setSaveStatus] = useState('');
 	const [isMoreDropdownOpen, setIsMoreDropdownOpen] = useState(false);
 
 	const toggleDarkMode = () => {
@@ -848,6 +836,9 @@ const BuildPage = () => {
 		setAgentName(existingAgent.name);
 		setAgentDescription(existingAgent.description ?? '');
 		setAgentInstructions(existingAgent.instructions ?? '');
+		setAgentIcon(existingAgent.icon ?? 'bot');
+		setAgentIconColor(existingAgent.color ?? 'purple');
+		setAllowSelfUpdates(existingAgent.allow_self_updates);
 		if (existingAgent.model_catalog_id) {
 			setAgentModel(existingAgent.model_catalog_id);
 		}
@@ -858,13 +849,18 @@ const BuildPage = () => {
 		name?: string;
 		description?: string;
 		instructions?: string;
+		icon?: TAgentIcon;
+		color?: TAgentColor;
 	}): Promise<string> => {
 		const payload = {
 			name: overrides?.name?.trim() || agentName.trim() || 'Untitled Agent',
 			description: overrides?.description ?? agentDescription,
+			icon: overrides?.icon ?? agentIcon,
+			color: overrides?.color ?? agentIconColor,
 			instructions:
 				(overrides?.instructions ?? agentInstructions) || 'You are a helpful assistant.',
 			model_catalog_id: agentModel || null,
+			allow_self_updates: allowSelfUpdates,
 		};
 
 		if (currentAgentId) {
@@ -1064,50 +1060,6 @@ const BuildPage = () => {
 		},
 	];
 
-	const selectableIcons = [
-		{ Icon: Bot },
-		{ Icon: Flame },
-		{ Icon: Search },
-		{ Icon: Target },
-		{ Icon: SlidersHorizontal },
-		{ Icon: Shield },
-		{ Icon: Sparkles },
-		{ Icon: Brain },
-		{ Icon: Rocket },
-		{ Icon: Layers },
-	];
-
-	const colorsList = [
-		{ value: 'purple', bgClass: 'bg-primary-400' },
-		{ value: 'blue', bgClass: 'bg-blue-500' },
-		{ value: 'teal', bgClass: 'bg-teal-500' },
-		{ value: 'orange', bgClass: 'bg-amber-500' },
-		{ value: 'red', bgClass: 'bg-rose-500' },
-		{
-			value: 'rainbow',
-			bgClass: 'bg-gradient-to-tr from-primary-400 via-emerald-500 to-rose-500',
-		},
-	];
-
-	const getIconColorClass = (color: string) => {
-		switch (color) {
-			case 'green':
-				return 'text-emerald-500 dark:text-emerald-400';
-			case 'blue':
-				return 'text-blue-500 dark:text-blue-400';
-			case 'teal':
-				return 'text-teal-500 dark:text-teal-400';
-			case 'orange':
-				return 'text-amber-500 dark:text-amber-400';
-			case 'red':
-				return 'text-rose-500 dark:text-rose-400';
-			case 'rainbow':
-				return 'text-transparent bg-clip-text bg-gradient-to-tr from-primary-400 via-emerald-500 to-rose-500';
-			default: // purple
-				return 'text-primary-500 dark:text-primary-400';
-		}
-	};
-
 	const handleChipClick = (text: string) => {
 		setPromptText(text);
 		if (textareaRef.current) {
@@ -1115,117 +1067,69 @@ const BuildPage = () => {
 		}
 	};
 
-	// Start preview mode with selected agent details
-	const startPreview = (name: string, icon: any, color: string, customGreeting?: string) => {
-		setAgentName(name);
-		setAgentIcon(icon);
-		setAgentIconColor(color);
-		setIsPreviewMode(true);
+	const openPreview = () => setIsPreviewMode(true);
 
-		const greeting = customGreeting || `Hi! I'm your ${name}. How can I help you today?`;
-		setChatHistory([
-			{
-				id: 'init-' + Date.now(),
-				sender: 'agent',
-				text: greeting,
-				timestamp: new Date().toLocaleTimeString([], {
-					hour: '2-digit',
-					minute: '2-digit',
-				}),
-				type: 'text',
-			},
-		]);
-	};
+	const draftAgentMutation = useDraftAgent(workspaceId);
 
-	// Handle Generate agent click from main builder prompt
-	const handleSendMessage = async () => {
-		if (!promptText.trim()) {
-			startPreview('Lead Generation Agent', Bot, 'purple');
-			await ensureAgentPersisted({ name: 'Lead Generation Agent' });
-			toast.info('Starting default Lead Generation Agent preview.');
+		// Drafts the agent's name, description, instructions and look from the
+	// description with the selected model, creates it as a new agent, and
+	// opens its chat.
+	const handleGenerateAgent = async () => {
+		const description = promptText.trim();
+		if (!description) {
+			heroPromptRef.current?.focus();
+			toast.info('Describe what your agent should do first.');
+			return;
+		}
+		if (!agentModel) {
+			toast.error('Choose a model for the agent first.');
 			return;
 		}
 
-		let matchedName = 'Lead Generation Agent';
-		let matchedIcon = Bot;
-		let matchedColor = 'purple';
-		let greeting = `Hi! I'm your Lead Generation Agent. How can I help you today?`;
-
-		const promptLower = promptText.toLowerCase();
-		if (
-			promptLower.includes('recruit') ||
-			promptLower.includes('job') ||
-			promptLower.includes('candidate')
-		) {
-			matchedName = 'Recruiting Sourcer Agent';
-			matchedIcon = Users;
-			matchedColor = 'purple';
-			greeting = `Hi! I'm your Recruiting Sourcer Agent. How can I help you today?`;
-		} else if (
-			promptLower.includes('feedback') ||
-			promptLower.includes('ticket') ||
-			promptLower.includes('support')
-		) {
-			matchedName = 'Feedback Digest Agent';
-			matchedIcon = Bot;
-			matchedColor = 'green';
-			greeting = `Hi! I'm your Feedback Digest Agent. How can I help you today?`;
-		} else if (
-			promptLower.includes('sql') ||
-			promptLower.includes('database') ||
-			promptLower.includes('query')
-		) {
-			matchedName = 'Database SQL Analyst Agent';
-			matchedIcon = Database;
-			matchedColor = 'purple';
-			greeting = `Hi! I'm your Database SQL Analyst Agent. How can I help you today?`;
+		try {
+			const draft = await draftAgentMutation.mutateAsync({
+				prompt: description,
+				model_catalog_id: agentModel,
+			});
+						const created = await createAgentMutation.mutateAsync({
+				...draft,
+				model_catalog_id: agentModel,
+				allow_self_updates: false,
+			});
+			setAgentName(draft.name);
+			setAgentDescription(draft.description);
+			setAgentInstructions(draft.instructions);
+			setAgentIcon(draft.icon);
+			setAgentIconColor(draft.color);
+			setAllowSelfUpdates(false);
+			setCurrentAgentId(created.id);
+			setChatAgentId(created.id);
+			navigate(paths.editAgent(workspaceId, created.id), { replace: true });
+			setPromptText('');
+			setChatHistory([]);
+			openPreview();
+		} catch {
+			// The mutation's own error toast has already told the user.
 		}
-
-		startPreview(matchedName, matchedIcon, matchedColor, greeting);
-		await ensureAgentPersisted({ name: matchedName });
-
-		const userMsg = promptText;
-		setPromptText('');
-
-		setTimeout(() => {
-			sendChatMessage(userMsg);
-		}, 800);
 	};
 
-	// Handle template card clicks
-	const handleTemplateClick = (templateTitle: string) => {
-		let matchedName = 'Lead Generation Agent';
-		let matchedIcon = Bot;
-		let matchedColor = 'purple';
+	const { data: agentTemplates = [] } = useAgentTemplates(workspaceId);
+	const useTemplateMutation = useUseAgentTemplate(workspaceId);
 
-		if (templateTitle === 'Recruiting Sourcer') {
-			matchedName = 'Recruiting Sourcer Agent';
-			matchedIcon = Users;
-			matchedColor = 'purple';
-		} else if (templateTitle === 'Feedback Digest Agent') {
-			matchedName = 'Feedback Digest Agent';
-			matchedIcon = Bot;
-			matchedColor = 'green';
-		} else if (templateTitle === 'Weekly Recap Agent') {
-			matchedName = 'Weekly Recap Agent';
-			matchedIcon = Users;
-			matchedColor = 'purple';
-		} else if (templateTitle === 'LinkedIn Outreach Expert') {
-			matchedName = 'LinkedIn Outreach Expert Agent';
-			matchedIcon = Users;
-			matchedColor = 'purple';
-		} else if (templateTitle === 'Metrics Analyst Bot') {
-			matchedName = 'Metrics Analyst Bot';
-			matchedIcon = Database;
-			matchedColor = 'purple';
-		} else if (templateTitle === 'SEO Content Planner') {
-			matchedName = 'SEO Content Planner Agent';
-			matchedIcon = Bot;
-			matchedColor = 'purple';
-		}
-
-		const greeting = `Hi! I'm your ${matchedName}. How can I help you today?`;
-		startPreview(matchedName, matchedIcon, matchedColor, greeting);
+	const handleTemplateClick = (template: TAgentTemplate) => {
+		if (useTemplateMutation.isPending) return;
+		useTemplateMutation.mutate(
+			{ id: template.id, body: { name: template.name, model_catalog_id: agentModel || null } },
+			{
+				onSuccess: (agent) => {
+					setCurrentAgentId(agent.id);
+					setChatAgentId(agent.id);
+					setChatHistory([]);
+					navigate(paths.editAgent(workspaceId, agent.id), { replace: true });
+					openPreview();
+				},
+			},
+		);
 	};
 
 	/**
@@ -1567,12 +1471,19 @@ const BuildPage = () => {
 		});
 	};
 
-	// Filter templates based on dynamic active tab state, limited to first 3
-	const filteredTemplates = (
+	const templateTabs = useMemo(
+		() => [
+			'All',
+			...Array.from(
+				new Set(agentTemplates.map((template) => template.category).filter(Boolean)),
+			).sort(),
+		] as string[],
+		[agentTemplates],
+	);
+	const filteredTemplates =
 		activeTab === 'All'
 			? agentTemplates
-			: agentTemplates.filter((template) => template.categories?.includes(activeTab))
-	).slice(0, 3);
+			: agentTemplates.filter((template) => template.category === activeTab);
 
 	// Drawer contents for whichever tab is showing, minus what's already attached.
 	const attachedNodeTypes = new Set((toolBindings ?? []).map((binding) => binding.node_type));
@@ -1614,7 +1525,7 @@ const BuildPage = () => {
 	const nodeFor = (nodeType: string) =>
 		(nodeCatalog ?? []).find((node) => node.type === nodeType);
 
-	const AgentIconComponent = agentIcon;
+	const AgentIconComponent = agentIconFor(agentIcon);
 	const chatStatus = isTyping
 		? 'Responding'
 		: conversationId && openedSession?.status === 'archived'
@@ -1637,20 +1548,25 @@ const BuildPage = () => {
 			<div className='bg-primary-400/8 dark:bg-primary-400/12 pointer-events-none absolute top-[-100px] left-1/4 -z-10 h-[380px] w-[380px] rounded-full blur-[120px]' />
 			<div className='pointer-events-none absolute right-1/4 bottom-1/4 -z-10 h-[450px] w-[450px] rounded-full bg-emerald-500/8 blur-[140px] dark:bg-emerald-600/12' />
 
-			{!isPreviewMode ? (
+						{!currentAgentId && !isPreviewMode ? (
 				<>
 					{/* Main Header / Top Bar */}
 					<MainAppBar
 						title='Agent Builder'
-						status={saveStatus}
-						meta='Templates ready'
+						status={
+							saveStatus ||
+							(existingAgent
+								? `Saved ${new Date(existingAgent.updated_at).toLocaleString()}`
+								: 'Not saved yet')
+						}
+						meta={`${agentTemplates.length} templates`}
 						primaryActionLabel='Create agent'
 						primaryActionIcon={Plus}
 						primaryActionColor='purple'
 						showWorkspaceActions={false}
 						showThemeToggle={false}
 						toggleClassName='md:hidden'
-						onPrimaryAction={handleSendMessage}>
+						onPrimaryAction={handleGenerateAgent}>
 						{/* Share button */}
 						<MainAppBarPillButton
 							onClick={() =>
@@ -1683,7 +1599,7 @@ const BuildPage = () => {
 						</MainAppBarPillButton>
 						{/* Preview button with live state values */}
 						<MainAppBarPillButton
-							onClick={() => startPreview(agentName, agentIcon, agentIconColor)}
+							onClick={openPreview}
 							className='!text-primary-600 border-primary-200 hover:bg-primary-50 hover:text-primary-700 dark:!text-primary-400 dark:border-primary-500/30 dark:hover:bg-primary-950/20'>
 							<Play size={15} className='fill-current' />
 							Preview
@@ -1732,17 +1648,21 @@ const BuildPage = () => {
 											onKeyDown={(e) => {
 												if (e.key === 'Enter') {
 													e.preventDefault();
-													handleSendMessage();
+													void handleGenerateAgent();
 												}
 											}}
 											className='flex-1 border-none bg-transparent px-4 py-2 text-sm font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
 										/>
 										<button
 											type='button'
-											onClick={handleSendMessage}
+											onClick={() => void handleGenerateAgent()}
 											className='bg-primary-400 text-primary-950 shadow-primary-500/25 hover:bg-primary-500 flex items-center gap-1.5 rounded-full px-5 py-2 text-xs font-bold shadow-md transition active:scale-95 dark:shadow-none'>
-											<Sparkles size={13} />
-											Generate agent
+											{draftAgentMutation.isPending ? (
+												<Loader2 size={13} className='animate-spin' />
+											) : (
+												<Sparkles size={13} />
+											)}
+											{draftAgentMutation.isPending ? 'Generating…' : 'Generate agent'}
 										</button>
 									</div>
 								</div>
@@ -1761,16 +1681,11 @@ const BuildPage = () => {
 											{filteredTemplates.length} Available
 										</span>
 									</div>
-									<button
-										type='button'
-										className='shrink-0 text-xs font-bold text-zinc-400 transition hover:text-zinc-950 sm:text-sm dark:text-zinc-500 dark:hover:text-zinc-200'>
-										Don't show again
-									</button>
 								</div>
 
 								{/* Categories Tab Bar */}
 								<div className='dark:border-border-main flex gap-5 overflow-x-auto border-b border-zinc-200/80 text-[13px] font-black whitespace-nowrap text-zinc-400 sm:gap-6 sm:text-sm dark:text-zinc-500'>
-									{agentTemplateTabs.map((tab) => {
+									{templateTabs.map((tab) => {
 										const isActive = tab === activeTab;
 										return (
 											<button
@@ -1805,16 +1720,18 @@ const BuildPage = () => {
 										{filteredTemplates.map((template) => (
 											<motion.div
 												layout
-												key={template.title}
+												key={template.id}
 												initial={{ opacity: 0, scale: 0.95 }}
 												animate={{ opacity: 1, scale: 1 }}
 												exit={{ opacity: 0, scale: 0.95 }}
 												transition={{ duration: 0.2 }}>
 												<AgentTemplateCard
 													template={template}
-													onClick={() =>
-														handleTemplateClick(template.title)
+													isCreating={
+														useTemplateMutation.isPending &&
+														useTemplateMutation.variables?.id === template.id
 													}
+													onClick={() => handleTemplateClick(template)}
 												/>
 											</motion.div>
 										))}
@@ -1857,16 +1774,16 @@ const BuildPage = () => {
 										onKeyDown={(e) => {
 											if (e.key === 'Enter') {
 												e.preventDefault();
-												handleSendMessage();
+												void handleGenerateAgent();
 											}
 										}}
-										placeholder='Send a message to your agent...'
+										placeholder='Or describe your agent here...'
 										className='flex-1 border-none bg-transparent px-2 text-sm font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
 									/>
 									<button
 										aria-label='Send'
 										type='button'
-										onClick={handleSendMessage}
+										onClick={() => void handleGenerateAgent()}
 										className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-md transition active:scale-95'>
 										<Send size={15} />
 									</button>
@@ -1900,7 +1817,7 @@ const BuildPage = () => {
 						</button>
 						<button
 							type='button'
-							onClick={() => startPreview(agentName, agentIcon, agentIconColor)}
+							onClick={openPreview}
 							className='flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold text-zinc-500 transition active:bg-zinc-100 dark:text-zinc-400 dark:active:bg-zinc-900'>
 							<Play size={18} />
 							Preview
@@ -1917,10 +1834,6 @@ const BuildPage = () => {
 						</button>
 					</nav>
 
-					<div className='pointer-events-none absolute right-10 bottom-8 hidden items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700 xl:flex dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400'>
-						<Sparkles size={16} />
-						Agent draft ready
-					</div>
 				</>
 			) : (
 				// Premium Chat Interface View (from user screenshot)
@@ -1930,7 +1843,7 @@ const BuildPage = () => {
 					<header className='border-zinc-150 flex min-h-14 shrink-0 items-center justify-between gap-2 border-b bg-white px-3 md:hidden dark:border-zinc-800 dark:bg-zinc-900'>
 						<button
 							aria-label='Back to agent builder'
-							onClick={() => setIsPreviewMode(false)}
+							onClick={() => (currentAgentId ? navigate(paths.agents(workspaceId)) : setIsPreviewMode(false))}
 							type='button'
 							className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-zinc-500 active:bg-zinc-100 dark:text-zinc-400 dark:active:bg-zinc-800'>
 							<ChevronRight size={20} className='rotate-180' />
@@ -1939,7 +1852,7 @@ const BuildPage = () => {
 							<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white dark:border dark:border-white/10 dark:bg-zinc-900'>
 								<AgentIconComponent
 									size={17}
-									className={getIconColorClass(agentIconColor)}
+									className={agentColorTextClass(agentIconColor)}
 								/>
 							</div>
 							<div className='min-w-0'>
@@ -1985,7 +1898,7 @@ const BuildPage = () => {
 							{/* Back button */}
 							<button
 								aria-label='Close'
-								onClick={() => setIsPreviewMode(false)}
+								onClick={() => (currentAgentId ? navigate(paths.agents(workspaceId)) : setIsPreviewMode(false))}
 								className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-400 dark:hover:bg-white/[0.07] dark:hover:text-white'>
 								<X size={16} />
 							</button>
@@ -1995,7 +1908,7 @@ const BuildPage = () => {
 								className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white shadow-md dark:border dark:border-white/10 dark:bg-zinc-900`}>
 								<AgentIconComponent
 									size={20}
-									className={getIconColorClass(agentIconColor)}
+									className={agentColorTextClass(agentIconColor)}
 								/>
 							</div>
 
@@ -2038,14 +1951,7 @@ const BuildPage = () => {
 								<span>Share</span>
 							</MainAppBarPillButton>
 
-							<MainAppBarIconButton
-								title='Settings'
-								onClick={() => {
-									setActiveSidebarTab('agent');
-									setIsSettingsOpen(true);
-								}}>
-								<SlidersHorizontal size={14} />
-							</MainAppBarIconButton>
+							
 
 							<div className='relative'>
 								<MainAppBarIconButton
@@ -2077,23 +1983,7 @@ const BuildPage = () => {
 														// aside's Recents; the next message opens a new one.
 														newSession();
 														loadedSessionRef.current = null;
-														const greeting = `Hi! I'm your ${agentName}. How can I help you today?`;
-														setChatHistory([
-															{
-																id: 'init-' + Date.now(),
-																sender: 'agent',
-																text: greeting,
-																timestamp:
-																	new Date().toLocaleTimeString(
-																		[],
-																		{
-																			hour: '2-digit',
-																			minute: '2-digit',
-																		},
-																	),
-																type: 'text',
-															},
-														]);
+														setChatHistory([]);
 														toast.success('Chat history cleared!');
 													}}
 													className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-white/[0.04]'>
@@ -2151,10 +2041,27 @@ const BuildPage = () => {
 													Export Agent JSON
 												</button>
 
-												<div className='my-1 border-t border-zinc-100 dark:border-white/5' />
+																									<button
+														disabled={!currentAgentId || duplicateAgentMutation.isPending}
+														onClick={() => {
+															setIsMoreDropdownOpen(false);
+															if (!currentAgentId) return;
+															duplicateAgentMutation.mutate(currentAgentId, {
+																onSuccess: (copy) => {
+																	toast.success(`"${copy.name}" created.`);
+																	navigate(paths.editAgent(workspaceId, copy.id));
+																},
+															});
+														}}
+														className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-white/[0.04]'>
+														<Copy size={13} />
+														Duplicate Agent
+													</button>
 
-												<button
-													onClick={handleDeleteAgent}
+													<div className='my-1 border-t border-zinc-100 dark:border-white/5' />
+
+													<button
+														onClick={handleDeleteAgent}
 													className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/20'>
 													<Trash2 size={13} />
 													Delete Agent
@@ -2165,11 +2072,14 @@ const BuildPage = () => {
 								</AnimatePresence>
 							</div>
 
-							<button
-								onClick={() => setIsPreviewMode(false)}
+														<button
+								onClick={() => {
+									setActiveSidebarTab('agent');
+									setIsSettingsOpen(true);
+								}}
 								className='bg-primary-400 text-primary-950 shadow-primary-500/20 hover:bg-primary-500 flex h-9 items-center gap-1.5 rounded-lg px-4 text-xs font-bold shadow-md transition active:scale-95 dark:shadow-none'>
-								<SquarePen size={13} />
-								<span>Edit Draft</span>
+								<SlidersHorizontal size={13} />
+								<span>Settings</span>
 							</button>
 						</div>
 					</header>
@@ -2291,31 +2201,6 @@ const BuildPage = () => {
 											className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
 											<ImageIcon size={18} />
 										</button>
-										<button
-											aria-label='Show welcome message again'
-											title='Show welcome message'
-											type='button'
-											onClick={() => {
-												const greeting = `Hi! I'm your ${agentName}. How can I help you today?`;
-												setChatHistory([
-													{
-														id: 'init-' + Date.now(),
-														sender: 'agent',
-														text: greeting,
-														timestamp: new Date().toLocaleTimeString(
-															[],
-															{
-																hour: '2-digit',
-																minute: '2-digit',
-															},
-														),
-														type: 'text',
-													},
-												]);
-											}}
-											className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
-											<RotateCcw size={18} />
-										</button>
 									</div>
 
 									{/* Get started section */}
@@ -2378,6 +2263,23 @@ const BuildPage = () => {
 										</div>
 									)}
 								</div>
+							) : chatHistory.length === 0 ? (
+								<div className='flex flex-col items-center justify-center px-4 pt-16 pb-8 text-center select-none'>
+									<div className='mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-zinc-200 bg-white shadow-2xs dark:border-zinc-800 dark:bg-zinc-900'>
+										<AgentIconComponent
+											size={30}
+											className={agentColorTextClass(agentIconColor)}
+										/>
+									</div>
+									<h2 className='text-xl font-black tracking-tight text-zinc-900 dark:text-white'>
+										{agentName || 'Untitled Agent'}
+									</h2>
+									{agentDescription && (
+										<p className='mt-2 max-w-md text-sm font-semibold text-zinc-500 dark:text-zinc-400'>
+											{agentDescription}
+										</p>
+									)}
+								</div>
 							) : (
 								chatHistory.map((message, messageIdx) => {
 									const isUser = message.sender === 'user';
@@ -2396,7 +2298,7 @@ const BuildPage = () => {
 														className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-zinc-950 text-white dark:border-white/10 dark:bg-zinc-900`}>
 														<AgentIconComponent
 															size={16}
-															className={getIconColorClass(
+															className={agentColorTextClass(
 																agentIconColor,
 															)}
 														/>
@@ -2656,7 +2558,7 @@ const BuildPage = () => {
 											className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-zinc-950 text-white dark:border-white/10 dark:bg-zinc-900`}>
 											<AgentIconComponent
 												size={16}
-												className={getIconColorClass(agentIconColor)}
+												className={agentColorTextClass(agentIconColor)}
 											/>
 										</div>
 										<div className='min-w-0 flex-1'>
@@ -2939,41 +2841,8 @@ const BuildPage = () => {
 										className='max-h-[9rem] flex-1 resize-none self-center border-none bg-transparent px-3 py-1.5 text-sm font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
 									/>
 
-									{/* Right features: Incognito & Send */}
+									{/* Right features: Mic & Send */}
 									<div className='flex items-center gap-3 px-1.5'>
-										{/* Incognito toggle switch */}
-										<div className='flex items-center gap-2'>
-											<button
-												type='button'
-												role='switch'
-												aria-checked={incognito}
-												aria-label='Incognito mode'
-												onClick={() => setIncognito(!incognito)}
-												className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-													incognito
-														? 'bg-primary-400 dark:bg-primary-400'
-														: 'bg-zinc-200 dark:bg-zinc-800'
-												}`}>
-												<span
-													className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-														incognito
-															? 'translate-x-4'
-															: 'translate-x-0'
-													}`}
-												/>
-											</button>
-											<div className='flex items-center gap-1 text-[11px] font-black text-zinc-400 dark:text-zinc-500'>
-												<Ghost
-													size={12}
-													className={
-														incognito
-															? 'text-primary-600 dark:text-primary-400'
-															: ''
-													}
-												/>
-												<span>Incognito</span>
-											</div>
-										</div>
 
 										{/* Mic icon */}
 										<button
@@ -3018,24 +2887,9 @@ const BuildPage = () => {
 									</div>
 								</div>
 
-								<div className='flex items-center justify-center gap-1.5 text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
-									<span>
-										Agent can make mistakes. Please verify important
-										information.
-									</span>
-									<button
-										type='button'
-										onClick={() =>
-											window.open(
-												'https://docs.agent1o1.com',
-												'_blank',
-												'noopener,noreferrer',
-											)
-										}
-										className='underline hover:text-zinc-700 dark:hover:text-zinc-300'>
-										Report an issue
-									</button>
-								</div>
+																<p className='text-center text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
+									Agent can make mistakes. Please verify important information.
+								</p>
 							</div>
 						</footer>
 					)}
@@ -3087,24 +2941,6 @@ const BuildPage = () => {
 										<Bot size={14} />
 										<span>Agent</span>
 									</button>
-									{/* Tab: Settings */}
-									<button
-										onClick={(event) => {
-											setActiveSidebarTab('settings');
-											event.currentTarget.scrollIntoView({
-												block: 'nearest',
-												inline: 'center',
-												behavior: 'smooth',
-											});
-										}}
-										className={`flex shrink-0 items-center gap-1.5 border-b-2 px-3 pb-4 text-xs font-bold whitespace-nowrap transition-all ${
-											activeSidebarTab === 'settings'
-												? 'text-primary-600 border-primary-600 dark:text-primary-400 dark:border-primary-400'
-												: 'border-transparent text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
-										}`}>
-										<SlidersHorizontal size={14} />
-										<span>Settings</span>
-									</button>
 									{/* Tab: Chat Details */}
 									<button
 										onClick={(event) => {
@@ -3121,7 +2957,7 @@ const BuildPage = () => {
 												: 'border-transparent text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'
 										}`}>
 										<MessageSquare size={14} />
-										<span>Chat Details</span>
+										<span>Chats</span>
 									</button>
 									{/* Tab: Data (knowledge / memory / runs / analytics) */}
 									<button
@@ -3163,8 +2999,193 @@ const BuildPage = () => {
 							</div>
 
 							{/* Settings Body - Render conditionally based on activeSidebarTab */}
-							{activeSidebarTab === 'agent' && (
+														{activeSidebarTab === 'agent' && (
 								<div className='flex-1 space-y-4 overflow-y-auto bg-zinc-50/40 p-4 dark:bg-zinc-950/20'>
+									{/* Personalization Section */}
+									<div className='space-y-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900/40'>
+										{/* Section Header */}
+										<div className='flex items-center gap-2.5 border-b border-zinc-100 pb-2 dark:border-zinc-800/80'>
+											<ChevronDown
+												size={18}
+												className='cursor-pointer text-zinc-500'
+											/>
+											<div className='bg-primary-100 text-primary-600 dark:bg-primary-400/10 dark:text-primary-400 flex h-8 w-8 items-center justify-center rounded-xl'>
+												<Users size={16} />
+											</div>
+											<h3 className='text-sm font-black text-zinc-950 dark:text-white'>
+												Personalization
+											</h3>
+										</div>
+
+										{/* Content Layout */}
+										<div className='grid grid-cols-1 items-start gap-6 md:grid-cols-12'>
+											{/* Left side: Avatar and Popover Icon Selector Grid */}
+											<div className='relative flex flex-col items-start space-y-3 md:col-span-5'>
+												{/* Subheader Title */}
+												<div className='space-y-0.5'>
+													<h4 className='text-xs font-black text-zinc-950 dark:text-white'>
+														Icon & Name
+													</h4>
+													<p className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+														Choose an icon and give your agent a name.
+													</p>
+												</div>
+
+												{/* Large Chosen Icon Avatar Box */}
+												<div
+													onClick={() =>
+														setIsIconPickerOpen(!isIconPickerOpen)
+													}
+													className='relative flex h-24 w-24 cursor-pointer items-center justify-center rounded-2xl border border-zinc-200 bg-white p-2.5 shadow-2xs select-none dark:border-zinc-700 dark:bg-zinc-950/45'>
+													<AgentIconComponent
+														size={44}
+														className={agentColorTextClass(
+															agentIconColor,
+														)}
+													/>
+													{/* Pencil edit badge overlay */}
+													<div className='bg-primary-400 text-primary-950 shadow-primary-500/10 absolute -right-1 -bottom-1 flex h-6.5 w-6.5 cursor-pointer items-center justify-center rounded-full border border-white shadow-md dark:border-zinc-900'>
+														<SquarePen size={11} />
+													</div>
+												</div>
+
+												{/* Icon Picker Popover Container (Dropdown) */}
+												<AnimatePresence>
+													{isIconPickerOpen && (
+														<motion.div
+															initial={{ opacity: 0, y: -10 }}
+															animate={{ opacity: 1, y: 0 }}
+															exit={{ opacity: 0, y: -10 }}
+															transition={{ duration: 0.15 }}
+															className='relative mt-1.5 w-full max-w-[280px] space-y-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60'>
+															{/* Top pointer speech-bubble triangle */}
+															<div className='absolute -top-1.5 left-9 h-3 w-3 rotate-45 border-t border-l border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900' />
+
+															{/* Icons Grid (10 icons) */}
+															<div className='relative z-10 grid grid-cols-5 gap-2'>
+																{AGENT_ICONS.map(
+																	(iconName) => {
+																		const Icon =
+																			AGENT_ICON_COMPONENTS[iconName];
+																		const isSelected =
+																			agentIcon === iconName;
+																		return (
+																			<button
+																				key={iconName}
+																				type='button'
+																				title={iconName}
+																				onClick={() =>
+																					setAgentIcon(iconName)
+																				}
+																				className={`flex h-9 w-9 items-center justify-center rounded-xl border transition active:scale-95 ${
+																					isSelected
+																						? 'border-primary-600 bg-primary-50 text-primary-600 dark:border-primary-400 dark:bg-primary-400/10 dark:text-primary-400'
+																						: 'border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'
+																				}`}>
+																				<Icon size={16} />
+																			</button>
+																		);
+																	},
+																)}
+															</div>
+
+															{/* Colors Selector */}
+															<div className='relative z-10 space-y-1.5'>
+																<span className='text-[10px] font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
+																	Color
+																</span>
+																<div className='flex items-center gap-2.5'>
+																	{AGENT_COLORS.map((color) => {
+																		const isSelected =
+																			agentIconColor === color;
+																		return (
+																			<button
+																				key={color}
+																				type='button'
+																				onClick={() =>
+																					setAgentIconColor(color)
+																				}
+																				className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${AGENT_COLOR_SWATCHES[color]} ${
+																					isSelected
+																						? 'ring-primary-500 bg-clip-content p-[1px] ring-2 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900'
+																						: 'border-zinc-200 dark:border-zinc-700'
+																				}`}
+																				title={color}>
+																				{color === 'rainbow' && (
+																					<div className='from-primary-400 h-full w-full rounded-full bg-gradient-to-tr via-emerald-500 to-rose-500' />
+																				)}
+																			</button>
+																		);
+																	})}
+																</div>
+															</div>
+														</motion.div>
+													)}
+												</AnimatePresence>
+											</div>
+
+											{/* Right side: Input text name & description */}
+											<div className='w-full space-y-4 pt-12 md:col-span-7 md:pt-0'>
+												{/* Agent Name input field */}
+												<div className='w-full space-y-1.5'>
+													<label className='text-[11px] font-black text-zinc-500 dark:text-zinc-400'>
+														Agent Name
+													</label>
+													<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 relative flex items-center rounded-xl border border-zinc-200 bg-white px-3.5 py-3 shadow-2xs focus-within:ring-4 dark:border-zinc-800 dark:bg-zinc-950/20'>
+														<input
+															type='text'
+															value={agentName}
+															onChange={(e) =>
+																setAgentName(
+																	e.target.value.substring(0, 50),
+																)
+															}
+															className='flex-1 border-none bg-transparent p-0 text-xs font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-0 dark:text-zinc-100'
+															placeholder='Name your agent...'
+														/>
+														<span className='shrink-0 text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
+															{agentName.length} / 50
+														</span>
+													</div>
+												</div>
+
+												{/* Description textarea box */}
+												<div className='w-full space-y-1.5'>
+													<div className='flex flex-col'>
+														<label className='text-[11px] font-black text-zinc-600 dark:text-zinc-300'>
+															Description
+														</label>
+														<span className='mt-0.5 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+															Describe what your agent does and how it
+															helps you.
+														</span>
+													</div>
+													{/* Border wrapping both textarea and character count at bottom right */}
+													<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 relative flex flex-col rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs focus-within:ring-4 dark:border-zinc-800 dark:bg-zinc-950/20'>
+														<textarea
+															rows={4}
+															value={agentDescription}
+															onChange={(e) =>
+																setAgentDescription(
+																	e.target.value.substring(
+																		0,
+																		500,
+																	),
+																)
+															}
+															className='w-full resize-none border-none bg-transparent p-0 text-xs font-semibold text-zinc-800 outline-none focus:ring-0 focus:outline-none dark:text-zinc-200 dark:placeholder:text-zinc-500'
+															placeholder='Describe agent capability...'
+														/>
+														<span className='mt-2 self-end text-right text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
+															{agentDescription.length} / 500
+														</span>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+
+
 									{/* Agent Preferences Section */}
 									<div className='space-y-4 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
 										{/* Preferences Header */}
@@ -3223,11 +3244,12 @@ const BuildPage = () => {
 															<button
 																key={option.id}
 																type='button'
+																disabled={!option.isAvailable}
 																onClick={() => {
 																	setAgentModel(option.id);
 																	setIsModelPickerOpen(false);
 																}}
-																className={`flex w-full flex-col items-start gap-0.5 rounded-lg px-3 py-2 text-left transition ${
+																className={`flex w-full flex-col items-start gap-0.5 rounded-lg px-3 py-2 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
 																	option.id === agentModel
 																		? 'bg-primary-50 dark:bg-primary-950/30'
 																		: 'hover:bg-zinc-50 dark:hover:bg-zinc-800'
@@ -3237,7 +3259,7 @@ const BuildPage = () => {
 																		{option.label}
 																	</span>
 																	<span className='rounded-full bg-zinc-100 px-2 py-0.5 text-[9px] font-bold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'>
-																		{option.tier}
+																		{option.isAvailable ? option.tier : 'No API key'}
 																	</span>
 																</div>
 																<span className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
@@ -3250,21 +3272,26 @@ const BuildPage = () => {
 											)}
 										</div>
 
-										{/* Instructions Textarea */}
-										<div className='flex flex-col'>
+																				{/* Instructions */}
+										<div className='flex flex-col gap-1.5'>
+											<label
+												htmlFor='agent-instructions'
+												className='text-[11px] font-black text-zinc-600 dark:text-zinc-300'>
+												Instructions
+											</label>
+											<span className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+												The agent's system prompt: its role, how it works, and what it must never do.
+											</span>
 											<textarea
-												rows={3}
+												id='agent-instructions'
+												rows={14}
 												value={agentInstructions}
-												onChange={(e) =>
-													setAgentInstructions(
-														e.target.value.substring(0, 4000),
-													)
-												}
-												placeholder='Add instructions for the agent...'
-												className='focus:border-primary-500/50 focus:ring-primary-500/5 w-full rounded-xl border border-zinc-200 bg-white p-3 text-xs font-semibold text-zinc-800 outline-none placeholder:text-zinc-400 focus:ring-4 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950/25 dark:text-zinc-200 dark:placeholder:text-zinc-500'
+												onChange={(e) => setAgentInstructions(e.target.value)}
+												placeholder='You are an agent that...'
+												className='focus:border-primary-500/50 focus:ring-primary-500/5 min-h-[240px] w-full resize-y rounded-xl border border-zinc-200 bg-white p-3 font-mono text-xs leading-relaxed text-zinc-800 outline-none placeholder:text-zinc-400 focus:ring-4 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950/25 dark:text-zinc-200 dark:placeholder:text-zinc-500'
 											/>
-											<span className='mt-1.5 text-right text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
-												{agentInstructions.length} / 4000
+											<span className='text-right text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
+												{agentInstructions.length.toLocaleString()} characters
 											</span>
 										</div>
 
@@ -3279,8 +3306,8 @@ const BuildPage = () => {
 														Allow Self-Updates
 													</span>
 													<span className='mt-0.5 text-[10px] leading-normal font-semibold text-zinc-400 dark:text-zinc-400'>
-														Let the agent improve its knowledge and
-														instructions automatically.
+														Let the agent update its own instructions when
+														you correct it. Each change is a new version.
 													</span>
 												</div>
 											</div>
@@ -3846,369 +3873,18 @@ const BuildPage = () => {
 								</div>
 							)}
 
-							{/* Settings Tab Layout */}
-							{activeSidebarTab === 'settings' && (
-								<div className='flex-1 space-y-4 overflow-y-auto bg-zinc-50/40 p-4 dark:bg-zinc-950/20'>
-									{/* Personalization Section */}
-									<div className='space-y-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900/40'>
-										{/* Section Header */}
-										<div className='flex items-center gap-2.5 border-b border-zinc-100 pb-2 dark:border-zinc-800/80'>
-											<ChevronDown
-												size={18}
-												className='cursor-pointer text-zinc-500'
-											/>
-											<div className='bg-primary-100 text-primary-600 dark:bg-primary-400/10 dark:text-primary-400 flex h-8 w-8 items-center justify-center rounded-xl'>
-												<Users size={16} />
-											</div>
-											<h3 className='text-sm font-black text-zinc-950 dark:text-white'>
-												Personalization
-											</h3>
-										</div>
-
-										{/* Content Layout */}
-										<div className='grid grid-cols-1 items-start gap-6 md:grid-cols-12'>
-											{/* Left side: Avatar and Popover Icon Selector Grid */}
-											<div className='relative flex flex-col items-start space-y-3 md:col-span-5'>
-												{/* Subheader Title */}
-												<div className='space-y-0.5'>
-													<h4 className='text-xs font-black text-zinc-950 dark:text-white'>
-														Icon & Name
-													</h4>
-													<p className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-														Choose an icon and give your agent a name.
-													</p>
-												</div>
-
-												{/* Large Chosen Icon Avatar Box */}
-												<div
-													onClick={() =>
-														setIsIconPickerOpen(!isIconPickerOpen)
-													}
-													className='relative flex h-24 w-24 cursor-pointer items-center justify-center rounded-2xl border border-zinc-200 bg-white p-2.5 shadow-2xs select-none dark:border-zinc-700 dark:bg-zinc-950/45'>
-													<AgentIconComponent
-														size={44}
-														className={getIconColorClass(
-															agentIconColor,
-														)}
-													/>
-													{/* Pencil edit badge overlay */}
-													<div className='bg-primary-400 text-primary-950 shadow-primary-500/10 absolute -right-1 -bottom-1 flex h-6.5 w-6.5 cursor-pointer items-center justify-center rounded-full border border-white shadow-md dark:border-zinc-900'>
-														<SquarePen size={11} />
-													</div>
-												</div>
-
-												{/* Icon Picker Popover Container (Dropdown) */}
-												<AnimatePresence>
-													{isIconPickerOpen && (
-														<motion.div
-															initial={{ opacity: 0, y: -10 }}
-															animate={{ opacity: 1, y: 0 }}
-															exit={{ opacity: 0, y: -10 }}
-															transition={{ duration: 0.15 }}
-															className='relative mt-1.5 w-full max-w-[280px] space-y-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60'>
-															{/* Top pointer speech-bubble triangle */}
-															<div className='absolute -top-1.5 left-9 h-3 w-3 rotate-45 border-t border-l border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900' />
-
-															{/* Icons Grid (10 icons) */}
-															<div className='relative z-10 grid grid-cols-5 gap-2'>
-																{selectableIcons.map(
-																	(item, idx) => {
-																		const Icon = item.Icon;
-																		const isSelected =
-																			agentIcon === Icon;
-																		return (
-																			<button
-																				key={idx}
-																				type='button'
-																				onClick={() =>
-																					setAgentIcon(
-																						() => Icon,
-																					)
-																				}
-																				className={`flex h-9 w-9 items-center justify-center rounded-xl border transition active:scale-95 ${
-																					isSelected
-																						? 'border-primary-600 bg-primary-50 text-primary-600 dark:border-primary-400 dark:bg-primary-400/10 dark:text-primary-400'
-																						: 'border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'
-																				}`}>
-																				<Icon size={16} />
-																			</button>
-																		);
-																	},
-																)}
-															</div>
-
-															{/* Colors Selector */}
-															<div className='relative z-10 space-y-1.5'>
-																<span className='text-[10px] font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
-																	Color
-																</span>
-																<div className='flex items-center gap-2.5'>
-																	{colorsList.map((col) => {
-																		const isSelected =
-																			agentIconColor ===
-																			col.value;
-																		return (
-																			<button
-																				key={col.value}
-																				type='button'
-																				onClick={() =>
-																					setAgentIconColor(
-																						col.value,
-																					)
-																				}
-																				className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${col.bgClass} ${
-																					isSelected
-																						? 'ring-primary-500 bg-clip-content p-[1px] ring-2 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900'
-																						: 'border-zinc-200 dark:border-zinc-700'
-																				}`}
-																				title={col.value}>
-																				{col.value ===
-																					'rainbow' && (
-																					<div className='from-primary-400 h-full w-full rounded-full bg-gradient-to-tr via-emerald-500 to-rose-500' />
-																				)}
-																			</button>
-																		);
-																	})}
-																</div>
-															</div>
-														</motion.div>
-													)}
-												</AnimatePresence>
-											</div>
-
-											{/* Right side: Input text name & description */}
-											<div className='w-full space-y-4 pt-12 md:col-span-7 md:pt-0'>
-												{/* Agent Name input field */}
-												<div className='w-full space-y-1.5'>
-													<label className='text-[11px] font-black text-zinc-500 dark:text-zinc-400'>
-														Agent Name
-													</label>
-													<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 relative flex items-center rounded-xl border border-zinc-200 bg-white px-3.5 py-3 shadow-2xs focus-within:ring-4 dark:border-zinc-800 dark:bg-zinc-950/20'>
-														<input
-															type='text'
-															value={agentName}
-															onChange={(e) =>
-																setAgentName(
-																	e.target.value.substring(0, 50),
-																)
-															}
-															className='flex-1 border-none bg-transparent p-0 text-xs font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-0 dark:text-zinc-100'
-															placeholder='Name your agent...'
-														/>
-														<span className='shrink-0 text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
-															{agentName.length} / 50
-														</span>
-													</div>
-												</div>
-
-												{/* Description textarea box */}
-												<div className='w-full space-y-1.5'>
-													<div className='flex flex-col'>
-														<label className='text-[11px] font-black text-zinc-600 dark:text-zinc-300'>
-															Description
-														</label>
-														<span className='mt-0.5 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-															Describe what your agent does and how it
-															helps you.
-														</span>
-													</div>
-													{/* Border wrapping both textarea and character count at bottom right */}
-													<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 relative flex flex-col rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs focus-within:ring-4 dark:border-zinc-800 dark:bg-zinc-950/20'>
-														<textarea
-															rows={4}
-															value={agentDescription}
-															onChange={(e) =>
-																setAgentDescription(
-																	e.target.value.substring(
-																		0,
-																		500,
-																	),
-																)
-															}
-															className='w-full resize-none border-none bg-transparent p-0 text-xs font-semibold text-zinc-800 outline-none focus:ring-0 focus:outline-none dark:text-zinc-200 dark:placeholder:text-zinc-500'
-															placeholder='Describe agent capability...'
-														/>
-														<span className='mt-2 self-end text-right text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
-															{agentDescription.length} / 500
-														</span>
-													</div>
-												</div>
-											</div>
-										</div>
-									</div>
-
-									{/* List of sub-setting options rows */}
-									<div className='space-y-2.5'>
-										{/* Agent Details */}
-										<div className='flex cursor-pointer items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:border-zinc-800 dark:bg-zinc-900/40'>
-											<div className='flex min-w-0 items-center gap-3'>
-												<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl'>
-													<Zap size={16} />
-												</div>
-												<div className='flex min-w-0 flex-col'>
-													<span className='text-xs font-black text-zinc-900 dark:text-zinc-200'>
-														Agent Details
-													</span>
-													<span className='mt-0.5 truncate text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
-														Configure core information and capabilities
-														of your agent.
-													</span>
-												</div>
-											</div>
-											<div className='flex shrink-0 items-center gap-2.5'>
-												<button
-													type='button'
-													disabled={
-														!currentAgentId ||
-														duplicateAgentMutation.isPending
-													}
-													onClick={(e) => {
-														e.stopPropagation();
-														if (!currentAgentId) return;
-														duplicateAgentMutation.mutate(
-															currentAgentId,
-															{
-																onSuccess: (copy) => {
-																	toast.success(
-																		`"${copy.name}" created.`,
-																	);
-																	navigate(
-																		paths.editAgent(
-																			workspaceId,
-																			copy.id,
-																		),
-																	);
-																},
-															},
-														);
-													}}
-													className='flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1 text-[10px] font-black text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900'>
-													<Copy size={11} />
-													<span>Make a Copy</span>
-												</button>
-												<ChevronRight size={14} className='text-zinc-400' />
-											</div>
-										</div>
-
-										{/* Chat Preferences */}
-										<div className='flex cursor-pointer items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:border-zinc-800 dark:bg-zinc-900/40'>
-											<div className='flex min-w-0 items-center gap-3'>
-												<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:bg-blue-500/5 dark:text-blue-400'>
-													<MessageSquare size={16} />
-												</div>
-												<div className='flex min-w-0 flex-col'>
-													<span className='text-xs font-black text-zinc-900 dark:text-zinc-200'>
-														Chat Preferences
-													</span>
-													<span className='mt-0.5 truncate text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
-														Customize how your agent communicates and
-														responds.
-													</span>
-												</div>
-											</div>
-											<ChevronRight size={14} className='text-zinc-400' />
-										</div>
-
-										{/* Slack Preferences */}
-										<div className='flex cursor-pointer items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:border-zinc-800 dark:bg-zinc-900/40'>
-											<div className='flex min-w-0 items-center gap-3'>
-												<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/5 dark:text-emerald-400'>
-													<Layers size={16} />
-												</div>
-												<div className='flex min-w-0 flex-col'>
-													<span className='text-xs font-black text-zinc-900 dark:text-zinc-200'>
-														Slack Preferences
-													</span>
-													<span className='mt-0.5 truncate text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
-														Configure how your agent interacts in Slack.
-													</span>
-												</div>
-											</div>
-											<ChevronRight size={14} className='text-zinc-400' />
-										</div>
-
-										{/* Secrets */}
-										<div className='flex cursor-pointer items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:border-zinc-800 dark:bg-zinc-900/40'>
-											<div className='flex min-w-0 items-center gap-3'>
-												<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/5 dark:text-amber-400'>
-													<Lock size={16} />
-												</div>
-												<div className='flex min-w-0 flex-col'>
-													<span className='text-xs font-black text-zinc-900 dark:text-zinc-200'>
-														Secrets
-													</span>
-													<span className='mt-0.5 truncate text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
-														Manage API keys, tokens, and other sensitive
-														information.
-													</span>
-												</div>
-											</div>
-											<ChevronRight size={14} className='text-zinc-400' />
-										</div>
-
-										{/* Danger Zone */}
-										<div className='flex cursor-pointer items-center justify-between rounded-xl border border-rose-200 bg-white p-3.5 shadow-2xs transition hover:bg-rose-50/60 dark:hover:bg-rose-950/20 dark:border-rose-950/40 dark:bg-zinc-900/40'>
-											<div className='flex min-w-0 items-center gap-3'>
-												<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600 dark:bg-rose-500/5 dark:text-rose-400'>
-													<AlertTriangle size={16} />
-												</div>
-												<div className='flex min-w-0 flex-col'>
-													<span className='text-xs font-black text-rose-600 dark:text-rose-400'>
-														Danger Zone
-													</span>
-													<span className='mt-0.5 truncate text-[10px] leading-tight font-semibold text-zinc-400 dark:text-rose-950/40'>
-														Irreversible actions that can affect your
-														agent.
-													</span>
-												</div>
-											</div>
-											<ChevronRight size={14} className='text-rose-400' />
-										</div>
-									</div>
-
-									{/* Bottom secure banner */}
-									<div className='bg-primary-400/5 border-primary-500/10 dark:bg-primary-400/5 dark:border-primary-500/10 flex items-center justify-between rounded-xl border p-3.5'>
-										<div className='flex gap-3'>
-											<Shield
-												size={16}
-												className='text-primary-500 mt-0.5 shrink-0'
-											/>
-											<div className='flex flex-col'>
-												<span className='text-primary-700 dark:text-primary-400 text-xs font-bold'>
-													Your settings are secure
-												</span>
-												<span className='mt-1 text-[10px] leading-normal font-semibold text-zinc-500 dark:text-zinc-400'>
-													All changes are saved automatically and
-													encrypted.
-												</span>
-											</div>
-										</div>
-										<a
-											href='https://docs.agent1o1.com'
-											target='_blank'
-											rel='noopener noreferrer'
-											className='text-primary-600 dark:text-primary-400 flex shrink-0 items-center gap-1 text-[10px] font-bold hover:underline'>
-											<span>Learn more</span>
-											<ExternalLink size={10} />
-										</a>
-									</div>
-								</div>
-							)}
-
-							{/* Chat Details Tab */}
-							{activeSidebarTab === 'chatDetails' && (
-								<div className='flex flex-1 flex-col items-center justify-center space-y-3 overflow-y-auto bg-zinc-50/40 p-4 text-center dark:bg-zinc-950/20'>
-									<div className='flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-400 dark:bg-zinc-900 dark:text-zinc-500'>
-										<MessageSquare size={22} />
-									</div>
-									<h4 className='text-sm font-black text-zinc-800 dark:text-zinc-100'>
-										No Active Chat History Details
-									</h4>
-									<p className='max-w-[280px] text-xs leading-relaxed font-semibold text-zinc-400 dark:text-zinc-500'>
-										Once this agent runs inside a production environment,
-										conversation logs, token usage, and execution stats will be
-										displayed here.
-									</p>
+							{/* Chats Tab */}
+														{activeSidebarTab === 'chatDetails' && (
+								<div className='flex-1 overflow-y-auto bg-zinc-50/40 p-4 dark:bg-zinc-950/20'>
+									<AgentChatsPanel
+										ws={workspaceId}
+										agentId={currentAgentId}
+										activeSessionId={conversationId ?? null}
+										onOpen={(sessionId) => {
+											closeSettingsDrawer();
+											openSession(sessionId);
+										}}
+									/>
 								</div>
 							)}
 

@@ -43,10 +43,17 @@ const paths = {
 	newAgent: (workspaceId: string) => buildPath(agentEditorPages.add.to, { workspaceId }),
 	editAgent: (workspaceId: string, agentId: string | number) =>
 		buildPath(agentEditorPages.edit.to, { workspaceId, agentId }),
-	agentReflections: (workspaceId: string, agentId: string | number) =>
-		buildPath(agentEditorPages.reflections.to, { workspaceId, agentId }),
+	agentInsights: (workspaceId: string, agentId: string | number, tab?: string) =>
+		buildPath(agentEditorPages.insights.to, { workspaceId, agentId }) + (tab ? `?tab=${tab}` : ''),
+
+	apps: (workspaceId: string) => buildPath(workspacePages.apps.to, { workspaceId }),
+	trail: (workspaceId: string, runId?: string) =>
+		buildPath(workspacePages.trail.to, { workspaceId }) + (runId ? `?run=${runId}` : ''),
 
 	settings: (workspaceId: string) => buildPath(pages.settings.to, { workspaceId }),
+	members: (workspaceId: string) => buildPath(settingsPages.members.to, { workspaceId }),
+	notificationSettings: (workspaceId: string) =>
+		buildPath(settingsPages.notifications.to, { workspaceId }),
 	billing: (workspaceId: string) => buildPath(settingsPages.billing.to, { workspaceId }),
 	billingPlans: (workspaceId: string) => buildPath(billingPages.plans.to, { workspaceId }),
 	billingCredits: (workspaceId: string) => buildPath(billingPages.credits.to, { workspaceId }),

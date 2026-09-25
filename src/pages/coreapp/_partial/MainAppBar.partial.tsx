@@ -102,11 +102,8 @@ const MainAppBar = ({
 				<span className='min-w-0 truncate text-[15px] font-semibold tracking-tight text-zinc-950 dark:text-white'>
 					{title}
 				</span>
-				<span className='shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-100'>
-					Draft
-				</span>
 				<span className='hidden min-w-0 truncate text-xs text-zinc-500 sm:inline dark:text-zinc-500'>
-					{status} · {meta ?? 'Updated just now'}
+					{meta ? `${status} · ${meta}` : status}
 				</span>
 			</div>
 

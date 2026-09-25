@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import {
 	Activity,
+	Brain,
 	Calendar,
 	ChevronDown,
 	Code,
@@ -11,6 +12,7 @@ import {
 	Sparkles,
 	TrendingDown,
 	Wallet,
+	Wand2,
 	ArrowDownRight,
 	ArrowUpRight,
 } from 'lucide-react';
@@ -23,8 +25,8 @@ import { withWorkspace } from '@/Routes/paths';
 
 const billingPages = pages.settings.subPages!.billing.subPages!;
 
-/** The backend's `CreditTransactionType` enum — these four are the only
- *  `source_type` values credit_transactions ever carries. */
+/** The backend's `CreditTransactionType` enum — every `source_type` a
+ *  credit transaction can carry. */
 const SOURCE_TYPE_LABELS: Record<string, { label: string; color: string }> = {
 	node_run: {
 		label: 'Workflow Run',
@@ -41,6 +43,14 @@ const SOURCE_TYPE_LABELS: Record<string, { label: string; color: string }> = {
 	session_evaluation: {
 		label: 'Session Evaluation',
 		color: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400',
+	},
+	reflection: {
+		label: 'Reflection',
+		color: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400',
+	},
+	agent_draft: {
+		label: 'Agent Draft',
+		color: 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400',
 	},
 };
 
@@ -72,6 +82,20 @@ const BREAKDOWN_CARDS = [
 		icon: Activity,
 		iconBg: 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400',
 		bar: 'bg-sky-500',
+	},
+	{
+		type: 'reflection',
+		label: 'Reflections',
+		icon: Brain,
+		iconBg: 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-400',
+		bar: 'bg-violet-500',
+	},
+	{
+		type: 'agent_draft',
+		label: 'Agent Drafts',
+		icon: Wand2,
+		iconBg: 'bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400',
+		bar: 'bg-rose-500',
 	},
 ] as const;
 
@@ -472,7 +496,7 @@ const UsagePage = () => {
 						Last 30 days
 					</span>
 				</div>
-				<div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
+				<div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-3'>
 					{BREAKDOWN_CARDS.map((item) => {
 						const credits = bySource[item.type] ?? 0;
 						const isSelected = txType === item.type;
