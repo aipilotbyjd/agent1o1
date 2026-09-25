@@ -3,7 +3,8 @@ import {
 	Sparkles,
 	SquarePen,
 	Wrench,
-	Lightbulb,
+	KeyRound,
+	Hammer,
 	CheckCircle2,
 	XCircle,
 	Clock,
@@ -39,15 +40,22 @@ type TProps = {
 };
 
 const TYPE_STYLE: Record<TReflectionType, { icon: typeof SquarePen; label: string }> = {
-	prompt_change: { icon: SquarePen, label: 'Prompt change' },
 	new_skill: { icon: Wrench, label: 'New skill' },
-	insight: { icon: Lightbulb, label: 'Insight' },
+	skill_fix: { icon: Hammer, label: 'Skill fix' },
+	instruction_update: { icon: SquarePen, label: 'Instruction update' },
+	tool_access: { icon: KeyRound, label: 'Tool access' },
 };
 
-const STATUS_STYLE: Record<string, { icon: typeof CheckCircle2; className: string }> = {
+const APPLY_BEHAVIOR_LABEL: Record<TReflectionApplyBehavior, string> = {
+	review_queue: 'Review queue',
+	auto_apply: 'Auto-apply',
+};
+
+const STATUS_STYLE: Record<TReflectionStatus, { icon: typeof CheckCircle2; className: string }> = {
 	pending: { icon: Clock, className: 'text-amber-500' },
 	applied: { icon: CheckCircle2, className: 'text-emerald-500' },
 	dismissed: { icon: MinusCircle, className: 'text-zinc-400' },
+	superseded: { icon: MinusCircle, className: 'text-zinc-400' },
 };
 
 const RUN_STATUS_STYLE: Record<string, { icon: typeof CheckCircle2; className: string }> = {
@@ -115,7 +123,7 @@ const ReflectionSettingsForm = ({
 		is_enabled: settings.is_enabled,
 		apply_behavior: settings.apply_behavior,
 		schedule_cron: settings.schedule_cron ?? '',
-		min_chats_threshold: settings.min_chats_threshold ?? 0,
+		min_chats_threshold: settings.min_chats_threshold,
 		extra_instructions: settings.extra_instructions ?? '',
 		notify_on_skip: settings.notify_on_skip,
 	});
@@ -140,19 +148,19 @@ const ReflectionSettingsForm = ({
 					Apply behaviour
 				</span>
 				<div className='mt-1.5 flex gap-1.5'>
-					{(['manual', 'automatic'] as TReflectionApplyBehavior[]).map((behavior) => (
+					{(['review_queue', 'auto_apply'] as TReflectionApplyBehavior[]).map((behavior) => (
 						<button
 							key={behavior}
 							type='button'
 							onClick={() =>
 								updateMutation.mutate(patch({ apply_behavior: behavior }))
 							}
-							className={`rounded-lg px-2.5 py-1 text-[10px] font-black capitalize transition ${
+							className={`rounded-lg px-2.5 py-1 text-[10px] font-black transition ${
 								form.apply_behavior === behavior
 									? 'bg-primary-400 text-primary-950'
 									: 'border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'
 							}`}>
-							{behavior}
+							{APPLY_BEHAVIOR_LABEL[behavior]}
 						</button>
 					))}
 				</div>
@@ -178,7 +186,7 @@ const ReflectionSettingsForm = ({
 					</span>
 					<input
 						type='number'
-						min={0}
+						min={1}
 						value={form.min_chats_threshold}
 						onChange={(e) =>
 							setForm((f) => ({ ...f, min_chats_threshold: Number(e.target.value) }))
@@ -248,11 +256,10 @@ const ReflectionCard = ({
 	const applyMutation = useApplyAgentReflection(ws, agentId);
 	const dismissMutation = useDismissAgentReflection(ws, agentId);
 
-	const type = TYPE_STYLE[reflection.type] ?? TYPE_STYLE.insight;
+	const type = TYPE_STYLE[reflection.type] ?? TYPE_STYLE.instruction_update;
 	const TypeIcon = type.icon;
 	const status = STATUS_STYLE[reflection.status] ?? STATUS_STYLE.pending;
 	const StatusIcon = status.icon;
-	const confidencePct = Math.round((reflection.confidence ?? 0) * 100);
 
 	return (
 		<div className='space-y-2 rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
@@ -272,7 +279,7 @@ const ReflectionCard = ({
 							{type.label}
 						</span>
 						<span className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[8px] font-black text-zinc-500 uppercase dark:bg-zinc-800'>
-							{confidencePct}% confident
+							{reflection.confidence}% confident
 						</span>
 						<span className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[8px] font-black text-zinc-500 uppercase dark:bg-zinc-800'>
 							{reflection.support_count} chats
@@ -401,7 +408,7 @@ const ReflectionRunRow = ({ run }: { run: TReflectionRun }) => {
 
 /**
  * Reflections for an agent — a periodic self-review of past chats that proposes
- * prompt changes, new skills, and insights for review.
+ * new skills, skill fixes, instruction updates and tool-access gaps for review.
  * Backed by {agent}/reflections — see AgentReflectionController.
  */
 const AgentReflectionsPanel = ({ ws, agentId, displayMode = 'panel' }: TProps) => {

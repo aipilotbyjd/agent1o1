@@ -342,7 +342,7 @@ export type TAgentSessionEvaluation = {
 
 // ─── Reflections (periodic self-review of past sessions) ──────
 
-export type TReflectionApplyBehavior = 'manual' | 'automatic';
+export type TReflectionApplyBehavior = 'review_queue' | 'auto_apply';
 
 export type TReflectionSettings = {
 	id: string;
@@ -373,8 +373,8 @@ export type TUpdateReflectionSettingsDto = Partial<
 
 export type TReflectionRunStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
 
-export type TReflectionType = 'prompt_change' | 'new_skill' | 'insight';
-export type TReflectionStatus = 'pending' | 'applied' | 'dismissed';
+export type TReflectionType = 'new_skill' | 'skill_fix' | 'instruction_update' | 'tool_access';
+export type TReflectionStatus = 'pending' | 'applied' | 'dismissed' | 'superseded';
 
 export type TReflection = {
 	id: string;
@@ -383,7 +383,7 @@ export type TReflection = {
 	type: TReflectionType;
 	title: string;
 	rationale: string;
-	evidence: unknown;
+	evidence: { session_ids: string[] } | null;
 	confidence: number;
 	support_count: number;
 	proposed_prompt: string | null;
