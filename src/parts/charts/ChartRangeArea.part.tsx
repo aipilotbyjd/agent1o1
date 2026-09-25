@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { IChartOptions } from '@/interface/chart.interface';
-import Chart from '@/components/utils/Chart';
+import Chart, { type IChartProps } from '@/components/utils/Chart';
 
 const ChartRangeAreaPart = () => {
 	const [state] = useState<IChartOptions>({
@@ -219,7 +219,7 @@ const ChartRangeAreaPart = () => {
 		<Chart
 			options={state.options}
 			series={state.series}
-			type={state.options.chart?.type}
+			type={state.options.chart?.type as IChartProps['type']}
 			height={state.options.chart?.height}
 		/>
 	);

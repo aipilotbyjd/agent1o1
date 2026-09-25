@@ -38,13 +38,11 @@ import NodeFlowTriggerToggle from './NodeFlowTriggerToggle.partial';
 import NodeAuthWarning from './NodeAuthWarning.partial';
 import NodeCredentialBadge from './NodeCredentialBadge.partial';
 import { tintStyle, getNodeAccentColor } from '../../library/library.util';
-import { PORT_TYPE_COLOR, getNodeCreditCost } from '../../../_helper/builder.constants';
+import { getNodeCreditCost } from '../../../_helper/builder.constants';
 import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
 import type { TCanvasNode } from '../../../_types/canvas.type';
 import type { TNodeComment, TNodePort } from '../../../_types/node.type';
 import type { TValidationIssue } from '../../../_helper/validation.helper';
-
-const getPortTop = (index: number, total: number) => `${((index + 1) * 100) / (total + 1)}%`;
 
 const iconMap = {
 	'trigger.webhook': Webhook,

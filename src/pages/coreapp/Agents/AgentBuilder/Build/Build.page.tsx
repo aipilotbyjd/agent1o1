@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, type RefObject } from 'react';
+import { useState, useRef, useEffect, useMemo, memo, type RefObject } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown, { type Components } from 'react-markdown';
@@ -123,11 +123,32 @@ const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 				minute: '2-digit',
 			}),
 			type: 'text' as const,
+			attachments: message.attachments?.map((artifact) => ({
+				id: artifact.id,
+				filename: artifact.filename,
+				size: artifact.size,
+			})),
 		}));
 
 const EXPORT_ARTIFACT_TOOL = 'ExportArtifactTool';
 const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
-const ATTACHMENT_EXTENSIONS = ['.txt', '.md', '.html', '.csv', '.json', '.xml', '.yaml', '.yml'];
+const MAX_ATTACHMENTS = 10;
+const ATTACHMENT_EXTENSIONS = [
+	'.png',
+	'.jpg',
+	'.jpeg',
+	'.gif',
+	'.webp',
+	'.pdf',
+	'.txt',
+	'.md',
+	'.html',
+	'.csv',
+	'.json',
+	'.xml',
+	'.yaml',
+	'.yml',
+];
 
 const webhookUrlFor = (trigger: TTrigger) =>
 	`${import.meta.env.VITE_API_URL ?? ''}/triggers/${trigger.id}/${trigger.token ?? ''}`;
@@ -156,6 +177,9 @@ interface TMessage {
 	text: string;
 	/** Original composer text, without attachment labels, for a failed-turn retry. */
 	retryText?: string;
+	/** Files sent with a user message. `id` is the stored artifact's — absent on
+	 *  the copy shown while the turn is still in flight. */
+	attachments?: { id?: string; filename: string; size: number }[];
 	timestamp: string;
 	type?: 'text' | 'table';
 	headers?: string[];
@@ -200,12 +224,10 @@ const autoSizeComposer = (el: HTMLTextAreaElement) => {
 
 const ChatAttachmentTray = ({
 	files,
-	progress,
 	busy,
 	onRemove,
 }: {
 	files: File[];
-	progress: { completed: number; total: number } | null;
 	busy: boolean;
 	onRemove: (file: File) => void;
 }) => {
@@ -226,11 +248,53 @@ const ChatAttachmentTray = ({
 					</button>
 				))}
 			</div>
-			{progress && (
-				<p role='status' className='text-[11px] font-semibold text-zinc-500'>
-					Uploading files {progress.completed}/{progress.total}…
-				</p>
-			)}
+		</div>
+	);
+};
+
+/** Files a member sent with a message, above its bubble. Downloadable once the
+ *  turn is stored and the artifact has an id. */
+const MessageAttachments = ({
+	attachments,
+	ws,
+}: {
+	attachments: NonNullable<TMessage['attachments']>;
+	ws: string;
+}) => {
+	const downloadMutation = useDownloadArtifact(ws);
+	const chipClass =
+		'flex min-h-9 max-w-full min-w-0 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2.5 text-xs font-semibold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-200';
+
+	return (
+		<div className='mb-1.5 flex flex-wrap justify-end gap-1.5'>
+			{attachments.map((file, index) => {
+				const label = (
+					<>
+						<Paperclip size={12} className='shrink-0 text-zinc-400' />
+						<span className='truncate'>{file.filename}</span>
+						<span className='shrink-0 text-[10px] text-zinc-400'>
+							{formatArtifactSize(file.size)}
+						</span>
+					</>
+				);
+				const { id } = file;
+				return id ? (
+					<button
+						key={id}
+						type='button'
+						aria-label={`Download ${file.filename}`}
+						onClick={() =>
+							downloadMutation.mutate({ artifactId: id, filename: file.filename })
+						}
+						className={`${chipClass} cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800`}>
+						{label}
+					</button>
+				) : (
+					<span key={`${file.filename}-${index}`} className={chipClass}>
+						{label}
+					</span>
+				);
+			})}
 		</div>
 	);
 };
@@ -308,6 +372,13 @@ const mdComponents: Components = {
 		</div>
 	),
 };
+
+// Markdown parsing is the costliest part of a chat row. The page re-renders on
+// every keystroke and every streamed delta; memoising on `text` means only the
+// reply that is actually changing gets re-parsed.
+const MessageMarkdown = memo(function MessageMarkdown({ text }: { text: string }) {
+	return <ReactMarkdown components={mdComponents}>{text}</ReactMarkdown>;
+});
 
 const prettifyToolName = (raw: string) =>
 	raw.replace(/[_-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
@@ -507,11 +578,6 @@ const BuildPage = () => {
 	const [chatHistory, setChatHistory] = useState<TMessage[]>([]);
 	const [chatInput, setChatInput] = useState('');
 	const [chatAttachments, setChatAttachments] = useState<File[]>([]);
-	const [uploadProgress, setUploadProgress] = useState<{
-		completed: number;
-		total: number;
-	} | null>(null);
-	const uploadedAttachmentsRef = useRef<Map<File, string>>(new Map());
 	const attachmentInputRef = useRef<HTMLInputElement | null>(null);
 	const mobileComposerRef = useRef<HTMLTextAreaElement | null>(null);
 	const [mobileViewportHeight, setMobileViewportHeight] = useState<number | null>(null);
@@ -620,7 +686,7 @@ const BuildPage = () => {
 				)
 			) {
 				toast.error(
-					`${file.name}: use a text, Markdown, HTML, CSV, JSON, XML, or YAML file.`,
+					`${file.name}: use an image (JPEG, PNG, GIF, WebP), a PDF, or a text, Markdown, HTML, CSV, JSON, XML, or YAML file.`,
 				);
 				continue;
 			}
@@ -630,22 +696,25 @@ const BuildPage = () => {
 			}
 			accepted.push(file);
 		}
-		setChatAttachments((current) => [
-			...current,
-			...accepted.filter(
-				(file) =>
-					!current.some(
-						(existing) =>
-							existing.name === file.name &&
-							existing.size === file.size &&
-							existing.lastModified === file.lastModified,
-					),
-			),
+		const added = accepted.filter(
+			(file) =>
+				!chatAttachments.some(
+					(existing) =>
+						existing.name === file.name &&
+						existing.size === file.size &&
+						existing.lastModified === file.lastModified,
+				),
+		);
+		if (chatAttachments.length + added.length > MAX_ATTACHMENTS) {
+			toast.error(`You can attach up to ${MAX_ATTACHMENTS} files per message.`);
+		}
+		setChatAttachments([
+			...chatAttachments,
+			...added.slice(0, Math.max(MAX_ATTACHMENTS - chatAttachments.length, 0)),
 		]);
 		if (attachmentInputRef.current) attachmentInputRef.current.value = '';
 	};
 	const removeChatAttachment = (file: File) => {
-		uploadedAttachmentsRef.current.delete(file);
 		setChatAttachments((current) => current.filter((item) => item !== file));
 	};
 
@@ -1199,17 +1268,20 @@ const BuildPage = () => {
 		const trimmed = messageText.trim();
 		const files = [...chatAttachments];
 		if ((!trimmed && files.length === 0) || !workspaceId || streamAbortRef.current) return;
-		const displayText = [trimmed, ...files.map((file) => `📎 ${file.name}`)]
-			.filter(Boolean)
-			.join('\n');
+		// The backend requires message text, even when only files are sent.
+		const prompt = trimmed || 'Please review the attached files.';
 		followLatestRef.current = true;
 		setShowLatestButton(false);
 
 		const userMsg: TMessage = {
 			id: 'user-' + Date.now(),
 			sender: 'user',
-			text: displayText,
+			text: prompt,
 			retryText: trimmed,
+			attachments:
+				files.length > 0
+					? files.map((file) => ({ filename: file.name, size: file.size }))
+					: undefined,
 			timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
 		};
 
@@ -1226,26 +1298,6 @@ const BuildPage = () => {
 		try {
 			const agentIdForRun = await ensureAgentPersisted();
 			if (controller.signal.aborted) throw new DOMException('Canceled', 'AbortError');
-			if (files.length > 0) {
-				setUploadProgress({ completed: 0, total: files.length });
-				for (const [index, file] of files.entries()) {
-					if (controller.signal.aborted) throw new DOMException('Canceled', 'AbortError');
-					if (uploadedAttachmentsRef.current.get(file) !== agentIdForRun) {
-						await ArtifactService.upload(workspaceId, {
-							file,
-							agent_id: agentIdForRun,
-						});
-						uploadedAttachmentsRef.current.set(file, agentIdForRun);
-					}
-					setUploadProgress({ completed: index + 1, total: files.length });
-				}
-				setUploadProgress(null);
-			}
-			if (controller.signal.aborted) throw new DOMException('Canceled', 'AbortError');
-			const prompt =
-				files.length > 0
-					? `${trimmed || 'Please review the attached files.'}\n\nFiles uploaded to your knowledge: ${files.map((file) => file.name).join(', ')}. Search these files as needed before replying.`
-					: trimmed;
 
 			// Conversations are "sessions" in this backend. The old API created one
 			// implicitly with the first message and handed its id back on the reply;
@@ -1277,7 +1329,7 @@ const BuildPage = () => {
 				workspaceId,
 				agentIdForRun,
 				sessionId,
-				{ message: prompt },
+				{ message: prompt, attachments: files },
 				controller.signal,
 			)) {
 				if (event.event === 'delta') {
@@ -1368,7 +1420,6 @@ const BuildPage = () => {
 			};
 			setChatHistory((prev) => [...prev, agentMsg]);
 			setChatAttachments([]);
-			uploadedAttachmentsRef.current.clear();
 		} catch (err) {
 			if (!turnStarted) {
 				setChatInput((current) => {
@@ -1380,7 +1431,7 @@ const BuildPage = () => {
 					return restored;
 				});
 				if (!controller.signal.aborted)
-					toast.error(err instanceof Error ? err.message : 'Failed to upload files.');
+					toast.error(err instanceof Error ? err.message : 'Failed to start the chat.');
 				return;
 			}
 			// Stop is not a failure. Keep whatever the agent had already streamed —
@@ -1424,7 +1475,6 @@ const BuildPage = () => {
 				toast.error(err instanceof Error ? err.message : 'Failed to reach the agent.');
 			}
 		} finally {
-			setUploadProgress(null);
 			streamAbortRef.current = null;
 			setIsSending(false);
 			setIsTyping(false);
@@ -2381,6 +2431,16 @@ const BuildPage = () => {
 															</div>
 														)}
 
+													{/* Files the member sent with this message */}
+													{isUser &&
+														message.attachments &&
+														message.attachments.length > 0 && (
+															<MessageAttachments
+																attachments={message.attachments}
+																ws={workspaceId}
+															/>
+														)}
+
 													{/* Chat bubble */}
 													<div
 														className={`max-w-full min-w-0 rounded-2xl px-4 py-3 text-sm leading-relaxed font-semibold [overflow-wrap:anywhere] ${
@@ -2393,10 +2453,9 @@ const BuildPage = () => {
 																{message.text}
 															</p>
 														) : (
-															<ReactMarkdown
-																components={mdComponents}>
-																{message.text}
-															</ReactMarkdown>
+															<MessageMarkdown
+																text={message.text}
+															/>
 														)}
 
 														{/* Structured Table for data responses */}
@@ -2680,7 +2739,6 @@ const BuildPage = () => {
 							<div className='mx-auto flex w-full max-w-4xl flex-col gap-3'>
 								<ChatAttachmentTray
 									files={chatAttachments}
-									progress={uploadProgress}
 									busy={isTyping}
 									onRemove={removeChatAttachment}
 								/>
@@ -2815,7 +2873,6 @@ const BuildPage = () => {
 							<div className='mx-auto flex w-full max-w-4xl flex-col gap-3'>
 								<ChatAttachmentTray
 									files={chatAttachments}
-									progress={uploadProgress}
 									busy={isTyping}
 									onRemove={removeChatAttachment}
 								/>

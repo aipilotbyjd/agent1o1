@@ -1,6 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap')
-layer(base);
-
+/* Urbanist is loaded from index.html (<link> + preconnect), not @import here —
+   an @import can only start after this stylesheet itself has downloaded. */
 @import '../node_modules/react-date-range/dist/styles.css';
 @import '../node_modules/react-date-range/dist/theme/default.css';
 @import 'rc-tree/assets/index.css';

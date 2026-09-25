@@ -96,6 +96,7 @@ const AgentKnowledgePanel = ({ ws, agentId }: TProps) => {
 
 	const handleSubmit = async () => {
 		if (!form.title.trim() || !form.content.trim()) return;
+		if (createMutation.isPending || updateMutation.isPending) return;
 		const body = {
 			title: form.title.trim(),
 			content: form.content.trim(),

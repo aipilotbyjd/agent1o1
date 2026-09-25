@@ -60,7 +60,6 @@ const NodeSandbox = ({ code }: NodeSandboxProps) => {
 
 	const result = sandbox.data;
 	const isRunning = sandbox.isPending;
-	const hasError = !!sandbox.error || !!result?.error;
 	const codeLen = code.length;
 	const overLimit = codeLen > MAX_CODE_CHARS;
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Zap, X } from 'lucide-react';
+import { Search, Zap } from 'lucide-react';
 import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
 import Modal from './Modal.partial';
 

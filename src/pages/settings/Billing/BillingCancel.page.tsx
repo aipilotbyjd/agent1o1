@@ -10,7 +10,7 @@ const billingPages = settingsPages.billing.subPages!;
 const playbooksPath = pages.workspace.subPages!.playbooks.to;
 
 const TYPE_BACK: Record<string, string> = {
-	plan: settingsPages.plan.subPages!.upgrade.to,
+	plan: billingPages.plans.to,
 	credits: billingPages.credits.to,
 };
 

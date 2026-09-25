@@ -3,6 +3,7 @@ import { lazy } from 'react';
 import Root from '@/Root';
 import Providers from '@/Providers/Providers';
 import Page404Page from '@/pages/Page404.page';
+import RouteErrorPage from '@/pages/RouteError.page';
 import UnderConstructionPage from '@/pages/UnderConstruction.page';
 import IdentityPages from '@/Routes/appPages/identityPages';
 import WelcomePages from '@/Routes/appPages/welcomePages';
@@ -24,6 +25,7 @@ const router = createBrowserRouter([
 			{
 				path: '/',
 				element: <Root />,
+				errorElement: <RouteErrorPage />,
 				children: [
 					{
 						index: true,

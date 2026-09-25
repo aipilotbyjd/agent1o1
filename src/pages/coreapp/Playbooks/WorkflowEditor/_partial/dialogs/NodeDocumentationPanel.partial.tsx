@@ -1,4 +1,4 @@
-import { X, Info, Plug, Zap, BookOpen } from 'lucide-react';
+import { X, Info, Zap, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
 import { getNodeDefinition } from '../../_helper/nodeCatalog.constants';

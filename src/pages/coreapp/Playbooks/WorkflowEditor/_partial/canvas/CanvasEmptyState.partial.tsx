@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
 import { useAiChatStore } from '@/store/aiChat.store';
-import { useAuth } from '@/context/auth';
 import {
 	Paperclip,
 	Sliders,
@@ -17,16 +16,9 @@ import {
 	ArrowRight,
 	LayoutGrid,
 	Cloud,
-	Maximize2,
-	Grid2X2,
-	Search,
-	Sun,
-	Minus,
-	Plus,
 	Webhook,
 	Zap,
 	Beaker,
-	Info,
 	Image as ImageIcon,
 	Bot,
 } from 'lucide-react';
@@ -196,7 +188,6 @@ const CanvasEmptyState = () => {
 
 	const startChat = useAiChatStore((store) => store.startChat);
 	const workflowBuildStep = useAiChatStore((store) => store.workflowBuildStep);
-	const { userData } = useAuth();
 
 	const handleGenerate = () => {
 		const cleanPrompt = prompt.trim();

@@ -13,9 +13,7 @@ export const useWorkflowApiLoader = (workspaceId: string, workflowId: string) =>
 	const versionsQuery = useWorkflowVersions(workspaceId, workflowId);
 
 	// Load dynamic node categories/definitions from the API
-	const { data: apiCategories, isLoading: categoriesLoading } = useNodeCategories({
-		include_nodes: true,
-	});
+	const { data: apiCategories, isLoading: categoriesLoading } = useNodeCategories(true);
 
 	// Register dynamic definitions so they are globally resolvable in the editor
 	useEffect(() => {
@@ -35,11 +33,8 @@ export const useWorkflowApiLoader = (workspaceId: string, workflowId: string) =>
 	const selectedVersion = useMemo(() => {
 		const versions = versionsQuery.data ?? [];
 		const currentVersionId = workflowQuery.data?.current_version_id;
-		return (
-			versions.find((version) => version.id === currentVersionId) ??
-			versions.find((version) => version.is_published) ??
-			versions[0]
-		);
+		// `current_version_id` is the published version; there is no per-version flag.
+		return versions.find((version) => version.id === currentVersionId) ?? versions[0];
 	}, [versionsQuery.data, workflowQuery.data?.current_version_id]);
 
 	useEffect(() => {
@@ -52,8 +47,9 @@ export const useWorkflowApiLoader = (workspaceId: string, workflowId: string) =>
 		// fields. Gating here guarantees definitions exist before nodes mount.
 		if (categoriesLoading) return;
 
-		const versionKey = selectedVersion?.id ?? 'empty';
-		const loadKey = `${workspaceId}:${workflowId}:${versionKey}`;
+		// Keyed on the workflow only: the canvas is the draft, and publishing a
+		// version must not reload it from the (possibly older) cached detail.
+		const loadKey = `${workspaceId}:${workflowId}`;
 		if (loadedKey.current === loadKey) return;
 		loadedKey.current = loadKey;
 

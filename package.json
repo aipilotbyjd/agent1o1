@@ -8,6 +8,7 @@
 		"build": "tsc -b && vite build",
 		"preview": "vite preview",
 		"lint": "eslint .",
+		"icons:used": "node scripts/generate-used-icons.mjs",
 		"lint:fix": "eslint --fix .",
 		"prettier:fix": "prettier --write .",
 		"icon": "svgr SvgIcons -d src/components/icon/svg-icons --typescript --no-prettier"

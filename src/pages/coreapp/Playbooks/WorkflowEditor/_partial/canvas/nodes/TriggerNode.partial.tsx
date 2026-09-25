@@ -159,11 +159,7 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 	const isTriggerActive = useMemo(() => {
 		if (!triggerData) return false;
 		if (Array.isArray(triggerData)) {
-			return (
-				triggerData.length > 0 &&
-				triggerData[0]?.status !== 'paused' &&
-				triggerData[0]?.is_active !== false
-			);
+			return triggerData.length > 0 && triggerData[0]?.is_active !== false;
 		}
 		return (
 			(triggerData as any)?.status !== 'paused' && (triggerData as any)?.is_active !== false
@@ -218,22 +214,22 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 									(triggerData as any)?.id ??
 									(Array.isArray(triggerData) ? triggerData[0]?.id : null);
 								if (triggerId) {
-									pauseTrigger.mutate({ workflowId, triggerId });
+									pauseTrigger.mutate(triggerId);
 								}
 							} else {
 								const triggerId =
 									(triggerData as any)?.id ??
 									(Array.isArray(triggerData) ? triggerData[0]?.id : null);
 								if (triggerId) {
-									resumeTrigger.mutate({ workflowId, triggerId });
+									resumeTrigger.mutate(triggerId);
 								} else {
 									if (
 										data.defKey.includes('time') ||
 										data.defKey.includes('schedule')
 									) {
-										createPolling.mutate({ id: workflowId });
+										createPolling.mutate({ workflowId });
 									} else {
-										createWebhook.mutate({ id: workflowId });
+										createWebhook.mutate({ workflowId });
 									}
 								}
 							}
@@ -365,7 +361,7 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 									type='button'
 									onClick={() => {
 										if (triggerId) {
-											deleteTrigger.mutate({ workflowId, triggerId });
+											deleteTrigger.mutate(triggerId);
 										}
 									}}
 									disabled={deleteTrigger.isPending}

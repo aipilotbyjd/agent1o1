@@ -4,6 +4,8 @@ import type {
 	INodeSchemaProperty,
 	INodeType,
 } from '@/types/node-type.type';
+import type { TNode } from '@/types/node.type';
+import type { TNodeCategoryWithCount } from '@/types/catalog.type';
 import type {
 	TFieldKind,
 	TNodeCategory,
@@ -111,11 +113,15 @@ const schemaToPorts = (
 	}));
 };
 
+// The catalog endpoints return `TNode` / `TNodeCategoryWithCount` (nullable
+// fields, untyped schemas). Everything below already falls back on null, so
+// both shapes are read through the older, richer `INodeType` view.
 export const mapApiNodeToDefinition = (
-	node: INodeType,
+	apiNode: INodeType | TNode,
 	categorySlug?: string,
 	categoryColor?: string,
 ): TNodeDefinition => {
+	const node = apiNode as INodeType;
 	const parent = typeof node.category === 'object' ? node.category : undefined;
 	const slug = categorySlug ?? parent?.slug;
 	const color = node.color ?? categoryColor ?? parent?.color;
@@ -152,7 +158,11 @@ export const mapApiNodeToDefinition = (
 	};
 };
 
-export const mapApiCategoryToGroup = (category: INodeCategory): TNodeCategoryGroup => ({
+export const mapApiCategoryToGroup = (
+	apiCategory: INodeCategory | TNodeCategoryWithCount,
+): TNodeCategoryGroup => {
+	const category = apiCategory as INodeCategory;
+	return {
 	id: category.id,
 	slug: category.slug,
 	label: category.name,
@@ -167,7 +177,10 @@ export const mapApiCategoryToGroup = (category: INodeCategory): TNodeCategoryGro
 	nodes: (category.nodes ?? []).map((node) =>
 		mapApiNodeToDefinition(node, category.slug, category.color),
 	),
-});
+	};
+};
 
-export const mapApiCategoriesToGroups = (categories: INodeCategory[]): TNodeCategoryGroup[] =>
+export const mapApiCategoriesToGroups = (
+	categories: Array<INodeCategory | TNodeCategoryWithCount>,
+): TNodeCategoryGroup[] =>
 	categories.map(mapApiCategoryToGroup).sort((a, b) => a.order - b.order);
