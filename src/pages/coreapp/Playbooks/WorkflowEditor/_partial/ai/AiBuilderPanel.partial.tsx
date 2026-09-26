@@ -4,6 +4,14 @@ import ReactMarkdown, { type Components } from 'react-markdown';
 import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
 import { useAiChatStore, type TAiChatMessage, type TAiTimelineItem } from '@/store/aiChat.store';
 import { useAuth } from '@/context/auth';
+import { useConfirm } from '@/context/confirm';
+import { notify } from '@/api/core';
+import {
+	useDeleteWorkflowBuilderSession,
+	usePromoteWorkflowBuilderSession,
+	useWorkflowBuilderSessions,
+} from '@/api/modules/workflow-builder';
+import { versionToExportedWorkflow } from '../../_helper/workflowApiTransform.helper';
 import type { IBuilderMessageAction } from '@/types/workflow-builder.type';
 import {
 	Paperclip,
@@ -33,6 +41,7 @@ import {
 	Bug,
 	Tag,
 	HelpCircle,
+	ArrowDownToLine,
 } from 'lucide-react';
 import type { TCanvasNode } from '../../_types/canvas.type';
 
@@ -153,14 +162,13 @@ const AiBuilderPanel = () => {
 	const messages = useAiChatStore((store) => store.messages);
 	const isThinking = useAiChatStore((store) => store.isThinking);
 	const streamTimeline = useAiChatStore((store) => store.streamTimeline);
-	const sessions = useAiChatStore((store) => store.sessions);
-	const activeSessionId = useAiChatStore((store) => store.activeSessionId);
+	const builderSessionId = useAiChatStore((store) => store.builderSessionId);
 	const sendMessage = useAiChatStore((store) => store.sendMessage);
 	const stopThinking = useAiChatStore((store) => store.stopThinking);
 	const exitChat = useAiChatStore((store) => store.exitChat);
 	const newChat = useAiChatStore((store) => store.newChat);
-	const loadSession = useAiChatStore((store) => store.loadSession);
-	const deleteSession = useAiChatStore((store) => store.deleteSession);
+	const openBuilderSession = useAiChatStore((store) => store.openBuilderSession);
+	const { confirm } = useConfirm();
 
 	const [promptInput, setPromptInput] = useState('');
 	const [mode, setMode] = useState<'build' | 'ask'>('build');
@@ -170,7 +178,18 @@ const AiBuilderPanel = () => {
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-	const sortedSessions = [...sessions].sort((a, b) => b.updatedAt - a.updatedAt);
+	// Chat history is the workspace's builder sessions on the server, narrowed to
+	// the ones started from this workflow.
+	const workspaceId = state.workflow.workspaceId ?? '';
+	const workflowApiId = state.workflow.apiId ? String(state.workflow.apiId) : null;
+	const { data: builderSessions, isLoading: isSessionsLoading } = useWorkflowBuilderSessions(
+		showHistory ? workspaceId : '',
+	);
+	const deleteBuilderSession = useDeleteWorkflowBuilderSession(workspaceId);
+	const promoteBuilderSession = usePromoteWorkflowBuilderSession(workspaceId);
+	const sortedSessions = (builderSessions ?? [])
+		.filter((session) => session.workflow_id !== null && String(session.workflow_id) === workflowApiId)
+		.sort((a, b) => Date.parse(b.last_activity_at) - Date.parse(a.last_activity_at));
 
 	// Nodes currently on the canvas, matched against an in-progress @mention.
 	const mentionMatches = useMemo(() => {
@@ -257,8 +276,42 @@ const AiBuilderPanel = () => {
 	};
 
 	const handleLoadSession = (id: string) => {
-		loadSession(id);
+		if (id !== builderSessionId) openBuilderSession(id);
 		setShowHistory(false);
+	};
+
+	const handleDeleteSession = async (id: string) => {
+		const confirmed = await confirm({
+			title: 'Delete chat',
+			message: 'This deletes the conversation and its draft for everyone in the workspace. The workflow itself is not changed.',
+		});
+		if (!confirmed) return;
+		deleteBuilderSession.mutate(id, {
+			onSuccess: () => {
+				if (id === builderSessionId) newChat();
+			},
+		});
+	};
+
+	// Promote writes the chat's draft graph into this workflow on the server;
+	// the canvas then reloads from what was saved.
+	const handlePromoteSession = async (id: string) => {
+		const confirmed = await confirm({
+			title: 'Apply chat draft',
+			message: 'Replace the workflow on the canvas with the draft from this chat? Unsaved canvas edits will be lost.',
+		});
+		if (!confirmed) return;
+		promoteBuilderSession.mutate(
+			{ id },
+			{
+				onSuccess: (workflow) => {
+					const { nodes, edges } = versionToExportedWorkflow(workflow, undefined, workspaceId);
+					dispatch({ type: 'APPLY_BUILDER_DRAFT', nodes, edges });
+					notify.success('Chat draft applied to the workflow');
+					setShowHistory(false);
+				},
+			},
+		);
 	};
 
 	// Fallback user avatar image
@@ -608,7 +661,12 @@ const AiBuilderPanel = () => {
 				</div>
 
 				<div className='min-h-0 flex-1 overflow-y-auto px-2.5 pb-2.5 space-y-1'>
-					{sortedSessions.length === 0 ? (
+					{isSessionsLoading ? (
+						<div className='flex h-full items-center justify-center text-xs text-zinc-400'>
+							<Loader2 size={14} className='mr-2 animate-spin' />
+							Loading chats...
+						</div>
+					) : sortedSessions.length === 0 ? (
 						<div className='flex h-full flex-col items-center justify-center gap-2 px-6 text-center'>
 							<div className='flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-zinc-400 dark:bg-zinc-900 dark:text-zinc-600'>
 								<MessageSquare size={18} />
@@ -629,32 +687,46 @@ const AiBuilderPanel = () => {
 								onClick={() => handleLoadSession(session.id)}
 								onKeyDown={(e) => e.key === 'Enter' && handleLoadSession(session.id)}
 								className={`group flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 transition ${
-									session.id === activeSessionId
+									session.id === builderSessionId
 										? 'bg-primary-50 dark:bg-primary-950/30'
 										: 'hover:bg-zinc-50 dark:hover:bg-zinc-900/70'
 								}`}>
 								<MessageSquare
 									size={14}
 									className={
-										session.id === activeSessionId
+										session.id === builderSessionId
 											? 'text-primary-600 dark:text-primary-400 shrink-0'
 											: 'text-zinc-400 dark:text-zinc-600 shrink-0'
 									}
 								/>
 								<div className='min-w-0 flex-1'>
 									<div className='truncate text-xs font-semibold text-zinc-700 dark:text-zinc-200'>
-										{session.title}
+										{session.title || 'Untitled chat'}
 									</div>
 									<div className='text-[10px] text-zinc-400 dark:text-zinc-500'>
-										{formatRelativeTime(session.updatedAt)}
+										{formatRelativeTime(Date.parse(session.last_activity_at))}
+										{session.status === 'promoted' && ' · applied'}
 									</div>
 								</div>
 								<button
 									type='button'
-									title='Delete chat'
+									title='Apply this chat’s draft to the workflow'
+									aria-label='Apply chat draft to workflow'
+									disabled={promoteBuilderSession.isPending}
 									onClick={(e) => {
 										e.stopPropagation();
-										deleteSession(session.id);
+										void handlePromoteSession(session.id);
+									}}
+									className='flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-zinc-300 opacity-0 transition hover:bg-primary-50 hover:text-primary-600 group-hover:opacity-100 disabled:opacity-40 dark:text-zinc-600 dark:hover:bg-primary-950/30 dark:hover:text-primary-400'>
+									<ArrowDownToLine size={12} />
+								</button>
+								<button
+									type='button'
+									title='Delete chat'
+									aria-label='Delete chat'
+									onClick={(e) => {
+										e.stopPropagation();
+										void handleDeleteSession(session.id);
 									}}
 									className='flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-zinc-300 opacity-0 transition hover:bg-rose-50 hover:text-rose-500 group-hover:opacity-100 dark:text-zinc-600 dark:hover:bg-rose-950/30 dark:hover:text-rose-400'>
 									<Trash2 size={12} />

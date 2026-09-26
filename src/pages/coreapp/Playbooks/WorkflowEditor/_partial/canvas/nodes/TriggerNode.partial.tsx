@@ -40,6 +40,7 @@ import NodeLoopToggle from './NodeLoopToggle.partial';
 import NodeAuthWarning from './NodeAuthWarning.partial';
 import NodeCredentialBadge from './NodeCredentialBadge.partial';
 import NodeHelpTip from './NodeHelpTip.partial';
+import TriggerDetails from './TriggerDetails.partial';
 import { tintStyle, getNodeAccentColor } from '../../library/library.util';
 
 const iconMap: Record<
@@ -156,22 +157,13 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 	const deleteTrigger = useDeleteWorkflowTrigger(workspaceId);
 	const resumeTrigger = useResumeWorkflowTrigger(workspaceId);
 
-	const isTriggerActive = useMemo(() => {
-		if (!triggerData) return false;
-		if (Array.isArray(triggerData)) {
-			return triggerData.length > 0 && triggerData[0]?.is_active !== false;
-		}
-		return (
-			(triggerData as any)?.status !== 'paused' && (triggerData as any)?.is_active !== false
-		);
-	}, [triggerData]);
+	// useWorkflowTrigger always yields an array: this workflow's triggers, possibly none.
+	const isTriggerActive = useMemo(
+		() => triggerData.length > 0 && triggerData[0]?.is_active !== false,
+		[triggerData],
+	);
 
-	const triggerId = useMemo(() => {
-		if (!triggerData) return '';
-		return Array.isArray(triggerData)
-			? String(triggerData[0]?.id ?? '')
-			: String((triggerData as any)?.id ?? '');
-	}, [triggerData]);
+	const triggerId = useMemo(() => String(triggerData[0]?.id ?? ''), [triggerData]);
 
 	const { data: triggerDetail } = useWorkflowTriggerDetail(workspaceId, workflowId, triggerId);
 
@@ -210,16 +202,12 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 						onClick={() => {
 							if (!workspaceId || !workflowId) return;
 							if (isTriggerActive) {
-								const triggerId =
-									(triggerData as any)?.id ??
-									(Array.isArray(triggerData) ? triggerData[0]?.id : null);
+								const triggerId = triggerData[0]?.id ?? null;
 								if (triggerId) {
 									pauseTrigger.mutate(triggerId);
 								}
 							} else {
-								const triggerId =
-									(triggerData as any)?.id ??
-									(Array.isArray(triggerData) ? triggerData[0]?.id : null);
+								const triggerId = triggerData[0]?.id ?? null;
 								if (triggerId) {
 									resumeTrigger.mutate(triggerId);
 								} else {
@@ -335,16 +323,7 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 				)}
 					{!!triggerDetail && (
 						<div className='mt-3 flex flex-col gap-2 border-t border-zinc-100 pt-2.5 dark:border-zinc-800'>
-							{(triggerDetail as any).webhook_url && (
-								<div className='flex flex-col gap-1'>
-									<span className='text-[10px] font-semibold text-zinc-500 dark:text-zinc-400'>
-										Webhook URL:
-									</span>
-									<span className='cursor-text rounded-lg border border-zinc-200 bg-white p-1.5 font-mono text-[9px] font-semibold break-all text-zinc-700 select-all select-text dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'>
-										{(triggerDetail as any).webhook_url}
-									</span>
-								</div>
-							)}
+							<TriggerDetails workspaceId={workspaceId} trigger={triggerDetail} />
 							<div className='mt-1 flex items-center justify-between'>
 								<div
 									className={`flex items-center gap-1.5 text-[10px] font-semibold ${isTriggerActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400 dark:text-zinc-500'}`}>

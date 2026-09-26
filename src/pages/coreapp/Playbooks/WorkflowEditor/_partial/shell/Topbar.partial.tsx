@@ -22,6 +22,9 @@ import {
 	ShieldCheck,
 	Download,
 	FileCheck,
+	FormInput,
+	LayoutTemplate,
+	ListChecks,
 	Copy,
 	Check,
 	Folder,
@@ -45,6 +48,7 @@ import pages from '@/Routes/pages';
 import paths from '@/Routes/paths';
 import NotificationsDropdown from '@/components/notifications/NotificationsDropdown';
 import AppLogo from '@/components/AppLogo';
+import SaveAsTemplateModal from '@/parts/SaveAsTemplateModal.part';
 
 /** Which topbar menu is open. Only one may be open at a time. */
 type TopbarMenu = 'save' | 'share' | 'mobile' | null;
@@ -384,6 +388,7 @@ const Topbar = () => {
 		setOpenMenu((current) => (current === menu ? null : menu));
 	const closeMenu = () => setOpenMenu(null);
 	const [copiedLink, setCopiedLink] = useState(false);
+	const [isSaveAsTemplateOpen, setIsSaveAsTemplateOpen] = useState(false);
 	const [runSeconds, setRunSeconds] = useState(0);
 
 	const isRunning = state.run.status === 'running';
@@ -912,6 +917,34 @@ const Topbar = () => {
 										/>
 										<span>Contracts Verification</span>
 									</button>
+									<button
+										type='button'
+										onClick={() => {
+											closeMenu();
+											setGovModalTab('checks');
+											setGovModalOpen(true);
+										}}
+										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
+										<ListChecks
+											size={14}
+											className='text-primary-700 dark:text-primary-400'
+										/>
+										<span>Validate & Dry Run</span>
+									</button>
+									<button
+										type='button'
+										onClick={() => {
+											closeMenu();
+											setGovModalTab('interface');
+											setGovModalOpen(true);
+										}}
+										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
+										<FormInput
+											size={14}
+											className='text-primary-700 dark:text-primary-400'
+										/>
+										<span>Run Form</span>
+									</button>
 
 									<div className='bg-primary-500/15 dark:bg-primary-400/15 my-1 h-px' />
 
@@ -927,6 +960,20 @@ const Topbar = () => {
 											className='text-primary-700 dark:text-primary-400'
 										/>
 										<span>Export Workflow JSON</span>
+									</button>
+									<button
+										type='button'
+										disabled={!state.workflow.apiId}
+										onClick={() => {
+											closeMenu();
+											setIsSaveAsTemplateOpen(true);
+										}}
+										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition disabled:opacity-50 dark:text-zinc-300'>
+										<LayoutTemplate
+											size={14}
+											className='text-primary-700 dark:text-primary-400'
+										/>
+										<span>Save as Template</span>
 									</button>
 								</motion.div>
 							</>
@@ -1124,6 +1171,24 @@ const Topbar = () => {
 					</AnimatePresence>
 				</div>
 			</div>
+			{state.workflow.apiId && (
+				<SaveAsTemplateModal
+					ws={workspaceId}
+					kind='workflow'
+					sourceId={state.workflow.apiId}
+					isOpen={isSaveAsTemplateOpen}
+					onClose={() => setIsSaveAsTemplateOpen(false)}
+					defaultName={state.workflow.name}
+					beforeSave={async () => {
+						// The template copies the server-side draft — push the canvas first.
+						await WorkflowDiagnosticsService.replaceGraph(
+							workspaceId,
+							state.workflow.apiId!,
+							buildGraphPayload(state.nodes, state.edges),
+						);
+					}}
+				/>
+			)}
 		</header>
 	);
 };

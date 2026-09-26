@@ -444,6 +444,8 @@ const AgentAsideTemplate = () => {
 															session.last_activity_at ??
 																session.created_at,
 														)}
+														{/* Another conversation handed this one its task. */}
+														{session.parent_session_id && ' · Subagent task'}
 													</p>
 												</button>
 											)}

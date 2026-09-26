@@ -23,6 +23,8 @@ export type TWorkspace = {
 	role: TWorkspaceRole | null;
 	workflows_count?: number;
 	agents_count?: number;
+	/** Not sent by the backend yet, so the workspace card's live-runs dot stays off until it is. */
+	has_active_runs?: boolean;
 	created_at: string;
 	updated_at: string;
 };

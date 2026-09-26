@@ -17,7 +17,9 @@ import {
 	Clock,
 	CheckCircle2,
 	XCircle,
-	Loader2
+	Loader2,
+	ListChecks,
+	FormInput,
 } from 'lucide-react';
 import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
@@ -25,6 +27,8 @@ import { useWorkflowRouteParams } from '../../_hooks/useWorkflowRouteParams.hook
 import { useConfirm } from '@/context/confirm';
 import { notify } from '@/api/core';
 import Modal from './Modal.partial';
+import WorkflowChecksTab from './WorkflowChecksTab.partial';
+import WorkflowInterfaceTab from './WorkflowInterfaceTab.partial';
 import {
 	useWorkflowVersions,
 	useRepublishWorkflowVersion,
@@ -112,7 +116,12 @@ const WorkflowGovernanceModal = () => {
 	const generateContract = useGenerateContract(workspaceId, workflowId);
 	const runContractTest = useRunContractTest(workspaceId, workflowId);
 
-	const [testResults, setTestResults] = useState<Record<string, any>>({});
+	const [testResults, setTestResults] = useState<
+		Record<
+			string,
+			{ status?: string; results?: { missing_nodes: string[]; unexpected_nodes: string[] } }
+		>
+	>({});
 	const [runningTestId, setRunningTestId] = useState<string | null>(null);
 
 	if (!isGovModalOpen) return null;
@@ -189,6 +198,8 @@ const WorkflowGovernanceModal = () => {
 		{ id: 'approvals', label: 'Approvals', icon: FileSignature },
 		{ id: 'releases', label: 'Releases & Deploy', icon: Disc },
 		{ id: 'contracts', label: 'Contracts & Tests', icon: ShieldCheck },
+		{ id: 'checks', label: 'Validate & Dry Run', icon: ListChecks },
+		{ id: 'interface', label: 'Run Form', icon: FormInput },
 	];
 
 	return (
@@ -982,6 +993,16 @@ const WorkflowGovernanceModal = () => {
 								)}
 							</div>
 						</div>
+					)}
+
+					{/* ─── CHECKS TAB ─── */}
+					{activeTab === 'checks' && (
+						<WorkflowChecksTab workspaceId={workspaceId} workflowId={workflowId} />
+					)}
+
+					{/* ─── RUN FORM TAB ─── */}
+					{activeTab === 'interface' && (
+						<WorkflowInterfaceTab workspaceId={workspaceId} workflowId={workflowId} />
 					)}
 				</main>
 			</div>

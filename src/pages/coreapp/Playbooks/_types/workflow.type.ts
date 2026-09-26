@@ -112,8 +112,8 @@ export type TCreateWorkflowDto = {
 export type TUpdateWorkflowDto = {
 	name?: string;
 	description?: string;
-	nodes?: any[];
-	edges?: any[];
+	nodes?: IWorkflowNode[];
+	edges?: IWorkflowConnection[];
 	connections?: IWorkflowConnection[];
 	settings?: IWorkflowSettings;
 	tags?: string[];

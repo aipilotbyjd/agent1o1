@@ -9,6 +9,7 @@ import {
 } from '@/api/modules/notification-channels';
 import { useWorkspaceContext } from '@/context/workspace';
 import { notify } from '@/api/core';
+import formatDate from '@/utils/formatDate.util';
 import type { TNotificationChannel, TNotificationChannelType } from '@/types/notification.type';
 import Button from '@/components/ui/Button';
 import Modal, {
@@ -35,13 +36,6 @@ const typeConfig = Object.fromEntries(typeOptions.map((o) => [o.value, o])) as R
 	TNotificationChannelType,
 	(typeof typeOptions)[number]
 >;
-
-const formatDate = (value: string) =>
-	new Date(value).toLocaleDateString('en-US', {
-		year: 'numeric',
-		month: 'short',
-		day: 'numeric',
-	});
 
 const NotificationChannelsPage = () => {
 	const { activeWorkspaceId } = useWorkspaceContext();

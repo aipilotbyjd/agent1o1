@@ -26,7 +26,9 @@ export const useUploadArtifact = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (payload: TUploadArtifactDto) => ArtifactService.upload(ws, payload),
-		onSuccess: () => qc.invalidateQueries({ queryKey: artifactKeys.lists(ws) }),
+		// An upload can land as a new version of an existing group, so any open
+		// version history is stale too — not just the list.
+		onSuccess: () => qc.invalidateQueries({ queryKey: artifactKeys.all(ws) }),
 		meta: { errorMessage: 'Failed to upload artifact' },
 	});
 };
@@ -45,7 +47,8 @@ export const useUpdateArtifactAccess = (ws: string) => {
 	return useMutation({
 		mutationFn: ({ id, body }: { id: string; body: TUpdateArtifactAccessDto }) =>
 			ArtifactService.updateAccess(ws, id, body),
-		onSuccess: (_artifact, { id }) => qc.invalidateQueries({ queryKey: artifactKeys.detail(ws, id) }),
+		// The list carries `general_access` too (the card shows a lock for restricted).
+		onSuccess: () => qc.invalidateQueries({ queryKey: artifactKeys.all(ws) }),
 		meta: { errorMessage: 'Failed to update artifact access' },
 	});
 };

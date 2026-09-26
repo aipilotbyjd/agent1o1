@@ -22,7 +22,7 @@ import ArtifactsPage from '@/pages/UnderConstruction.page';
 import HistoryPage from '@/pages/UnderConstruction.page';
 import Topbar from '../_partial/shell/Topbar.partial';
 import WorkflowsPage from '@/pages/coreapp/Playbooks/WorkflowsList.page';
-import WorkspaceSidebar from '@/templates/asides/AgentAside.template';
+import AgentAsideTemplate from '@/templates/asides/AgentAside.template';
 import useDeviceScreen from '@/hooks/useDeviceScreen';
 import { useAiBuilderBridge } from '../_hooks/useAiBuilderBridge.hook';
 import { useAutosave } from '../_hooks/useAutosave.hook';
@@ -96,7 +96,7 @@ const BuildPage = () => {
 			)}
 			{resolvedView !== 'settings' && resolvedView !== 'editor' && (
 				<div className='hidden shrink-0 lg:block'>
-					<WorkspaceSidebar />
+					<AgentAsideTemplate />
 				</div>
 			)}
 			<AnimatePresence>
@@ -118,7 +118,7 @@ const BuildPage = () => {
 							exit={{ x: -300 }}
 							transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
 							className='relative h-full w-[286px] max-w-[86vw]'>
-							<WorkspaceSidebar />
+							<AgentAsideTemplate />
 						</motion.div>
 					</motion.div>
 				)}

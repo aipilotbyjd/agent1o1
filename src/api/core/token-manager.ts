@@ -8,6 +8,8 @@
 // never sees it.
 // ============================================================
 
+import safeStorage from '@/utils/safeStorage.util';
+
 const TOKEN_KEYS = {
 	ACCESS_TOKEN: 'a1o1_access_token',
 	TOKEN_EXPIRY: 'a1o1_token_expiry',
@@ -23,27 +25,28 @@ const dispatchTokenChange = () => {
 // ─── Getters ─────────────────────────────────────────────────
 
 export const getAccessToken = (): string | null =>
-	localStorage.getItem(TOKEN_KEYS.ACCESS_TOKEN) ||
-	sessionStorage.getItem(TOKEN_KEYS.ACCESS_TOKEN);
+	safeStorage.get(TOKEN_KEYS.ACCESS_TOKEN) || safeStorage.get(TOKEN_KEYS.ACCESS_TOKEN, 'session');
 
 export const getTokenExpiry = (): number | null => {
 	const expiry =
-		localStorage.getItem(TOKEN_KEYS.TOKEN_EXPIRY) ||
-		sessionStorage.getItem(TOKEN_KEYS.TOKEN_EXPIRY);
+		safeStorage.get(TOKEN_KEYS.TOKEN_EXPIRY) ||
+		safeStorage.get(TOKEN_KEYS.TOKEN_EXPIRY, 'session');
 	return expiry ? parseInt(expiry, 10) : null;
 };
 
-export const isRememberMe = (): boolean => localStorage.getItem(TOKEN_KEYS.REMEMBER_ME) === 'true';
+export const isRememberMe = (): boolean => safeStorage.get(TOKEN_KEYS.REMEMBER_ME) === 'true';
 
 // ─── Setters ─────────────────────────────────────────────────
 
 const clearTokensRaw = (): void => {
 	Object.values(TOKEN_KEYS).forEach((key) => {
-		localStorage.removeItem(key);
-		sessionStorage.removeItem(key);
+		safeStorage.remove(key);
+		safeStorage.remove(key, 'session');
 	});
 };
 
+// Deliberately not safeStorage: a token that cannot be stored must fail the login loudly,
+// not leave the user silently signed out on the next request.
 export const setToken = (token: string, expiresIn: number, rememberMe: boolean = false): void => {
 	const storage = rememberMe ? localStorage : sessionStorage;
 	clearTokensRaw();

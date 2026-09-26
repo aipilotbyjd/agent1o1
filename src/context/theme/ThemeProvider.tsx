@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { TDarkMode } from '@/types/dark-mode.type';
 import DARK_MODE from '@/constants/darkMode.constant';
 import useDeviceScreen from '@/hooks/useDeviceScreen';
+import safeStorage from '@/utils/safeStorage.util';
 import { TLang } from '@/types/lang.type';
 import ThemeContext from './ThemeContext';
 import type { IThemeContextProps } from './theme.types';
@@ -18,10 +19,10 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 	 */
 	const { i18n } = useTranslation();
 	const [language, setLanguage] = useState<TLang>(
-		(localStorage.getItem('bolt_language') as TLang) || 'en',
+		(safeStorage.get('bolt_language') as TLang) || 'en',
 	);
 	useLayoutEffect(() => {
-		localStorage.setItem('bolt_language', language);
+		safeStorage.set('bolt_language', language);
 
 		i18n.changeLanguage(language)
 			.then(() => {
@@ -42,15 +43,15 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 	 * Dark Mode
 	 */
 	const [darkModeStatus, setDarkModeStatus] = useState<TDarkMode | null>(
-		(localStorage.getItem('theme') || DARK_MODE.SYSTEM) as TDarkMode,
+		(safeStorage.get('theme') || DARK_MODE.SYSTEM) as TDarkMode,
 	);
 	const [isDarkTheme, setIsDarkTheme] = useState<boolean>(darkModeStatus === DARK_MODE.DARK);
 	useLayoutEffect(() => {
-		localStorage.setItem('theme', darkModeStatus as string);
+		safeStorage.set('theme', darkModeStatus as string);
 
 		if (
-			localStorage.getItem('theme') === DARK_MODE.DARK ||
-			(localStorage.getItem('theme') === DARK_MODE.SYSTEM &&
+			darkModeStatus === DARK_MODE.DARK ||
+			(darkModeStatus === DARK_MODE.SYSTEM &&
 				window.matchMedia(`(prefers-color-scheme: ${DARK_MODE.DARK})`).matches)
 		) {
 			document.documentElement.classList.add(DARK_MODE.DARK);
@@ -80,21 +81,19 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 	 */
 	const { width } = useDeviceScreen();
 	const [asideStatus, setAsideStatus] = useState(
-		localStorage.getItem('bolt_asideStatus')
-			? localStorage.getItem('bolt_asideStatus') === 'true'
-			: true,
+		safeStorage.get('bolt_asideStatus') ? safeStorage.get('bolt_asideStatus') === 'true' : true,
 	);
 	useLayoutEffect(() => {
 		if (Number(theme.screens.md.replace('rem', '')) * 16 <= Number(width))
-			localStorage.setItem('bolt_asideStatus', asideStatus?.toString());
+			safeStorage.set('bolt_asideStatus', asideStatus?.toString());
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [asideStatus]);
 	useEffect(() => {
 		if (Number(theme.screens.md.replace('rem', '')) * 16 > Number(width)) setAsideStatus(false);
 		return () => {
 			setAsideStatus(
-				localStorage.getItem('bolt_asideStatus')
-					? localStorage.getItem('bolt_asideStatus') === 'true'
+				safeStorage.get('bolt_asideStatus')
+					? safeStorage.get('bolt_asideStatus') === 'true'
 					: true,
 			);
 		};
@@ -104,12 +103,10 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 	 * Font Size
 	 */
 	const [fontSize, setFontSize] = useState<number>(
-		Number(localStorage.getItem('bolt_fontSize'))
-			? Number(localStorage.getItem('bolt_fontSize'))
-			: 13,
+		Number(safeStorage.get('bolt_fontSize')) ? Number(safeStorage.get('bolt_fontSize')) : 13,
 	);
 	useLayoutEffect(() => {
-		localStorage.setItem('bolt_fontSize', fontSize?.toString());
+		safeStorage.set('bolt_fontSize', fontSize?.toString());
 	}, [fontSize]);
 
 	const values: IThemeContextProps = useMemo(

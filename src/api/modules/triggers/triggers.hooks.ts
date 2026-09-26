@@ -42,16 +42,23 @@ export const useDeleteTrigger = (ws: string) => {
 	});
 };
 
-export const useRunTrigger = (ws: string) =>
-	useMutation({
+export const useRunTrigger = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
 		mutationFn: (id: string) => TriggerService.run(ws, id),
+		onSuccess: (_event, id) => {
+			qc.invalidateQueries({ queryKey: triggerEventKeys.list(ws, id) });
+			qc.invalidateQueries({ queryKey: triggerKeys.lists(ws) });
+		},
 		meta: { errorMessage: 'Failed to run trigger' },
 	});
+};
 
 export const useRotateTriggerToken = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (id: string) => TriggerService.rotateToken(ws, id),
+		// The list is the only source of `token`, so it must refetch for the new URL to show.
 		onSuccess: () => qc.invalidateQueries({ queryKey: triggerKeys.lists(ws) }),
 		meta: { errorMessage: 'Failed to rotate trigger token' },
 	});

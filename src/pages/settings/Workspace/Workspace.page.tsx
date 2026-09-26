@@ -6,6 +6,7 @@ import { useConfirm } from '@/context/confirm';
 import { useUpdateWorkspace, useDeleteWorkspace, useWorkspace } from '@/api/modules/workspaces';
 import { primaryBtn, secondaryBtn, dangerBtn } from '@/pages/settings/_shared/buttons';
 import { notify } from '@/api/core';
+import formatDate from '@/utils/formatDate.util';
 
 const inputClass =
 	'h-12 w-full rounded-xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-800 shadow-xs outline-none placeholder:text-zinc-400 focus:border-primary-300 focus:ring-4 focus:ring-primary-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-primary-500 dark:focus:ring-primary-500/20';
@@ -22,17 +23,6 @@ const getInitials = (name: string) => {
 		.slice(0, 2)
 		.map((part) => part[0]?.toUpperCase())
 		.join('');
-};
-
-const formatDate = (value?: string | null) => {
-	if (!value) return 'Not available';
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return 'Not available';
-	return new Intl.DateTimeFormat('en', {
-		month: 'short',
-		day: 'numeric',
-		year: 'numeric',
-	}).format(date);
 };
 
 const formatRole = (role?: string | null) => {
@@ -94,7 +84,7 @@ const WorkspacePage = () => {
 	}, [activeWorkspace, workspaceName, timezone]);
 
 	const displayName = workspaceName || activeWorkspace?.name || 'Workspace';
-	const createdAt = formatDate(activeWorkspace?.created_at);
+	const createdAt = formatDate(activeWorkspace?.created_at) ?? 'Not available';
 	const workspaceRole = formatRole(role);
 	const isOwner = role === 'owner';
 

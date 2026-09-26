@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { formatDistanceToNow, isToday, isYesterday } from 'date-fns';
+import { isToday, isYesterday } from 'date-fns';
 import { ArrowRight, Bell, CheckCheck, Settings, Trash2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Dropdown, { DropdownMenu, DropdownToggle } from '@/components/ui/Dropdown';
@@ -14,20 +14,13 @@ import {
 } from '@/api/modules/notifications';
 import { useWorkspaceContext } from '@/context/workspace';
 import paths from '@/Routes/paths';
+import relativeTime from '@/utils/relativeTime.util';
 import type { TNotification } from '@/types/notification.type';
 import { TONE_CLASSES, notificationHref, notificationMeta } from './notificationMeta';
 
 type TTab = 'all' | 'unread';
 
 const isUnread = (n: TNotification) => !n.read_at;
-
-const relativeTime = (iso: string): string => {
-	try {
-		return formatDistanceToNow(new Date(iso), { addSuffix: true });
-	} catch {
-		return '';
-	}
-};
 
 const dayGroup = (iso: string): string => {
 	const date = new Date(iso);
@@ -82,7 +75,7 @@ const NotificationRow = ({
 				)}
 				<div className='mt-2 flex items-center gap-1.5 text-[11px] leading-4 whitespace-nowrap text-zinc-400 dark:text-zinc-500'>
 					<span title={new Date(notification.created_at).toLocaleString()}>
-						{relativeTime(notification.created_at)}
+						{relativeTime(notification.created_at) ?? ''}
 					</span>
 					{workspaceName && (
 						<>

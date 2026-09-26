@@ -1,9 +1,9 @@
 import { Pin, PinOff } from 'lucide-react';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useNodePin } from '../../_hooks/useNodePin.hook';
 import type { TCanvasNode } from '../../_types/canvas.type';
 
 const NodeRunOutput = ({ nodes }: { nodes: TCanvasNode[] }) => {
-	const { dispatch } = useWorkflowEditor();
+	const { pin, unpin } = useNodePin();
 	const nodesWithOutput = nodes
 		.filter((node) => node.data.outputPreview !== undefined || node.data.pinned)
 		.slice(-3);
@@ -45,13 +45,7 @@ const NodeRunOutput = ({ nodes }: { nodes: TCanvasNode[] }) => {
 								<button
 									type='button'
 									title={pinned ? 'Unpin output' : 'Pin this output for re-runs'}
-									onClick={() =>
-										dispatch(
-											pinned
-												? { type: 'UNPIN_NODE', id: node.id }
-												: { type: 'PIN_NODE_OUTPUT', id: node.id },
-										)
-									}
+									onClick={() => void (pinned ? unpin(node.id) : pin(node.id))}
 									className={`flex h-5 w-5 items-center justify-center rounded transition ${
 										pinned
 											? 'text-amber-500 hover:text-amber-600'

@@ -306,8 +306,8 @@ const Modal: FC<IModalProps> = (props) => {
 		contentClassName,
 		...rest
 	} = props;
-	const refModal = useRef(null);
-	const ref = useRef(null);
+	const refModal = useRef<HTMLDivElement>(null);
+	const ref = useRef<HTMLDivElement>(null);
 
 	const titleId = useId();
 
@@ -321,10 +321,8 @@ const Modal: FC<IModalProps> = (props) => {
 		size;
 
 	// Backdrop close function
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const closeModal = (event: { target: any }) => {
-		// @ts-expect-error
-		if (ref.current && !ref.current.contains(event.target) && !isStaticBackdrop) {
+	const closeModal = (event: Event) => {
+		if (ref.current && !ref.current.contains(event.target as Node) && !isStaticBackdrop) {
 			setIsOpen(false);
 		}
 	};
@@ -332,15 +330,11 @@ const Modal: FC<IModalProps> = (props) => {
 	useEventListener('touchstart', closeModal); // Touchscreen
 
 	// Backdrop static function
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const modalStatic = (event: { target: any }) => {
-		// @ts-expect-error
-		if (ref.current && !ref.current.contains(event.target) && isStaticBackdrop) {
-			// @ts-expect-error
-			refModal.current.classList.add('scale-105!');
+	const modalStatic = (event: Event) => {
+		if (ref.current && !ref.current.contains(event.target as Node) && isStaticBackdrop) {
+			refModal.current?.classList.add('scale-105!');
 
-			// @ts-expect-error
-			setTimeout(() => refModal.current.classList.remove('scale-105!'), 300);
+			setTimeout(() => refModal.current?.classList.remove('scale-105!'), 300);
 		}
 	};
 	useEventListener('mousedown', modalStatic);
