@@ -126,6 +126,8 @@ export type TAgentMessage = {
 	attachments?: TArtifact[];
 	/** Tools the model called while writing this (assistant) reply. */
 	tool_calls: { id: string; name: string; arguments: Record<string, unknown> }[] | null;
+	/** What each tool call returned, capped at `AgentMessageResource::TOOL_OUTPUT_LIMIT`. */
+	tool_results: { id: string; name: string; output: string }[];
 	/** Tool call id → the subagent task that `invoke_agent` call started. */
 	subagent_task_ids: Record<string, string>;
 	usage: { prompt_tokens?: number; completion_tokens?: number } | null;
@@ -168,7 +170,14 @@ export type TSendAgentMessageDto = {
 export type TAgentSessionStreamEvent =
 	| { event: 'delta'; delta: string }
 	| { event: 'tool-call'; id: string; name: string; arguments: unknown }
-	| { event: 'tool-result'; id: string; name: string; result?: { task_id?: string } }
+	| {
+			event: 'tool-result';
+			id: string;
+			name: string;
+			result?: { task_id?: string };
+			output: string;
+			successful: boolean;
+	  }
 	| { event: 'complete'; run_id: string; status: string; message_id: string | null; text: string | null }
 	| { event: 'error'; message: string }
 	| { event: 'done' };
@@ -613,16 +622,14 @@ export type TAgentStreamArtifact = {
 };
 
 /**
- * Payload of `AgentMessageCreated::broadcastWith()`. Deliberately not derived
- * from `TAgentMessage`: the broadcast carries `tool_calls`, which the REST
- * resource omits, and omits `usage`, which the REST resource carries.
+ * Payload of `AgentMessageCreated::broadcastWith()` — a notice that a message
+ * arrived, without its content, which can pass the 10 KB broadcast limit.
+ * Fetch the session's messages to read it.
  */
 export type TAgentMessageCreatedEvent = {
 	id: string;
 	agent_session_id: string;
 	role: TAgentMessageRole;
-	content: unknown;
-	tool_calls: unknown;
 	created_at: string | null;
 };
 

@@ -42,7 +42,12 @@ export const useCreateAgentReflectionRun = (ws: string, agentId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: () => AgentReflectionRunService.create(ws, agentId),
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentReflectionKeys.runs(ws, agentId) }),
+		onSuccess: () =>
+			Promise.all([
+				qc.invalidateQueries({ queryKey: agentReflectionKeys.runs(ws, agentId) }),
+				qc.invalidateQueries({ queryKey: agentReflectionKeys.list(ws, agentId) }),
+				qc.invalidateQueries({ queryKey: agentReflectionKeys.settings(ws, agentId) }),
+			]),
 		meta: { errorMessage: 'Failed to start reflection run' },
 	});
 };
@@ -58,7 +63,11 @@ export const useApplyAgentReflection = (ws: string, agentId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (id: string) => AgentReflectionService.apply(ws, agentId, id),
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentReflectionKeys.list(ws, agentId) }),
+		onSuccess: () =>
+			Promise.all([
+				qc.invalidateQueries({ queryKey: agentReflectionKeys.list(ws, agentId) }),
+				qc.invalidateQueries({ queryKey: agentReflectionKeys.runs(ws, agentId) }),
+			]),
 		meta: { errorMessage: 'Failed to apply reflection' },
 	});
 };
@@ -67,7 +76,11 @@ export const useDismissAgentReflection = (ws: string, agentId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (id: string) => AgentReflectionService.dismiss(ws, agentId, id),
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentReflectionKeys.list(ws, agentId) }),
+		onSuccess: () =>
+			Promise.all([
+				qc.invalidateQueries({ queryKey: agentReflectionKeys.list(ws, agentId) }),
+				qc.invalidateQueries({ queryKey: agentReflectionKeys.runs(ws, agentId) }),
+			]),
 		meta: { errorMessage: 'Failed to dismiss reflection' },
 	});
 };

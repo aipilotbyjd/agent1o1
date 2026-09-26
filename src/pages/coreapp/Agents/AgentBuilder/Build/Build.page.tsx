@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, memo, type RefObject } from 'react';
+import { useState, useRef, useEffect, useMemo, memo, type ReactNode, type RefObject } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -95,6 +95,8 @@ import {
 	agentKeys,
 	agentVersionKeys,
 	agentSkillAttachmentKeys,
+	agentMemoryKeys,
+	agentSessionKeys,
 	agentSubagentKeys,
 	useAgents,
 	useAgentSubagents,
@@ -124,7 +126,7 @@ import type { TAgentMessage, TSubagentTask } from '@/types/agent.type';
 import type { TAgentSkill } from '@/types/agent-skill.type';
 import { useAgentChatStore } from '@/store/agentChat.store';
 import { useAgentBuilderStore } from '@/store/agentBuilder.store';
-import { XCircle, Wrench, FileDown, GitMerge } from 'lucide-react';
+import { XCircle, Wrench, FileDown, GitMerge, Brain, ScrollText } from 'lucide-react';
 import AgentDataPanel from './_partial/AgentDataPanel.partial';
 import AgentTagsPanel from './_partial/AgentTagsPanel.partial';
 import AgentSideDrawer, { AttachToggle } from './_partial/AgentSideDrawer.partial';
@@ -152,6 +154,7 @@ const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 						toolName: call.name,
 						arguments: call.arguments ?? {},
 						status: 'done' as const,
+						output: message.tool_results?.find((result) => result.id === call.id)?.output,
 						taskId: message.subagent_task_ids?.[call.id],
 					}))
 				: undefined,
@@ -169,6 +172,7 @@ const CREATE_SKILL_TOOL = 'create_skill';
 const INVOKE_AGENT_TOOL = 'invoke_agent';
 const WAIT_SUBAGENTS_TOOL = 'wait_for_subagents';
 const UPDATE_SKILL_TOOL = 'update_skill';
+const REMEMBER_TOOL = 'remember';
 
 /** What each skill tool did, for the step line and the chip above a reply. */
 const SKILL_TOOL_VERBS: Record<string, { running: string; done: string; nameArg: string }> = {
@@ -206,6 +210,7 @@ type TChatTimelineItem =
 			toolName: string;
 			arguments: Record<string, unknown>;
 			status: 'running' | 'done' | 'error';
+			output?: string;
 			/** The subagent task an `invoke_agent` call started. */
 			taskId?: string;
 	  }
@@ -430,28 +435,57 @@ const MessageMarkdown = memo(function MessageMarkdown({ text }: { text: string }
 const prettifyToolName = (raw: string) =>
 	raw.replace(/[_-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-/** One tool-call line in the live scratchpad or a finished message's collapsed steps. */
-const ToolStepLine = ({ item }: { item: Extract<TChatTimelineItem, { kind: 'tool' }> }) => (
-	<div className='flex items-center gap-1.5 text-[12.5px] font-semibold text-zinc-500 dark:text-zinc-400'>
-		{item.status === 'running' && (
-			<Loader2 size={12} className='text-primary-500 shrink-0 animate-spin' />
-		)}
-		{item.status === 'done' && <CheckCircle2 size={12} className='shrink-0 text-emerald-500' />}
-		{item.status === 'error' && <XCircle size={12} className='shrink-0 text-rose-500' />}
-		<Wrench size={12} className='shrink-0 opacity-60' />
-		<span>
-			{SKILL_TOOL_VERBS[item.toolName]
-				? `${SKILL_TOOL_VERBS[item.toolName][item.status === 'running' ? 'running' : 'done']} skill · ${String(item.arguments[SKILL_TOOL_VERBS[item.toolName].nameArg] ?? '')}`
-				: item.toolName === INVOKE_AGENT_TOOL
-					? `${item.status === 'running' ? 'Starting' : 'Started'} subagent · ${String(item.arguments.agent ?? '')}`
-					: item.toolName === WAIT_SUBAGENTS_TOOL
-						? item.status === 'running'
-							? 'Waiting for subagents…'
-							: 'Collected subagent results'
-						: prettifyToolName(item.toolName.replace(/Tool$/, ''))}
-		</span>
-	</div>
-);
+type TToolItem = Extract<TChatTimelineItem, { kind: 'tool' }>;
+
+/** A step's one-line summary, in the tense of its status. */
+const toolStepLabel = (item: TToolItem, task?: TSubagentTask): string => {
+	const running = item.status === 'running';
+	const arg = (name: string) => String(item.arguments[name] ?? '');
+	const skillVerb = SKILL_TOOL_VERBS[item.toolName];
+
+	if (skillVerb) return `${skillVerb[running ? 'running' : 'done']} skill · ${arg(skillVerb.nameArg)}`;
+	if (item.toolName === REMEMBER_TOOL) return `${running ? 'Remembering' : 'Remembered'} · ${arg('key')}`;
+	if (item.toolName === UPDATE_INSTRUCTIONS_TOOL)
+		return running ? 'Updating its instructions' : 'Updated its instructions';
+	if (item.toolName === INVOKE_AGENT_TOOL) return `Subagent · ${task?.agent.name ?? arg('agent')}`;
+	if (item.toolName === WAIT_SUBAGENTS_TOOL)
+		return running ? 'Waiting for subagents…' : 'Collected subagent results';
+	if (item.toolName === EXPORT_ARTIFACT_TOOL)
+		return `${running ? 'Exporting' : 'Exported'} · ${arg('filename')}`;
+	return prettifyToolName(item.toolName.replace(/Tool$/, ''));
+};
+
+const toolStepIcon = (toolName: string) => {
+	if (toolName === REMEMBER_TOOL) return Brain;
+	if (toolName === UPDATE_INSTRUCTIONS_TOOL) return ScrollText;
+	if (SKILL_TOOL_VERBS[toolName]) return Sparkles;
+	if (toolName === INVOKE_AGENT_TOOL || toolName === WAIT_SUBAGENTS_TOOL) return Bot;
+	if (toolName === EXPORT_ARTIFACT_TOOL) return FileDown;
+	if (/search/i.test(toolName)) return Search;
+	if (/fetch|web|http|url/i.test(toolName)) return Globe;
+	return Wrench;
+};
+
+const formatToolValue = (value: unknown) =>
+	typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+
+/** Tools often return JSON; parsed, it reads without escapes like `’`.
+ *  Output cut at the backend's length cap no longer parses and stays as-is. */
+const parseToolOutput = (output: string): unknown => {
+	try {
+		return JSON.parse(output);
+	} catch {
+		return undefined;
+	}
+};
+
+type TCollectedSubagentResult = {
+	agent?: string;
+	task?: string;
+	status?: string;
+	answer?: string;
+	error?: string;
+};
 
 const SUBAGENT_STATUS: Record<TSubagentTask['status'], { label: string; className: string }> = {
 	queued: { label: 'Queued', className: 'text-zinc-500 dark:text-zinc-400' },
@@ -460,71 +494,243 @@ const SUBAGENT_STATUS: Record<TSubagentTask['status'], { label: string; classNam
 	failed: { label: 'Failed', className: 'text-rose-600 dark:text-rose-400' },
 };
 
-/** One card per subagent a reply started, with its live status and a link to its conversation. */
-const SubagentCards = ({
+const ToolStepDetail = ({ label, children }: { label: string; children: ReactNode }) => (
+	<div className='min-w-0'>
+		<p className='mb-1 text-[10px] font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
+			{label}
+		</p>
+		{children}
+	</div>
+);
+
+const StepAnswer = ({ text }: { text: string }) => (
+	<div className='max-h-60 overflow-y-auto rounded-md bg-zinc-50 px-2.5 py-2 text-[12px] leading-relaxed font-semibold text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300'>
+		<MessageMarkdown text={text} />
+	</div>
+);
+
+/** What `wait_for_subagents` brought back: each subagent's answer, readable. */
+const CollectedSubagentResults = ({ output }: { output: string }) => {
+	const parsed = parseToolOutput(output) as
+		| { results?: TCollectedSubagentResult[]; still_running?: string[] }
+		| undefined;
+
+	if (!parsed || !Array.isArray(parsed.results)) {
+		return <StepOutput output={output} failed={false} />;
+	}
+
+	return (
+		<div className='space-y-3'>
+			{parsed.results.map((result, index) => (
+				<ToolStepDetail
+					key={`${result.agent}-${index}`}
+					label={`${result.agent ?? 'Subagent'} · ${result.status === 'failed' ? 'Failed' : 'Answer'}`}>
+					{result.task && (
+						<p className='mb-1 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500'>
+							{result.task}
+						</p>
+					)}
+					{result.status === 'failed' ? (
+						<StepOutput output={result.error ?? 'The subagent failed.'} failed />
+					) : (
+						<StepAnswer text={result.answer ?? ''} />
+					)}
+				</ToolStepDetail>
+			))}
+			{(parsed.still_running?.length ?? 0) > 0 && (
+				<ToolStepDetail label='Still running'>
+					<ul className='list-disc pl-4 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400'>
+						{parsed.still_running!.map((line) => (
+							<li key={line}>{line}</li>
+						))}
+					</ul>
+				</ToolStepDetail>
+			)}
+			{parsed.results.length === 0 && !parsed.still_running?.length && (
+				<p className='text-[11px] font-semibold text-zinc-400'>No new results.</p>
+			)}
+		</div>
+	);
+};
+
+const StepOutput = ({ output, failed }: { output: string; failed: boolean }) => {
+	const parsed = parseToolOutput(output);
+	return (
+		<pre
+			className={`max-h-40 overflow-y-auto rounded-md px-2 py-1 font-mono text-[11px] whitespace-pre-wrap [overflow-wrap:anywhere] ${
+				failed
+					? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300'
+					: 'bg-zinc-50 text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300'
+			}`}>
+			{parsed !== undefined && typeof parsed === 'object' ? JSON.stringify(parsed, null, 2) : output}
+		</pre>
+	);
+};
+
+/** One tool call on the timeline: a status dot on the rail, a one-line summary,
+ *  and what went in and came out when expanded. A subagent's step follows the
+ *  subagent's own status rather than the call that started it. */
+const ToolStep = ({
+	item,
+	isLast,
+	task,
+	ws,
+}: {
+	item: TToolItem;
+	isLast: boolean;
+	task?: TSubagentTask;
+	ws: string;
+}) => {
+	const [expanded, setExpanded] = useState(false);
+	const Icon = toolStepIcon(item.toolName);
+	const isSubagent = item.toolName === INVOKE_AGENT_TOOL;
+	const args = Object.entries(item.arguments).filter(([key]) => !(isSubagent && key === 'agent'));
+	const hasDetail = args.length > 0 || Boolean(item.output) || Boolean(task?.result || task?.error);
+
+	const dot: 'running' | 'done' | 'error' = task
+		? task.status === 'completed'
+			? 'done'
+			: task.status === 'failed'
+				? 'error'
+				: 'running'
+		: item.status;
+	const subagentStatus = task ? SUBAGENT_STATUS[task.status] : undefined;
+	const AgentIcon = task ? agentIconFor(task.agent.icon) : null;
+
+	return (
+		<li className='relative pb-2 pl-7 last:pb-0'>
+			{!isLast && (
+				<span
+					aria-hidden
+					className='absolute top-6 bottom-0 left-[9px] w-px bg-zinc-200 dark:bg-zinc-800'
+				/>
+			)}
+			<span className='absolute top-1.5 left-0 flex h-[19px] w-[19px] items-center justify-center rounded-full border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900'>
+				{dot === 'running' && <Loader2 size={11} className='text-primary-500 animate-spin' />}
+				{dot === 'done' && <CheckCircle2 size={11} className='text-emerald-500' />}
+				{dot === 'error' && <XCircle size={11} className='text-rose-500' />}
+			</span>
+			<div className='rounded-xl border border-zinc-200/80 bg-white dark:border-zinc-800/85 dark:bg-zinc-900/60'>
+				<div className='flex min-w-0 items-center'>
+					<button
+						type='button'
+						onClick={() => setExpanded((v) => !v)}
+						disabled={!hasDetail}
+						aria-expanded={expanded}
+						className='flex min-h-8 min-w-0 flex-1 items-center gap-2 px-3 py-1.5 text-left disabled:cursor-default'>
+						{task && AgentIcon ? (
+							<span
+								className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border ${agentColorTileClass(task.agent.color)}`}>
+								<AgentIcon size={12} />
+							</span>
+						) : (
+							<Icon size={13} className='shrink-0 text-zinc-400' />
+						)}
+						<span className='min-w-0 flex-1'>
+							<span className='block truncate text-[12.5px] font-bold text-zinc-700 dark:text-zinc-200'>
+								{toolStepLabel(item, task)}
+							</span>
+							{isSubagent && (
+								<span className='block truncate text-[11px] font-semibold text-zinc-400 dark:text-zinc-500'>
+									{task?.status === 'failed' && task.error ? task.error : String(item.arguments.task ?? '')}
+								</span>
+							)}
+						</span>
+						{subagentStatus && (
+							<span className={`shrink-0 text-[11px] font-bold ${subagentStatus.className}`}>
+								{subagentStatus.label}
+							</span>
+						)}
+						{hasDetail && (
+							<ChevronRight
+								size={13}
+								className={`shrink-0 text-zinc-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
+							/>
+						)}
+					</button>
+					{task?.session_id && (
+						<a
+							href={`${paths.editAgent(ws, task.agent.id)}?session=${task.session_id}`}
+							target='_blank'
+							rel='noreferrer'
+							aria-label={`Open ${task.agent.name}'s conversation`}
+							title="Open this subagent's conversation"
+							className='mr-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
+							<ExternalLink size={13} />
+						</a>
+					)}
+				</div>
+				{expanded && (
+					<div className='space-y-3 border-t border-zinc-100 px-3 py-2.5 dark:border-zinc-800'>
+						{args.length > 0 && (
+							<ToolStepDetail label='Input'>
+								<dl className='space-y-1.5'>
+									{args.map(([key, value]) => (
+										<div key={key} className='min-w-0'>
+											<dt className='font-mono text-[11px] font-bold text-zinc-500 dark:text-zinc-400'>
+												{key}
+											</dt>
+											<dd className='max-h-40 overflow-y-auto rounded-md bg-zinc-50 px-2 py-1 font-mono text-[11px] whitespace-pre-wrap text-zinc-700 [overflow-wrap:anywhere] dark:bg-zinc-950 dark:text-zinc-300'>
+												{formatToolValue(value)}
+											</dd>
+										</div>
+									))}
+								</dl>
+							</ToolStepDetail>
+						)}
+						{isSubagent ? (
+							task?.status === 'failed' ? (
+								<ToolStepDetail label='Error'>
+									<StepOutput output={task.error ?? 'The subagent failed.'} failed />
+								</ToolStepDetail>
+							) : task?.result ? (
+								<ToolStepDetail label='Answer'>
+									<StepAnswer text={task.result} />
+								</ToolStepDetail>
+							) : null
+						) : item.toolName === WAIT_SUBAGENTS_TOOL && item.output && item.status !== 'error' ? (
+							<CollectedSubagentResults output={item.output} />
+						) : (
+							item.output && (
+								<ToolStepDetail label={item.status === 'error' ? 'Error' : 'Output'}>
+									<StepOutput output={item.output} failed={item.status === 'error'} />
+								</ToolStepDetail>
+							)
+						)}
+					</div>
+				)}
+			</div>
+		</li>
+	);
+};
+
+/** The tool calls behind a reply, in the order the agent made them. */
+const ToolTimeline = ({
 	items,
 	tasks,
 	ws,
+	className = '',
 }: {
 	items: TChatTimelineItem[];
 	tasks: TSubagentTask[];
 	ws: string;
+	className?: string;
 }) => {
-	const started = items.filter(
-		(item): item is Extract<TChatTimelineItem, { kind: 'tool' }> =>
-			item.kind === 'tool' && item.toolName === INVOKE_AGENT_TOOL,
-	);
-	const matched = started.flatMap((item) => {
-		const task = tasks.find((candidate) => candidate.id === item.taskId);
-		return task ? [task] : [];
-	});
-
-	if (matched.length === 0) return null;
+	const tools = items.filter((item): item is TToolItem => item.kind === 'tool');
+	if (tools.length === 0) return null;
 
 	return (
-		<div className='mb-1.5 flex flex-col gap-1.5'>
-			{matched.map((task) => {
-				const AgentIcon = agentIconFor(task.agent.icon);
-				const status = SUBAGENT_STATUS[task.status];
-				const isActive = task.status === 'queued' || task.status === 'running';
-				return (
-					<div
-						key={task.id}
-						className='flex max-w-full min-w-0 items-center gap-3 rounded-2xl border border-zinc-200/80 bg-white px-3.5 py-2.5 shadow-2xs dark:border-zinc-800/85 dark:bg-zinc-900/60'>
-						<div
-							className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${agentColorTileClass(task.agent.color)}`}>
-							<AgentIcon size={15} />
-						</div>
-						<div className='min-w-0 flex-1'>
-							<p className='truncate text-xs font-black text-zinc-800 dark:text-zinc-200'>
-								{task.agent.name}
-							</p>
-							<p className='truncate text-[11px] font-semibold text-zinc-400 dark:text-zinc-500'>
-								{task.status === 'failed' && task.error ? task.error : task.task}
-							</p>
-						</div>
-						<span
-							className={`flex shrink-0 items-center gap-1 text-[11px] font-bold ${status.className}`}>
-							{isActive && <Loader2 size={12} className='animate-spin' />}
-							{task.status === 'completed' && <CheckCircle2 size={12} />}
-							{task.status === 'failed' && <XCircle size={12} />}
-							{status.label}
-						</span>
-						{task.session_id && (
-							<a
-								href={`${paths.editAgent(ws, task.agent.id)}?session=${task.session_id}`}
-								target='_blank'
-								rel='noreferrer'
-								aria-label={`Open ${task.agent.name}'s conversation`}
-								title="Open this subagent's conversation"
-								className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
-								<ExternalLink size={13} />
-							</a>
-						)}
-					</div>
-				);
-			})}
-		</div>
+		<ol className={`flex flex-col ${className}`}>
+			{tools.map((item, index) => (
+				<ToolStep
+					key={item.id}
+					item={item}
+					isLast={index === tools.length - 1}
+					task={item.taskId ? tasks.find((task) => task.id === item.taskId) : undefined}
+					ws={ws}
+				/>
+			))}
+		</ol>
 	);
 };
 
@@ -608,41 +814,6 @@ const ArtifactCard = ({
 				className='flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800'>
 				<Download size={13} />
 			</button>
-		</div>
-	);
-};
-
-const TimelineSteps = ({
-	items,
-	className = '',
-}: {
-	items: TChatTimelineItem[];
-	className?: string;
-}) => {
-	const [expanded, setExpanded] = useState(false);
-	const toolCount = items.filter((item) => item.kind === 'tool').length;
-
-	if (toolCount === 0) return null;
-
-	return (
-		<div className={`flex flex-col gap-1.5 pl-1 ${className}`}>
-			<button
-				type='button'
-				onClick={() => setExpanded((v) => !v)}
-				className='flex w-fit items-center gap-1 text-[11px] font-bold text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'>
-				<ChevronRight
-					size={11}
-					className={`transition-transform ${expanded ? 'rotate-90' : ''}`}
-				/>
-				{toolCount} step{toolCount === 1 ? '' : 's'}
-			</button>
-			{expanded && (
-				<div className='flex flex-col gap-1'>
-					{items.map((item) =>
-						item.kind === 'tool' ? <ToolStepLine key={item.id} item={item} /> : null,
-					)}
-				</div>
-			)}
 		</div>
 	);
 };
@@ -1431,6 +1602,10 @@ const BuildPage = () => {
 					title: (trimmed || files[0]?.name || 'New chat').slice(0, 60),
 				});
 				sessionId = String(created.id);
+				void queryClient.invalidateQueries({
+					queryKey: agentSessionKeys.list(workspaceId, agentIdForRun),
+					exact: true,
+				});
 				// This transcript is already on screen — keep the loader off it.
 				loadedSessionRef.current = sessionId;
 				openSession(sessionId);
@@ -1442,6 +1617,7 @@ const BuildPage = () => {
 			const exportedFilenames: string[] = [];
 			let updatedInstructions = false;
 			let changedSkills = false;
+			let rememberedFacts = false;
 			let replyText = '';
 			let sawComplete = false;
 
@@ -1490,11 +1666,12 @@ const BuildPage = () => {
 				}
 
 				if (event.event === 'tool-result') {
-					// Only a tool that returned is reported; one that threw ends the
-					// turn with `error` instead, so reaching here means success.
-					if (event.name === UPDATE_INSTRUCTIONS_TOOL) updatedInstructions = true;
-					if (event.name === CREATE_SKILL_TOOL || event.name === UPDATE_SKILL_TOOL)
-						changedSkills = true;
+					if (event.successful) {
+						if (event.name === UPDATE_INSTRUCTIONS_TOOL) updatedInstructions = true;
+						if (event.name === CREATE_SKILL_TOOL || event.name === UPDATE_SKILL_TOOL)
+							changedSkills = true;
+						if (event.name === REMEMBER_TOOL) rememberedFacts = true;
+					}
 					if (event.name === INVOKE_AGENT_TOOL) {
 						void queryClient.invalidateQueries({
 							queryKey: agentSubagentKeys.tasks(workspaceId, agentIdForRun, sessionId),
@@ -1503,7 +1680,12 @@ const BuildPage = () => {
 					setTimeline((prev) =>
 						prev.map((item) =>
 							item.kind === 'tool' && item.id === event.id
-								? { ...item, status: 'done', taskId: event.result?.task_id }
+								? {
+										...item,
+										status: event.successful ? 'done' : 'error',
+										output: event.output,
+										taskId: event.result?.task_id,
+									}
 								: item,
 						),
 					);
@@ -1548,6 +1730,13 @@ const BuildPage = () => {
 					queryKey: agentSkillAttachmentKeys.list(workspaceId, agentIdForRun),
 				});
 				void queryClient.invalidateQueries({ queryKey: agentSkillKeys.all(workspaceId) });
+			}
+
+			// The agent saved a fact; refresh the Memory panel.
+			if (rememberedFacts) {
+				void queryClient.invalidateQueries({
+					queryKey: agentMemoryKeys.list(workspaceId, agentIdForRun),
+				});
 			}
 
 			const finishedTimeline = streamTimelineRef.current;
@@ -1607,12 +1796,19 @@ const BuildPage = () => {
 					},
 				]);
 			} else {
+				// The steps that ran before the failure still happened — keep them.
+				const partial = streamTimelineRef.current.map((item) =>
+					item.kind === 'tool' && item.status === 'running'
+						? { ...item, status: 'error' as const }
+						: item,
+				);
 				setChatHistory((prev) => [
 					...prev,
 					{
 						id: 'agent-error-' + Date.now(),
 						sender: 'agent',
 						text: "Sorry, I couldn't process that - please try again.",
+						timeline: partial.length > 0 ? partial : undefined,
 						failed: true,
 						timestamp: new Date().toLocaleTimeString([], {
 							hour: '2-digit',
@@ -2536,7 +2732,7 @@ const BuildPage = () => {
 											key={message.id}
 											className={`group flex w-full ${isUser ? 'justify-end' : 'justify-start'}`}>
 											<div
-												className={`flex max-w-[90%] gap-3 sm:max-w-[80%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+												className={`flex gap-3 ${isUser ? 'max-w-[90%] flex-row-reverse sm:max-w-[80%]' : 'w-full max-w-3xl flex-row'}`}>
 												{/* Agent Avatar in body */}
 												{!isUser && (
 													<div
@@ -2550,8 +2746,8 @@ const BuildPage = () => {
 													</div>
 												)}
 
-												<div className='flex min-w-0 flex-col'>
-													{/* What the agent did to produce this reply — collapsible steps */}
+												<div className={`flex min-w-0 flex-col ${isUser ? '' : 'flex-1'}`}>
+													{/* What the agent did to produce this reply, step by step */}
 													{!isUser &&
 														message.timeline &&
 														message.timeline.length > 0 && (
@@ -2560,14 +2756,11 @@ const BuildPage = () => {
 																	items={message.timeline}
 																	skills={workspaceSkills ?? []}
 																/>
-																<SubagentCards
+																<ToolTimeline
 																	items={message.timeline}
 																	tasks={subagentTasks ?? []}
 																	ws={workspaceId}
-																/>
-																<TimelineSteps
-																	items={message.timeline}
-																	className='mb-1.5'
+																	className='mb-3'
 																/>
 															</>
 														)}
@@ -2599,12 +2792,12 @@ const BuildPage = () => {
 															/>
 														)}
 
-													{/* Chat bubble */}
+													{/* The user's bubble, or the agent's answer as plain prose under its steps */}
 													<div
-														className={`max-w-full min-w-0 rounded-2xl px-4 py-3 text-sm leading-relaxed font-semibold [overflow-wrap:anywhere] ${
+														className={`max-w-full min-w-0 text-sm leading-relaxed font-semibold [overflow-wrap:anywhere] ${
 															isUser
-																? 'bg-primary-400/10 dark:bg-primary-400/25 rounded-tr-none text-zinc-950 dark:text-zinc-100'
-																: 'rounded-tl-none border border-zinc-200/80 bg-white text-zinc-800 shadow-2xs dark:border-zinc-800/85 dark:bg-zinc-900/60 dark:text-zinc-200'
+																? 'bg-primary-400/10 dark:bg-primary-400/25 rounded-2xl rounded-tr-none px-4 py-3 text-zinc-950 dark:text-zinc-100'
+																: 'pt-1.5 text-zinc-800 dark:text-zinc-200'
 														}`}>
 														{isUser ? (
 															<p className='whitespace-pre-line'>
@@ -2806,10 +2999,10 @@ const BuildPage = () => {
 								})
 							)}
 
-							{/* Live scratchpad — reasoning + tool calls as they stream in, Gumloop-style */}
+							{/* The reply streaming in — same layout it settles into once finished */}
 							{isTyping && (
 								<div className='flex w-full justify-start'>
-									<div className='flex max-w-[90%] flex-row gap-3 sm:max-w-[80%]'>
+									<div className='flex w-full max-w-3xl flex-row gap-3'>
 										<div
 											className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-zinc-950 text-white dark:border-white/10 dark:bg-zinc-900`}>
 											<AgentIconComponent
@@ -2818,60 +3011,39 @@ const BuildPage = () => {
 											/>
 										</div>
 										<div className='min-w-0 flex-1'>
-											{streamTimeline.length === 0 ? (
-												<div className='inline-flex items-center gap-1.5 rounded-2xl rounded-tl-none border border-zinc-200/80 bg-white px-4 py-3 shadow-2xs dark:border-zinc-800/85 dark:bg-zinc-900/60'>
-													<div className='bg-primary-400 h-2.5 w-2.5 animate-bounce rounded-full [animation-delay:-0.3s]' />
-													<div className='bg-primary-400 h-2.5 w-2.5 animate-bounce rounded-full [animation-delay:-0.15s]' />
-													<div className='bg-primary-400 h-2.5 w-2.5 animate-bounce rounded-full' />
+											<ToolTimeline
+												items={streamTimeline}
+												tasks={subagentTasks ?? []}
+												ws={workspaceId}
+												className='mb-3'
+											/>
+											{streamTimeline.some((item) => item.kind === 'artifact') && (
+												<div className='mb-3 flex flex-col gap-1.5'>
+													{streamTimeline.map((item) =>
+														item.kind === 'artifact' ? (
+															<ArtifactCard key={item.id} item={item} ws={workspaceId} />
+														) : null,
+													)}
+												</div>
+											)}
+											{streamTimeline.some((item) => item.kind === 'text') ? (
+												<div className='pt-1.5 text-sm leading-relaxed font-semibold text-zinc-800 [overflow-wrap:anywhere] dark:text-zinc-200'>
+													<MessageMarkdown
+														text={streamTimeline
+															.map((item) => (item.kind === 'text' ? item.text : ''))
+															.join('')}
+													/>
+													<span className='ml-0.5 inline-block h-3.5 w-[2px] animate-pulse bg-current align-middle' />
 												</div>
 											) : (
-												<>
-													<div className='flex flex-col gap-1.5 rounded-2xl rounded-tl-none border border-zinc-200/80 bg-white px-4 py-3 text-sm leading-relaxed shadow-2xs dark:border-zinc-800/85 dark:bg-zinc-900/60'>
-														{streamTimeline.map((item) => {
-															if (item.kind === 'text') {
-																return (
-																	<span
-																		key={item.id}
-																		className='whitespace-pre-line text-zinc-700 dark:text-zinc-300'>
-																		{item.text}
-																		<span className='ml-0.5 inline-block h-3.5 w-[2px] animate-pulse bg-current align-middle' />
-																	</span>
-																);
-															}
-															if (item.kind === 'tool') {
-																return (
-																	<ToolStepLine
-																		key={item.id}
-																		item={item}
-																	/>
-																);
-															}
-															return null;
-														})}
+												!streamTimeline.some(
+													(item) => item.kind === 'tool' && item.status === 'running',
+												) && (
+													<div className='flex min-h-9 items-center gap-2 text-[12.5px] font-bold text-zinc-400 dark:text-zinc-500'>
+														<Loader2 size={13} className='text-primary-500 animate-spin' />
+														{streamTimeline.length === 0 ? 'Thinking…' : 'Working…'}
 													</div>
-													<div className='mt-1.5'>
-														<SubagentCards
-															items={streamTimeline}
-															tasks={subagentTasks ?? []}
-															ws={workspaceId}
-														/>
-													</div>
-													{streamTimeline.some(
-														(item) => item.kind === 'artifact',
-													) && (
-														<div className='mt-1.5 flex flex-col gap-1.5'>
-															{streamTimeline.map((item) =>
-																item.kind === 'artifact' ? (
-																	<ArtifactCard
-																		key={item.id}
-																		item={item}
-																		ws={workspaceId}
-																	/>
-																) : null,
-															)}
-														</div>
-													)}
-												</>
+												)
 											)}
 										</div>
 									</div>
