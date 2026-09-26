@@ -1,5 +1,6 @@
 import { Activity, Check, Clock, Coins, Copy, ExternalLink, MessageSquare, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import AgentRunLog from './AgentRunLog.partial';
 import ExecutionLogsViewer from './ExecutionLogsViewer.partial';
 import RunActions from './RunActions.partial';
 import type { DisplayItem } from '../_types/history.type';
@@ -132,6 +133,8 @@ const HistoryDetailDrawer = ({
 											</div>
 										))}
 									</div>
+								) : run && run.runnable_type !== 'workflow' ? (
+									<AgentRunLog ws={activeWorkspaceId} run={run} />
 								) : (
 									<ExecutionLogsViewer
 										ws={activeWorkspaceId}
