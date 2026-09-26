@@ -116,7 +116,6 @@ export interface INodeCategory {
 	kind?: TNodeCategoryKind;
 	sort_order: number;
 	nodes_count?: number;
-	connected?: boolean;
 	nodes?: INodeType[];
 }
 

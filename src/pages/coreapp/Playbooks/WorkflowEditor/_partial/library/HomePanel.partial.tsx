@@ -8,6 +8,7 @@ import {
 } from '../../_helper/apiNodeCatalog.helper';
 import type { TNodeCategoryGroup } from '../../_helper/apiNodeCatalog.helper';
 import type { TNodeDefinition } from '../../_types/node.type';
+import { useConnectedApps } from '../../_hooks/useConnectedApps.hook';
 import {
 	AppCard,
 	CategoryRow,
@@ -29,6 +30,7 @@ const FREQUENT_COUNT = 6;
 const HomePanel = ({ workspaceId, onSelectCategory, onAdd }: Props) => {
 	const { data: categories, isLoading, isError, refetch } = useNodeCategories();
 	const { data: recentlyUsed, isLoading: recentLoading } = useRecentlyUsedNodes(workspaceId);
+	const connectedApps = useConnectedApps(workspaceId);
 
 	const recent = useMemo(() => recentlyUsed?.nodes ?? [], [recentlyUsed]);
 	const needsFallback = !recentLoading && recent.length === 0;
@@ -95,7 +97,12 @@ const HomePanel = ({ workspaceId, onSelectCategory, onAdd }: Props) => {
 					<SectionTitle>Apps & Integrations</SectionTitle>
 					<div className='grid grid-cols-3 gap-2.5'>
 						{appGroups.map((group) => (
-							<AppCard key={group.id} group={group} onSelect={onSelectCategory} />
+							<AppCard
+								key={group.id}
+								group={group}
+								connected={connectedApps.has(group.slug)}
+								onSelect={onSelectCategory}
+							/>
 						))}
 					</div>
 				</div>

@@ -1,6 +1,16 @@
+const isNearBlack = (hex: string) => {
+	const value = parseInt(hex.slice(1, 7), 16);
+	const [r, g, b] = [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+	return 0.2126 * r + 0.7152 * g + 0.0722 * b < 60;
+};
+
+/** Brand colors like GitHub's near-black would vanish on the dark theme, so they go light there. */
 export const tintStyle = (hex?: string) =>
 	hex
-		? { backgroundColor: `${hex}1a`, color: hex }
+		? {
+				backgroundColor: `${hex}1a`,
+				color: isNearBlack(hex) ? `light-dark(${hex}, #e4e4e7)` : hex,
+			}
 		: { backgroundColor: 'rgb(124 58 237 / 0.1)', color: 'rgb(124 58 237)' };
 
 /**

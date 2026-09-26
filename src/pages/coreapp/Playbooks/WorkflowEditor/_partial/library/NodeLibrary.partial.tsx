@@ -7,7 +7,7 @@ import type { TNodeCategoryGroup } from '../../_helper/apiNodeCatalog.helper';
 import type { TNodeDefinition } from '../../_types/node.type';
 import { useNodeCategories } from '@/api/modules/catalog';
 import NodeLibrarySearch from './NodeLibrarySearch.partial';
-import CategoryIcon from './CategoryIcon.partial';
+import NodeIcon from './NodeIcon.partial';
 import { PanelLoader } from './LibraryItems.partial';
 import { tintStyle } from './library.util';
 import HomePanel from './HomePanel.partial';
@@ -98,7 +98,7 @@ const NodeLibrary = () => {
 						<span
 							className='flex h-8 w-8 shrink-0 items-center justify-center rounded-xl'
 							style={tintStyle(selected.colorHex)}>
-							<CategoryIcon slug={selected.slug} label={selected.label} size={17} />
+							<NodeIcon icon={selected.icon} size={17} />
 						</span>
 						<span className='flex min-w-0 flex-col'>
 							<span className='truncate text-sm font-extrabold text-zinc-900 dark:text-white'>

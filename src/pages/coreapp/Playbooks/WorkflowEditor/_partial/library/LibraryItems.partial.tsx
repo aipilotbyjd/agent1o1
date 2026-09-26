@@ -3,7 +3,6 @@ import { ChevronRight, Plus } from 'lucide-react';
 import type { TNodeCategoryGroup } from '../../_helper/apiNodeCatalog.helper';
 import type { TNodeDefinition } from '../../_types/node.type';
 import NodeIcon from './NodeIcon.partial';
-import CategoryIcon from './CategoryIcon.partial';
 import { tintStyle } from './library.util';
 
 const startNodeDrag = (event: React.DragEvent, node: TNodeDefinition) => {
@@ -73,7 +72,7 @@ export const CategoryRow = ({ group, onSelect }: TGroupProps) => (
 		<span
 			className='flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all group-hover:scale-[1.03]'
 			style={tintStyle(group.colorHex)}>
-			<CategoryIcon slug={group.slug} label={group.label} size={20} />
+			<NodeIcon icon={group.icon} size={20} />
 		</span>
 		<span className='min-w-0 flex-1'>
 			<span className='block truncate text-sm font-bold text-zinc-900 transition group-hover:text-zinc-950 dark:text-zinc-100 dark:group-hover:text-white'>
@@ -90,12 +89,12 @@ export const CategoryRow = ({ group, onSelect }: TGroupProps) => (
 	</button>
 );
 
-export const AppCard = ({ group, onSelect }: TGroupProps) => (
+export const AppCard = ({ group, connected, onSelect }: TGroupProps & { connected: boolean }) => (
 	<button
 		type='button'
 		onClick={() => onSelect(group)}
 		className='group relative flex flex-col items-center justify-center rounded-2xl border border-zinc-100 bg-white p-3 text-center transition hover:-translate-y-0.5 hover:border-zinc-200 dark:border-white/[0.04] dark:bg-white/[0.01] dark:hover:border-white/10'>
-		{group.connected && (
+		{connected && (
 			<span
 				className='absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-emerald-500'
 				title='Connected'
@@ -104,7 +103,7 @@ export const AppCard = ({ group, onSelect }: TGroupProps) => (
 		<span
 			className='flex h-10 w-10 items-center justify-center rounded-xl transition-all group-hover:scale-105'
 			style={tintStyle(group.colorHex)}>
-			<CategoryIcon slug={group.slug} label={group.label} size={18} />
+			<NodeIcon icon={group.icon} size={18} />
 		</span>
 		<span className='mt-2 line-clamp-1 text-[10px] font-bold text-zinc-600 dark:text-zinc-300'>
 			{group.label}

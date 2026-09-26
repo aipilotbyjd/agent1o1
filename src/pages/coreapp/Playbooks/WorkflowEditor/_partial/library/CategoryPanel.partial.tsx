@@ -3,6 +3,7 @@ import { AlertTriangle } from 'lucide-react';
 import { useNodeCategory } from '@/api/modules/catalog';
 import { mapApiCategoryToGroup } from '../../_helper/apiNodeCatalog.helper';
 import type { TNodeDefinition } from '../../_types/node.type';
+import { useConnectedApps } from '../../_hooks/useConnectedApps.hook';
 import { NodeRow, PanelLoader, RetryButton, StateMessage } from './LibraryItems.partial';
 
 type Props = {
@@ -11,9 +12,9 @@ type Props = {
 	onAdd: (node: TNodeDefinition) => void;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const CategoryPanel = ({ categoryId, workspaceId: _workspaceId, onAdd }: Props) => {
+const CategoryPanel = ({ categoryId, workspaceId, onAdd }: Props) => {
 	const { data, isLoading, isError, refetch } = useNodeCategory(categoryId);
+	const connectedApps = useConnectedApps(workspaceId);
 	// The detail endpoint returns the category and its nodes side by side.
 	const group = useMemo(
 		() =>
@@ -26,6 +27,8 @@ const CategoryPanel = ({ categoryId, workspaceId: _workspaceId, onAdd }: Props) 
 				: null,
 		[data],
 	);
+
+	const connected = group ? connectedApps.has(group.slug) : false;
 
 	if (isLoading) return <PanelLoader />;
 
@@ -51,8 +54,8 @@ const CategoryPanel = ({ categoryId, workspaceId: _workspaceId, onAdd }: Props) 
 		<div className='space-y-1 px-4 pb-4'>
 			{group.kind === 'app' && (
 				<div className='px-1 pb-2 text-[10px] font-black tracking-widest uppercase'>
-					<span className={group.connected ? 'text-emerald-500' : 'text-zinc-400'}>
-						{group.connected ? '● Connected' : '○ Not connected'}
+					<span className={connected ? 'text-emerald-500' : 'text-zinc-400'}>
+						{connected ? '● Connected' : '○ Not connected'}
 					</span>
 					<span className='text-zinc-400'> · {group.nodes.length} nodes</span>
 				</div>

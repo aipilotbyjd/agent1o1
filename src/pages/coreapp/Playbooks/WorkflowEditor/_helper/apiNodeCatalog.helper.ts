@@ -26,7 +26,6 @@ export type TNodeCategoryGroup = {
 	kind: 'core' | 'app';
 	order: number;
 	nodesCount: number;
-	connected: boolean;
 	nodes: TNodeDefinition[];
 };
 
@@ -173,7 +172,6 @@ export const mapApiCategoryToGroup = (
 	kind: category.kind === 'app' ? 'app' : 'core',
 	order: category.sort_order,
 	nodesCount: category.nodes_count ?? category.nodes?.length ?? 0,
-	connected: Boolean(category.connected),
 	nodes: (category.nodes ?? []).map((node) =>
 		mapApiNodeToDefinition(node, category.slug, category.color),
 	),
