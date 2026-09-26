@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext, useParams } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, FileDown, Download, Trash2, History, Eye, MoreHorizontal } from 'lucide-react';
+import { Search, FileDown, Download, Trash2, History, Eye, MoreHorizontal, Share2, Lock } from 'lucide-react';
 import { OutletContextType } from './_layouts/Artifacts.layout';
 import { useConfirm } from '@/context/confirm';
 import Breadcrumb from '@/components/layout/Breadcrumb';
@@ -14,6 +14,8 @@ import ListSkeletonPart from '@/parts/ListSkeleton.part';
 import { notify } from '@/api/core';
 import { ARTIFACT_CATEGORIES, getArtifactIcon, getArtifactColor, formatBytes } from './_helper/artifacts.constants';
 import ArtifactVersionsModal from './_partial/ArtifactVersionsModal.partial';
+import ArtifactUploadButton from './_partial/ArtifactUploadButton.partial';
+import ArtifactShareModal from './_partial/ArtifactShareModal.partial';
 
 const PER_PAGE = 24;
 
@@ -37,6 +39,7 @@ const ArtifactsListPage = () => {
 	const [selectedCategory, setSelectedCategory] = useState<'All' | TArtifactMimeCategory>('All');
 	const [page, setPage] = useState(1);
 	const [historyArtifactId, setHistoryArtifactId] = useState<string | null>(null);
+	const [sharingArtifact, setSharingArtifact] = useState<TArtifact | null>(null);
 
 	// The backend paginates and filters server-side — no client-side filtering
 	// needed here (unlike Skills, this endpoint takes real query params).
@@ -85,6 +88,12 @@ const ArtifactsListPage = () => {
 					<h1 className='text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white'>
 						Artifacts
 					</h1>
+					<ArtifactUploadButton
+						ws={ws}
+						label='Upload'
+						multiple
+						className='flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-primary-400 px-4 text-xs font-bold text-primary-950 shadow-md shadow-primary-500/10 transition-all hover:bg-primary-500 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60'
+					/>
 				</div>
 
 				<div className='mb-8 flex flex-col gap-4'>
@@ -136,6 +145,14 @@ const ArtifactsListPage = () => {
 						<p className='text-xs font-semibold text-slate-400 dark:text-zinc-500'>
 							Files your agents export during conversations will show up here.
 						</p>
+						{!searchQuery.trim() && selectedCategory === 'All' && (
+							<ArtifactUploadButton
+								ws={ws}
+								label='Upload a file'
+								multiple
+								className='mt-2 flex h-8 cursor-pointer items-center gap-1.5 rounded-xl border border-border-main px-3 text-[11px] font-bold text-slate-600 transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-zinc-300 dark:hover:bg-zinc-900'
+							/>
+						)}
 					</div>
 				) : (
 					<>
@@ -146,6 +163,7 @@ const ArtifactsListPage = () => {
 										key={artifact.id}
 										artifact={artifact}
 										onShowVersions={() => setHistoryArtifactId(artifact.id)}
+										onShare={() => setSharingArtifact(artifact)}
 										onDownload={() =>
 											downloadMutation.mutate({
 												artifactId: artifact.id,
@@ -184,6 +202,7 @@ const ArtifactsListPage = () => {
 			</div>
 
 			<ArtifactVersionsModal ws={ws} artifactId={historyArtifactId} onClose={() => setHistoryArtifactId(null)} />
+			<ArtifactShareModal ws={ws} artifact={sharingArtifact} onClose={() => setSharingArtifact(null)} />
 		</Container>
 	);
 };
@@ -191,11 +210,13 @@ const ArtifactsListPage = () => {
 const ArtifactCard = ({
 	artifact,
 	onShowVersions,
+	onShare,
 	onDownload,
 	onDelete,
 }: {
 	artifact: TArtifact;
 	onShowVersions: () => void;
+	onShare: () => void;
 	onDownload: () => void;
 	onDelete: () => void;
 }) => {
@@ -239,6 +260,24 @@ const ArtifactCard = ({
 							<button
 								onClick={() => {
 									setMenuOpen(false);
+									onShowVersions();
+								}}
+								className='flex w-full cursor-pointer items-center gap-1.5 px-3 py-2 text-left text-[11px] font-bold text-slate-600 hover:bg-slate-50 dark:text-zinc-300 dark:hover:bg-zinc-800'>
+								<History size={12} />
+								Versions
+							</button>
+							<button
+								onClick={() => {
+									setMenuOpen(false);
+									onShare();
+								}}
+								className='flex w-full cursor-pointer items-center gap-1.5 px-3 py-2 text-left text-[11px] font-bold text-slate-600 hover:bg-slate-50 dark:text-zinc-300 dark:hover:bg-zinc-800'>
+								<Share2 size={12} />
+								Sharing
+							</button>
+							<button
+								onClick={() => {
+									setMenuOpen(false);
 									onDelete();
 								}}
 								className='flex w-full cursor-pointer items-center gap-1.5 px-3 py-2 text-left text-[11px] font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20'>
@@ -257,6 +296,9 @@ const ArtifactCard = ({
 			<div className='mt-auto flex items-center justify-between border-t border-slate-100/80 pt-3.5 dark:border-zinc-900/60'>
 				<span className='inline-flex items-center gap-1 rounded-full border border-primary-200 bg-primary-50 px-2.5 py-0.5 text-[9px] font-bold text-primary-700 dark:border-primary-500/20 dark:bg-primary-950/20 dark:text-primary-400'>
 					v{artifact.version}
+					{artifact.general_access === 'restricted' && (
+						<Lock size={9} aria-label='Restricted' className='ml-0.5' />
+					)}
 				</span>
 				{(artifact.versions_count ?? 1) > 1 && (
 					<button

@@ -176,7 +176,7 @@ const mapApiWorkspaceToCard = (w: TWorkspace, currentUserId?: string): IWorkspac
 		gradientTo: g.to,
 		accentColor: g.accent,
 		lastActive,
-		hasActiveRuns: (w as any).has_active_runs ?? false,
+		hasActiveRuns: w.has_active_runs ?? false,
 	};
 };
 

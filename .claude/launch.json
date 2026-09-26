@@ -4,8 +4,24 @@
 		{
 			"name": "agent1o1-web",
 			"runtimeExecutable": "npm",
-			"runtimeArgs": ["run", "dev", "--", "--port", "5173", "--strictPort"],
+			"runtimeArgs": [
+				"run",
+				"dev",
+				"--",
+				"--port",
+				"5173",
+				"--strictPort"
+			],
 			"port": 5173
+		},
+		{
+			"name": "agent1o1-api",
+			"runtimeExecutable": "bash",
+			"runtimeArgs": [
+				"-c",
+				"cd /Users/muhammadsahilamaan/Desktop/sahil/agent/agentbackend/agent-1o1-ai && php artisan serve --port 8000"
+			],
+			"port": 8000
 		}
 	]
 }

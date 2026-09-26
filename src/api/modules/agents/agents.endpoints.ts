@@ -71,9 +71,9 @@ export const AgentKnowledgeEndpoints = {
 export const AgentKnowledgeSourceEndpoints = {
 	list: (ws: string, agentId: string) => `${agent(ws, agentId)}/knowledge-sources`,
 	attach: (ws: string, agentId: string, collection: string) =>
-		`${agent(ws, agentId)}/knowledge-sources/${collection}`,
+		`${agent(ws, agentId)}/knowledge-sources/${encodeURIComponent(collection)}`,
 	detach: (ws: string, agentId: string, collection: string) =>
-		`${agent(ws, agentId)}/knowledge-sources/${collection}`,
+		`${agent(ws, agentId)}/knowledge-sources/${encodeURIComponent(collection)}`,
 } as const;
 
 export const AgentMemoryEndpoints = {

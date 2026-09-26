@@ -35,14 +35,26 @@ export const buildGraphPayload = (
 	})),
 });
 
-const draftNodeToCanvas = (node: TWorkflowNode): TCanvasNode =>
-	builderNodeToCanvas({
+const draftNodeToCanvas = (node: TWorkflowNode): TCanvasNode => {
+	const canvasNode = builderNodeToCanvas({
 		id: node.key,
 		type: node.type,
 		name: '',
 		config: node.config ?? {},
 		position: node.position ?? { x: 120, y: 120 },
 	});
+	// Pins live on the node row and survive a graph save (`replaceGraph` carries
+	// them over by key), so they come back with the draft.
+	if (node.pinned_data === null || node.pinned_data === undefined) return canvasNode;
+	return { ...canvasNode, data: { ...canvasNode.data, pinned: true, pinnedOutput: node.pinned_data } };
+};
+
+/** Pinned data has to be a JSON object or array on the backend — a scalar
+ *  output (only the local simulation produces those) is wrapped. */
+export const toPinPayload = (output: unknown): Record<string, unknown> | unknown[] =>
+	output !== null && typeof output === 'object'
+		? (output as Record<string, unknown> | unknown[])
+		: { value: output ?? null };
 
 const draftEdgesToCanvas = (nodes: TWorkflowNode[], edges: TWorkflowEdge[]): TCanvasEdge[] => {
 	// Edges point at node row ids; the canvas addresses nodes by key.

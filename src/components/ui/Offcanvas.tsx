@@ -267,16 +267,14 @@ const Offcanvas: FC<IOffcanvasProps> = (props) => {
 		contentClassName,
 		...rest
 	} = props;
-	const refOffcanvas = useRef(null);
-	const ref = useRef(null);
+	const refOffcanvas = useRef<HTMLDivElement>(null);
+	const ref = useRef<HTMLDivElement>(null);
 
 	const titleId = useId();
 
 	// Backdrop close function
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const closeOffcanvas = (event: { target: any }) => {
-		// @ts-expect-error
-		if (ref.current && !ref.current.contains(event.target) && !isStaticBackdrop) {
+	const closeOffcanvas = (event: Event) => {
+		if (ref.current && !ref.current.contains(event.target as Node) && !isStaticBackdrop) {
 			setIsOpen(false);
 		}
 	};
@@ -284,15 +282,11 @@ const Offcanvas: FC<IOffcanvasProps> = (props) => {
 	useEventListener('touchstart', closeOffcanvas); // Touchscreen
 
 	// Backdrop static function
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const offCanvasStatic = (event: { target: any }) => {
-		// @ts-expect-error
-		if (ref.current && !ref.current.contains(event.target) && isStaticBackdrop) {
-			// @ts-expect-error
-			refOffcanvas.current.classList.add('scale-105!');
+	const offCanvasStatic = (event: Event) => {
+		if (ref.current && !ref.current.contains(event.target as Node) && isStaticBackdrop) {
+			refOffcanvas.current?.classList.add('scale-105!');
 
-			// @ts-expect-error
-			setTimeout(() => refOffcanvas.current.classList.remove('scale-105!'), 300);
+			setTimeout(() => refOffcanvas.current?.classList.remove('scale-105!'), 300);
 		}
 	};
 	useEventListener('mousedown', offCanvasStatic);

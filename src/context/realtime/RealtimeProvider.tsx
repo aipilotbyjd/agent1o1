@@ -10,12 +10,12 @@ import RealtimeContext from './RealtimeContext';
 
 // Ensure Pusher is on window for Laravel Echo
 if (typeof window !== 'undefined') {
-	(window as any).Pusher = Pusher;
+	(window as Window & { Pusher?: typeof Pusher }).Pusher = Pusher;
 }
 
 export const RealtimeProvider = ({ children }: { children: React.ReactNode }) => {
 	const { activeWorkspaceId } = useWorkspaceContext();
-	const [echo, setEcho] = useState<Echo<any> | null>(null);
+	const [echo, setEcho] = useState<Echo<'reverb'> | null>(null);
 	const qc = useQueryClient();
 
 	// Track the token in state so we re-subscribe on login/logout/refresh instead

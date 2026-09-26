@@ -1,5 +1,3 @@
-import { formatDistanceToNow } from 'date-fns';
-
 export const inputClass =
 	'h-11 w-full rounded-xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-800 shadow-xs outline-none placeholder:text-zinc-400 focus:border-primary-400 focus:ring-4 focus:ring-primary-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-primary-500 dark:focus:ring-primary-500/25';
 
@@ -8,14 +6,7 @@ export const cardClass =
 
 export const errorClass = 'mt-1.5 text-xs font-semibold text-red-500';
 
-export const relativeTime = (iso: string | null | undefined) => {
-	if (!iso) return null;
-	try {
-		return formatDistanceToNow(new Date(iso), { addSuffix: true });
-	} catch {
-		return null;
-	}
-};
+export { default as relativeTime } from '@/utils/relativeTime.util';
 
 export const formatDateTime = (iso: string | null | undefined) => {
 	if (!iso) return '—';

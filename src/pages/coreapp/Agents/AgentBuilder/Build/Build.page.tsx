@@ -46,7 +46,9 @@ import {
 	Trash2,
 	Share,
 	ImageIcon,
+	LayoutTemplate,
 } from 'lucide-react';
+import SaveAsTemplateModal from '@/parts/SaveAsTemplateModal.part';
 import AgentTemplateCard from '../_partial/AgentTemplateCard.partial';
 import {
 	AGENT_COLOR_SWATCHES,
@@ -60,7 +62,7 @@ import MainAppBar, {
 	MainAppBarPillButton,
 	MainAppBarIconButton,
 } from '@/pages/coreapp/_partial/MainAppBar.partial';
-import { toast } from 'react-toastify';
+import { notify } from '@/api/core';
 import useDarkMode from '@/hooks/useDarkMode';
 import DARK_MODE from '@/constants/darkMode.constant';
 import { LogoFyr } from '@/assets/images';
@@ -99,6 +101,7 @@ import {
 	agentSessionKeys,
 	agentSubagentKeys,
 	useAgents,
+	useAgentSessions,
 	useAgentSubagents,
 	useAttachSubagent,
 	useDetachSubagent,
@@ -132,6 +135,7 @@ import { useAgentBuilderStore } from '@/store/agentBuilder.store';
 import { XCircle, Wrench, FileDown, GitMerge, Brain, ScrollText } from 'lucide-react';
 import AgentDataPanel from './_partial/AgentDataPanel.partial';
 import AgentTagsPanel from './_partial/AgentTagsPanel.partial';
+import AgentKnowledgeSourcesPanel from './_partial/AgentKnowledgeSourcesPanel.partial';
 import AgentSideDrawer, { AttachToggle } from './_partial/AgentSideDrawer.partial';
 import AgentChatsPanel from './_partial/AgentChatsPanel.partial';
 
@@ -169,6 +173,21 @@ const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 		}));
 
 const EXPORT_ARTIFACT_TOOL = 'ExportArtifactTool';
+const EXPORT_FORMATS = ['pdf', 'xlsx', 'docx'];
+
+/**
+ * The filename an `export_artifact` call is stored under. With a `format`, the
+ * backend builds the document itself and swaps the extension — `report.md` +
+ * pdf is saved as `report.pdf` (ExportArtifactTool::handle).
+ */
+const exportedFilename = (filename: string, format: unknown) => {
+	const ext = typeof format === 'string' ? format.toLowerCase() : '';
+	if (!EXPORT_FORMATS.includes(ext)) return filename;
+	const base = filename.split('/').pop() ?? '';
+	const dot = base.lastIndexOf('.');
+	return `${(dot === -1 ? base : base.slice(0, dot)) || 'document'}.${ext}`;
+};
+
 const UPDATE_INSTRUCTIONS_TOOL = 'update_own_instructions';
 const USE_SKILL_TOOL = 'use_skill';
 const CREATE_SKILL_TOOL = 'create_skill';
@@ -238,7 +257,7 @@ interface TMessage {
 	timestamp: string;
 	type?: 'text' | 'table';
 	headers?: string[];
-	data?: any[];
+	data?: Record<string, ReactNode>[];
 	followUp?: string;
 	actions?: { label: string; type: string }[];
 	timeline?: TChatTimelineItem[];
@@ -916,7 +935,7 @@ const BuildPage = () => {
 	const [activeTab, setActiveTab] = useState('All');
 	const [promptText, setPromptText] = useState('');
 	const { isDarkTheme, setDarkModeStatus } = useDarkMode();
-	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const textareaRef = useRef<HTMLInputElement>(null);
 	const heroPromptRef = useRef<HTMLInputElement>(null);
 	const templatesSectionRef = useRef<HTMLElement>(null);
 	const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -1001,6 +1020,21 @@ const BuildPage = () => {
 		conversationId ?? '',
 	);
 
+	// A chat another conversation started as a subagent task. The parent is only
+	// linkable when it belongs to this agent (a "Me" clone) — the aside already
+	// holds that list, so this reuses its cache.
+	const parentSessionId =
+		openedSession && String(openedSession.id) === String(conversationId)
+			? openedSession.parent_session_id
+			: null;
+	const { data: agentSessions } = useAgentSessions(
+		workspaceId,
+		parentSessionId ? (currentAgentId ?? '') : '',
+	);
+	const parentSessionInAgent =
+		!!parentSessionId &&
+		!!agentSessions?.some((session) => String(session.id) === String(parentSessionId));
+
 	useEffect(() => {
 		if (!conversationId) {
 			if (loadedSessionRef.current === null) return;
@@ -1051,13 +1085,13 @@ const BuildPage = () => {
 					file.name.toLowerCase().endsWith(extension),
 				)
 			) {
-				toast.error(
+				notify.error(
 					`${file.name}: use an image (JPEG, PNG, GIF, WebP), a PDF, or a text, Markdown, HTML, CSV, JSON, XML, or YAML file.`,
 				);
 				continue;
 			}
 			if (file.size > MAX_ATTACHMENT_BYTES) {
-				toast.error(`${file.name}: maximum file size is 25 MB.`);
+				notify.error(`${file.name}: maximum file size is 25 MB.`);
 				continue;
 			}
 			accepted.push(file);
@@ -1072,7 +1106,7 @@ const BuildPage = () => {
 				),
 		);
 		if (chatAttachments.length + added.length > MAX_ATTACHMENTS) {
-			toast.error(`You can attach up to ${MAX_ATTACHMENTS} files per message.`);
+			notify.error(`You can attach up to ${MAX_ATTACHMENTS} files per message.`);
 		}
 		setChatAttachments([
 			...chatAttachments,
@@ -1205,6 +1239,7 @@ const BuildPage = () => {
 	const [isSaving, setIsSaving] = useState(false);
 	const [saveStatus, setSaveStatus] = useState('');
 	const [isMoreDropdownOpen, setIsMoreDropdownOpen] = useState(false);
+	const [isSaveAsTemplateOpen, setIsSaveAsTemplateOpen] = useState(false);
 
 	const toggleDarkMode = () => {
 		setDarkModeStatus(isDarkTheme ? DARK_MODE.LIGHT : DARK_MODE.DARK);
@@ -1268,7 +1303,7 @@ const BuildPage = () => {
 				second: '2-digit',
 			});
 			setSaveStatus(`Saved at ${now}`);
-			toast.success('Agent saved successfully!');
+			notify.success('Agent saved successfully!');
 			return true;
 		} catch {
 			setSaveStatus('Failed to save');
@@ -1316,11 +1351,11 @@ const BuildPage = () => {
 	const handleCreateTrigger = async () => {
 		if (!currentAgentId) return;
 		if (newTriggerType === 'schedule' && !newTriggerCron.trim()) {
-			toast.error('Enter a schedule before creating the trigger.');
+			notify.error('Enter a schedule before creating the trigger.');
 			return;
 		}
 		if (newTriggerType === 'event' && !newTriggerEventName.trim()) {
-			toast.error('Enter an event name before creating the trigger.');
+			notify.error('Enter an event name before creating the trigger.');
 			return;
 		}
 		const config: Record<string, unknown> =
@@ -1340,7 +1375,7 @@ const BuildPage = () => {
 			setNewTriggerEventName('');
 			setNewTriggerInitialMessage('');
 			setIsTriggerPanelOpen(false);
-			toast.success('Trigger created.');
+			notify.success('Trigger created.');
 		} catch {
 			// The mutation cache shows the API error; keep the form for correction.
 		}
@@ -1349,7 +1384,7 @@ const BuildPage = () => {
 	const handleToggleTrigger = async (triggerId: string, isActive: boolean) => {
 		try {
 			await updateTriggerMutation.mutateAsync({ triggerId, body: { is_active: !isActive } });
-			toast.success(isActive ? 'Trigger disabled.' : 'Trigger enabled.');
+			notify.success(isActive ? 'Trigger disabled.' : 'Trigger enabled.');
 		} catch {
 			// The mutation cache reports the API error.
 		}
@@ -1359,7 +1394,7 @@ const BuildPage = () => {
 		deleteTriggerMutation.mutate(triggerId, {
 			onSuccess: () => {
 				setPendingDeleteTriggerId(null);
-				toast.success('Trigger deleted.');
+				notify.success('Trigger deleted.');
 			},
 		});
 	};
@@ -1367,7 +1402,7 @@ const BuildPage = () => {
 	const handleFireTrigger = async (triggerId: string) => {
 		try {
 			await fireTriggerMutation.mutateAsync({ triggerId });
-			toast.success('Trigger started.');
+			notify.success('Trigger started.');
 		} catch {
 			// The mutation cache reports the API error.
 		}
@@ -1376,9 +1411,9 @@ const BuildPage = () => {
 	const copyToClipboard = async (value: string, successMessage: string) => {
 		try {
 			await navigator.clipboard.writeText(value);
-			toast.success(successMessage);
+			notify.success(successMessage);
 		} catch {
-			toast.error('Could not copy. Please try again.');
+			notify.error('Could not copy. Please try again.');
 		}
 	};
 
@@ -1456,7 +1491,7 @@ const BuildPage = () => {
 			});
 			setAgentInstructions(improved);
 			setInstructionsChange('');
-			toast.success('Instructions rewritten. Review them, then save.');
+			notify.success('Instructions rewritten. Review them, then save.');
 		} catch {
 			// The mutation's own error toast has already told the user.
 		}
@@ -1469,11 +1504,11 @@ const BuildPage = () => {
 		const description = promptText.trim();
 		if (!description) {
 			heroPromptRef.current?.focus();
-			toast.info('Describe what your agent should do first.');
+			notify.info('Describe what your agent should do first.');
 			return;
 		}
 		if (!agentModel) {
-			toast.error('Choose a model for the agent first.');
+			notify.error('Choose a model for the agent first.');
 			return;
 		}
 
@@ -1655,7 +1690,7 @@ const BuildPage = () => {
 				if (event.event === 'tool-call') {
 					const args = (event.arguments ?? {}) as Record<string, unknown>;
 					if (event.name === EXPORT_ARTIFACT_TOOL && typeof args.filename === 'string') {
-						exportedFilenames.push(args.filename);
+						exportedFilenames.push(exportedFilename(args.filename, args.format));
 					}
 					setTimeline((prev) => [
 						...prev,
@@ -1774,7 +1809,7 @@ const BuildPage = () => {
 					return restored;
 				});
 				if (!controller.signal.aborted)
-					toast.error(err instanceof Error ? err.message : 'Failed to start the chat.');
+					notify.error(err instanceof Error ? err.message : 'Failed to start the chat.');
 				return;
 			}
 			// Stop is not a failure. Keep whatever the agent had already streamed —
@@ -1822,7 +1857,7 @@ const BuildPage = () => {
 						type: 'text',
 					},
 				]);
-				toast.error(err instanceof Error ? err.message : 'Failed to reach the agent.');
+				notify.error(err instanceof Error ? err.message : 'Failed to reach the agent.');
 			}
 		} finally {
 			streamAbortRef.current = null;
@@ -1897,23 +1932,23 @@ const BuildPage = () => {
 	const handleAttachNode = (node: TNode) => {
 		if (!currentAgentId) return;
 		if ((toolBindings ?? []).some((binding) => binding.node_type === node.type)) {
-			toast.info(`${node.name} is already attached.`);
+			notify.info(`${node.name} is already attached.`);
 			return;
 		}
 		createToolBindingMutation.mutate(
 			{ node_type: node.type },
-			{ onSuccess: () => toast.success(`${node.name} attached.`) },
+			{ onSuccess: () => notify.success(`${node.name} attached.`) },
 		);
 	};
 
 	const handleAttachWorkflow = (workflow: TWorkflow) => {
 		if (!currentAgentId) return;
 		if ((workflowTools ?? []).some((attached) => String(attached.id) === String(workflow.id))) {
-			toast.info(`${workflow.name} is already attached.`);
+			notify.info(`${workflow.name} is already attached.`);
 			return;
 		}
 		attachWorkflowMutation.mutate(String(workflow.id), {
-			onSuccess: () => toast.success(`${workflow.name} attached.`),
+			onSuccess: () => notify.success(`${workflow.name} attached.`),
 		});
 	};
 
@@ -2238,7 +2273,7 @@ const BuildPage = () => {
 										<Sparkles size={18} />
 									</div>
 									<input
-										ref={textareaRef as any}
+										ref={textareaRef}
 										type='text'
 										value={promptText}
 										onChange={(e) => setPromptText(e.target.value)}
@@ -2364,7 +2399,10 @@ const BuildPage = () => {
 					</header>
 
 					{/* Desktop Chat Header */}
-					<header className='hidden h-16 shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-4 shadow-2xs backdrop-blur-md md:flex dark:border-white/10 dark:bg-zinc-950/90'>
+					{/* `relative z-20`: backdrop-blur makes this header its own stacking
+					    context, so without a z-index the chat pane below paints over the
+					    More-options dropdown and swallows every click on it. */}
+					<header className='relative z-20 hidden h-16 shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-4 shadow-2xs backdrop-blur-md md:flex dark:border-white/10 dark:bg-zinc-950/90'>
 						<div className='flex min-w-0 items-center gap-3'>
 							{/* Back button */}
 							<button
@@ -2455,7 +2493,7 @@ const BuildPage = () => {
 														newSession();
 														loadedSessionRef.current = null;
 														setChatHistory([]);
-														toast.success('Chat history cleared!');
+														notify.success('Chat history cleared!');
 													}}
 													className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-white/[0.04]'>
 													<RotateCcw size={13} />
@@ -2503,7 +2541,7 @@ const BuildPage = () => {
 														document.body.appendChild(downloadAnchor);
 														downloadAnchor.click();
 														downloadAnchor.remove();
-														toast.success(
+														notify.success(
 															'Agent configuration exported!',
 														);
 													}}
@@ -2519,7 +2557,7 @@ const BuildPage = () => {
 															if (!currentAgentId) return;
 															duplicateAgentMutation.mutate(currentAgentId, {
 																onSuccess: (copy) => {
-																	toast.success(`"${copy.name}" created.`);
+																	notify.success(`"${copy.name}" created.`);
 																	navigate(paths.editAgent(workspaceId, copy.id));
 																},
 															});
@@ -2527,6 +2565,17 @@ const BuildPage = () => {
 														className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-white/[0.04]'>
 														<Copy size={13} />
 														Duplicate Agent
+													</button>
+
+													<button
+														disabled={!currentAgentId}
+														onClick={() => {
+															setIsMoreDropdownOpen(false);
+															setIsSaveAsTemplateOpen(true);
+														}}
+														className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-white/[0.04]'>
+														<LayoutTemplate size={13} />
+														Save as Template
 													</button>
 
 													<div className='my-1 border-t border-zinc-100 dark:border-white/5' />
@@ -2561,6 +2610,24 @@ const BuildPage = () => {
 							ref={chatScrollRef}
 							onScroll={handleChatScroll}
 							className='mx-auto h-full w-full max-w-4xl space-y-6 overflow-y-auto px-4 py-6 md:px-8'>
+							{parentSessionId && (
+								<div className='flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-[11px] font-semibold text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
+									<Bot size={13} className='shrink-0' />
+									<span className='min-w-0 flex-1'>
+										Subagent task — another conversation handed this chat its job, and
+										the final reply went back to it.
+									</span>
+									{parentSessionInAgent && (
+										<button
+											type='button'
+											onClick={() => openSession(String(parentSessionId))}
+											disabled={isTyping}
+											className='text-primary-600 dark:text-primary-400 min-h-8 shrink-0 cursor-pointer rounded-lg px-2 font-bold hover:underline disabled:cursor-not-allowed disabled:opacity-50'>
+											Open parent chat
+										</button>
+									)}
+								</div>
+							)}
 							{conversationId &&
 							loadedSessionRef.current !== conversationId &&
 							isSessionError ? (
@@ -3170,7 +3237,7 @@ const BuildPage = () => {
 												aria-label='Voice input'
 												type='button'
 												onClick={() =>
-													toast.info('Voice input is not supported yet.')
+													notify.info('Voice input is not supported yet.')
 												}
 												className='flex h-11 w-11 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-50 dark:text-zinc-500 dark:hover:bg-zinc-800'>
 												<Mic size={18} />
@@ -4202,6 +4269,9 @@ const BuildPage = () => {
 
 									</div>
 
+									{/* Knowledge Sources Section */}
+									<AgentKnowledgeSourcesPanel ws={workspaceId} agentId={currentAgentId} />
+
 									{/* Subagents Section */}
 									<div className='space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
 										<div className='flex items-center justify-between'>
@@ -4744,6 +4814,18 @@ const BuildPage = () => {
 				onClose={() => setIsSkillEditorOpen(false)}
 				onCreated={(skill) => handleAttachSkill(skill.id)}
 			/>
+
+			{currentAgentId && (
+				<SaveAsTemplateModal
+					ws={workspaceId}
+					kind='agent'
+					sourceId={currentAgentId}
+					isOpen={isSaveAsTemplateOpen}
+					onClose={() => setIsSaveAsTemplateOpen(false)}
+					defaultName={agentName}
+					defaultDescription={agentDescription}
+				/>
+			)}
 		</div>
 	);
 };

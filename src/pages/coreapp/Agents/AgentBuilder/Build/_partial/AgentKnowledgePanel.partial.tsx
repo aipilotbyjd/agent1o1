@@ -7,7 +7,7 @@ import {
 	useDeleteAgentKnowledge,
 } from '@/api/modules/agents';
 import type { TAgentKnowledge, TAgentKnowledgeSourceType } from '@/types/agent.type';
-import { toast } from 'react-toastify';
+import { notify } from '@/api/core';
 
 type TProps = {
 	ws: string;
@@ -41,14 +41,14 @@ const AgentKnowledgePanel = ({ ws, agentId }: TProps) => {
 	const loadFile = async (file: File | undefined) => {
 		if (!file) return;
 		if (!/\.(txt|md|html|csv|json|xml|ya?ml)$/i.test(file.name)) {
-			toast.error('Choose a text, Markdown, HTML, CSV, JSON, XML, or YAML file.');
+			notify.error('Choose a text, Markdown, HTML, CSV, JSON, XML, or YAML file.');
 			return;
 		}
 		setIsReadingFile(true);
 		try {
 			const content = await file.text();
 			if (content.length > 50000) {
-				toast.error('Knowledge files must contain at most 50,000 characters.');
+				notify.error('Knowledge files must contain at most 50,000 characters.');
 				return;
 			}
 			setForm((current) => ({ ...current, title: current.title || file.name, content }));

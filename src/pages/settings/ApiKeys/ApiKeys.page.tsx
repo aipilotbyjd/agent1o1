@@ -15,6 +15,7 @@ import {
 import { useApiKeys, useCreateApiKey, useDeleteApiKey } from '@/api/modules/user';
 import { useWorkspaceContext } from '@/context/workspace';
 import { notify } from '@/api/core';
+import formatDate from '@/utils/formatDate.util';
 import type { TApiKey, TApiKeyAbility, TCreateApiKeyDto } from '@/types/auth.type';
 import Button from '@/components/ui/Button';
 import Modal, {
@@ -79,15 +80,6 @@ const abilityBadgeColors: Record<string, string> = {
 
 const abilityLabel = (value: TApiKeyAbility) =>
 	value === '*' ? 'Full access' : (abilityOptions.find((o) => o.value === value)?.label ?? value);
-
-const formatDate = (value: string | null) =>
-	value
-		? new Date(value).toLocaleDateString('en-US', {
-				year: 'numeric',
-				month: 'short',
-				day: 'numeric',
-			})
-		: null;
 
 const ApiKeysPage = () => {
 	const { activeWorkspaceId } = useWorkspaceContext();

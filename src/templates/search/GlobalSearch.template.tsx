@@ -40,6 +40,7 @@ import type { TWorkflowTemplate } from '@/types/template.type';
 import type { TArtifact } from '@/types/artifact.type';
 import useResolvePath from '@/hooks/useResolvePath';
 import { useGlobalSearchStore } from '@/store/globalSearch.store';
+import safeStorage from '@/utils/safeStorage.util';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type TSearchCategory =
@@ -71,7 +72,7 @@ const MAX_RECENT = 8;
 
 const getRecentSearches = (): string[] => {
 	try {
-		const raw = localStorage.getItem(STORAGE_KEY);
+		const raw = safeStorage.get(STORAGE_KEY);
 		return raw ? (JSON.parse(raw) as string[]) : [];
 	} catch {
 		return [];
@@ -81,16 +82,16 @@ const getRecentSearches = (): string[] => {
 const addRecentSearch = (query: string) => {
 	const current = getRecentSearches().filter((s) => s !== query);
 	current.unshift(query);
-	localStorage.setItem(STORAGE_KEY, JSON.stringify(current.slice(0, MAX_RECENT)));
+	safeStorage.set(STORAGE_KEY, JSON.stringify(current.slice(0, MAX_RECENT)));
 };
 
 const clearRecentSearches = () => {
-	localStorage.removeItem(STORAGE_KEY);
+	safeStorage.remove(STORAGE_KEY);
 };
 
 const removeRecentSearch = (query: string) => {
 	const current = getRecentSearches().filter((s) => s !== query);
-	localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+	safeStorage.set(STORAGE_KEY, JSON.stringify(current));
 	return current;
 };
 

@@ -2,6 +2,13 @@ import Modal, { ModalHeader, ModalBody } from '@/components/ui/Modal';
 import { Download, History } from 'lucide-react';
 import { useArtifact, useDownloadArtifact } from '@/api/modules/artifacts';
 import { formatBytes } from '../_helper/artifacts.constants';
+import ArtifactUploadButton from './ArtifactUploadButton.partial';
+
+/** `.pdf` from `report.pdf` — a new version must stay the same kind of file. */
+const extensionOf = (filename: string) => {
+	const dot = filename.lastIndexOf('.');
+	return dot > 0 ? filename.slice(dot) : undefined;
+};
 
 interface IArtifactVersionsModalProps {
 	ws: string;
@@ -57,6 +64,16 @@ const ArtifactVersionsModal = ({ ws, artifactId, onClose }: IArtifactVersionsMod
 							</button>
 						</div>
 					))}
+					{artifact && (
+						<ArtifactUploadButton
+							ws={ws}
+							label='Upload new version'
+							groupId={artifact.group_id}
+							filename={artifact.filename}
+							accept={extensionOf(artifact.filename)}
+							className='mt-2 flex h-9 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-border-main text-[11px] font-bold text-slate-600 transition-all hover:border-primary-400 hover:text-primary-600 disabled:cursor-not-allowed disabled:opacity-60 dark:text-zinc-300 dark:hover:text-primary-400'
+						/>
+					)}
 				</div>
 			</ModalBody>
 		</Modal>

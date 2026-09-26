@@ -115,6 +115,9 @@ type TAiChatState = {
 	newChat: () => void;
 	loadSession: (id: string) => void;
 	deleteSession: (id: string) => void;
+	/** Switch to a backend builder session; the editor bridge then rehydrates
+	 *  the chat and canvas from it. */
+	openBuilderSession: (id: string) => void;
 };
 
 const makeId = () => `ai_msg_${Math.random().toString(36).slice(2, 9)}`;
@@ -552,6 +555,21 @@ export const useAiChatStore = create<TAiChatState>()(
 						builderSessionId: null,
 					};
 				});
+			},
+
+			openBuilderSession: (id) => {
+				set((state) => ({
+					builderSessionId: id,
+					hydratedSessionId: null,
+					pendingMessageId: null,
+					isThinking: false,
+					isChatActive: false,
+					workflowBuildStep: 0,
+					errorText: null,
+					streamTimeline: [],
+					messages: [WELCOME_MESSAGE],
+					sessionByWorkflow: { ...state.sessionByWorkflow, [workflowKey(state.workflowId)]: id },
+				}));
 			},
 		}),
 		{

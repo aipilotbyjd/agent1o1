@@ -29,6 +29,7 @@ import { notify } from '@/api/core';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useConfirm } from '@/context/confirm';
 import { withWorkspace } from '@/Routes/paths';
+import safeStorage from '@/utils/safeStorage.util';
 import type {
 	TConnector,
 	TConnectorCredential,
@@ -599,9 +600,9 @@ const AppsListPage = () => {
 		}
 
 		// Handle popup/new-tab OAuth return via postMessage → sessionStorage fallback
-		const stored = sessionStorage.getItem('oauth_result');
+		const stored = safeStorage.get('oauth_result', 'session');
 		if (!stored) return;
-		sessionStorage.removeItem('oauth_result');
+		safeStorage.remove('oauth_result', 'session');
 		try {
 			const result = JSON.parse(stored) as {
 				success: boolean;

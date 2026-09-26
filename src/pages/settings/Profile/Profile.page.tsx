@@ -28,6 +28,7 @@ import {
 import { useConfirm } from '@/context/confirm';
 import { primaryBtn, secondaryBtn, dangerBtn } from '@/pages/settings/_shared/buttons';
 import { useWorkspaceContext } from '@/context/workspace';
+import formatDate from '@/utils/formatDate.util';
 
 type TProfileForm = {
 	firstName: string;
@@ -58,17 +59,6 @@ const getInitials = (name: string) => {
 		.slice(0, 2)
 		.map((part) => part[0]?.toUpperCase())
 		.join('');
-};
-
-const formatDate = (value?: string | null) => {
-	if (!value) return 'Not available';
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return 'Not available';
-	return new Intl.DateTimeFormat('en', {
-		month: 'short',
-		day: 'numeric',
-		year: 'numeric',
-	}).format(date);
 };
 
 const formatRole = (role?: string | null) => {
@@ -174,7 +164,9 @@ const ProfilePage = () => {
 	);
 
 	const displayName = fullName || userData?.name || '';
-	const joinedAt = userData?.created_at ? formatDate(userData.created_at) : '';
+	const joinedAt = userData?.created_at
+		? (formatDate(userData.created_at) ?? 'Not available')
+		: '';
 	const workspaceName = userData?.current_workspace?.name ?? '';
 	const workspaceRole = formatRole(userData?.current_workspace?.role);
 	const isEmailVerified = !!userData?.email_verified_at;

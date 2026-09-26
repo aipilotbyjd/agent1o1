@@ -11,6 +11,8 @@ import {
 	connectorCredentialKeys,
 } from '@/api/modules/connectors';
 import type { TConnector } from '@/types/connector.type';
+import type { TCanvasNode } from '../../_types/canvas.type';
+import type { TNodeDefinition } from '../../_types/node.type';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -62,8 +64,12 @@ const LinkCredentialsDialog = () => {
 		dispatch({ type: 'SET_LINK_CREDENTIALS_OPEN', open: false });
 	};
 
-	const getCredentialType = (node: any, def: any): string => {
-		const credField = def?.fields?.find((f: any) => f.kind === 'credential');
+	/** Backend-supplied definitions may carry the credential type at the top level too. */
+	const getCredentialType = (
+		node: TCanvasNode,
+		def?: TNodeDefinition & { credentialType?: string; credential_type?: string },
+	): string => {
+		const credField = def?.fields?.find((f) => f.kind === 'credential');
 		if (credField?.credentialType) return credField.credentialType;
 		if (def?.credentialType) return def.credentialType;
 		if (def?.credential_type) return def.credential_type;
