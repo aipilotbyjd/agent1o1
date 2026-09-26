@@ -112,6 +112,9 @@ import {
 import SkillEditorDrawer from '@/pages/coreapp/Skills/_partial/SkillEditorDrawer.partial';
 import { useGlobalNodeCatalog } from '@/api/modules/nodes';
 import { useWorkflows } from '@/api/modules/workflows';
+import { useConnectorCredentials } from '@/api/modules/connectors';
+import { useCurrentUser } from '@/api/modules/user';
+import type { TConnectorCredential } from '@/types/connector.type';
 import type { TNode } from '@/types/node.type';
 import type { TTrigger } from '@/types/trigger.type';
 import { AGENT_COLORS, AGENT_ICONS } from '@/types/agent.type';
@@ -122,7 +125,7 @@ import { AgentSessionService } from '@/api/modules/agents/agent-sessions.service
 import { useDownloadArtifact, ArtifactService } from '@/api/modules/artifacts';
 import type { TWorkflow } from '@/types/workflow.type';
 import type { TArtifact } from '@/types/artifact.type';
-import type { TAgentMessage, TSubagentTask } from '@/types/agent.type';
+import type { TAgentMessage, TAgentToolBinding, TSubagentTask } from '@/types/agent.type';
 import type { TAgentSkill } from '@/types/agent-skill.type';
 import { useAgentChatStore } from '@/store/agentChat.store';
 import { useAgentBuilderStore } from '@/store/agentBuilder.store';
@@ -1118,6 +1121,8 @@ const BuildPage = () => {
 		isError: isToolBindingsError,
 		refetch: refetchToolBindings,
 	} = useAgentToolBindings(workspaceId, currentAgentId ?? '');
+	const { data: connectorCredentials } = useConnectorCredentials(workspaceId);
+	const { data: currentUser } = useCurrentUser();
 	const {
 		data: workflowTools,
 		isPending: isWorkflowToolsPending,
@@ -1965,6 +1970,31 @@ const BuildPage = () => {
 	/** Node metadata for an attached binding, so a row can show a real name. */
 	const nodeFor = (nodeType: string) =>
 		(nodeCatalog ?? []).find((node) => node.type === nodeType);
+
+	/**
+	 * Mirrors the backend's `ResolvesConnectorCredential`: a credential pinned in the
+	 * binding wins, else the caller's personal default, else the team default — where
+	 * a default is the one marked so, or the only one in that scope.
+	 */
+	const hasUsableCredential = (binding: TAgentToolBinding, connectorKey: string) => {
+		if (binding.config?.credential_id || binding.config?.access_token) return true;
+
+		const preferredOf = (candidates: TConnectorCredential[]) =>
+			candidates.find((credential) => credential.is_default) ??
+			(candidates.length === 1 ? candidates[0] : undefined);
+		const forConnector = (connectorCredentials ?? []).filter(
+			(credential) => credential.connector?.key === connectorKey,
+		);
+		const resolved =
+			preferredOf(
+				forConnector.filter(
+					(credential) =>
+						credential.scope === 'personal' && credential.created_by === currentUser?.id,
+				),
+			) ?? preferredOf(forConnector.filter((credential) => credential.scope === 'team'));
+
+		return resolved !== undefined && !resolved.is_expired;
+	};
 
 	const AgentIconComponent = agentIconFor(agentIcon);
 	const chatStatus = isTyping
@@ -4042,7 +4072,9 @@ const BuildPage = () => {
 																    workspace has credentials for it. */}
 																{node &&
 																	'requires_connector' in node &&
-																	node.requires_connector && (
+																	node.requires_connector &&
+																	connectorCredentials &&
+																	!hasUsableCredential(binding, node.category) && (
 																		<span className='mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-bold text-amber-600 dark:bg-amber-500/5 dark:text-amber-400'>
 																			Needs a connector
 																			credential
