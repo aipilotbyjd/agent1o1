@@ -1,14 +1,8 @@
 import { Bot, Workflow } from 'lucide-react';
 import dayjs from 'dayjs';
 import type { DisplayItem, IHistoryItem } from '../_types/history.type';
+import { AGENT_RUN_KINDS } from '@/components/common/AgentRunLog';
 import type { TRun } from '@/types/run.type';
-
-/** What an agent run was, by its `runnable_type` morph alias. A chat turn is just the agent's name. */
-const AGENT_RUN_KINDS: Record<string, string> = {
-	reflection_run: 'Reflection',
-	agent_session_evaluation: 'Chat grading',
-	agent_eval_run: 'Eval suite',
-};
 
 const agentRunTitle = (run: TRun) => {
 	const name = run.agent?.name ?? 'Agent';

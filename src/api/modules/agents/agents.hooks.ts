@@ -16,7 +16,7 @@ import {
 	useDeleteTrigger,
 	useRunTrigger,
 } from '@/api/modules/triggers';
-import { useRuns, useRun } from '@/api/modules/runs';
+import { useRuns } from '@/api/modules/runs';
 import { useModelCatalog } from '@/api/modules/catalog';
 import { AgentService } from './agents.service';
 import { AgentMemoryService } from './agent-memory.service';
@@ -139,9 +139,6 @@ export const useAgentRuns = (ws: string, agentId: string, filters?: TRunListPara
 	const query = useRuns(agentId ? ws : '', { ...filters, agent_id: agentId, per_page: 100 });
 	return { ...query, data: query.data?.runs ?? [] };
 };
-
-export const useAgentRun = (ws: string, _agentId: string, runId: string | null | undefined) =>
-	useRun(ws, runId ?? '');
 
 /**
  * The old API served `{agent}/analytics`; this backend has no such endpoint, and

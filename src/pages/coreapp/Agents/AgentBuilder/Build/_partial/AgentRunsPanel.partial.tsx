@@ -9,43 +9,11 @@ import {
 	Zap,
 	MessageSquare,
 	Play,
-	Wrench,
-	FileDown,
-	Download,
 } from 'lucide-react';
-import { useAgentRuns, useAgentRun } from '@/api/modules/agents';
-import { useDownloadArtifact } from '@/api/modules/artifacts';
+import { useAgentRuns } from '@/api/modules/agents';
+import AgentRunLog, { AGENT_RUN_KINDS } from '@/components/common/AgentRunLog';
 import type { TAgentRunStatus } from '@/types/agent.type';
-import type { TRun, TNodeRun, TRunStatus } from '@/types/run.type';
-
-type TArtifactStepOutput = { id: string; filename: string; version: number };
-
-// A node run whose output is an exported artifact. The old shape carried
-// `tool_name`/`tool_output`; this backend records `type`/`output` per node run.
-const isArtifactStep = (step: TNodeRun): step is TNodeRun & { output: TArtifactStepOutput } =>
-	step.type === 'ExportArtifactTool' &&
-	!!step.output &&
-	typeof step.output === 'object' &&
-	'filename' in (step.output as object);
-
-/** Compact download chip for a step that exported an artifact — replaces the generic wrench row. */
-const ArtifactStepRow = ({ ws, output }: { ws: string; output: TArtifactStepOutput }) => {
-	const downloadMutation = useDownloadArtifact(ws);
-	return (
-		<div className='flex items-center gap-2 rounded-lg bg-white p-2 dark:bg-zinc-900/40'>
-			<FileDown size={14} className='shrink-0 text-primary-500' />
-			<span className='min-w-0 flex-1 truncate text-[10px] font-black text-zinc-700 dark:text-zinc-300'>
-				{output.filename} <span className='font-semibold text-zinc-400'>v{output.version}</span>
-			</span>
-			<button
-				aria-label='Download'
-				onClick={() => downloadMutation.mutate({ artifactId: output.id, filename: output.filename })}
-				className='shrink-0 cursor-pointer text-zinc-400 hover:text-primary-500'>
-				<Download size={12} />
-			</button>
-		</div>
-	);
-};
+import type { TRun, TRunStatus } from '@/types/run.type';
 
 type TProps = {
 	ws: string;
@@ -77,10 +45,16 @@ const StatusBadge = ({ status }: { status: TAgentRunStatus }) => {
 	return <Icon size={14} className={style.className} />;
 };
 
-/** Expandable row: run summary + on-demand step trace. */
-const RunRow = ({ ws, agentId, run }: { ws: string; agentId: string; run: TRun }) => {
+/** A chat turn by what was asked; a reflection, grading or eval run by its kind. */
+const runTitle = (run: TRun) => {
+	const message = (run.input as { message?: unknown } | null)?.message;
+	if (typeof message === 'string' && message.trim()) return message;
+	return AGENT_RUN_KINDS[run.runnable_type] ?? 'Run';
+};
+
+/** Expandable row: run summary + what the run did. */
+const RunRow = ({ ws, run }: { ws: string; run: TRun }) => {
 	const [open, setOpen] = useState(false);
-	const { data: detail, isLoading } = useAgentRun(ws, agentId, open ? run.id : null);
 	const SourceIcon = SOURCE_ICON[run.trigger_type as keyof typeof SOURCE_ICON] ?? Play;
 
 	return (
@@ -98,69 +72,26 @@ const RunRow = ({ ws, agentId, run }: { ws: string; agentId: string; run: TRun }
 					<div className='flex items-center gap-2'>
 						<SourceIcon size={11} className='shrink-0 text-zinc-400' />
 						<span className='truncate text-[11px] font-black text-zinc-800 dark:text-zinc-200'>
-							{run.trigger_type ?? 'run'}
+							{runTitle(run)}
 						</span>
 					</div>
-					<span className='text-[9px] font-semibold text-zinc-400 dark:text-zinc-600'>
-						{new Date(run.created_at).toLocaleString()}
+					<span className='text-[9px] font-semibold text-zinc-400 capitalize dark:text-zinc-600'>
+						{run.trigger_type.replace(/_/g, ' ')} · {new Date(run.created_at).toLocaleString()}
 					</span>
 				</div>
 				<div className='flex shrink-0 flex-col items-end'>
 					<span className='text-[10px] font-black text-zinc-600 dark:text-zinc-300'>
 						{run.total_credits_used ?? 0} cr
 					</span>
-					<span className='text-[9px] font-semibold text-zinc-400'>{fmtDuration(run.duration_ms)}</span>
+					<span className='text-[9px] font-semibold text-zinc-400'>
+						{fmtDuration(run.duration_ms)}
+					</span>
 				</div>
 			</button>
 
 			{open && (
 				<div className='border-t border-zinc-100 p-3 dark:border-zinc-800'>
-					{isLoading ? (
-						<p className='text-center text-[10px] font-semibold text-zinc-400'>Loading trace…</p>
-					) : (
-						<div className='space-y-2'>
-							{run.error && (
-								<p className='rounded-lg bg-rose-500/10 px-2.5 py-1.5 text-[10px] font-semibold text-rose-600 dark:text-rose-400'>
-									{run.error}
-								</p>
-							)}
-							{(detail?.node_runs ?? []).length === 0 ? (
-								<p className='text-[10px] font-semibold text-zinc-400'>No step trace recorded.</p>
-							) : (
-								(detail?.node_runs ?? []).map((step) =>
-									isArtifactStep(step) ? (
-										<ArtifactStepRow key={step.id} ws={ws} output={step.output} />
-									) : (
-										<div
-											key={step.id}
-											className='flex items-start gap-2 rounded-lg bg-white p-2 dark:bg-zinc-900/40'>
-											<span className='mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-zinc-100 text-[9px] font-black text-zinc-500 dark:bg-zinc-800'>
-												{step.attempt}
-											</span>
-											<div className='min-w-0 flex-1'>
-												<div className='flex items-center gap-1.5'>
-													{step.type && <Wrench size={10} className='text-primary-500' />}
-													<span className='truncate text-[10px] font-black text-zinc-700 dark:text-zinc-300'>
-														{step.type ?? step.key ?? 'step'}
-													</span>
-												</div>
-												{step.error && (
-													<p className='mt-0.5 line-clamp-2 text-[9px] font-semibold text-zinc-400'>
-														{step.error}
-													</p>
-												)}
-											</div>
-											{step.credits_used != null && (
-												<span className='shrink-0 text-[9px] font-bold text-zinc-400'>
-													{step.credits_used} cr
-												</span>
-											)}
-										</div>
-									),
-								)
-							)}
-						</div>
-					)}
+					<AgentRunLog ws={ws} run={run} />
 				</div>
 			)}
 		</div>
@@ -225,7 +156,7 @@ const AgentRunsPanel = ({ ws, agentId }: TProps) => {
 			) : (
 				<div className='space-y-2'>
 					{runs.map((run) => (
-						<RunRow key={run.id} ws={ws} agentId={agentId} run={run} />
+						<RunRow key={run.id} ws={ws} run={run} />
 					))}
 				</div>
 			)}
