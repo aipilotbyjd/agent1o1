@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo, memo, type RefObject } from 'react';
 import { useParams, useNavigate } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import {
@@ -82,6 +83,7 @@ import {
 	useFireAgentTrigger,
 	useAgentMetaModels,
 	useDraftAgent,
+	useImproveAgentInstructions,
 	useAgentSkillAttachments,
 	useAgentToolBindings,
 	useCreateAgentToolBinding,
@@ -89,6 +91,8 @@ import {
 	useAgentWorkflowTools,
 	useAttachAgentWorkflow,
 	useDetachAgentWorkflow,
+	agentKeys,
+	agentVersionKeys,
 } from '@/api/modules/agents';
 import { useGlobalNodeCatalog } from '@/api/modules/nodes';
 import { useWorkflows } from '@/api/modules/workflows';
@@ -133,6 +137,7 @@ const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 		}));
 
 const EXPORT_ARTIFACT_TOOL = 'ExportArtifactTool';
+const UPDATE_INSTRUCTIONS_TOOL = 'update_own_instructions';
 const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 const MAX_ATTACHMENTS = 10;
 const ATTACHMENT_EXTENSIONS = [
@@ -507,6 +512,7 @@ const BuildPage = () => {
 	};
 
 	const { data: existingAgent } = useAgent(workspaceId, currentAgentId ?? '');
+	const queryClient = useQueryClient();
 	const duplicateAgentMutation = useDuplicateAgent(workspaceId);
 	const [showGetStarted, setShowGetStarted] = useState(true);
 	const createAgentMutation = useCreateAgent(workspaceId);
@@ -726,6 +732,7 @@ const BuildPage = () => {
 		setIsSettingsOpen(true);
 	}, [requestedDataSection]);
 	const [agentInstructions, setAgentInstructions] = useState('');
+	const [instructionsChange, setInstructionsChange] = useState('');
 	const [agentModel, setAgentModel] = useState('');
 
 	useEffect(() => {
@@ -857,8 +864,7 @@ const BuildPage = () => {
 			description: overrides?.description ?? agentDescription,
 			icon: overrides?.icon ?? agentIcon,
 			color: overrides?.color ?? agentIconColor,
-			instructions:
-				(overrides?.instructions ?? agentInstructions) || 'You are a helpful assistant.',
+			instructions: (overrides?.instructions ?? agentInstructions).trim() || null,
 			model_catalog_id: agentModel || null,
 			allow_self_updates: allowSelfUpdates,
 		};
@@ -1070,6 +1076,26 @@ const BuildPage = () => {
 	const openPreview = () => setIsPreviewMode(true);
 
 	const draftAgentMutation = useDraftAgent(workspaceId);
+	const improveInstructionsMutation = useImproveAgentInstructions(workspaceId);
+
+	// Rewrites what's in the editor (saved or not) with the agent's own model;
+	// the result stays unsaved until the user saves the agent.
+	const handleImproveInstructions = async () => {
+		if (improveInstructionsMutation.isPending) return;
+		try {
+			const id = currentAgentId ?? (await ensureAgentPersisted());
+			const improved = await improveInstructionsMutation.mutateAsync({
+				id,
+				instructions: agentInstructions.trim() || null,
+				request: instructionsChange.trim() || null,
+			});
+			setAgentInstructions(improved);
+			setInstructionsChange('');
+			toast.success('Instructions rewritten. Review them, then save.');
+		} catch {
+			// The mutation's own error toast has already told the user.
+		}
+	};
 
 		// Drafts the agent's name, description, instructions and look from the
 	// description with the selected model, creates it as a new agent, and
@@ -1224,6 +1250,7 @@ const BuildPage = () => {
 
 			// Filenames exported during this turn, resolved to artifacts once it ends.
 			const exportedFilenames: string[] = [];
+			let updatedInstructions = false;
 			let replyText = '';
 			let sawComplete = false;
 
@@ -1274,6 +1301,7 @@ const BuildPage = () => {
 				if (event.event === 'tool-result') {
 					// Only a tool that returned is reported; one that threw ends the
 					// turn with `error` instead, so reaching here means success.
+					if (event.name === UPDATE_INSTRUCTIONS_TOOL) updatedInstructions = true;
 					setTimeline((prev) =>
 						prev.map((item) =>
 							item.kind === 'tool' && item.id === event.id
@@ -1303,6 +1331,17 @@ const BuildPage = () => {
 
 			if (exportedFilenames.length > 0) {
 				await appendExportedArtifacts(agentIdForRun, exportedFilenames);
+			}
+
+			// The agent rewrote its own instructions; refetching the agent
+			// re-syncs the settings form, and the save made a new version.
+			if (updatedInstructions) {
+				void queryClient.invalidateQueries({
+					queryKey: agentKeys.detail(workspaceId, agentIdForRun),
+				});
+				void queryClient.invalidateQueries({
+					queryKey: agentVersionKeys.list(workspaceId, agentIdForRun),
+				});
 			}
 
 			const finishedTimeline = streamTimelineRef.current;
@@ -3282,6 +3321,30 @@ const BuildPage = () => {
 											<span className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
 												The agent's system prompt: its role, how it works, and what it must never do.
 											</span>
+											<div className='flex items-center gap-2'>
+												<input
+													type='text'
+													value={instructionsChange}
+													onChange={(e) => setInstructionsChange(e.target.value)}
+													onKeyDown={(e) => {
+														if (e.key === 'Enter') {
+															e.preventDefault();
+															void handleImproveInstructions();
+														}
+													}}
+													placeholder='What should change? (optional)'
+													disabled={improveInstructionsMutation.isPending}
+													className='focus:border-primary-500/50 focus:ring-primary-500/5 h-8 min-w-0 flex-1 rounded-lg border border-zinc-200 bg-white px-2.5 text-xs text-zinc-800 outline-none placeholder:text-zinc-400 focus:ring-4 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950/25 dark:text-zinc-200 dark:placeholder:text-zinc-500'
+												/>
+												<button
+													type='button'
+													onClick={() => void handleImproveInstructions()}
+													disabled={improveInstructionsMutation.isPending}
+													className='bg-primary-500/10 text-primary-600 hover:bg-primary-500/15 dark:text-primary-400 flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-black transition-colors disabled:opacity-60'>
+													<Sparkles size={13} />
+													{improveInstructionsMutation.isPending ? 'Rewriting…' : 'Improve with AI'}
+												</button>
+											</div>
 											<textarea
 												id='agent-instructions'
 												rows={14}

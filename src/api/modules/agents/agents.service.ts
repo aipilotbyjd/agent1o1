@@ -6,6 +6,7 @@ import type {
 	TAgentDraft,
 	TCreateAgentDto,
 	TDraftAgentDto,
+	TImproveAgentInstructionsDto,
 	TUpdateAgentDto,
 	TSyncAgentTagsDto,
 } from '@/types/agent.type';
@@ -31,6 +32,11 @@ export const AgentService = {
 		axiosClient
 			.post<TApiResponse<{ draft: TAgentDraft }>>(E.draft(ws), payload)
 			.then(unwrapKey<TAgentDraft>('draft')),
+
+	improveInstructions: (ws: string, id: string, payload: TImproveAgentInstructionsDto) =>
+		axiosClient
+			.post<TApiResponse<{ instructions: string }>>(E.improveInstructions(ws, id), payload)
+			.then(unwrapKey<string>('instructions')),
 
 	update: (ws: string, id: string, payload: TUpdateAgentDto) =>
 		axiosClient

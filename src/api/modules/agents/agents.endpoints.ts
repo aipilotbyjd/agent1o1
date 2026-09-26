@@ -9,6 +9,7 @@ export const AgentEndpoints = {
 	update: agent,
 	delete: agent,
 	duplicate: (ws: string, id: string) => `${agent(ws, id)}/duplicate`,
+	improveInstructions: (ws: string, id: string) => `${agent(ws, id)}/instructions/improve`,
 	syncTags: (ws: string, id: string) => `${agent(ws, id)}/tags`,
 } as const;
 

@@ -46,7 +46,7 @@ export type TAgent = {
 	description: string | null;
 	icon: TAgentIcon | null;
 	color: TAgentColor | null;
-	instructions: string;
+	instructions: string | null;
 	provider: string | null;
 	model: string | null;
 	model_catalog_id: string | null;
@@ -69,7 +69,7 @@ export type TCreateAgentDto = {
 	folder_id?: string | null;
 	icon?: TAgentIcon | null;
 	color?: TAgentColor | null;
-	instructions: string;
+	instructions?: string | null;
 	provider?: string | null;
 	model?: string | null;
 	model_catalog_id?: string | null;
@@ -83,6 +83,11 @@ export type TUpdateAgentDto = Partial<TCreateAgentDto>;
 export type TDraftAgentDto = {
 	prompt: string;
 	model_catalog_id: string;
+};
+
+export type TImproveAgentInstructionsDto = {
+	instructions?: string | null;
+	request?: string | null;
 };
 
 export type TAgentDraft = {

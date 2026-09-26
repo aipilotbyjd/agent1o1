@@ -1,7 +1,11 @@
 import { useMemo } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createResource } from '@/api/core';
-import type { TDraftAgentDto, TSyncAgentTagsDto } from '@/types/agent.type';
+import type {
+	TDraftAgentDto,
+	TImproveAgentInstructionsDto,
+	TSyncAgentTagsDto,
+} from '@/types/agent.type';
 import type { TRunListParams } from '@/types/run.type';
 import type { TCreateTriggerDto, TUpdateTriggerDto } from '@/types/trigger.type';
 import type { TModelCatalogEntry } from '@/types/catalog.type';
@@ -34,6 +38,13 @@ export const useDraftAgent = (ws: string) =>
 	useMutation({
 		mutationFn: (payload: TDraftAgentDto) => AgentService.draft(ws, payload),
 		meta: { errorMessage: 'Failed to draft the agent' },
+	});
+
+export const useImproveAgentInstructions = (ws: string) =>
+	useMutation({
+		mutationFn: ({ id, ...payload }: TImproveAgentInstructionsDto & { id: string }) =>
+			AgentService.improveInstructions(ws, id, payload),
+		meta: { errorMessage: 'Failed to improve the instructions' },
 	});
 
 export const useDuplicateAgent = (ws: string) => {
