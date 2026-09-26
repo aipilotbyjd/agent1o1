@@ -54,6 +54,8 @@ export type TAgent = {
 	temperature: number | null;
 	settings: Record<string, unknown> | null;
 	allow_self_updates: boolean;
+	allow_skill_editing: boolean;
+	allow_self_clone: boolean;
 	tags?: TTag[];
 	sessions_count?: number;
 	last_used_at?: string | null;
@@ -76,6 +78,8 @@ export type TCreateAgentDto = {
 	temperature?: number | null;
 	settings?: Record<string, unknown> | null;
 	allow_self_updates?: boolean;
+	allow_skill_editing?: boolean;
+	allow_self_clone?: boolean;
 };
 
 export type TUpdateAgentDto = Partial<TCreateAgentDto>;
@@ -120,6 +124,10 @@ export type TAgentMessage = {
 	/** Files a member sent with this (user) message. Present whenever the
 	 *  backend eager-loads them — session detail and the paged transcript. */
 	attachments?: TArtifact[];
+	/** Tools the model called while writing this (assistant) reply. */
+	tool_calls: { id: string; name: string; arguments: Record<string, unknown> }[] | null;
+	/** Tool call id → the subagent task that `invoke_agent` call started. */
+	subagent_task_ids: Record<string, string>;
 	usage: { prompt_tokens?: number; completion_tokens?: number } | null;
 	created_at: string;
 };
@@ -128,6 +136,8 @@ export type TAgentSession = {
 	id: string;
 	workspace_id: string;
 	agent_id: string;
+	/** Set when another agent handed this conversation its task. */
+	parent_session_id: string | null;
 	user_id: string;
 	title: string | null;
 	status: TAgentSessionStatus;
@@ -158,7 +168,7 @@ export type TSendAgentMessageDto = {
 export type TAgentSessionStreamEvent =
 	| { event: 'delta'; delta: string }
 	| { event: 'tool-call'; id: string; name: string; arguments: unknown }
-	| { event: 'tool-result'; id: string; name: string }
+	| { event: 'tool-result'; id: string; name: string; result?: { task_id?: string } }
 	| { event: 'complete'; run_id: string; status: string; message_id: string | null; text: string | null }
 	| { event: 'error'; message: string }
 	| { event: 'done' };
@@ -667,3 +677,19 @@ export type TAgentSkillCategory =
 	| 'Development'
 	| 'Content';
 
+
+export type TSubagentTaskStatus = 'queued' | 'running' | 'completed' | 'failed';
+
+/** Work a conversation handed to a subagent, running in its own conversation. */
+export type TSubagentTask = {
+	id: string;
+	agent: { id: string; name: string; icon: TAgentIcon | null; color: TAgentColor | null };
+	session_id: string | null;
+	task: string;
+	status: TSubagentTaskStatus;
+	result: string | null;
+	error: string | null;
+	started_at: string | null;
+	finished_at: string | null;
+	created_at: string;
+};

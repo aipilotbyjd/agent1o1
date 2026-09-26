@@ -1,7 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { TCreateAgentToolBindingDto } from '@/types/agent.type';
-import { AgentToolBindingService, AgentWorkflowToolService, AgentSkillAttachmentService } from './agent-tools.service';
-import { agentToolBindingKeys, agentWorkflowToolKeys, agentSkillAttachmentKeys } from './agents.keys';
+import {
+	AgentToolBindingService,
+	AgentWorkflowToolService,
+	AgentSkillAttachmentService,
+	AgentSubagentService,
+} from './agent-tools.service';
+import {
+	agentToolBindingKeys,
+	agentWorkflowToolKeys,
+	agentSkillAttachmentKeys,
+	agentSubagentKeys,
+} from './agents.keys';
 
 // ─── Tool bindings ───────────────────────────────────────────
 
@@ -83,3 +93,42 @@ export const useDetachAgentSkill = (ws: string, agentId: string) => {
 		meta: { errorMessage: 'Failed to detach skill' },
 	});
 };
+
+// ─── Subagents ───────────────────────────────────────────────
+
+export const useAgentSubagents = (ws: string, agentId: string) =>
+	useQuery({
+		queryKey: agentSubagentKeys.list(ws, agentId),
+		queryFn: ({ signal }) => AgentSubagentService.list(ws, agentId, signal),
+		enabled: !!ws && !!agentId,
+	});
+
+export const useAttachSubagent = (ws: string, agentId: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (subagentId: string) => AgentSubagentService.attach(ws, agentId, subagentId),
+		onSuccess: () => qc.invalidateQueries({ queryKey: agentSubagentKeys.list(ws, agentId) }),
+		meta: { errorMessage: 'Failed to add subagent' },
+	});
+};
+
+export const useDetachSubagent = (ws: string, agentId: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (subagentId: string) => AgentSubagentService.detach(ws, agentId, subagentId),
+		onSuccess: () => qc.invalidateQueries({ queryKey: agentSubagentKeys.list(ws, agentId) }),
+		meta: { errorMessage: 'Failed to remove subagent' },
+	});
+};
+
+/** Subagents a conversation started. Polls while any are still queued or running. */
+export const useSubagentTasks = (ws: string, agentId: string, sessionId: string, enabled = true) =>
+	useQuery({
+		queryKey: agentSubagentKeys.tasks(ws, agentId, sessionId),
+		queryFn: ({ signal }) => AgentSubagentService.tasks(ws, agentId, sessionId, signal),
+		enabled: enabled && !!ws && !!agentId && !!sessionId,
+		refetchInterval: (query) =>
+			query.state.data?.some((task) => task.status === 'queued' || task.status === 'running')
+				? 2000
+				: false,
+	});

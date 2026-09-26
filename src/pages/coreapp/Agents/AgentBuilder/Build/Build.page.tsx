@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, memo, type RefObject } from 'react';
-import { useParams, useNavigate } from 'react-router';
+import { useParams, useNavigate, useSearchParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown, { type Components } from 'react-markdown';
@@ -40,6 +40,7 @@ import {
 	RefreshCw,
 	Search,
 	Loader2,
+	ExternalLink,
 	RotateCcw,
 	FileJson,
 	Trash2,
@@ -51,6 +52,7 @@ import {
 	AGENT_COLOR_SWATCHES,
 	AGENT_ICON_COMPONENTS,
 	agentColorTextClass,
+	agentColorTileClass,
 	agentIconFor,
 } from '../../_helper/agentAppearance';
 import { useAgentTemplates, useUseAgentTemplate } from '@/api/modules/templates';
@@ -73,7 +75,6 @@ import {
 	useDeleteAgent,
 	useDuplicateAgent,
 	useAgentSkills,
-	useCreateAgentSkill,
 	useAttachAgentSkill,
 	useDetachAgentSkill,
 	useAgentTriggers,
@@ -93,7 +94,20 @@ import {
 	useDetachAgentWorkflow,
 	agentKeys,
 	agentVersionKeys,
+	agentSkillAttachmentKeys,
+	agentSubagentKeys,
+	useAgents,
+	useAgentSubagents,
+	useAttachSubagent,
+	useDetachSubagent,
+	useSubagentTasks,
 } from '@/api/modules/agents';
+import { agentSkillKeys } from '@/api/modules/agent-skills';
+import {
+	getSkillCategoryColor,
+	getSkillIconComponent,
+} from '@/pages/coreapp/Skills/_helper/skills.constants';
+import SkillEditorDrawer from '@/pages/coreapp/Skills/_partial/SkillEditorDrawer.partial';
 import { useGlobalNodeCatalog } from '@/api/modules/nodes';
 import { useWorkflows } from '@/api/modules/workflows';
 import type { TNode } from '@/types/node.type';
@@ -106,12 +120,14 @@ import { AgentSessionService } from '@/api/modules/agents/agent-sessions.service
 import { useDownloadArtifact, ArtifactService } from '@/api/modules/artifacts';
 import type { TWorkflow } from '@/types/workflow.type';
 import type { TArtifact } from '@/types/artifact.type';
-import type { TAgentMessage } from '@/types/agent.type';
+import type { TAgentMessage, TSubagentTask } from '@/types/agent.type';
+import type { TAgentSkill } from '@/types/agent-skill.type';
 import { useAgentChatStore } from '@/store/agentChat.store';
 import { useAgentBuilderStore } from '@/store/agentBuilder.store';
 import { XCircle, Wrench, FileDown, GitMerge } from 'lucide-react';
 import AgentDataPanel from './_partial/AgentDataPanel.partial';
 import AgentTagsPanel from './_partial/AgentTagsPanel.partial';
+import AgentSideDrawer, { AttachToggle } from './_partial/AgentSideDrawer.partial';
 import AgentChatsPanel from './_partial/AgentChatsPanel.partial';
 
 const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
@@ -129,6 +145,16 @@ const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 				minute: '2-digit',
 			}),
 			type: 'text' as const,
+			timeline: message.tool_calls?.length
+				? message.tool_calls.map((call) => ({
+						kind: 'tool' as const,
+						id: call.id,
+						toolName: call.name,
+						arguments: call.arguments ?? {},
+						status: 'done' as const,
+						taskId: message.subagent_task_ids?.[call.id],
+					}))
+				: undefined,
 			attachments: message.attachments?.map((artifact) => ({
 				id: artifact.id,
 				filename: artifact.filename,
@@ -138,6 +164,18 @@ const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 
 const EXPORT_ARTIFACT_TOOL = 'ExportArtifactTool';
 const UPDATE_INSTRUCTIONS_TOOL = 'update_own_instructions';
+const USE_SKILL_TOOL = 'use_skill';
+const CREATE_SKILL_TOOL = 'create_skill';
+const INVOKE_AGENT_TOOL = 'invoke_agent';
+const WAIT_SUBAGENTS_TOOL = 'wait_for_subagents';
+const UPDATE_SKILL_TOOL = 'update_skill';
+
+/** What each skill tool did, for the step line and the chip above a reply. */
+const SKILL_TOOL_VERBS: Record<string, { running: string; done: string; nameArg: string }> = {
+	[USE_SKILL_TOOL]: { running: 'Using', done: 'Used', nameArg: 'skill' },
+	[CREATE_SKILL_TOOL]: { running: 'Creating', done: 'Created', nameArg: 'name' },
+	[UPDATE_SKILL_TOOL]: { running: 'Updating', done: 'Updated', nameArg: 'skill' },
+};
 const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 const MAX_ATTACHMENTS = 10;
 const ATTACHMENT_EXTENSIONS = [
@@ -168,6 +206,8 @@ type TChatTimelineItem =
 			toolName: string;
 			arguments: Record<string, unknown>;
 			status: 'running' | 'done' | 'error';
+			/** The subagent task an `invoke_agent` call started. */
+			taskId?: string;
 	  }
 	| {
 			kind: 'artifact';
@@ -399,9 +439,136 @@ const ToolStepLine = ({ item }: { item: Extract<TChatTimelineItem, { kind: 'tool
 		{item.status === 'done' && <CheckCircle2 size={12} className='shrink-0 text-emerald-500' />}
 		{item.status === 'error' && <XCircle size={12} className='shrink-0 text-rose-500' />}
 		<Wrench size={12} className='shrink-0 opacity-60' />
-		<span>{prettifyToolName(item.toolName.replace(/Tool$/, ''))}</span>
+		<span>
+			{SKILL_TOOL_VERBS[item.toolName]
+				? `${SKILL_TOOL_VERBS[item.toolName][item.status === 'running' ? 'running' : 'done']} skill · ${String(item.arguments[SKILL_TOOL_VERBS[item.toolName].nameArg] ?? '')}`
+				: item.toolName === INVOKE_AGENT_TOOL
+					? `${item.status === 'running' ? 'Starting' : 'Started'} subagent · ${String(item.arguments.agent ?? '')}`
+					: item.toolName === WAIT_SUBAGENTS_TOOL
+						? item.status === 'running'
+							? 'Waiting for subagents…'
+							: 'Collected subagent results'
+						: prettifyToolName(item.toolName.replace(/Tool$/, ''))}
+		</span>
 	</div>
 );
+
+const SUBAGENT_STATUS: Record<TSubagentTask['status'], { label: string; className: string }> = {
+	queued: { label: 'Queued', className: 'text-zinc-500 dark:text-zinc-400' },
+	running: { label: 'Working', className: 'text-primary-600 dark:text-primary-400' },
+	completed: { label: 'Done', className: 'text-emerald-600 dark:text-emerald-400' },
+	failed: { label: 'Failed', className: 'text-rose-600 dark:text-rose-400' },
+};
+
+/** One card per subagent a reply started, with its live status and a link to its conversation. */
+const SubagentCards = ({
+	items,
+	tasks,
+	ws,
+}: {
+	items: TChatTimelineItem[];
+	tasks: TSubagentTask[];
+	ws: string;
+}) => {
+	const started = items.filter(
+		(item): item is Extract<TChatTimelineItem, { kind: 'tool' }> =>
+			item.kind === 'tool' && item.toolName === INVOKE_AGENT_TOOL,
+	);
+	const matched = started.flatMap((item) => {
+		const task = tasks.find((candidate) => candidate.id === item.taskId);
+		return task ? [task] : [];
+	});
+
+	if (matched.length === 0) return null;
+
+	return (
+		<div className='mb-1.5 flex flex-col gap-1.5'>
+			{matched.map((task) => {
+				const AgentIcon = agentIconFor(task.agent.icon);
+				const status = SUBAGENT_STATUS[task.status];
+				const isActive = task.status === 'queued' || task.status === 'running';
+				return (
+					<div
+						key={task.id}
+						className='flex max-w-full min-w-0 items-center gap-3 rounded-2xl border border-zinc-200/80 bg-white px-3.5 py-2.5 shadow-2xs dark:border-zinc-800/85 dark:bg-zinc-900/60'>
+						<div
+							className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${agentColorTileClass(task.agent.color)}`}>
+							<AgentIcon size={15} />
+						</div>
+						<div className='min-w-0 flex-1'>
+							<p className='truncate text-xs font-black text-zinc-800 dark:text-zinc-200'>
+								{task.agent.name}
+							</p>
+							<p className='truncate text-[11px] font-semibold text-zinc-400 dark:text-zinc-500'>
+								{task.status === 'failed' && task.error ? task.error : task.task}
+							</p>
+						</div>
+						<span
+							className={`flex shrink-0 items-center gap-1 text-[11px] font-bold ${status.className}`}>
+							{isActive && <Loader2 size={12} className='animate-spin' />}
+							{task.status === 'completed' && <CheckCircle2 size={12} />}
+							{task.status === 'failed' && <XCircle size={12} />}
+							{status.label}
+						</span>
+						{task.session_id && (
+							<a
+								href={`${paths.editAgent(ws, task.agent.id)}?session=${task.session_id}`}
+								target='_blank'
+								rel='noreferrer'
+								aria-label={`Open ${task.agent.name}'s conversation`}
+								title="Open this subagent's conversation"
+								className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
+								<ExternalLink size={13} />
+							</a>
+						)}
+					</div>
+				);
+			})}
+		</div>
+	);
+};
+
+/** Skills the agent loaded, created or updated for a reply — always visible, like exported files. */
+const UsedSkills = ({
+	items,
+	skills,
+}: {
+	items: TChatTimelineItem[];
+	skills: TAgentSkill[];
+}) => {
+	const seen = new Set<string>();
+	const entries = items.flatMap((item) => {
+		const verb = item.kind === 'tool' ? SKILL_TOOL_VERBS[item.toolName] : undefined;
+		if (item.kind !== 'tool' || !verb || item.status === 'error') return [];
+		const name = String(item.arguments[verb.nameArg] ?? '');
+		const key = `${verb.done}:${name.toLowerCase()}`;
+		if (!name || seen.has(key)) return [];
+		seen.add(key);
+		return [{ key, name, verb: verb.done }];
+	});
+
+	if (entries.length === 0) return null;
+
+	return (
+		<div className='mb-1.5 flex flex-wrap items-center gap-1.5'>
+			{entries.map(({ key, name, verb }) => {
+				const skill = skills.find((s) => s.name.toLowerCase() === name.toLowerCase());
+				const SkillIcon = getSkillIconComponent(skill?.icon);
+				const color = skill?.color || getSkillCategoryColor(skill?.category);
+				return (
+					<span
+						key={key}
+						style={{ borderColor: `${color}55`, backgroundColor: `${color}14` }}
+						className='inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold text-zinc-700 dark:text-zinc-200'>
+						<SkillIcon size={12} style={{ color }} />
+						<span className='text-zinc-500 dark:text-zinc-400'>{verb} skill</span>
+						{skill?.name ?? name}
+					</span>
+				);
+			})}
+		</div>
+	);
+};
 
 const formatArtifactSize = (bytes: number): string => {
 	if (bytes === 0) return '0 B';
@@ -523,12 +690,26 @@ const BuildPage = () => {
 	const { data: workspaceSkills } = useAgentSkills(workspaceId);
 	// Attached skills are a sub-resource here, not an `agent.skills` field.
 	const { data: attachedSkills } = useAgentSkillAttachments(workspaceId, currentAgentId ?? '');
-	const createSkillMutation = useCreateAgentSkill(workspaceId);
 	const attachSkillMutation = useAttachAgentSkill(workspaceId, currentAgentId ?? '');
 	const detachSkillMutation = useDetachAgentSkill(workspaceId, currentAgentId ?? '');
+
+	// Subagents — other agents this one may hand work to, plus the tasks the open
+	// chat has started (polled while any are running).
+	const { data: workspaceAgents } = useAgents(workspaceId);
+	const { data: subagents } = useAgentSubagents(workspaceId, currentAgentId ?? '');
+	const attachSubagentMutation = useAttachSubagent(workspaceId, currentAgentId ?? '');
+	const detachSubagentMutation = useDetachSubagent(workspaceId, currentAgentId ?? '');
+	const [isSubagentPickerOpen, setIsSubagentPickerOpen] = useState(false);
+	const [subagentSearchQuery, setSubagentSearchQuery] = useState('');
+	const subagentIds = new Set((subagents ?? []).map((agent) => String(agent.id)));
+	const pickableAgents = (workspaceAgents ?? []).filter(
+		(agent) =>
+			String(agent.id) !== String(currentAgentId) &&
+			agent.name.toLowerCase().includes(subagentSearchQuery.trim().toLowerCase()),
+	);
 	const [isSkillPanelOpen, setIsSkillPanelOpen] = useState(false);
-	const [newSkillName, setNewSkillName] = useState('');
-	const [newSkillInstructions, setNewSkillInstructions] = useState('');
+	const [isSkillEditorOpen, setIsSkillEditorOpen] = useState(false);
+	const [skillSearchQuery, setSkillSearchQuery] = useState('');
 
 	// Triggers
 	const { data: agentTriggers } = useAgentTriggers(workspaceId, currentAgentId ?? '');
@@ -624,6 +805,14 @@ const BuildPage = () => {
 		setChatAgentId(currentAgentId ?? null);
 	}, [currentAgentId, setChatAgentId]);
 
+	// `?session=` opens a specific conversation — how a subagent card links to
+	// the conversation its task ran in.
+	const [searchParams] = useSearchParams();
+	const linkedSessionId = searchParams.get('session');
+	useEffect(() => {
+		if (linkedSessionId) openSession(linkedSessionId);
+	}, [linkedSessionId, openSession]);
+
 	const loadedSessionRef = useRef<string | null>(null);
 
 	const {
@@ -632,6 +821,11 @@ const BuildPage = () => {
 		isError: isSessionError,
 		refetch: refetchSession,
 	} = useAgentSession(workspaceId, currentAgentId ?? '', conversationId ?? '');
+	const { data: subagentTasks } = useSubagentTasks(
+		workspaceId,
+		currentAgentId ?? '',
+		conversationId ?? '',
+	);
 
 	useEffect(() => {
 		if (!conversationId) {
@@ -741,6 +935,8 @@ const BuildPage = () => {
 	}, [agentModel, modelOptions]);
 	const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
 	const [allowSelfUpdates, setAllowSelfUpdates] = useState(false);
+	const [allowSkillEditing, setAllowSkillEditing] = useState(true);
+	const [allowSelfClone, setAllowSelfClone] = useState(true);
 	const [agentDescription, setAgentDescription] = useState('');
 
 	const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
@@ -846,6 +1042,8 @@ const BuildPage = () => {
 		setAgentIcon(existingAgent.icon ?? 'bot');
 		setAgentIconColor(existingAgent.color ?? 'purple');
 		setAllowSelfUpdates(existingAgent.allow_self_updates);
+		setAllowSkillEditing(existingAgent.allow_skill_editing);
+		setAllowSelfClone(existingAgent.allow_self_clone);
 		if (existingAgent.model_catalog_id) {
 			setAgentModel(existingAgent.model_catalog_id);
 		}
@@ -867,6 +1065,7 @@ const BuildPage = () => {
 			instructions: (overrides?.instructions ?? agentInstructions).trim() || null,
 			model_catalog_id: agentModel || null,
 			allow_self_updates: allowSelfUpdates,
+			allow_skill_editing: allowSkillEditing,
 		};
 
 		if (currentAgentId) {
@@ -914,6 +1113,7 @@ const BuildPage = () => {
 	// Skills/Triggers both operate on a real agent id — save a draft first if needed.
 	const openSkillPanel = async () => {
 		await ensureAgentPersisted();
+		setSkillSearchQuery('');
 		setIsSkillPanelOpen(true);
 	};
 
@@ -923,8 +1123,8 @@ const BuildPage = () => {
 	};
 
 	const attachedSkillIds = new Set((attachedSkills ?? []).map((s) => s.id));
-	const availableSkillsToAttach = (workspaceSkills ?? []).filter(
-		(s) => !attachedSkillIds.has(s.id),
+	const matchingSkills = (workspaceSkills ?? []).filter((s) =>
+		s.name.toLowerCase().includes(skillSearchQuery.trim().toLowerCase()),
 	);
 
 	const handleAttachSkill = (skillId: string) => {
@@ -935,17 +1135,6 @@ const BuildPage = () => {
 	const handleDetachSkill = (skillId: string) => {
 		if (!currentAgentId) return;
 		detachSkillMutation.mutate(skillId);
-	};
-
-	const handleCreateAndAttachSkill = async () => {
-		if (!currentAgentId || !newSkillName.trim() || !newSkillInstructions.trim()) return;
-		const skill = await createSkillMutation.mutateAsync({
-			name: newSkillName.trim(),
-			instructions: newSkillInstructions.trim(),
-		});
-		attachSkillMutation.mutate(skill.id);
-		setNewSkillName('');
-		setNewSkillInstructions('');
 	};
 
 	const handleCreateTrigger = async () => {
@@ -1128,6 +1317,7 @@ const BuildPage = () => {
 			setAgentIcon(draft.icon);
 			setAgentIconColor(draft.color);
 			setAllowSelfUpdates(false);
+			setAllowSkillEditing(true);
 			setCurrentAgentId(created.id);
 			setChatAgentId(created.id);
 			navigate(paths.editAgent(workspaceId, created.id), { replace: true });
@@ -1251,6 +1441,7 @@ const BuildPage = () => {
 			// Filenames exported during this turn, resolved to artifacts once it ends.
 			const exportedFilenames: string[] = [];
 			let updatedInstructions = false;
+			let changedSkills = false;
 			let replyText = '';
 			let sawComplete = false;
 
@@ -1302,10 +1493,17 @@ const BuildPage = () => {
 					// Only a tool that returned is reported; one that threw ends the
 					// turn with `error` instead, so reaching here means success.
 					if (event.name === UPDATE_INSTRUCTIONS_TOOL) updatedInstructions = true;
+					if (event.name === CREATE_SKILL_TOOL || event.name === UPDATE_SKILL_TOOL)
+						changedSkills = true;
+					if (event.name === INVOKE_AGENT_TOOL) {
+						void queryClient.invalidateQueries({
+							queryKey: agentSubagentKeys.tasks(workspaceId, agentIdForRun, sessionId),
+						});
+					}
 					setTimeline((prev) =>
 						prev.map((item) =>
 							item.kind === 'tool' && item.id === event.id
-								? { ...item, status: 'done' }
+								? { ...item, status: 'done', taskId: event.result?.task_id }
 								: item,
 						),
 					);
@@ -1342,6 +1540,14 @@ const BuildPage = () => {
 				void queryClient.invalidateQueries({
 					queryKey: agentVersionKeys.list(workspaceId, agentIdForRun),
 				});
+			}
+
+			// The agent saved or edited a skill; refresh the Skills card and library.
+			if (changedSkills) {
+				void queryClient.invalidateQueries({
+					queryKey: agentSkillAttachmentKeys.list(workspaceId, agentIdForRun),
+				});
+				void queryClient.invalidateQueries({ queryKey: agentSkillKeys.all(workspaceId) });
 			}
 
 			const finishedTimeline = streamTimelineRef.current;
@@ -2349,10 +2555,21 @@ const BuildPage = () => {
 													{!isUser &&
 														message.timeline &&
 														message.timeline.length > 0 && (
-															<TimelineSteps
-																items={message.timeline}
-																className='mb-1.5'
-															/>
+															<>
+																<UsedSkills
+																	items={message.timeline}
+																	skills={workspaceSkills ?? []}
+																/>
+																<SubagentCards
+																	items={message.timeline}
+																	tasks={subagentTasks ?? []}
+																	ws={workspaceId}
+																/>
+																<TimelineSteps
+																	items={message.timeline}
+																	className='mb-1.5'
+																/>
+															</>
 														)}
 
 													{/* Files the agent exported — always shown, never collapsed */}
@@ -2631,6 +2848,13 @@ const BuildPage = () => {
 															}
 															return null;
 														})}
+													</div>
+													<div className='mt-1.5'>
+														<SubagentCards
+															items={streamTimeline}
+															tasks={subagentTasks ?? []}
+															ws={workspaceId}
+														/>
 													</div>
 													{streamTimeline.some(
 														(item) => item.kind === 'artifact',
@@ -3396,6 +3620,41 @@ const BuildPage = () => {
 												/>
 											</button>
 										</div>
+
+										{/* Skill Editing & Creation Row */}
+										<div className='flex items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
+											<div className='flex items-center gap-3'>
+												<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-9 w-9 items-center justify-center rounded-xl'>
+													<Sparkles size={16} />
+												</div>
+												<div className='flex flex-col pr-4'>
+													<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
+														Skill Editing & Creation
+													</span>
+													<span className='mt-0.5 text-[10px] leading-normal font-semibold text-zinc-400 dark:text-zinc-400'>
+														Let the agent save new skills and improve its
+														skills when you correct it.
+													</span>
+												</div>
+											</div>
+											<button
+												type='button'
+												role='switch'
+												aria-checked={allowSkillEditing}
+												aria-label='Allow skill editing and creation'
+												onClick={() => setAllowSkillEditing(!allowSkillEditing)}
+												className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+													allowSkillEditing
+														? 'bg-primary-400 dark:bg-primary-400'
+														: 'bg-zinc-200 dark:bg-zinc-800'
+												}`}>
+												<span
+													className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+														allowSkillEditing ? 'translate-x-4' : 'translate-x-0'
+													}`}
+												/>
+											</button>
+										</div>
 									</div>
 
 									{/* Tags Section */}
@@ -3420,8 +3679,7 @@ const BuildPage = () => {
 											</button>
 										</div>
 
-										{(agentTriggers ?? []).length === 0 &&
-											!isTriggerPanelOpen && (
+										{(agentTriggers ?? []).length === 0 && (
 												<p className='pl-9 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
 													Define events or conditions that activate this
 													agent.
@@ -3549,77 +3807,6 @@ const BuildPage = () => {
 											</div>
 										)}
 
-										{isTriggerPanelOpen && (
-											<div className='ml-9 space-y-2.5 rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
-												<div className='flex gap-1.5'>
-													{(
-														[
-															'schedule',
-															'webhook',
-															'event',
-														] as TAgentTriggerType[]
-													).map((t) => (
-														<button
-															key={t}
-															type='button'
-															onClick={() => setNewTriggerType(t)}
-															className={`min-h-11 rounded-lg px-2.5 py-1 text-[10px] font-black capitalize transition md:min-h-0 ${
-																newTriggerType === t
-																	? 'bg-primary-400 text-primary-950'
-																	: 'border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'
-															}`}>
-															{t}
-														</button>
-													))}
-												</div>
-												{newTriggerType === 'schedule' && (
-													<input
-														type='text'
-														value={newTriggerCron}
-														onChange={(e) =>
-															setNewTriggerCron(e.target.value)
-														}
-														placeholder='Cron expression (0 9 * * *)'
-														className='focus:border-primary-500/50 min-h-11 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-base text-zinc-800 outline-none md:min-h-0 md:text-[11px] dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
-													/>
-												)}
-												{newTriggerType === 'event' && (
-													<input
-														type='text'
-														value={newTriggerEventName}
-														onChange={(e) =>
-															setNewTriggerEventName(e.target.value)
-														}
-														placeholder='Event name'
-														className='focus:border-primary-500/50 min-h-11 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-base font-semibold text-zinc-800 outline-none md:min-h-0 md:text-[11px] dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
-													/>
-												)}
-												<input
-													type='text'
-													value={newTriggerInitialMessage}
-													onChange={(e) =>
-														setNewTriggerInitialMessage(e.target.value)
-													}
-													placeholder='Initial message (optional)'
-													className='focus:border-primary-500/50 min-h-11 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-base font-semibold text-zinc-800 outline-none md:min-h-0 md:text-[11px] dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
-												/>
-												<div className='flex justify-end gap-2'>
-													<button
-														onClick={() => setIsTriggerPanelOpen(false)}
-														className='min-h-11 rounded-lg px-2.5 py-1 text-[10px] font-bold text-zinc-500 hover:bg-zinc-100 md:min-h-0 dark:hover:bg-zinc-800'>
-														Cancel
-													</button>
-													<button
-														onClick={() => void handleCreateTrigger()}
-														disabled={createTriggerMutation.isPending}
-														className='bg-primary-400 text-primary-950 hover:bg-primary-500 min-h-11 rounded-lg px-3 py-1 text-[10px] font-black disabled:opacity-60 md:min-h-0'>
-														{createTriggerMutation.isPending
-															? 'Creating…'
-															: 'Create'}
-													</button>
-												</div>
-											</div>
-										)}
 									</div>
 
 									{/* Apps Section */}
@@ -3757,8 +3944,7 @@ const BuildPage = () => {
 											</button>
 										</div>
 
-										{(attachedSkills ?? []).length === 0 &&
-											!isSkillPanelOpen && (
+										{(attachedSkills ?? []).length === 0 && (
 												<p className='pl-9 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
 													Add custom skills to extend your agent's
 													abilities.
@@ -3767,104 +3953,49 @@ const BuildPage = () => {
 
 										{(attachedSkills ?? []).length > 0 && (
 											<div className='space-y-2 pl-9'>
-												{(attachedSkills ?? []).map((skill) => (
-													<div
-														key={skill.id}
-														className='flex items-center justify-between border-b border-zinc-100 py-1.5 last:border-0 dark:border-zinc-800/80'>
-														<div className='flex min-w-0 flex-col'>
-															<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
-																{skill.name}
-															</span>
-															{skill.description && (
-																<span className='truncate text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-																	{skill.description}
-																</span>
-															)}
-														</div>
-														<button
-															onClick={() =>
-																handleDetachSkill(skill.id)
-															}
-															title='Remove skill'
-															className='shrink-0 text-zinc-400 hover:text-rose-500'>
-															<X size={13} />
-														</button>
-													</div>
-												))}
-											</div>
-										)}
-
-										{isSkillPanelOpen && (
-											<div className='ml-9 space-y-3 rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
-												{availableSkillsToAttach.length > 0 && (
-													<div className='space-y-1.5'>
-														<span className='text-[10px] font-black tracking-wider text-zinc-400 uppercase'>
-															Attach existing
-														</span>
-														{availableSkillsToAttach.map((skill) => (
+												{(attachedSkills ?? []).map((skill) => {
+													const SkillIcon = getSkillIconComponent(skill.icon);
+													return (
+														<div
+															key={skill.id}
+															className='flex items-center justify-between border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-800/80'>
+															<div className='flex min-w-0 items-center gap-3'>
+																<div
+																	style={{
+																		backgroundColor:
+																			skill.color ||
+																			getSkillCategoryColor(
+																				skill.category,
+																			),
+																	}}
+																	className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white'>
+																	<SkillIcon size={15} />
+																</div>
+																<div className='flex min-w-0 flex-col'>
+																	<span className='truncate text-xs font-black text-zinc-800 dark:text-zinc-200'>
+																		{skill.name}
+																	</span>
+																	{skill.description && (
+																		<span className='mt-0.5 truncate text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
+																			{skill.description}
+																		</span>
+																	)}
+																</div>
+															</div>
 															<button
-																key={skill.id}
 																onClick={() =>
-																	handleAttachSkill(skill.id)
+																	handleDetachSkill(skill.id)
 																}
-																className='flex w-full items-center justify-between rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-left hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
-																<span className='text-[11px] font-bold text-zinc-700 dark:text-zinc-300'>
-																	{skill.name}
-																</span>
-																<Plus
-																	size={11}
-																	className='text-primary-500'
-																/>
+																title='Remove skill'
+																className='cursor-pointer p-1 text-zinc-400 hover:text-red-500 dark:hover:text-red-400'>
+																<Trash2 size={14} />
 															</button>
-														))}
-													</div>
-												)}
-
-												<div className='space-y-1.5'>
-													<span className='text-[10px] font-black tracking-wider text-zinc-400 uppercase'>
-														Create new
-													</span>
-													<input
-														type='text'
-														value={newSkillName}
-														onChange={(e) =>
-															setNewSkillName(e.target.value)
-														}
-														placeholder='Skill name'
-														className='focus:border-primary-500/50 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
-													/>
-													<textarea
-														rows={2}
-														value={newSkillInstructions}
-														onChange={(e) =>
-															setNewSkillInstructions(e.target.value)
-														}
-														placeholder='Instructions for this skill...'
-														className='focus:border-primary-500/50 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
-													/>
-												</div>
-
-												<div className='flex justify-end gap-2'>
-													<button
-														onClick={() => setIsSkillPanelOpen(false)}
-														className='rounded-lg px-2.5 py-1 text-[10px] font-bold text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'>
-														Cancel
-													</button>
-													<button
-														onClick={async () => {
-															await handleCreateAndAttachSkill();
-															setIsSkillPanelOpen(false);
-														}}
-														disabled={
-															!newSkillName.trim() ||
-															!newSkillInstructions.trim()
-														}
-														className='bg-primary-400 text-primary-950 hover:bg-primary-500 rounded-lg px-3 py-1 text-[10px] font-black disabled:opacity-40'>
-														Create & Attach
-													</button>
-												</div>
+														</div>
+													);
+												})}
 											</div>
 										)}
+
 									</div>
 
 									{/* Subagents Section */}
@@ -3879,41 +4010,93 @@ const BuildPage = () => {
 												</h4>
 											</div>
 											<button
-												type='button'
-												disabled
-												title='Subagents are not available yet'
-												className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-900'>
+												onClick={async () => {
+													await ensureAgentPersisted();
+													setSubagentSearchQuery('');
+													setIsSubagentPickerOpen(true);
+												}}
+												className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
 												<Plus size={10} />
 												<span>Subagent</span>
 											</button>
 										</div>
-										<p className='pl-9 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-											Delegate tasks to specialized subagents.
-										</p>
 
-										{/* Subagent Item */}
-										<div className='flex items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 py-2 pl-9 dark:border-zinc-800 dark:bg-zinc-950/20'>
-											<div className='flex items-center gap-3'>
-												<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-950 text-white dark:border dark:border-zinc-700 dark:bg-zinc-800'>
-													<Bot size={15} />
+										<div className='space-y-2 pl-9'>
+											{/* The agent's own clone, for splitting work into parallel subtasks */}
+											<div className='flex items-center justify-between border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-800/80'>
+												<div className='flex min-w-0 items-center gap-3'>
+													<div
+														className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${agentColorTileClass(agentIconColor)}`}>
+														<AgentIconComponent size={15} />
+													</div>
+													<div className='flex min-w-0 flex-col'>
+														<span className='truncate text-xs font-black text-zinc-800 dark:text-zinc-200'>
+															{agentName || 'This agent'} (Me)
+														</span>
+														<span className='mt-0.5 text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
+															Clones itself to work on subtasks in parallel.
+														</span>
+													</div>
 												</div>
-												<div className='flex flex-col'>
-													<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
-														Competitor Research Agent (Me)
-													</span>
-													<span className='mt-0.5 text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
-														Enables me to clone myself as a subagent to
-														research competitors.
-													</span>
-												</div>
+												<button
+													type='button'
+													role='switch'
+													aria-checked={allowSelfClone}
+													aria-label='Allow self-cloning'
+													onClick={() => {
+														const next = !allowSelfClone;
+														setAllowSelfClone(next);
+														if (currentAgentId) {
+															updateAgentMutation.mutate({
+																id: currentAgentId,
+																body: { allow_self_clone: next },
+															});
+														}
+													}}
+													className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+														allowSelfClone
+															? 'bg-primary-400 dark:bg-primary-400'
+															: 'bg-zinc-200 dark:bg-zinc-800'
+													}`}>
+													<span
+														className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+															allowSelfClone ? 'translate-x-4' : 'translate-x-0'
+														}`}
+													/>
+												</button>
 											</div>
-											<button
-												type='button'
-												disabled
-												title='Subagents are not available yet'
-												className='p-1 text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50'>
-												<MoreHorizontal size={14} />
-											</button>
+
+											{(subagents ?? []).map((subagent) => {
+												const SubagentIcon = agentIconFor(subagent.icon);
+												return (
+													<div
+														key={subagent.id}
+														className='flex items-center justify-between border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-800/80'>
+														<div className='flex min-w-0 items-center gap-3'>
+															<div
+																className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${agentColorTileClass(subagent.color)}`}>
+																<SubagentIcon size={15} />
+															</div>
+															<div className='flex min-w-0 flex-col'>
+																<span className='truncate text-xs font-black text-zinc-800 dark:text-zinc-200'>
+																	{subagent.name}
+																</span>
+																{subagent.description && (
+																	<span className='mt-0.5 truncate text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
+																		{subagent.description}
+																	</span>
+																)}
+															</div>
+														</div>
+														<button
+															onClick={() => detachSubagentMutation.mutate(String(subagent.id))}
+															title='Remove subagent'
+															className='cursor-pointer p-1 text-zinc-400 hover:text-red-500 dark:hover:text-red-400'>
+															<Trash2 size={14} />
+														</button>
+													</div>
+												);
+											})}
 										</div>
 									</div>
 
@@ -4139,6 +4322,224 @@ const BuildPage = () => {
 					</>
 				)}
 			</AnimatePresence>
+
+			<AgentSideDrawer
+				isOpen={isSubagentPickerOpen}
+				title='Add a subagent'
+				onClose={() => setIsSubagentPickerOpen(false)}
+				search={{
+					value: subagentSearchQuery,
+					onChange: setSubagentSearchQuery,
+					placeholder: 'Search agents',
+				}}>
+				<h4 className='pl-1 text-[10px] font-black tracking-widest text-zinc-400 uppercase'>
+					Workspace agents
+				</h4>
+				<div className='space-y-1.5'>
+					{pickableAgents.map((agent) => {
+						const PickIcon = agentIconFor(agent.icon);
+						const isAttached = subagentIds.has(String(agent.id));
+						return (
+							<div
+								key={agent.id}
+								className='flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/40'>
+								<div className='flex min-w-0 items-center gap-3'>
+									<div
+										className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${agentColorTileClass(agent.color)}`}>
+										<PickIcon size={16} />
+									</div>
+									<div className='flex min-w-0 flex-col'>
+										<span className='truncate text-xs font-black text-zinc-900 dark:text-zinc-100'>
+											{agent.name}
+										</span>
+										<span className='mt-0.5 truncate text-[9px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
+											{agent.description || 'No description provided.'}
+										</span>
+									</div>
+								</div>
+								<AttachToggle
+									label={agent.name}
+									isAttached={isAttached}
+									disabled={attachSubagentMutation.isPending || detachSubagentMutation.isPending}
+									onClick={() =>
+										isAttached
+											? detachSubagentMutation.mutate(String(agent.id))
+											: attachSubagentMutation.mutate(String(agent.id))
+									}
+								/>
+							</div>
+						);
+					})}
+					{pickableAgents.length === 0 && (
+						<div className='py-8 text-center text-xs font-bold text-zinc-400 dark:text-zinc-500'>
+							{subagentSearchQuery.trim()
+								? `Nothing matches "${subagentSearchQuery}"`
+								: 'No other agents in this workspace yet.'}
+						</div>
+					)}
+				</div>
+			</AgentSideDrawer>
+
+			<AgentSideDrawer
+				isOpen={isSkillPanelOpen}
+				title='Add a skill'
+				onClose={() => setIsSkillPanelOpen(false)}
+				search={{
+					value: skillSearchQuery,
+					onChange: setSkillSearchQuery,
+					placeholder: `Search ${(workspaceSkills ?? []).length} skills`,
+				}}
+				footer={
+					<button
+						onClick={() => {
+							setIsSkillPanelOpen(false);
+							setIsSkillEditorOpen(true);
+						}}
+						className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-xs font-black md:min-h-0'>
+						<Plus size={13} />
+						Create new skill
+					</button>
+				}>
+				<h4 className='pl-1 text-[10px] font-black tracking-widest text-zinc-400 uppercase'>
+					Workspace skills
+				</h4>
+				<div className='space-y-1.5'>
+					{matchingSkills.map((skill) => {
+						const SkillIcon = getSkillIconComponent(skill.icon);
+						return (
+							<div
+								key={skill.id}
+								className='flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/40'>
+								<div className='flex min-w-0 items-center gap-3'>
+									<div
+										style={{
+											backgroundColor:
+												skill.color || getSkillCategoryColor(skill.category),
+										}}
+										className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white shadow-2xs'>
+										<SkillIcon size={16} />
+									</div>
+									<div className='flex min-w-0 flex-col'>
+										<span className='truncate text-xs font-black text-zinc-900 dark:text-zinc-100'>
+											{skill.name}
+										</span>
+										<span className='mt-0.5 truncate text-[9px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
+											{skill.description || skill.category || 'No description provided.'}
+										</span>
+									</div>
+								</div>
+								<AttachToggle
+									label={skill.name}
+									isAttached={attachedSkillIds.has(skill.id)}
+									disabled={attachSkillMutation.isPending || detachSkillMutation.isPending}
+									onClick={() =>
+										attachedSkillIds.has(skill.id)
+											? handleDetachSkill(skill.id)
+											: handleAttachSkill(skill.id)
+									}
+								/>
+							</div>
+						);
+					})}
+					{matchingSkills.length === 0 && (
+						<div className='py-8 text-center text-xs font-bold text-zinc-400 dark:text-zinc-500'>
+							{skillSearchQuery.trim()
+								? `Nothing matches "${skillSearchQuery}"`
+								: 'No skills in this workspace yet. Create one below.'}
+						</div>
+					)}
+				</div>
+			</AgentSideDrawer>
+
+			<AgentSideDrawer
+				isOpen={isTriggerPanelOpen}
+				title='Add a trigger'
+				onClose={() => setIsTriggerPanelOpen(false)}
+				footer={
+					<div className='flex justify-end gap-2'>
+						<button
+							onClick={() => setIsTriggerPanelOpen(false)}
+							className='min-h-11 rounded-lg px-4 py-1.5 text-xs font-bold text-zinc-500 hover:bg-zinc-100 md:min-h-0 dark:hover:bg-zinc-800'>
+							Cancel
+						</button>
+						<button
+							onClick={() => void handleCreateTrigger()}
+							disabled={createTriggerMutation.isPending}
+							className='bg-primary-400 text-primary-950 hover:bg-primary-500 min-h-11 rounded-lg px-4 py-1.5 text-xs font-black disabled:opacity-60 md:min-h-0'>
+							{createTriggerMutation.isPending ? 'Creating…' : 'Create trigger'}
+						</button>
+					</div>
+				}>
+				<div className='space-y-1.5'>
+					<span className='pl-1 text-[10px] font-black tracking-widest text-zinc-400 uppercase'>
+						Type
+					</span>
+					<div role='group' aria-label='Trigger type' className='grid grid-cols-3 rounded-lg bg-zinc-100 p-0.5 dark:bg-zinc-950/45'>
+						{(['schedule', 'webhook', 'event'] as TAgentTriggerType[]).map((t) => (
+							<button
+								key={t}
+								type='button'
+								aria-pressed={newTriggerType === t}
+								onClick={() => setNewTriggerType(t)}
+								className={`min-h-11 rounded-md px-3 py-1.5 text-[10px] font-black capitalize transition md:min-h-0 ${
+									newTriggerType === t
+										? 'bg-white text-zinc-900 shadow-2xs dark:bg-zinc-800 dark:text-white'
+										: 'text-zinc-400 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-300'
+								}`}>
+								{t}
+							</button>
+						))}
+					</div>
+				</div>
+				{newTriggerType === 'schedule' && (
+					<label className='block space-y-1.5'>
+						<span className='pl-1 text-[10px] font-black tracking-widest text-zinc-400 uppercase'>
+							Schedule (cron)
+						</span>
+						<input
+							type='text'
+							value={newTriggerCron}
+							onChange={(e) => setNewTriggerCron(e.target.value)}
+							placeholder='0 9 * * *'
+							className='focus:border-primary-500/50 min-h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 font-mono text-base text-zinc-800 outline-none md:min-h-0 md:text-xs dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+						/>
+					</label>
+				)}
+				{newTriggerType === 'event' && (
+					<label className='block space-y-1.5'>
+						<span className='pl-1 text-[10px] font-black tracking-widest text-zinc-400 uppercase'>
+							Event name
+						</span>
+						<input
+							type='text'
+							value={newTriggerEventName}
+							onChange={(e) => setNewTriggerEventName(e.target.value)}
+							placeholder='Event name'
+							className='focus:border-primary-500/50 min-h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-base font-semibold text-zinc-800 outline-none md:min-h-0 md:text-xs dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+						/>
+					</label>
+				)}
+				<label className='block space-y-1.5'>
+					<span className='pl-1 text-[10px] font-black tracking-widest text-zinc-400 uppercase'>
+						Initial message (optional)
+					</span>
+					<textarea
+						rows={3}
+						value={newTriggerInitialMessage}
+						onChange={(e) => setNewTriggerInitialMessage(e.target.value)}
+						placeholder='What the agent is told when this trigger fires'
+						className='focus:border-primary-500/50 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-base font-semibold text-zinc-800 outline-none md:text-xs dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+					/>
+				</label>
+			</AgentSideDrawer>
+
+			<SkillEditorDrawer
+				ws={workspaceId}
+				isOpen={isSkillEditorOpen}
+				skillId={null}
+				onClose={() => setIsSkillEditorOpen(false)}
+				onCreated={(skill) => handleAttachSkill(skill.id)}
+			/>
 		</div>
 	);
 };

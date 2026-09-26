@@ -20,6 +20,8 @@ export const AgentSessionEndpoints = {
 	update: (ws: string, agentId: string, id: string) => `${agent(ws, agentId)}/sessions/${id}`,
 	delete: (ws: string, agentId: string, id: string) => `${agent(ws, agentId)}/sessions/${id}`,
 	messages: (ws: string, agentId: string, id: string) => `${agent(ws, agentId)}/sessions/${id}/messages`,
+	subagentTasks: (ws: string, agentId: string, id: string) =>
+		`${agent(ws, agentId)}/sessions/${id}/subagent-tasks`,
 	sendMessage: (ws: string, agentId: string, id: string) =>
 		`${agent(ws, agentId)}/sessions/${id}/messages`,
 	streamMessage: (ws: string, agentId: string, id: string) =>
@@ -45,6 +47,12 @@ export const AgentWorkflowToolEndpoints = {
 		`${agent(ws, agentId)}/workflows/${workflowId}`,
 	detach: (ws: string, agentId: string, workflowId: string) =>
 		`${agent(ws, agentId)}/workflows/${workflowId}`,
+} as const;
+
+export const AgentSubagentEndpoints = {
+	list: (ws: string, agentId: string) => `${agent(ws, agentId)}/subagents`,
+	attach: (ws: string, agentId: string, subagentId: string) => `${agent(ws, agentId)}/subagents/${subagentId}`,
+	detach: (ws: string, agentId: string, subagentId: string) => `${agent(ws, agentId)}/subagents/${subagentId}`,
 } as const;
 
 export const AgentSkillAttachmentEndpoints = {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, Plus, Trash2, FileText, Code2 } from 'lucide-react';
+import type { TAgentSkill } from '@/types/agent-skill.type';
 import {
 	useAgentSkill,
 	useCreateAgentSkill,
@@ -24,6 +25,7 @@ interface ISkillEditorDrawerProps {
 	isOpen: boolean;
 	skillId: string | null;
 	onClose: () => void;
+	onCreated?: (skill: TAgentSkill) => void;
 }
 
 const emptyForm = {
@@ -43,7 +45,7 @@ const emptyScript = {
 	code: '',
 };
 
-const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose }: ISkillEditorDrawerProps) => {
+const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEditorDrawerProps) => {
 	const [createdSkillId, setCreatedSkillId] = useState<string | null>(null);
 	const activeSkillId = skillId ?? createdSkillId;
 
@@ -107,7 +109,10 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose }: ISkillEditorDrawerP
 			updateMutation.mutate({ id: activeSkillId, body }, { onSuccess: () => onClose() });
 		} else {
 			createMutation.mutate(body, {
-				onSuccess: (created) => setCreatedSkillId(created.id),
+				onSuccess: (created) => {
+					setCreatedSkillId(created.id);
+					onCreated?.(created);
+				},
 			});
 		}
 	};
@@ -136,14 +141,14 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose }: ISkillEditorDrawerP
 				animate={{ opacity: 1 }}
 				exit={{ opacity: 0 }}
 				onClick={onClose}
-				className='fixed inset-0 z-40 bg-black/40 backdrop-blur-sm'
+				className='fixed inset-0 z-60 bg-black/40 backdrop-blur-sm'
 			/>
 			<motion.div
 				initial={{ x: '100%' }}
 				animate={{ x: 0 }}
 				exit={{ x: '100%' }}
 				transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-				className='fixed top-0 right-0 z-50 flex h-full w-full max-w-lg flex-col overflow-y-auto border-l border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950'>
+				className='fixed top-0 right-0 z-65 flex h-full w-full max-w-lg flex-col overflow-y-auto border-l border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950'>
 				<div className='flex items-center justify-between border-b border-zinc-200 px-6 py-5 dark:border-zinc-800'>
 					<div>
 						<h2 className='text-lg font-black tracking-tight text-zinc-900 dark:text-white'>
