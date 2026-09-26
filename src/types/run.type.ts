@@ -7,6 +7,8 @@
 // `data` — see `RunController::index`.
 // ============================================================
 
+import type { TAgentMessage } from './agent.type';
+
 export type TRunStatus =
 	| 'pending'
 	| 'running'
@@ -54,6 +56,14 @@ export type TNodeRunDetail = {
 	child_runs?: TRun[];
 };
 
+/** The agent a run was done on behalf of — see `Run::owningAgent()`. */
+export type TRunAgent = {
+	id: string;
+	name: string;
+	icon: string | null;
+	color: string | null;
+};
+
 export type TRun = {
 	id: string;
 	workspace_id: string;
@@ -68,6 +78,10 @@ export type TRun = {
 	output: unknown;
 	error: string | null;
 	node_runs?: TNodeRun[];
+	/** Null for a workflow run; absent where the backend didn't load it. */
+	agent?: TRunAgent | null;
+	/** An `agent_session` run's reply, on `GET .../runs/{id}` only; null if the turn failed. */
+	agent_reply?: TAgentMessage | null;
 	triggered_by: string | null;
 	loop_index: number | null;
 	started_at: string | null;
@@ -80,6 +94,7 @@ export type TRun = {
 export type TRunListParams = {
 	status?: TRunStatus;
 	workflow_id?: string;
+	agent_id?: string;
 	trigger_type?: string;
 	exclude_trigger_type?: string;
 	per_page?: number;

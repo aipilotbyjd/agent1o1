@@ -1,6 +1,7 @@
 export type {
 	TApiResponse,
 	TPaginationMeta,
+	TPaginatedResponse,
 	TCursorPaginationMeta,
 	TListParams,
 	TApiError,

@@ -35,7 +35,7 @@ const navItemClasses = {
 		'transition-all duration-300 ease-in-out',
 	),
 	inactive: 'border-transparent',
-	active: 'border-zinc-300 text-zinc-950 dark:border-zinc-800 dark:text-zinc-100',
+	active: 'bg-primary-400/10 border-transparent text-primary-500 dark:text-primary-400 font-semibold',
 	here: 'text-zinc-950 dark:text-zinc-100 border-transparent',
 };
 
@@ -170,6 +170,11 @@ interface INavItemProps extends Omit<HTMLAttributes<HTMLLIElement>, 'onClick'> {
 	isChildrenNavButtonOverwrite?: boolean;
 	text?: string;
 	to?: string;
+	/**
+	 * Exact-match the route. Defaults to true; pass false for an item that owns a
+	 * subtree (Billing, say) so it stays highlighted on `/billing/plans`.
+	 */
+	end?: boolean;
 	className?: string;
 	subPages?: unknown;
 	onClick?: MouseEventHandler<HTMLButtonElement>;
@@ -180,6 +185,7 @@ export const NavItem: FC<INavItemProps> = (props) => {
 		icon,
 		text = 'Text',
 		to,
+		end = true,
 		className,
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		subPages,
@@ -227,7 +233,7 @@ export const NavItem: FC<INavItemProps> = (props) => {
 					<>
 						{/* For Desktop */}
 						<NavLink
-							end
+							end={end}
 							to={to}
 							className={({ isActive }) =>
 								isActive || isActiveOverwrite
@@ -246,7 +252,7 @@ export const NavItem: FC<INavItemProps> = (props) => {
 						</NavLink>
 						{/* For Mobile */}
 						<NavLink
-							end
+							end={end}
 							to={to}
 							onClick={() => setAsideStatus(false)}
 							className={({ isActive }) =>

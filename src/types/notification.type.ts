@@ -70,6 +70,7 @@ export type TNotificationEventKey =
 	| 'billing.subscription_renewed'
 	| 'billing.credits_low'
 	| 'billing.credits_exhausted'
+	| 'billing.overage_cap_reached'
 	| 'agent.reflection_run_completed'
 	| 'agent.session_evaluation_notify';
 

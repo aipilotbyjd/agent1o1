@@ -66,7 +66,7 @@ export type TAgentTemplateConfig = {
 
 export type TAgentTemplate = {
 	id: string;
-	workspace_id: string;
+	workspace_id: string | null;
 	source_agent_id: string | null;
 	name: string;
 	slug: string;
@@ -96,8 +96,8 @@ export type TCreateAgentTemplateDto = {
 export type TUpdateAgentTemplateDto = Partial<TCreateAgentTemplateDto>;
 
 export type TUseAgentTemplateDto = {
-	name?: string;
-	folder_id?: string | null;
+	name: string;
+	model_catalog_id?: string | null;
 };
 
 export type TSaveAgentAsTemplateDto = {

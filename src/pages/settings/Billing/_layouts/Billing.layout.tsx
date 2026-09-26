@@ -1,0 +1,49 @@
+import { Outlet, NavLink, useParams } from 'react-router';
+import { Activity, CreditCard, FileText, Layers, LayoutGrid } from 'lucide-react';
+import { useWorkspaceContext } from '@/context/workspace';
+import pages from '@/Routes/pages';
+import { withWorkspace } from '@/Routes/paths';
+
+const settingsPages = pages.settings.subPages!;
+const billingPages = settingsPages.billing.subPages!;
+
+const tabs = [
+	{ to: settingsPages.billing.to, label: 'Overview', icon: LayoutGrid, end: true },
+	{ to: billingPages.plans.to, label: 'Plans', icon: Layers, end: false },
+	{ to: billingPages.credits.to, label: 'Buy Credits', icon: CreditCard, end: false },
+	{ to: billingPages.usage.to, label: 'Usage', icon: Activity, end: false },
+	{ to: billingPages.invoices.to, label: 'Invoices', icon: FileText, end: false },
+];
+
+const BillingLayout = () => {
+	const { workspaceId } = useParams<{ workspaceId: string }>();
+	const { activeWorkspaceId } = useWorkspaceContext();
+	const toWorkspacePath = (to: string) => withWorkspace(to, workspaceId || activeWorkspaceId);
+
+	return (
+		<div className='mx-auto w-full max-w-[1180px] min-w-0 px-4 py-6 sm:px-10 sm:py-8 lg:px-14'>
+			<div className='mb-6 flex items-center gap-1 rounded-2xl border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-700 dark:bg-zinc-800/50'>
+				{tabs.map(({ to, label, icon: Icon, end }) => (
+					<NavLink
+						key={to}
+						to={toWorkspacePath(to)}
+						end={end}
+						className={({ isActive }) =>
+							[
+								'flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all',
+								isActive
+									? 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-900 dark:text-zinc-50'
+									: 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300',
+							].join(' ')
+						}>
+						<Icon size={15} />
+						<span className='hidden sm:inline'>{label}</span>
+					</NavLink>
+				))}
+			</div>
+			<Outlet />
+		</div>
+	);
+};
+
+export default BillingLayout;

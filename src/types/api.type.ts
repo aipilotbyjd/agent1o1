@@ -50,6 +50,17 @@ export type TCursorPaginationMeta = {
 	has_more: boolean;
 };
 
+/** The old frontend's list envelope, kept for the ported billing/credits
+ *  modules: `meta` on newer endpoints, `pagination` on the older ones. */
+export type TPaginatedResponse<T> = {
+	data: T[];
+	meta?: TPaginationMeta;
+	pagination?: TPaginationMeta & {
+		from?: number | null;
+		to?: number | null;
+	};
+};
+
 export type TListParams = {
 	page?: number;
 	per_page?: number;

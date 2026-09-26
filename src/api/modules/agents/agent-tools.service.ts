@@ -1,13 +1,20 @@
 import { axiosClient } from '@/api/client';
 import { unwrapKey } from '@/api/core';
 import type { TApiResponse } from '@/api/core';
-import type { TAgentToolBinding, TCreateAgentToolBindingDto } from '@/types/agent.type';
+import type {
+	TAgent,
+	TAgentToolBinding,
+	TCreateAgentToolBindingDto,
+	TSubagentTask,
+} from '@/types/agent.type';
 import type { TWorkflow } from '@/types/workflow.type';
 import type { TAgentSkill } from '@/types/agent-skill.type';
 import {
 	AgentToolBindingEndpoints as TB,
 	AgentWorkflowToolEndpoints as WF,
 	AgentSkillAttachmentEndpoints as SK,
+	AgentSubagentEndpoints as SA,
+	AgentSessionEndpoints as SE,
 } from './agents.endpoints';
 
 export const AgentToolBindingService = {
@@ -53,4 +60,24 @@ export const AgentSkillAttachmentService = {
 
 	detach: (ws: string, agentId: string, skillId: string) =>
 		axiosClient.delete(SK.detach(ws, agentId, skillId)).then(() => undefined),
+};
+
+export const AgentSubagentService = {
+	list: (ws: string, agentId: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<{ subagents: TAgent[] }>>(SA.list(ws, agentId), { signal })
+			.then(unwrapKey<TAgent[]>('subagents')),
+
+	attach: (ws: string, agentId: string, subagentId: string) =>
+		axiosClient
+			.post<TApiResponse<{ subagents: TAgent[] }>>(SA.attach(ws, agentId, subagentId))
+			.then(unwrapKey<TAgent[]>('subagents')),
+
+	detach: (ws: string, agentId: string, subagentId: string) =>
+		axiosClient.delete(SA.detach(ws, agentId, subagentId)).then(() => undefined),
+
+	tasks: (ws: string, agentId: string, sessionId: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<{ tasks: TSubagentTask[] }>>(SE.subagentTasks(ws, agentId, sessionId), { signal })
+			.then(unwrapKey<TSubagentTask[]>('tasks')),
 };

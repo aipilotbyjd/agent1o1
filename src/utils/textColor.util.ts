@@ -1,5 +1,5 @@
 import { TAllColors } from '@/types/colors.type';
-import { TColorIntensity } from '@/types/colorIntensities.type';
+import { TColorIntensity } from '@/types/color-intensities.type';
 
 export const textColor = (color: TAllColors | undefined, shade: TColorIntensity | undefined) => {
 	if (typeof color === 'undefined') return null;

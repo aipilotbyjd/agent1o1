@@ -48,14 +48,15 @@ export const useDeleteWorkflowBuilderSession = (ws: string) => {
 	});
 };
 
-export const usePromoteWorkflowBuilderSession = (ws: string, id: string) => {
+export const usePromoteWorkflowBuilderSession = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (payload?: TPromoteBuilderSessionDto) =>
+		mutationFn: ({ id, payload }: { id: string; payload?: TPromoteBuilderSessionDto }) =>
 			WorkflowBuilderSessionService.promote(ws, id, payload),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: builderSessionKeys.detail(ws, id) });
+		onSuccess: (workflow) => {
+			qc.invalidateQueries({ queryKey: builderSessionKeys.all(ws) });
 			qc.invalidateQueries({ queryKey: workflowKeys.lists(ws) });
+			qc.setQueryData(workflowKeys.detail(ws, String(workflow.id)), workflow);
 		},
 		meta: { errorMessage: 'Failed to publish workflow' },
 	});

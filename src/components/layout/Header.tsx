@@ -18,13 +18,17 @@ export const HeaderLeft: FC<IHeaderLeftProps> = (props) => {
 	return (
 		<div
 			data-component-name='Header/HeaderLeft'
-			className={classNames('flex items-center gap-4', 'ltr:mr-auto rtl:ml-auto', className)}
+			className={classNames(
+				'flex min-w-0 items-center gap-2 sm:gap-4',
+				'ltr:mr-auto rtl:ml-auto',
+				className,
+			)}
 			{...rest}>
 			<button
 				type='button'
 				aria-label='Toggle Aside Menu'
 				onClick={() => setAsideStatus(!asideStatus)}
-				className='flex h-12 w-12 items-center justify-center md:hidden'>
+				className='flex h-12 w-10 shrink-0 items-center justify-center sm:w-12 md:hidden'>
 				<Icon icon={asideStatus ? 'SidebarLeft01' : 'SidebarLeft'} className='text-2xl' />
 			</button>
 			{children}
@@ -45,7 +49,11 @@ export const HeaderRight: FC<IHeaderRightProps> = (props) => {
 	return (
 		<div
 			data-component-name='Header/HeaderRight'
-			className={classNames('flex items-center gap-4', 'ltr:ml-auto rtl:mr-auto', className)}
+			className={classNames(
+				'flex shrink-0 items-center gap-2 sm:gap-4',
+				'ltr:ml-auto rtl:mr-auto',
+				className,
+			)}
 			{...rest}>
 			{children}
 		</div>
@@ -72,9 +80,9 @@ const Header: FC<IHeaderProps> = (props) => {
 				ref={divRef}
 				data-component-name='Header'
 				className={classNames(
-					'sticky top-6 z-30 mx-2 mt-2 px-5 py-4',
-					'flex items-center justify-center rounded-xl shadow-md/5',
-					'bg-zinc-100/50 backdrop-blur-md dark:bg-zinc-900/75',
+					'sticky top-2 z-30 mx-2 mt-2 px-3 py-3 sm:px-5 sm:py-4',
+					'flex flex-nowrap items-center rounded-xl shadow-md/5',
+					'bg-bg-sidebar/90 dark:bg-bg-sidebar/90 backdrop-blur-md',
 					className,
 				)}
 				{...rest}>

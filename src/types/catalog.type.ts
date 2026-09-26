@@ -7,6 +7,8 @@
 // so they're typed as `unknown` rather than guessed at.
 // ============================================================
 
+import type { TBuiltinNode } from './node.type';
+
 export type TNodeCategory = {
 	id: string;
 	name: string;
@@ -17,6 +19,8 @@ export type TNodeCategory = {
 	sort_order: number;
 	kind: string;
 };
+
+export type TNodeCategoryWithCount = TNodeCategory & { nodes_count: number; nodes?: TBuiltinNode[] };
 
 export type TTriggerMechanism = 'webhook' | 'schedule' | 'manual' | 'polling' | 'event';
 
@@ -39,4 +43,5 @@ export type TModelCatalogEntry = {
 	display_name: string;
 	brand: string;
 	capabilities: unknown;
+	is_available: boolean;
 };

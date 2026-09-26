@@ -7,6 +7,29 @@
 // write-only and never comes back in a response.
 // ============================================================
 
+/** Mirrors `App\Enums\Connectors\ConnectorAuthType`. */
+export type TConnectorAuthType = 'oauth2' | 'api_key' | 'bearer_token' | 'basic_auth';
+
+/**
+ * One entry of `connectors.fields` — the form schema for a manually entered
+ * credential. The backend stores this as a JSON *array* (see
+ * `ConnectorFactory`), not the keyed object the old frontend assumed.
+ */
+export type TConnectorField = {
+	name: string;
+	label?: string;
+	type?: 'string' | 'number' | 'boolean' | 'multiline';
+	secret?: boolean;
+	required?: boolean;
+	placeholder?: string;
+	description?: string;
+};
+
+export type TConnectorDataValue = string | number | boolean;
+
+/** The write-only secret payload sent on create/update. Never comes back. */
+export type TConnectorData = Record<string, TConnectorDataValue>;
+
 export type TConnector = {
 	id: string;
 	key: string;
@@ -14,9 +37,9 @@ export type TConnector = {
 	description: string | null;
 	icon: string | null;
 	color: string | null;
-	auth_type: string;
+	auth_type: TConnectorAuthType;
 	is_oauth: boolean;
-	fields: unknown;
+	fields: TConnectorField[];
 	is_active: boolean;
 };
 
@@ -40,7 +63,7 @@ export type TConnectorCredential = {
 export type TCreateConnectorCredentialDto = {
 	connector_id: string;
 	name: string;
-	data: Record<string, unknown>;
+	data: TConnectorData;
 	expires_at?: string | null;
 	scope?: TConnectorCredentialScope;
 	is_default?: boolean;
@@ -48,7 +71,7 @@ export type TCreateConnectorCredentialDto = {
 
 export type TUpdateConnectorCredentialDto = {
 	name?: string;
-	data?: Record<string, unknown>;
+	data?: TConnectorData;
 	expires_at?: string | null;
 };
 
@@ -59,4 +82,13 @@ export type TInitiateOAuthConnectorDto = {
 	scope?: TConnectorCredentialScope;
 };
 
-export type TInitiateOAuthConnectorResult = { url: string };
+/**
+ * What `OAuthConnectorFlowService::initiate()` actually returns. `state` is the
+ * opaque, 10-minute token the provider echoes back to the callback; `scope` on
+ * the request DTO above is the credential's visibility (team/personal), NOT the
+ * OAuth scopes — those come from the connector row server-side.
+ */
+export type TInitiateOAuthConnectorResult = {
+	authorize_url: string;
+	state: string;
+};
