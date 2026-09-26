@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { apiConfig } from '@/api/core';
 import pages from '@/Routes/pages';
@@ -36,6 +36,7 @@ const OAuthCompletePage = () => {
 	const [searchParams] = useSearchParams();
 	const navigate = useNavigate();
 	const [failure, setFailure] = useState<string | null>(null);
+	const pendingExchange = useRef<{ url: string; response: Promise<Response> } | null>(null);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -54,7 +55,8 @@ const OAuthCompletePage = () => {
 			const target = new URL(pages.workspace.subPages!.apps.to, window.location.origin);
 			if (result.success) {
 				target.searchParams.set('oauth', 'success');
-				if (result.credentialId) target.searchParams.set('credential_id', result.credentialId);
+				if (result.credentialId)
+					target.searchParams.set('credential_id', result.credentialId);
 				if (result.connectorKey) target.searchParams.set('type', result.connectorKey);
 			} else {
 				target.searchParams.set('oauth', 'error');
@@ -100,10 +102,19 @@ const OAuthCompletePage = () => {
 			try {
 				// Deliberately plain `fetch`: this route is public and sits outside
 				// the axios client's versioned base URL.
-				const response = await fetch(callbackUrl(state, code), {
-					headers: { Accept: 'application/json' },
-				});
-				const body = await response.json().catch(() => null);
+				const url = callbackUrl(state, code);
+				// Reuse the exchange during effect replay: OAuth codes are single-use.
+				if (pendingExchange.current?.url !== url) {
+					pendingExchange.current = {
+						url,
+						response: fetch(url, { headers: { Accept: 'application/json' } }),
+					};
+				}
+				const response = await pendingExchange.current.response;
+				const body = await response
+					.clone()
+					.json()
+					.catch(() => null);
 
 				if (!response.ok) {
 					finish({
