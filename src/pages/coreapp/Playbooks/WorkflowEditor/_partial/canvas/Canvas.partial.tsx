@@ -16,7 +16,19 @@ import {
 import '@xyflow/react/dist/style.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bot, Database, GitBranch, Globe2, MousePointer2, Timer, Webhook, Zap, Minus, Plus, Maximize2, ChevronDown } from 'lucide-react';
+import {
+	Bot,
+	Database,
+	GitBranch,
+	Globe2,
+	MousePointer2,
+	Timer,
+	Zap,
+	Minus,
+	Plus,
+	Maximize2,
+	ChevronDown,
+} from 'lucide-react';
 import { useCanvasDrop } from '../../_hooks/useCanvasDrop.hook';
 import { isTypingTarget } from '../../_hooks/useEditorHotkeys.hook';
 import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
@@ -53,12 +65,11 @@ const edgeTypes: EdgeTypes = {
 };
 
 const quickAddNodes = [
-	{ key: 'trigger.webhook', label: 'Webhook', icon: Webhook },
-	{ key: 'ai.agent', label: 'AI Agent', icon: Bot },
-	{ key: 'data.http', label: 'API', icon: Globe2 },
-	{ key: 'data.database', label: 'Database', icon: Database },
-	{ key: 'logic.condition', label: 'Condition', icon: GitBranch },
-	{ key: 'utility.delay', label: 'Delay', icon: Timer },
+	{ key: 'agent', label: 'AI Agent', icon: Bot },
+	{ key: 'call_api', label: 'API', icon: Globe2 },
+	{ key: 'transform', label: 'Transform', icon: Database },
+	{ key: 'router', label: 'Router', icon: GitBranch },
+	{ key: 'delay', label: 'Delay', icon: Timer },
 ];
 
 const getPortType = (node: TCanvasNode | undefined, portId?: string | null): TPortType => {
@@ -291,19 +302,12 @@ const Canvas = () => {
 		[state.edges, state.nodes, state.run.currentNodeId, state.run.status],
 	);
 
-	const isValidConnection: IsValidConnection = useCallback(
-		(connection) => {
-			if (
-				!connection.source ||
-				!connection.target ||
-				connection.source === connection.target
-			) {
-				return false;
-			}
-			return true;
-		},
-		[],
-	);
+	const isValidConnection: IsValidConnection = useCallback((connection) => {
+		if (!connection.source || !connection.target || connection.source === connection.target) {
+			return false;
+		}
+		return true;
+	}, []);
 
 	const onConnect = useCallback(
 		(connection: Connection) => {
@@ -343,8 +347,8 @@ const Canvas = () => {
 				type: 'ADD_EDGE',
 				source: fromIsSource ? fromNodeId : droppedNodeId,
 				target: fromIsSource ? droppedNodeId : fromNodeId,
-				sourceHandle: fromIsSource ? fromHandle.id ?? undefined : undefined,
-				targetHandle: fromIsSource ? undefined : fromHandle.id ?? undefined,
+				sourceHandle: fromIsSource ? (fromHandle.id ?? undefined) : undefined,
+				targetHandle: fromIsSource ? undefined : (fromHandle.id ?? undefined),
 			});
 		},
 		[dispatch],
@@ -471,8 +475,8 @@ const Canvas = () => {
 						exit={{ opacity: 0, scale: 0.96, y: 4 }}
 						transition={{ duration: 0.12 }}
 						style={{ left: contextMenu.x, top: contextMenu.y }}
-						className='absolute z-30 w-64 overflow-hidden rounded-xl border border-zinc-250 bg-white p-2 text-zinc-800 shadow-2xl shadow-zinc-200/55 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/95 dark:text-zinc-100 dark:shadow-black/40'>
-						<div className='mb-1 flex items-center gap-2 px-2 py-1.5 text-xs font-semibold text-zinc-450 dark:text-zinc-500'>
+						className='border-zinc-250 absolute z-30 w-64 overflow-hidden rounded-xl border bg-white p-2 text-zinc-800 shadow-2xl shadow-zinc-200/55 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/95 dark:text-zinc-100 dark:shadow-black/40'>
+						<div className='text-zinc-450 mb-1 flex items-center gap-2 px-2 py-1.5 text-xs font-semibold dark:text-zinc-500'>
 							<MousePointer2 size={13} />
 							Add node here
 						</div>
@@ -505,8 +509,8 @@ const Canvas = () => {
 								dispatch({ type: 'SET_COMMAND_PALETTE', open: true });
 								setContextMenu(null);
 							}}
-							className='mt-1 flex w-full items-center gap-3 rounded-lg border border-primary-100 bg-primary-50 px-2.5 py-2 text-left text-sm font-semibold text-primary-700 transition hover:bg-primary-100 dark:border-primary-500/20 dark:bg-primary-400/10 dark:text-primary-100 dark:hover:bg-primary-500/15'>
-							<span className='flex h-8 w-8 items-center justify-center rounded-lg bg-primary-200/50 dark:bg-primary-400/15'>
+							className='border-primary-100 bg-primary-50 text-primary-700 hover:bg-primary-100 dark:border-primary-500/20 dark:bg-primary-400/10 dark:text-primary-100 dark:hover:bg-primary-500/15 mt-1 flex w-full items-center gap-3 rounded-lg border px-2.5 py-2 text-left text-sm font-semibold transition'>
+							<span className='bg-primary-200/50 dark:bg-primary-400/15 flex h-8 w-8 items-center justify-center rounded-lg'>
 								<Zap size={15} className='text-primary-600 dark:text-primary-400' />
 							</span>
 							Open command palette
@@ -524,13 +528,15 @@ const Canvas = () => {
 			<NodeExpandedView />
 
 			{isChatActive && (
-				<div className='pointer-events-auto absolute right-0 bottom-0 left-0 flex h-14 items-center justify-between border-t border-zinc-200 bg-white/95 px-5 select-none dark:border-white/10 dark:bg-[#07080b]/95 z-10'>
+				<div className='pointer-events-auto absolute right-0 bottom-0 left-0 z-10 flex h-14 items-center justify-between border-t border-zinc-200 bg-white/95 px-5 select-none dark:border-white/10 dark:bg-[#07080b]/95'>
 					{/* Left items - Flow Tab */}
 					<div className='flex h-full items-end'>
-						<div className='flex h-[40px] items-center rounded-t-xl border border-zinc-250 border-b-0 bg-white px-4 text-xs font-bold text-primary-600 dark:border-zinc-800 dark:bg-[#07080b] shadow-xs relative' style={{ borderBottomColor: 'transparent' }}>
+						<div
+							className='border-zinc-250 text-primary-600 relative flex h-[40px] items-center rounded-t-xl border border-b-0 bg-white px-4 text-xs font-bold shadow-xs dark:border-zinc-800 dark:bg-[#07080b]'
+							style={{ borderBottomColor: 'transparent' }}>
 							<span className='text-sm font-black'>Flow</span>
 							{/* Purple active indicator line */}
-							<div className='absolute bottom-0 left-0 right-0 h-[3px] bg-primary-400 rounded-t-lg' />
+							<div className='bg-primary-400 absolute right-0 bottom-0 left-0 h-[3px] rounded-t-lg' />
 						</div>
 					</div>
 
@@ -542,8 +548,7 @@ const Canvas = () => {
 								aria-label='Remove'
 								type='button'
 								onClick={() => reactFlow.zoomOut({ duration: 150 })}
-								className='text-zinc-450 hover:text-zinc-800 p-1 dark:hover:text-zinc-200'
-							>
+								className='text-zinc-450 p-1 hover:text-zinc-800 dark:hover:text-zinc-200'>
 								<Minus size={13} strokeWidth={2.5} />
 							</button>
 							<span className='min-w-[32px] text-center text-[10px] font-bold text-zinc-500 dark:text-zinc-400'>
@@ -553,36 +558,41 @@ const Canvas = () => {
 								aria-label='Add'
 								type='button'
 								onClick={() => reactFlow.zoomIn({ duration: 150 })}
-								className='text-zinc-450 hover:text-zinc-800 p-1 dark:hover:text-zinc-200'
-							>
+								className='text-zinc-450 p-1 hover:text-zinc-800 dark:hover:text-zinc-200'>
 								<Plus size={13} strokeWidth={2.5} />
 							</button>
-							<span className='h-3 w-[1px] bg-zinc-200 dark:bg-zinc-800 mx-1' />
+							<span className='mx-1 h-3 w-[1px] bg-zinc-200 dark:bg-zinc-800' />
 							<button
 								aria-label='Expand'
 								type='button'
 								onClick={() => reactFlow.fitView({ padding: 0.18, duration: 240 })}
-								className='text-zinc-455 hover:text-zinc-700 p-1 dark:hover:text-zinc-300'
-							>
+								className='text-zinc-455 p-1 hover:text-zinc-700 dark:hover:text-zinc-300'>
 								<Maximize2 size={12} />
 							</button>
 						</div>
 
 						{/* Profile selector card */}
-						<div className='flex items-center gap-2.5 bg-white border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 rounded-xl px-3 py-1.5 shadow-xs hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition cursor-pointer ml-3'>
-							<div className='relative h-6.5 w-6.5 rounded-full overflow-hidden'>
-								<img src={userData?.image?.org || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'} alt='User avatar' className='h-full w-full object-cover' />
-								<span className='absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 border-2 border-white dark:border-zinc-900' />
+						<div className='ml-3 flex cursor-pointer items-center gap-2.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 shadow-xs transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/50'>
+							<div className='relative h-6.5 w-6.5 overflow-hidden rounded-full'>
+								<img
+									src={
+										userData?.image?.org ||
+										'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'
+									}
+									alt='User avatar'
+									className='h-full w-full object-cover'
+								/>
+								<span className='absolute right-0 bottom-0 h-2 w-2 rounded-full border-2 border-white bg-emerald-500 dark:border-zinc-900' />
 							</div>
 							<div className='text-left leading-none'>
 								<div className='text-[11px] font-bold text-zinc-800 dark:text-white'>
 									{userData?.name || 'Amaan'}
 								</div>
-								<div className='text-[9px] text-zinc-450 dark:text-zinc-500 font-medium mt-0.5'>
+								<div className='text-zinc-450 mt-0.5 text-[9px] font-medium dark:text-zinc-500'>
 									{userData?.email || 'beingamaan21@gmail.com'}
 								</div>
 							</div>
-							<ChevronDown size={13} className='text-zinc-400 ml-1' />
+							<ChevronDown size={13} className='ml-1 text-zinc-400' />
 						</div>
 					</div>
 				</div>

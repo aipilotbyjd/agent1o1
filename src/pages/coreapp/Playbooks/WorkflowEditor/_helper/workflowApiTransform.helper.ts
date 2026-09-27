@@ -20,22 +20,27 @@ import type { TExportedWorkflow } from '../_types/workflow-editor.type';
  * survives a save — saving it as `null` would turn an error path into one
  * that always runs. Edges reload on each node's default handles.
  */
-export const buildGraphPayload = (
-	nodes: TCanvasNode[],
-	edges: TCanvasEdge[],
-): TReplaceGraphDto => ({
-	nodes: nodes.map((node) => ({
-		key: node.id,
-		type: node.data.defKey,
-		config: node.data.values ?? {},
-		position: { x: node.position.x, y: node.position.y },
-	})),
-	edges: edges.map((edge) => ({
-		from: edge.source,
-		to: edge.target,
-		condition: edgeCondition(edge),
-	})),
-});
+export const buildGraphPayload = (nodes: TCanvasNode[], edges: TCanvasEdge[]): TReplaceGraphDto => {
+	// Sticky notes are canvas annotations. The backend only accepts executable
+	// node types and validates every edge against the submitted node keys.
+	const executableNodes = nodes.filter((node) => node.type !== 'note');
+	const executableIds = new Set(executableNodes.map((node) => node.id));
+	return {
+		nodes: executableNodes.map((node) => ({
+			key: node.id,
+			type: node.data.defKey,
+			config: node.data.values ?? {},
+			position: { x: node.position.x, y: node.position.y },
+		})),
+		edges: edges
+			.filter((edge) => executableIds.has(edge.source) && executableIds.has(edge.target))
+			.map((edge) => ({
+				from: edge.source,
+				to: edge.target,
+				condition: edgeCondition(edge),
+			})),
+	};
+};
 
 const draftNodeToCanvas = (node: TWorkflowNode): TCanvasNode => {
 	const canvasNode = graphNodeToCanvas({
@@ -47,7 +52,10 @@ const draftNodeToCanvas = (node: TWorkflowNode): TCanvasNode => {
 	// Pins live on the node row and survive a graph save (`replaceGraph` carries
 	// them over by key), so they come back with the draft.
 	if (node.pinned_data === null || node.pinned_data === undefined) return canvasNode;
-	return { ...canvasNode, data: { ...canvasNode.data, pinned: true, pinnedOutput: node.pinned_data } };
+	return {
+		...canvasNode,
+		data: { ...canvasNode.data, pinned: true, pinnedOutput: node.pinned_data },
+	};
 };
 
 /** Pinned data has to be a JSON object or array on the backend — a scalar

@@ -37,11 +37,10 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import DARK_MODE from '@/constants/darkMode.constant';
 import useDarkMode from '@/hooks/useDarkMode';
-import { useCreateWorkflowVersion, useUpdateWorkflow } from '@/api/modules/workflows';
+import { useCreateWorkflowVersion } from '@/api/modules/workflows';
 import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
-import { WorkflowDiagnosticsService } from '@/api/modules/workflow-builder';
 import { ApiError, notify } from '@/api/core';
-import { buildGraphPayload } from '../../_helper/workflowApiTransform.helper';
+import { persistWorkflowDraft } from '../../_helper/persistDraft.helper';
 import { useRunWorkflow } from '../../_hooks/useRunWorkflow.hook';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import pages from '@/Routes/pages';
@@ -374,7 +373,6 @@ const Topbar = () => {
 	const dashboardPath = workspaceId ? paths.dashboard(workspaceId) : pages.choose.to;
 
 	const saveVersion = useCreateWorkflowVersion(workspaceId);
-	const updateWorkflow = useUpdateWorkflow(workspaceId);
 	const setGovModalOpen = useWorkflowShellStore((store) => store.setGovModalOpen);
 	const setGovModalTab = useWorkflowShellStore((store) => store.setGovModalTab);
 	// One menu at a time. Previously each menu had its own backdrop, so clicking a
@@ -390,6 +388,9 @@ const Topbar = () => {
 	const [copiedLink, setCopiedLink] = useState(false);
 	const [isSaveAsTemplateOpen, setIsSaveAsTemplateOpen] = useState(false);
 	const [runSeconds, setRunSeconds] = useState(0);
+	const stateRef = useRef(state);
+	stateRef.current = state;
+	const publishingRef = useRef(false);
 
 	const isRunning = state.run.status === 'running';
 	const isRunDisabled = state.nodes.length === 0 && state.ui.emptyCanvasView !== 'chat-started';
@@ -429,15 +430,6 @@ const Topbar = () => {
 
 	const handleRenameWorkflow = (name: string) => {
 		dispatch({ type: 'SET_WORKFLOW_META', patch: { name, savingState: 'dirty' } });
-		if (!state.workflow.workspaceId || !state.workflow.apiId) return;
-		updateWorkflow.mutate(
-			{ id: state.workflow.apiId, body: { name } },
-			{
-				onSuccess: () =>
-					dispatch({ type: 'SET_WORKFLOW_META', patch: { savingState: 'saved' } }),
-				onError: () => dispatch({ type: 'SET_SAVE_STATE', savingState: 'error' }),
-			},
-		);
 	};
 
 	// The Save tooltip advertises Cmd/Ctrl+S, but nothing listened for it, so the
@@ -455,43 +447,47 @@ const Topbar = () => {
 	}, []);
 
 	const handleSave = async () => {
+		if (publishingRef.current) return;
 		if (!state.workflow.workspaceId || !state.workflow.apiId) {
 			dispatch({ type: 'SET_SAVE_STATE', savingState: 'dirty' });
 			return;
 		}
 
+		publishingRef.current = true;
+		const draft = state;
 		dispatch({ type: 'SET_SAVE_STATE', savingState: 'saving' });
 		// Publishing snapshots the server-side draft, so push the canvas first —
 		// otherwise anything still inside the autosave debounce is left out.
 		try {
-			await WorkflowDiagnosticsService.replaceGraph(
-				state.workflow.workspaceId,
-				state.workflow.apiId,
-				buildGraphPayload(state.nodes, state.edges),
-			);
+			await persistWorkflowDraft({
+				workspaceId: state.workflow.workspaceId,
+				workflowId: state.workflow.apiId,
+				name: state.workflow.name,
+				description: state.workflow.description,
+				nodes: state.nodes,
+				edges: state.edges,
+			});
+			const data = await saveVersion.mutateAsync({ workflowId: state.workflow.apiId });
+			const current = stateRef.current;
+			const changed =
+				current.nodes !== draft.nodes ||
+				current.edges !== draft.edges ||
+				current.workflow.name !== draft.workflow.name ||
+				current.workflow.description !== draft.workflow.description;
+			dispatch({
+				type: 'SET_WORKFLOW_META',
+				patch: {
+					currentVersionId: data.version.id,
+					currentVersionNumber: data.version.version,
+					savingState: changed ? 'dirty' : 'saved',
+				},
+			});
 		} catch (error) {
 			notify.error(ApiError.is(error) ? error.message : 'Could not save the workflow');
 			dispatch({ type: 'SET_SAVE_STATE', savingState: 'error' });
-			return;
+		} finally {
+			publishingRef.current = false;
 		}
-		saveVersion.mutate(
-			{
-				workflowId: state.workflow.apiId,
-			},
-			{
-				onSuccess: (data) => {
-					dispatch({
-						type: 'SET_WORKFLOW_META',
-						patch: {
-							currentVersionId: data.version.id,
-							currentVersionNumber: data.version.version,
-							savingState: 'saved',
-						},
-					});
-				},
-				onError: () => dispatch({ type: 'SET_SAVE_STATE', savingState: 'error' }),
-			},
-		);
 	};
 
 	useEffect(() => {
@@ -1181,11 +1177,14 @@ const Topbar = () => {
 					defaultName={state.workflow.name}
 					beforeSave={async () => {
 						// The template copies the server-side draft — push the canvas first.
-						await WorkflowDiagnosticsService.replaceGraph(
+						await persistWorkflowDraft({
 							workspaceId,
-							state.workflow.apiId!,
-							buildGraphPayload(state.nodes, state.edges),
-						);
+							workflowId: state.workflow.apiId!,
+							name: state.workflow.name,
+							description: state.workflow.description,
+							nodes: state.nodes,
+							edges: state.edges,
+						});
 					}}
 				/>
 			)}

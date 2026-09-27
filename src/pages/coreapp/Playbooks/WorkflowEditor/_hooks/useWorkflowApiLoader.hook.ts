@@ -74,8 +74,14 @@ export const useWorkflowApiLoader = (workspaceId: string, workflowId: string) =>
 
 	return {
 		isApiWorkflow: Boolean(workspaceId && workflowId),
-		isLoading: workflowQuery.isLoading || versionsQuery.isLoading,
-		isError: workflowQuery.isError || versionsQuery.isError,
+		isLoading:
+			workflowQuery.isLoading ||
+			versionsQuery.isLoading ||
+			categoriesLoading ||
+			(Boolean(workspaceId && workflowId && workflowQuery.data) &&
+				loadedKey.current !== `${workspaceId}:${workflowId}`),
+		isError: workflowQuery.isError,
+		retry: () => void workflowQuery.refetch(),
 		workflow: workflowQuery.data,
 		version: selectedVersion,
 	};

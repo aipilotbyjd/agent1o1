@@ -3,9 +3,8 @@ import { AUTOSAVE_DEBOUNCE_MS } from '../_helper/builder.constants';
 import { exportWorkflow } from '../_helper/importExport.helper';
 import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
 import { useQueryClient } from '@tanstack/react-query';
-import { WorkflowService, workflowKeys } from '@/api/modules/workflows';
-import { WorkflowDiagnosticsService } from '@/api/modules/workflow-builder';
-import { buildGraphPayload } from '../_helper/workflowApiTransform.helper';
+import { workflowKeys } from '@/api/modules/workflows';
+import { persistWorkflowDraft } from '../_helper/persistDraft.helper';
 
 export const useAutosave = () => {
 	const { state, dispatch } = useWorkflowEditor();
@@ -43,6 +42,8 @@ export const useAutosave = () => {
 			// marked saved — otherwise that edit would never be persisted.
 			const savedNodes = current.nodes;
 			const savedEdges = current.edges;
+			const savedName = current.workflow.name;
+			const savedDescription = current.workflow.description;
 
 			setState('saving');
 
@@ -50,19 +51,21 @@ export const useAutosave = () => {
 				try {
 					// Name/description and the graph are separate resources on this
 					// backend: PATCH ignores nodes/edges, the draft lives behind PUT /graph.
-					await WorkflowService.update(workspaceId, apiId, {
-						name: current.workflow.name,
-						description: current.workflow.description || undefined,
-					});
-					const saved = await WorkflowDiagnosticsService.replaceGraph(
+					const saved = await persistWorkflowDraft({
 						workspaceId,
-						apiId,
-						buildGraphPayload(savedNodes, savedEdges),
-					);
+						workflowId: apiId,
+						name: savedName,
+						description: savedDescription,
+						nodes: savedNodes,
+						edges: savedEdges,
+					});
 					// Reopening the editor reads the cached detail — keep it on the saved draft.
 					queryClient.setQueryData(workflowKeys.detail(workspaceId, apiId), saved);
 					const stale =
-						stateRef.current.nodes !== savedNodes || stateRef.current.edges !== savedEdges;
+						stateRef.current.nodes !== savedNodes ||
+						stateRef.current.edges !== savedEdges ||
+						stateRef.current.workflow.name !== savedName ||
+						stateRef.current.workflow.description !== savedDescription;
 					setState(stale ? 'dirty' : 'saved');
 				} catch (err) {
 					console.error('Failed to autosave workflow to API:', err);
@@ -70,7 +73,10 @@ export const useAutosave = () => {
 				}
 			} else {
 				try {
-					localStorage.setItem(`workflow-editor:${current.workflow.id}`, exportWorkflow(current));
+					localStorage.setItem(
+						`workflow-editor:${current.workflow.id}`,
+						exportWorkflow(current),
+					);
 					setState('saved');
 				} catch {
 					setState('error');
