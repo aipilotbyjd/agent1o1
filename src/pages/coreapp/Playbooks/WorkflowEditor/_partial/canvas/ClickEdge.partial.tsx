@@ -117,7 +117,9 @@ const ClickEdge = ({
 				<div
 					className={[
 						'nodrag nopan absolute flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 transition-opacity duration-150',
-						selected ? 'opacity-100' : 'opacity-0 hover:opacity-100',
+						// A branch condition changes what the edge means, so it stays
+						// visible; plain connections only show their label on hover.
+						selected || data?.condition ? 'opacity-100' : 'opacity-0 hover:opacity-100',
 					].join(' ')}
 					style={{
 						transform: `translate(${labelX}px, ${labelY}px)`,

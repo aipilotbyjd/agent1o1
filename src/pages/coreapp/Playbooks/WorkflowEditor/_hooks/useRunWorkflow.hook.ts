@@ -1,16 +1,11 @@
-import { useRef } from 'react';
-import { useWorkflow } from '@/api/modules/workflows';
-import {
-	RunService,
-	subscribeToRun,
-	type IRunStateChangedEvent,
-	type INodeRunStateChangedEvent,
-} from '@/api/modules/runs';
-import type { TNodeRunDetail, TRunStatus } from '@/types/run.type';
-import { useRealtime } from '@/context/realtime';
+import { createContext, createElement, useContext, useRef, type ReactNode } from 'react';
+import { useWorkflow, WorkflowService, WorkflowVersionService } from '@/api/modules/workflows';
+import { RunService } from '@/api/modules/runs';
+import type { TNodeRunDetail, TRun, TRunStatus } from '@/types/run.type';
 import { createId } from '../_context/WorkflowEditorStore.context';
 import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
 import { getRunOrder } from '../_helper/runGraph.helper';
+import { persistWorkflowDraft } from '../_helper/persistDraft.helper';
 import {
 	buildRuntimeContext,
 	executeNode,
@@ -26,9 +21,9 @@ import { notify } from '@/api/core/notify';
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-/** Backend poll cadence and safety cap (~5 min) so a stuck execution can't poll forever. */
+/** Poll quickly during active work, then less often for approval/callback waits. */
 const POLL_INTERVAL_MS = 2000;
-const MAX_POLL_ATTEMPTS = 150;
+const WAITING_POLL_INTERVAL_MS = 10000;
 
 /** How long a breakpoint waits for a manual step before auto-continuing. */
 const BREAKPOINT_TIMEOUT_MS = 60_000;
@@ -62,10 +57,10 @@ const ACTIVE_RUN_STATUSES = new Set<TRunStatus>([
 	'awaiting_callback',
 ]);
 
-export const useRunWorkflow = () => {
+const useRunWorkflowController = () => {
 	const { state, dispatch } = useWorkflowEditor();
-	const { echo } = useRealtime();
 	const stopped = useRef(false);
+	const starting = useRef(false);
 	const stepResolveRef = useRef<(() => void) | null>(null);
 
 	const ws = state.workflow.workspaceId;
@@ -95,7 +90,7 @@ export const useRunWorkflow = () => {
 		});
 	};
 
-	/** Mirror a single node result (from poll or realtime) onto the editor state. */
+	/** Mirror a single node result onto the editor state. */
 	const applyNodeResult = (
 		nodeRunKey: string,
 		status: string | undefined,
@@ -118,95 +113,83 @@ export const useRunWorkflow = () => {
 		}
 	};
 
-	/** Finalise a remote run: cancel on stop, otherwise flip status from the result. */
-	const finishRemoteRun = async (ws: string, runId: string, status: TRunStatus | undefined) => {
-		if (stopped.current) {
+	/** Finalise a remote run from the backend's recorded status. */
+	const finishRemoteRun = async (ws: string, run: TRun, nodeRuns: TNodeRunDetail[]) => {
+		let finalRun = run;
+		if (stopped.current && ACTIVE_RUN_STATUSES.has(run.status)) {
 			try {
-				await RunService.cancel(ws, runId);
+				finalRun = await RunService.cancel(ws, run.id);
 			} catch (e) {
 				console.error('Failed to cancel run on backend:', e);
+				try {
+					finalRun = await RunService.detail(ws, run.id);
+				} catch {
+					notify.error('Could not confirm whether the run stopped. Check Run History.');
+					dispatch({ type: 'RUN_FINISH', status: 'error' });
+					return;
+				}
 			}
-			dispatch({ type: 'RUN_FINISH', status: 'stopped' });
-			return;
 		}
 
 		const finalStatus: 'success' | 'error' | 'stopped' =
-			status === 'completed' ? 'success' : status === 'cancelled' ? 'stopped' : 'error';
+			finalRun.status === 'completed'
+				? 'success'
+				: finalRun.status === 'cancelled'
+					? 'stopped'
+					: 'error';
 		dispatch({ type: 'RUN_FINISH', status: finalStatus });
 		dispatch({
 			type: 'APPEND_LOG',
 			log: {
 				level: finalStatus === 'success' ? 'info' : 'error',
-				message: `Run finished with status: ${status ?? 'unknown'}`,
+				message: finalRun.error ?? `Run finished with status: ${finalRun.status}`,
+			},
+		});
+		dispatch({
+			type: 'PUSH_RUN_HISTORY',
+			record: {
+				id: finalRun.id,
+				startedAt: finalRun.started_at ? Date.parse(finalRun.started_at) : Date.now(),
+				finishedAt: finalRun.finished_at ? Date.parse(finalRun.finished_at) : Date.now(),
+				status: finalStatus,
+				trigger: 'manual',
+				nodeRuns: nodeRuns.map((nodeRun) => ({
+					nodeId: nodeRun.key,
+					label:
+						state.nodes.find((node) => node.id === nodeRun.key)?.data.label ??
+						nodeRun.key,
+					status:
+						nodeRun.status === 'completed'
+							? 'success'
+							: nodeRun.status === 'skipped'
+								? 'skipped'
+								: 'error',
+					durationMs: nodeRun.duration_ms ?? undefined,
+					output: nodeRun.output,
+					error: nodeRun.error ?? undefined,
+				})),
+				logs: [],
 			},
 		});
 	};
 
-	/**
-	 * Realtime path: subscribe to the run's private channel and mirror
-	 * `run.state-changed` / `node-run.state-changed`. Resolves with the final
-	 * run status.
-	 */
-	const runViaRealtime = (ws: string, runId: string) =>
-		new Promise<TRunStatus>((resolve) => {
-			let settled = false;
-			const settle = (status: TRunStatus) => {
-				if (settled) return;
-				settled = true;
-				unsubscribe();
-				clearTimeout(safetyTimer);
-				clearInterval(stopWatch);
-				resolve(status);
-			};
-
-			const unsubscribe = subscribeToRun(echo!, ws, runId, {
-				onRunState: (event: IRunStateChangedEvent) => {
-					if (event.status === 'completed' || event.status === 'failed' || event.status === 'cancelled') {
-						if (event.status === 'failed' && event.error) {
-							dispatch({
-								type: 'APPEND_LOG',
-								log: { level: 'error', message: errorText(event.error) ?? 'Run failed' },
-							});
-						}
-						settle(event.status);
-						return;
-					}
-					if (event.status === 'awaiting_approval' || event.status === 'awaiting_callback') {
-						dispatch({
-							type: 'APPEND_LOG',
-							log: { level: 'info', message: `Run paused: ${event.status}` },
-						});
-						return;
-					}
-					dispatch({
-						type: 'APPEND_LOG',
-						log: { level: 'info', message: `Run ${runId} ${event.status}` },
-					});
-				},
-				onNodeState: (event: INodeRunStateChangedEvent) =>
-					applyNodeResult(event.key, event.status, undefined, event.error, undefined, undefined),
-			});
-
-			// Backstops: overall time cap, and a watcher so Stop tears the run down.
-			const safetyTimer = setTimeout(
-				() => settle('failed'),
-				MAX_POLL_ATTEMPTS * POLL_INTERVAL_MS,
-			);
-			const stopWatch = setInterval(() => {
-				if (stopped.current) settle('cancelled');
-			}, 500);
-		});
-
-	/** Polling path (used when no realtime connection is available). */
-	const runViaPolling = async (ws: string, runId: string, initialStatus: TRunStatus) => {
-		let status = initialStatus;
-		const poll = async () => {
-			if (stopped.current) return;
+	/** Poll the backend because a realtime completion event may precede subscription. */
+	const runViaPolling = async (ws: string, initialRun: TRun) => {
+		let run = initialRun;
+		let nodeRuns: TNodeRunDetail[] = [];
+		let attempts = 0;
+		do {
+			if (attempts > 0) {
+				await wait(
+					run.status === 'awaiting_approval' || run.status === 'awaiting_callback'
+						? WAITING_POLL_INTERVAL_MS
+						: POLL_INTERVAL_MS,
+				);
+			}
+			if (stopped.current) break;
 			try {
-				const detail = await RunService.detail(ws, runId);
-				status = detail.status;
-
-				const nodeRuns: TNodeRunDetail[] = await RunService.nodeRuns(ws, runId);
+				run = await RunService.detail(ws, run.id);
+				nodeRuns = await RunService.nodeRuns(ws, run.id);
 				for (const nodeRun of nodeRuns) {
 					applyNodeResult(
 						nodeRun.key,
@@ -217,30 +200,16 @@ export const useRunWorkflow = () => {
 						nodeRun.input,
 					);
 				}
-			} catch (e) {
-				console.error('Error polling run:', e);
-			}
-		};
-
-		let attempts = 0;
-		while (ACTIVE_RUN_STATUSES.has(status) && !stopped.current) {
-			if (attempts >= MAX_POLL_ATTEMPTS) {
-				dispatch({
-					type: 'APPEND_LOG',
-					log: { level: 'warn', message: 'Stopped polling: run did not finish in time.' },
-				});
-				break;
+			} catch (error) {
+				console.error('Error polling run:', error);
 			}
 			attempts += 1;
-			await wait(POLL_INTERVAL_MS);
-			await poll();
-		}
-		return status;
+		} while (ACTIVE_RUN_STATUSES.has(run.status) && !stopped.current);
+		return { run, nodeRuns };
 	};
 
 	/**
-	 * Drive a real backend run. Prefers realtime when Echo is connected;
-	 * falls back to polling otherwise.
+	 * Drive a real backend run and use the backend record as the source of truth.
 	 */
 	const runRemoteWorkflow = async (ws: string, wfId: string) => {
 		try {
@@ -254,11 +223,8 @@ export const useRunWorkflow = () => {
 				},
 			});
 
-			const status = echo
-				? await runViaRealtime(ws, run.id)
-				: await runViaPolling(ws, run.id, run.status);
-
-			await finishRemoteRun(ws, run.id, status);
+			const result = await runViaPolling(ws, run);
+			await finishRemoteRun(ws, result.run, result.nodeRuns);
 		} catch (error) {
 			const msg = error instanceof Error ? error.message : 'Failed to start run';
 			notify.error(msg);
@@ -293,7 +259,11 @@ export const useRunWorkflow = () => {
 				nodeRuns.push({ nodeId: node.id, label: node.data.label, status: 'skipped' });
 				dispatch({
 					type: 'APPEND_LOG',
-					log: { nodeId: node.id, level: 'info', message: `${node.data.label} skipped (inactive branch)` },
+					log: {
+						nodeId: node.id,
+						level: 'info',
+						message: `${node.data.label} skipped (inactive branch)`,
+					},
 				});
 				continue;
 			}
@@ -309,6 +279,7 @@ export const useRunWorkflow = () => {
 					},
 				});
 				dispatch({ type: 'RUN_CURRENT_NODE', nodeId: node.id });
+				dispatch({ type: 'STEP_WAIT' });
 				let resolved = false;
 				let safetyTimer: ReturnType<typeof setTimeout>;
 				await new Promise<void>((resolve) => {
@@ -321,6 +292,8 @@ export const useRunWorkflow = () => {
 						if (!resolved) resolve();
 					}, BREAKPOINT_TIMEOUT_MS);
 				});
+				stepResolveRef.current = null;
+				dispatch({ type: 'STEP_NEXT' });
 				if (stopped.current) break;
 			}
 
@@ -336,7 +309,9 @@ export const useRunWorkflow = () => {
 				log: {
 					nodeId: node.id,
 					level: 'info',
-					message: usePinned ? `${node.data.label} using pinned data` : `${node.data.label} started`,
+					message: usePinned
+						? `${node.data.label} using pinned data`
+						: `${node.data.label} started`,
 				},
 			});
 
@@ -393,9 +368,19 @@ export const useRunWorkflow = () => {
 				});
 				dispatch({
 					type: 'APPEND_LOG',
-					log: { nodeId: node.id, level: 'error', message: `${node.data.label} failed: ${runError}` },
+					log: {
+						nodeId: node.id,
+						level: 'error',
+						message: `${node.data.label} failed: ${runError}`,
+					},
 				});
-				nodeRuns.push({ nodeId: node.id, label: node.data.label, status: 'error', durationMs, error: runError });
+				nodeRuns.push({
+					nodeId: node.id,
+					label: node.data.label,
+					status: 'error',
+					durationMs,
+					error: runError,
+				});
 				finishLocalRun('error', runId, runStartedAt, nodeRuns);
 				return;
 			}
@@ -411,7 +396,13 @@ export const useRunWorkflow = () => {
 				inputPreview: { config: resolvedValues },
 				outputPreview: output,
 			});
-			nodeRuns.push({ nodeId: node.id, label: node.data.label, status: 'success', durationMs, output });
+			nodeRuns.push({
+				nodeId: node.id,
+				label: node.data.label,
+				status: 'success',
+				durationMs,
+				output,
+			});
 			dispatch({
 				type: 'APPEND_LOG',
 				log: {
@@ -434,9 +425,10 @@ export const useRunWorkflow = () => {
 	};
 
 	const runWorkflow = async () => {
-		const isRunDisabled = state.nodes.length === 0 && state.ui.emptyCanvasView !== 'chat-started';
+		const isRunDisabled =
+			state.nodes.length === 0 && state.ui.emptyCanvasView !== 'chat-started';
 		if (isRunDisabled) return;
-		if (state.run.status === 'running') return;
+		if (state.run.status === 'running' || starting.current) return;
 
 		// Check for missing credentials.
 		const hasMissingCredentials = state.nodes.some((node) => {
@@ -444,7 +436,8 @@ export const useRunWorkflow = () => {
 			return Boolean(def?.requiresCredential) && !node.data.values.credential_id;
 		});
 
-		const isMockEmptyState = state.nodes.length === 0 && state.ui.emptyCanvasView === 'chat-started';
+		const isMockEmptyState =
+			state.nodes.length === 0 && state.ui.emptyCanvasView === 'chat-started';
 
 		if (hasMissingCredentials || isMockEmptyState) {
 			dispatch({ type: 'SET_LINK_CREDENTIALS_OPEN', open: true });
@@ -484,7 +477,42 @@ export const useRunWorkflow = () => {
 			return;
 		}
 
-		await runRemoteWorkflow(ws, wfId);
+		starting.current = true;
+		try {
+			// Runs are pinned to a published version on this backend. Save any
+			// pending canvas edits, then publish the draft if it differs from live.
+			const workflow =
+				state.workflow.savingState === 'saved'
+					? await WorkflowService.detail(ws, wfId)
+					: await persistWorkflowDraft({
+							workspaceId: ws,
+							workflowId: wfId,
+							name: state.workflow.name,
+							description: state.workflow.description,
+							nodes: state.nodes,
+							edges: state.edges,
+						});
+			if (workflow.has_unpublished_changes || !workflow.current_version_id) {
+				const published = await WorkflowVersionService.publish(ws, wfId);
+				dispatch({
+					type: 'SET_WORKFLOW_META',
+					patch: {
+						currentVersionId: published.version.id,
+						currentVersionNumber: published.version.version,
+					},
+				});
+			}
+			await runRemoteWorkflow(ws, wfId);
+		} catch (error) {
+			notify.error(
+				error instanceof Error
+					? error.message
+					: 'Could not save the workflow before running',
+			);
+			dispatch({ type: 'SET_SAVE_STATE', savingState: 'error' });
+		} finally {
+			starting.current = false;
+		}
 	};
 
 	const stopRun = () => {
@@ -499,4 +527,18 @@ export const useRunWorkflow = () => {
 	};
 
 	return { runWorkflow, stopRun, stepNext };
+};
+
+type TRunWorkflowController = ReturnType<typeof useRunWorkflowController>;
+const WorkflowRunContext = createContext<TRunWorkflowController | null>(null);
+
+export const WorkflowRunProvider = ({ children }: { children: ReactNode }) => {
+	const controller = useRunWorkflowController();
+	return createElement(WorkflowRunContext.Provider, { value: controller }, children);
+};
+
+export const useRunWorkflow = () => {
+	const controller = useContext(WorkflowRunContext);
+	if (!controller) throw new Error('useRunWorkflow must be used inside WorkflowRunProvider');
+	return controller;
 };

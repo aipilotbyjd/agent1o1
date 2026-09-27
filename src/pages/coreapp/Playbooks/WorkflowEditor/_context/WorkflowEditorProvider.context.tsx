@@ -5,12 +5,13 @@ import {
 	workflowEditorReducer,
 } from './WorkflowEditorStore.context';
 import type { TRunRecord } from '../_types/run.type';
+import { useWorkflowRouteParams } from '../_hooks/useWorkflowRouteParams.hook';
 
 const RUN_HISTORY_KEY = 'wf-editor-run-history';
 
-const loadRunHistory = (): TRunRecord[] => {
+const loadRunHistory = (key: string): TRunRecord[] => {
 	try {
-		const raw = localStorage.getItem(RUN_HISTORY_KEY);
+		const raw = localStorage.getItem(key);
 		return raw ? (JSON.parse(raw) as TRunRecord[]) : [];
 	} catch {
 		return [];
@@ -28,21 +29,23 @@ const toPersistableHistory = (history: TRunRecord[]): TRunRecord[] =>
 		nodeRuns: record.nodeRuns.map(({ output: _output, ...rest }) => rest),
 	}));
 
-const saveRunHistory = (history: TRunRecord[]) => {
+const saveRunHistory = (key: string, history: TRunRecord[]) => {
 	try {
-		localStorage.setItem(RUN_HISTORY_KEY, JSON.stringify(toPersistableHistory(history)));
+		localStorage.setItem(key, JSON.stringify(toPersistableHistory(history)));
 	} catch {
 		/* ignore quota / serialization errors */
 	}
 };
 
 export const WorkflowEditorProvider = ({ children }: { children: ReactNode }) => {
+	const { workspaceId, workflowId } = useWorkflowRouteParams();
+	const runHistoryKey = `${RUN_HISTORY_KEY}:${workspaceId}:${workflowId}`;
 	const [state, dispatch] = useReducer(
 		workflowEditorReducer,
 		initialWorkflowEditorState,
 		(initial) => {
 			const isAddWorkflow = window.location.pathname.endsWith('/new');
-			const runHistory = loadRunHistory();
+			const runHistory = loadRunHistory(runHistoryKey);
 			if (isAddWorkflow) {
 				return {
 					...initial,
@@ -57,8 +60,8 @@ export const WorkflowEditorProvider = ({ children }: { children: ReactNode }) =>
 
 	// Persist run history so past runs survive reloads (frontend-only store).
 	useEffect(() => {
-		saveRunHistory(state.runHistory);
-	}, [state.runHistory]);
+		saveRunHistory(runHistoryKey, state.runHistory);
+	}, [runHistoryKey, state.runHistory]);
 
 	const value = useMemo(() => ({ state, dispatch }), [state]);
 

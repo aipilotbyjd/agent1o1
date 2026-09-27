@@ -79,6 +79,20 @@ const BuildPage = () => {
 		}
 	}, [setActiveWorkspaceView, workflowId, workspaceId]);
 
+	if (apiState.isError && workspaceId && workflowId) {
+		return (
+			<div className='flex h-full flex-col items-center justify-center gap-4 bg-white px-4 text-center dark:bg-zinc-950'>
+				<p className='text-sm font-semibold text-rose-600'>Could not load this workflow.</p>
+				<button
+					type='button'
+					onClick={apiState.retry}
+					className='bg-primary-500 text-primary-foreground rounded-lg px-4 py-2 text-sm font-semibold'>
+					Retry
+				</button>
+			</div>
+		);
+	}
+
 	if (apiState.isLoading && workspaceId && workflowId) {
 		return (
 			<div className='flex h-full items-center justify-center bg-white text-sm font-bold text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400'>
@@ -89,11 +103,6 @@ const BuildPage = () => {
 
 	return (
 		<div className='flex h-full min-h-0 flex-col bg-zinc-50 dark:bg-[#07080b]'>
-			{apiState.isError && (
-				<div className='absolute top-0 right-0 left-0 z-50 flex items-center justify-center gap-2 bg-rose-500 px-4 py-1 text-xs font-bold text-white'>
-					API unavailable - running in local mode.
-				</div>
-			)}
 			{resolvedView !== 'settings' && resolvedView !== 'editor' && (
 				<div className='hidden shrink-0 lg:block'>
 					<AgentAsideTemplate />
@@ -245,7 +254,7 @@ const BuildPage = () => {
 										<button
 											type='button'
 											onClick={() => dispatch({ type: 'TOGGLE_LEFT_PANEL' })}
-											className='absolute top-1/2 left-0 z-10 flex h-10 w-4 -translate-y-1/2 cursor-pointer items-center justify-center rounded-r-md border border-l-0 border-zinc-200 bg-white text-zinc-400 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-700 dark:hover:text-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900'>
+											className='absolute top-1/2 left-0 z-10 flex h-10 w-4 -translate-y-1/2 cursor-pointer items-center justify-center rounded-r-md border border-l-0 border-zinc-200 bg-white text-zinc-400 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900 dark:hover:text-zinc-200'>
 											<span className='text-[10px] font-bold'>&gt;</span>
 										</button>
 									)}

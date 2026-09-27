@@ -5,14 +5,18 @@ import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context
 import { useAiChatStore, type TAiChatMessage, type TAiTimelineItem } from '@/store/aiChat.store';
 import { useAuth } from '@/context/auth';
 import { useConfirm } from '@/context/confirm';
-import { notify } from '@/api/core';
+import { messageFromError, notify } from '@/api/core';
 import {
+	WorkflowBuilderAssistService,
 	useDeleteWorkflowBuilderSession,
 	usePromoteWorkflowBuilderSession,
+	useRestoreWorkflowBuilderVersion,
+	useUpdateWorkflowBuilderSession,
 	useWorkflowBuilderSessions,
+	useWorkflowBuilderVersions,
 } from '@/api/modules/workflow-builder';
 import { versionToExportedWorkflow } from '../../_helper/workflowApiTransform.helper';
-import type { IBuilderMessageAction } from '@/types/workflow-builder.type';
+import type { TBuilderDraftVersion, TBuilderMessageAction } from '@/types/workflow-builder.type';
 import {
 	Paperclip,
 	Sparkles,
@@ -42,6 +46,14 @@ import {
 	Tag,
 	HelpCircle,
 	ArrowDownToLine,
+	Archive,
+	Undo2,
+	Lightbulb,
+	ListChecks,
+	BookOpen,
+	ShieldCheck,
+	FlaskConical,
+	GitBranch,
 } from 'lucide-react';
 import type { TCanvasNode } from '../../_types/canvas.type';
 
@@ -95,51 +107,52 @@ const nodeLabel = (nodes: TCanvasNode[], id: unknown): string => {
 /**
  * Icon + dynamic present-tense caption for a live tool call, built from that
  * call's actual arguments (not a generic per-tool label) — Gumloop-style.
- * `toolName` is the resolved Laravel\Ai tool name, which (since our tool
- * classes don't define name()) falls back to the PascalCase class basename.
+ * `toolName` is the builder tool's `name()` (`App\Ai\Tools\WorkflowBuilder\*`).
  */
 const describeToolCall = (
 	toolName: string,
 	args: Record<string, unknown>,
 	nodes: TCanvasNode[],
 ): { Icon: typeof Search; text: string } => {
+	const str = (value: unknown) => (typeof value === 'string' ? value : '');
+
 	switch (toolName) {
-		case 'AddNodeTool': {
-			const type = typeof args.type === 'string' ? args.type : '';
-			const label = (typeof args.name === 'string' && args.name) || prettify(type || 'node');
-			return { Icon: CirclePlus, text: `Add ${label} node` };
+		case 'add_node':
+			return { Icon: CirclePlus, text: `Add ${prettify(str(args.type) || 'node')} node${args.key ? ` “${str(args.key)}”` : ''}` };
+		case 'update_node':
+			return { Icon: Pencil, text: `Update ${nodeLabel(nodes, args.key)}` };
+		case 'remove_node':
+			return { Icon: Trash2, text: `Remove ${nodeLabel(nodes, args.key)}` };
+		case 'connect_nodes': {
+			const condition = str(args.condition);
+			return {
+				Icon: condition ? GitBranch : Link2,
+				text: `Connect ${nodeLabel(nodes, args.from)} → ${nodeLabel(nodes, args.to)}${
+					condition ? ` (${condition === 'error' ? 'on error' : condition})` : ''
+				}`,
+			};
 		}
-		case 'RemoveNodeTool':
-			return { Icon: Trash2, text: `Remove ${nodeLabel(nodes, args.node_id)} node` };
-		case 'UpdateNodeTool':
-			return { Icon: Pencil, text: `Update ${nodeLabel(nodes, args.node_id)} node` };
-		case 'ConnectNodesTool':
-			return {
-				Icon: Link2,
-				text: `Connect ${nodeLabel(nodes, args.source)} → ${nodeLabel(nodes, args.target)}`,
-			};
-		case 'DisconnectNodesTool':
-			return {
-				Icon: Unlink,
-				text: `Disconnect ${nodeLabel(nodes, args.source)} → ${nodeLabel(nodes, args.target)}`,
-			};
-		case 'ListAvailableNodesTool':
-			return {
-				Icon: Search,
-				text:
-					typeof args.category === 'string' && args.category
-						? `Look up ${prettify(args.category)} nodes`
-						: 'Look up available nodes',
-			};
-		case 'InspectNodeSchemaTool':
-			return {
-				Icon: Search,
-				text: `Check requirements for ${prettify(typeof args.node_type === 'string' ? args.node_type : 'node')}`,
-			};
-		case 'ReadDraftWorkflowTool':
+		case 'disconnect_nodes':
+			return { Icon: Unlink, text: `Disconnect ${nodeLabel(nodes, args.from)} → ${nodeLabel(nodes, args.to)}` };
+		case 'read_draft':
 			return { Icon: Search, text: 'Read the current draft' };
+		case 'list_available_nodes':
+			return { Icon: Search, text: 'Look up available nodes' };
+		case 'inspect_node_schema':
+			return { Icon: Search, text: `Check settings for ${prettify(str(args.type) || 'node')}` };
+		case 'inspect_node_output':
+			return {
+				Icon: Search,
+				text: `Check what ${args.key ? nodeLabel(nodes, args.key) : prettify(str(args.type) || 'node')} outputs`,
+			};
+		case 'list_workflows':
+			return { Icon: Search, text: 'Look up workflows it can call' };
+		case 'validate_workflow':
+			return { Icon: ShieldCheck, text: 'Validate the workflow' };
+		case 'dry_run_workflow':
+			return { Icon: FlaskConical, text: 'Dry-run the workflow' };
 		default:
-			return { Icon: Wrench, text: prettify(toolName.replace(/Tool$/, '')) };
+			return { Icon: Wrench, text: prettify(toolName) };
 	}
 };
 
@@ -155,6 +168,55 @@ const formatRelativeTime = (ts: number) => {
 	return new Date(ts).toLocaleDateString();
 };
 
+type TAssistKind = 'explain' | 'improve' | 'next';
+
+/** One-shot helpers shown above the input once there's something to work on. */
+const ASSIST_ACTIONS: { kind: TAssistKind; label: string; title: string; Icon: typeof Search }[] = [
+	{ kind: 'explain', label: 'Explain', title: 'Explain what this workflow does, step by step', Icon: BookOpen },
+	{ kind: 'improve', label: 'Review', title: 'Suggest concrete improvements', Icon: ListChecks },
+	{ kind: 'next', label: 'What’s next?', title: 'Suggest nodes to add next', Icon: Lightbulb },
+];
+
+const formatExplanation = (
+	result: { summary: string; steps: { key: string; description: string }[] },
+	nodes: TCanvasNode[],
+) =>
+	[
+		'**What this workflow does**',
+		result.summary,
+		...result.steps.map((step, index) => `${index + 1}. **${nodeLabel(nodes, step.key)}** — ${step.description}`),
+	].join('\n\n');
+
+const formatImprovements = (
+	improvements: { title: string; description: string; priority: string; node_keys: string[] }[],
+	nodes: TCanvasNode[],
+) =>
+	improvements.length === 0
+		? 'I reviewed this workflow and have nothing to suggest — it looks good.'
+		: [
+				'**Suggested improvements**',
+				...improvements.map((item) => {
+					const involved = item.node_keys.map((key) => nodeLabel(nodes, key)).join(', ');
+					return `- **${item.title}** _(${item.priority})_ — ${item.description}${involved ? ` _(${involved})_` : ''}`;
+				}),
+				'Ask me to make any of these changes.',
+			].join('\n\n');
+
+const formatNodeSuggestions = (
+	suggestions: { name: string; type: string; reason: string; connect_from: string | null }[],
+	nodes: TCanvasNode[],
+) =>
+	suggestions.length === 0
+		? 'I don’t have a suggestion for the next step yet — tell me what you’d like it to do.'
+		: [
+				'**What could come next**',
+				...suggestions.map(
+					(item) =>
+						`- **${item.name}** — ${item.reason}${item.connect_from ? ` _(after ${nodeLabel(nodes, item.connect_from)})_` : ''}`,
+				),
+				'Ask me to add any of these.',
+			].join('\n\n');
+
 const AiBuilderPanel = () => {
 	const { state, dispatch } = useWorkflowEditor();
 	const { userData } = useAuth();
@@ -168,11 +230,16 @@ const AiBuilderPanel = () => {
 	const exitChat = useAiChatStore((store) => store.exitChat);
 	const newChat = useAiChatStore((store) => store.newChat);
 	const openBuilderSession = useAiChatStore((store) => store.openBuilderSession);
+	const ensureBuilderSession = useAiChatStore((store) => store.ensureBuilderSession);
+	const pushAssistantNote = useAiChatStore((store) => store.pushAssistantNote);
+	const rehydrate = useAiChatStore((store) => store.rehydrate);
 	const { confirm } = useConfirm();
 
 	const [promptInput, setPromptInput] = useState('');
 	const [mode, setMode] = useState<'build' | 'ask'>('build');
 	const [showHistory, setShowHistory] = useState(false);
+	const [showVersions, setShowVersions] = useState(false);
+	const [assistBusy, setAssistBusy] = useState<TAssistKind | null>(null);
 	const [mentionQuery, setMentionQuery] = useState<string | null>(null);
 	const [stepsExpanded, setStepsExpanded] = useState(true);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -187,9 +254,20 @@ const AiBuilderPanel = () => {
 	);
 	const deleteBuilderSession = useDeleteWorkflowBuilderSession(workspaceId);
 	const promoteBuilderSession = usePromoteWorkflowBuilderSession(workspaceId);
+	const updateBuilderSession = useUpdateWorkflowBuilderSession(workspaceId);
+	const sessionTime = (session: { last_activity_at: string | null; created_at: string }) =>
+		Date.parse(session.last_activity_at ?? session.created_at);
 	const sortedSessions = (builderSessions ?? [])
 		.filter((session) => session.workflow_id !== null && String(session.workflow_id) === workflowApiId)
-		.sort((a, b) => Date.parse(b.last_activity_at) - Date.parse(a.last_activity_at));
+		.sort((a, b) => sessionTime(b) - sessionTime(a));
+
+	// Undo history for the open chat's draft.
+	const { data: draftVersions, isLoading: isVersionsLoading } = useWorkflowBuilderVersions(
+		workspaceId,
+		builderSessionId ?? '',
+		showVersions,
+	);
+	const restoreVersion = useRestoreWorkflowBuilderVersion(workspaceId, builderSessionId ?? '');
 
 	// Nodes currently on the canvas, matched against an in-progress @mention.
 	const mentionMatches = useMemo(() => {
@@ -280,6 +358,60 @@ const AiBuilderPanel = () => {
 		setShowHistory(false);
 	};
 
+	/**
+	 * One-shot helpers (see `WorkflowBuilderAssistService`). They read the
+	 * chat's draft — created and synced from the canvas first — and answer as
+	 * a note in the chat; none of them changes the workflow.
+	 */
+	const runAssist = async (kind: TAssistKind) => {
+		if (assistBusy || isThinking) return;
+		setAssistBusy(kind);
+		try {
+			const sessionId = await ensureBuilderSession();
+			if (kind === 'explain') {
+				const result = await WorkflowBuilderAssistService.explain(workspaceId, sessionId);
+				pushAssistantNote(formatExplanation(result, state.nodes));
+			} else if (kind === 'improve') {
+				const result = await WorkflowBuilderAssistService.suggestImprovements(workspaceId, sessionId);
+				pushAssistantNote(formatImprovements(result, state.nodes));
+			} else {
+				const result = await WorkflowBuilderAssistService.suggestNodes(workspaceId, sessionId);
+				pushAssistantNote(formatNodeSuggestions(result, state.nodes));
+			}
+		} catch (error) {
+			notify.error(messageFromError(error, 'The assistant couldn’t do that right now. Please try again.'));
+		} finally {
+			setAssistBusy(null);
+		}
+	};
+
+	const handleRestoreVersion = async (version: TBuilderDraftVersion) => {
+		const confirmed = await confirm({
+			title: 'Restore this version',
+			message: `Put the draft back to “${version.label ?? 'this version'}”? The restore is saved as a new step, so you can undo it the same way.`,
+		});
+		if (!confirmed) return;
+		restoreVersion.mutate(version.id, {
+			onSuccess: () => {
+				rehydrate();
+				setShowVersions(false);
+				notify.success('Draft restored');
+			},
+		});
+	};
+
+	const handleArchiveSession = (id: string) => {
+		updateBuilderSession.mutate(
+			{ id, payload: { status: 'archived' } },
+			{
+				onSuccess: () => {
+					if (id === builderSessionId) newChat();
+					notify.success('Chat archived');
+				},
+			},
+		);
+	};
+
 	const handleDeleteSession = async (id: string) => {
 		const confirmed = await confirm({
 			title: 'Delete chat',
@@ -348,6 +480,16 @@ const AiBuilderPanel = () => {
 						</div>
 					</div>
 					<div className='flex items-center gap-1.5'>
+						<button
+							type='button'
+							onClick={() => setShowVersions(true)}
+							disabled={!builderSessionId || isThinking}
+							title='Undo history'
+							aria-label='Undo history'
+							className='flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 shadow-xs hover:bg-zinc-50 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'
+						>
+							<Undo2 size={14} />
+						</button>
 						<button
 							type='button'
 							onClick={handleNewChat}
@@ -500,6 +642,26 @@ const AiBuilderPanel = () => {
 
 			{/* Input Container */}
 			<div className='shrink-0 border-t border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950'>
+				{state.nodes.length > 0 && (
+					<div className='mb-2.5 flex flex-wrap gap-1.5'>
+						{ASSIST_ACTIONS.map((action) => (
+							<button
+								key={action.kind}
+								type='button'
+								onClick={() => void runAssist(action.kind)}
+								disabled={isThinking || assistBusy !== null}
+								title={action.title}
+								className='flex items-center gap-1 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-zinc-600 shadow-xs transition hover:border-primary-300 hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-primary-700 dark:hover:text-white'>
+								{assistBusy === action.kind ? (
+									<Loader2 size={11} className='animate-spin' />
+								) : (
+									<action.Icon size={11} className='text-primary-500' />
+								)}
+								{action.label}
+							</button>
+						))}
+					</div>
+				)}
 				<div
 					className={`relative rounded-2xl border p-3 shadow-xs transition-colors ${
 						isThinking
@@ -704,7 +866,7 @@ const AiBuilderPanel = () => {
 										{session.title || 'Untitled chat'}
 									</div>
 									<div className='text-[10px] text-zinc-400 dark:text-zinc-500'>
-										{formatRelativeTime(Date.parse(session.last_activity_at))}
+										{formatRelativeTime(sessionTime(session))}
 										{session.status === 'promoted' && ' · applied'}
 									</div>
 								</div>
@@ -722,6 +884,18 @@ const AiBuilderPanel = () => {
 								</button>
 								<button
 									type='button'
+									title='Archive chat'
+									aria-label='Archive chat'
+									disabled={updateBuilderSession.isPending}
+									onClick={(e) => {
+										e.stopPropagation();
+										handleArchiveSession(session.id);
+									}}
+									className='flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-zinc-300 opacity-0 transition hover:bg-zinc-100 hover:text-zinc-600 group-hover:opacity-100 disabled:opacity-40 dark:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300'>
+									<Archive size={12} />
+								</button>
+								<button
+									type='button'
 									title='Delete chat'
 									aria-label='Delete chat'
 									onClick={(e) => {
@@ -731,6 +905,75 @@ const AiBuilderPanel = () => {
 									className='flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-zinc-300 opacity-0 transition hover:bg-rose-50 hover:text-rose-500 group-hover:opacity-100 dark:text-zinc-600 dark:hover:bg-rose-950/30 dark:hover:text-rose-400'>
 									<Trash2 size={12} />
 								</button>
+							</div>
+						))
+					)}
+				</div>
+			</div>
+
+			{/* Undo history (slide-in overlay) */}
+			<div
+				className={`absolute inset-0 z-20 bg-black/20 backdrop-blur-[1px] transition-opacity dark:bg-black/40 ${
+					showVersions ? 'opacity-100' : 'pointer-events-none opacity-0'
+				}`}
+				onClick={() => setShowVersions(false)}
+			/>
+			<div
+				className={`absolute inset-y-0 right-0 z-30 flex w-[85%] max-w-[300px] flex-col border-l border-zinc-200 bg-white shadow-2xl transition-transform duration-200 ease-out dark:border-zinc-800 dark:bg-zinc-950 ${
+					showVersions ? 'translate-x-0' : 'translate-x-full'
+				}`}
+			>
+				<div className='flex shrink-0 items-center justify-between border-b border-zinc-200 px-3.5 py-3 dark:border-zinc-800'>
+					<div className='flex items-center gap-1.5 text-sm font-bold text-zinc-800 dark:text-white'>
+						<Undo2 size={14} className='text-zinc-400 dark:text-zinc-500' />
+						Undo history
+					</div>
+					<button
+						type='button'
+						onClick={() => setShowVersions(false)}
+						title='Close'
+						className='flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'
+					>
+						<X size={14} />
+					</button>
+				</div>
+				<p className='shrink-0 px-3.5 pt-2.5 text-[11px] text-zinc-400 dark:text-zinc-500'>
+					Every change to this chat’s draft — by the assistant or by you — newest first.
+				</p>
+				<div className='min-h-0 flex-1 space-y-1 overflow-y-auto p-2.5'>
+					{isVersionsLoading ? (
+						<div className='flex h-full items-center justify-center text-xs text-zinc-400'>
+							<Loader2 size={14} className='mr-2 animate-spin' />
+							Loading history...
+						</div>
+					) : !draftVersions?.length ? (
+						<div className='flex h-full items-center justify-center px-6 text-center text-xs text-zinc-400'>
+							No changes yet.
+						</div>
+					) : (
+						draftVersions.map((version, index) => (
+							<div
+								key={version.id}
+								className='group flex items-center gap-2.5 rounded-lg px-2.5 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-900/70'>
+								<div className='min-w-0 flex-1'>
+									<div className='truncate text-xs font-semibold text-zinc-700 dark:text-zinc-200'>
+										{version.label ?? 'Edit'}
+									</div>
+									<div className='text-[10px] text-zinc-400 dark:text-zinc-500'>
+										{formatRelativeTime(Date.parse(version.created_at))} · {version.node_count} node
+										{version.node_count === 1 ? '' : 's'}
+										{index === 0 && ' · current'}
+									</div>
+								</div>
+								{index > 0 && (
+									<button
+										type='button'
+										disabled={restoreVersion.isPending}
+										onClick={() => void handleRestoreVersion(version)}
+										className='shrink-0 rounded-md border border-zinc-200 px-2 py-0.5 text-[10.5px] font-bold text-zinc-600 opacity-0 transition hover:bg-white group-hover:opacity-100 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800'>
+										Restore
+									</button>
+								)}
 							</div>
 						))
 					)}
@@ -882,42 +1125,39 @@ const MessageSteps = ({ message, nodes }: { message: TAiChatMessage; nodes: TCan
 						),
 					)
 				: message.actionsSummary?.map((action, index) => (
-						<ActionSummaryLine key={index} action={action} />
+						<ActionSummaryLine key={index} action={action} nodes={nodes} />
 					))}
 		</div>
 	);
 };
 
 /** One line in a historical message's lightweight action summary. */
-const ActionSummaryLine = ({ action }: { action: IBuilderMessageAction }) => {
-	const map: Record<string, { Icon: typeof Search; text: string; tone: string }> = {
-		node_added: {
-			Icon: CirclePlus,
-			text: `Added ${action.label ?? action.node_id ?? 'node'}`,
-			tone: 'text-emerald-500',
-		},
-		node_removed: {
-			Icon: Trash2,
-			text: `Removed ${action.label ?? action.node_id ?? 'node'}`,
-			tone: 'text-rose-500',
-		},
-		node_updated: {
-			Icon: Pencil,
-			text: `Updated ${action.label ?? action.node_id ?? 'node'}`,
-			tone: 'text-amber-500',
-		},
-		edges_added: {
-			Icon: Link2,
-			text: `Added ${action.count ?? 1} connection${(action.count ?? 1) === 1 ? '' : 's'}`,
-			tone: 'text-primary-500',
-		},
-		edges_removed: {
-			Icon: Unlink,
-			text: `Removed ${action.count ?? 1} connection${(action.count ?? 1) === 1 ? '' : 's'}`,
-			tone: 'text-rose-500',
-		},
-	};
-	const entry = map[action.type] ?? { Icon: Wrench, text: action.type, tone: 'text-zinc-400' };
+const ActionSummaryLine = ({ action, nodes }: { action: TBuilderMessageAction; nodes: TCanvasNode[] }) => {
+	const entry = (() => {
+		switch (action.type) {
+			case 'node_added':
+				return { Icon: CirclePlus, text: `Added ${nodeLabel(nodes, action.key)}`, tone: 'text-emerald-500' };
+			case 'node_updated':
+				return { Icon: Pencil, text: `Updated ${nodeLabel(nodes, action.key)}`, tone: 'text-amber-500' };
+			case 'node_removed':
+				return { Icon: Trash2, text: `Removed ${action.key}`, tone: 'text-rose-500' };
+			case 'edge_added':
+				return {
+					Icon: action.condition ? GitBranch : Link2,
+					text: `Connected ${nodeLabel(nodes, action.from)} → ${nodeLabel(nodes, action.to)}${
+						action.condition ? ` (${action.condition === 'error' ? 'on error' : action.condition})` : ''
+					}`,
+					tone: 'text-primary-500',
+				};
+			case 'edge_removed':
+				return {
+					Icon: Unlink,
+					text: `Disconnected ${nodeLabel(nodes, action.from)} → ${nodeLabel(nodes, action.to)}`,
+					tone: 'text-rose-500',
+				};
+		}
+	})();
+
 	return (
 		<div className='flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 dark:text-zinc-400'>
 			<entry.Icon size={11} className={`shrink-0 ${entry.tone}`} />

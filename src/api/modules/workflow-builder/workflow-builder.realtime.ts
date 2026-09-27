@@ -1,15 +1,14 @@
 import type {
-	IBuilderMessageReadyEvent,
-	IBuilderStreamTextDeltaEvent,
-	IBuilderStreamToolCallEvent,
-	IBuilderStreamToolResultEvent,
+	TBuilderDeltaEvent,
+	TBuilderDraftEvent,
+	TBuilderStatusEvent,
+	TBuilderToolCallEvent,
+	TBuilderToolResultEvent,
 } from '@/types/workflow-builder.type';
 
 /**
- * Minimal structural type for a Laravel Echo instance. We avoid a hard
- * dependency on `laravel-echo` / `pusher-js` so this module compiles even when
- * realtime is wired up by the host application. Pass in whatever Echo instance
- * the app already constructs (see the WebSocket section of the builder docs).
+ * Minimal structural type for a Laravel Echo instance, so this module (and
+ * `agents.realtime`) compiles without a hard dependency on `laravel-echo`.
  */
 export interface IEchoChannelLike {
 	listen: (event: string, cb: (payload: unknown) => void) => IEchoChannelLike;
@@ -21,71 +20,64 @@ export interface IEchoLike {
 	leave: (channel: string) => void;
 }
 
-export const builderChannelName = (sessionId: string) => `builder.session.${sessionId}`;
+/** Mirrors App\Broadcasting\Channels::WORKFLOW_BUILDER_SESSION_PATTERN. */
+export const builderChannelName = (workspaceId: string, sessionId: string) =>
+	`workspaces.${workspaceId}.workflow-builder-sessions.${sessionId}`;
 
-/** Event name as broadcast by Reverb (note the leading dot in Echo's `.listen`). */
-export const BUILDER_MESSAGE_READY_EVENT = '.builder.message.ready';
+/**
+ * `App\Events\Workflows\WorkflowBuilderActivity::broadcastAs()` names. The
+ * leading dot stops Echo prefixing them with the `App.Events` namespace.
+ */
+export const BUILDER_EVENTS = {
+	status: '.builder.status',
+	delta: '.builder.delta',
+	toolCall: '.builder.tool-call',
+	toolResult: '.builder.tool-result',
+	draft: '.builder.draft',
+} as const;
 
-// The `laravel/ai` package's StreamEvent::broadcast() sends the bare event
-// name it returns from type() (e.g. "text_delta") — same leading-dot rule
-// applies so Echo doesn't prefix it with the App.Events namespace.
-export const BUILDER_TEXT_DELTA_EVENT = '.text_delta';
-export const BUILDER_TOOL_CALL_EVENT = '.tool_call';
-export const BUILDER_TOOL_RESULT_EVENT = '.tool_result';
-
-export interface ISubscribeBuilderSessionOptions {
-	onReady: (event: IBuilderMessageReadyEvent) => void;
-	onError?: (event: IBuilderMessageReadyEvent) => void;
-	/** A chunk of the reply as it's generated — append to the in-flight message. */
-	onTextDelta?: (event: IBuilderStreamTextDeltaEvent) => void;
-	/** The agent is invoking a tool (e.g. adding a node) — show live progress. */
-	onToolCall?: (event: IBuilderStreamToolCallEvent) => void;
-	onToolResult?: (event: IBuilderStreamToolResultEvent) => void;
+export interface ISubscribeBuilderSessionHandlers {
+	/** The reply moved to processing / completed / failed. */
+	onStatus: (event: TBuilderStatusEvent) => void;
+	/** A chunk of the reply's text — concatenate in order. */
+	onDelta?: (event: TBuilderDeltaEvent) => void;
+	onToolCall?: (event: TBuilderToolCallEvent) => void;
+	onToolResult?: (event: TBuilderToolResultEvent) => void;
+	/** The draft changed. Carries only the new lock version — refetch the session for the graph. */
+	onDraft?: (event: TBuilderDraftEvent) => void;
 }
 
 /**
  * Subscribe to a builder session's private channel. Returns an unsubscribe
- * function. The `onError` callback (if provided) fires for events where
- * `event.error === true`; otherwise everything routes through `onReady`.
- *
- * @example
- *   const unsub = subscribeToBuilderSession(echo, sessionId, {
- *     onReady: (e) => { setNodes(e.draft.nodes); setEdges(e.draft.edges); },
- *     onError: (e) => showError(e.message.error_message),
- *   });
- *   // later: unsub();
+ * function. Payloads are capped server-side (Reverb drops events over
+ * 10 KB), so the persisted message and draft stay the source of truth.
  */
 export function subscribeToBuilderSession(
 	echo: IEchoLike,
+	workspaceId: string,
 	sessionId: string,
-	{ onReady, onError, onTextDelta, onToolCall, onToolResult }: ISubscribeBuilderSessionOptions,
+	handlers: ISubscribeBuilderSessionHandlers,
 ): () => void {
-	const channel = builderChannelName(sessionId);
+	const channel = builderChannelName(workspaceId, sessionId);
 	const instance = echo.private(channel);
 
-	instance.listen(BUILDER_MESSAGE_READY_EVENT, (payload) => {
-		const event = payload as IBuilderMessageReadyEvent;
-		if (event.error && onError) {
-			onError(event);
-			return;
-		}
-		onReady(event);
-	});
+	instance.listen(BUILDER_EVENTS.status, (payload) => handlers.onStatus(payload as TBuilderStatusEvent));
 
-	if (onTextDelta) {
-		instance.listen(BUILDER_TEXT_DELTA_EVENT, (payload) => {
-			onTextDelta(payload as IBuilderStreamTextDeltaEvent);
-		});
+	if (handlers.onDelta) {
+		const onDelta = handlers.onDelta;
+		instance.listen(BUILDER_EVENTS.delta, (payload) => onDelta(payload as TBuilderDeltaEvent));
 	}
-	if (onToolCall) {
-		instance.listen(BUILDER_TOOL_CALL_EVENT, (payload) => {
-			onToolCall(payload as IBuilderStreamToolCallEvent);
-		});
+	if (handlers.onToolCall) {
+		const onToolCall = handlers.onToolCall;
+		instance.listen(BUILDER_EVENTS.toolCall, (payload) => onToolCall(payload as TBuilderToolCallEvent));
 	}
-	if (onToolResult) {
-		instance.listen(BUILDER_TOOL_RESULT_EVENT, (payload) => {
-			onToolResult(payload as IBuilderStreamToolResultEvent);
-		});
+	if (handlers.onToolResult) {
+		const onToolResult = handlers.onToolResult;
+		instance.listen(BUILDER_EVENTS.toolResult, (payload) => onToolResult(payload as TBuilderToolResultEvent));
+	}
+	if (handlers.onDraft) {
+		const onDraft = handlers.onDraft;
+		instance.listen(BUILDER_EVENTS.draft, (payload) => onDraft(payload as TBuilderDraftEvent));
 	}
 
 	return () => echo.leave(channel);

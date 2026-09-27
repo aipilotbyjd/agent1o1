@@ -1,5 +1,6 @@
 import { useReactFlow } from '@xyflow/react';
 import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useRunWorkflow } from '../../_hooks/useRunWorkflow.hook';
 import { Bug, ChevronRight, X } from 'lucide-react';
 import NodeRunOutput from './NodeRunOutput.partial';
 import RunConsole from './RunConsole.partial';
@@ -63,6 +64,7 @@ const ProfilerSummary = ({ nodes }: { nodes: { label: string; durationMs?: numbe
 
 const RunPanel = () => {
 	const { state, dispatch } = useWorkflowEditor();
+	const { stepNext } = useRunWorkflow();
 	const reactFlow = useReactFlow();
 	if (!state.ui.runPanelOpen) return null;
 
@@ -133,7 +135,7 @@ const RunPanel = () => {
 						{state.ui.stepMode && state.ui.waitingForStep && (
 							<button
 								type='button'
-								onClick={() => dispatch({ type: 'STEP_NEXT' })}
+								onClick={stepNext}
 								className='flex animate-pulse items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-300 hover:bg-amber-500/20'>
 								<ChevronRight size={12} />
 								<span className='hidden sm:inline'>Step (Space)</span>

@@ -10,7 +10,7 @@ export const isTypingTarget = (target: EventTarget | null) => {
 
 export const useEditorHotkeys = () => {
 	const { dispatch, state } = useWorkflowEditor();
-	const { runWorkflow, stopRun } = useRunWorkflow();
+	const { runWorkflow, stopRun, stepNext } = useRunWorkflow();
 	// Safe here: WorkflowEditorLayout mounts ReactFlowProvider above this page.
 	const reactFlow = useReactFlow();
 
@@ -23,7 +23,11 @@ export const useEditorHotkeys = () => {
 			// binds) still reach the canvas. Everything else belongs to the input:
 			// ⌘Z has to undo the text rather than the graph, and ⌘⇧V is "paste without
 			// formatting" inside a field, not the version diff viewer.
-			if (isTypingTarget(event.target) && event.key !== 'Escape' && !(mod && event.key === 'Enter')) {
+			if (
+				isTypingTarget(event.target) &&
+				event.key !== 'Escape' &&
+				!(mod && event.key === 'Enter')
+			) {
 				return;
 			}
 
@@ -141,7 +145,7 @@ export const useEditorHotkeys = () => {
 				state.ui.waitingForStep
 			) {
 				event.preventDefault();
-				dispatch({ type: 'STEP_NEXT' });
+				stepNext();
 				return;
 			}
 

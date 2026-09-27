@@ -1,65 +1,59 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { isAxiosError } from 'axios';
 import { useRealtime } from '@/context/realtime';
+import { notify } from '@/api/core';
 import { useAiChatStore } from '@/store/aiChat.store';
-import { WorkflowBuilderService } from '@/api/modules/workflow-builder/workflow-builder.service';
+import {
+	WorkflowBuilderMessageService,
+	WorkflowBuilderSessionService,
+} from '@/api/modules/workflow-builder/workflow-builder.service';
 import {
 	subscribeToBuilderSession,
 	type IEchoLike,
 } from '@/api/modules/workflow-builder/workflow-builder.realtime';
-import type {
-	IBuilderMessage,
-	IBuilderMessageReadyEvent,
-	IBuilderNodePosition,
-} from '@/types/workflow-builder.type';
+import type { TBuilderMessage, TBuilderSession } from '@/types/workflow-builder.type';
 import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
 import { useWorkflowRouteParams } from './useWorkflowRouteParams.hook';
-import {
-	builderDraftToCanvas,
-	builderNodeToCanvas,
-	canvasToBuilderDraft,
-} from '../_helper/builderDraft.helper';
+import { builderGraphToCanvas, canvasToBuilderGraph } from '../_helper/builderDraft.helper';
 
 const POLL_INTERVAL_MS = 2500;
-const POLL_TIMEOUT_MS = 120_000;
+/** Comfortably above the backend job's 300s timeout. */
+const POLL_TIMEOUT_MS = 6 * 60_000;
 const DRAFT_SYNC_DEBOUNCE_MS = 1500;
 
-// Tool names as resolved by Laravel\Ai\Tools\ToolNameResolver — our tool
-// classes don't define name(), so it falls back to class_basename(), i.e. the
-// PascalCase class name verbatim (see App\Agents\Tools\Draft\*).
-const TOOL_ADD_NODE = 'AddNodeTool';
-const TOOL_REMOVE_NODE = 'RemoveNodeTool';
-const TOOL_UPDATE_NODE = 'UpdateNodeTool';
-const TOOL_CONNECT_NODES = 'ConnectNodesTool';
-const TOOL_DISCONNECT_NODES = 'DisconnectNodesTool';
+const isTerminal = (message: TBuilderMessage) =>
+	message.processing_status === 'completed' || message.processing_status === 'failed';
 
-/** The tool handlers return `json_encode(...)` — parse it back, defensively. */
-const parseToolResult = (result: unknown): Record<string, unknown> | null => {
-	if (result && typeof result === 'object') return result as Record<string, unknown>;
-	if (typeof result === 'string') {
+/** Tool-call arguments arrive as an object, or as a capped JSON string. */
+const parseArguments = (value: unknown): Record<string, unknown> => {
+	if (value && typeof value === 'object') return value as Record<string, unknown>;
+	if (typeof value === 'string') {
 		try {
-			const parsed = JSON.parse(result);
-			return parsed && typeof parsed === 'object' ? parsed : null;
+			const parsed = JSON.parse(value);
+			return parsed && typeof parsed === 'object' ? parsed : {};
 		} catch {
-			return null;
+			return {};
 		}
 	}
-	return null;
+	return {};
 };
 
 /**
- * Connects the AI chat store to the real backend workflow builder.
+ * Connects the AI chat store, the backend builder session and the canvas.
  *
- * - Feeds the current workspace/workflow into the store so it can call the API.
- * - Subscribes to the builder session's private realtime channel for instant
- *   results, AND polls the session as a fallback (realtime auth can be flaky on
- *   some deploys). Whichever arrives first wins; the other is a no-op.
- * - Applies the canvas live, node-by-node, as each tool call in the agent's run
- *   succeeds (Gumloop-style) — not just once at the very end. The final
- *   `builder.message.ready` still runs APPLY_BUILDER_DRAFT as the authoritative
- *   reconciliation, in case any granular step was missed.
+ * - The assistant's reply streams in over the session's private channel
+ *   (`builder.delta`, `builder.tool-call`, `builder.tool-result`); each draft
+ *   change (`builder.draft`) refetches the session and applies it to the
+ *   canvas, so nodes appear as the assistant adds them. `builder.status`
+ *   completes or fails the reply.
+ * - A poll on the pending reply covers deploys where the socket never
+ *   connects. Whichever delivers first wins; the other is a no-op.
+ * - Manual canvas edits are pushed into the session's draft (debounced, and
+ *   flushed right before each message) with the draft's lock version, so the
+ *   assistant always works from what the user sees — and a canvas that is
+ *   behind the assistant gets a 409 instead of silently undoing its work.
  *
- * Mount once inside the editor (where the WorkflowEditor + Realtime providers and
- * the route params are all available).
+ * Mount once inside the editor.
  */
 export const useAiBuilderBridge = () => {
 	const { echo } = useRealtime();
@@ -71,6 +65,7 @@ export const useAiBuilderBridge = () => {
 	const pendingMessageId = useAiChatStore((s) => s.pendingMessageId);
 	const isThinking = useAiChatStore((s) => s.isThinking);
 	const setBuilderContext = useAiChatStore((s) => s.setBuilderContext);
+	const setBeforeSend = useAiChatStore((s) => s.setBeforeSend);
 	const applyReadyMessage = useAiChatStore((s) => s.applyReadyMessage);
 	const hydrateFromBackend = useAiChatStore((s) => s.hydrateFromBackend);
 	const failPending = useAiChatStore((s) => s.failPending);
@@ -78,54 +73,171 @@ export const useAiBuilderBridge = () => {
 	const pushToolCall = useAiChatStore((s) => s.pushToolCall);
 	const resolveToolResult = useAiChatStore((s) => s.resolveToolResult);
 
-	// Guards against applying the same assistant message twice (e.g. realtime and
-	// poll both delivering it).
-	const appliedMessageIds = useRef<Set<string>>(new Set());
+	// Latest canvas, read from callbacks that outlive a render.
+	const canvasRef = useRef({ nodes: state.nodes, edges: state.edges });
+	canvasRef.current = { nodes: state.nodes, edges: state.edges };
 
-	// Arguments of tool calls currently in flight, keyed by tool_id, so the
-	// matching tool_result can be turned into a canvas mutation without waiting
-	// for the whole reply.
-	const pendingToolArgs = useRef<Map<string, { toolName: string; args: Record<string, unknown> }>>(
-		new Map(),
-	);
-
-	// Set right before the canvas is overwritten wholesale from the backend
-	// (resume-on-mount, or the final reconciliation after an AI reply) so the
-	// draft-sync effect below doesn't immediately echo that same state right
-	// back to the server as a redundant "manual edit".
-	const skipNextSyncRef = useRef(false);
-	const lastSyncedDraftRef = useRef<string>('');
+	// The session's draft version the canvas was last reconciled with — what a
+	// canvas sync must send so the server can refuse a stale one.
+	const lockVersionRef = useRef<number | null>(null);
+	// The draft (as JSON) last known to match the server, so an unchanged
+	// canvas isn't synced back.
+	const lastSyncedRef = useRef('');
 	const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	// Keep the store's API context in sync with the route.
+	// Replies already shown — realtime and the poll can both deliver one.
+	const finalizedMessageIds = useRef<Set<string>>(new Set());
+
+	// One draft refetch at a time; a change that lands mid-fetch queues one more.
+	const refreshingRef = useRef(false);
+	const refreshAgainRef = useRef(false);
+
 	useEffect(() => {
 		setBuilderContext(workspaceId ?? null, workflowId ?? null);
 	}, [workspaceId, workflowId, setBuilderContext]);
 
-	// Resume: when the store points at a backend session we haven't loaded yet
-	// (e.g. after a page reload), pull it from the server and rebuild the chat +
-	// canvas from that authoritative state.
+	/** Put the server's draft on the canvas, keeping the user's layout. */
+	const applySessionDraft = useCallback(
+		(session: TBuilderSession) => {
+			lockVersionRef.current = session.draft_lock_version;
+			const next = builderGraphToCanvas(session.draft_graph, canvasRef.current.nodes);
+			lastSyncedRef.current = JSON.stringify(canvasToBuilderGraph(next.nodes, next.edges));
+			if (next.nodes.length === 0 && canvasRef.current.nodes.length === 0) return;
+			dispatch({ type: 'APPLY_BUILDER_DRAFT', nodes: next.nodes, edges: next.edges });
+		},
+		[dispatch],
+	);
+
+	const refreshDraft = useCallback(async () => {
+		const sessionId = useAiChatStore.getState().builderSessionId;
+		if (!workspaceId || !sessionId) return;
+
+		if (refreshingRef.current) {
+			refreshAgainRef.current = true;
+			return;
+		}
+
+		refreshingRef.current = true;
+		try {
+			const session = await WorkflowBuilderSessionService.detail(workspaceId, sessionId);
+			applySessionDraft(session);
+		} catch {
+			/* the next draft event or the final reconciliation retries */
+		} finally {
+			refreshingRef.current = false;
+			if (refreshAgainRef.current) {
+				refreshAgainRef.current = false;
+				void refreshDraft();
+			}
+		}
+	}, [workspaceId, applySessionDraft]);
+
+	/** Show a finished reply exactly once, with the draft it left behind. */
+	const finalizeReply = useCallback(
+		async (messageId: string) => {
+			const sessionId = useAiChatStore.getState().builderSessionId;
+			if (!workspaceId || !sessionId || finalizedMessageIds.current.has(messageId)) return;
+			if (useAiChatStore.getState().ignoredMessageIds.has(messageId)) return;
+
+			const session = await WorkflowBuilderSessionService.detail(workspaceId, sessionId);
+			const reply = session.messages?.find((message) => message.id === messageId);
+			if (!reply || !isTerminal(reply) || finalizedMessageIds.current.has(messageId)) return;
+
+			finalizedMessageIds.current.add(messageId);
+			applySessionDraft(session);
+
+			if (reply.processing_status === 'failed') {
+				failPending(reply.error_message ?? undefined);
+				return;
+			}
+			applyReadyMessage(reply);
+		},
+		[workspaceId, applySessionDraft, applyReadyMessage, failPending],
+	);
+
+	/**
+	 * Push the canvas into the draft if it differs from what the server has.
+	 * On 409 the assistant (or another tab) changed the draft since: its
+	 * version wins and is reloaded, rather than overwritten by a stale canvas.
+	 */
+	const syncCanvas = useCallback(
+		async (sessionId: string) => {
+			if (!workspaceId || lockVersionRef.current === null) return;
+
+			const graph = canvasToBuilderGraph(canvasRef.current.nodes, canvasRef.current.edges);
+			const snapshot = JSON.stringify(graph);
+			if (snapshot === lastSyncedRef.current) return;
+
+			try {
+				const session = await WorkflowBuilderSessionService.syncDraft(
+					workspaceId,
+					sessionId,
+					{
+						...graph,
+						draft_lock_version: lockVersionRef.current,
+					},
+				);
+				lockVersionRef.current = session.draft_lock_version;
+				lastSyncedRef.current = snapshot;
+			} catch (error) {
+				if (isAxiosError(error) && error.response?.status === 409) {
+					const session = await WorkflowBuilderSessionService.detail(
+						workspaceId,
+						sessionId,
+					);
+					applySessionDraft(session);
+					notify.info('The assistant changed the draft — reloaded its latest version.');
+					return;
+				}
+				// 422: the canvas is mid-edit (e.g. a node missing a required
+				// setting). Remember it so it isn't resent until it changes.
+				lastSyncedRef.current = snapshot;
+			}
+		},
+		[workspaceId, applySessionDraft],
+	);
+
+	// Before each message: make sure the draft is what's on the canvas. A
+	// session created for this message starts from the *saved* workflow, which
+	// may be a moment behind the canvas.
+	useEffect(() => {
+		setBeforeSend(async (sessionId, created) => {
+			if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+			if (created) {
+				lockVersionRef.current = created.draft_lock_version;
+				lastSyncedRef.current = JSON.stringify(created.draft_graph);
+			}
+			await syncCanvas(sessionId);
+		});
+		return () => setBeforeSend(null);
+	}, [setBeforeSend, syncCanvas]);
+
+	// Resume: when the store points at a session we haven't loaded (a reload,
+	// or picking one from history), rebuild the chat and canvas from it.
 	useEffect(() => {
 		if (!workspaceId || !builderSessionId || builderSessionId === hydratedSessionId) return;
 
 		let cancelled = false;
-		WorkflowBuilderService.getSession(workspaceId, builderSessionId)
+		WorkflowBuilderSessionService.detail(workspaceId, builderSessionId)
 			.then((session) => {
 				if (cancelled) return;
+				(session.messages ?? [])
+					.filter(isTerminal)
+					.forEach((m) => finalizedMessageIds.current.add(m.id));
 				hydrateFromBackend(session);
-				(session.messages ?? []).forEach((m) => {
-					if (m.processing_status === 'completed' || m.processing_status === 'failed') {
-						appliedMessageIds.current.add(m.id);
-					}
-				});
-				const { nodes, edges } = builderDraftToCanvas({
-					nodes: session.nodes_draft ?? [],
-					edges: session.edges_draft ?? [],
-				});
-				if (nodes.length) {
-					skipNextSyncRef.current = true;
-					dispatch({ type: 'APPLY_BUILDER_DRAFT', nodes, edges });
+
+				// An empty draft never replaces a canvas with work on it (e.g. the
+				// first sync never landed) — that would blank the canvas and let
+				// autosave blank the workflow. Keep the canvas and push it up.
+				const canvasHasNodes =
+					canvasToBuilderGraph(canvasRef.current.nodes, []).nodes.length > 0;
+				if (session.draft_graph.nodes.length === 0 && canvasHasNodes) {
+					lockVersionRef.current = session.draft_lock_version;
+					lastSyncedRef.current = JSON.stringify(session.draft_graph);
+					void syncCanvas(session.id);
+					return;
 				}
+				applySessionDraft(session);
 			})
 			.catch(() => {
 				/* stale/deleted session — leave the fresh chat as-is */
@@ -134,197 +246,111 @@ export const useAiBuilderBridge = () => {
 		return () => {
 			cancelled = true;
 		};
-	}, [workspaceId, builderSessionId, hydratedSessionId, hydrateFromBackend, dispatch]);
+	}, [
+		workspaceId,
+		builderSessionId,
+		hydratedSessionId,
+		hydrateFromBackend,
+		applySessionDraft,
+		syncCanvas,
+	]);
 
-	// Turn one successful tool call into an immediate, targeted canvas mutation
-	// — the tool's own call arguments carry everything needed (name/config/
-	// position); the result is only consulted for AddNodeTool, since the
-	// backend auto-generates the node id when the call left it blank.
-	const applyToolMutation = (toolId: string, successful: boolean, result: unknown) => {
-		const pending = pendingToolArgs.current.get(toolId);
-		pendingToolArgs.current.delete(toolId);
-		if (!pending || !successful) return;
-
-		const { toolName, args } = pending;
-
-		switch (toolName) {
-			case TOOL_ADD_NODE: {
-				const type = args.type as string | undefined;
-				if (!type) return;
-				const resultData = parseToolResult(result);
-				const nodeId = (resultData?.node_id as string | undefined) || (args.id as string) || toolId;
-				dispatch({
-					type: 'BUILDER_ADD_NODE',
-					node: builderNodeToCanvas({
-						id: nodeId,
-						type,
-						name: (args.name as string) || type,
-						config: (args.config as Record<string, unknown>) ?? {},
-						position: (args.position as IBuilderNodePosition) ?? { x: 0, y: 200 },
-					}),
-				});
-				return;
-			}
-			case TOOL_REMOVE_NODE: {
-				const nodeId = args.node_id as string | undefined;
-				if (nodeId) dispatch({ type: 'BUILDER_REMOVE_NODE', id: nodeId });
-				return;
-			}
-			case TOOL_UPDATE_NODE: {
-				const nodeId = args.node_id as string | undefined;
-				if (!nodeId) return;
-				dispatch({
-					type: 'BUILDER_UPDATE_NODE',
-					id: nodeId,
-					name: args.name as string | undefined,
-					config: args.config as Record<string, unknown> | undefined,
-					position: args.position as IBuilderNodePosition | undefined,
-				});
-				return;
-			}
-			case TOOL_CONNECT_NODES: {
-				const source = args.source as string | undefined;
-				const target = args.target as string | undefined;
-				if (!source || !target) return;
-				dispatch({
-					type: 'ADD_EDGE',
-					source,
-					target,
-					sourceHandle: args.source_handle as string | undefined,
-					targetHandle: args.target_handle as string | undefined,
-				});
-				return;
-			}
-			case TOOL_DISCONNECT_NODES: {
-				const source = args.source as string | undefined;
-				const target = args.target as string | undefined;
-				if (source && target) dispatch({ type: 'BUILDER_REMOVE_EDGE', source, target });
-			}
-		}
-	};
-
-	// Shared handler: surface an assistant result (from realtime or poll) exactly
-	// once. Nodes/edges have already been live-applied per tool call as the
-	// agent worked — this runs once more as the authoritative reconciliation.
-	const applyResult = (event: IBuilderMessageReadyEvent) => {
-		if (appliedMessageIds.current.has(event.message.id)) return;
-		if (useAiChatStore.getState().ignoredMessageIds.has(event.message.id)) return;
-		appliedMessageIds.current.add(event.message.id);
-
-		if (event.error) {
-			failPending(event.message?.error_message ?? undefined);
-			return;
-		}
-
-		applyReadyMessage(event);
-		if ((event.draft?.nodes?.length ?? 0) > 0) {
-			const { nodes, edges } = builderDraftToCanvas(event.draft);
-			skipNextSyncRef.current = true;
-			dispatch({ type: 'APPLY_BUILDER_DRAFT', nodes, edges });
-		}
-	};
-
-	// Realtime path — instant when broadcasting is healthy.
+	// No session (new chat) means no draft version to sync against yet.
 	useEffect(() => {
-		if (!echo || !builderSessionId) return;
+		if (!builderSessionId) lockVersionRef.current = null;
+	}, [builderSessionId]);
 
-		const unsubscribe = subscribeToBuilderSession(echo as unknown as IEchoLike, builderSessionId, {
-			onReady: applyResult,
-			onError: applyResult,
-			onTextDelta: (event) => appendTextDelta(event.delta),
-			onToolCall: (event) => {
-				pendingToolArgs.current.set(event.tool_id, {
-					toolName: event.tool_name,
-					args: event.arguments,
-				});
-				pushToolCall(event.tool_id, event.tool_name, event.arguments);
+	// Realtime — instant when broadcasting is healthy.
+	useEffect(() => {
+		if (!echo || !workspaceId || !builderSessionId) return;
+
+		const isLive = () => useAiChatStore.getState().isThinking;
+
+		return subscribeToBuilderSession(
+			echo as unknown as IEchoLike,
+			workspaceId,
+			builderSessionId,
+			{
+				onStatus: (event) => {
+					if (event.status === 'completed' || event.status === 'failed') {
+						void finalizeReply(event.message_id);
+					}
+				},
+				onDelta: (event) => {
+					if (isLive()) appendTextDelta(event.delta);
+				},
+				onToolCall: (event) => {
+					if (isLive())
+						pushToolCall(event.id, event.name, parseArguments(event.arguments));
+				},
+				onToolResult: (event) => {
+					if (isLive()) resolveToolResult(event.id, event.successful);
+				},
+				onDraft: () => {
+					void refreshDraft();
+				},
 			},
-			onToolResult: (event) => {
-				resolveToolResult(event.tool_id, event.successful);
-				applyToolMutation(event.tool_id, event.successful, event.result);
-			},
-		});
+		);
+	}, [
+		echo,
+		workspaceId,
+		builderSessionId,
+		finalizeReply,
+		refreshDraft,
+		appendTextDelta,
+		pushToolCall,
+		resolveToolResult,
+	]);
 
-		return unsubscribe;
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [echo, builderSessionId]);
-
-	// Polling fallback — works even when the WebSocket never connects. Waits for
-	// the specific assistant message the backend queued (pendingMessageId) to
-	// reach a terminal status, so it never applies a stale earlier reply. It
-	// only ever sees the final state (no granular tool-call events), which is
-	// fine — APPLY_BUILDER_DRAFT reconciles everything in one shot.
+	// Poll fallback — works even when the socket never connects. Watches the
+	// specific reply the backend queued, so it never applies an older one.
 	useEffect(() => {
 		if (!workspaceId || !builderSessionId || !pendingMessageId || !isThinking) return;
 
 		let cancelled = false;
 		const startedAt = Date.now();
 
-		const isTerminal = (m: IBuilderMessage) =>
-			m.processing_status === 'completed' || m.processing_status === 'failed';
-
 		const poll = async () => {
 			try {
-				const session = await WorkflowBuilderService.getSession(workspaceId, builderSessionId);
+				const reply = await WorkflowBuilderMessageService.detail(
+					workspaceId,
+					builderSessionId,
+					pendingMessageId,
+				);
 				if (cancelled) return;
-
-				const target = (session.messages ?? []).find((m) => m.id === pendingMessageId);
-				if (target && isTerminal(target)) {
-					applyResult({
-						message: target,
-						draft: { nodes: session.nodes_draft ?? [], edges: session.edges_draft ?? [] },
-						version: null,
-						session: { id: session.id, title: session.title, status: session.status },
-						error: target.processing_status === 'failed',
-					});
+				if (isTerminal(reply)) {
+					await finalizeReply(reply.id);
 					return;
 				}
-
 				if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
 					failPending('The builder took too long to respond. Please try again.');
 				}
 			} catch {
-				/* transient — the next tick will retry */
+				/* transient — the next tick retries */
 			}
 		};
 
-		void poll();
 		const timer = window.setInterval(poll, POLL_INTERVAL_MS);
 		return () => {
 			cancelled = true;
 			window.clearInterval(timer);
 		};
-	}, [workspaceId, builderSessionId, pendingMessageId, isThinking]);
+	}, [workspaceId, builderSessionId, pendingMessageId, isThinking, finalizeReply, failPending]);
 
-	// Sync manual canvas edits (drag, delete, add from the library, rename,
-	// etc.) back into the builder session's draft, debounced, so the AI's next
-	// message operates on what's actually on the canvas — not just whatever it
-	// last wrote itself. Paused while the AI is mid-turn to avoid racing its
-	// own writes to the same session.
+	// Manual canvas edits → the session's draft, debounced. Paused while the
+	// assistant is mid-turn: it is editing the same draft, and its changes are
+	// streaming onto this canvas.
 	useEffect(() => {
 		if (!workspaceId || !builderSessionId || isThinking) return;
 
-		const draft = canvasToBuilderDraft(state.nodes, state.edges);
-		const snapshot = JSON.stringify(draft);
-
-		if (skipNextSyncRef.current) {
-			skipNextSyncRef.current = false;
-			lastSyncedDraftRef.current = snapshot;
-			return;
-		}
-		if (snapshot === lastSyncedDraftRef.current) return;
-
 		if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-		syncTimerRef.current = setTimeout(() => {
-			lastSyncedDraftRef.current = snapshot;
-			WorkflowBuilderService.syncDraft(workspaceId, builderSessionId, draft).catch(() => {
-				// Best-effort — the next canvas edit (or the AI's own next turn,
-				// which reads live state via read_draft_workflow) will retry.
-			});
-		}, DRAFT_SYNC_DEBOUNCE_MS);
+		syncTimerRef.current = setTimeout(
+			() => void syncCanvas(builderSessionId),
+			DRAFT_SYNC_DEBOUNCE_MS,
+		);
 
 		return () => {
 			if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
 		};
-	}, [state.nodes, state.edges, workspaceId, builderSessionId, isThinking]);
+	}, [state.nodes, state.edges, workspaceId, builderSessionId, isThinking, syncCanvas]);
 };

@@ -118,6 +118,7 @@ export type TWorkflowEditorAction =
 	| { type: 'SET_NODE_EXPANDED'; open: boolean; nodeId?: string | null }
 	| { type: 'SET_DIFF_VIEWER'; open: boolean }
 	| { type: 'SET_STEP_MODE'; enabled: boolean }
+	| { type: 'STEP_WAIT' }
 	| { type: 'STEP_NEXT' }
 	| { type: 'SET_LINK_CREDENTIALS_OPEN'; open: boolean }
 	// Pinned data + run history
@@ -336,7 +337,11 @@ export const workflowEditorReducer = (
 			const ids = state.nodes.map((node) => node.id);
 			return {
 				...state,
-				ui: { ...state.ui, selectedNodeIds: ids, selectedNodeId: ids[ids.length - 1] ?? null },
+				ui: {
+					...state.ui,
+					selectedNodeIds: ids,
+					selectedNodeId: ids[ids.length - 1] ?? null,
+				},
 			};
 		}
 		case 'CLEAR_NODE_SELECTION':
@@ -707,7 +712,8 @@ export const workflowEditorReducer = (
 			};
 		case 'TOGGLE_NODE_FLOW_TRIGGER': {
 			// A flow has a single entry trigger — enabling one clears the rest.
-			const enabling = !state.nodes.find((node) => node.id === action.id)?.data.activateAsTrigger;
+			const enabling = !state.nodes.find((node) => node.id === action.id)?.data
+				.activateAsTrigger;
 			return {
 				...state,
 				workflow: { ...state.workflow, savingState: 'dirty', updatedAt: Date.now() },
@@ -824,6 +830,8 @@ export const workflowEditorReducer = (
 				...state,
 				ui: { ...state.ui, stepMode: action.enabled, waitingForStep: false },
 			};
+		case 'STEP_WAIT':
+			return { ...state, ui: { ...state.ui, waitingForStep: true } };
 		case 'STEP_NEXT':
 			return { ...state, ui: { ...state.ui, waitingForStep: false } };
 		case 'SET_LINK_CREDENTIALS_OPEN':
@@ -839,12 +847,18 @@ export const workflowEditorReducer = (
 								data: {
 									...node.data,
 									definition: {
-										...(node.data.definition ?? getNodeDefinition(node.data.defKey)!),
+										...(node.data.definition ??
+											getNodeDefinition(node.data.defKey)!),
 										fields: action.fields,
 										outputs: action.fields.map((f) => ({
 											id: f.key,
 											name: f.label,
-											type: f.kind === 'toggle' ? 'boolean' : f.kind === 'number' ? 'number' : 'string',
+											type:
+												f.kind === 'toggle'
+													? 'boolean'
+													: f.kind === 'number'
+														? 'number'
+														: 'string',
 										})),
 									},
 								},
@@ -877,7 +891,10 @@ export const workflowEditorReducer = (
 				...state,
 				nodes: state.nodes.map((node) =>
 					node.id === action.id
-						? { ...node, data: { ...node.data, pinned: false, pinnedOutput: undefined } }
+						? {
+								...node,
+								data: { ...node.data, pinned: false, pinnedOutput: undefined },
+							}
 						: node,
 				),
 			};

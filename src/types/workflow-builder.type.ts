@@ -1,343 +1,179 @@
-// AI Workflow Builder — /workspaces/{workspace}/workflow-builder/
+// AI Workflow Builder — /workspaces/{workspace}/workflow-builder-sessions
+//
+// Mirrors the backend's `WorkflowBuilderSession*` resources. A session owns a
+// `draft_graph` in the same shape `PUT /workflows/{id}/graph` takes — nodes
+// keyed by `key`, edges as `{ from, to, condition }` — so the canvas converts
+// it with the same helpers it uses for a saved workflow.
 
-import type { TWorkflow } from './workflow.type';
+// ─── Draft graph ─────────────────────────────────────────────
 
-// Draft graph
-
-export interface IBuilderNodePosition {
-	x: number;
-	y: number;
-}
-
-export interface IBuilderNode {
-	id: string;
+export type TBuilderGraphNode = {
+	key: string;
 	type: string;
-	name: string;
 	config: Record<string, unknown>;
-	position: IBuilderNodePosition;
-}
+	position?: { x: number; y: number } | null;
+};
 
-export interface IBuilderEdge {
-	source: string;
-	target: string;
-	sourceHandle?: string;
-	targetHandle?: string;
-}
+/** `condition`: `null` = always taken, `"error"` = taken when `from` fails,
+ *  anything else = the router/filter `result` value that selects the branch. */
+export type TBuilderGraphEdge = {
+	from: string;
+	to: string;
+	condition: string | null;
+};
 
-export interface IBuilderDraft {
-	nodes: IBuilderNode[];
-	edges: IBuilderEdge[];
-}
+export type TBuilderGraph = {
+	nodes: TBuilderGraphNode[];
+	edges: TBuilderGraphEdge[];
+};
 
-// Sessions
+// ─── Sessions & messages ─────────────────────────────────────
 
-export type TBuilderSessionStatus = 'active' | 'completed' | 'archived' | 'failed';
-
-export type TBuilderMessageRole = 'user' | 'assistant';
+export type TBuilderSessionStatus = 'active' | 'promoted' | 'archived';
 
 export type TBuilderMessageStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
-export interface IBuilderMessageAction {
-	type: 'node_added' | 'node_removed' | 'node_updated' | 'edges_added' | 'edges_removed';
-	node_id?: string;
-	node_type?: string;
-	label?: string;
-	count?: number;
-}
+/** What one assistant reply changed in the draft — `DraftDiff::between()`. */
+export type TBuilderMessageAction =
+	| { type: 'node_added' | 'node_updated' | 'node_removed'; key: string; node_type: string }
+	| { type: 'edge_added' | 'edge_removed'; from: string; to: string; condition: string | null };
 
-export interface IBuilderMessage {
-	id: string;
-	role: TBuilderMessageRole;
-	content: string;
-	actions?: IBuilderMessageAction[] | null;
-	processing_status: TBuilderMessageStatus;
-	error_message?: string | null;
-	draft_version_id?: string | null;
-	created_at: string;
-	updated_at?: string;
-}
-
-export interface IBuilderSession {
-	id: string;
-	title: string;
-	status: TBuilderSessionStatus;
-	status_label?: string;
-	workflow_id?: string | null;
-	conversation_id?: string | null;
-	nodes_draft: IBuilderNode[];
-	edges_draft: IBuilderEdge[];
-	draft_lock_version: number;
-	message_count?: number;
-	version_count?: number;
-	messages?: IBuilderMessage[];
-	last_activity_at?: string | null;
-	created_at: string;
-	updated_at?: string;
-}
-
-export interface IBuilderDraftVersion {
-	id: string;
-	label?: string | null;
-	node_count: number;
-	edge_count: number;
-	triggered_by?: string | null;
-	nodes_snapshot?: IBuilderNode[];
-	edges_snapshot?: IBuilderEdge[];
-	created_at: string;
-}
-
-// Validation
-
-export interface IBuilderValidationError {
-	node_id: string | null;
-	issue: string;
-}
-
-export interface IBuilderValidationResult {
-	valid: boolean;
-	errors: IBuilderValidationError[];
-}
-
-// Request DTOs
-
-export interface IListSessionsParams {
-	status?: TBuilderSessionStatus;
-	per_page?: number;
-	page?: number;
-}
-
-export interface ICreateSessionDto {
-	title?: string;
-	prompt?: string;
-	workflow_id?: string;
-	nodes?: IBuilderNode[];
-	edges?: IBuilderEdge[];
-}
-
-export interface IRenameSessionDto {
-	title: string;
-}
-
-export interface ISyncDraftDto {
-	nodes: IBuilderNode[];
-	edges: IBuilderEdge[];
-}
-
-export interface ISendBuilderMessageDto {
-	message: string;
-}
-
-export interface IListMessagesParams {
-	per_page?: number;
-	page?: number;
-}
-
-export interface IListVersionsParams {
-	per_page?: number;
-	page?: number;
-}
-
-// Response shapes
-
-export interface ISessionQueuedResponse {
-	session_id: string;
-	message_id: string;
-}
-
-export type TCreateSessionResponse = IBuilderSession | ISessionQueuedResponse;
-
-export const isSessionQueued = (
-	res: TCreateSessionResponse,
-): res is ISessionQueuedResponse =>
-	(res as ISessionQueuedResponse).session_id !== undefined &&
-	(res as IBuilderSession).id === undefined;
-
-export interface ISendMessageResponse {
-	message_id: string;
-}
-
-// One-shot generation
-
-export interface IGenerateWorkflowDto {
-	prompt: string;
-	save?: boolean;
-}
-
-export interface IGenerateWorkflowResult {
-	name: string;
-	description: string;
-	nodes: IBuilderNode[];
-	edges: IBuilderEdge[];
-	workflow: TWorkflow | null;
-}
-
-export interface IExplainWorkflowDto {
-	nodes: IBuilderNode[];
-	edges: IBuilderEdge[];
-}
-
-export interface IExplainWorkflowResult {
-	explanation: string;
-}
-
-export interface ISuggestNodesDto {
-	nodes: IBuilderNode[];
-	edges: IBuilderEdge[];
-	goal?: string;
-}
-
-export interface INodeSuggestion {
-	node_type: string;
-	node_name: string;
-	reason: string;
-	category: string;
-	complexity: string;
-}
-
-export interface ISuggestNodesResult {
-	suggestions: INodeSuggestion[];
-}
-
-export interface IConfigureNodeDto {
-	node_type: string;
-	intent: string;
-}
-
-export interface IConfigureNodeResult {
-	config: Record<string, unknown>;
-	explanation: string;
-	validation_notes: string;
-}
-
-export interface ISuggestEnhancementsDto {
-	nodes: IBuilderNode[];
-	edges: IBuilderEdge[];
-}
-
-export interface IEnhancementSuggestion {
-	title: string;
-	description: string;
-	impact: string;
-	priority: string;
-	effort: string;
-	suggested_node_type?: string;
-}
-
-export interface ISuggestEnhancementsResult {
-	suggestions: IEnhancementSuggestion[];
-}
-
-// Realtime (WebSocket)
-
-export interface IBuilderMessageReadyEvent {
-	message: IBuilderMessage;
-	draft: IBuilderDraft;
-	version: {
-		id: string;
-		label?: string | null;
-		node_count: number;
-		edge_count: number;
-		created_at: string;
-	} | null;
-	session: Pick<IBuilderSession, 'id' | 'title' | 'status'> & {
-		draft_lock_version?: number;
-	};
-	error: boolean;
-}
-
-export interface IBuilderStreamTextDeltaEvent {
-	type: 'text_delta';
-	id: string;
-	invocation_id: string | null;
-	message_id: string;
-	delta: string;
-	timestamp: number;
-}
-
-export interface IBuilderStreamToolCallEvent {
-	type: 'tool_call';
-	id: string;
-	invocation_id: string | null;
-	tool_id: string;
-	tool_name: string;
-	arguments: Record<string, unknown>;
-	reasoning_id?: string | null;
-	timestamp: number;
-}
-
-export interface IBuilderStreamToolResultEvent {
-	type: 'tool_result';
-	id: string;
-	invocation_id: string | null;
-	tool_id: string;
-	tool_name: string;
-	result: unknown;
-	successful: boolean;
-	error: string | null;
-	timestamp: number;
-}
-
-export interface IBuilderStreamStartEvent {
-	type: 'stream_start';
-	provider: string;
-	model: string;
-	timestamp: number;
-}
-
-export interface IBuilderStreamEndEvent {
-	type: 'stream_end';
-	reason: string;
-	usage?: Record<string, unknown> | null;
-	timestamp: number;
-}
-
-export interface IBuilderStreamErrorEvent {
-	type: 'error';
-	message: string;
-	recoverable: boolean;
-	timestamp: number;
-}
-
-// Legacy (v1 prototype, unused — kept for future reuse)
-
-export type TWorkflowBuilderSessionStatus = 'active' | 'promoted' | 'archived';
-
-export type TWorkflowBuilderMessage = {
+export type TBuilderMessage = {
 	id: string;
 	session_id: string;
 	draft_version_id: string | null;
 	role: 'user' | 'assistant';
 	content: string;
-	actions: unknown;
+	actions: TBuilderMessageAction[] | null;
+	processing_status: TBuilderMessageStatus;
+	error_message: string | null;
 	created_at: string;
 };
 
-export type TWorkflowBuilderSession = {
+export type TBuilderSession = {
 	id: string;
 	workspace_id: string;
 	user_id: string;
 	workflow_id: string | null;
-	title: string | null;
-	draft_graph: { nodes: unknown[]; edges: unknown[] };
+	title: string;
+	draft_graph: TBuilderGraph;
 	draft_lock_version: number;
-	status: TWorkflowBuilderSessionStatus;
-	last_activity_at: string;
-	messages?: TWorkflowBuilderMessage[];
+	status: TBuilderSessionStatus;
+	last_activity_at: string | null;
+	messages?: TBuilderMessage[];
+	messages_count?: number;
+	created_at: string;
+	updated_at?: string;
+};
+
+export type TBuilderDraftVersion = {
+	id: string;
+	session_id: string;
+	label: string | null;
+	triggered_by: string | null;
+	node_count: number;
+	edge_count: number;
+	graph_snapshot?: TBuilderGraph;
 	created_at: string;
 };
+
+// ─── Request DTOs ────────────────────────────────────────────
 
 export type TCreateBuilderSessionDto = {
 	title?: string;
 	workflow_id?: string | null;
+	/** Sent as the session's first message straight away. */
+	prompt?: string;
 };
 
-export type TSendBuilderMessageDto = {
-	message: string;
+export type TUpdateBuilderSessionDto = {
+	title?: string;
+	/** `promoted` is set by promoting, never directly. */
+	status?: 'active' | 'archived';
 };
 
-export type TPromoteBuilderSessionDto = {
-	name?: string;
+/** The canvas's copy of the draft, plus the lock version it was built on —
+ *  the server answers 409 if the assistant changed the draft since. */
+export type TSyncBuilderDraftDto = TBuilderGraph & { draft_lock_version: number };
+
+export type TSendBuilderMessageDto = { message: string };
+
+export type TPromoteBuilderSessionDto = { name?: string };
+
+export type TListBuilderSessionsParams = { status?: TBuilderSessionStatus };
+
+// ─── Assist (one-shot helpers; none change the draft) ────────
+
+export type TBuilderNodeSuggestion = {
+	type: string;
+	name: string;
+	reason: string;
+	connect_from: string | null;
 };
+
+export type TConfigureBuilderNodeDto = {
+	instruction: string;
+	/** A node about to be added… */
+	type?: string;
+	/** …or one already in the draft. */
+	key?: string;
+};
+
+export type TBuilderNodeConfigProposal = {
+	type: string;
+	config: Record<string, unknown>;
+	explanation: string;
+	needs_from_user: string[];
+	/** Where the proposal breaks the node's config schema. */
+	errors: string[];
+};
+
+export type TBuilderWorkflowExplanation = {
+	summary: string;
+	steps: { key: string; description: string }[];
+};
+
+export type TBuilderImprovement = {
+	title: string;
+	description: string;
+	priority: 'high' | 'medium' | 'low';
+	node_keys: string[];
+	suggested_type: string | null;
+};
+
+// ─── Realtime — `WorkflowBuilderActivity` (`builder.<type>`) ─
+
+type TBuilderEventBase = { session_id: string; message_id: string };
+
+export type TBuilderStatusEvent = TBuilderEventBase & {
+	status: 'processing' | 'completed' | 'failed';
+	title?: string;
+	draft_lock_version?: number;
+	error_message?: string;
+};
+
+export type TBuilderDeltaEvent = TBuilderEventBase & { delta: string };
+
+export type TBuilderToolCallEvent = TBuilderEventBase & {
+	id: string;
+	name: string;
+	/** Capped server-side; may arrive as a truncated JSON string. */
+	arguments: Record<string, unknown> | string;
+};
+
+export type TBuilderToolResultEvent = TBuilderEventBase & {
+	id: string;
+	name: string;
+	output: string;
+	successful: boolean;
+};
+
+export type TBuilderDraftEvent = TBuilderEventBase & {
+	draft_lock_version: number;
+	label: string | null;
+};
+
+// ─── Diagnostics on a saved workflow ─────────────────────────
 
 export type TWorkflowGraphNodeInput = {
 	key: string;
@@ -364,8 +200,25 @@ export type TWorkflowValidationResult = {
 	issues: unknown[];
 };
 
+/** `DryRunner::run()`. */
+export type TWorkflowDryRun = {
+	ok: boolean;
+	issues: string[];
+	/** Template references that can't resolve. */
+	warnings: string[];
+	/** References into a node whose output shape isn't known yet (never run or
+	 *  pinned) — not errors, just unchecked. */
+	unverified: string[];
+	steps: {
+		key: string;
+		type: string;
+		resolved_config: Record<string, unknown>;
+		sample_output: unknown;
+	}[];
+};
+
 export type TWorkflowDryRunResult = {
-	dry_run: unknown;
+	dry_run: TWorkflowDryRun;
 };
 
 export type TTestWorkflowNodeDto = {
