@@ -1,44 +1,67 @@
 import { axiosClient } from '@/api/client';
 import { unwrapKey } from '@/api/core';
 import type { TApiResponse } from '@/api/core';
+import type { TPaginatedResponse } from '@/types/api.type';
 import type {
-	TWorkflowBuilderSession,
+	TBuilderDraftVersion,
+	TBuilderImprovement,
+	TBuilderMessage,
+	TBuilderNodeConfigProposal,
+	TBuilderNodeSuggestion,
+	TBuilderSession,
+	TBuilderWorkflowExplanation,
+	TConfigureBuilderNodeDto,
 	TCreateBuilderSessionDto,
-	TWorkflowBuilderMessage,
-	TSendBuilderMessageDto,
-	TPromoteBuilderSessionDto,
-	TValidateWorkflowDto,
 	TDryRunWorkflowDto,
-	TWorkflowValidationResult,
-	TWorkflowDryRunResult,
+	TListBuilderSessionsParams,
+	TPromoteBuilderSessionDto,
+	TSendBuilderMessageDto,
+	TSyncBuilderDraftDto,
 	TTestWorkflowNodeDto,
-	IBuilderSession,
-	IBuilderNode,
-	IBuilderEdge,
+	TUpdateBuilderSessionDto,
+	TValidateWorkflowDto,
+	TWorkflowDryRunResult,
+	TWorkflowValidationResult,
 } from '@/types/workflow-builder.type';
 import type { TWorkflow, TReplaceGraphDto } from '@/types/workflow.type';
 import type { TNodeRunDetail } from '@/types/run.type';
 import { WorkflowBuilderEndpoints as E, WorkflowDiagnosticsEndpoints as D } from './workflow-builder.endpoints';
 
 export const WorkflowBuilderSessionService = {
-	list: (ws: string, signal?: AbortSignal) =>
+	/** Archived sessions are only listed when asked for by `status`. */
+	list: (ws: string, params?: TListBuilderSessionsParams, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ sessions: TWorkflowBuilderSession[] }>>(E.list(ws), { signal })
-			.then(unwrapKey<TWorkflowBuilderSession[]>('sessions')),
+			.get<TApiResponse<{ sessions: TBuilderSession[] }>>(E.list(ws), { params, signal })
+			.then(unwrapKey<TBuilderSession[]>('sessions')),
 
-	// Eager-loads the message transcript — there is no separate messages
-	// list endpoint.
+	/** Includes the full message transcript. */
 	detail: (ws: string, id: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ session: TWorkflowBuilderSession }>>(E.detail(ws, id), { signal })
-			.then(unwrapKey<TWorkflowBuilderSession>('session')),
+			.get<TApiResponse<{ session: TBuilderSession }>>(E.detail(ws, id), { signal })
+			.then(unwrapKey<TBuilderSession>('session')),
 
+	/** With a `prompt`, `message` is the pending reply to that first message. */
 	create: (ws: string, payload: TCreateBuilderSessionDto) =>
 		axiosClient
-			.post<TApiResponse<{ session: TWorkflowBuilderSession }>>(E.create(ws), payload)
-			.then(unwrapKey<TWorkflowBuilderSession>('session')),
+			.post<TApiResponse<{ session: TBuilderSession; message: TBuilderMessage | null }>>(E.create(ws), payload)
+			.then((res) => res.data.data),
+
+	/** Rename, archive, or unarchive. */
+	update: (ws: string, id: string, payload: TUpdateBuilderSessionDto) =>
+		axiosClient
+			.patch<TApiResponse<{ session: TBuilderSession }>>(E.update(ws, id), payload)
+			.then(unwrapKey<TBuilderSession>('session')),
 
 	remove: (ws: string, id: string) => axiosClient.delete(E.delete(ws, id)).then(() => undefined),
+
+	/**
+	 * Replace the draft with the canvas's copy. Rejected with 409 when
+	 * `draft_lock_version` is behind — the assistant changed the draft since.
+	 */
+	syncDraft: (ws: string, id: string, payload: TSyncBuilderDraftDto) =>
+		axiosClient
+			.patch<TApiResponse<{ session: TBuilderSession }>>(E.syncDraft(ws, id), payload)
+			.then(unwrapKey<TBuilderSession>('session')),
 
 	/** Publishes the draft graph to a real, workspace-visible workflow. */
 	promote: (ws: string, id: string, payload?: TPromoteBuilderSessionDto) =>
@@ -48,12 +71,71 @@ export const WorkflowBuilderSessionService = {
 };
 
 export const WorkflowBuilderMessageService = {
-	// Queues background processing on the session; re-fetch the session
-	// (which eager-loads `messages`) to see the reply once it lands.
+	list: (ws: string, sessionId: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<{ messages: TBuilderMessage[] }>>(E.messages(ws, sessionId), { signal })
+			.then(unwrapKey<TBuilderMessage[]>('messages')),
+
+	/**
+	 * Returns (202) the pending assistant message. Its reply is written in the
+	 * background — follow it on the session channel or poll `detail()`.
+	 * 409 while a previous reply is still being written.
+	 */
 	send: (ws: string, sessionId: string, payload: TSendBuilderMessageDto) =>
 		axiosClient
-			.post<TApiResponse<{ message: TWorkflowBuilderMessage }>>(E.sendMessage(ws, sessionId), payload)
-			.then(unwrapKey<TWorkflowBuilderMessage>('message')),
+			.post<TApiResponse<{ message: TBuilderMessage }>>(E.messages(ws, sessionId), payload)
+			.then(unwrapKey<TBuilderMessage>('message')),
+
+	detail: (ws: string, sessionId: string, messageId: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<{ message: TBuilderMessage }>>(E.message(ws, sessionId, messageId), { signal })
+			.then(unwrapKey<TBuilderMessage>('message')),
+};
+
+/** Undo history — one labelled snapshot per edit, newest first. */
+export const WorkflowBuilderVersionService = {
+	list: (ws: string, sessionId: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TPaginatedResponse<TBuilderDraftVersion>>(E.versions(ws, sessionId), {
+				params: { per_page: 50 },
+				signal,
+			})
+			.then((res) => res.data.data),
+
+	restore: (ws: string, sessionId: string, versionId: string) =>
+		axiosClient
+			.post<TApiResponse<{ session: TBuilderSession }>>(E.restoreVersion(ws, sessionId, versionId))
+			.then(unwrapKey<TBuilderSession>('session')),
+};
+
+/** One-shot helpers over a session's draft. None of them change it. */
+export const WorkflowBuilderAssistService = {
+	suggestNodes: (ws: string, sessionId: string, note?: string) =>
+		axiosClient
+			.post<TApiResponse<{ suggestions: TBuilderNodeSuggestion[] }>>(E.assist(ws, sessionId, 'suggest-nodes'), {
+				note: note || undefined,
+			})
+			.then(unwrapKey<TBuilderNodeSuggestion[]>('suggestions')),
+
+	configureNode: (ws: string, sessionId: string, payload: TConfigureBuilderNodeDto) =>
+		axiosClient
+			.post<TApiResponse<{ proposal: TBuilderNodeConfigProposal }>>(
+				E.assist(ws, sessionId, 'configure-node'),
+				payload,
+			)
+			.then(unwrapKey<TBuilderNodeConfigProposal>('proposal')),
+
+	explain: (ws: string, sessionId: string) =>
+		axiosClient
+			.post<TApiResponse<{ explanation: TBuilderWorkflowExplanation }>>(E.assist(ws, sessionId, 'explain'))
+			.then(unwrapKey<TBuilderWorkflowExplanation>('explanation')),
+
+	suggestImprovements: (ws: string, sessionId: string) =>
+		axiosClient
+			.post<TApiResponse<{ improvements: TBuilderImprovement[] }>>(
+				E.assist(ws, sessionId, 'suggest-improvements'),
+			)
+			.then(unwrapKey<TBuilderImprovement[]>('improvements')),
 };
 
 /** Pre-flight checks on an already-created `Workflow`, run against the same
@@ -80,60 +162,4 @@ export const WorkflowDiagnosticsService = {
 		axiosClient
 			.put<TApiResponse<{ workflow: TWorkflow }>>(D.replaceGraph(ws, workflowId), payload)
 			.then(unwrapKey<TWorkflow>('workflow')),
-};
-
-// ── Ported-frontend adapter ───────────────────────────────────────────────────
-//
-// The old frontend called one flat `WorkflowBuilderService`; this module splits
-// the same endpoints across Session/Message/Diagnostics services. The adapter
-// keeps the old names and call signatures so the ported `aiChat.store` needed no
-// changes — same approach as the agent-builder adapters in `agents.hooks.ts`.
-//
-// Contract gap to settle in the backend-adaptation pass: old `createSession`
-// posted the first `prompt` with the session, this backend's create takes only
-// `title`/`workflow_id`, so the prompt has to be sent as a follow-up message.
-const toBuilderSession = (s: TWorkflowBuilderSession): IBuilderSession => ({
-	id: s.id,
-	title: s.title ?? '',
-	// This backend has no `completed`/`failed` session state; `promoted` is its
-	// terminal one, which is what the old UI rendered as `completed`.
-	status: s.status === 'promoted' ? 'completed' : s.status,
-	workflow_id: s.workflow_id,
-	nodes_draft: (s.draft_graph?.nodes ?? []) as IBuilderNode[],
-	edges_draft: (s.draft_graph?.edges ?? []) as IBuilderEdge[],
-	draft_lock_version: s.draft_lock_version,
-	last_activity_at: s.last_activity_at,
-	created_at: s.created_at,
-});
-
-export const WorkflowBuilderService = {
-	createSession: (ws: string, body: { prompt?: string; workflow_id?: string }) =>
-		WorkflowBuilderSessionService.create(ws, { workflow_id: body.workflow_id ?? null }).then(
-			toBuilderSession,
-		),
-
-	sendMessage: (ws: string, sessionId: string, body: TSendBuilderMessageDto) =>
-		WorkflowBuilderMessageService.send(ws, sessionId, body).then((m) => ({ message_id: m.id })),
-
-	/**
-	 * `messages` is deliberately left off. Old's `IBuilderMessage` carried a
-	 * `processing_status`, and the ported bridge polls this endpoint until the
-	 * message it just sent reaches a terminal one. This backend models no
-	 * per-message status at all, so any value here would be invented — and a
-	 * fabricated `completed` would make that poll resolve against the user's own
-	 * message instead of the assistant's reply. Session hydration, which is what
-	 * the editor actually needs on load, works without it; reworking the poll is
-	 * the backend-adaptation pass's job.
-	 */
-	getSession: (ws: string, id: string, signal?: AbortSignal) =>
-		WorkflowBuilderSessionService.detail(ws, id, signal).then(toBuilderSession),
-
-	/**
-	 * No counterpart: this backend has no endpoint that pushes the live canvas
-	 * into a builder session (its sessions own their own `draft_graph`). The
-	 * ported caller already treats this as best-effort and swallows failures, so
-	 * it degrades exactly as that call site was written to expect.
-	 */
-	syncDraft: (_ws: string, _id: string, _body: unknown): Promise<never> =>
-		Promise.reject(new Error('Syncing the canvas draft into a builder session is not supported')),
 };

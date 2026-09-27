@@ -5,7 +5,7 @@ import type {
 	TWorkflowNode,
 } from '@/types/workflow.type';
 import type { TWorkflowVersion } from '@/types/workflow-extras.type';
-import { builderEdgeToCanvas, builderNodeToCanvas } from './builderDraft.helper';
+import { edgeCondition, graphEdgeToCanvas, graphNodeToCanvas } from './builderDraft.helper';
 import type { TCanvasEdge, TCanvasNode } from '../_types/canvas.type';
 import type { TExportedWorkflow } from '../_types/workflow-editor.type';
 
@@ -15,8 +15,10 @@ import type { TExportedWorkflow } from '../_types/workflow-editor.type';
  * `Workflow::replaceGraph()`. The canvas node id doubles as that key.
  *
  * Edges carry no port handles on the backend: `condition` is a branch value
- * (`null` = always, `'error'` = on failure), not a port name, so canvas edges
- * are saved unconditional and reload on each node's default handles.
+ * (`null` = always, `'error'` = on failure), not a port name. It rides on
+ * `edge.data.condition` so a branch the AI builder (or an import) created
+ * survives a save — saving it as `null` would turn an error path into one
+ * that always runs. Edges reload on each node's default handles.
  */
 export const buildGraphPayload = (
 	nodes: TCanvasNode[],
@@ -31,17 +33,16 @@ export const buildGraphPayload = (
 	edges: edges.map((edge) => ({
 		from: edge.source,
 		to: edge.target,
-		condition: null,
+		condition: edgeCondition(edge),
 	})),
 });
 
 const draftNodeToCanvas = (node: TWorkflowNode): TCanvasNode => {
-	const canvasNode = builderNodeToCanvas({
-		id: node.key,
+	const canvasNode = graphNodeToCanvas({
+		key: node.key,
 		type: node.type,
-		name: '',
 		config: node.config ?? {},
-		position: node.position ?? { x: 120, y: 120 },
+		position: node.position,
 	});
 	// Pins live on the node row and survive a graph save (`replaceGraph` carries
 	// them over by key), so they come back with the draft.
@@ -62,7 +63,9 @@ const draftEdgesToCanvas = (nodes: TWorkflowNode[], edges: TWorkflowEdge[]): TCa
 	return edges.flatMap((edge, index) => {
 		const source = keyById.get(String(edge.from_node_id));
 		const target = keyById.get(String(edge.to_node_id));
-		return source && target ? [builderEdgeToCanvas({ source, target }, index)] : [];
+		return source && target
+			? [graphEdgeToCanvas({ from: source, to: target, condition: edge.condition }, index)]
+			: [];
 	});
 };
 

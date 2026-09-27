@@ -5,11 +5,18 @@ export const WorkflowBuilderEndpoints = {
 	list: base,
 	create: base,
 	detail: session,
+	update: session,
 	delete: session,
+	syncDraft: (ws: string, id: string) => `${session(ws, id)}/draft`,
 	promote: (ws: string, id: string) => `${session(ws, id)}/promote`,
-	// There is no messages-list route — the session's `show` response is
-	// the only place the transcript is read back (eager-loaded).
-	sendMessage: (ws: string, sessionId: string) => `${session(ws, sessionId)}/messages`,
+	messages: (ws: string, sessionId: string) => `${session(ws, sessionId)}/messages`,
+	message: (ws: string, sessionId: string, messageId: string) =>
+		`${session(ws, sessionId)}/messages/${messageId}`,
+	versions: (ws: string, sessionId: string) => `${session(ws, sessionId)}/versions`,
+	restoreVersion: (ws: string, sessionId: string, versionId: string) =>
+		`${session(ws, sessionId)}/versions/${versionId}/restore`,
+	assist: (ws: string, sessionId: string, helper: 'suggest-nodes' | 'configure-node' | 'explain' | 'suggest-improvements') =>
+		`${session(ws, sessionId)}/assist/${helper}`,
 } as const;
 
 export const WorkflowDiagnosticsEndpoints = {

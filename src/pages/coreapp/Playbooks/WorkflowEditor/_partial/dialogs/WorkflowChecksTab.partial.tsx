@@ -1,21 +1,26 @@
 import { useMemo, useState } from 'react';
-import { AlertCircle, AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, Loader2, Play, ShieldCheck } from 'lucide-react';
+import {
+	AlertCircle,
+	AlertTriangle,
+	CheckCircle2,
+	ChevronDown,
+	ChevronRight,
+	HelpCircle,
+	Loader2,
+	Play,
+	ShieldCheck,
+} from 'lucide-react';
 import { useDryRunWorkflow, useValidateWorkflow } from '@/api/modules/workflow-builder';
-import type { TWorkflowValidationResult } from '@/types/workflow-builder.type';
+import type { TWorkflowDryRun, TWorkflowValidationResult } from '@/types/workflow-builder.type';
 import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
 import { buildGraphPayload } from '../../_helper/workflowApiTransform.helper';
 
-/** `DryRunner::run()` — the backend types it as `unknown`. */
-type TDryRunStep = {
-	key: string;
-	type: string;
-	resolved_config: Record<string, unknown>;
-	sample_output: unknown;
-};
-type TDryRun = { ok: boolean; issues: string[]; warnings: string[]; steps: TDryRunStep[] };
+type TDryRun = TWorkflowDryRun;
 
 const toStrings = (value: unknown): string[] =>
-	Array.isArray(value) ? value.map((item) => (typeof item === 'string' ? item : JSON.stringify(item))) : [];
+	Array.isArray(value)
+		? value.map((item) => (typeof item === 'string' ? item : JSON.stringify(item)))
+		: [];
 
 /**
  * Server-side checks on the canvas as it is right now (unsaved edits
@@ -23,7 +28,13 @@ const toStrings = (value: unknown): string[] =>
  * walks the graph in order and resolves each node's templates against
  * placeholder outputs — nothing external is called.
  */
-const WorkflowChecksTab = ({ workspaceId, workflowId }: { workspaceId: string; workflowId: string }) => {
+const WorkflowChecksTab = ({
+	workspaceId,
+	workflowId,
+}: {
+	workspaceId: string;
+	workflowId: string;
+}) => {
 	const { state } = useWorkflowEditor();
 	const validate = useValidateWorkflow(workspaceId, workflowId);
 	const dryRun = useDryRunWorkflow(workspaceId, workflowId);
@@ -73,6 +84,7 @@ const WorkflowChecksTab = ({ workspaceId, workflowId }: { workspaceId: string; w
 						ok: Boolean(raw.ok),
 						issues: toStrings(raw.issues),
 						warnings: toStrings(raw.warnings),
+						unverified: toStrings(raw.unverified),
 						steps: Array.isArray(raw.steps) ? raw.steps : [],
 					});
 				},
@@ -86,7 +98,9 @@ const WorkflowChecksTab = ({ workspaceId, workflowId }: { workspaceId: string; w
 	return (
 		<div className='space-y-6'>
 			<div>
-				<h3 className='text-sm font-bold text-zinc-800 dark:text-zinc-200'>Validate & Dry Run</h3>
+				<h3 className='text-sm font-bold text-zinc-800 dark:text-zinc-200'>
+					Validate & Dry Run
+				</h3>
 				<p className='mt-1 text-xs text-zinc-500 dark:text-zinc-400'>
 					Check the canvas on the server before you publish. Unsaved edits are included.
 				</p>
@@ -96,10 +110,12 @@ const WorkflowChecksTab = ({ workspaceId, workflowId }: { workspaceId: string; w
 			<div className='space-y-3 rounded-xl border border-zinc-200 bg-zinc-50/20 p-4 dark:border-zinc-800 dark:bg-zinc-900/20'>
 				<div className='flex items-center justify-between gap-3'>
 					<div>
-						<h4 className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>Validate graph</h4>
+						<h4 className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
+							Validate graph
+						</h4>
 						<p className='text-[11px] text-zinc-500'>
-							The same checks publishing runs: duplicate keys, broken connections, cycles, unreachable
-							nodes and node settings.
+							The same checks publishing runs: duplicate keys, broken connections,
+							cycles, unreachable nodes and node settings.
 						</p>
 					</div>
 					<button
@@ -107,7 +123,11 @@ const WorkflowChecksTab = ({ workspaceId, workflowId }: { workspaceId: string; w
 						onClick={handleValidate}
 						disabled={validate.isPending || isEmpty}
 						className='flex shrink-0 items-center gap-1.5 rounded-lg bg-zinc-900 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200'>
-						{validate.isPending ? <Loader2 size={13} className='animate-spin' /> : <ShieldCheck size={13} />}
+						{validate.isPending ? (
+							<Loader2 size={13} className='animate-spin' />
+						) : (
+							<ShieldCheck size={13} />
+						)}
 						Validate
 					</button>
 				</div>
@@ -136,10 +156,13 @@ const WorkflowChecksTab = ({ workspaceId, workflowId }: { workspaceId: string; w
 			<div className='space-y-3 rounded-xl border border-zinc-200 bg-zinc-50/20 p-4 dark:border-zinc-800 dark:bg-zinc-900/20'>
 				<div className='flex items-center justify-between gap-3'>
 					<div>
-						<h4 className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>Dry run</h4>
+						<h4 className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
+							Dry run
+						</h4>
 						<p className='text-[11px] text-zinc-500'>
-							Walks the nodes in order and fills in each node's templates. Flags references that nothing
-							provides. No node actually runs.
+							Walks the nodes in order and fills in each node's templates. Flags
+							references that nothing provides, or fields a node isn't known to
+							output. No node actually runs.
 						</p>
 					</div>
 					<button
@@ -147,7 +170,11 @@ const WorkflowChecksTab = ({ workspaceId, workflowId }: { workspaceId: string; w
 						onClick={handleDryRun}
 						disabled={dryRun.isPending || isEmpty}
 						className='flex shrink-0 items-center gap-1.5 rounded-lg bg-zinc-900 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200'>
-						{dryRun.isPending ? <Loader2 size={13} className='animate-spin' /> : <Play size={11} fill='currentColor' />}
+						{dryRun.isPending ? (
+							<Loader2 size={13} className='animate-spin' />
+						) : (
+							<Play size={11} fill='currentColor' />
+						)}
 						Dry run
 					</button>
 				</div>
@@ -164,7 +191,7 @@ const WorkflowChecksTab = ({ workspaceId, workflowId }: { workspaceId: string; w
 						onChange={(e) => setInputJson(e.target.value)}
 						rows={3}
 						spellCheck={false}
-						className='w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 font-mono text-[11px] text-zinc-700 outline-none focus:border-primary-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'
+						className='focus:border-primary-400 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 font-mono text-[11px] text-zinc-700 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'
 					/>
 					{inputError && <p className='text-[11px] text-rose-500'>{inputError}</p>}
 				</div>
@@ -202,6 +229,26 @@ const WorkflowChecksTab = ({ workspaceId, workflowId }: { workspaceId: string; w
 							</ul>
 						)}
 
+						{dryRunResult.unverified.length > 0 && (
+							<div className='space-y-1.5'>
+								<p className='text-[11px] text-zinc-500'>
+									Not checked — these nodes haven't run or been pinned yet, so
+									their output fields aren't known. Run or pin them once to check
+									these references.
+								</p>
+								<ul className='space-y-1.5'>
+									{dryRunResult.unverified.map((note, index) => (
+										<li
+											key={index}
+											className='flex items-start gap-1.5 text-xs text-zinc-500 dark:text-zinc-400'>
+											<HelpCircle size={13} className='mt-px shrink-0' />
+											<span>{note}</span>
+										</li>
+									))}
+								</ul>
+							</div>
+						)}
+
 						{dryRunResult.steps.length > 0 && (
 							<div className='space-y-1.5'>
 								<h5 className='text-[10px] font-bold tracking-wider text-zinc-500 uppercase'>
@@ -215,12 +262,20 @@ const WorkflowChecksTab = ({ workspaceId, workflowId }: { workspaceId: string; w
 											className='rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/40'>
 											<button
 												type='button'
-												onClick={() => setOpenStep(isOpen ? null : step.key)}
+												onClick={() =>
+													setOpenStep(isOpen ? null : step.key)
+												}
 												className='flex w-full items-center gap-2 px-3 py-2 text-left text-xs'>
 												{isOpen ? (
-													<ChevronDown size={12} className='text-zinc-400' />
+													<ChevronDown
+														size={12}
+														className='text-zinc-400'
+													/>
 												) : (
-													<ChevronRight size={12} className='text-zinc-400' />
+													<ChevronRight
+														size={12}
+														className='text-zinc-400'
+													/>
 												)}
 												<span className='text-zinc-400'>{index + 1}.</span>
 												<span className='truncate font-semibold text-zinc-800 dark:text-zinc-200'>
