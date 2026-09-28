@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Plus, Brain, Trash2, X, Loader2 } from 'lucide-react';
+import { Plus, Brain, Trash2, X, Loader2, Pencil } from 'lucide-react';
 import {
 	useAgentMemories,
 	useCreateAgentMemory,
+	useUpdateAgentMemory,
 	useDeleteAgentMemory,
 	useClearAgentMemories,
 } from '@/api/modules/agents';
+import type { TAgentMemory } from '@/types/agent.type';
 
 type TProps = {
 	ws: string;
@@ -25,9 +27,12 @@ const emptyForm = {
 const AgentMemoryPanel = ({ ws, agentId }: TProps) => {
 	const [isFormOpen, setIsFormOpen] = useState(false);
 	const [form, setForm] = useState(emptyForm);
+	// Set while the form edits an existing memory rather than adding one.
+	const [editingId, setEditingId] = useState<string | null>(null);
 
 	const { data: memories, isLoading } = useAgentMemories(ws, agentId ?? '');
 	const createMutation = useCreateAgentMemory(ws, agentId ?? '');
+	const updateMutation = useUpdateAgentMemory(ws, agentId ?? '');
 	const deleteMutation = useDeleteAgentMemory(ws, agentId ?? '');
 	const clearMutation = useClearAgentMemories(ws, agentId ?? '');
 
@@ -43,16 +48,27 @@ const AgentMemoryPanel = ({ ws, agentId }: TProps) => {
 
 	const resetForm = () => {
 		setForm(emptyForm);
+		setEditingId(null);
 		setIsFormOpen(false);
 	};
 
+	const startEdit = (memory: TAgentMemory) => {
+		setForm({ key: memory.key, value: memory.value, type: memory.type ?? 'fact' });
+		setEditingId(memory.id);
+		setIsFormOpen(true);
+	};
+
+	const isSaving = createMutation.isPending || updateMutation.isPending;
+
 	const handleSubmit = async () => {
 		if (!form.key.trim() || !form.value.trim()) return;
-		await createMutation.mutateAsync({
+		const body = {
 			key: form.key.trim(),
 			value: form.value.trim(),
 			type: form.type.trim() || 'fact',
-		});
+		};
+		if (editingId) await updateMutation.mutateAsync({ id: editingId, body });
+		else await createMutation.mutateAsync(body);
 		resetForm();
 	};
 
@@ -92,7 +108,9 @@ const AgentMemoryPanel = ({ ws, agentId }: TProps) => {
 			{isFormOpen && (
 				<div className='space-y-2.5 rounded-xl border border-zinc-100 bg-zinc-50/40 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
 					<div className='flex items-center justify-between'>
-						<span className='text-[11px] font-black text-zinc-700 dark:text-zinc-300'>New memory</span>
+						<span className='text-[11px] font-black text-zinc-700 dark:text-zinc-300'>
+							{editingId ? 'Edit memory' : 'New memory'}
+						</span>
 						<button aria-label='Close' onClick={resetForm} className='text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
 							<X size={13} />
 						</button>
@@ -119,9 +137,9 @@ const AgentMemoryPanel = ({ ws, agentId }: TProps) => {
 						</button>
 						<button
 							onClick={handleSubmit}
-							disabled={createMutation.isPending || !form.key.trim() || !form.value.trim()}
+							disabled={isSaving || !form.key.trim() || !form.value.trim()}
 							className='flex items-center gap-1 rounded-lg bg-primary-400 px-3 py-1 text-[10px] font-black text-primary-950 hover:bg-primary-500 disabled:opacity-50'>
-							{createMutation.isPending && <Loader2 size={11} className='animate-spin' />}
+							{isSaving && <Loader2 size={11} className='animate-spin' />}
 							Save
 						</button>
 					</div>
@@ -157,12 +175,26 @@ const AgentMemoryPanel = ({ ws, agentId }: TProps) => {
 									{memory.value}
 								</p>
 							</div>
-							<button
-								onClick={() => deleteMutation.mutate(memory.id)}
-								title='Delete'
-								className='shrink-0 text-zinc-400 hover:text-rose-500'>
-								<Trash2 size={12} />
-							</button>
+							<div className='flex shrink-0 items-center gap-2'>
+								<button
+									onClick={() => startEdit(memory)}
+									title='Edit'
+									aria-label={`Edit ${memory.key}`}
+									className={`hover:text-primary-600 dark:hover:text-primary-400 ${
+										editingId === memory.id ? 'text-primary-600 dark:text-primary-400' : 'text-zinc-400'
+									}`}>
+									<Pencil size={12} />
+								</button>
+								<button
+									onClick={() => {
+										if (editingId === memory.id) resetForm();
+										deleteMutation.mutate(memory.id);
+									}}
+									title='Delete'
+									className='text-zinc-400 hover:text-rose-500'>
+									<Trash2 size={12} />
+								</button>
+							</div>
 						</div>
 					))}
 				</div>

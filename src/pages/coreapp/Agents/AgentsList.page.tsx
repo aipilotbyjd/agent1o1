@@ -17,6 +17,8 @@ import {
 	Briefcase,
 	Copy,
 	Clock,
+	Folder,
+	FolderInput,
 } from 'lucide-react';
 import { OutletContextType } from './_layouts/Agents.layout';
 import { useConfirm } from '@/context/confirm';
@@ -27,10 +29,18 @@ import paths from '@/Routes/paths';
 import { useWorkspaceContext } from '@/context/workspace';
 import { agentKeys, useAgents, useDeleteAgent, useDuplicateAgent } from '@/api/modules/agents';
 import { useModelCatalog } from '@/api/modules/catalog';
+import { useFolders } from '@/api/modules/folders';
 import { agentColorTileClass, agentIconFor } from './_helper/agentAppearance';
 import ListSkeletonPart from '@/parts/ListSkeleton.part';
 import type { TAgent } from '@/types/agent.type';
 import { notify } from '@/api/core';
+import AgentFolderBar from './_partial/AgentFolderBar.partial';
+import {
+	flattenFolders,
+	FOLDER_COLORS,
+	type TAgentFolderFilter,
+} from './_helper/agentFolders.helper';
+import MoveAgentModal from './_partial/MoveAgentModal.partial';
 
 interface IAgentItem {
 	id: string;
@@ -42,6 +52,7 @@ interface IAgentItem {
 	tags: string[];
 	chats: number;
 	lastUsedAt: string | null;
+	folderId: string | null;
 }
 
 const getModelColor = (model: string) => {
@@ -108,6 +119,8 @@ const AgentsListPage = () => {
 
 	const { data: apiAgents, isLoading } = useAgents(currentWorkspaceId);
 	const { data: modelCatalog } = useModelCatalog();
+	const { data: apiFolders } = useFolders(currentWorkspaceId, 'agent');
+	const folders = useMemo(() => flattenFolders(apiFolders), [apiFolders]);
 	const deleteAgentMutation = useDeleteAgent(currentWorkspaceId);
 	const duplicateAgentMutation = useDuplicateAgent(currentWorkspaceId);
 	const queryClient = useQueryClient();
@@ -130,6 +143,7 @@ const AgentsListPage = () => {
 			tags: a.tags?.map((t) => t.name) ?? [],
 			chats: a.sessions_count ?? 0,
 			lastUsedAt: a.last_used_at ?? null,
+			folderId: a.folder_id ? String(a.folder_id) : null,
 		}));
 	}, [apiAgents, modelCatalog]);
 
@@ -144,6 +158,28 @@ const AgentsListPage = () => {
 
 	const [searchQuery, setSearchQuery] = useState('');
 	const [selectedCategory, setSelectedCategory] = useState<string>('All');
+	const [selectedFolder, setSelectedFolder] = useState<TAgentFolderFilter>('all');
+	const [movingAgent, setMovingAgent] = useState<IAgentItem | null>(null);
+
+	const folderIds = useMemo(() => new Set(folders.map((f) => f.id)), [folders]);
+	/** An agent whose folder is gone (or not in the tree we loaded) counts as unfiled. */
+	const folderOf = (agent: IAgentItem) =>
+		agent.folderId && folderIds.has(agent.folderId) ? agent.folderId : null;
+
+	const folderCounts = useMemo(() => {
+		const counts: Record<string, number> = { none: 0 };
+		agents.forEach((agent) => {
+			const key = agent.folderId && folderIds.has(agent.folderId) ? agent.folderId : 'none';
+			counts[key] = (counts[key] ?? 0) + 1;
+		});
+		return counts;
+	}, [agents, folderIds]);
+
+	// A folder deleted elsewhere drops the filter back to everything.
+	const activeFolder =
+		selectedFolder !== 'all' && selectedFolder !== 'none' && !folderIds.has(selectedFolder)
+			? 'all'
+			: selectedFolder;
 
 	const filteredAgents = useMemo(() => {
 		return agents.filter((agent) => {
@@ -155,9 +191,14 @@ const AgentsListPage = () => {
 			const matchesCategory =
 				selectedCategory === 'All' || agent.tags.includes(selectedCategory);
 
-			return matchesSearch && matchesCategory;
+			const matchesFolder =
+				activeFolder === 'all' ||
+				(activeFolder === 'none' ? folderOf(agent) === null : folderOf(agent) === activeFolder);
+
+			return matchesSearch && matchesCategory && matchesFolder;
 		});
-	}, [agents, searchQuery, selectedCategory]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [agents, searchQuery, selectedCategory, activeFolder, folderIds]);
 
 	const handleDelete = async (id: string) => {
 		const agent = agents.find((a) => a.id === id);
@@ -313,6 +354,17 @@ const AgentsListPage = () => {
 					</div>
 				</div>
 
+				{!isLoading && (
+					<AgentFolderBar
+						ws={currentWorkspaceId}
+						folders={folders}
+						counts={folderCounts}
+						total={agents.length}
+						selected={activeFolder}
+						onSelect={setSelectedFolder}
+					/>
+				)}
+
 				{/* Agent List Cards */}
 				{isLoading ? (
 					<div className='grid gap-6 md:grid-cols-2 xl:grid-cols-3'>
@@ -322,10 +374,14 @@ const AgentsListPage = () => {
 					<div className='border-border-main bg-bg-card flex flex-col items-center justify-center gap-2 rounded-3xl border py-16 text-center'>
 						<Bot size={28} className='text-slate-300 dark:text-zinc-600' />
 						<p className='text-sm font-bold text-slate-700 dark:text-zinc-300'>
-							No agents yet
+							{agents.length === 0 ? 'No agents yet' : 'No agents here'}
 						</p>
 						<p className='text-xs font-semibold text-slate-400 dark:text-zinc-500'>
-							Build your first agent to get started.
+							{agents.length === 0
+								? 'Build your first agent to get started.'
+								: activeFolder !== 'all'
+									? 'Nothing in this folder matches. Move an agent here with its folder button.'
+									: 'Try a different search or tag.'}
 						</p>
 					</div>
 				) : (
@@ -334,6 +390,7 @@ const AgentsListPage = () => {
 							{filteredAgents.map((agent) => {
 								const modelColor = getModelColor(agent.model);
 								const AgentIcon = agentIconFor(agent.icon);
+								const agentFolder = folders.find((f) => f.id === folderOf(agent));
 
 								return (
 									<motion.article
@@ -380,6 +437,16 @@ const AgentsListPage = () => {
 
 										{/* Brand Info Tags */}
 										<div className='mt-4 flex flex-wrap gap-2'>
+											{agentFolder && (
+												<span className='inline-flex max-w-[160px] items-center gap-1 rounded-lg border border-slate-200/50 bg-slate-50/50 px-2 py-1 text-[10px] font-semibold text-slate-600 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-400'>
+													<Folder
+														size={11}
+														className='shrink-0'
+														style={{ color: agentFolder.color || FOLDER_COLORS[0] }}
+													/>
+													<span className='truncate'>{agentFolder.label}</span>
+												</span>
+											)}
 											<span className='inline-flex items-center gap-1 rounded-lg border border-slate-200/50 bg-slate-50/50 px-2 py-1 text-[10px] font-semibold text-slate-600 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-400'>
 												<Cpu size={11} className='text-primary-500' />
 												{agent.model}
@@ -465,6 +532,13 @@ const AgentsListPage = () => {
 													<Play size={12} className='fill-current' />
 												</button>
 												<button
+													onClick={() => setMovingAgent(agent)}
+													className='hover:border-primary-300 hover:bg-primary-50 hover:text-primary-600 dark:hover:border-primary-900/30 dark:hover:bg-primary-950/20 flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition-all active:scale-95 dark:border-zinc-800'
+													title='Move to folder'
+													aria-label={`Move ${agent.name} to a folder`}>
+													<FolderInput size={12} />
+												</button>
+												<button
 													onClick={() =>
 														duplicateAgentMutation.mutate(agent.id)
 													}
@@ -511,6 +585,17 @@ const AgentsListPage = () => {
 					</button>
 				</div>
 			</div>
+
+			<MoveAgentModal
+				ws={currentWorkspaceId}
+				agent={
+					movingAgent
+						? { id: movingAgent.id, name: movingAgent.name, folderId: folderOf(movingAgent) }
+						: null
+				}
+				folders={folders}
+				onClose={() => setMovingAgent(null)}
+			/>
 		</Container>
 	);
 };

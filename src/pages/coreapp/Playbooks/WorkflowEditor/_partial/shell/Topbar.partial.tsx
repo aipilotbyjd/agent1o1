@@ -30,6 +30,7 @@ import {
 	Folder,
 	Layers,
 	Square,
+	Zap,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
@@ -940,6 +941,20 @@ const Topbar = () => {
 											className='text-primary-700 dark:text-primary-400'
 										/>
 										<span>Run Form</span>
+									</button>
+									<button
+										type='button'
+										onClick={() => {
+											closeMenu();
+											setGovModalTab('triggers');
+											setGovModalOpen(true);
+										}}
+										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
+										<Zap
+											size={14}
+											className='text-primary-700 dark:text-primary-400'
+										/>
+										<span>Triggers</span>
 									</button>
 
 									<div className='bg-primary-500/15 dark:bg-primary-400/15 my-1 h-px' />

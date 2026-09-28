@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type {
+	TFolderType,
 	TCreateFolderDto,
 	TUpdateFolderDto,
 	TMoveWorkflowsDto,
@@ -10,10 +11,10 @@ import { folderKeys } from './folders.keys';
 import { workflowKeys } from '../workflows/workflows.keys';
 import { agentKeys } from '../agents/agents.keys';
 
-export const useFolders = (ws: string) =>
+export const useFolders = (ws: string, type: TFolderType = 'workflow') =>
 	useQuery({
-		queryKey: folderKeys.list(ws),
-		queryFn: ({ signal }) => FolderService.list(ws, signal),
+		queryKey: folderKeys.list(ws, type),
+		queryFn: ({ signal }) => FolderService.list(ws, type, signal),
 		enabled: !!ws,
 	});
 
@@ -40,7 +41,12 @@ export const useDeleteFolder = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (id: string) => FolderService.remove(ws, id),
-		onSuccess: () => qc.invalidateQueries({ queryKey: folderKeys.lists(ws) }),
+		// Whatever was inside falls back to no folder (FK nullOnDelete).
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: folderKeys.lists(ws) });
+			qc.invalidateQueries({ queryKey: workflowKeys.lists(ws) });
+			qc.invalidateQueries({ queryKey: agentKeys.lists(ws) });
+		},
 		meta: { errorMessage: 'Failed to delete folder' },
 	});
 };

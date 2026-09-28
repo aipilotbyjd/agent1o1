@@ -53,7 +53,7 @@ export const useUpdateWorkflowTemplate = (ws: string) => {
 	return useMutation({
 		mutationFn: ({ id, body }: { id: string; body: TUpdateWorkflowTemplateDto }) =>
 			WorkflowTemplateService.update(ws, id, body),
-		onSuccess: () => qc.invalidateQueries({ queryKey: workflowTemplateKeys.lists(ws) }),
+		onSuccess: () => qc.invalidateQueries({ queryKey: workflowTemplateKeys.all(ws) }),
 		meta: { errorMessage: 'Failed to update workflow template' },
 	});
 };
@@ -117,7 +117,7 @@ export const useUpdateAgentTemplate = (ws: string) => {
 	return useMutation({
 		mutationFn: ({ id, body }: { id: string; body: TUpdateAgentTemplateDto }) =>
 			AgentTemplateService.update(ws, id, body),
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentTemplateKeys.lists(ws) }),
+		onSuccess: () => qc.invalidateQueries({ queryKey: agentTemplateKeys.all(ws) }),
 		meta: { errorMessage: 'Failed to update agent template' },
 	});
 };
@@ -181,7 +181,7 @@ export const useUpdateTemplateCollection = (ws: string) => {
 	return useMutation({
 		mutationFn: ({ id, body }: { id: string; body: TUpdateTemplateCollectionDto }) =>
 			TemplateCollectionService.update(ws, id, body),
-		onSuccess: () => qc.invalidateQueries({ queryKey: templateCollectionKeys.lists(ws) }),
+		onSuccess: () => qc.invalidateQueries({ queryKey: templateCollectionKeys.all(ws) }),
 		meta: { errorMessage: 'Failed to update collection' },
 	});
 };
@@ -213,7 +213,7 @@ export const useAddTemplateCollectionItem = (ws: string, id: string) => {
 	return useMutation({
 		mutationFn: (payload: TAddTemplateCollectionItemDto) =>
 			TemplateCollectionService.addItem(ws, id, payload),
-		onSuccess: () => qc.invalidateQueries({ queryKey: templateCollectionKeys.detail(ws, id) }),
+		onSuccess: () => qc.invalidateQueries({ queryKey: templateCollectionKeys.all(ws) }),
 		meta: { errorMessage: 'Failed to add item to collection' },
 	});
 };
@@ -223,7 +223,7 @@ export const useReorderTemplateCollectionItems = (ws: string, id: string) => {
 	return useMutation({
 		mutationFn: (payload: TReorderTemplateCollectionItemsDto) =>
 			TemplateCollectionService.reorderItems(ws, id, payload),
-		onSuccess: () => qc.invalidateQueries({ queryKey: templateCollectionKeys.detail(ws, id) }),
+		onSuccess: () => qc.invalidateQueries({ queryKey: templateCollectionKeys.all(ws) }),
 		meta: { errorMessage: 'Failed to reorder items' },
 	});
 };
@@ -232,7 +232,7 @@ export const useRemoveTemplateCollectionItem = (ws: string, id: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (itemId: string) => TemplateCollectionService.removeItem(ws, id, itemId),
-		onSuccess: () => qc.invalidateQueries({ queryKey: templateCollectionKeys.detail(ws, id) }),
+		onSuccess: () => qc.invalidateQueries({ queryKey: templateCollectionKeys.all(ws) }),
 		meta: { errorMessage: 'Failed to remove item from collection' },
 	});
 };

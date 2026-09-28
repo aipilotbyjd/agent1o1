@@ -19,6 +19,7 @@ import {
 	useAgentReflectionSettings,
 	useUpdateAgentReflectionSettings,
 	useAgentReflectionRuns,
+	useAgentReflectionRun,
 	useCreateAgentReflectionRun,
 	useAgentReflections,
 	useApplyAgentReflection,
@@ -324,8 +325,16 @@ const ReflectionCard = ({
 };
 
 /** Expandable row: reflection run summary + what it produced. */
-const ReflectionRunRow = ({ run }: { run: TReflectionRun }) => {
+const ReflectionRunRow = ({ ws, agentId, run }: { ws: string; agentId: string; run: TReflectionRun }) => {
 	const [open, setOpen] = useState(false);
+	// The list only counts reflections; which ones a run produced comes with
+	// the detail, fetched the first time the row is expanded.
+	const { data: detail, isLoading: isDetailLoading } = useAgentReflectionRun(
+		ws,
+		agentId,
+		open ? run.id : '',
+	);
+	const produced = detail?.reflections ?? run.reflections ?? [];
 	const style = RUN_STATUS_STYLE[run.status] ?? RUN_STATUS_STYLE.pending;
 	const Icon = style.icon;
 
@@ -383,9 +392,18 @@ const ReflectionRunRow = ({ run }: { run: TReflectionRun }) => {
 							</p>
 						</div>
 					</div>
-					{(run.reflections ?? []).length > 0 && (
+					{isDetailLoading && (
+						<p className='flex items-center gap-1.5 text-[10px] font-semibold text-zinc-400'>
+							<Loader2 size={10} className='animate-spin' />
+							Loading what this run found…
+						</p>
+					)}
+					{!isDetailLoading && detail && produced.length === 0 && (
+						<p className='text-[10px] font-semibold text-zinc-400'>This run found nothing to suggest.</p>
+					)}
+					{produced.length > 0 && (
 						<div className='space-y-1.5'>
-							{(run.reflections ?? []).map((reflection) => (
+							{produced.map((reflection) => (
 								<div
 									key={reflection.id}
 									className='flex items-center gap-2 rounded-lg bg-white p-2 dark:bg-zinc-900/40'>
@@ -545,7 +563,7 @@ const AgentReflectionsPanel = ({ ws, agentId, displayMode = 'panel' }: TProps) =
 			) : (
 				<div className='space-y-2'>
 					{(runs ?? []).map((run) => (
-						<ReflectionRunRow key={run.id} run={run} />
+						<ReflectionRunRow key={run.id} ws={ws} agentId={agentId} run={run} />
 					))}
 				</div>
 			)}

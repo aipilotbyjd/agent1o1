@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import type { ComponentType, FormEvent } from 'react';
-import { MessageSquare, PlayCircle, Plus, Send, Trash2, Webhook } from 'lucide-react';
+import { MessageSquare, Pencil, PlayCircle, Plus, Send, Trash2, Webhook } from 'lucide-react';
 import {
 	useNotificationChannels,
 	useCreateNotificationChannel,
+	useUpdateNotificationChannel,
 	useDeleteNotificationChannel,
 	useTestNotificationChannel,
 } from '@/api/modules/notification-channels';
@@ -41,6 +42,7 @@ const NotificationChannelsPage = () => {
 	const { activeWorkspaceId } = useWorkspaceContext();
 	const { data: channels = [], isLoading, error } = useNotificationChannels(activeWorkspaceId);
 	const createChannel = useCreateNotificationChannel(activeWorkspaceId);
+	const updateChannel = useUpdateNotificationChannel(activeWorkspaceId);
 	const deleteChannel = useDeleteNotificationChannel(activeWorkspaceId);
 	const testChannel = useTestNotificationChannel(activeWorkspaceId);
 
@@ -51,6 +53,43 @@ const NotificationChannelsPage = () => {
 	const [type, setType] = useState<TNotificationChannelType>('webhook');
 	const [name, setName] = useState('');
 	const [url, setUrl] = useState('');
+
+	// Edit form. The API never returns a channel's `config` (the URL is a
+	// secret), so the URL field starts empty and blank means "keep the current one".
+	const [channelToEdit, setChannelToEdit] = useState<TNotificationChannel | null>(null);
+	const [editName, setEditName] = useState('');
+	const [editUrl, setEditUrl] = useState('');
+	const [editActive, setEditActive] = useState(true);
+
+	const openEdit = (channel: TNotificationChannel) => {
+		setChannelToEdit(channel);
+		setEditName(channel.name);
+		setEditUrl('');
+		setEditActive(channel.is_active);
+	};
+
+	const handleUpdate = async (e: FormEvent) => {
+		e.preventDefault();
+		if (!channelToEdit) return;
+		if (!editName.trim()) {
+			notify.error('Please enter a name for the channel');
+			return;
+		}
+		try {
+			await updateChannel.mutateAsync({
+				id: channelToEdit.id,
+				body: {
+					name: editName.trim(),
+					is_active: editActive,
+					...(editUrl.trim() ? { config: { url: editUrl.trim() } } : {}),
+				},
+			});
+			notify.success(`"${editName.trim()}" saved.`);
+			setChannelToEdit(null);
+		} catch {
+			// Toast is handled by the API hook.
+		}
+	};
 
 	const resetForm = () => {
 		setType('webhook');
@@ -203,6 +242,14 @@ const NotificationChannelsPage = () => {
 									</button>
 									<button
 										type='button'
+										aria-label={`Edit ${channel.name}`}
+										title='Edit'
+										onClick={() => openEdit(channel)}
+										className='rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
+										<Pencil size={15} />
+									</button>
+									<button
+										type='button'
 										aria-label={`Delete ${channel.name}`}
 										onClick={() => setChannelToDelete(channel)}
 										className='rounded-lg p-2 text-zinc-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10'>
@@ -293,6 +340,93 @@ const NotificationChannelsPage = () => {
 								isLoading={createChannel.isPending}
 								className='shadow-primary-500/10 h-11 font-bold text-zinc-950 shadow-md'>
 								Add channel
+							</Button>
+						</ModalFooterChild>
+					</ModalFooter>
+				</form>
+			</Modal>
+
+			{/* Edit channel modal */}
+			<Modal
+				isOpen={!!channelToEdit}
+				setIsOpen={(open) => !open && setChannelToEdit(null)}
+				size='sm'>
+				<ModalHeader setIsOpen={() => setChannelToEdit(null)}>
+					<div className='flex items-center gap-3'>
+						<div className='bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400 flex h-9 w-9 items-center justify-center rounded-xl'>
+							<Pencil size={16} />
+						</div>
+						<span className='text-xl font-extrabold tracking-tight text-zinc-950 dark:text-white'>
+							Edit channel
+						</span>
+					</div>
+				</ModalHeader>
+				<form onSubmit={handleUpdate}>
+					<ModalBody>
+						<div className='space-y-4 pt-2'>
+							<Input
+								label='Name'
+								name='edit-name'
+								required
+								value={editName}
+								onChange={(e) => setEditName(e.target.value)}
+								variant='default'
+								dimension='default'
+							/>
+							<div>
+								<Input
+									label={
+										channelToEdit?.type === 'webhook' || !channelToEdit
+											? 'New webhook URL'
+											: `New ${typeConfig[channelToEdit.type].label} webhook URL`
+									}
+									name='edit-url'
+									type='url'
+									value={editUrl}
+									onChange={(e) => setEditUrl(e.target.value)}
+									placeholder='Leave blank to keep the current URL'
+									variant='default'
+									dimension='default'
+								/>
+								<p className='mt-1.5 text-xs font-semibold text-zinc-400'>
+									The saved URL is never shown. Only fill this in to replace it.
+								</p>
+							</div>
+							<label className='flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-zinc-200 px-4 py-3 dark:border-zinc-700'>
+								<span>
+									<span className='block text-sm font-bold text-zinc-700 dark:text-zinc-300'>
+										Active
+									</span>
+									<span className='block text-xs font-semibold text-zinc-400'>
+										Inactive channels keep their settings but receive nothing.
+									</span>
+								</span>
+								<input
+									type='checkbox'
+									aria-label='Channel active'
+									checked={editActive}
+									onChange={(e) => setEditActive(e.target.checked)}
+									className='accent-primary-500 h-4 w-4 shrink-0'
+								/>
+							</label>
+						</div>
+					</ModalBody>
+					<ModalFooter>
+						<ModalFooterChild className='flex w-full justify-end gap-3'>
+							<Button
+								variant='outline'
+								color='zinc'
+								onClick={() => setChannelToEdit(null)}
+								className='h-11 border-zinc-200 font-bold text-zinc-500 hover:bg-zinc-50'>
+								Cancel
+							</Button>
+							<Button
+								type='submit'
+								variant='solid'
+								color='primary'
+								isLoading={updateChannel.isPending}
+								className='shadow-primary-500/10 h-11 font-bold text-zinc-950 shadow-md'>
+								Save
 							</Button>
 						</ModalFooterChild>
 					</ModalFooter>

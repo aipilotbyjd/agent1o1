@@ -14,11 +14,14 @@ import {
 	Database,
 	RotateCw,
 	Play,
+	ChevronDown,
+	ChevronRight,
 } from 'lucide-react';
 import {
 	useAgentEvaluationSettings,
 	useUpdateAgentEvaluationSettings,
 	useAgentSessionEvaluations,
+	useAgentSessionEvaluation,
 	useAgentSessions,
 	useRunAgentSessionEvaluation,
 } from '@/api/modules/agents';
@@ -446,16 +449,113 @@ const EvaluationSettingsForm = ({
 	);
 };
 
+/** The grader's JSON is model-written, so read each row defensively. */
+type TResultRow = Record<string, unknown>;
+const asRows = (value: unknown): TResultRow[] =>
+	Array.isArray(value) ? value.filter((r): r is TResultRow => !!r && typeof r === 'object') : [];
+const textOf = (row: TResultRow, ...keys: string[]) => {
+	for (const key of keys) {
+		const v = row[key];
+		if (v !== undefined && v !== null && v !== '') return typeof v === 'object' ? JSON.stringify(v) : String(v);
+	}
+	return null;
+};
+const RESULT_STYLE: Record<string, string> = {
+	success: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+	failure: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+};
+
+/** Per-criterion verdicts and extracted data for one graded chat — only on the detail endpoint's card view. */
+const EvaluationDetail = ({ ws, agentId, id }: { ws: string; agentId: string; id: string }) => {
+	const { data, isLoading } = useAgentSessionEvaluation(ws, agentId, id);
+
+	if (isLoading || !data) {
+		return (
+			<p className='flex items-center gap-1.5 text-[10px] font-semibold text-zinc-400'>
+				<Loader2 size={10} className='animate-spin' />
+				Loading details…
+			</p>
+		);
+	}
+
+	const criteria = asRows(data.criteria_results);
+	const dataPoints = asRows(data.data_results);
+
+	return (
+		<div className='space-y-2.5'>
+			{data.summary && (
+				<p className='text-[10px] font-semibold whitespace-pre-wrap text-zinc-600 dark:text-zinc-300'>
+					{data.summary}
+				</p>
+			)}
+
+			<div className='space-y-1.5'>
+				<span className='text-[9px] font-black tracking-wide text-zinc-400 uppercase'>Criteria</span>
+				{criteria.length === 0 ? (
+					<p className='text-[10px] font-semibold text-zinc-400'>No criteria were checked.</p>
+				) : (
+					criteria.map((row, idx) => {
+						const result = textOf(row, 'result', 'status') ?? 'unknown';
+						return (
+							<div key={idx} className='rounded-lg bg-white p-2 dark:bg-zinc-900/40'>
+								<div className='flex items-center justify-between gap-2'>
+									<span className='truncate text-[10px] font-black text-zinc-700 dark:text-zinc-300'>
+										{textOf(row, 'name', 'criterion', 'id') ?? `Criterion ${idx + 1}`}
+									</span>
+									<span
+										className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase ${RESULT_STYLE[result] ?? 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800'}`}>
+										{result}
+									</span>
+								</div>
+								{textOf(row, 'rationale', 'reason', 'explanation') && (
+									<p className='mt-1 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400'>
+										{textOf(row, 'rationale', 'reason', 'explanation')}
+									</p>
+								)}
+							</div>
+						);
+					})
+				)}
+			</div>
+
+			{dataPoints.length > 0 && (
+				<div className='space-y-1.5'>
+					<span className='text-[9px] font-black tracking-wide text-zinc-400 uppercase'>
+						Extracted data
+					</span>
+					{dataPoints.map((row, idx) => (
+						<div
+							key={idx}
+							className='flex items-start justify-between gap-3 rounded-lg bg-white p-2 dark:bg-zinc-900/40'>
+							<span className='shrink-0 font-mono text-[10px] font-black text-zinc-600 dark:text-zinc-300'>
+								{textOf(row, 'name', 'key', 'id') ?? `#${idx + 1}`}
+							</span>
+							<span className='min-w-0 text-right text-[10px] font-semibold break-words text-zinc-500 dark:text-zinc-400'>
+								{textOf(row, 'value', 'result') ?? '-'}
+							</span>
+						</div>
+					))}
+				</div>
+			)}
+		</div>
+	);
+};
+
 /** One graded chat. `onRegrade` re-runs the grader on the chat behind it. */
 const EvaluationCard = ({
+	ws,
+	agentId,
 	evaluation,
 	onRegrade,
 	isRegrading,
 }: {
+	ws: string;
+	agentId: string;
 	evaluation: TAgentSessionEvaluation;
 	onRegrade: (sessionId: string) => void;
 	isRegrading: boolean;
 }) => {
+	const [isOpen, setIsOpen] = useState(false);
 	const grade = evaluation.grade ? GRADE_STYLE[evaluation.grade] : null;
 	const GradeIcon = grade?.icon ?? Clock;
 
@@ -526,6 +626,23 @@ const EvaluationCard = ({
 						</span>
 					))}
 				</div>
+			)}
+
+			{evaluation.status === 'completed' && (
+				<>
+					<button
+						type='button'
+						onClick={() => setIsOpen((v) => !v)}
+						className='flex items-center gap-1 text-[10px] font-bold text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'>
+						{isOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+						{isOpen ? 'Hide details' : 'Criteria & data'}
+					</button>
+					{isOpen && (
+						<div className='border-t border-zinc-100 pt-2 dark:border-zinc-800'>
+							<EvaluationDetail ws={ws} agentId={agentId} id={evaluation.id} />
+						</div>
+					)}
+				</>
 			)}
 		</div>
 	);
@@ -664,6 +781,8 @@ const AgentEvaluationsPanel = ({ ws, agentId }: TProps) => {
 					{items.map((evaluation) => (
 						<EvaluationCard
 							key={evaluation.id}
+							ws={ws}
+							agentId={agentId}
 							evaluation={evaluation}
 							onRegrade={gradeSession}
 							isRegrading={

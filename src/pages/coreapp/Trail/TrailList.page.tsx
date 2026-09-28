@@ -14,7 +14,7 @@ import { mapToDisplayItem } from './_helper/mapExecution';
 // Sub-components
 import HistoryPageHeader from './_partial/HistoryPageHeader.partial';
 import HistoryStatsCards from './_partial/HistoryStatsCards.partial';
-import HistorySearchBar from './_partial/HistorySearchBar.partial';
+import HistorySearchBar, { type TTrailStatusFilter } from './_partial/HistorySearchBar.partial';
 import HistorySkeletonLoader from './_partial/HistorySkeletonLoader.partial';
 import HistoryEmptyState from './_partial/HistoryEmptyState.partial';
 import HistoryTableRow from './_partial/HistoryTableRow.partial';
@@ -35,6 +35,7 @@ const TrailListPage = () => {
 	// ─── State ─────────────────────────────────────────────────────────────────
 	const [searchQuery, setSearchQuery] = useState('');
 	const [selectedType, setSelectedType] = useState<'All' | 'Chat' | 'Workflow run'>('All');
+	const [selectedStatus, setSelectedStatus] = useState<TTrailStatusFilter>('all');
 	const [showFilters, setShowFilters] = useState(false);
 	const [currentPage, setCurrentPage] = useState(1);
 	const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -53,6 +54,7 @@ const TrailListPage = () => {
 		page: currentPage,
 		per_page: rowsPerPage,
 		exclude_trigger_type: 'node_test',
+		...(selectedStatus !== 'all' ? { status: selectedStatus } : {}),
 	});
 	const { data: workflows } = useWorkflows(activeWorkspaceId);
 
@@ -77,7 +79,9 @@ const TrailListPage = () => {
 	// ─── Derived: item lists ────────────────────────────────────────────────────
 	// The runs endpoint takes no search term and cannot tell agent runs from
 	// workflow runs, so both filters narrow the page the server returned.
+	// Status is different: the server applies it, across every page.
 	const isFiltering = searchQuery.trim() !== '' || selectedType !== 'All';
+	const hasAnyFilter = isFiltering || selectedStatus !== 'all';
 	const paginatedItems = useMemo(() => {
 		if (!isFiltering) return runs;
 		const q = searchQuery.trim().toLowerCase();
@@ -136,6 +140,19 @@ const TrailListPage = () => {
 		setCurrentPage(1);
 	};
 
+	const handleStatusChange = (status: TTrailStatusFilter) => {
+		setSelectedStatus(status);
+		setShowFilters(false);
+		setCurrentPage(1);
+	};
+
+	const handleClearFilters = () => {
+		setSelectedType('All');
+		setSelectedStatus('all');
+		setShowFilters(false);
+		setCurrentPage(1);
+	};
+
 	const handleSearchChange = (value: string) => {
 		setSearchQuery(value);
 		setCurrentPage(1);
@@ -166,6 +183,9 @@ const TrailListPage = () => {
 					onSearchChange={handleSearchChange}
 					selectedType={selectedType}
 					onTypeChange={handleTypeChange}
+					selectedStatus={selectedStatus}
+					onStatusChange={handleStatusChange}
+					onClearFilters={handleClearFilters}
 					showFilters={showFilters}
 					onToggleFilters={() => setShowFilters((prev) => !prev)}
 				/>
@@ -199,7 +219,7 @@ const TrailListPage = () => {
 							}
 						/>
 					) : paginatedItems.length === 0 ? (
-						isFiltering ? (
+						hasAnyFilter ? (
 							<HistoryEmptyState />
 						) : (
 							<HistoryEmptyState

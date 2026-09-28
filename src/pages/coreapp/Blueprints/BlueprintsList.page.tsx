@@ -18,6 +18,8 @@ import {
 	SlidersHorizontal,
 	Grid,
 	List,
+	Pencil,
+	Plus,
 } from 'lucide-react';
 import { OutletContextType } from './_layouts/Blueprints.layout';
 import { useConfirm } from '@/context/confirm';
@@ -45,20 +47,29 @@ import {
 import type { TWorkflowTemplate, TAgentTemplate, TTemplateCollection } from '@/types/template.type';
 import ListSkeletonPart from '@/parts/ListSkeleton.part';
 import { formatUsageCount } from './_helper/blueprints.constants';
+import TemplateFormModal, { type TTemplateFormTarget } from './_partial/TemplateFormModal.partial';
+import CollectionItemsEditor from './_partial/CollectionItemsEditor.partial';
 
 type TTab = 'workflows' | 'agents' | 'collections';
 
+/** Stored template graphs use the backend's shape (`key`, edges `from`/`to`,
+ *  see WorkflowTemplateController::snapshotGraph); React Flow's `id`/`source`/
+ *  `target` are accepted too, so either kind of graph previews. */
 interface IPreviewNode {
-	id: string;
+	id?: string;
+	key?: string;
 	type?: string;
+	name?: string;
 	position?: { x: number; y: number };
 	data?: { label?: string };
 }
 
 interface IPreviewEdge {
-	id: string;
-	source: string;
-	target: string;
+	id?: string;
+	source?: string;
+	target?: string;
+	from?: string;
+	to?: string;
 }
 
 // Mini read-only node graph visualizer
@@ -92,12 +103,12 @@ const GraphPreview = ({
 	const containerHeight = 200;
 	const padding = 50;
 
-	const scaledNodes = nodes.map((node) => {
+	const scaledNodes = nodes.map((node, idx) => {
 		const nx = node.position?.x ?? 0;
 		const ny = node.position?.y ?? 0;
 		const x = padding + ((nx - minX) / widthRange) * (containerWidth - padding * 2);
 		const y = padding + ((ny - minY) / heightRange) * (containerHeight - padding * 2);
-		return { ...node, x, y };
+		return { ...node, nodeId: node.id ?? node.key ?? String(idx), x, y };
 	});
 
 	return (
@@ -115,14 +126,16 @@ const GraphPreview = ({
 						<path d='M 0 1 L 10 5 L 0 9 z' fill='#8B5CF6' />
 					</marker>
 				</defs>
-				{edges.map((edge) => {
-					const sourceNode = scaledNodes.find((n) => n.id === edge.source);
-					const targetNode = scaledNodes.find((n) => n.id === edge.target);
+				{edges.map((edge, idx) => {
+					const from = edge.source ?? edge.from;
+					const to = edge.target ?? edge.to;
+					const sourceNode = scaledNodes.find((n) => n.nodeId === from);
+					const targetNode = scaledNodes.find((n) => n.nodeId === to);
 					if (!sourceNode || !targetNode) return null;
 
 					return (
 						<line
-							key={edge.id}
+							key={edge.id ?? `${from}-${to}-${idx}`}
 							x1={sourceNode.x}
 							y1={sourceNode.y}
 							x2={targetNode.x}
@@ -138,7 +151,7 @@ const GraphPreview = ({
 			</svg>
 			{scaledNodes.map((node) => (
 				<div
-					key={node.id}
+					key={node.nodeId}
 					style={{
 						position: 'absolute',
 						left: `${node.x}px`,
@@ -148,7 +161,7 @@ const GraphPreview = ({
 					className='flex max-w-[150px] items-center gap-2 overflow-hidden rounded-lg border border-primary-200 bg-white px-3 py-1.5 shadow-xs dark:border-zinc-800 dark:bg-zinc-950'>
 					<div className='h-2 w-2 shrink-0 rounded-full bg-primary-400' />
 					<div className='truncate text-[10px] font-bold text-zinc-800 select-none dark:text-zinc-200'>
-						{node.data?.label || node.type || 'Action'}
+						{node.data?.label || node.name || node.type || 'Action'}
 					</div>
 				</div>
 			))}
@@ -179,6 +192,8 @@ const BlueprintsListPage = () => {
 
 	// Details dialog trigger
 	const [previewId, setPreviewId] = useState<string | null>(null);
+	// Create / edit-details dialog
+	const [formTarget, setFormTarget] = useState<TTemplateFormTarget | null>(null);
 
 	// None of these endpoints take query params — the whole workspace list
 	// comes back at once, so search/category filter client-side.
@@ -287,8 +302,9 @@ const BlueprintsListPage = () => {
 	);
 
 	const handleUseWorkflow = (template: TWorkflowTemplate) => {
+		// UseWorkflowTemplateRequest requires `name`; without it every Use was a 422.
 		useWorkflowTemplateMutation.mutate(
-			{ id: template.id },
+			{ id: template.id, body: { name: template.name } },
 			{
 				onSuccess: (workflow) => {
 					notify.success(`Created "${workflow.name}" from template.`);
@@ -523,6 +539,23 @@ const BlueprintsListPage = () => {
 						</div>
 
 						<div className='flex items-center gap-3'>
+							<button
+								type='button'
+								onClick={() =>
+									setFormTarget({
+										kind:
+											activeTab === 'workflows'
+												? 'workflow'
+												: activeTab === 'agents'
+													? 'agent'
+													: 'collection',
+									})
+								}
+								className='flex h-[30px] shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-primary-400 px-3.5 text-xs font-black text-primary-950 shadow-xs transition-all hover:bg-primary-500 active:scale-95'>
+								<Plus size={13} />
+								{activeTab === 'collections' ? 'New collection' : 'New template'}
+							</button>
+
 							{/* Sort Dropdown */}
 							<div className='relative'>
 								<select
@@ -597,6 +630,7 @@ const BlueprintsListPage = () => {
 											isUsePending={useWorkflowTemplateMutation.isPending}
 											onPreview={() => setPreviewId(wf.id)}
 											onUse={() => handleUseWorkflow(wf)}
+											onEdit={() => setFormTarget({ kind: 'workflow', item: wf })}
 											onDelete={() => handleDeleteWorkflow(wf)}
 										/>
 									))}
@@ -616,6 +650,7 @@ const BlueprintsListPage = () => {
 											isUsePending={useAgentTemplateMutation.isPending}
 											onPreview={() => setPreviewId(agent.id)}
 											onUse={() => handleUseAgent(agent)}
+											onEdit={() => setFormTarget({ kind: 'agent', item: agent })}
 											onDelete={() => handleDeleteAgent(agent)}
 										/>
 									))}
@@ -635,6 +670,7 @@ const BlueprintsListPage = () => {
 											isUsePending={useCollectionMutation.isPending}
 											onPreview={() => setPreviewId(coll.id)}
 											onUse={() => handleUseCollection(coll)}
+											onEdit={() => setFormTarget({ kind: 'collection', item: coll })}
 											onDelete={() => handleDeleteCollection(coll)}
 										/>
 									))}
@@ -669,6 +705,22 @@ const BlueprintsListPage = () => {
 								className='absolute top-4 right-4 rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-900'>
 								<X className='h-5 w-5' />
 							</button>
+							{(activeTab === 'workflows' ? wfDetail : activeTab === 'agents' ? agentDetail : collectionDetail) && (
+								<button
+									aria-label='Edit details'
+									title='Edit details'
+									onClick={() => {
+										if (activeTab === 'workflows' && wfDetail)
+											setFormTarget({ kind: 'workflow', item: wfDetail });
+										else if (activeTab === 'agents' && agentDetail)
+											setFormTarget({ kind: 'agent', item: agentDetail });
+										else if (collectionDetail)
+											setFormTarget({ kind: 'collection', item: collectionDetail });
+									}}
+									className='absolute top-4 right-14 rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-900'>
+									<Pencil className='h-4.5 w-4.5' />
+								</button>
+							)}
 
 							{/* Active tab details content */}
 							<div className='flex-1 overflow-y-auto p-6 md:p-8'>
@@ -937,51 +989,8 @@ const BlueprintsListPage = () => {
 													</p>
 												</div>
 
-												{/* List of items included */}
-												<div>
-													<h3 className='mb-3 text-xs font-bold tracking-wider text-zinc-800 uppercase dark:text-zinc-200'>
-														Included Assets ({collectionDetail.items?.length ?? 0})
-													</h3>
-
-													<div className='flex flex-col gap-3'>
-														{(collectionDetail.items ?? []).map((item, idx) => {
-															const isAgent = item.templatable_type === 'agent_template';
-															const asset = item.templatable;
-															const name = asset?.name || (isAgent ? 'Agent' : 'Workflow');
-															const color = asset?.color || (isAgent ? '#3B82F6' : '#10B981');
-															const desc = asset?.description || '';
-
-															return (
-																<div
-																	key={item.id ?? idx}
-																	className='flex gap-3.5 rounded-xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700'>
-																	<div
-																		style={{ backgroundColor: `${color}15` }}
-																		className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-100 dark:border-zinc-800'>
-																		{isAgent ? (
-																			<Cpu className='h-5 w-5' style={{ color }} />
-																		) : (
-																			<Workflow className='h-5 w-5' style={{ color }} />
-																		)}
-																	</div>
-																	<div className='flex-1'>
-																		<div className='flex items-center gap-2.5'>
-																			<h4 className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
-																				{name}
-																			</h4>
-																			<span className='rounded border border-zinc-200/40 bg-zinc-50 px-1.5 py-0.5 text-[9px] font-bold text-zinc-400 uppercase dark:border-zinc-800 dark:bg-zinc-950'>
-																				{isAgent ? 'agent' : 'workflow'}
-																			</span>
-																		</div>
-																		<p className='mt-1 text-[10px] leading-relaxed text-zinc-500 dark:text-zinc-400'>
-																			{desc}
-																		</p>
-																	</div>
-																</div>
-															);
-														})}
-													</div>
-												</div>
+												{/* List of items included — add, remove, reorder */}
+												<CollectionItemsEditor ws={ws} collection={collectionDetail} />
 
 												{/* Deploy Collection action */}
 												<div className='mt-4 border-t border-zinc-200 pt-6 dark:border-zinc-800'>
@@ -1008,6 +1017,8 @@ const BlueprintsListPage = () => {
 					</div>
 				)}
 			</AnimatePresence>
+
+			<TemplateFormModal ws={ws} target={formTarget} onClose={() => setFormTarget(null)} />
 		</Container>
 	);
 };
@@ -1048,6 +1059,7 @@ const CatalogCard = ({
 	isUsePending,
 	onPreview,
 	onUse,
+	onEdit,
 	onDelete,
 }: {
 	color: string;
@@ -1061,6 +1073,7 @@ const CatalogCard = ({
 	isUsePending: boolean;
 	onPreview: () => void;
 	onUse: () => void;
+	onEdit: () => void;
 	onDelete: () => void;
 }) => {
 	const [menuOpen, setMenuOpen] = useState(false);
@@ -1104,6 +1117,16 @@ const CatalogCard = ({
 					</button>
 					{menuOpen && (
 						<div className='absolute top-8 right-0 z-10 w-32 overflow-hidden rounded-xl border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
+							<button
+								onClick={(e) => {
+									e.stopPropagation();
+									setMenuOpen(false);
+									onEdit();
+								}}
+								className='flex w-full cursor-pointer items-center gap-1.5 px-3 py-2 text-left text-[11px] font-bold text-zinc-600 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800'>
+								<Pencil size={12} />
+								Edit details
+							</button>
 							<button
 								onClick={(e) => {
 									e.stopPropagation();

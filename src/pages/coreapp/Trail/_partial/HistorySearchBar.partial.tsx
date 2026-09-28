@@ -1,11 +1,27 @@
 import { Filter, Search } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import type { TRunStatus } from '@/types/run.type';
+
+export type TTrailStatusFilter = 'all' | TRunStatus;
+
+/** Applied by the server (`GET runs?status=`), so it spans every page. */
+export const TRAIL_STATUS_OPTIONS: { value: TTrailStatusFilter; label: string }[] = [
+	{ value: 'all', label: 'All statuses' },
+	{ value: 'running', label: 'Running' },
+	{ value: 'awaiting_approval', label: 'Awaiting approval' },
+	{ value: 'completed', label: 'Completed' },
+	{ value: 'failed', label: 'Failed' },
+	{ value: 'cancelled', label: 'Cancelled' },
+];
 
 interface HistorySearchBarProps {
 	searchQuery: string;
 	onSearchChange: (value: string) => void;
 	selectedType: 'All' | 'Chat' | 'Workflow run';
 	onTypeChange: (type: 'All' | 'Chat' | 'Workflow run') => void;
+	selectedStatus: TTrailStatusFilter;
+	onStatusChange: (status: TTrailStatusFilter) => void;
+	onClearFilters: () => void;
 	showFilters: boolean;
 	onToggleFilters: () => void;
 }
@@ -15,9 +31,14 @@ const HistorySearchBar = ({
 	onSearchChange,
 	selectedType,
 	onTypeChange,
+	selectedStatus,
+	onStatusChange,
+	onClearFilters,
 	showFilters,
 	onToggleFilters,
 }: HistorySearchBarProps) => {
+	const statusLabel = TRAIL_STATUS_OPTIONS.find((option) => option.value === selectedStatus)?.label;
+	const noFilters = selectedType === 'All' && selectedStatus === 'all';
 	return (
 		<div className='flex flex-col gap-3.5 md:flex-row md:items-center'>
 			<div className='group relative flex-1'>
@@ -40,6 +61,11 @@ const HistorySearchBar = ({
 						className='dark:text-zinc-350 dark:hover:bg-zinc-800 flex h-12 cursor-pointer items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4.5 text-xs font-black text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900/60'>
 						<Filter size={14} className='text-slate-400' />
 						<span>Filters</span>
+						{selectedStatus !== 'all' && (
+							<span className='rounded-lg bg-primary-50 px-1.5 py-0.5 text-[10px] text-primary-600 dark:bg-primary-400/10 dark:text-primary-400'>
+								{statusLabel}
+							</span>
+						)}
 					</button>
 
 					<AnimatePresence>
@@ -64,15 +90,30 @@ const HistorySearchBar = ({
 										{type === 'All' ? 'All Activities' : type}
 									</button>
 								))}
+								<div className='dark:text-zinc-550 mt-1 mb-1 border-y border-slate-100 px-2.5 py-1.5 text-[9px] font-black tracking-wider text-slate-400 uppercase dark:border-zinc-800/60'>
+									Status
+								</div>
+								{TRAIL_STATUS_OPTIONS.map((option) => (
+									<button
+										key={option.value}
+										onClick={() => onStatusChange(option.value)}
+										className={`w-full cursor-pointer rounded-xl px-2.5 py-2 text-left text-xs font-bold transition ${
+											selectedStatus === option.value
+												? 'text-primary-600 bg-primary-50 dark:bg-primary-400/10 dark:text-primary-400'
+												: 'text-slate-650 dark:text-zinc-350 hover:bg-slate-50 dark:hover:bg-zinc-800/40'
+										}`}>
+										{option.label}
+									</button>
+								))}
 							</motion.div>
 						)}
 					</AnimatePresence>
 				</div>
 
 				<button
-					onClick={() => onTypeChange('All')}
+					onClick={onClearFilters}
 					className={`flex h-12 cursor-pointer items-center justify-center rounded-2xl px-5 text-xs font-black transition-all duration-300 ${
-						selectedType === 'All'
+						noFilters
 							? 'bg-linear-to-r from-primary-400 to-primary-400 text-primary-950 shadow-md shadow-primary-500/25 dark:shadow-none'
 							: 'dark:text-zinc-350 dark:hover:bg-zinc-800 border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900/60'
 					}`}>

@@ -18,6 +18,7 @@ import {
 	useSearchKnowledge,
 } from '@/api/modules/knowledge-base';
 import IngestKnowledgeDialog from './_partial/IngestKnowledgeDialog.partial';
+import KnowledgeDocumentModal from './_partial/KnowledgeDocumentModal.partial';
 
 const PER_PAGE = 12;
 
@@ -39,6 +40,7 @@ const KnowledgeListPage = () => {
 	const [page, setPage] = useState(1);
 	const [view, setView] = useState<'browse' | 'search'>('browse');
 	const [isIngestOpen, setIsIngestOpen] = useState(false);
+	const [openDoc, setOpenDoc] = useState<{ source: string; collection: string } | null>(null);
 
 	const { data: collections, isLoading: isLoadingCollections } = useKnowledgeCollections(ws);
 	const { data: chunkPage, isLoading: isLoadingChunks } = useKnowledgeChunks(ws, {
@@ -283,9 +285,24 @@ const KnowledgeListPage = () => {
 											</div>
 											<div className='min-w-0 flex-1'>
 												<div className='flex min-w-0 flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2'>
-													<span className='truncate text-sm font-bold text-slate-900 dark:text-white'>
-														{chunk.source ?? 'Untitled'}
-													</span>
+													{chunk.source ? (
+														<button
+															type='button'
+															onClick={() =>
+																setOpenDoc({
+																	source: chunk.source!,
+																	collection: chunk.collection,
+																})
+															}
+															title='Open the full document'
+															className='hover:text-primary-600 dark:hover:text-primary-400 cursor-pointer truncate text-left text-sm font-bold text-slate-900 hover:underline dark:text-white'>
+															{chunk.source}
+														</button>
+													) : (
+														<span className='truncate text-sm font-bold text-slate-900 dark:text-white'>
+															Untitled
+														</span>
+													)}
 													<span className='inline-flex w-fit max-w-full items-center gap-1 truncate rounded-lg border border-slate-200/50 bg-slate-50/50 px-2 py-0.5 font-mono text-[10px] font-semibold text-slate-600 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-400'>
 														{chunk.collection}
 													</span>
@@ -336,6 +353,8 @@ const KnowledgeListPage = () => {
 					</>
 				)}
 			</div>
+
+			<KnowledgeDocumentModal ws={ws} doc={openDoc} onClose={() => setOpenDoc(null)} />
 
 			<IngestKnowledgeDialog
 				ws={ws}

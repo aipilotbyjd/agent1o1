@@ -47,6 +47,7 @@ import {
 	HelpCircle,
 	ArrowDownToLine,
 	Archive,
+	ArchiveRestore,
 	Undo2,
 	Lightbulb,
 	ListChecks,
@@ -95,6 +96,9 @@ const mdComponents: Components = {
 
 /** Matches an in-progress `@mention` fragment at the end of typed text. */
 const MENTION_RE = /@([\w .-]*)$/;
+
+/** How long a reply may show nothing before the panel explains the wait. */
+const SLOW_REPLY_HINT_MS = 20_000;
 
 const prettify = (raw: string) =>
 	raw.replace(/[_-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
@@ -238,6 +242,11 @@ const AiBuilderPanel = () => {
 	const [promptInput, setPromptInput] = useState('');
 	const [mode, setMode] = useState<'build' | 'ask'>('build');
 	const [showHistory, setShowHistory] = useState(false);
+	const [historyTab, setHistoryTab] = useState<'recent' | 'archived'>('recent');
+	const [renamingId, setRenamingId] = useState<string | null>(null);
+	const [renameValue, setRenameValue] = useState('');
+	// Escape unmounts the rename input; its blur must not save.
+	const cancelRenameRef = useRef(false);
 	const [showVersions, setShowVersions] = useState(false);
 	const [assistBusy, setAssistBusy] = useState<TAssistKind | null>(null);
 	const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -249,8 +258,11 @@ const AiBuilderPanel = () => {
 	// the ones started from this workflow.
 	const workspaceId = state.workflow.workspaceId ?? '';
 	const workflowApiId = state.workflow.apiId ? String(state.workflow.apiId) : null;
+	// Archived chats are read-only history, listed only on their own tab.
+	const isArchivedTab = historyTab === 'archived';
 	const { data: builderSessions, isLoading: isSessionsLoading } = useWorkflowBuilderSessions(
 		showHistory ? workspaceId : '',
+		isArchivedTab ? 'archived' : undefined,
 	);
 	const deleteBuilderSession = useDeleteWorkflowBuilderSession(workspaceId);
 	const promoteBuilderSession = usePromoteWorkflowBuilderSession(workspaceId);
@@ -313,6 +325,19 @@ const AiBuilderPanel = () => {
 	useEffect(() => {
 		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 	}, [messages, isThinking, displayedActiveText, streamTimeline.length]);
+
+	// A reply with no live update after a while gets a hint: without the
+	// socket only the final answer arrives (via the poll), and locally a
+	// missing queue worker leaves it pending until the 6-minute timeout.
+	const pendingMessageId = useAiChatStore((store) => store.pendingMessageId);
+	const [slowMessageId, setSlowMessageId] = useState<string | null>(null);
+	useEffect(() => {
+		if (!isThinking || streamTimeline.length > 0 || !pendingMessageId) return;
+		const timer = setTimeout(() => setSlowMessageId(pendingMessageId), SLOW_REPLY_HINT_MS);
+		return () => clearTimeout(timer);
+	}, [isThinking, streamTimeline.length, pendingMessageId]);
+	const isSlowReply =
+		isThinking && streamTimeline.length === 0 && !!pendingMessageId && slowMessageId === pendingMessageId;
 
 	if (!state.ui.aiPanelOpen) return null;
 
@@ -410,6 +435,26 @@ const AiBuilderPanel = () => {
 				},
 			},
 		);
+	};
+
+	const handleUnarchiveSession = (id: string) => {
+		updateBuilderSession.mutate(
+			{ id, payload: { status: 'active' } },
+			{ onSuccess: () => notify.success('Chat restored') },
+		);
+	};
+
+	const startRename = (id: string, title: string | null) => {
+		cancelRenameRef.current = false;
+		setRenameValue(title ?? '');
+		setRenamingId(id);
+	};
+
+	const commitRename = (id: string, previous: string | null) => {
+		const title = renameValue.trim();
+		setRenamingId(null);
+		if (cancelRenameRef.current || !title || title === (previous ?? '')) return;
+		updateBuilderSession.mutate({ id, payload: { title } });
 	};
 
 	const handleDeleteSession = async (id: string) => {
@@ -591,6 +636,14 @@ const AiBuilderPanel = () => {
 									<span className='h-1.5 w-1.5 rounded-full bg-primary-400 animate-ping' />
 									Getting started…
 								</div>
+							)}
+							{isSlowReply && (
+								<p className='mt-1.5 text-[11px] leading-relaxed text-zinc-400 dark:text-zinc-500'>
+									Still working — no live updates yet. Bigger changes can take a minute or two; the
+									reply will appear here when it's done.
+									{import.meta.env.DEV &&
+										' (Local dev: check that a queue worker is listening on the "workflow-builder" queue.)'}
+								</p>
 							)}
 
 							{toolCount > 0 && (
@@ -820,6 +873,21 @@ const AiBuilderPanel = () => {
 						<Plus size={13} />
 						<span>New Chat</span>
 					</button>
+					<div className='mt-2 grid grid-cols-2 gap-1 rounded-lg bg-zinc-100 p-0.5 dark:bg-zinc-900'>
+						{(['recent', 'archived'] as const).map((tab) => (
+							<button
+								key={tab}
+								type='button'
+								onClick={() => setHistoryTab(tab)}
+								className={`rounded-md px-2 py-1 text-[11px] font-semibold capitalize transition ${
+									historyTab === tab
+										? 'bg-white text-zinc-800 shadow-xs dark:bg-zinc-800 dark:text-white'
+										: 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+								}`}>
+								{tab}
+							</button>
+						))}
+					</div>
 				</div>
 
 				<div className='min-h-0 flex-1 overflow-y-auto px-2.5 pb-2.5 space-y-1'>
@@ -834,21 +902,29 @@ const AiBuilderPanel = () => {
 								<MessageSquare size={18} />
 							</div>
 							<div className='text-xs font-semibold text-zinc-500 dark:text-zinc-400'>
-								No previous chats yet
+								{isArchivedTab ? 'No archived chats' : 'No previous chats yet'}
 							</div>
 							<div className='text-[11px] text-zinc-400 dark:text-zinc-600'>
-								Conversations you start will show up here.
+								{isArchivedTab
+									? 'Chats you archive will show up here.'
+									: 'Conversations you start will show up here.'}
 							</div>
 						</div>
 					) : (
 						sortedSessions.map((session) => (
 							<div
 								key={session.id}
-								role='button'
-								tabIndex={0}
-								onClick={() => handleLoadSession(session.id)}
-								onKeyDown={(e) => e.key === 'Enter' && handleLoadSession(session.id)}
-								className={`group flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 transition ${
+								role={isArchivedTab ? undefined : 'button'}
+								tabIndex={isArchivedTab ? undefined : 0}
+								onClick={isArchivedTab ? undefined : () => handleLoadSession(session.id)}
+								onKeyDown={
+									isArchivedTab
+										? undefined
+										: (e) => e.key === 'Enter' && handleLoadSession(session.id)
+								}
+								className={`group flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition ${
+									isArchivedTab ? '' : 'cursor-pointer'
+								} ${
 									session.id === builderSessionId
 										? 'bg-primary-50 dark:bg-primary-950/30'
 										: 'hover:bg-zinc-50 dark:hover:bg-zinc-900/70'
@@ -862,14 +938,59 @@ const AiBuilderPanel = () => {
 									}
 								/>
 								<div className='min-w-0 flex-1'>
-									<div className='truncate text-xs font-semibold text-zinc-700 dark:text-zinc-200'>
-										{session.title || 'Untitled chat'}
-									</div>
+									{renamingId === session.id ? (
+										<input
+											// eslint-disable-next-line jsx-a11y/no-autofocus
+											autoFocus
+											value={renameValue}
+											onChange={(e) => setRenameValue(e.target.value)}
+											onClick={(e) => e.stopPropagation()}
+											onKeyDown={(e) => {
+												e.stopPropagation();
+												if (e.key === 'Enter') e.currentTarget.blur();
+												if (e.key === 'Escape') {
+													cancelRenameRef.current = true;
+													e.currentTarget.blur();
+												}
+											}}
+											onBlur={() => commitRename(session.id, session.title)}
+											maxLength={255}
+											aria-label='Chat name'
+											className='w-full rounded-md border border-primary-300 bg-white px-1.5 py-0.5 text-xs font-semibold text-zinc-700 outline-none dark:border-primary-700 dark:bg-zinc-900 dark:text-zinc-200'
+										/>
+									) : (
+										<div className='truncate text-xs font-semibold text-zinc-700 dark:text-zinc-200'>
+											{session.title || 'Untitled chat'}
+										</div>
+									)}
 									<div className='text-[10px] text-zinc-400 dark:text-zinc-500'>
 										{formatRelativeTime(sessionTime(session))}
 										{session.status === 'promoted' && ' · applied'}
 									</div>
 								</div>
+								{isArchivedTab ? (
+									<button
+										type='button'
+										title='Unarchive chat'
+										aria-label='Unarchive chat'
+										disabled={updateBuilderSession.isPending}
+										onClick={() => handleUnarchiveSession(session.id)}
+										className='flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-zinc-300 opacity-0 transition hover:bg-primary-50 hover:text-primary-600 group-hover:opacity-100 disabled:opacity-40 dark:text-zinc-600 dark:hover:bg-primary-950/30 dark:hover:text-primary-400'>
+										<ArchiveRestore size={12} />
+									</button>
+								) : (
+								<>
+								<button
+									type='button'
+									title='Rename chat'
+									aria-label='Rename chat'
+									onClick={(e) => {
+										e.stopPropagation();
+										startRename(session.id, session.title);
+									}}
+									className='flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-zinc-300 opacity-0 transition hover:bg-zinc-100 hover:text-zinc-600 group-hover:opacity-100 dark:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300'>
+									<Pencil size={12} />
+								</button>
 								<button
 									type='button'
 									title='Apply this chat’s draft to the workflow'
@@ -894,6 +1015,8 @@ const AiBuilderPanel = () => {
 									className='flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-zinc-300 opacity-0 transition hover:bg-zinc-100 hover:text-zinc-600 group-hover:opacity-100 disabled:opacity-40 dark:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300'>
 									<Archive size={12} />
 								</button>
+								</>
+								)}
 								<button
 									type='button'
 									title='Delete chat'

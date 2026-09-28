@@ -3,6 +3,7 @@ import { unwrapKey } from '@/api/core';
 import type { TApiResponse } from '@/api/core';
 import type {
 	TFolder,
+	TFolderType,
 	TCreateFolderDto,
 	TUpdateFolderDto,
 	TMoveWorkflowsDto,
@@ -12,10 +13,11 @@ import { FolderEndpoints as E } from './folders.endpoints';
 
 export const FolderService = {
 	// Root folders only, with one level of `children` eager-loaded — not a
-	// flat list.
-	list: (ws: string, signal?: AbortSignal) =>
+	// flat list. The backend defaults `type` to workflow, so agent folders
+	// must ask for them.
+	list: (ws: string, type: TFolderType = 'workflow', signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ folders: TFolder[] }>>(E.list(ws), { signal })
+			.get<TApiResponse<{ folders: TFolder[] }>>(E.list(ws), { params: { type }, signal })
 			.then(unwrapKey<TFolder[]>('folders')),
 
 	create: (ws: string, payload: TCreateFolderDto) =>
