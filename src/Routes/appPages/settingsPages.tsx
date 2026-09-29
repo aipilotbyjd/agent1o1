@@ -27,6 +27,9 @@ const NotificationChannelsPage = lazy(
 	() => import('@/pages/settings/NotificationChannels/NotificationChannels.page'),
 );
 const TagsPage = lazy(() => import('@/pages/settings/Tags/Tags.page'));
+const ReferralsPage = lazy(() => import('@/pages/settings/Referrals/Referrals.page'));
+const AdminReferralsPage = lazy(() => import('@/pages/settings/Admin/AdminReferrals.page'));
+const AdminAuditLogPage = lazy(() => import('@/pages/settings/Admin/AdminAuditLog.page'));
 
 /** Registered as a child of the `/:workspaceId` guard, alongside the core-app shell. */
 const SettingsPages: RouteObject[] = [
@@ -41,6 +44,9 @@ const SettingsPages: RouteObject[] = [
 			{ path: rel(settingsPages.profile.to), element: <ProfilePage /> },
 			{ path: rel(settingsPages.security.to), element: <SecurityPage /> },
 			{ path: rel(settingsPages.notifications.to), element: <NotificationsPage /> },
+			{ path: rel(settingsPages.referrals.to), element: <ReferralsPage /> },
+			{ path: rel(settingsPages.adminReferrals.to), element: <AdminReferralsPage /> },
+			{ path: rel(settingsPages.adminAuditLog.to), element: <AdminAuditLogPage /> },
 			{ path: rel(settingsPages.workspace.to), element: <WorkspacePage /> },
 			{ path: rel(settingsPages.members.to), element: <MembersPage /> },
 			{ path: rel(settingsPages.apiKeys.to), element: <ApiKeysPage /> },

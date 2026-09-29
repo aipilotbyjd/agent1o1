@@ -4,6 +4,8 @@ export type TNavSection = {
 	/** Section heading; omit for an ungrouped run of items. */
 	title?: string;
 	items: TNavEntry[];
+	/** Only shown to platform admins (`user.is_platform_admin`). */
+	adminOnly?: boolean;
 };
 
 export type TNavEntry = TPage & {
@@ -48,7 +50,12 @@ export const coreAppNavigation: TNavSection[] = [
 export const settingsNavigation: TNavSection[] = [
 	{
 		title: 'Account',
-		items: [settingsPages.profile, settingsPages.security, settingsPages.notifications],
+		items: [
+			settingsPages.profile,
+			settingsPages.security,
+			settingsPages.notifications,
+			settingsPages.referrals,
+		],
 	},
 	{
 		title: 'Workspace',
@@ -63,5 +70,10 @@ export const settingsNavigation: TNavSection[] = [
 	{
 		title: 'Billing',
 		items: [{ ...settingsPages.billing, collapsible: true }],
+	},
+	{
+		title: 'Platform admin',
+		items: [settingsPages.adminReferrals, settingsPages.adminAuditLog],
+		adminOnly: true,
 	},
 ];

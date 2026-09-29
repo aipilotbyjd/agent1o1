@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useExchangeSocialCode } from '@/api/modules/auth';
 import { messageFromError } from '@/api/core';
+import { ReferralService } from '@/api/modules/referrals';
+import { clearReferralAttribution, getReferralAttribution } from '@/utils/referralAttribution.util';
 import useAfterAuthRedirect from '@/hooks/useAfterAuthRedirect';
 import Wordmark from '@/components/common/Wordmark';
 import Card, { CardBody } from '@/components/ui/Card';
@@ -18,6 +20,25 @@ import pages from '@/Routes/pages';
 // code (valid ~60s) or an `error` message — see
 // `AuthController::handleProviderCallback`.
 // ============================================================
+
+/**
+ * A social signup can't carry the `?ref=` code through the provider round
+ * trip, so it is claimed here instead. The backend only accepts a claim
+ * from a fresh account with no referral yet, so calling it on every social
+ * sign-in is harmless; any refusal is ignored and the stored code dropped.
+ */
+const claimStoredReferral = async () => {
+	const referral = getReferralAttribution();
+	if (!referral) return;
+
+	try {
+		await ReferralService.claim({ code: referral.code, visitor_id: referral.visitor_id });
+	} catch {
+		// Existing account, expired window or dead code — nothing to claim.
+	} finally {
+		clearReferralAttribution();
+	}
+};
 
 const OAuthCallbackPage = () => {
 	const [searchParams] = useSearchParams();
@@ -43,7 +64,8 @@ const OAuthCallbackPage = () => {
 		exchange.mutate(
 			{ code },
 			{
-				onSuccess: () => {
+				onSuccess: async () => {
+					await claimStoredReferral();
 					void redirectAfterAuth();
 				},
 				onError: (err) =>

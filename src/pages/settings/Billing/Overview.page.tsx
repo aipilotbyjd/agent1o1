@@ -8,6 +8,7 @@ import {
 	Coins,
 	Crown,
 	ExternalLink,
+	Gift,
 	GitBranch,
 	RotateCcw,
 	ShieldCheck,
@@ -157,7 +158,11 @@ const BillingOverviewPage = () => {
 		usage_period: usage,
 		dunning,
 	} = overview;
-	const isLifetime = !!grant;
+	// A grant with an end date is time-limited (earned through referrals, or a
+	// comp) — only an open-ended grant is a lifetime purchase.
+	const isLifetime = !!grant && grant.expires_at === null;
+	const freeUntil = grant && grant.expires_at !== null ? grant.expires_at : null;
+	const isReferralTime = !!freeUntil && grant?.source === 'referral';
 	const status = subscription?.stripe_status;
 	const statusCfg = status ? statusConfig[status] : null;
 
@@ -293,6 +298,15 @@ const BillingOverviewPage = () => {
 								{isLifetime && (
 									<p className='mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400'>
 										One-time purchase · Never expires
+									</p>
+								)}
+								{freeUntil && (
+									<p className='mt-1 inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400'>
+										<Gift size={12} />
+										{isReferralTime
+											? 'Earned through referrals'
+											: 'Complimentary'}{' '}
+										· Free until {fmtDate(freeUntil)}
 									</p>
 								)}
 							</div>

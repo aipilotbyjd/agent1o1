@@ -7,10 +7,15 @@ import AsideHeaderPart from '@/templates/asides/_parts/AsideHeader.part';
 import AsideFooterPart from '@/templates/asides/_parts/AsideFooter.part';
 import NavSectionsPart from '@/templates/asides/_parts/NavSections.part';
 import { settingsNavigation } from '@/Routes/navigation';
+import { useAuth } from '@/context/auth';
 
 const SettingsAsideTemplate = () => {
 	const navigate = useNavigate();
 	const { resolvePath } = useResolvePath();
+	const { userData } = useAuth();
+	const sections = settingsNavigation.filter(
+		(section) => !section.adminOnly || userData?.is_platform_admin,
+	);
 
 	return (
 		<Aside>
@@ -22,7 +27,7 @@ const SettingsAsideTemplate = () => {
 						text='Go back'
 						onClick={() => navigate(resolvePath(pages.workspace.to))}
 					/>
-					<NavSectionsPart sections={settingsNavigation} />
+					<NavSectionsPart sections={sections} />
 				</Nav>
 			</AsideBody>
 			<AsideFooterPart />
