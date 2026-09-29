@@ -6,4 +6,4 @@ Disallow: /billing/
 Disallow: /oauth/
 Disallow: /invitations/
 
-Sitemap: https://agent1o1.app/sitemap.xml
+Sitemap: https://agent1o1.com/sitemap.xml
