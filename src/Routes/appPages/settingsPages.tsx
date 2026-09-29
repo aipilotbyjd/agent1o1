@@ -26,6 +26,7 @@ const NotificationsPage = lazy(() => import('@/pages/settings/Notifications/Noti
 const NotificationChannelsPage = lazy(
 	() => import('@/pages/settings/NotificationChannels/NotificationChannels.page'),
 );
+const TagsPage = lazy(() => import('@/pages/settings/Tags/Tags.page'));
 
 /** Registered as a child of the `/:workspaceId` guard, alongside the core-app shell. */
 const SettingsPages: RouteObject[] = [
@@ -47,6 +48,7 @@ const SettingsPages: RouteObject[] = [
 				path: rel(settingsPages.notificationChannels.to),
 				element: <NotificationChannelsPage />,
 			},
+			{ path: rel(settingsPages.tags.to), element: <TagsPage /> },
 			{
 				path: rel(settingsPages.billing.to),
 				element: <BillingLayout />,

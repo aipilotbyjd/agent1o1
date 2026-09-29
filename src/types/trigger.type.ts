@@ -27,8 +27,18 @@ export type TTrigger = {
 	updated_at: string;
 };
 
-export type TTriggerEventSource = 'webhook' | 'schedule' | 'manual' | 'poll';
-export type TTriggerEventStatus = 'skipped' | 'accepted' | 'processed' | 'failed';
+/** An event's `source` is the backend's `TriggerType` value. */
+export type TTriggerEventSource = 'webhook' | 'schedule' | 'manual' | 'polling';
+/** `TriggerEventStatus` — `queued`/`running` are in flight, the rest are terminal. */
+export type TTriggerEventStatus =
+	| 'queued'
+	| 'running'
+	| 'fired'
+	| 'ignored'
+	| 'skipped'
+	| 'rejected'
+	| 'failed'
+	| 'duplicate';
 
 export type TTriggerEvent = {
 	id: string;

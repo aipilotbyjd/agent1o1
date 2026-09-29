@@ -48,6 +48,12 @@ export const settings: TPage = {
 			text: 'Notification Channels',
 			icon: 'Notification02',
 		},
+		tags: {
+			id: 'tagsSettings',
+			to: ws('settings/tags'),
+			text: 'Tags',
+			icon: 'Tag01',
+		},
 		billing: {
 			id: 'billingSettings',
 			to: ws('settings/billing'),

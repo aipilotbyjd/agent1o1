@@ -13,19 +13,24 @@ import {
 	Clock,
 	FlaskConical,
 	ListChecks,
+	Pencil,
 } from 'lucide-react';
 import {
 	useAgentEvalSuites,
+	useAgentEvalSuite,
 	useCreateAgentEvalSuite,
+	useUpdateAgentEvalSuite,
 	useDeleteAgentEvalSuite,
 	useAgentEvalCases,
 	useCreateAgentEvalCase,
+	useUpdateAgentEvalCase,
 	useDeleteAgentEvalCase,
 	useAgentEvalRuns,
 	useAgentEvalRun,
 	useRunAgentEvalSuite,
 } from '@/api/modules/agents';
 import type {
+	TAgentEvalCase,
 	TAgentEvalSuite,
 	TAgentEvalRun,
 	TAgentEvalRunStatus,
@@ -174,29 +179,72 @@ const SuiteDetail = ({
 }) => {
 	const [isFormOpen, setIsFormOpen] = useState(false);
 	const [form, setForm] = useState(emptyCaseForm);
+	// Set while the case form edits an existing case instead of adding one.
+	const [editingCaseId, setEditingCaseId] = useState<string | null>(null);
+	const [isEditingSuite, setIsEditingSuite] = useState(false);
+	const [suiteForm, setSuiteForm] = useState({ name: '', description: '' });
 
+	// The list row goes stale if the suite changes while it is open; the detail
+	// is the current name/description.
+	const { data: suiteDetail } = useAgentEvalSuite(ws, agentId, suite.id);
+	const current = suiteDetail ?? suite;
 	const { data: cases, isLoading } = useAgentEvalCases(ws, agentId, suite.id);
 	const { data: runs, isLoading: isRunsLoading } = useAgentEvalRuns(ws, agentId, suite.id);
 	const createMutation = useCreateAgentEvalCase(ws, agentId, suite.id);
+	const updateMutation = useUpdateAgentEvalCase(ws, agentId, suite.id);
 	const deleteMutation = useDeleteAgentEvalCase(ws, agentId, suite.id);
+	const updateSuiteMutation = useUpdateAgentEvalSuite(ws, agentId);
 	const runMutation = useRunAgentEvalSuite(ws, agentId, suite.id);
 
 	const items = cases ?? [];
+	const isSaving = createMutation.isPending || updateMutation.isPending;
 
 	const resetForm = () => {
 		setForm(emptyCaseForm);
+		setEditingCaseId(null);
 		setIsFormOpen(false);
+	};
+
+	const startEditCase = (evalCase: TAgentEvalCase) => {
+		setForm({
+			name: evalCase.name,
+			input: evalCase.input,
+			assertions: evalCase.assertions?.length
+				? evalCase.assertions.map((a) => ({ ...a }))
+				: emptyCaseForm.assertions,
+		});
+		setEditingCaseId(String(evalCase.id));
+		setIsFormOpen(true);
 	};
 
 	const handleSubmit = async () => {
 		const assertions = form.assertions.filter((a) => a.value.trim());
 		if (!form.name.trim() || !form.input.trim() || assertions.length === 0) return;
-		await createMutation.mutateAsync({
+		const body = {
 			name: form.name.trim(),
 			input: form.input.trim(),
 			assertions: assertions.map((a) => ({ type: a.type, value: a.value.trim() })),
-		});
+		};
+		if (editingCaseId) {
+			await updateMutation.mutateAsync({ caseId: editingCaseId, body });
+		} else {
+			await createMutation.mutateAsync(body);
+		}
 		resetForm();
+	};
+
+	const startEditSuite = () => {
+		setSuiteForm({ name: current.name, description: current.description ?? '' });
+		setIsEditingSuite(true);
+	};
+
+	const handleSuiteSubmit = async () => {
+		if (!suiteForm.name.trim()) return;
+		await updateSuiteMutation.mutateAsync({
+			suiteId: String(suite.id),
+			body: { name: suiteForm.name.trim(), description: suiteForm.description.trim() || null },
+		});
+		setIsEditingSuite(false);
 	};
 
 	return (
@@ -208,11 +256,19 @@ const SuiteDetail = ({
 						<ChevronLeft size={14} />
 					</button>
 					<div className='min-w-0'>
-						<h4 className='truncate text-xs font-black text-zinc-900 dark:text-white'>{suite.name}</h4>
+						<h4 className='truncate text-xs font-black text-zinc-900 dark:text-white'>{current.name}</h4>
 						<p className='truncate text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-							{suite.description || 'No description.'}
+							{current.description || 'No description.'}
 						</p>
 					</div>
+					<button
+						type='button'
+						onClick={startEditSuite}
+						title='Edit suite'
+						aria-label='Edit suite'
+						className='shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
+						<Pencil size={11} />
+					</button>
 				</div>
 				<button
 					onClick={() => runMutation.mutate()}
@@ -226,6 +282,46 @@ const SuiteDetail = ({
 					<span>Run</span>
 				</button>
 			</div>
+
+			{/* Suite edit form */}
+			{isEditingSuite && (
+				<div className='space-y-2.5 rounded-xl border border-zinc-100 bg-zinc-50/40 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
+					<div className='flex items-center justify-between'>
+						<span className='text-[11px] font-black text-zinc-700 dark:text-zinc-300'>Edit suite</span>
+						<button aria-label='Close' onClick={() => setIsEditingSuite(false)} className='text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
+							<X size={13} />
+						</button>
+					</div>
+					<input
+						type='text'
+						value={suiteForm.name}
+						onChange={(e) => setSuiteForm((f) => ({ ...f, name: e.target.value }))}
+						placeholder='Suite name (e.g. tone regression)'
+						className='w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+					/>
+					<textarea
+						value={suiteForm.description}
+						onChange={(e) => setSuiteForm((f) => ({ ...f, description: e.target.value }))}
+						placeholder='Description (optional)'
+						rows={2}
+						className='w-full resize-none rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+					/>
+					<div className='flex justify-end gap-2'>
+						<button
+							onClick={() => setIsEditingSuite(false)}
+							className='rounded-lg border border-zinc-200 bg-white px-3 py-1 text-[10px] font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
+							Cancel
+						</button>
+						<button
+							onClick={handleSuiteSubmit}
+							disabled={updateSuiteMutation.isPending || !suiteForm.name.trim()}
+							className='flex items-center gap-1 rounded-lg bg-primary-400 px-3 py-1 text-[10px] font-black text-primary-950 hover:bg-primary-500 disabled:opacity-50'>
+							{updateSuiteMutation.isPending && <Loader2 size={11} className='animate-spin' />}
+							Save
+						</button>
+					</div>
+				</div>
+			)}
 
 			{/* Cases */}
 			<div className='flex items-center justify-between'>
@@ -247,7 +343,9 @@ const SuiteDetail = ({
 			{isFormOpen && (
 				<div className='space-y-2.5 rounded-xl border border-zinc-100 bg-zinc-50/40 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
 					<div className='flex items-center justify-between'>
-						<span className='text-[11px] font-black text-zinc-700 dark:text-zinc-300'>New case</span>
+						<span className='text-[11px] font-black text-zinc-700 dark:text-zinc-300'>
+							{editingCaseId ? 'Edit case' : 'New case'}
+						</span>
 						<button aria-label='Close' onClick={resetForm} className='text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
 							<X size={13} />
 						</button>
@@ -342,13 +440,13 @@ const SuiteDetail = ({
 						<button
 							onClick={handleSubmit}
 							disabled={
-								createMutation.isPending ||
+								isSaving ||
 								!form.name.trim() ||
 								!form.input.trim() ||
 								form.assertions.every((a) => !a.value.trim())
 							}
 							className='flex items-center gap-1 rounded-lg bg-primary-400 px-3 py-1 text-[10px] font-black text-primary-950 hover:bg-primary-500 disabled:opacity-50'>
-							{createMutation.isPending && <Loader2 size={11} className='animate-spin' />}
+							{isSaving && <Loader2 size={11} className='animate-spin' />}
 							Save
 						</button>
 					</div>
@@ -388,6 +486,14 @@ const SuiteDetail = ({
 									))}
 								</div>
 							</div>
+							<button
+								type='button'
+								onClick={() => startEditCase(evalCase)}
+								title='Edit'
+								aria-label='Edit case'
+								className='shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
+								<Pencil size={12} />
+							</button>
 							<button
 								onClick={() => deleteMutation.mutate(evalCase.id)}
 								title='Delete'

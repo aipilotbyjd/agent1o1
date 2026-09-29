@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, Plus, Trash2, FileText, Code2 } from 'lucide-react';
-import type { TAgentSkill } from '@/types/agent-skill.type';
+import { X, Plus, Trash2, FileText, Code2, Pencil, Loader2 } from 'lucide-react';
+import type { TAgentSkill, TAgentSkillReference, TAgentSkillScript } from '@/types/agent-skill.type';
 import {
 	useAgentSkill,
 	useCreateAgentSkill,
 	useUpdateAgentSkill,
 	useSkillReferences,
 	useCreateSkillReference,
+	useUpdateSkillReference,
 	useDeleteSkillReference,
 	useSkillScripts,
 	useCreateSkillScript,
+	useUpdateSkillScript,
 	useDeleteSkillScript,
 } from '@/api/modules/agent-skills';
 import {
@@ -55,13 +57,24 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 	const createMutation = useCreateAgentSkill(ws);
 	const updateMutation = useUpdateAgentSkill(ws);
 	const addReferenceMutation = useCreateSkillReference(ws, activeSkillId ?? '');
+	const updateReferenceMutation = useUpdateSkillReference(ws, activeSkillId ?? '');
 	const removeReferenceMutation = useDeleteSkillReference(ws, activeSkillId ?? '');
 	const addScriptMutation = useCreateSkillScript(ws, activeSkillId ?? '');
+	const updateScriptMutation = useUpdateSkillScript(ws, activeSkillId ?? '');
 	const removeScriptMutation = useDeleteSkillScript(ws, activeSkillId ?? '');
 
 	const [form, setForm] = useState(emptyForm);
 	const [newReference, setNewReference] = useState({ title: '', content: '' });
 	const [newScript, setNewScript] = useState(emptyScript);
+	// The one reference / script being edited in place, if any.
+	const [editingReference, setEditingReference] = useState<{
+		id: string;
+		title: string;
+		content: string;
+	} | null>(null);
+	const [editingScript, setEditingScript] = useState<
+		({ id: string; is_enabled: boolean } & typeof emptyScript) | null
+	>(null);
 
 	useEffect(() => {
 		if (!isOpen) {
@@ -69,6 +82,8 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 			setForm(emptyForm);
 			setNewReference({ title: '', content: '' });
 			setNewScript(emptyScript);
+			setEditingReference(null);
+			setEditingScript(null);
 			return;
 		}
 		if (skillDetail) {
@@ -118,10 +133,48 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 	};
 
 	const handleAddReference = () => {
-		if (!newReference.title.trim() || !activeSkillId || addReferenceMutation.isPending) return;
+		if (!newReference.title.trim() || !newReference.content.trim()) return;
+		if (!activeSkillId || addReferenceMutation.isPending) return;
 		addReferenceMutation.mutate(
 			{ title: newReference.title.trim(), content: newReference.content, sort_order: 0 },
 			{ onSuccess: () => setNewReference({ title: '', content: '' }) },
+		);
+	};
+
+	const startEditReference = (ref: TAgentSkillReference) =>
+		setEditingReference({ id: ref.id, title: ref.title, content: ref.content });
+
+	const handleSaveReference = () => {
+		if (!editingReference || updateReferenceMutation.isPending) return;
+		if (!editingReference.title.trim() || !editingReference.content.trim()) return;
+		updateReferenceMutation.mutate(
+			{
+				id: editingReference.id,
+				body: { title: editingReference.title.trim(), content: editingReference.content },
+			},
+			{ onSuccess: () => setEditingReference(null) },
+		);
+	};
+
+	const startEditScript = (script: TAgentSkillScript) =>
+		setEditingScript({
+			id: script.id,
+			name: script.name,
+			description: script.description ?? '',
+			language: (SKILL_SCRIPT_LANGUAGES as readonly string[]).includes(script.language)
+				? (script.language as (typeof SKILL_SCRIPT_LANGUAGES)[number])
+				: 'javascript',
+			code: script.code,
+			is_enabled: script.is_enabled,
+		});
+
+	const handleSaveScript = () => {
+		if (!editingScript || updateScriptMutation.isPending) return;
+		if (!editingScript.name.trim() || !editingScript.code.trim()) return;
+		const { id, ...body } = editingScript;
+		updateScriptMutation.mutate(
+			{ id, body: { ...body, name: body.name.trim() } },
+			{ onSuccess: () => setEditingScript(null) },
 		);
 	};
 
@@ -305,26 +358,79 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 								</div>
 
 								<div className='mb-3 space-y-2'>
-									{(references ?? []).map((ref) => (
-										<div
-											key={ref.id}
-											className='flex items-start justify-between gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/40'>
-											<div>
-												<p className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
-													{ref.title}
-												</p>
-												<p className='mt-0.5 line-clamp-2 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500'>
-													{ref.content}
-												</p>
+									{(references ?? []).map((ref) =>
+										editingReference?.id === ref.id ? (
+											<div
+												key={ref.id}
+												className='space-y-2 rounded-xl border border-primary-500/40 bg-white p-3 dark:bg-zinc-900'>
+												<input
+													type='text'
+													aria-label='Reference title'
+													value={editingReference.title}
+													onChange={(e) =>
+														setEditingReference((r) => r && { ...r, title: e.target.value })
+													}
+													className='block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
+												/>
+												<textarea
+													aria-label='Reference content'
+													rows={6}
+													value={editingReference.content}
+													onChange={(e) =>
+														setEditingReference((r) => r && { ...r, content: e.target.value })
+													}
+													className='block w-full resize-y rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
+												/>
+												<div className='flex justify-end gap-2'>
+													<button
+														onClick={() => setEditingReference(null)}
+														className='h-7 cursor-pointer rounded-lg border border-zinc-200 px-3 text-[11px] font-bold text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-900'>
+														Cancel
+													</button>
+													<button
+														onClick={handleSaveReference}
+														disabled={
+															updateReferenceMutation.isPending ||
+															!editingReference.title.trim() ||
+															!editingReference.content.trim()
+														}
+														className='flex h-7 cursor-pointer items-center gap-1 rounded-lg bg-primary-400 px-3 text-[11px] font-black text-primary-950 hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-50'>
+														{updateReferenceMutation.isPending && (
+															<Loader2 size={11} className='animate-spin' />
+														)}
+														Save
+													</button>
+												</div>
 											</div>
-											<button
-												aria-label='Delete'
-												onClick={() => removeReferenceMutation.mutate(ref.id)}
-												className='shrink-0 cursor-pointer text-zinc-300 hover:text-rose-500 dark:text-zinc-600'>
-												<Trash2 size={13} />
-											</button>
-										</div>
-									))}
+										) : (
+											<div
+												key={ref.id}
+												className='flex items-start justify-between gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/40'>
+												<div>
+													<p className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
+														{ref.title}
+													</p>
+													<p className='mt-0.5 line-clamp-2 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500'>
+														{ref.content}
+													</p>
+												</div>
+												<div className='flex shrink-0 items-center gap-2'>
+													<button
+														aria-label={`Edit ${ref.title}`}
+														onClick={() => startEditReference(ref)}
+														className='cursor-pointer text-zinc-300 hover:text-primary-600 dark:text-zinc-600 dark:hover:text-primary-400'>
+														<Pencil size={12} />
+													</button>
+													<button
+														aria-label='Delete'
+														onClick={() => removeReferenceMutation.mutate(ref.id)}
+														className='cursor-pointer text-zinc-300 hover:text-rose-500 dark:text-zinc-600'>
+														<Trash2 size={13} />
+													</button>
+												</div>
+											</div>
+										),
+									)}
 								</div>
 
 								<div className='space-y-2 rounded-xl border border-dashed border-zinc-200 p-3 dark:border-zinc-800'>
@@ -348,7 +454,7 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 									/>
 									<button
 										onClick={handleAddReference}
-										disabled={!newReference.title.trim()}
+										disabled={!newReference.title.trim() || !newReference.content.trim()}
 										className='flex h-8 w-full cursor-pointer items-center justify-center gap-1 rounded-lg border border-zinc-200 text-[11px] font-bold text-zinc-600 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900'>
 										<Plus size={12} /> Add reference
 									</button>
@@ -365,29 +471,135 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 								</div>
 
 								<div className='mb-3 space-y-2'>
-									{(scripts ?? []).map((script) => (
-										<div
-											key={script.id}
-											className='flex items-start justify-between gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/40'>
-											<div>
-												<p className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
-													{script.name}{' '}
-													<span className='ml-1 rounded bg-zinc-100 px-1.5 py-0.5 text-[9px] font-black tracking-wider text-zinc-500 uppercase dark:bg-zinc-800 dark:text-zinc-400'>
-														{script.language}
-													</span>
-												</p>
-												<p className='mt-0.5 line-clamp-2 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500'>
-													{script.description}
-												</p>
+									{(scripts ?? []).map((script) =>
+										editingScript?.id === script.id ? (
+											<div
+												key={script.id}
+												className='space-y-2 rounded-xl border border-primary-500/40 bg-white p-3 dark:bg-zinc-900'>
+												<div className='flex gap-2'>
+													<input
+														type='text'
+														aria-label='Script name'
+														value={editingScript.name}
+														onChange={(e) =>
+															setEditingScript((x) => x && { ...x, name: e.target.value })
+														}
+														className='block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
+													/>
+													<select
+														aria-label='Script language'
+														value={editingScript.language}
+														onChange={(e) =>
+															setEditingScript(
+																(x) =>
+																	x && {
+																		...x,
+																		language: e.target
+																			.value as (typeof SKILL_SCRIPT_LANGUAGES)[number],
+																	},
+															)
+														}
+														className='block h-8 shrink-0 rounded-lg border border-zinc-200 bg-white px-2 text-[11px] font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'>
+														{SKILL_SCRIPT_LANGUAGES.map((lang) => (
+															<option key={lang} value={lang}>
+																{lang}
+															</option>
+														))}
+													</select>
+												</div>
+												<input
+													type='text'
+													aria-label='Script description'
+													placeholder='Short description'
+													value={editingScript.description}
+													onChange={(e) =>
+														setEditingScript((x) => x && { ...x, description: e.target.value })
+													}
+													className='block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
+												/>
+												<textarea
+													aria-label='Script code'
+													rows={8}
+													value={editingScript.code}
+													onChange={(e) =>
+														setEditingScript((x) => x && { ...x, code: e.target.value })
+													}
+													className='block w-full resize-y rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-[11px] font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
+												/>
+												<div className='flex items-center justify-between gap-2'>
+													<label className='flex cursor-pointer items-center gap-1.5 text-[11px] font-bold text-zinc-600 dark:text-zinc-300'>
+														<input
+															type='checkbox'
+															aria-label='Script enabled'
+															checked={editingScript.is_enabled}
+															onChange={(e) =>
+																setEditingScript(
+																	(x) => x && { ...x, is_enabled: e.target.checked },
+																)
+															}
+															className='accent-primary-500'
+														/>
+														Enabled
+													</label>
+													<div className='flex gap-2'>
+														<button
+															onClick={() => setEditingScript(null)}
+															className='h-7 cursor-pointer rounded-lg border border-zinc-200 px-3 text-[11px] font-bold text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-900'>
+															Cancel
+														</button>
+														<button
+															onClick={handleSaveScript}
+															disabled={
+																updateScriptMutation.isPending ||
+																!editingScript.name.trim() ||
+																!editingScript.code.trim()
+															}
+															className='flex h-7 cursor-pointer items-center gap-1 rounded-lg bg-primary-400 px-3 text-[11px] font-black text-primary-950 hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-50'>
+															{updateScriptMutation.isPending && (
+																<Loader2 size={11} className='animate-spin' />
+															)}
+															Save
+														</button>
+													</div>
+												</div>
 											</div>
-											<button
-												aria-label='Delete'
-												onClick={() => removeScriptMutation.mutate(script.id)}
-												className='shrink-0 cursor-pointer text-zinc-300 hover:text-rose-500 dark:text-zinc-600'>
-												<Trash2 size={13} />
-											</button>
-										</div>
-									))}
+										) : (
+											<div
+												key={script.id}
+												className='flex items-start justify-between gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/40'>
+												<div>
+													<p className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
+														{script.name}{' '}
+														<span className='ml-1 rounded bg-zinc-100 px-1.5 py-0.5 text-[9px] font-black tracking-wider text-zinc-500 uppercase dark:bg-zinc-800 dark:text-zinc-400'>
+															{script.language}
+														</span>
+														{!script.is_enabled && (
+															<span className='ml-1 rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-black tracking-wider text-amber-600 uppercase dark:bg-amber-950/40 dark:text-amber-400'>
+																off
+															</span>
+														)}
+													</p>
+													<p className='mt-0.5 line-clamp-2 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500'>
+														{script.description}
+													</p>
+												</div>
+												<div className='flex shrink-0 items-center gap-2'>
+													<button
+														aria-label={`Edit ${script.name}`}
+														onClick={() => startEditScript(script)}
+														className='cursor-pointer text-zinc-300 hover:text-primary-600 dark:text-zinc-600 dark:hover:text-primary-400'>
+														<Pencil size={12} />
+													</button>
+													<button
+														aria-label='Delete'
+														onClick={() => removeScriptMutation.mutate(script.id)}
+														className='cursor-pointer text-zinc-300 hover:text-rose-500 dark:text-zinc-600'>
+														<Trash2 size={13} />
+													</button>
+												</div>
+											</div>
+										),
+									)}
 								</div>
 
 								<div className='space-y-2 rounded-xl border border-dashed border-zinc-200 p-3 dark:border-zinc-800'>

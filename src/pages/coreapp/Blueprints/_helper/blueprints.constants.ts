@@ -38,6 +38,18 @@ export const DEFAULT_TEMPLATE_COLORS: Record<'workflow' | 'agent' | 'collection'
 export const getTemplateColor = (color: string | null, kind: 'workflow' | 'agent' | 'collection'): string =>
 	color || DEFAULT_TEMPLATE_COLORS[kind];
 
+/** Swatches offered by the template/collection form. `color` is max 7 chars on the backend, so hex only. */
+export const TEMPLATE_COLOR_OPTIONS = [
+	'#C4EE3D',
+	'#10A37F',
+	'#6366F1',
+	'#7C3AED',
+	'#F59E0B',
+	'#EC4899',
+	'#0EA5E9',
+	'#EF4444',
+];
+
 export const formatUsageCount = (count: number): string => {
 	if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
 	return count.toString();

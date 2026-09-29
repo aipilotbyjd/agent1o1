@@ -4,25 +4,10 @@ import { CalendarClock, Download, ExternalLink, FileText, ShieldCheck } from 'lu
 import { useWorkspace } from '@/api/modules/workspaces';
 import { useInvoices, useUpcomingInvoice } from '@/api/modules/billing';
 import type { TInvoice } from '@/types/billing.type';
+import { INVOICE_STATUS_STYLES, fmtInvoiceDate } from './_helper/invoices.helper';
+import InvoiceDetailModal from './_partial/InvoiceDetailModal.partial';
 
 const PER_PAGE = 12;
-
-const STATUS_STYLES: Record<string, string> = {
-	paid: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
-	open: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
-	draft: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300',
-	void: 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400',
-	uncollectible: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400',
-};
-
-const fmtDate = (value: string | null) =>
-	value
-		? new Date(value).toLocaleDateString(undefined, {
-				month: 'short',
-				day: 'numeric',
-				year: 'numeric',
-			})
-		: '—';
 
 const linkBtn =
 	'inline-flex h-8 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2.5 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-white';
@@ -62,6 +47,7 @@ const BillingInvoicesPage = () => {
 	const canManage = workspace?.role === 'admin' || workspace?.role === 'owner';
 
 	const [cursors, setCursors] = useState<(string | undefined)[]>([undefined]);
+	const [openInvoiceId, setOpenInvoiceId] = useState<string | null>(null);
 	const cursor = cursors[cursors.length - 1];
 
 	const { data: upcoming } = useUpcomingInvoice(canManage ? workspaceId! : '');
@@ -109,7 +95,7 @@ const BillingInvoicesPage = () => {
 								{upcoming.amount_due}
 							</p>
 							<p className='mt-0.5 text-xs font-semibold text-zinc-400 dark:text-zinc-500'>
-								Expected {fmtDate(upcoming.due_date ?? upcoming.date)}
+								Expected {fmtInvoiceDate(upcoming.due_date ?? upcoming.date)}
 								{upcoming.tax && upcoming.tax !== upcoming.total
 									? ` · includes ${upcoming.tax} tax`
 									: ''}
@@ -155,24 +141,28 @@ const BillingInvoicesPage = () => {
 							<li
 								key={invoice.id}
 								className='flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between'>
-								<div className='flex min-w-0 items-center gap-4'>
+								<button
+									type='button'
+									onClick={() => setOpenInvoiceId(invoice.id)}
+									title='View invoice details'
+									className='group flex min-w-0 cursor-pointer items-center gap-4 text-left'>
 									<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'>
 										<FileText size={16} />
 									</div>
 									<div className='min-w-0'>
-										<p className='truncate text-sm font-black'>
+										<p className='truncate text-sm font-black group-hover:underline'>
 											{invoice.number ?? invoice.id}
 										</p>
 										<p className='text-xs font-semibold text-zinc-400 dark:text-zinc-500'>
-											{fmtDate(invoice.date)}
+											{fmtInvoiceDate(invoice.date)}
 										</p>
 									</div>
-								</div>
+								</button>
 								<div className='flex flex-wrap items-center gap-x-4 gap-y-2 pl-13 sm:pl-0'>
 									<span className='text-sm font-black'>{invoice.total}</span>
 									{invoice.status && (
 										<span
-											className={`rounded-full px-2.5 py-0.5 text-[10px] font-black tracking-wider uppercase ${STATUS_STYLES[invoice.status] ?? STATUS_STYLES.draft}`}>
+											className={`rounded-full px-2.5 py-0.5 text-[10px] font-black tracking-wider uppercase ${INVOICE_STATUS_STYLES[invoice.status] ?? INVOICE_STATUS_STYLES.draft}`}>
 											{invoice.status}
 										</span>
 									)}
@@ -204,6 +194,12 @@ const BillingInvoicesPage = () => {
 					</div>
 				)}
 			</div>
+
+			<InvoiceDetailModal
+				ws={canManage ? workspaceId! : ''}
+				invoiceId={openInvoiceId}
+				onClose={() => setOpenInvoiceId(null)}
+			/>
 		</div>
 	);
 };

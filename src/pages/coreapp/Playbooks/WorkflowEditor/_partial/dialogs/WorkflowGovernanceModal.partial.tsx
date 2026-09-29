@@ -20,6 +20,7 @@ import {
 	Loader2,
 	ListChecks,
 	FormInput,
+	Zap,
 } from 'lucide-react';
 import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
@@ -29,6 +30,8 @@ import { notify } from '@/api/core';
 import Modal from './Modal.partial';
 import WorkflowChecksTab from './WorkflowChecksTab.partial';
 import WorkflowInterfaceTab from './WorkflowInterfaceTab.partial';
+import WorkflowTriggersTab from './WorkflowTriggersTab.partial';
+import WorkflowVersionDetail from './WorkflowVersionDetail.partial';
 import {
 	useWorkflowVersions,
 	useRepublishWorkflowVersion,
@@ -67,6 +70,7 @@ const WorkflowGovernanceModal = () => {
 	);
 	const publishVersion = useRepublishWorkflowVersion(workspaceId);
 	const rollbackVersion = useRollbackWorkflowVersion(workspaceId);
+	const [openVersionId, setOpenVersionId] = useState<string | null>(null);
 
 	// ── 2. Sharing Tab Data & Mutations ───────────────────
 	const { data: shares, isLoading: isSharesLoading } = useWorkflowShares(
@@ -200,6 +204,7 @@ const WorkflowGovernanceModal = () => {
 		{ id: 'contracts', label: 'Contracts & Tests', icon: ShieldCheck },
 		{ id: 'checks', label: 'Validate & Dry Run', icon: ListChecks },
 		{ id: 'interface', label: 'Run Form', icon: FormInput },
+		{ id: 'triggers', label: 'Triggers', icon: Zap },
 	];
 
 	return (
@@ -261,7 +266,7 @@ const WorkflowGovernanceModal = () => {
 										return (
 											<div
 												key={version.id}
-												className={`flex items-start justify-between rounded-xl border p-4 transition ${
+												className={`flex flex-wrap items-start justify-between rounded-xl border p-4 transition ${
 													isCurrent
 														? 'border-primary-200 bg-primary-50/15 dark:border-primary-800/40 dark:bg-primary-950/10'
 														: 'border-zinc-200 bg-white dark:border-zinc-800/50 dark:bg-zinc-900/10'
@@ -303,6 +308,18 @@ const WorkflowGovernanceModal = () => {
 												</div>
 
 												<div className="flex items-center gap-2">
+													<button
+														type="button"
+														onClick={() =>
+															setOpenVersionId((id) =>
+																id === String(version.id) ? null : String(version.id)
+															)
+														}
+														aria-expanded={openVersionId === String(version.id)}
+														className="rounded-lg border border-zinc-200 hover:bg-zinc-50 hover:text-zinc-950 dark:hover:text-white px-2.5 py-1.5 text-[10px] font-bold text-zinc-600 dark:border-zinc-800 dark:hover:bg-white/[0.04] dark:text-zinc-300 transition"
+													>
+														{openVersionId === String(version.id) ? 'Hide' : 'View'}
+													</button>
 													{!isPublished && (
 														<button
 															type="button"
@@ -331,6 +348,16 @@ const WorkflowGovernanceModal = () => {
 														</button>
 													)}
 												</div>
+
+												{openVersionId === String(version.id) && (
+													<div className="w-full basis-full">
+														<WorkflowVersionDetail
+															workspaceId={workspaceId}
+															workflowId={workflowId}
+															versionId={String(version.id)}
+														/>
+													</div>
+												)}
 											</div>
 										);
 									})}
@@ -1003,6 +1030,11 @@ const WorkflowGovernanceModal = () => {
 					{/* ─── RUN FORM TAB ─── */}
 					{activeTab === 'interface' && (
 						<WorkflowInterfaceTab workspaceId={workspaceId} workflowId={workflowId} />
+					)}
+
+					{/* ─── TRIGGERS TAB ─── */}
+					{activeTab === 'triggers' && (
+						<WorkflowTriggersTab workspaceId={workspaceId} workflowId={workflowId} />
 					)}
 				</main>
 			</div>

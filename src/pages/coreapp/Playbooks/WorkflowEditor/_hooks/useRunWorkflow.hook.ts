@@ -1,6 +1,7 @@
 import { createContext, createElement, useContext, useRef, type ReactNode } from 'react';
 import { useWorkflow, WorkflowService, WorkflowVersionService } from '@/api/modules/workflows';
 import { RunService } from '@/api/modules/runs';
+import { useConfirm } from '@/context/confirm';
 import type { TNodeRunDetail, TRun, TRunStatus } from '@/types/run.type';
 import { createId } from '../_context/WorkflowEditorStore.context';
 import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
@@ -61,6 +62,9 @@ const useRunWorkflowController = () => {
 	const { state, dispatch } = useWorkflowEditor();
 	const stopped = useRef(false);
 	const starting = useRef(false);
+	// Set once the user has agreed that Run may publish the draft.
+	const publishConfirmed = useRef(false);
+	const { confirm } = useConfirm();
 	const stepResolveRef = useRef<(() => void) | null>(null);
 
 	const ws = state.workflow.workspaceId;
@@ -493,6 +497,20 @@ const useRunWorkflowController = () => {
 							edges: state.edges,
 						});
 			if (workflow.has_unpublished_changes || !workflow.current_version_id) {
+				// Publishing replaces the live version — the one triggers and every
+				// other caller run — so ask once per editor session before doing it
+				// on the user's behalf. A first publish replaces nothing.
+				if (workflow.current_version_id && !publishConfirmed.current) {
+					const confirmed = await confirm({
+						title: 'Publish and run',
+						message:
+							'Runs use the published version, so your changes will be published as the new live version first. Triggers and anything else that runs this workflow will use it from then on.',
+						confirmText: 'Publish & run',
+						tone: 'primary',
+					});
+					if (!confirmed) return;
+					publishConfirmed.current = true;
+				}
 				const published = await WorkflowVersionService.publish(ws, wfId);
 				dispatch({
 					type: 'SET_WORKFLOW_META',
@@ -501,6 +519,7 @@ const useRunWorkflowController = () => {
 						currentVersionNumber: published.version.version,
 					},
 				});
+				notify.info(`Published v${published.version.version} — running it now.`);
 			}
 			await runRemoteWorkflow(ws, wfId);
 		} catch (error) {

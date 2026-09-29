@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, GitBranch, RotateCcw, Loader2, User } from 'lucide-react';
-import { useAgentVersions, useRestoreAgentVersion } from '@/api/modules/agents';
+import { ChevronDown, ChevronRight, GitBranch, RotateCcw, Loader2, User, Copy } from 'lucide-react';
+import { useAgentVersions, useAgentVersion, useRestoreAgentVersion } from '@/api/modules/agents';
+import { notify } from '@/api/core';
 import type { TAgentVersion } from '@/types/agent.type';
 
 type TProps = {
@@ -37,7 +38,16 @@ const VersionRow = ({
 	isCurrent: boolean;
 }) => {
 	const [open, setOpen] = useState(false);
+	const [showFull, setShowFull] = useState(false);
 	const restoreMutation = useRestoreAgentVersion(ws, agentId);
+	// The labelled rows above are a clamped summary; the full snapshot (settings,
+	// tools, skills…) comes from the version's own endpoint, on demand.
+	const { data: detail, isLoading: isDetailLoading } = useAgentVersion(
+		ws,
+		agentId,
+		showFull ? version.version : 0,
+	);
+	const fullJson = detail ? JSON.stringify(detail.snapshot ?? {}, null, 2) : '';
 	const snapshot = version.snapshot ?? {};
 	const rows = SNAPSHOT_FIELDS.filter(({ key }) => key in snapshot);
 
@@ -93,6 +103,36 @@ const VersionRow = ({
 							</div>
 						))
 					)}
+
+					<button
+						onClick={() => setShowFull((v) => !v)}
+						className='flex items-center gap-1 text-[10px] font-bold text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'>
+						{showFull ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+						{showFull ? 'Hide full snapshot' : 'Full snapshot'}
+					</button>
+					{showFull &&
+						(isDetailLoading || !detail ? (
+							<p className='flex items-center gap-1.5 text-[10px] font-semibold text-zinc-400'>
+								<Loader2 size={10} className='animate-spin' />
+								Loading snapshot…
+							</p>
+						) : (
+							<div className='relative'>
+								<button
+									aria-label='Copy snapshot JSON'
+									title='Copy JSON'
+									onClick={() => {
+										navigator.clipboard?.writeText(fullJson);
+										notify.success('Snapshot copied');
+									}}
+									className='absolute top-1.5 right-1.5 rounded-md bg-white p-1 text-zinc-400 hover:text-zinc-700 dark:bg-zinc-900 dark:hover:text-zinc-200'>
+									<Copy size={10} />
+								</button>
+								<pre className='max-h-72 overflow-auto rounded-lg bg-white p-2 pr-7 font-mono text-[9px] leading-relaxed text-zinc-600 dark:bg-zinc-900/40 dark:text-zinc-300'>
+									{fullJson}
+								</pre>
+							</div>
+						))}
 
 					{!isCurrent && (
 						<div className='flex justify-end'>

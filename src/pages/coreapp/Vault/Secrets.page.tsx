@@ -17,6 +17,7 @@ import Modal, {
 } from '@/components/ui/Modal';
 import Table, { TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
 import { primaryBtn, secondaryBtn, dangerBtn } from '@/pages/settings/_shared/buttons';
+import SecretDetailModal from './_partial/SecretDetailModal.partial';
 
 // ── shared styles ─────────────────────────────────────────────
 const inputCls =
@@ -235,6 +236,7 @@ const SecretsPage = () => {
 	const [modalOpen, setModalOpen] = useState(false);
 	const [editTarget, setEditTarget] = useState<TSecret | null>(null);
 	const [deleteTarget, setDeleteTarget] = useState<TSecret | null>(null);
+	const [detailId, setDetailId] = useState<string | null>(null);
 	const [visibleIds, setVisibleIds] = useState<Set<string>>(new Set());
 
 	const openAdd = () => {
@@ -430,9 +432,12 @@ const SecretsPage = () => {
 										</div>
 										<div className='min-w-0 flex-1'>
 											<div className='flex min-w-0 items-center gap-2'>
-												<h2 className='truncate font-mono text-sm font-black text-zinc-900 dark:text-zinc-100'>
+												<button
+													type='button'
+													onClick={() => setDetailId(secret.id)}
+													className='min-w-0 truncate text-left font-mono text-sm font-black text-zinc-900 dark:text-zinc-100'>
 													{secret.key}
-												</h2>
+												</button>
 												{secret.is_secret && (
 													<span className='inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-black text-amber-700 uppercase dark:bg-amber-950/50 dark:text-amber-400'>
 														<Lock size={9} /> Secret
@@ -545,9 +550,13 @@ const SecretsPage = () => {
 													<span className='dark:bg-bg-sidebar flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 dark:text-zinc-400'>
 														<Key size={14} />
 													</span>
-													<span className='truncate font-mono text-sm font-bold text-zinc-900 dark:text-zinc-100'>
+													<button
+														type='button'
+														onClick={() => setDetailId(secret.id)}
+														title='View details'
+														className='hover:text-primary-600 dark:hover:text-primary-400 cursor-pointer truncate font-mono text-sm font-bold text-zinc-900 hover:underline dark:text-zinc-100'>
 														{secret.key}
-													</span>
+													</button>
 													{secret.is_secret && (
 														<span className='hidden shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 sm:inline-flex dark:bg-amber-950/50 dark:text-amber-400'>
 															<Lock size={9} />
@@ -629,6 +638,17 @@ const SecretsPage = () => {
 					</div>
 				</>
 			)}
+
+			{/* Detail */}
+			<SecretDetailModal
+				ws={activeWorkspaceId}
+				secretId={detailId}
+				onClose={() => setDetailId(null)}
+				onEdit={(secret) => {
+					setDetailId(null);
+					openEdit(secret);
+				}}
+			/>
 
 			{/* Add / Edit modal */}
 			<SecretModal

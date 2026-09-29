@@ -65,4 +65,11 @@ export const ArtifactService = {
 		link.remove();
 		URL.revokeObjectURL(url);
 	},
+
+	/** The stored file as a `File`, e.g. to upload it again with a new message. */
+	fetchFile: async (ws: string, id: string, filename: string) => {
+		const response = await axiosClient.get(E.download(ws, id), { responseType: 'blob' });
+		const blob = response.data as Blob;
+		return new File([blob], filename, { type: blob.type });
+	},
 };

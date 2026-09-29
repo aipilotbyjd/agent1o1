@@ -3,24 +3,11 @@ import { Link } from 'react-router';
 import { ChevronRight, Copy, ExternalLink, Play, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { notify } from '@/api/core';
-import { apiConfig } from '@/api/core/config';
 import { useRotateTriggerToken, useRunTrigger, useTriggerEvents } from '@/api/modules/triggers';
 import { useConfirm } from '@/context/confirm';
 import paths from '@/Routes/paths';
-import type { TTrigger, TTriggerEventStatus } from '@/types/trigger.type';
-
-// The public webhook route is `POST /api/hooks/{token}` — outside `/api/v1`,
-// so it is derived from the API base URL rather than an endpoint constant.
-// The trigger resource only carries `token`; it never sends a ready-made URL.
-const webhookUrlFor = (token: string) =>
-	`${apiConfig.baseUrl.replace(/\/v1\/?$/, '')}/hooks/${token}`;
-
-const statusDot: Record<TTriggerEventStatus, string> = {
-	processed: 'bg-emerald-500',
-	accepted: 'bg-sky-500',
-	skipped: 'bg-zinc-300 dark:bg-zinc-600',
-	failed: 'bg-rose-500',
-};
+import type { TTrigger } from '@/types/trigger.type';
+import { eventStatusDot as statusDot, webhookUrlFor } from '../../../_helper/trigger.helper';
 
 const EVENTS_SHOWN = 5;
 

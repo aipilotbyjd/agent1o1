@@ -254,6 +254,8 @@ interface TMessage {
 	/** Files sent with a user message. `id` is the stored artifact's — absent on
 	 *  the copy shown while the turn is still in flight. */
 	attachments?: { id?: string; filename: string; size: number }[];
+	/** The files as sent from this tab, kept so Regenerate can upload them again. */
+	files?: File[];
 	timestamp: string;
 	type?: 'text' | 'table';
 	headers?: string[];
@@ -969,6 +971,8 @@ const BuildPage = () => {
 	// Aborts the turn in flight. `streamMessage` already takes an AbortSignal —
 	// this is the Stop button's end of it.
 	const streamAbortRef = useRef<AbortController | null>(null);
+	// Set while Regenerate downloads the original attachments, before the turn starts.
+	const regeneratingRef = useRef(false);
 	// Message whose hover toolbar is pinned open on touch, where there is no hover.
 	const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
 	const composerRef = useRef<HTMLTextAreaElement | null>(null);
@@ -1595,9 +1599,11 @@ const BuildPage = () => {
 
 	// Sends a message to the real agent — persists the agent first if this is
 	// still an unsaved draft, then starts or continues its conversation.
-	const sendChatMessage = async (messageText: string) => {
+	// `resendFiles` replaces the composer's attachments — Regenerate passes the
+	// ones the original message carried.
+	const sendChatMessage = async (messageText: string, resendFiles?: File[]) => {
 		const trimmed = messageText.trim();
-		const files = [...chatAttachments];
+		const files = resendFiles ?? [...chatAttachments];
 		if ((!trimmed && files.length === 0) || !workspaceId || streamAbortRef.current) return;
 		// The backend requires message text, even when only files are sent.
 		const prompt = trimmed || 'Please review the attached files.';
@@ -1613,6 +1619,7 @@ const BuildPage = () => {
 				files.length > 0
 					? files.map((file) => ({ filename: file.name, size: file.size }))
 					: undefined,
+			files: files.length > 0 ? files : undefined,
 			timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
 		};
 
@@ -1797,7 +1804,8 @@ const BuildPage = () => {
 				timeline: finishedTimeline.length > 0 ? finishedTimeline : undefined,
 			};
 			setChatHistory((prev) => [...prev, agentMsg]);
-			setChatAttachments([]);
+			// A regenerate never used the composer's files, so leave them staged.
+			if (!resendFiles) setChatAttachments([]);
 		} catch (err) {
 			if (!turnStarted) {
 				setChatInput((current) => {
@@ -1874,16 +1882,39 @@ const BuildPage = () => {
 
 	/** Re-runs the last user message. The backend keeps the abandoned turn in the
 	 *  session's history — this appends a fresh one rather than replacing it. */
-	const regenerateLastReply = () => {
-		if (isTyping) return;
+	const regenerateLastReply = async () => {
+		if (isTyping || regeneratingRef.current) return;
 		const lastUser = [...chatHistory].reverse().find((message) => message.sender === 'user');
 		if (!lastUser) return;
+
+		// The files go again too: kept in memory for a message sent from this
+		// tab, downloaded back from their stored artifacts for one loaded from
+		// history. The backend only takes uploads, not artifact ids.
+		let files = lastUser.files;
+		if (!files && lastUser.attachments?.length && workspaceId) {
+			regeneratingRef.current = true;
+			try {
+				files = await Promise.all(
+					lastUser.attachments
+						.filter((attachment) => attachment.id)
+						.map((attachment) =>
+							ArtifactService.fetchFile(workspaceId, String(attachment.id), attachment.filename),
+						),
+				);
+			} catch {
+				notify.error('Could not load the original attachments, so the reply was not regenerated.');
+				return;
+			} finally {
+				regeneratingRef.current = false;
+			}
+		}
+
 		// Drop the reply being replaced so the transcript does not show both.
 		setChatHistory((prev) => {
 			const lastUserIdx = prev.map((m) => m.id).lastIndexOf(lastUser.id);
 			return lastUserIdx === -1 ? prev : prev.slice(0, lastUserIdx);
 		});
-		sendChatMessage(lastUser.retryText ?? lastUser.text);
+		void sendChatMessage(lastUser.retryText ?? lastUser.text, files ?? []);
 	};
 
 	/** Puts a sent message back in the composer and rewinds the transcript to it. */
