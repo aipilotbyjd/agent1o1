@@ -1,4 +1,9 @@
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /onboarding
+Disallow: /workspaces
+Disallow: /billing/
+Disallow: /oauth/
+Disallow: /invitations/
 
-Sitemap: https://boltify.omtanke.studio/sitemap.xml
+Sitemap: https://agent1o1.com/sitemap.xml

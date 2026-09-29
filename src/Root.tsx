@@ -4,6 +4,7 @@ import { useAuth } from './context/auth';
 import useFontSize from './hooks/useFontSize';
 import { ToastContainer } from 'react-toastify';
 import useDarkMode from './hooks/useDarkMode';
+import usePageMeta from './hooks/usePageMeta';
 import AppLogo from './components/AppLogo';
 import colors from './tailwindcss/colors.tailwind';
 
@@ -34,7 +35,7 @@ const RootWrapper = ({ children }: { children: ReactNode }) => {
 const Root = () => {
 	const { isLoading } = useAuth();
 	const location = useLocation();
-
+	usePageMeta();
 
 	useEffect(() => {
 		window.scrollTo(0, 0);
