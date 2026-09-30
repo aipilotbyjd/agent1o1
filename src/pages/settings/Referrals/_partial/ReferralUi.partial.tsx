@@ -5,8 +5,7 @@ import Spinner from '@/components/ui/Spinner';
 import type { TPaginationMeta } from '@/api/core';
 import { TONE_PILL, type TTone } from '../_helper/referral.helper';
 
-// Small building blocks shared by the "Refer & earn" page and the admin
-// referral screens, so both read as one feature.
+// Small building blocks for the "Refer & earn" page.
 
 export const Pill: FC<{ tone: TTone; children: ReactNode }> = ({ tone, children }) => (
 	<span

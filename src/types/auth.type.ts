@@ -17,8 +17,6 @@ export type TUser = {
 	/** Set while an email change awaits confirmation from the new address. */
 	pending_email: string | null;
 	two_factor_enabled: boolean;
-	/** Runs the platform; unlocks the admin screens. Set only from the server's command line. */
-	is_platform_admin?: boolean;
 	avatar: string | null;
 	current_workspace_id: string | null;
 	current_workspace: TWorkspace | null;

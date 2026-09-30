@@ -30,18 +30,6 @@ export const settings: TPage = {
 			text: 'Refer & earn',
 			icon: 'Gift',
 		},
-		adminReferrals: {
-			id: 'adminReferralsSettings',
-			to: ws('settings/admin/referrals'),
-			text: 'Referral program',
-			icon: 'Shield01',
-		},
-		adminAuditLog: {
-			id: 'adminAuditLogSettings',
-			to: ws('settings/admin/audit-log'),
-			text: 'Audit log',
-			icon: 'Clock01',
-		},
 		workspace: {
 			id: 'workspaceGeneralSettings',
 			to: ws('settings/workspace'),

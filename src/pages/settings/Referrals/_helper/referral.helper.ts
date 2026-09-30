@@ -1,10 +1,4 @@
-import type {
-	TReferralRecipient,
-	TReferralRewardStatus,
-	TReferralRewardType,
-	TReferralStatus,
-	TReferralTrigger,
-} from '@/types/referral.type';
+import type { TReferralRewardStatus, TReferralStatus } from '@/types/referral.type';
 
 export type TTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'primary';
 
@@ -32,27 +26,6 @@ export const REWARD_STATUS: Record<TReferralRewardStatus, { label: string; tone:
 	revoked: { label: 'Withdrawn', tone: 'danger' },
 };
 
-export const TRIGGER_LABEL: Record<TReferralTrigger, string> = {
-	signup_verified: 'Signs up and verifies email',
-	activated: 'Starts using the product',
-	first_payment: 'First payment',
-	repeat_payment: 'Later payment',
-	milestone: 'Referrer milestone',
-	manual: 'Granted by an admin',
-};
-
-export const RECIPIENT_LABEL: Record<TReferralRecipient, string> = {
-	referrer: 'Referrer',
-	referee: 'New user',
-};
-
-export const REWARD_TYPE_LABEL: Record<TReferralRewardType, string> = {
-	credits: 'Bonus credits',
-	plan_time: 'Free plan time',
-	stripe_balance_credit: 'Invoice credit',
-	trial_extension: 'Extra trial days',
-};
-
 export const formatCents = (cents: number) =>
 	(cents / 100).toLocaleString('en-US', {
 		style: 'currency',
@@ -61,5 +34,3 @@ export const formatCents = (cents: number) =>
 	});
 
 export const formatNumber = (value: number) => value.toLocaleString('en-US');
-
-export const formatPercent = (ratio: number) => `${Math.round(ratio * 1000) / 10}%`;
