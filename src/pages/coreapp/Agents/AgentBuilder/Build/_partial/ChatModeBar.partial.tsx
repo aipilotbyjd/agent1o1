@@ -30,9 +30,15 @@ const ChatModeBar = ({
 	return (
 		<div className='flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
 			<ShieldCheck size={13} className='shrink-0' />
-			<span className='min-w-0 flex-1 truncate'>{AUTONOMY_MODE_META[mode].description}</span>
+			<span className='min-w-0 flex-1 truncate'>
+				{testRun
+					? 'Actions are simulated, so nothing waits for approval.'
+					: AUTONOMY_MODE_META[mode].description}
+			</span>
 			{testRun && (
-				<span className='flex items-center gap-1 rounded-md bg-violet-50 px-1.5 py-0.5 font-bold text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'>
+				<span
+					title='Test run is on — turn it off in Settings to approve actions for real.'
+					className='flex items-center gap-1 rounded-md bg-violet-50 px-1.5 py-0.5 font-bold text-violet-700 dark:bg-violet-950/60 dark:text-violet-300'>
 					<FlaskConical size={11} /> Test run
 				</span>
 			)}

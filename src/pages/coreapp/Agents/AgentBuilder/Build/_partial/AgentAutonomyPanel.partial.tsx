@@ -192,6 +192,14 @@ const AgentAutonomyPanel = ({ ws, agentId, nodeName }: TProps) => {
 				})}
 			</div>
 
+			{agent.test_mode && (
+				<p className='flex items-start gap-2 rounded-xl bg-violet-50 px-3 py-2 text-[11px] leading-normal font-semibold text-violet-700 dark:bg-violet-950/40 dark:text-violet-300'>
+					<FlaskConical size={13} className='mt-px shrink-0' />
+					Test run is on, so no action waits for approval — each one is simulated instead.
+					Turn it off to approve actions for real.
+				</p>
+			)}
+
 			<div className='flex items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
 				<div className='flex items-center gap-3'>
 					<FlaskConical size={16} className='text-primary-500 shrink-0' />
@@ -200,7 +208,8 @@ const AgentAutonomyPanel = ({ ws, agentId, nodeName }: TProps) => {
 							Test run
 						</span>
 						<span className='mt-0.5 text-[10px] leading-normal font-semibold text-zinc-400'>
-							Simulate every action — nothing is really sent, posted or changed.
+							Simulate every action instead of running or asking — nothing is really
+							sent, posted or changed.
 						</span>
 					</div>
 				</div>

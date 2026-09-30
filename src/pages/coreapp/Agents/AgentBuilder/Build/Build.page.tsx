@@ -141,7 +141,17 @@ import type { TAgentMessage, TAgentToolBinding, TSubagentTask } from '@/types/ag
 import type { TAgentSkill } from '@/types/agent-skill.type';
 import { useAgentChatStore } from '@/store/agentChat.store';
 import { useAgentBuilderStore } from '@/store/agentBuilder.store';
-import { XCircle, Wrench, FileDown, GitMerge, Brain, ScrollText, PauseCircle } from 'lucide-react';
+import {
+	XCircle,
+	Wrench,
+	FileDown,
+	GitMerge,
+	Brain,
+	ScrollText,
+	PauseCircle,
+	FlaskConical,
+	Ban,
+} from 'lucide-react';
 import AgentDataPanel from './_partial/AgentDataPanel.partial';
 import AgentTagsPanel from './_partial/AgentTagsPanel.partial';
 import AgentKnowledgeSourcesPanel from './_partial/AgentKnowledgeSourcesPanel.partial';
@@ -165,7 +175,11 @@ import { useWorkspace } from '@/api/modules/workspaces';
 import { useRealtime } from '@/context/realtime';
 import type { IEchoLike } from '@/api/modules/workflow-builder/workflow-builder.realtime';
 import type { TAgentSessionStreamEvent } from '@/types/agent.type';
-import type { TAgentActionDecision } from '@/types/agent-action.type';
+import type {
+	TAgentAction,
+	TAgentActionDecision,
+	TAgentActionStatus,
+} from '@/types/agent-action.type';
 
 /** What a reply paused on approvals shows when the agent wrote nothing before stopping. */
 const AWAITING_APPROVAL_TEXT = '_Waiting for approval before carrying on._';
@@ -552,6 +566,29 @@ const SUBAGENT_STATUS: Record<TSubagentTask['status'], { label: string; classNam
 	failed: { label: 'Failed', className: 'text-rose-600 dark:text-rose-400' },
 };
 
+type TStepBadge = { label: string; className: string };
+
+/** How a call's approval ended, when that differs from simply running. */
+const ACTION_OUTCOME: Partial<Record<TAgentActionStatus, TStepBadge>> = {
+	simulated: { label: 'Simulated', className: 'text-violet-600 dark:text-violet-300' },
+	denied: { label: 'Blocked', className: 'text-rose-600 dark:text-rose-400' },
+	rejected: { label: 'Rejected', className: 'text-rose-600 dark:text-rose-400' },
+	expired: { label: 'Expired', className: 'text-zinc-500 dark:text-zinc-400' },
+	cancelled: { label: 'Cancelled', className: 'text-zinc-500 dark:text-zinc-400' },
+};
+
+const APPROVED_BADGE: TStepBadge = {
+	label: 'Approved',
+	className: 'text-emerald-600 dark:text-emerald-400',
+};
+
+const SKIPPED_STATUSES: TAgentActionStatus[] = ['denied', 'rejected', 'expired', 'cancelled'];
+
+const actionBadge = (action: TAgentAction): TStepBadge | undefined =>
+	action.decided_by && ['approved', 'running', 'executed'].includes(action.status)
+		? APPROVED_BADGE
+		: ACTION_OUTCOME[action.status];
+
 const ToolStepDetail = ({ label, children }: { label: string; children: ReactNode }) => (
 	<div className='min-w-0'>
 		<p className='mb-1 text-[10px] font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
@@ -632,11 +669,14 @@ const ToolStep = ({
 	item,
 	isLast,
 	task,
+	action,
 	ws,
 }: {
 	item: TToolItem;
 	isLast: boolean;
 	task?: TSubagentTask;
+	/** The approvals record for this call, when the gate weighed it. */
+	action?: TAgentAction;
 	ws: string;
 }) => {
 	const [expanded, setExpanded] = useState(false);
@@ -645,14 +685,19 @@ const ToolStep = ({
 	const args = Object.entries(item.arguments).filter(([key]) => !(isSubagent && key === 'agent'));
 	const hasDetail = args.length > 0 || Boolean(item.output) || Boolean(task?.result || task?.error);
 
-	const dot: 'running' | 'waiting' | 'done' | 'error' = task
+	const dot: TToolItem['status'] | 'simulated' | 'skipped' = task
 		? task.status === 'completed'
 			? 'done'
 			: task.status === 'failed'
 				? 'error'
 				: 'running'
-		: item.status;
-	const subagentStatus = task ? SUBAGENT_STATUS[task.status] : undefined;
+		: action?.status === 'simulated' && item.status === 'done'
+			? 'simulated'
+			: action && SKIPPED_STATUSES.includes(action.status) && item.status === 'done'
+				? 'skipped'
+				: item.status;
+	const badge = task ? SUBAGENT_STATUS[task.status] : action ? actionBadge(action) : undefined;
+	const badgeTitle = action?.decision_note ?? action?.reason?.detail ?? undefined;
 	const AgentIcon = task ? agentIconFor(task.agent.icon) : null;
 
 	return (
@@ -668,6 +713,8 @@ const ToolStep = ({
 				{dot === 'waiting' && <PauseCircle size={11} className='text-amber-500' />}
 				{dot === 'done' && <CheckCircle2 size={11} className='text-emerald-500' />}
 				{dot === 'error' && <XCircle size={11} className='text-rose-500' />}
+				{dot === 'simulated' && <FlaskConical size={11} className='text-violet-500' />}
+				{dot === 'skipped' && <Ban size={11} className='text-rose-500' />}
 			</span>
 			<div className='rounded-xl border border-zinc-200/80 bg-white dark:border-zinc-800/85 dark:bg-zinc-900/60'>
 				<div className='flex min-w-0 items-center'>
@@ -695,9 +742,11 @@ const ToolStep = ({
 								</span>
 							)}
 						</span>
-						{subagentStatus && (
-							<span className={`shrink-0 text-[11px] font-bold ${subagentStatus.className}`}>
-								{subagentStatus.label}
+						{badge && (
+							<span
+								title={badgeTitle}
+								className={`shrink-0 text-[11px] font-bold ${badge.className}`}>
+								{badge.label}
 							</span>
 						)}
 						{hasDetail && (
@@ -767,11 +816,13 @@ const ToolStep = ({
 const ToolTimeline = ({
 	items,
 	tasks,
+	actions = [],
 	ws,
 	className = '',
 }: {
 	items: TChatTimelineItem[];
 	tasks: TSubagentTask[];
+	actions?: TAgentAction[];
 	ws: string;
 	className?: string;
 }) => {
@@ -786,6 +837,7 @@ const ToolTimeline = ({
 					item={item}
 					isLast={index === tools.length - 1}
 					task={item.taskId ? tasks.find((task) => task.id === item.taskId) : undefined}
+					action={actions.find((action) => action.tool_call_id === item.id)}
 					ws={ws}
 				/>
 			))}
@@ -1886,6 +1938,11 @@ const BuildPage = () => {
 				agentIdForRun,
 				sessionId,
 			);
+			// Calls the gate simulated, blocked or let through were recorded
+			// during the turn — fetch them so each step shows how it went.
+			void queryClient.invalidateQueries({
+				queryKey: agentActionKeys.forSession(workspaceId, agentIdForRun, sessionId),
+			});
 
 			const finishedTimeline = streamTimelineRef.current;
 			const streamedText = finishedTimeline
@@ -3112,6 +3169,7 @@ const BuildPage = () => {
 																<ToolTimeline
 																	items={message.timeline}
 																	tasks={subagentTasks ?? []}
+																	actions={sessionActions}
 																	ws={workspaceId}
 																	className='mb-3'
 																/>
@@ -3367,6 +3425,7 @@ const BuildPage = () => {
 											<ToolTimeline
 												items={streamTimeline}
 												tasks={subagentTasks ?? []}
+												actions={sessionActions}
 												ws={workspaceId}
 												className='mb-3'
 											/>
