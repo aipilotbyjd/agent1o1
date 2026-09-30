@@ -72,7 +72,11 @@ export type TNotificationEventKey =
 	| 'billing.credits_exhausted'
 	| 'billing.overage_cap_reached'
 	| 'agent.reflection_run_completed'
-	| 'agent.session_evaluation_notify';
+	| 'agent.session_evaluation_notify'
+	| 'referral.signed_up'
+	| 'referral.reward_granted'
+	| 'referral.milestone_reached'
+	| 'referral.plan_time_ending';
 
 /** The fixed catalog of toggleable events, from GET /notifications/events. */
 export type TNotificationEventCatalogEntry = {

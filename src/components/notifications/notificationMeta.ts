@@ -3,6 +3,7 @@ import {
 	Coins,
 	CreditCard,
 	Gauge,
+	Gift,
 	Hand,
 	PlugZap,
 	Sparkles,
@@ -110,6 +111,30 @@ const BY_TYPE: Record<string, TNotificationMeta> = {
 	},
 	'billing.trial_ending': {
 		icon: CreditCard,
+		tone: 'warning',
+		action: 'View plans',
+		href: (ws) => paths.billingPlans(ws),
+	},
+	'referral.signed_up': {
+		icon: Gift,
+		tone: 'info',
+		action: 'View referrals',
+		href: (ws) => paths.referrals(ws),
+	},
+	'referral.reward_granted': {
+		icon: Gift,
+		tone: 'success',
+		action: 'View rewards',
+		href: (ws) => paths.referrals(ws),
+	},
+	'referral.milestone_reached': {
+		icon: Gift,
+		tone: 'success',
+		action: 'View referrals',
+		href: (ws) => paths.referrals(ws),
+	},
+	'referral.plan_time_ending': {
+		icon: Gift,
 		tone: 'warning',
 		action: 'View plans',
 		href: (ws) => paths.billingPlans(ws),

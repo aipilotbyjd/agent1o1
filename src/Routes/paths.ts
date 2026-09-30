@@ -54,6 +54,7 @@ const paths = {
 	members: (workspaceId: string) => buildPath(settingsPages.members.to, { workspaceId }),
 	notificationSettings: (workspaceId: string) =>
 		buildPath(settingsPages.notifications.to, { workspaceId }),
+	referrals: (workspaceId: string) => buildPath(settingsPages.referrals.to, { workspaceId }),
 	billing: (workspaceId: string) => buildPath(settingsPages.billing.to, { workspaceId }),
 	billingPlans: (workspaceId: string) => buildPath(billingPages.plans.to, { workspaceId }),
 	billingCredits: (workspaceId: string) => buildPath(billingPages.credits.to, { workspaceId }),

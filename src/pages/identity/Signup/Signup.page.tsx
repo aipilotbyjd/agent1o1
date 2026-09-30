@@ -8,6 +8,7 @@ import { useAuth } from '@/context/auth';
 import useAfterAuthRedirect, { AFTER_AUTH_PATH } from '@/hooks/useAfterAuthRedirect';
 import pages from '@/Routes/pages';
 import applyApiFieldErrors from '@/utils/apiFormErrors.util';
+import { clearReferralAttribution, getReferralAttribution } from '@/utils/referralAttribution.util';
 import Icon from '@/components/icon/Icon';
 import Spinner from '@/components/ui/Spinner';
 import Progress from '@/components/ui/Progress';
@@ -66,7 +67,13 @@ const RegisterPage = () => {
 		validationSchema,
 		onSubmit: async (values) => {
 			try {
-				await register.mutateAsync(values);
+				const referral = getReferralAttribution();
+				await register.mutateAsync({
+					...values,
+					referral_code: referral?.code,
+					referral_visitor_id: referral?.visitor_id,
+				});
+				clearReferralAttribution();
 				await redirectAfterAuth(from);
 			} catch (error) {
 				applyApiFieldErrors(error, formik);

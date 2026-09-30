@@ -24,6 +24,12 @@ export const settings: TPage = {
 			text: 'Notifications',
 			icon: 'Notification01',
 		},
+		referrals: {
+			id: 'referralsSettings',
+			to: ws('settings/referrals'),
+			text: 'Refer & earn',
+			icon: 'Gift',
+		},
 		workspace: {
 			id: 'workspaceGeneralSettings',
 			to: ws('settings/workspace'),
