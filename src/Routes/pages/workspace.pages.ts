@@ -54,6 +54,12 @@ export const workspace: TPage = {
 			text: 'Vault',
 			icon: 'Lock',
 		},
+		approvals: {
+			id: 'approvals',
+			to: ws('approvals'),
+			text: 'Approvals',
+			icon: 'CheckmarkCircle02',
+		},
 		trail: {
 			id: 'trail',
 			to: ws('trail'),

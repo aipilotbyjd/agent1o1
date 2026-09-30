@@ -47,6 +47,7 @@ const paths = {
 		buildPath(agentEditorPages.insights.to, { workspaceId, agentId }) + (tab ? `?tab=${tab}` : ''),
 
 	apps: (workspaceId: string) => buildPath(workspacePages.apps.to, { workspaceId }),
+	approvals: (workspaceId: string) => buildPath(workspacePages.approvals.to, { workspaceId }),
 	trail: (workspaceId: string, runId?: string) =>
 		buildPath(workspacePages.trail.to, { workspaceId }) + (runId ? `?run=${runId}` : ''),
 
@@ -55,6 +56,7 @@ const paths = {
 	notificationSettings: (workspaceId: string) =>
 		buildPath(settingsPages.notifications.to, { workspaceId }),
 	referrals: (workspaceId: string) => buildPath(settingsPages.referrals.to, { workspaceId }),
+	agentPolicy: (workspaceId: string) => buildPath(settingsPages.agentPolicy.to, { workspaceId }),
 	billing: (workspaceId: string) => buildPath(settingsPages.billing.to, { workspaceId }),
 	billingPlans: (workspaceId: string) => buildPath(billingPages.plans.to, { workspaceId }),
 	billingCredits: (workspaceId: string) => buildPath(billingPages.credits.to, { workspaceId }),

@@ -38,12 +38,16 @@ export const AgentVersionEndpoints = {
 export const AgentToolBindingEndpoints = {
 	list: (ws: string, agentId: string) => `${agent(ws, agentId)}/tool-bindings`,
 	create: (ws: string, agentId: string) => `${agent(ws, agentId)}/tool-bindings`,
+	update: (ws: string, agentId: string, id: string) => `${agent(ws, agentId)}/tool-bindings/${id}`,
 	delete: (ws: string, agentId: string, id: string) => `${agent(ws, agentId)}/tool-bindings/${id}`,
 } as const;
 
 export const AgentWorkflowToolEndpoints = {
 	list: (ws: string, agentId: string) => `${agent(ws, agentId)}/workflows`,
 	attach: (ws: string, agentId: string, workflowId: string) =>
+		`${agent(ws, agentId)}/workflows/${workflowId}`,
+	/** Sets the approval rule for running the workflow as a tool. */
+	update: (ws: string, agentId: string, workflowId: string) =>
 		`${agent(ws, agentId)}/workflows/${workflowId}`,
 	detach: (ws: string, agentId: string, workflowId: string) =>
 		`${agent(ws, agentId)}/workflows/${workflowId}`,

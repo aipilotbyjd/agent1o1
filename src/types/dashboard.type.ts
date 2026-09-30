@@ -61,6 +61,8 @@ export type TDashboardOverview = {
 	runs: TRunTotals;
 	in_flight: Record<string, number>;
 	pending_approvals: number;
+	/** Agent actions waiting on a person — the approvals inbox. */
+	pending_agent_actions?: number;
 	credits: TDashboardCredits;
 	counts: TDashboardCounts;
 	recent_runs: TRun[];

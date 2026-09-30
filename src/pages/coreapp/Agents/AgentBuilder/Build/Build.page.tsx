@@ -1,4 +1,13 @@
-import { useState, useRef, useEffect, useMemo, memo, type ReactNode, type RefObject } from 'react';
+import {
+	useState,
+	useRef,
+	useEffect,
+	useEffectEvent,
+	useMemo,
+	memo,
+	type ReactNode,
+	type RefObject,
+} from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -132,12 +141,34 @@ import type { TAgentMessage, TAgentToolBinding, TSubagentTask } from '@/types/ag
 import type { TAgentSkill } from '@/types/agent-skill.type';
 import { useAgentChatStore } from '@/store/agentChat.store';
 import { useAgentBuilderStore } from '@/store/agentBuilder.store';
-import { XCircle, Wrench, FileDown, GitMerge, Brain, ScrollText } from 'lucide-react';
+import { XCircle, Wrench, FileDown, GitMerge, Brain, ScrollText, PauseCircle } from 'lucide-react';
 import AgentDataPanel from './_partial/AgentDataPanel.partial';
 import AgentTagsPanel from './_partial/AgentTagsPanel.partial';
 import AgentKnowledgeSourcesPanel from './_partial/AgentKnowledgeSourcesPanel.partial';
 import AgentSideDrawer, { AttachToggle } from './_partial/AgentSideDrawer.partial';
 import AgentChatsPanel from './_partial/AgentChatsPanel.partial';
+import AgentApprovalCards from './_partial/AgentApprovalCards.partial';
+import AgentPlanCard from './_partial/AgentPlanCard.partial';
+import AgentAutonomyPanel from './_partial/AgentAutonomyPanel.partial';
+import ChatModeBar from './_partial/ChatModeBar.partial';
+import {
+	AgentActionService,
+	agentActionKeys,
+	agentPlanKeys,
+	subscribeToAgentActions,
+	useAgentPlans,
+	useApproveAgentPlan,
+	useRejectAgentPlan,
+	useSessionAgentActions,
+} from '@/api/modules/agent-actions';
+import { useWorkspace } from '@/api/modules/workspaces';
+import { useRealtime } from '@/context/realtime';
+import type { IEchoLike } from '@/api/modules/workflow-builder/workflow-builder.realtime';
+import type { TAgentSessionStreamEvent } from '@/types/agent.type';
+import type { TAgentActionDecision } from '@/types/agent-action.type';
+
+/** What a reply paused on approvals shows when the agent wrote nothing before stopping. */
+const AWAITING_APPROVAL_TEXT = '_Waiting for approval before carrying on._';
 
 const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 	messages
@@ -147,7 +178,7 @@ const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 			sender: message.role === 'user' ? ('user' as const) : ('agent' as const),
 			text:
 				typeof message.content === 'string'
-					? message.content
+					? message.content || (message.awaiting_approval ? AWAITING_APPROVAL_TEXT : '')
 					: JSON.stringify(message.content, null, 2),
 			timestamp: new Date(message.created_at).toLocaleTimeString([], {
 				hour: '2-digit',
@@ -160,7 +191,9 @@ const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 						id: call.id,
 						toolName: call.name,
 						arguments: call.arguments ?? {},
-						status: 'done' as const,
+						status: message.pending_tool_call_ids?.includes(call.id)
+							? ('waiting' as const)
+							: ('done' as const),
 						output: message.tool_results?.find((result) => result.id === call.id)?.output,
 						taskId: message.subagent_task_ids?.[call.id],
 					}))
@@ -231,7 +264,8 @@ type TChatTimelineItem =
 			id: string;
 			toolName: string;
 			arguments: Record<string, unknown>;
-			status: 'running' | 'done' | 'error';
+			/** `waiting`: paused for a person to approve it. */
+			status: 'running' | 'waiting' | 'done' | 'error';
 			output?: string;
 			/** The subagent task an `invoke_agent` call started. */
 			taskId?: string;
@@ -611,7 +645,7 @@ const ToolStep = ({
 	const args = Object.entries(item.arguments).filter(([key]) => !(isSubagent && key === 'agent'));
 	const hasDetail = args.length > 0 || Boolean(item.output) || Boolean(task?.result || task?.error);
 
-	const dot: 'running' | 'done' | 'error' = task
+	const dot: 'running' | 'waiting' | 'done' | 'error' = task
 		? task.status === 'completed'
 			? 'done'
 			: task.status === 'failed'
@@ -631,6 +665,7 @@ const ToolStep = ({
 			)}
 			<span className='absolute top-1.5 left-0 flex h-[19px] w-[19px] items-center justify-center rounded-full border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900'>
 				{dot === 'running' && <Loader2 size={11} className='text-primary-500 animate-spin' />}
+				{dot === 'waiting' && <PauseCircle size={11} className='text-amber-500' />}
 				{dot === 'done' && <CheckCircle2 size={11} className='text-emerald-500' />}
 				{dot === 'error' && <XCircle size={11} className='text-rose-500' />}
 			</span>
@@ -1023,6 +1058,35 @@ const BuildPage = () => {
 		currentAgentId ?? '',
 		conversationId ?? '',
 	);
+
+	// Approvals — actions the open chat's paused turn waits on (its subagents'
+	// included), and a plan waiting for review in Plan mode.
+	const { data: sessionActions } = useSessionAgentActions(
+		workspaceId,
+		currentAgentId ?? '',
+		conversationId ?? null,
+	);
+	const pendingActions = (sessionActions ?? []).filter((action) => action.status === 'pending');
+	const { data: sessionPlans } = useAgentPlans(
+		workspaceId,
+		currentAgentId ?? '',
+		conversationId ?? null,
+	);
+	// Plans come newest first; only the latest can still be open.
+	const proposedPlan = sessionPlans?.[0]?.status === 'proposed' ? sessionPlans[0] : null;
+	const approvePlanMutation = useApproveAgentPlan(
+		workspaceId,
+		currentAgentId ?? '',
+		conversationId ?? '',
+	);
+	const rejectPlanMutation = useRejectAgentPlan(
+		workspaceId,
+		currentAgentId ?? '',
+		conversationId ?? '',
+	);
+	// "Always allow" needs agent.manage — editors and up.
+	const { data: activeWorkspace } = useWorkspace(workspaceId);
+	const canManageAgents = ['owner', 'admin', 'editor'].includes(activeWorkspace?.role ?? '');
 
 	// A chat another conversation started as a subagent task. The parent is only
 	// linkable when it belongs to this agent (a "Me" clone) — the aside already
@@ -1597,6 +1661,157 @@ const BuildPage = () => {
 		}
 	};
 
+	/**
+	 * Plays one turn's server-sent events into the live timeline, then does
+	 * the turn's follow-up (exported files, refreshed panels). Shared by
+	 * sending a message and by deciding on a paused turn's actions, which
+	 * answers with the resumed turn's events. `paused` is set when the turn
+	 * stopped to wait for approval rather than finishing.
+	 */
+	const consumeTurnEvents = async (
+		events: AsyncIterable<TAgentSessionStreamEvent>,
+		agentIdForRun: string,
+		sessionId: string,
+	): Promise<{ replyText: string; paused: boolean }> => {
+		// Filenames exported during this turn, resolved to artifacts once it ends.
+		const exportedFilenames: string[] = [];
+		let updatedInstructions = false;
+		let changedSkills = false;
+		let rememberedFacts = false;
+		let replyText = '';
+		let sawComplete = false;
+		let paused = false;
+
+		// The reply arrives as server-sent events on `.../messages/stream` — the
+		// old backend broadcast it over Echo instead, which this one never does.
+		for await (const event of events) {
+			if (event.event === 'delta') {
+				setTimeline((prev) => {
+					const last = prev[prev.length - 1];
+					if (last && last.kind === 'text') {
+						return [...prev.slice(0, -1), { ...last, text: last.text + event.delta }];
+					}
+					return [
+						...prev,
+						{ kind: 'text', id: `text-${prev.length}`, text: event.delta },
+					];
+				});
+				continue;
+			}
+
+			if (event.event === 'tool-call') {
+				const args = (event.arguments ?? {}) as Record<string, unknown>;
+				if (event.name === EXPORT_ARTIFACT_TOOL && typeof args.filename === 'string') {
+					exportedFilenames.push(exportedFilename(args.filename, args.format));
+				}
+				setTimeline((prev) => [
+					...prev,
+					{
+						kind: 'tool',
+						id: event.id,
+						toolName: event.name,
+						arguments: args,
+						status: 'running',
+					},
+				]);
+				continue;
+			}
+
+			if (event.event === 'tool-result') {
+				if (event.successful) {
+					if (event.name === UPDATE_INSTRUCTIONS_TOOL) updatedInstructions = true;
+					if (event.name === CREATE_SKILL_TOOL || event.name === UPDATE_SKILL_TOOL)
+						changedSkills = true;
+					if (event.name === REMEMBER_TOOL) rememberedFacts = true;
+				}
+				if (event.name === INVOKE_AGENT_TOOL) {
+					void queryClient.invalidateQueries({
+						queryKey: agentSubagentKeys.tasks(workspaceId, agentIdForRun, sessionId),
+					});
+				}
+				setTimeline((prev) =>
+					prev.map((item) =>
+						item.kind === 'tool' && item.id === event.id
+							? {
+									...item,
+									status: event.successful ? 'done' : 'error',
+									output: event.output,
+									taskId: event.result?.task_id,
+								}
+							: item,
+					),
+				);
+				continue;
+			}
+
+			if (event.event === 'approval-required') {
+				// The turn is pausing on these calls — show them as waiting,
+				// and fetch the cards to decide them.
+				const waitingIds = new Set(event.actions.map((action) => action.tool_call_id));
+				setTimeline((prev) =>
+					prev.map((item) =>
+						item.kind === 'tool' && waitingIds.has(item.id)
+							? { ...item, status: 'waiting' }
+							: item,
+					),
+				);
+				void queryClient.invalidateQueries({
+					queryKey: agentActionKeys.forSession(workspaceId, agentIdForRun, sessionId),
+				});
+				continue;
+			}
+
+			if (event.event === 'complete') {
+				sawComplete = true;
+				paused = event.status === 'awaiting_approval';
+				// The persisted reply. Same string the deltas spell out, and the
+				// fallback when a provider streamed none.
+				replyText = event.text ?? replyText;
+				continue;
+			}
+
+			if (event.event === 'error') {
+				throw new Error(event.message || 'The agent failed to respond.');
+			}
+		}
+
+		if (!sawComplete) {
+			throw new Error('The connection dropped before the agent finished replying.');
+		}
+
+		if (exportedFilenames.length > 0) {
+			await appendExportedArtifacts(agentIdForRun, exportedFilenames);
+		}
+
+		// The agent rewrote its own instructions; refetching the agent
+		// re-syncs the settings form, and the save made a new version.
+		if (updatedInstructions) {
+			void queryClient.invalidateQueries({
+				queryKey: agentKeys.detail(workspaceId, agentIdForRun),
+			});
+			void queryClient.invalidateQueries({
+				queryKey: agentVersionKeys.list(workspaceId, agentIdForRun),
+			});
+		}
+
+		// The agent saved or edited a skill; refresh the Skills card and library.
+		if (changedSkills) {
+			void queryClient.invalidateQueries({
+				queryKey: agentSkillAttachmentKeys.list(workspaceId, agentIdForRun),
+			});
+			void queryClient.invalidateQueries({ queryKey: agentSkillKeys.all(workspaceId) });
+		}
+
+		// The agent saved a fact; refresh the Memory panel.
+		if (rememberedFacts) {
+			void queryClient.invalidateQueries({
+				queryKey: agentMemoryKeys.list(workspaceId, agentIdForRun),
+			});
+		}
+
+		return { replyText, paused };
+	};
+
 	// Sends a message to the real agent — persists the agent first if this is
 	// still an unsaved draft, then starts or continues its conversation.
 	// `resendFiles` replaces the composer's attachments — Regenerate passes the
@@ -1660,131 +1875,17 @@ const BuildPage = () => {
 			setChatHistory((prev) => [...prev, userMsg]);
 			turnStarted = true;
 
-			// Filenames exported during this turn, resolved to artifacts once it ends.
-			const exportedFilenames: string[] = [];
-			let updatedInstructions = false;
-			let changedSkills = false;
-			let rememberedFacts = false;
-			let replyText = '';
-			let sawComplete = false;
-
-			// The reply arrives as server-sent events on `.../messages/stream` — the
-			// old backend broadcast it over Echo instead, which this one never does.
-			for await (const event of AgentSessionService.streamMessage(
-				workspaceId,
+			const { replyText, paused } = await consumeTurnEvents(
+				AgentSessionService.streamMessage(
+					workspaceId,
+					agentIdForRun,
+					sessionId,
+					{ message: prompt, attachments: files },
+					controller.signal,
+				),
 				agentIdForRun,
 				sessionId,
-				{ message: prompt, attachments: files },
-				controller.signal,
-			)) {
-				if (event.event === 'delta') {
-					setTimeline((prev) => {
-						const last = prev[prev.length - 1];
-						if (last && last.kind === 'text') {
-							return [
-								...prev.slice(0, -1),
-								{ ...last, text: last.text + event.delta },
-							];
-						}
-						return [
-							...prev,
-							{ kind: 'text', id: `text-${prev.length}`, text: event.delta },
-						];
-					});
-					continue;
-				}
-
-				if (event.event === 'tool-call') {
-					const args = (event.arguments ?? {}) as Record<string, unknown>;
-					if (event.name === EXPORT_ARTIFACT_TOOL && typeof args.filename === 'string') {
-						exportedFilenames.push(exportedFilename(args.filename, args.format));
-					}
-					setTimeline((prev) => [
-						...prev,
-						{
-							kind: 'tool',
-							id: event.id,
-							toolName: event.name,
-							arguments: args,
-							status: 'running',
-						},
-					]);
-					continue;
-				}
-
-				if (event.event === 'tool-result') {
-					if (event.successful) {
-						if (event.name === UPDATE_INSTRUCTIONS_TOOL) updatedInstructions = true;
-						if (event.name === CREATE_SKILL_TOOL || event.name === UPDATE_SKILL_TOOL)
-							changedSkills = true;
-						if (event.name === REMEMBER_TOOL) rememberedFacts = true;
-					}
-					if (event.name === INVOKE_AGENT_TOOL) {
-						void queryClient.invalidateQueries({
-							queryKey: agentSubagentKeys.tasks(workspaceId, agentIdForRun, sessionId),
-						});
-					}
-					setTimeline((prev) =>
-						prev.map((item) =>
-							item.kind === 'tool' && item.id === event.id
-								? {
-										...item,
-										status: event.successful ? 'done' : 'error',
-										output: event.output,
-										taskId: event.result?.task_id,
-									}
-								: item,
-						),
-					);
-					continue;
-				}
-
-				if (event.event === 'complete') {
-					sawComplete = true;
-					// The persisted reply. Same string the deltas spell out, and the
-					// fallback when a provider streamed none.
-					replyText = event.text ?? replyText;
-					continue;
-				}
-
-				if (event.event === 'error') {
-					throw new Error(event.message || 'The agent failed to respond.');
-				}
-			}
-
-			if (!sawComplete) {
-				throw new Error('The connection dropped before the agent finished replying.');
-			}
-
-			if (exportedFilenames.length > 0) {
-				await appendExportedArtifacts(agentIdForRun, exportedFilenames);
-			}
-
-			// The agent rewrote its own instructions; refetching the agent
-			// re-syncs the settings form, and the save made a new version.
-			if (updatedInstructions) {
-				void queryClient.invalidateQueries({
-					queryKey: agentKeys.detail(workspaceId, agentIdForRun),
-				});
-				void queryClient.invalidateQueries({
-					queryKey: agentVersionKeys.list(workspaceId, agentIdForRun),
-				});
-			}
-
-			// The agent saved or edited a skill; refresh the Skills card and library.
-			if (changedSkills) {
-				void queryClient.invalidateQueries({
-					queryKey: agentSkillAttachmentKeys.list(workspaceId, agentIdForRun),
-				});
-				void queryClient.invalidateQueries({ queryKey: agentSkillKeys.all(workspaceId) });
-			}
-
-			// The agent saved a fact; refresh the Memory panel.
-			if (rememberedFacts) {
-				void queryClient.invalidateQueries({
-					queryKey: agentMemoryKeys.list(workspaceId, agentIdForRun),
-				});
-			}
+			);
 
 			const finishedTimeline = streamTimelineRef.current;
 			const streamedText = finishedTimeline
@@ -1795,7 +1896,7 @@ const BuildPage = () => {
 			const agentMsg: TMessage = {
 				id: 'agent-' + Date.now(),
 				sender: 'agent',
-				text: replyText || streamedText,
+				text: replyText || streamedText || (paused ? AWAITING_APPROVAL_TEXT : ''),
 				timestamp: new Date().toLocaleTimeString([], {
 					hour: '2-digit',
 					minute: '2-digit',
@@ -1879,6 +1980,120 @@ const BuildPage = () => {
 	const stopStreaming = () => {
 		streamAbortRef.current?.abort();
 	};
+
+	/**
+	 * Rebuilds the transcript from the server. A turn resumed after approvals
+	 * is written onto the reply it paused on, so the settled conversation is
+	 * the backend's, not what this tab pieced together while it streamed.
+	 */
+	const reloadTranscript = async () => {
+		const { data } = await refetchSession();
+		if (data && String(data.id) === String(conversationId)) {
+			setChatHistory(transcriptToMessages(data.messages ?? []));
+		}
+	};
+
+	/**
+	 * Records decisions on the paused turn's actions. When that leaves the turn
+	 * fully decided, the backend carries it on in the same response — streamed
+	 * here like any reply; otherwise only the decisions are recorded and the
+	 * rest of the cards wait.
+	 */
+	const decideActions = async (decisions: TAgentActionDecision[]) => {
+		const agentIdForRun = currentAgentId;
+		const sessionId = conversationId;
+		if (!workspaceId || !agentIdForRun || !sessionId || streamAbortRef.current) return;
+
+		const controller = new AbortController();
+		streamAbortRef.current = controller;
+		setIsSending(true);
+		setIsTyping(true);
+		setTimeline(() => []);
+		followLatestRef.current = true;
+
+		try {
+			const result = await AgentActionService.decideInChat(
+				workspaceId,
+				agentIdForRun,
+				sessionId,
+				{ decisions },
+				controller.signal,
+			);
+
+			if (result.resumed) {
+				await consumeTurnEvents(result.events, agentIdForRun, sessionId);
+			}
+		} catch (err) {
+			if (!controller.signal.aborted) {
+				notify.error(err instanceof Error ? err.message : 'Could not record the decision.');
+			}
+		} finally {
+			streamAbortRef.current = null;
+			setIsSending(false);
+			setIsTyping(false);
+			setTimeline(() => []);
+			void queryClient.invalidateQueries({
+				queryKey: agentActionKeys.forSession(workspaceId, agentIdForRun, sessionId),
+			});
+			void queryClient.invalidateQueries({
+				queryKey: agentSessionKeys.list(workspaceId, agentIdForRun),
+			});
+			await reloadTranscript();
+		}
+	};
+
+	/** Approves the proposed plan, then tells the agent to carry it out — as a
+	 *  normal message, so the chat streams the work instead of it happening
+	 *  out of sight on the queue. */
+	const approvePlan = async (skipStepIds: string[], note: string | null) => {
+		if (!proposedPlan) return;
+		const plan = await approvePlanMutation.mutateAsync({
+			planId: proposedPlan.id,
+			body: { skip_step_ids: skipStepIds, note },
+		});
+		if (plan.status === 'approved') {
+			void sendChatMessage(
+				note
+					? `Your plan "${plan.title}" is approved. Carry out its steps now. ${note}`
+					: `Your plan "${plan.title}" is approved. Carry out its steps now.`,
+			);
+		}
+	};
+
+	/** Sends the plan back; the note tells the agent what to change. */
+	const rejectPlan = async (note: string | null) => {
+		if (!proposedPlan) return;
+		await rejectPlanMutation.mutateAsync({ planId: proposedPlan.id, body: { note } });
+		void sendChatMessage(
+			note ? `I rejected the plan. ${note}` : 'I rejected the plan. Propose a different one.',
+		);
+	};
+
+	// Actions decided elsewhere — the inbox, an email link, Slack, another tab —
+	// resume the turn on the backend's queue. Follow along: refresh the cards,
+	// and the transcript once the resumed turn has written to it.
+	const { echo } = useRealtime();
+	const onActionsChanged = useEffectEvent(() => {
+		if (!currentAgentId || !conversationId) return;
+		void queryClient.invalidateQueries({
+			queryKey: agentActionKeys.forSession(workspaceId, currentAgentId, conversationId),
+		});
+		void queryClient.invalidateQueries({
+			queryKey: agentPlanKeys.list(workspaceId, currentAgentId, conversationId),
+		});
+		// A turn streaming in this tab reloads itself when it ends.
+		if (!streamAbortRef.current) void reloadTranscript();
+	});
+	useEffect(() => {
+		if (!echo || !workspaceId || !conversationId) return;
+
+		return subscribeToAgentActions(
+			echo as unknown as IEchoLike,
+			workspaceId,
+			conversationId,
+			onActionsChanged,
+		);
+	}, [echo, workspaceId, conversationId]);
 
 	/** Re-runs the last user message. The backend keeps the abandoned turn in the
 	 *  session's history — this appends a fresh one rather than replacing it. */
@@ -2659,6 +2874,16 @@ const BuildPage = () => {
 									)}
 								</div>
 							)}
+							{existingAgent &&
+								openedSession &&
+								String(openedSession.id) === String(conversationId) && (
+									<ChatModeBar
+										ws={workspaceId}
+										agent={existingAgent}
+										session={openedSession}
+										disabled={isTyping}
+									/>
+								)}
 							{conversationId &&
 							loadedSessionRef.current !== conversationId &&
 							isSessionError ? (
@@ -3176,6 +3401,32 @@ const BuildPage = () => {
 										</div>
 									</div>
 								</div>
+							)}
+
+							{/* A paused turn's waiting actions, and Plan mode's plan up for review */}
+							{!isTyping && conversationId && (
+								<>
+									<AgentApprovalCards
+										actions={pendingActions}
+										busy={isTyping}
+										canRemember={canManageAgents}
+										onDecide={(decisions) => void decideActions(decisions)}
+									/>
+									{proposedPlan && pendingActions.length === 0 && (
+										<AgentPlanCard
+											key={proposedPlan.id}
+											plan={proposedPlan}
+											busy={
+												approvePlanMutation.isPending ||
+												rejectPlanMutation.isPending
+											}
+											onApprove={(skipIds, note) =>
+												void approvePlan(skipIds, note)
+											}
+											onReject={(note) => void rejectPlan(note)}
+										/>
+									)}
+								</>
 							)}
 						</div>
 						{showLatestButton && (
@@ -3956,6 +4207,13 @@ const BuildPage = () => {
 											</button>
 										</div>
 									</div>
+
+									{/* Autonomy & approvals */}
+									<AgentAutonomyPanel
+										ws={workspaceId}
+										agentId={currentAgentId}
+										nodeName={(nodeType) => nodeFor(nodeType)?.name}
+									/>
 
 									{/* Tags Section */}
 									<AgentTagsPanel ws={workspaceId} agentId={currentAgentId} />
