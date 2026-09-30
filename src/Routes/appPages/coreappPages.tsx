@@ -27,6 +27,8 @@ const AgentBuilderPage = lazy(
 	() => import('@/pages/coreapp/Agents/AgentBuilder/AgentBuilder.page'),
 );
 const AgentInsightsPage = lazy(() => import('@/pages/coreapp/Agents/AgentInsights.page'));
+const ApprovalsLayout = lazy(() => import('@/pages/coreapp/Approvals/_layouts/Approvals.layout'));
+const ApprovalsPage = lazy(() => import('@/pages/coreapp/Approvals/Approvals.page'));
 const TrailLayout = lazy(() => import('@/pages/coreapp/Trail/_layouts/Trail.layout'));
 const TrailListPage = lazy(() => import('@/pages/coreapp/Trail/TrailList.page'));
 const SkillsLayout = lazy(() => import('@/pages/coreapp/Skills/_layouts/Skills.layout'));
@@ -68,6 +70,7 @@ const listRoutes: RouteObject[] = (
 		[workspacePages.apps.to, <AppsLayout />, <AppsListPage />],
 		[workspacePages.knowledge.to, <KnowledgeLayout />, <KnowledgeListPage />],
 		[workspacePages.vault.to, <VaultLayout />, <SecretsPage />],
+		[workspacePages.approvals.to, <ApprovalsLayout />, <ApprovalsPage />],
 		[workspacePages.trail.to, <TrailLayout />, <TrailListPage />],
 		[workspacePages.artifacts.to, <ArtifactsLayout />, <ArtifactsListPage />],
 	] as const

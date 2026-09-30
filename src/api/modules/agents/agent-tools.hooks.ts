@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { TCreateAgentToolBindingDto } from '@/types/agent.type';
+import type { TCreateAgentToolBindingDto, TUpdateAgentToolBindingDto } from '@/types/agent.type';
+import type { TApprovalPolicy } from '@/types/agent-action.type';
 import {
 	AgentToolBindingService,
 	AgentWorkflowToolService,
@@ -31,6 +32,16 @@ export const useCreateAgentToolBinding = (ws: string, agentId: string) => {
 	});
 };
 
+export const useUpdateAgentToolBinding = (ws: string, agentId: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({ id, body }: { id: string; body: TUpdateAgentToolBindingDto }) =>
+			AgentToolBindingService.update(ws, agentId, id, body),
+		onSuccess: () => qc.invalidateQueries({ queryKey: agentToolBindingKeys.list(ws, agentId) }),
+		meta: { errorMessage: 'Failed to update tool' },
+	});
+};
+
 export const useDeleteAgentToolBinding = (ws: string, agentId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
@@ -55,6 +66,22 @@ export const useAttachAgentWorkflow = (ws: string, agentId: string) => {
 		mutationFn: (workflowId: string) => AgentWorkflowToolService.attach(ws, agentId, workflowId),
 		onSuccess: () => qc.invalidateQueries({ queryKey: agentWorkflowToolKeys.list(ws, agentId) }),
 		meta: { errorMessage: 'Failed to attach workflow' },
+	});
+};
+
+export const useUpdateAgentWorkflowPolicy = (ws: string, agentId: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			workflowId,
+			policy,
+		}: {
+			workflowId: string;
+			policy: TApprovalPolicy | null;
+		}) => AgentWorkflowToolService.updatePolicy(ws, agentId, workflowId, policy),
+		onSuccess: (workflows) =>
+			qc.setQueryData(agentWorkflowToolKeys.list(ws, agentId), workflows),
+		meta: { errorMessage: 'Failed to update the workflow rule' },
 	});
 };
 

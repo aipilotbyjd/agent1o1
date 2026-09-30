@@ -36,6 +36,7 @@ import type { TOnboardingStepKey } from '@/types/onboarding.type';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useDashboard } from './_helper/dashboard.adapter';
 import PendingApprovalsCard from './_partial/PendingApprovalsCard.partial';
+import PendingAgentActionsCard from './_partial/PendingAgentActionsCard.partial';
 import { STATUS_BADGE_COLORS, type TExecutionStatus } from './_types/dashboard.type';
 
 const workspacePages = pages.workspace.subPages!;
@@ -602,6 +603,7 @@ const DashboardPage = () => {
 					{/* Left: needs attention + recent runs */}
 					<div className='space-y-6 lg:col-span-2'>
 						<PendingApprovalsCard ws={currentWorkspaceId} />
+						<PendingAgentActionsCard ws={currentWorkspaceId} />
 
 						{/* Needs attention */}
 						<div className='border-border-main bg-bg-card overflow-hidden rounded-3xl border shadow-sm'>

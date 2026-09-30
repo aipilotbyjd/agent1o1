@@ -60,6 +60,12 @@ export const settings: TPage = {
 			text: 'Tags',
 			icon: 'Tag01',
 		},
+		agentPolicy: {
+			id: 'agentPolicySettings',
+			to: ws('settings/agent-policy'),
+			text: 'Agent Policy',
+			icon: 'Shield01',
+		},
 		billing: {
 			id: 'billingSettings',
 			to: ws('settings/billing'),

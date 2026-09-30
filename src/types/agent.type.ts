@@ -10,6 +10,7 @@
 // ============================================================
 import type { TArtifact } from './artifact.type';
 import type { TTag } from './tag.type';
+import type { TAgentAction, TApprovalPolicy, TAutonomyMode } from './agent-action.type';
 
 export const AGENT_ICONS = [
 	'bot',
@@ -56,6 +57,11 @@ export type TAgent = {
 	allow_self_updates: boolean;
 	allow_skill_editing: boolean;
 	allow_self_clone: boolean;
+	/** How freely the agent may act — see `TAutonomyMode`. */
+	autonomy_mode: TAutonomyMode;
+	/** Test run: actions are simulated, nothing is really sent or changed. */
+	test_mode: boolean;
+	allow_web_fetch: boolean;
 	tags?: TTag[];
 	sessions_count?: number;
 	last_used_at?: string | null;
@@ -80,6 +86,9 @@ export type TCreateAgentDto = {
 	allow_self_updates?: boolean;
 	allow_skill_editing?: boolean;
 	allow_self_clone?: boolean;
+	autonomy_mode?: TAutonomyMode;
+	test_mode?: boolean;
+	allow_web_fetch?: boolean;
 };
 
 export type TUpdateAgentDto = Partial<TCreateAgentDto>;
@@ -131,6 +140,10 @@ export type TAgentMessage = {
 	/** Tool call id → the subagent task that `invoke_agent` call started. */
 	subagent_task_ids: Record<string, string>;
 	usage: { prompt_tokens?: number; completion_tokens?: number } | null;
+	/** True while the turn waits for its actions to be decided. */
+	awaiting_approval?: boolean;
+	/** The tool calls it is waiting on. */
+	pending_tool_call_ids?: string[];
 	created_at: string;
 };
 
@@ -145,6 +158,12 @@ export type TAgentSession = {
 	status: TAgentSessionStatus;
 	last_activity_at: string;
 	messages_count?: number;
+	/** Actions in this conversation waiting for a decision (list endpoint only). */
+	pending_actions_count?: number;
+	/** This conversation's own mode; null runs under the agent's. */
+	autonomy_mode?: TAutonomyMode | null;
+	/** This conversation's own Test run switch; null follows the agent. */
+	test_mode?: boolean | null;
 	messages?: TAgentMessage[];
 	created_at: string;
 };
@@ -156,6 +175,9 @@ export type TCreateAgentSessionDto = {
 export type TUpdateAgentSessionDto = {
 	title?: string | null;
 	status?: TAgentSessionStatus;
+	/** Tightening needs chat access; loosening past the agent needs agent.manage. */
+	autonomy_mode?: TAutonomyMode | null;
+	test_mode?: boolean | null;
 };
 
 export type TSendAgentMessageDto = {
@@ -177,8 +199,20 @@ export type TAgentSessionStreamEvent =
 			result?: { task_id?: string };
 			output: string;
 			successful: boolean;
+			/** The call was not run: a person rejected it, or it expired. */
+			denied?: boolean;
 	  }
-	| { event: 'complete'; run_id: string; status: string; message_id: string | null; text: string | null }
+	/** The turn paused: these actions wait for a decision. */
+	| { event: 'approval-required'; actions: TAgentAction[] }
+	/** `status` is `awaiting_approval` when the turn paused rather than finished. */
+	| {
+			event: 'complete';
+			run_id: string;
+			status: string;
+			message_id: string | null;
+			text: string | null;
+			pending_action_ids?: string[];
+	  }
 	| { event: 'error'; message: string }
 	| { event: 'done' };
 
@@ -201,6 +235,7 @@ export type TAgentToolBinding = {
 	node_type: string;
 	config: Record<string, unknown> | null;
 	exposed_fields: string[] | null;
+	approval_policy: TApprovalPolicy | null;
 	created_at: string;
 };
 
@@ -208,6 +243,13 @@ export type TCreateAgentToolBindingDto = {
 	node_type: string;
 	config?: Record<string, unknown> | null;
 	exposed_fields?: string[] | null;
+	approval_policy?: TApprovalPolicy | null;
+};
+
+export type TUpdateAgentToolBindingDto = {
+	config?: Record<string, unknown> | null;
+	exposed_fields?: string[] | null;
+	approval_policy?: TApprovalPolicy | null;
 };
 
 // ─── Knowledge ───────────────────────────────────────────────

@@ -40,7 +40,7 @@ export const coreAppNavigation: TNavSection[] = [
 	},
 	{
 		title: 'Activity',
-		items: [workspacePages.trail, workspacePages.artifacts],
+		items: [workspacePages.approvals, workspacePages.trail, workspacePages.artifacts],
 	},
 ];
 
@@ -63,6 +63,7 @@ export const settingsNavigation: TNavSection[] = [
 			settingsPages.apiKeys,
 			settingsPages.notificationChannels,
 			settingsPages.tags,
+			settingsPages.agentPolicy,
 		],
 	},
 	{

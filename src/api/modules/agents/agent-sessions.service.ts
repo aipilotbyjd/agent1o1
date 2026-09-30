@@ -22,6 +22,44 @@ const messageBody = (payload: TSendAgentMessageDto): TSendAgentMessageDto | Form
 	return form;
 };
 
+/**
+ * Reads a server-sent event stream into `{ event, ...data }` objects. Shared
+ * by every endpoint that answers with the turn's events — sending a message,
+ * and deciding on a paused turn's actions (`AgentActionService.decideInChat`).
+ */
+export async function* readEventStream(
+	response: Response,
+): AsyncGenerator<TAgentSessionStreamEvent> {
+	if (!response.ok) {
+		const body = (await response.json().catch(() => null)) as { message?: string } | null;
+		throw new Error(body?.message ?? `Agent request failed (${response.status}).`);
+	}
+	if (!response.body) throw new Error('The agent returned an empty stream.');
+
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder();
+	let buffer = '';
+
+	while (true) {
+		const { done, value } = await reader.read();
+		if (done) break;
+
+		buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
+		const chunks = buffer.split('\n\n');
+		buffer = chunks.pop() ?? '';
+
+		for (const chunk of chunks) {
+			const eventLine = chunk.split('\n').find((line) => line.startsWith('event:'));
+			const dataLine = chunk.split('\n').find((line) => line.startsWith('data:'));
+			if (!eventLine || !dataLine) continue;
+
+			const event = eventLine.replace('event:', '').trim();
+			const data = JSON.parse(dataLine.replace('data:', '').trim());
+			yield { event, ...data } as TAgentSessionStreamEvent;
+		}
+	}
+}
+
 export const AgentSessionService = {
 	list: (ws: string, agentId: string, signal?: AbortSignal) =>
 		axiosClient
@@ -100,33 +138,6 @@ export const AgentSessionService = {
 			signal,
 		});
 
-		if (!response.ok) {
-			const body = (await response.json().catch(() => null)) as { message?: string } | null;
-			throw new Error(body?.message ?? `Agent request failed (${response.status}).`);
-		}
-		if (!response.body) throw new Error('The agent returned an empty stream.');
-
-		const reader = response.body.getReader();
-		const decoder = new TextDecoder();
-		let buffer = '';
-
-		while (true) {
-			const { done, value } = await reader.read();
-			if (done) break;
-
-			buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
-			const chunks = buffer.split('\n\n');
-			buffer = chunks.pop() ?? '';
-
-			for (const chunk of chunks) {
-				const eventLine = chunk.split('\n').find((line) => line.startsWith('event:'));
-				const dataLine = chunk.split('\n').find((line) => line.startsWith('data:'));
-				if (!eventLine || !dataLine) continue;
-
-				const event = eventLine.replace('event:', '').trim();
-				const data = JSON.parse(dataLine.replace('data:', '').trim());
-				yield { event, ...data } as TAgentSessionStreamEvent;
-			}
-		}
+		yield* readEventStream(response);
 	},
 };
