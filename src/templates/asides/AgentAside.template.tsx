@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router';
 import {
 	ArrowLeft,
 	Plus,
-	Folder,
+	Images,
 	LineChart,
 	Mail,
 	MessageSquare,
@@ -254,16 +254,20 @@ const AgentAsideTemplate = () => {
 				<div className='flex flex-col gap-1 px-3'>
 					<button
 						type='button'
-						title='Files this workspace has generated'
-						onClick={() => navigate(`/${workspaceId}/artifacts`)}
+						title='Images and files from your agent chats'
+						onClick={() => {
+							if (!workspaceId) return;
+							navigate(paths.library(workspaceId));
+							closeAside();
+						}}
 						className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50/80 dark:text-zinc-300 dark:hover:bg-zinc-900 ${asideStatus ? '' : 'w-full justify-center'}`}>
 						<span className='relative shrink-0'>
-							<Folder size={15} className='text-zinc-600 dark:text-zinc-400' />
+							<Images size={15} className='text-zinc-600 dark:text-zinc-400' />
 							{!asideStatus && (
 								<span className='absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-zinc-400 ring-2 ring-white dark:bg-zinc-500 dark:ring-zinc-950' />
 							)}
 						</span>
-						{asideStatus && <span className='truncate'>Files Generated</span>}
+						{asideStatus && <span className='truncate'>Library</span>}
 					</button>
 					<button
 						onClick={() => {

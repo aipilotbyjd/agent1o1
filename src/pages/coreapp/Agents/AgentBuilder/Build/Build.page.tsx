@@ -166,6 +166,9 @@ import AgentPlanCard from './_partial/AgentPlanCard.partial';
 import AgentAutonomyPanel from './_partial/AgentAutonomyPanel.partial';
 import ChatModeBar from './_partial/ChatModeBar.partial';
 import SaveEvalCaseModal, { type TEvalCaseDraft } from './_partial/SaveEvalCaseModal.partial';
+import AttachDrawer from './_partial/AttachDrawer.partial';
+import FilePreview, { LocalFilePreview } from '@/components/common/FilePreview';
+import { fileIconFor, fileSolidToneFor, isImageFile } from '@/utils/fileDisplay.util';
 import {
 	SkillCommandHighlight,
 	SkillCommandTag,
@@ -229,6 +232,8 @@ const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 				id: artifact.id,
 				filename: artifact.filename,
 				size: artifact.size,
+				mimeType: artifact.mime_type,
+				previewUrl: artifact.preview_url,
 			})),
 		}));
 
@@ -316,7 +321,14 @@ interface TMessage {
 	retryText?: string;
 	/** Files sent with a user message. `id` is the stored artifact's — absent on
 	 *  the copy shown while the turn is still in flight. */
-	attachments?: { id?: string; filename: string; size: number }[];
+	attachments?: {
+		id?: string;
+		filename: string;
+		size: number;
+		mimeType?: string;
+		/** A short-lived link to show the stored file; absent until the turn is saved. */
+		previewUrl?: string | null;
+	}[];
 	/** The files as sent from this tab, kept so Regenerate can upload them again. */
 	files?: File[];
 	/** The skill picked for this (user) message with `/`. */
@@ -374,21 +386,15 @@ const ChatAttachmentTray = ({
 }) => {
 	if (files.length === 0) return null;
 	return (
-		<div className='min-w-0 space-y-1.5' aria-live='polite'>
-			<div className='no-scrollbar flex max-h-24 flex-wrap gap-1.5 overflow-y-auto'>
-				{files.map((file) => (
-					<button
-						key={`${file.name}-${file.size}-${file.lastModified}`}
-						type='button'
-						onClick={() => onRemove(file)}
-						disabled={busy}
-						aria-label={`Remove ${file.name}`}
-						className='flex min-h-10 max-w-full min-w-0 items-center gap-1.5 rounded-lg border border-zinc-200 px-2 text-xs disabled:opacity-60 dark:border-zinc-700'>
-						<span className='truncate'>📎 {file.name}</span>
-						<X size={14} className='shrink-0' />
-					</button>
-				))}
-			</div>
+		<div className='flex flex-wrap gap-2 pt-1.5 pr-1.5' aria-live='polite'>
+			{files.map((file) => (
+				<LocalFilePreview
+					key={`${file.name}-${file.size}-${file.lastModified}`}
+					file={file}
+					onRemove={() => onRemove(file)}
+					removeDisabled={busy}
+				/>
+			))}
 		</div>
 	);
 };
@@ -397,43 +403,48 @@ const ChatAttachmentTray = ({
  *  turn is stored and the artifact has an id. */
 const MessageAttachments = ({
 	attachments,
+	files,
 	ws,
 }: {
 	attachments: NonNullable<TMessage['attachments']>;
+	/** The files as sent from this tab — thumbnails before the stored copies exist. */
+	files?: File[];
 	ws: string;
 }) => {
 	const downloadMutation = useDownloadArtifact(ws);
-	const chipClass =
-		'flex min-h-9 max-w-full min-w-0 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2.5 text-xs font-semibold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-200';
 
 	return (
-		<div className='mb-1.5 flex flex-wrap justify-end gap-1.5'>
+		<div className='mb-1.5 flex flex-wrap justify-end gap-2'>
 			{attachments.map((file, index) => {
-				const label = (
-					<>
-						<Paperclip size={12} className='shrink-0 text-zinc-400' />
-						<span className='truncate'>{file.filename}</span>
-						<span className='shrink-0 text-[10px] text-zinc-400'>
-							{formatArtifactSize(file.size)}
-						</span>
-					</>
-				);
-				const { id } = file;
-				return id ? (
-					<button
-						key={id}
-						type='button'
-						aria-label={`Download ${file.filename}`}
-						onClick={() =>
-							downloadMutation.mutate({ artifactId: id, filename: file.filename })
-						}
-						className={`${chipClass} cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800`}>
-						{label}
-					</button>
+				const local = files?.[index];
+				const { id, previewUrl } = file;
+				// An image opens full size; any other stored file downloads.
+				const open =
+					previewUrl && isImageFile(file.mimeType, file.filename)
+						? () => window.open(previewUrl, '_blank', 'noopener,noreferrer')
+						: id
+							? () => downloadMutation.mutate({ artifactId: id, filename: file.filename })
+							: undefined;
+				return local && !previewUrl ? (
+					<LocalFilePreview
+						key={`${file.filename}-${index}`}
+						file={local}
+						onClick={open}
+						imageSize='large'
+					/>
 				) : (
-					<span key={`${file.filename}-${index}`} className={chipClass}>
-						{label}
-					</span>
+					<FilePreview
+						key={id ?? `${file.filename}-${index}`}
+						imageSize='large'
+						filename={file.filename}
+						mimeType={file.mimeType}
+						size={file.size}
+						previewUrl={previewUrl}
+						onClick={open}
+						busy={
+							downloadMutation.isPending && downloadMutation.variables?.artifactId === id
+						}
+					/>
 				);
 			})}
 		</div>
@@ -924,11 +935,13 @@ const ArtifactCard = ({
 	ws: string;
 }) => {
 	const downloadMutation = useDownloadArtifact(ws);
+	const ArtifactIcon = fileIconFor(item.mimeType, item.filename);
 
 	return (
 		<div className='flex max-w-full min-w-0 items-center gap-3 rounded-2xl border border-zinc-200/80 bg-white px-4 py-3 shadow-2xs dark:border-zinc-800/85 dark:bg-zinc-900/60'>
-			<div className='bg-primary-400/10 text-primary-600 dark:text-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl'>
-				<FileDown size={16} />
+			<div
+				className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${fileSolidToneFor(item.mimeType, item.filename)}`}>
+				<ArtifactIcon size={16} />
 			</div>
 			<div className='min-w-0 flex-1'>
 				<p className='truncate text-xs font-bold text-zinc-800 dark:text-zinc-200'>
@@ -1281,7 +1294,11 @@ const BuildPage = () => {
 		if (mobileComposerRef.current) autoSizeComposer(mobileComposerRef.current);
 	}, [chatInput]);
 
-	const selectChatAttachments = (files: FileList | null) => {
+	const [isAttachOpen, setIsAttachOpen] = useState(false);
+	const canAttachFile = (filename: string) =>
+		ATTACHMENT_EXTENSIONS.some((extension) => filename.toLowerCase().endsWith(extension));
+
+	const selectChatAttachments = (files: FileList | File[] | null) => {
 		if (!files) return;
 		const accepted: File[] = [];
 		for (const file of Array.from(files)) {
@@ -1963,6 +1980,7 @@ const BuildPage = () => {
 		if ((!trimmed && files.length === 0 && !skill) || !workspaceId || streamAbortRef.current)
 			return;
 		// The backend requires message text, even when only files or a skill are sent.
+		setIsAttachOpen(false);
 		const prompt =
 			trimmed ||
 			(files.length > 0 ? 'Please review the attached files.' : `Use the ${skill?.name} skill.`);
@@ -1976,7 +1994,7 @@ const BuildPage = () => {
 			retryText: trimmed,
 			attachments:
 				files.length > 0
-					? files.map((file) => ({ filename: file.name, size: file.size }))
+					? files.map((file) => ({ filename: file.name, size: file.size, mimeType: file.type }))
 					: undefined,
 			files: files.length > 0 ? files : undefined,
 			skill: skill ?? undefined,
@@ -2529,7 +2547,7 @@ const BuildPage = () => {
 							initial={{ y: 18, opacity: 0 }}
 							animate={{ y: 0, opacity: 1 }}
 							transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-							className='mx-auto flex min-h-full w-full max-w-[1120px] flex-col px-5 pt-10 pb-5 sm:px-8 sm:pt-12 lg:px-10 lg:pt-14'>
+							className='mx-auto flex min-h-full w-full max-w-[1120px] flex-col px-5 pt-10 sm:px-8 sm:pt-12 lg:px-10 lg:pt-14'>
 							{/* Hero Banner Section */}
 							<section className='border-primary-100/50 from-primary-400/5 via-primary-400/5 to-primary-400/5 dark:border-border-main dark:from-bg-card dark:to-bg-card relative z-10 overflow-hidden rounded-3xl border bg-linear-to-tr p-6 sm:p-8 lg:p-10'>
 								{/* Background glow overlay */}
@@ -2657,8 +2675,10 @@ const BuildPage = () => {
 								</div>
 							</section>
 
-							{/* Chat Console Cockpit */}
-							<section className='relative z-10 mt-12 lg:mt-14'>
+							{/* Chat Console Cockpit — pinned to the bottom while the templates
+							    scroll behind it, which the fade at its top softens. */}
+							<div className='pointer-events-none mt-auto' />
+							<section className='sticky bottom-0 z-20 mt-6 bg-linear-to-t from-zinc-50 from-75% to-transparent pt-6 pb-5 lg:mt-8 dark:from-zinc-950'>
 								{/* Prompt Suggestions */}
 								<div className='mb-4 flex flex-wrap items-center gap-3'>
 									<span className='text-xs font-semibold text-zinc-400 dark:text-zinc-500'>
@@ -2707,8 +2727,6 @@ const BuildPage = () => {
 									</button>
 								</div>
 							</section>
-
-							<div className='pointer-events-none mt-auto h-6' />
 						</motion.div>
 					</main>
 
@@ -3309,6 +3327,7 @@ const BuildPage = () => {
 															message.attachments.length > 0 && (
 																<MessageAttachments
 																	attachments={message.attachments}
+																	files={message.files}
 																	ws={workspaceId}
 																/>
 															)}
@@ -3648,119 +3667,138 @@ const BuildPage = () => {
 									onRemove={removeChatAttachment}
 								/>
 								{/* Chat Input Container */}
-								<div className='flex flex-col rounded-2xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/60'>
-									{/* Input Text Area */}
-									<div className='relative'>
-										<SkillCommandHighlight
-											text={chatInput}
-											token={skillPicker.token}
-											textareaRef={mobileComposerRef}
-											className='px-1 text-base font-semibold'
-										/>
-										<textarea
-											ref={mobileComposerRef}
-											onBlur={skillPicker.close}
-											rows={1}
-											value={chatInput}
-											onChange={(e) => {
-												updateChatInput(e.target.value);
-												autoSizeComposer(e.currentTarget);
+								<div>
+									{isAttachOpen && (
+										<AttachDrawer
+											ws={workspaceId}
+											onClose={() => setIsAttachOpen(false)}
+											onUpload={() => {
+												setIsAttachOpen(false);
+												attachmentInputRef.current?.click();
 											}}
-											onKeyDown={(e) => {
-												if (
-													e.nativeEvent.isComposing ||
-													e.nativeEvent.keyCode === 229
-												)
-													return;
-												if (skillPicker.handleKeyDown(e)) return;
-												if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-													e.preventDefault();
+											onAttach={(file) => selectChatAttachments([file])}
+											canAttach={canAttachFile}
+											onOpenLibrary={() => navigate(paths.library(workspaceId))}
+										/>
+									)}
+									<div
+										className={`flex flex-col border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/60 ${
+											isAttachOpen ? 'rounded-b-2xl' : 'rounded-2xl'
+										}`}>
+										{/* Input Text Area */}
+										<div className='relative'>
+											<SkillCommandHighlight
+												text={chatInput}
+												token={skillPicker.token}
+												textareaRef={mobileComposerRef}
+												className='px-1 text-base font-semibold'
+											/>
+											<textarea
+												ref={mobileComposerRef}
+												onBlur={skillPicker.close}
+												rows={1}
+												value={chatInput}
+												onChange={(e) => {
+													updateChatInput(e.target.value);
+													autoSizeComposer(e.currentTarget);
+												}}
+												onKeyDown={(e) => {
 													if (
-														(chatInput.trim() || chatAttachments.length) &&
-														!isTyping
-													) {
-														sendChatMessage(skillPicker.message, undefined, skillPicker.skill);
-														updateChatInput('');
-													}
-												}
-											}}
-											placeholder='Send a message to your agent'
-											className='no-scrollbar placeholder:text-zinc-450 relative block max-h-32 w-full resize-none overflow-y-auto border-none bg-transparent px-1 text-base font-semibold text-zinc-800 outline-none focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
-										/>
-									</div>
-									{/* Bottom Controls Row */}
-									<div className='mt-2 flex items-center justify-between border-t border-zinc-100/50 pt-2 dark:border-zinc-800/50'>
-										{/* Plus button */}
-										<button
-											aria-label='Attach files'
-											type='button'
-											disabled={isTyping}
-											onClick={() => attachmentInputRef.current?.click()}
-											className='flex h-11 w-11 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-500 dark:hover:bg-zinc-800'>
-											<Plus size={18} />
-										</button>
-
-										{/* Right controls: Loader, Mic, Send */}
-										<div className='flex items-center gap-2.5'>
-											{/* Loading spinner — only while a turn is actually in flight */}
-											{isTyping && (
-												<div
-													className='flex size-4 h-4 w-4 shrink-0 animate-spin items-center justify-center rounded-full border border-zinc-200 border-t-zinc-400'
-													style={{
-														borderTopColor: '#3b82f6',
-														borderWidth: '1.5px',
-													}}
-												/>
-											)}
-
-											{/* Mic */}
-											<button
-												aria-label='Voice input'
-												type='button'
-												onClick={() =>
-													notify.info('Voice input is not supported yet.')
-												}
-												className='flex h-11 w-11 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-50 dark:text-zinc-500 dark:hover:bg-zinc-800'>
-												<Mic size={18} />
-											</button>
-
-											{/* Send button — becomes Stop for the duration of a turn */}
-											<button
-												type='button'
-												aria-label={
-													isTyping ? 'Stop generating' : 'Send message'
-												}
-												onClick={() => {
-													if (isTyping) {
-														stopStreaming();
+														e.nativeEvent.isComposing ||
+														e.nativeEvent.keyCode === 229
+													)
 														return;
-													}
-													if (
-														chatInput.trim() ||
-														chatAttachments.length
-													) {
-														sendChatMessage(skillPicker.message, undefined, skillPicker.skill);
-														updateChatInput('');
+													if (skillPicker.handleKeyDown(e)) return;
+													if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+														e.preventDefault();
+														if (
+															(chatInput.trim() || chatAttachments.length) &&
+															!isTyping
+														) {
+															sendChatMessage(skillPicker.message, undefined, skillPicker.skill);
+															updateChatInput('');
+														}
 													}
 												}}
-												title={
-													isTyping ? 'Stop generating' : 'Send message'
-												}
-												className={`flex h-11 w-11 items-center justify-center rounded-full shadow-2xs transition hover:opacity-90 active:scale-95 ${
-													isTyping
-														? 'bg-zinc-900 text-white dark:bg-zinc-200 dark:text-zinc-900'
-														: 'from-primary-400 to-primary-400 text-primary-950 bg-linear-to-tr'
-												}`}>
-												{isTyping ? (
-													<Square
-														size={12}
-														strokeWidth={3}
-														className='fill-current'
-													/>
-												) : (
-													<ArrowUp size={16} strokeWidth={2.5} />
-												)}
+												placeholder='Send a message to your agent'
+												className='no-scrollbar placeholder:text-zinc-450 relative block max-h-32 w-full resize-none overflow-y-auto border-none bg-transparent px-1 text-base font-semibold text-zinc-800 outline-none focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
+											/>
+										</div>
+										{/* Bottom Controls Row */}
+										<div className='mt-2 flex items-center justify-between border-t border-zinc-100/50 pt-2 dark:border-zinc-800/50'>
+											{/* Plus button */}
+											<button
+												aria-label='Add files'
+												aria-expanded={isAttachOpen}
+												type='button'
+												disabled={isTyping}
+												onClick={() => setIsAttachOpen((open) => !open)}
+												className='flex h-11 w-11 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-500 dark:hover:bg-zinc-800'>
+												<Plus size={18} />
 											</button>
+
+											{/* Right controls: Loader, Mic, Send */}
+											<div className='flex items-center gap-2.5'>
+												{/* Loading spinner — only while a turn is actually in flight */}
+												{isTyping && (
+													<div
+														className='flex size-4 h-4 w-4 shrink-0 animate-spin items-center justify-center rounded-full border border-zinc-200 border-t-zinc-400'
+														style={{
+															borderTopColor: '#3b82f6',
+															borderWidth: '1.5px',
+														}}
+													/>
+												)}
+
+												{/* Mic */}
+												<button
+													aria-label='Voice input'
+													type='button'
+													onClick={() =>
+														notify.info('Voice input is not supported yet.')
+													}
+													className='flex h-11 w-11 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-50 dark:text-zinc-500 dark:hover:bg-zinc-800'>
+													<Mic size={18} />
+												</button>
+
+												{/* Send button — becomes Stop for the duration of a turn */}
+												<button
+													type='button'
+													aria-label={
+														isTyping ? 'Stop generating' : 'Send message'
+													}
+													onClick={() => {
+														if (isTyping) {
+															stopStreaming();
+															return;
+														}
+														if (
+															chatInput.trim() ||
+															chatAttachments.length
+														) {
+															sendChatMessage(skillPicker.message, undefined, skillPicker.skill);
+															updateChatInput('');
+														}
+													}}
+													title={
+														isTyping ? 'Stop generating' : 'Send message'
+													}
+													className={`flex h-11 w-11 items-center justify-center rounded-full shadow-2xs transition hover:opacity-90 active:scale-95 ${
+														isTyping
+															? 'bg-zinc-900 text-white dark:bg-zinc-200 dark:text-zinc-900'
+															: 'from-primary-400 to-primary-400 text-primary-950 bg-linear-to-tr'
+													}`}>
+													{isTyping ? (
+														<Square
+															size={12}
+															strokeWidth={3}
+															className='fill-current'
+														/>
+													) : (
+														<ArrowUp size={16} strokeWidth={2.5} />
+													)}
+												</button>
+											</div>
 										</div>
 									</div>
 								</div>
@@ -3792,107 +3830,131 @@ const BuildPage = () => {
 									busy={isTyping}
 									onRemove={removeChatAttachment}
 								/>
-								<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 relative flex items-center rounded-2xl border border-zinc-200 bg-white p-2 shadow-2xs focus-within:ring-4 dark:border-zinc-800 dark:bg-zinc-900/60'>
-									{/* Left attachments & skill checkbox */}
-									<div className='flex items-center gap-1 px-1.5'>
-										<button
-											type='button'
-											onClick={() => attachmentInputRef.current?.click()}
-											title='Attach a text file'
-											className='flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-500'>
-											<Paperclip size={18} />
-										</button>
-									</div>
-
-									{/* Chat Input — a textarea, so Shift+Enter can open a new line.
-									    It grows with the message and stops at ~6 rows. */}
-									<div className='relative flex min-w-0 flex-1 self-center'>
-										<SkillCommandHighlight
-											text={chatInput}
-											token={skillPicker.token}
-											textareaRef={composerRef}
-											className='px-3 py-1.5 text-sm font-semibold'
-										/>
-										<textarea
-											ref={composerRef}
-											onBlur={skillPicker.close}
-											rows={1}
-											value={chatInput}
-											onChange={(e) => {
-												updateChatInput(e.target.value);
-												autoSizeComposer(e.currentTarget);
+								<div>
+									{isAttachOpen && (
+										<AttachDrawer
+											ws={workspaceId}
+											onClose={() => setIsAttachOpen(false)}
+											onUpload={() => {
+												setIsAttachOpen(false);
+												attachmentInputRef.current?.click();
 											}}
-											onKeyDown={(e) => {
-												if (
-													e.nativeEvent.isComposing ||
-													e.nativeEvent.keyCode === 229
-												)
-													return;
-												if (skillPicker.handleKeyDown(e)) return;
-												if (e.key === 'Enter' && !e.shiftKey) {
-													e.preventDefault();
+											onAttach={(file) => selectChatAttachments([file])}
+											canAttach={canAttachFile}
+											onOpenLibrary={() => navigate(paths.library(workspaceId))}
+										/>
+									)}
+									<div
+										className={`focus-within:border-primary-500/50 focus-within:ring-primary-500/5 relative flex items-center border border-zinc-200 bg-white p-2 shadow-2xs focus-within:ring-4 dark:border-zinc-800 dark:bg-zinc-900/60 ${
+											isAttachOpen ? 'rounded-b-2xl' : 'rounded-2xl'
+										}`}>
+										{/* Left attachments */}
+										<div className='flex items-center gap-1 px-1.5'>
+											<button
+												type='button'
+												onClick={() => setIsAttachOpen((open) => !open)}
+												disabled={isTyping}
+												aria-expanded={isAttachOpen}
+												title='Add files'
+												className={`flex h-9 w-9 items-center justify-center rounded-lg transition disabled:cursor-not-allowed disabled:opacity-50 ${
+													isAttachOpen
+														? 'bg-zinc-100 text-zinc-800 dark:bg-white/10 dark:text-zinc-100'
+														: 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-white/5 dark:hover:text-zinc-200'
+												}`}>
+												<Paperclip size={18} />
+											</button>
+										</div>
+
+										{/* Chat Input — a textarea, so Shift+Enter can open a new line.
+										    It grows with the message and stops at ~6 rows. */}
+										<div className='relative flex min-w-0 flex-1 self-center'>
+											<SkillCommandHighlight
+												text={chatInput}
+												token={skillPicker.token}
+												textareaRef={composerRef}
+												className='px-3 py-1.5 text-sm font-semibold'
+											/>
+											<textarea
+												ref={composerRef}
+												onBlur={skillPicker.close}
+												rows={1}
+												value={chatInput}
+												onChange={(e) => {
+													updateChatInput(e.target.value);
+													autoSizeComposer(e.currentTarget);
+												}}
+												onKeyDown={(e) => {
 													if (
-														(chatInput.trim() || chatAttachments.length) &&
-														!isTyping
-													) {
+														e.nativeEvent.isComposing ||
+														e.nativeEvent.keyCode === 229
+													)
+														return;
+													if (skillPicker.handleKeyDown(e)) return;
+													if (e.key === 'Enter' && !e.shiftKey) {
+														e.preventDefault();
+														if (
+															(chatInput.trim() || chatAttachments.length) &&
+															!isTyping
+														) {
+															sendChatMessage(skillPicker.message, undefined, skillPicker.skill);
+															updateChatInput('');
+															// The box grew with the draft — put it back to one row.
+															requestAnimationFrame(() => {
+																if (composerRef.current)
+																	autoSizeComposer(composerRef.current);
+															});
+														}
+													}
+												}}
+												placeholder='Send a message to your agent...'
+												className='no-scrollbar relative block max-h-[9rem] w-full resize-none border-none bg-transparent px-3 py-1.5 text-sm font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
+											/>
+										</div>
+
+										{/* Right features: Mic & Send */}
+										<div className='flex items-center gap-3 px-1.5'>
+
+											{/* Mic icon */}
+											<button
+												type='button'
+												disabled
+												title='Voice input is not supported yet'
+												className='flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-500'>
+												<Mic size={18} />
+											</button>
+
+											{/* Send Button — turns into Stop while the agent is replying */}
+											<button
+												aria-label={
+													isTyping ? 'Stop generating' : 'Send message'
+												}
+												onClick={() => {
+													if (isTyping) {
+														stopStreaming();
+														return;
+													}
+													if (chatInput.trim() || chatAttachments.length) {
 														sendChatMessage(skillPicker.message, undefined, skillPicker.skill);
 														updateChatInput('');
-														// The box grew with the draft — put it back to one row.
-														requestAnimationFrame(() => {
-															if (composerRef.current)
-																autoSizeComposer(composerRef.current);
-														});
 													}
-												}
-											}}
-											placeholder='Send a message to your agent...'
-											className='no-scrollbar relative block max-h-[9rem] w-full resize-none border-none bg-transparent px-3 py-1.5 text-sm font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
-										/>
-									</div>
-
-									{/* Right features: Mic & Send */}
-									<div className='flex items-center gap-3 px-1.5'>
-
-										{/* Mic icon */}
-										<button
-											type='button'
-											disabled
-											title='Voice input is not supported yet'
-											className='flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-500'>
-											<Mic size={18} />
-										</button>
-
-										{/* Send Button — turns into Stop while the agent is replying */}
-										<button
-											aria-label={
-												isTyping ? 'Stop generating' : 'Send message'
-											}
-											onClick={() => {
-												if (isTyping) {
-													stopStreaming();
-													return;
-												}
-												if (chatInput.trim() || chatAttachments.length) {
-													sendChatMessage(skillPicker.message, undefined, skillPicker.skill);
-													updateChatInput('');
-												}
-											}}
-											title={isTyping ? 'Stop generating' : 'Send message'}
-											className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full shadow-md transition active:scale-95 ${
-												isTyping
-													? 'bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-200 dark:text-zinc-900 dark:hover:bg-white'
-													: 'bg-primary-400 text-primary-950 hover:bg-primary-500'
-											}`}>
-											{isTyping ? (
-												<Square
-													size={13}
-													strokeWidth={3}
-													className='fill-current'
-												/>
-											) : (
-												<ArrowUp size={16} strokeWidth={2.5} />
-											)}
-										</button>
+												}}
+												title={isTyping ? 'Stop generating' : 'Send message'}
+												className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full shadow-md transition active:scale-95 ${
+													isTyping
+														? 'bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-200 dark:text-zinc-900 dark:hover:bg-white'
+														: 'bg-primary-400 text-primary-950 hover:bg-primary-500'
+												}`}>
+												{isTyping ? (
+													<Square
+														size={13}
+														strokeWidth={3}
+														className='fill-current'
+													/>
+												) : (
+													<ArrowUp size={16} strokeWidth={2.5} />
+												)}
+											</button>
+										</div>
 									</div>
 								</div>
 

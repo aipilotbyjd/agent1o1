@@ -36,7 +36,6 @@ import NodeOptionsPanel from './NodeOptionsPanel.partial';
 import NodeLoopToggle from './NodeLoopToggle.partial';
 import NodeFlowTriggerToggle from './NodeFlowTriggerToggle.partial';
 import NodeAuthWarning from './NodeAuthWarning.partial';
-import NodeCredentialBadge from './NodeCredentialBadge.partial';
 import { tintStyle, getNodeAccentColor } from '../../library/library.util';
 import { getNodeCreditCost } from '../../../_helper/builder.constants';
 import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
@@ -371,12 +370,6 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 				{!collapsed && (
 					<div className='mt-2 text-[10px] leading-tight text-zinc-500 dark:text-zinc-400'>
 						{def?.description}
-					</div>
-				)}
-
-				{!collapsed && credentialId && (
-					<div className='mt-2'>
-						<NodeCredentialBadge credentialId={String(credentialId)} />
 					</div>
 				)}
 

@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
-import { useConnectorCredentials } from '@/api/modules/connectors';
-import { useWorkspaceContext } from '@/context/workspace';
 import type { TNodeField } from '../../../_types/node.type';
+import AccountSelect from './AccountSelect.partial';
 import ExpressionInput from './ExpressionInput.partial';
 
 export const inputClass =
@@ -17,48 +16,6 @@ type FieldInputProps = {
 	onChange: (value: unknown) => void;
 	compact?: boolean;
 	nodeId?: string;
-};
-
-const CredentialFieldInput = ({ field, value, onChange, compact }: FieldInputProps) => {
-	const { activeWorkspaceId } = useWorkspaceContext();
-	const {
-		data: allCredentials = [],
-		isLoading,
-		isError,
-	} = useConnectorCredentials(activeWorkspaceId);
-
-	const credentials = field.credentialType
-		? allCredentials.filter((c) => c.connector?.key === field.credentialType)
-		: allCredentials;
-
-	const cls = compact ? compactInputClass : inputClass;
-
-	return (
-		<select
-			value={String(value ?? '')}
-			onChange={(event) => onChange(event.target.value)}
-			aria-label={field.label}
-			disabled={isLoading || isError || credentials.length === 0}
-			className={`${cls} disabled:cursor-not-allowed disabled:opacity-60`}>
-			<option value=''>
-				{isLoading
-					? 'Loading…'
-					: field.credentialType
-						? `Select ${field.credentialType}…`
-						: 'Select credential…'}
-			</option>
-			{credentials.map((credential) => {
-				const expired =
-					credential.expires_at && new Date(credential.expires_at) < new Date();
-				return (
-					<option key={credential.id} value={credential.id}>
-						{credential.name}
-						{expired ? ' (expired)' : ''}
-					</option>
-				);
-			})}
-		</select>
-	);
 };
 
 /**
@@ -162,11 +119,10 @@ const FieldInput = ({ field, value, onChange, compact, nodeId }: FieldInputProps
 
 	if (field.kind === 'credential') {
 		return (
-			<CredentialFieldInput
-				field={field}
-				value={value}
+			<AccountSelect
+				connectorKey={field.credentialType}
+				value={value ? String(value) : undefined}
 				onChange={onChange}
-				compact={compact}
 			/>
 		);
 	}

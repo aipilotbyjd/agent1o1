@@ -45,6 +45,7 @@ const paths = {
 		buildPath(agentEditorPages.edit.to, { workspaceId, agentId }),
 	agentInsights: (workspaceId: string, agentId: string | number, tab?: string) =>
 		buildPath(agentEditorPages.insights.to, { workspaceId, agentId }) + (tab ? `?tab=${tab}` : ''),
+	library: (workspaceId: string) => buildPath(agentEditorPages.library.to, { workspaceId }),
 
 	apps: (workspaceId: string) => buildPath(workspacePages.apps.to, { workspaceId }),
 	approvals: (workspaceId: string) => buildPath(workspacePages.approvals.to, { workspaceId }),

@@ -125,20 +125,26 @@ export const mapApiNodeToDefinition = (
 	const slug = categorySlug ?? parent?.slug;
 	const color = node.color ?? categoryColor ?? parent?.color;
 	const category = SLUG_TO_CATEGORY[slug ?? ''] ?? 'integration';
+	// Built-in nodes flag `requires_connector` instead of naming a credential
+	// type; their category slug is the connector key they resolve against.
+	const credentialType =
+		node.credential_type ??
+		('requires_connector' in apiNode && apiNode.requires_connector ? apiNode.category : undefined);
 	const configFields = schemaToFields(node.config_schema ?? node.schema);
 	const inputPorts = schemaToPorts(node.input_schema, 'input', 'any');
 	const outputPorts = schemaToPorts(node.output_schema, 'output', 'any');
-	const fields = node.credential_type
+	const fields = credentialType
 		? [
 				{
 					key: 'credential_id',
-					label: 'Credential',
+					label: 'Account',
 					kind: 'credential' as const,
-					credentialType: node.credential_type,
+					credentialType,
 					required: true,
-					help: `Select a ${node.credential_type} credential.`,
 				},
-				...configFields,
+				...configFields.filter(
+					(field) => field.key !== 'credential_id' && field.key !== 'access_token',
+				),
 			]
 		: configFields;
 
@@ -153,7 +159,7 @@ export const mapApiNodeToDefinition = (
 		inputs: node.node_kind === 'trigger' ? [] : inputPorts,
 		outputs: outputPorts,
 		fields,
-		requiresCredential: Boolean(node.credential_type),
+		requiresCredential: Boolean(credentialType),
 	};
 };
 

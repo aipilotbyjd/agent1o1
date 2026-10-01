@@ -232,6 +232,13 @@ const ArtifactCard = ({
 			exit={{ opacity: 0, y: 10 }}
 			transition={{ type: 'spring', stiffness: 350, damping: 25 }}
 			className='group relative flex flex-col rounded-2xl border border-slate-200/60 bg-white p-5 transition-all duration-300 hover:-translate-y-1 hover:border-primary-400 hover:shadow-[0_12px_24px_-10px_rgba(16,24,40,0.06)] dark:border-zinc-800/80 dark:bg-zinc-950 dark:hover:border-primary-400/50 dark:hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.5)]'>
+			{artifact.preview_url && artifact.mime_type.startsWith('image/') && (
+				<img
+					src={artifact.preview_url}
+					alt={artifact.filename}
+					className='-mx-5 -mt-5 mb-4 h-36 w-[calc(100%+2.5rem)] max-w-none rounded-t-2xl object-cover'
+				/>
+			)}
 			<div className='mb-3.5 flex items-start justify-between'>
 				<div className='flex min-w-0 items-center gap-3'>
 					<div

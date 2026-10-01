@@ -144,5 +144,11 @@ export const agentEditor: TPage = {
 			text: 'Agent Insights',
 			icon: 'Sparkles',
 		},
+		library: {
+			id: 'library',
+			to: ws('library'),
+			text: 'Library',
+			icon: 'Image01',
+		},
 	},
 };

@@ -1,9 +1,7 @@
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { KeyRound, RefreshCw, SlidersHorizontal } from 'lucide-react';
-import { useConnectorCredentials } from '@/api/modules/connectors';
-import { useWorkflowRouteParams } from '../../../_hooks/useWorkflowRouteParams.hook';
+import { KeyRound, SlidersHorizontal } from 'lucide-react';
 import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import AccountSelect from './AccountSelect.partial';
 import ConfigureInputsDialog from '../../dialogs/ConfigureInputsDialog.partial';
 import type { TNodeField } from '../../../_types/node.type';
 
@@ -21,23 +19,7 @@ type Props = {
  */
 const NodeOptionsPanel = ({ nodeId, fields, credentialField, credentialId }: Props) => {
 	const { dispatch } = useWorkflowEditor();
-	const { workspaceId } = useWorkflowRouteParams();
 	const [configureOpen, setConfigureOpen] = useState(false);
-
-	const { data: allCredentials = [], isLoading } = useConnectorCredentials(workspaceId);
-
-	const credentials = credentialField?.credentialType
-		? allCredentials.filter((c) => c.connector?.key === credentialField.credentialType)
-		: allCredentials;
-
-	// No token-refresh endpoint on this backend; OAuth is re-initiated instead.
-	const refreshToken = useMutation({
-		mutationFn: (_credentialId: string): Promise<never> =>
-			Promise.reject(new Error('Refreshing a credential token is not supported by this backend')),
-		meta: { errorMessage: 'Token refresh is not supported yet' },
-	});
-
-	const selected = credentials.find((credential) => credential.id === credentialId);
 
 	return (
 		<div className='pointer-events-none absolute top-0 right-[348px] z-10 flex w-[280px] flex-col'>
@@ -46,7 +28,7 @@ const NodeOptionsPanel = ({ nodeId, fields, credentialField, credentialId }: Pro
 			{/* Connector nub linking the panel back to the node */}
 			<span className='pointer-events-none absolute top-7 -right-[26px] h-px w-[26px] bg-gradient-to-l from-transparent to-zinc-300 dark:to-zinc-700' />
 
-			<div className='pointer-events-auto flex flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-xl shadow-zinc-900/10 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/95 dark:shadow-black/50'>
+			<div className='pointer-events-auto flex flex-col rounded-3xl border border-zinc-200 bg-white shadow-xl shadow-zinc-900/10 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/95 dark:shadow-black/50'>
 				<section className='flex flex-col gap-3 p-3.5'>
 					<div className='flex items-center gap-2'>
 						<span className='flex size-6 items-center justify-center rounded-lg bg-zinc-500/12 text-zinc-500 dark:text-zinc-400'>
@@ -63,46 +45,18 @@ const NodeOptionsPanel = ({ nodeId, fields, credentialField, credentialId }: Pro
 								<KeyRound size={10} />
 								Credentials to use
 							</span>
-							<div className='flex items-center gap-1.5'>
-								<select
-									value={credentialId ?? ''}
-									onPointerDown={(event) => event.stopPropagation()}
-									onChange={(event) =>
-										dispatch({
-											type: 'UPDATE_NODE_VALUE',
-											id: nodeId,
-											fieldKey: credentialField.key,
-											value: event.target.value || undefined,
-										})
-									}
-									disabled={isLoading}
-									className='nodrag w-full flex-1 truncate rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-700 outline-none transition focus:border-primary-400 focus:bg-white disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-200'>
-									<option value=''>Use Personal Default</option>
-									{credentials.map((credential) => (
-										<option key={credential.id} value={credential.id}>
-											{credential.name}
-										</option>
-									))}
-								</select>
-								<button
-									type='button'
-									title='Refresh credential token'
-									disabled={!credentialId || refreshToken.isPending}
-									onPointerDown={(event) => event.stopPropagation()}
-									onClick={(event) => {
-										event.stopPropagation();
-										if (credentialId) refreshToken.mutate(credentialId);
-									}}
-									className='nodrag flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:bg-zinc-50 hover:text-zinc-600 dark:hover:text-zinc-300 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:hover:bg-zinc-800'>
-									<RefreshCw
-										size={12}
-										className={refreshToken.isPending ? 'animate-spin' : ''}
-									/>
-								</button>
-							</div>
-							<span className='text-[10px] font-medium text-zinc-400 dark:text-zinc-500'>
-								Currently {selected ? selected.name : 'none'}
-							</span>
+							<AccountSelect
+								connectorKey={credentialField.credentialType}
+								value={credentialId}
+								onChange={(value) =>
+									dispatch({
+										type: 'UPDATE_NODE_VALUE',
+										id: nodeId,
+										fieldKey: credentialField.key,
+										value,
+									})
+								}
+							/>
 						</div>
 					)}
 
