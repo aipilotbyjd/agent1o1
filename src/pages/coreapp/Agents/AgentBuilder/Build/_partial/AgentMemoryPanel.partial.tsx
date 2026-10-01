@@ -7,6 +7,7 @@ import {
 	useDeleteAgentMemory,
 	useClearAgentMemories,
 } from '@/api/modules/agents';
+import paths from '@/Routes/paths';
 import type { TAgentMemory } from '@/types/agent.type';
 
 type TProps = {
@@ -173,6 +174,21 @@ const AgentMemoryPanel = ({ ws, agentId }: TProps) => {
 								</div>
 								<p className='mt-0.5 line-clamp-2 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400'>
 									{memory.value}
+								</p>
+								<p className='mt-1 text-[9px] font-semibold text-zinc-400 dark:text-zinc-600'>
+									{memory.agent_session_id && agentId ? (
+										<>
+											<a
+												href={`${paths.editAgent(ws, agentId)}?session=${memory.agent_session_id}`}
+												className='hover:text-primary-600 dark:hover:text-primary-400 underline-offset-2 hover:underline'>
+												Saved in a chat
+											</a>
+											{' · '}
+										</>
+									) : (
+										'Updated '
+									)}
+									{new Date(memory.updated_at).toLocaleDateString()}
 								</p>
 							</div>
 							<div className='flex shrink-0 items-center gap-2'>

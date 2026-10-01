@@ -34,7 +34,7 @@ const AgentDataPanel = ({ ws, agentId }: TProps) => {
 	}, [requestedSection, clearRequestedSection]);
 
 	return (
-		<div className='flex-1 overflow-y-auto bg-zinc-50/40 dark:bg-zinc-950/20'>
+		<div className='no-scrollbar flex-1 overflow-y-auto bg-zinc-50/40 dark:bg-zinc-950/20'>
 			{/* Segmented sub-nav */}
 			<div className='sticky top-0 z-10 grid grid-cols-3 gap-1 border-b border-zinc-200 bg-white/90 p-2 backdrop-blur dark:border-white/10 dark:bg-zinc-900/90'>
 				{SECTIONS.map(({ id, label, icon: Icon }) => (

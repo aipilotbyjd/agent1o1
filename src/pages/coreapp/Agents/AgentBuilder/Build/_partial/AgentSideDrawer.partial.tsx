@@ -90,7 +90,7 @@ const AgentSideDrawer = ({ isOpen, title, onClose, children, footer, search }: T
 							</div>
 						)}
 
-						<div className='flex-1 space-y-3 overflow-y-auto p-4 dark:bg-zinc-950/10'>
+						<div className='no-scrollbar flex-1 space-y-3 overflow-y-auto p-4 dark:bg-zinc-950/10'>
 							{children}
 						</div>
 

@@ -14,6 +14,7 @@ import {
 	FlaskConical,
 	ListChecks,
 	Pencil,
+	TrendingDown,
 } from 'lucide-react';
 import {
 	useAgentEvalSuites,
@@ -43,13 +44,28 @@ type TProps = {
 	agentId?: string;
 };
 
-const ASSERTION_TYPES: { id: TEvalAssertionType; label: string }[] = [
-	{ id: 'contains', label: 'Contains' },
-	{ id: 'not_contains', label: 'Not contains' },
-	{ id: 'equals', label: 'Equals' },
-	{ id: 'regex', label: 'Regex' },
-	{ id: 'llm_judge', label: 'LLM judge' },
+const ASSERTION_TYPES: { id: TEvalAssertionType; label: string; placeholder: string }[] = [
+	{ id: 'contains', label: 'Contains', placeholder: 'Text the reply must contain' },
+	{ id: 'not_contains', label: 'Not contains', placeholder: 'Text the reply must not contain' },
+	{ id: 'equals', label: 'Equals', placeholder: 'The exact reply' },
+	{ id: 'llm_rubric', label: 'AI judge', placeholder: 'e.g. Politely declines and offers a human' },
+	{ id: 'tool_called', label: 'Calls tool', placeholder: 'Tool name, e.g. remember' },
+	{ id: 'tool_not_called', label: 'Skips tool', placeholder: 'Tool name, e.g. send_email' },
 ];
+
+const assertionLabel = (type: string) =>
+	ASSERTION_TYPES.find((option) => option.id === type)?.label ?? type.replace(/_/g, ' ');
+
+type TGradedAssertion = { type: string; value: string; passed: boolean };
+
+/** The backend stores graded assertions as JSON; read them defensively. */
+const failedAssertions = (assertions: unknown): TGradedAssertion[] =>
+	Array.isArray(assertions)
+		? assertions.filter(
+				(a): a is TGradedAssertion =>
+					typeof a === 'object' && a !== null && (a as TGradedAssertion).passed === false,
+			)
+		: [];
 
 const RUN_STATUS_STYLE: Record<string, { icon: typeof CheckCircle2; className: string }> = {
 	completed: { icon: CheckCircle2, className: 'text-emerald-500' },
@@ -69,6 +85,32 @@ const emptyCaseForm = {
 	input: '',
 	assertions: [{ type: 'contains' as TEvalAssertionType, value: '' }] as TEvalAssertion[],
 };
+
+const RunOnChangeToggle = ({
+	value,
+	onChange,
+}: {
+	value: boolean;
+	onChange: (value: boolean) => void;
+}) => (
+	<label className='flex cursor-pointer items-start gap-2'>
+		<input
+			type='checkbox'
+			checked={value}
+			onChange={(e) => onChange(e.target.checked)}
+			className='accent-primary-500 mt-0.5'
+		/>
+		<span>
+			<span className='block text-[11px] font-bold text-zinc-700 dark:text-zinc-300'>
+				Re-run when the agent changes
+			</span>
+			<span className='block text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+				Runs a couple of minutes after an edit to instructions, model or settings. Actions are
+				simulated, and you're notified if fewer cases pass than before.
+			</span>
+		</span>
+	</label>
+);
 
 /** Expandable row: eval run summary + on-demand per-case results. */
 const EvalRunRow = ({
@@ -98,10 +140,19 @@ const EvalRunRow = ({
 				)}
 				<RunStatusBadge status={run.status} />
 				<div className='min-w-0 flex-1'>
-					<span className='truncate text-[11px] font-black capitalize text-zinc-800 dark:text-zinc-200'>
-						{run.status}
-					</span>
+					<div className='flex items-center gap-1.5'>
+						<span className='truncate text-[11px] font-black capitalize text-zinc-800 dark:text-zinc-200'>
+							{run.status}
+						</span>
+						{run.regressed && (
+							<span className='flex shrink-0 items-center gap-0.5 rounded-full bg-rose-500/10 px-1.5 py-0.5 text-[8px] font-black uppercase text-rose-600 dark:text-rose-400'>
+								<TrendingDown size={9} />
+								Worse
+							</span>
+						)}
+					</div>
 					<span className='block text-[9px] font-semibold text-zinc-400 dark:text-zinc-600'>
+						{run.trigger === 'agent_change' ? 'After an agent change · ' : ''}
 						{new Date(run.created_at).toLocaleString()}
 					</span>
 				</div>
@@ -153,6 +204,13 @@ const EvalRunRow = ({
 													</p>
 												)
 											)}
+											{failedAssertions(result.assertions).map((assertion, index) => (
+												<p
+													key={index}
+													className='mt-0.5 truncate text-[9px] font-bold text-rose-500'>
+													Failed: {assertionLabel(assertion.type)} “{assertion.value}”
+												</p>
+											))}
 										</div>
 									</div>
 								))
@@ -182,7 +240,7 @@ const SuiteDetail = ({
 	// Set while the case form edits an existing case instead of adding one.
 	const [editingCaseId, setEditingCaseId] = useState<string | null>(null);
 	const [isEditingSuite, setIsEditingSuite] = useState(false);
-	const [suiteForm, setSuiteForm] = useState({ name: '', description: '' });
+	const [suiteForm, setSuiteForm] = useState({ name: '', description: '', run_on_change: true });
 
 	// The list row goes stale if the suite changes while it is open; the detail
 	// is the current name/description.
@@ -234,7 +292,11 @@ const SuiteDetail = ({
 	};
 
 	const startEditSuite = () => {
-		setSuiteForm({ name: current.name, description: current.description ?? '' });
+		setSuiteForm({
+			name: current.name,
+			description: current.description ?? '',
+			run_on_change: current.run_on_change,
+		});
 		setIsEditingSuite(true);
 	};
 
@@ -242,7 +304,11 @@ const SuiteDetail = ({
 		if (!suiteForm.name.trim()) return;
 		await updateSuiteMutation.mutateAsync({
 			suiteId: String(suite.id),
-			body: { name: suiteForm.name.trim(), description: suiteForm.description.trim() || null },
+			body: {
+				name: suiteForm.name.trim(),
+				description: suiteForm.description.trim() || null,
+				run_on_change: suiteForm.run_on_change,
+			},
 		});
 		setIsEditingSuite(false);
 	};
@@ -305,6 +371,10 @@ const SuiteDetail = ({
 						placeholder='Description (optional)'
 						rows={2}
 						className='w-full resize-none rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+					/>
+					<RunOnChangeToggle
+						value={suiteForm.run_on_change}
+						onChange={(run_on_change) => setSuiteForm((f) => ({ ...f, run_on_change }))}
 					/>
 					<div className='flex justify-end gap-2'>
 						<button
@@ -400,7 +470,10 @@ const SuiteDetail = ({
 											),
 										}))
 									}
-									placeholder='Expected value'
+									placeholder={
+										ASSERTION_TYPES.find((option) => option.id === assertion.type)
+											?.placeholder ?? 'Expected value'
+									}
 									className='min-w-0 flex-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 								/>
 								{form.assertions.length > 1 && (
@@ -481,7 +554,7 @@ const SuiteDetail = ({
 										<span
 											key={index}
 											className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[8px] font-black uppercase text-zinc-500 dark:bg-zinc-800'>
-											{assertion.type.replace('_', ' ')}
+											{assertionLabel(assertion.type)}
 										</span>
 									))}
 								</div>
@@ -536,7 +609,7 @@ const SuiteDetail = ({
 const AgentEvalsPanel = ({ ws, agentId }: TProps) => {
 	const [openSuiteId, setOpenSuiteId] = useState<string | null>(null);
 	const [isFormOpen, setIsFormOpen] = useState(false);
-	const [form, setForm] = useState({ name: '', description: '' });
+	const [form, setForm] = useState({ name: '', description: '', run_on_change: true });
 
 	const { data: suites, isLoading } = useAgentEvalSuites(ws, agentId ?? '');
 	const createMutation = useCreateAgentEvalSuite(ws, agentId ?? '');
@@ -565,7 +638,7 @@ const AgentEvalsPanel = ({ ws, agentId }: TProps) => {
 	}
 
 	const resetForm = () => {
-		setForm({ name: '', description: '' });
+		setForm({ name: '', description: '', run_on_change: true });
 		setIsFormOpen(false);
 	};
 
@@ -574,6 +647,7 @@ const AgentEvalsPanel = ({ ws, agentId }: TProps) => {
 		await createMutation.mutateAsync({
 			name: form.name.trim(),
 			description: form.description.trim() || null,
+			run_on_change: form.run_on_change,
 		});
 		resetForm();
 	};
@@ -621,6 +695,10 @@ const AgentEvalsPanel = ({ ws, agentId }: TProps) => {
 						placeholder='Description (optional)'
 						rows={2}
 						className='w-full resize-none rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+					/>
+					<RunOnChangeToggle
+						value={form.run_on_change}
+						onChange={(run_on_change) => setForm((f) => ({ ...f, run_on_change }))}
 					/>
 					<div className='flex justify-end gap-2'>
 						<button

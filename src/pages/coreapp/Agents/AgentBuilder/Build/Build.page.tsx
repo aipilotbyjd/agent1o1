@@ -29,7 +29,6 @@ import {
 	Database,
 	Users,
 	Mic,
-	CheckSquare,
 	Download,
 	SlidersHorizontal,
 	MoreHorizontal,
@@ -137,7 +136,12 @@ import { AgentSessionService } from '@/api/modules/agents/agent-sessions.service
 import { useDownloadArtifact, ArtifactService } from '@/api/modules/artifacts';
 import type { TWorkflow } from '@/types/workflow.type';
 import type { TArtifact } from '@/types/artifact.type';
-import type { TAgentMessage, TAgentToolBinding, TSubagentTask } from '@/types/agent.type';
+import type {
+	TAgentMessage,
+	TAgentToolBinding,
+	TChosenSkill,
+	TSubagentTask,
+} from '@/types/agent.type';
 import type { TAgentSkill } from '@/types/agent-skill.type';
 import { useAgentChatStore } from '@/store/agentChat.store';
 import { useAgentBuilderStore } from '@/store/agentBuilder.store';
@@ -161,6 +165,14 @@ import AgentApprovalCards from './_partial/AgentApprovalCards.partial';
 import AgentPlanCard from './_partial/AgentPlanCard.partial';
 import AgentAutonomyPanel from './_partial/AgentAutonomyPanel.partial';
 import ChatModeBar from './_partial/ChatModeBar.partial';
+import SaveEvalCaseModal, { type TEvalCaseDraft } from './_partial/SaveEvalCaseModal.partial';
+import {
+	SkillCommandHighlight,
+	SkillCommandTag,
+	SkillSlashMenu,
+	useSkillPicker,
+	type TSlashCommand,
+} from './_partial/SkillSlashMenu.partial';
 import {
 	AgentActionService,
 	agentActionKeys,
@@ -190,6 +202,7 @@ const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 		.map((message) => ({
 			id: `msg-${message.id}`,
 			sender: message.role === 'user' ? ('user' as const) : ('agent' as const),
+			skill: message.skill ?? undefined,
 			text:
 				typeof message.content === 'string'
 					? message.content || (message.awaiting_approval ? AWAITING_APPROVAL_TEXT : '')
@@ -242,6 +255,8 @@ const INVOKE_AGENT_TOOL = 'invoke_agent';
 const WAIT_SUBAGENTS_TOOL = 'wait_for_subagents';
 const UPDATE_SKILL_TOOL = 'update_skill';
 const REMEMBER_TOOL = 'remember';
+const FORGET_TOOL = 'forget';
+const RECALL_MEMORIES_TOOL = 'recall_memories';
 
 /** What each skill tool did, for the step line and the chip above a reply. */
 const SKILL_TOOL_VERBS: Record<string, { running: string; done: string; nameArg: string }> = {
@@ -304,6 +319,8 @@ interface TMessage {
 	attachments?: { id?: string; filename: string; size: number }[];
 	/** The files as sent from this tab, kept so Regenerate can upload them again. */
 	files?: File[];
+	/** The skill picked for this (user) message with `/`. */
+	skill?: TChosenSkill;
 	timestamp: string;
 	type?: 'text' | 'table';
 	headers?: string[];
@@ -358,7 +375,7 @@ const ChatAttachmentTray = ({
 	if (files.length === 0) return null;
 	return (
 		<div className='min-w-0 space-y-1.5' aria-live='polite'>
-			<div className='flex max-h-24 flex-wrap gap-1.5 overflow-y-auto'>
+			<div className='no-scrollbar flex max-h-24 flex-wrap gap-1.5 overflow-y-auto'>
 				{files.map((file) => (
 					<button
 						key={`${file.name}-${file.size}-${file.lastModified}`}
@@ -517,6 +534,9 @@ const toolStepLabel = (item: TToolItem, task?: TSubagentTask): string => {
 
 	if (skillVerb) return `${skillVerb[running ? 'running' : 'done']} skill · ${arg(skillVerb.nameArg)}`;
 	if (item.toolName === REMEMBER_TOOL) return `${running ? 'Remembering' : 'Remembered'} · ${arg('key')}`;
+	if (item.toolName === FORGET_TOOL) return `${running ? 'Forgetting' : 'Forgot'} · ${arg('key')}`;
+	if (item.toolName === RECALL_MEMORIES_TOOL)
+		return `${running ? 'Recalling' : 'Recalled'} · ${arg('query')}`;
 	if (item.toolName === UPDATE_INSTRUCTIONS_TOOL)
 		return running ? 'Updating its instructions' : 'Updated its instructions';
 	if (item.toolName === INVOKE_AGENT_TOOL) return `Subagent · ${task?.agent.name ?? arg('agent')}`;
@@ -528,7 +548,8 @@ const toolStepLabel = (item: TToolItem, task?: TSubagentTask): string => {
 };
 
 const toolStepIcon = (toolName: string) => {
-	if (toolName === REMEMBER_TOOL) return Brain;
+	if (toolName === REMEMBER_TOOL || toolName === FORGET_TOOL || toolName === RECALL_MEMORIES_TOOL)
+		return Brain;
 	if (toolName === UPDATE_INSTRUCTIONS_TOOL) return ScrollText;
 	if (SKILL_TOOL_VERBS[toolName]) return Sparkles;
 	if (toolName === INVOKE_AGENT_TOOL || toolName === WAIT_SUBAGENTS_TOOL) return Bot;
@@ -599,7 +620,7 @@ const ToolStepDetail = ({ label, children }: { label: string; children: ReactNod
 );
 
 const StepAnswer = ({ text }: { text: string }) => (
-	<div className='max-h-60 overflow-y-auto rounded-md bg-zinc-50 px-2.5 py-2 text-[12px] leading-relaxed font-semibold text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300'>
+	<div className='no-scrollbar max-h-60 overflow-y-auto rounded-md bg-zinc-50 px-2.5 py-2 text-[12px] leading-relaxed font-semibold text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300'>
 		<MessageMarkdown text={text} />
 	</div>
 );
@@ -652,7 +673,7 @@ const StepOutput = ({ output, failed }: { output: string; failed: boolean }) => 
 	const parsed = parseToolOutput(output);
 	return (
 		<pre
-			className={`max-h-40 overflow-y-auto rounded-md px-2 py-1 font-mono text-[11px] whitespace-pre-wrap [overflow-wrap:anywhere] ${
+			className={`no-scrollbar max-h-40 overflow-y-auto rounded-md px-2 py-1 font-mono text-[11px] whitespace-pre-wrap [overflow-wrap:anywhere] ${
 				failed
 					? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300'
 					: 'bg-zinc-50 text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300'
@@ -778,7 +799,7 @@ const ToolStep = ({
 											<dt className='font-mono text-[11px] font-bold text-zinc-500 dark:text-zinc-400'>
 												{key}
 											</dt>
-											<dd className='max-h-40 overflow-y-auto rounded-md bg-zinc-50 px-2 py-1 font-mono text-[11px] whitespace-pre-wrap text-zinc-700 [overflow-wrap:anywhere] dark:bg-zinc-950 dark:text-zinc-300'>
+											<dd className='no-scrollbar max-h-40 overflow-y-auto rounded-md bg-zinc-50 px-2 py-1 font-mono text-[11px] whitespace-pre-wrap text-zinc-700 [overflow-wrap:anywhere] dark:bg-zinc-950 dark:text-zinc-300'>
 												{formatToolValue(value)}
 											</dd>
 										</div>
@@ -1189,6 +1210,70 @@ const BuildPage = () => {
 		writeDraft(draftKeyRef.current, value);
 	};
 
+	/** Built-in actions in the composer's `/` menu, listed above the skills. Always
+	 *  all shown, so the list doesn't change shape; one that can't run yet says why. */
+	const hasMessages = chatHistory.length > 0;
+	const slashCommands: TSlashCommand[] = [
+		{
+			id: 'new-chat',
+			name: 'New chat',
+			description: 'Start a fresh conversation',
+			unavailable: isTyping
+				? 'Wait for the reply to finish'
+				: !hasMessages
+					? 'This chat is already empty'
+					: undefined,
+			run: () => {
+				newSession();
+				loadedSessionRef.current = null;
+				setChatHistory([]);
+			},
+		},
+		{
+			id: 'regenerate',
+			name: 'Regenerate',
+			description: 'Write the last reply again',
+			unavailable: isTyping
+				? 'Wait for the reply to finish'
+				: chatHistory[chatHistory.length - 1]?.sender !== 'agent'
+					? 'No reply to redo yet'
+					: undefined,
+			run: () => void regenerateLastReply(),
+		},
+		{
+			id: 'copy-chat',
+			name: 'Copy chat',
+			description: 'Copy this conversation as text',
+			unavailable: hasMessages ? undefined : 'Nothing to copy yet',
+			run: () =>
+				void copyToClipboard(
+					chatHistory
+						.map(
+							(message) =>
+								`${message.sender === 'user' ? 'You' : agentName || 'Agent'}: ${message.text}`,
+						)
+						.join('\n\n'),
+					'Chat copied.',
+				),
+		},
+		{
+			id: 'settings',
+			name: 'Settings',
+			description: 'Instructions, model, tools and skills',
+			run: () => {
+				setActiveSidebarTab('agent');
+				setIsSettingsOpen(true);
+			},
+		},
+	];
+
+	const skillPicker = useSkillPicker({
+		skills: attachedSkills ?? [],
+		commands: slashCommands,
+		input: chatInput,
+		setInput: updateChatInput,
+	});
+
 	// A restored draft is set straight into state, so nothing has resized the box
 	// for it — a two-line draft would come back showing one line.
 	useEffect(() => {
@@ -1239,7 +1324,6 @@ const BuildPage = () => {
 	};
 
 	
-	const [skillEnabled, setSkillEnabled] = useState(true);
 
 	// Sidebar settings panel states
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -1774,7 +1858,8 @@ const BuildPage = () => {
 					if (event.name === UPDATE_INSTRUCTIONS_TOOL) updatedInstructions = true;
 					if (event.name === CREATE_SKILL_TOOL || event.name === UPDATE_SKILL_TOOL)
 						changedSkills = true;
-					if (event.name === REMEMBER_TOOL) rememberedFacts = true;
+					if (event.name === REMEMBER_TOOL || event.name === FORGET_TOOL)
+						rememberedFacts = true;
 				}
 				if (event.name === INVOKE_AGENT_TOOL) {
 					void queryClient.invalidateQueries({
@@ -1854,7 +1939,7 @@ const BuildPage = () => {
 			void queryClient.invalidateQueries({ queryKey: agentSkillKeys.all(workspaceId) });
 		}
 
-		// The agent saved a fact; refresh the Memory panel.
+		// The agent saved or forgot a fact; refresh the Memory panel.
 		if (rememberedFacts) {
 			void queryClient.invalidateQueries({
 				queryKey: agentMemoryKeys.list(workspaceId, agentIdForRun),
@@ -1868,12 +1953,19 @@ const BuildPage = () => {
 	// still an unsaved draft, then starts or continues its conversation.
 	// `resendFiles` replaces the composer's attachments — Regenerate passes the
 	// ones the original message carried.
-	const sendChatMessage = async (messageText: string, resendFiles?: File[]) => {
+	const sendChatMessage = async (
+		messageText: string,
+		resendFiles?: File[],
+		skill?: TChosenSkill | null,
+	) => {
 		const trimmed = messageText.trim();
 		const files = resendFiles ?? [...chatAttachments];
-		if ((!trimmed && files.length === 0) || !workspaceId || streamAbortRef.current) return;
-		// The backend requires message text, even when only files are sent.
-		const prompt = trimmed || 'Please review the attached files.';
+		if ((!trimmed && files.length === 0 && !skill) || !workspaceId || streamAbortRef.current)
+			return;
+		// The backend requires message text, even when only files or a skill are sent.
+		const prompt =
+			trimmed ||
+			(files.length > 0 ? 'Please review the attached files.' : `Use the ${skill?.name} skill.`);
 		followLatestRef.current = true;
 		setShowLatestButton(false);
 
@@ -1887,6 +1979,7 @@ const BuildPage = () => {
 					? files.map((file) => ({ filename: file.name, size: file.size }))
 					: undefined,
 			files: files.length > 0 ? files : undefined,
+			skill: skill ?? undefined,
 			timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
 		};
 
@@ -1932,7 +2025,7 @@ const BuildPage = () => {
 					workspaceId,
 					agentIdForRun,
 					sessionId,
-					{ message: prompt, attachments: files },
+					{ message: prompt, attachments: files, skill_id: skill?.id },
 					controller.signal,
 				),
 				agentIdForRun,
@@ -2186,7 +2279,7 @@ const BuildPage = () => {
 			const lastUserIdx = prev.map((m) => m.id).lastIndexOf(lastUser.id);
 			return lastUserIdx === -1 ? prev : prev.slice(0, lastUserIdx);
 		});
-		void sendChatMessage(lastUser.retryText ?? lastUser.text, files ?? []);
+		void sendChatMessage(lastUser.retryText ?? lastUser.text, files ?? [], lastUser.skill);
 	};
 
 	/** Puts a sent message back in the composer and rewinds the transcript to it. */
@@ -2196,13 +2289,29 @@ const BuildPage = () => {
 			const idx = prev.map((m) => m.id).lastIndexOf(message.id);
 			return idx === -1 ? prev : prev.slice(0, idx);
 		});
-		updateChatInput(message.text);
+		updateChatInput(
+			message.skill
+				? `/${message.skill.name} ${message.retryText ?? message.text}`
+				: message.text,
+		);
 		// The composer only exists on the desktop layout; mobile falls back to state.
 		requestAnimationFrame(() => composerRef.current?.focus());
 	};
 
 	const copyMessage = (text: string) => {
 		void copyToClipboard(text, 'Message copied.');
+	};
+
+	const [evalCaseDraft, setEvalCaseDraft] = useState<TEvalCaseDraft | null>(null);
+
+	/** The case input is the user message this reply answered. */
+	const saveReplyAsEvalCase = (replyIndex: number) => {
+		const asked = chatHistory
+			.slice(0, replyIndex)
+			.reverse()
+			.find((message) => message.sender === 'user');
+		if (!asked) return;
+		setEvalCaseDraft({ input: asked.text, reply: chatHistory[replyIndex].text });
 	};
 	const useSuggestedPrompt = (prompt: string) => {
 		updateChatInput(prompt);
@@ -2415,7 +2524,7 @@ const BuildPage = () => {
 						</MainAppBarPillButton>
 					</MainAppBar>
 
-					<main className='min-h-0 flex-1 overflow-y-auto'>
+					<main className='no-scrollbar min-h-0 flex-1 overflow-y-auto'>
 						<motion.div
 							initial={{ y: 18, opacity: 0 }}
 							animate={{ y: 0, opacity: 1 }}
@@ -2912,581 +3021,601 @@ const BuildPage = () => {
 						<div
 							ref={chatScrollRef}
 							onScroll={handleChatScroll}
-							className='mx-auto h-full w-full max-w-4xl space-y-6 overflow-y-auto px-4 py-6 md:px-8'>
-							{parentSessionId && (
-								<div className='flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-[11px] font-semibold text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
-									<Bot size={13} className='shrink-0' />
-									<span className='min-w-0 flex-1'>
-										Subagent task — another conversation handed this chat its job, and
-										the final reply went back to it.
-									</span>
-									{parentSessionInAgent && (
-										<button
-											type='button'
-											onClick={() => openSession(String(parentSessionId))}
-											disabled={isTyping}
-											className='text-primary-600 dark:text-primary-400 min-h-8 shrink-0 cursor-pointer rounded-lg px-2 font-bold hover:underline disabled:cursor-not-allowed disabled:opacity-50'>
-											Open parent chat
-										</button>
-									)}
-								</div>
-							)}
-							{existingAgent &&
-								openedSession &&
-								String(openedSession.id) === String(conversationId) && (
-									<ChatModeBar
-										ws={workspaceId}
-										agent={existingAgent}
-										session={openedSession}
-										disabled={isTyping}
-									/>
+							className='no-scrollbar h-full w-full overflow-y-auto'>
+							<div className='mx-auto w-full max-w-4xl space-y-6 px-4 py-6 md:px-8'>
+								{parentSessionId && (
+									<div className='flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-[11px] font-semibold text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
+										<Bot size={13} className='shrink-0' />
+										<span className='min-w-0 flex-1'>
+											Subagent task — another conversation handed this chat its job, and
+											the final reply went back to it.
+										</span>
+										{parentSessionInAgent && (
+											<button
+												type='button'
+												onClick={() => openSession(String(parentSessionId))}
+												disabled={isTyping}
+												className='text-primary-600 dark:text-primary-400 min-h-8 shrink-0 cursor-pointer rounded-lg px-2 font-bold hover:underline disabled:cursor-not-allowed disabled:opacity-50'>
+												Open parent chat
+											</button>
+										)}
+									</div>
 								)}
-							{conversationId &&
-							loadedSessionRef.current !== conversationId &&
-							isSessionError ? (
-								<div
-									role='alert'
-									className='mx-auto max-w-sm rounded-xl border border-rose-200 p-4 text-center text-sm text-zinc-700 dark:border-rose-900 dark:text-zinc-200'>
-									<p>Could not load this chat.</p>
-									<button
-										type='button'
-										onClick={() => void refetchSession()}
-										className='bg-primary-400 text-primary-950 mt-3 min-h-10 rounded-lg px-4 text-xs font-bold'>
-										Retry
-									</button>
-								</div>
-							) : conversationId &&
-							  loadedSessionRef.current !== conversationId &&
-							  isSessionPending ? (
-								<div
-									role='status'
-									className='flex items-center justify-center gap-2 py-12 text-sm text-zinc-500'>
-									<Loader2 size={16} className='animate-spin' /> Loading chat…
-								</div>
-							) : isMobile &&
-							  chatHistory.filter((m) => m.sender === 'user').length === 0 ? (
-								<div className='flex flex-col items-center justify-center px-2 pt-8 pb-4 select-none'>
-									{/* Centered Fire/Flame Logo */}
-									<div className='mb-6 flex items-center justify-center'>
-										<img
-											src={LogoFyr}
-											alt='Fyr Logo'
-											className='h-[88px] w-[88px] object-contain'
+								{existingAgent &&
+									openedSession &&
+									String(openedSession.id) === String(conversationId) && (
+										<ChatModeBar
+											ws={workspaceId}
+											agent={existingAgent}
+											session={openedSession}
+											disabled={isTyping}
 										/>
-									</div>
-
-									{/* Centered Title */}
-									<h2 className='mb-6 px-4 text-center text-[22px] font-black tracking-tight text-zinc-900 dark:text-white'>
-										{agentName}
-									</h2>
-
-									{/* Row of circular buttons */}
-									<div className='flex w-full max-w-sm flex-wrap items-center justify-center gap-3.5 px-4'>
+									)}
+								{conversationId &&
+								loadedSessionRef.current !== conversationId &&
+								isSessionError ? (
+									<div
+										role='alert'
+										className='mx-auto max-w-sm rounded-xl border border-rose-200 p-4 text-center text-sm text-zinc-700 dark:border-rose-900 dark:text-zinc-200'>
+										<p>Could not load this chat.</p>
 										<button
-											aria-label='Draft a research question'
-											title='Research question'
 											type='button'
-											onClick={() =>
-												useSuggestedPrompt(
-													'Research this topic and summarize the key findings: ',
-												)
-											}
-											className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-orange-50/60 text-orange-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-orange-500/20 dark:bg-orange-500/10'>
-											<Flame size={18} />
-										</button>
-										<button
-											aria-label='Draft a comparison request'
-											title='Compare options'
-											type='button'
-											onClick={() =>
-												useSuggestedPrompt(
-													'Compare these options in a clear table: ',
-												)
-											}
-											className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50/60 text-blue-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-blue-500/20 dark:bg-blue-500/10'>
-											<FileText size={18} />
-										</button>
-										<button
-											aria-label='Draft a structured plan request'
-											title='Make a plan'
-											type='button'
-											onClick={() =>
-												useSuggestedPrompt('Make a step-by-step plan for: ')
-											}
-											className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
-											<Layers size={18} />
-										</button>
-										<button
-											aria-label='Draft a web research question'
-											title='Web research question'
-											type='button'
-											onClick={() =>
-												useSuggestedPrompt(
-													'What should I know about this topic? Include sources if available: ',
-												)
-											}
-											className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
-											<Globe size={18} />
-										</button>
-										<button
-											aria-label='Draft a file request'
-											title='Ask for a file'
-											type='button'
-											onClick={() =>
-												useSuggestedPrompt(
-													'Create a downloadable file containing: ',
-												)
-											}
-											className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
-											<Download size={18} />
-										</button>
-										<button
-											aria-label='Draft an image request'
-											title='Describe an image'
-											type='button'
-											onClick={() =>
-												useSuggestedPrompt(
-													'Help me describe an image for: ',
-												)
-											}
-											className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
-											<ImageIcon size={18} />
+											onClick={() => void refetchSession()}
+											className='bg-primary-400 text-primary-950 mt-3 min-h-10 rounded-lg px-4 text-xs font-bold'>
+											Retry
 										</button>
 									</div>
-
-									{/* Get started section */}
-									{showGetStarted && (
-										<div className='mt-12 w-full px-4'>
-											<div className='mb-4 flex items-center justify-between'>
-												<span className='text-[15px] font-black text-zinc-800 dark:text-zinc-100'>
-													Get started
-												</span>
-												<button
-													type='button'
-													onClick={() => setShowGetStarted(false)}
-													className='text-xs font-bold text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'>
-													Dismiss
-												</button>
-											</div>
-
-											{/* Horizontal scrolling grid container */}
-											<div className='flex [scrollbar-width:none] gap-4 overflow-x-auto scroll-smooth pb-4 [&::-webkit-scrollbar]:hidden'>
-												{/* Card 1 */}
-												<button
-													type='button'
-													onClick={openGetStartedTrigger}
-													className='border-zinc-150 flex max-w-[270px] min-w-[270px] flex-col rounded-2xl border bg-white p-5 text-left shadow-2xs transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:border-zinc-800/80 dark:bg-zinc-900'>
-													<div className='mb-2 flex items-center gap-2 text-zinc-800 dark:text-zinc-200'>
-														<Zap
-															size={16}
-															className='text-zinc-450 dark:text-zinc-400'
-														/>
-														<span className='text-xs font-black'>
-															Set up a trigger
-														</span>
-													</div>
-													<p className='text-[11px] leading-relaxed font-semibold text-zinc-500 dark:text-zinc-400'>
-														Open trigger settings to run this agent on a
-														schedule or from an event.
-													</p>
-												</button>
-
-												{/* Card 2 */}
-												<button
-													type='button'
-													onClick={openGetStartedTool}
-													className='border-zinc-150 flex max-w-[270px] min-w-[270px] flex-col rounded-2xl border bg-white p-5 text-left shadow-2xs transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:border-zinc-800/80 dark:bg-zinc-900'>
-													<div className='mb-2 flex items-center gap-2 text-zinc-800 dark:text-zinc-200'>
-														<Layers
-															size={16}
-															className='text-zinc-455 dark:text-zinc-400'
-														/>
-														<span className='text-xs font-black'>
-															Add a tool
-														</span>
-													</div>
-													<p className='text-[11px] leading-relaxed font-semibold text-zinc-500 dark:text-zinc-400'>
-														Choose a tool or workflow this agent can use
-														while answering.
-													</p>
-												</button>
-											</div>
+								) : conversationId &&
+								  loadedSessionRef.current !== conversationId &&
+								  isSessionPending ? (
+									<div
+										role='status'
+										className='flex items-center justify-center gap-2 py-12 text-sm text-zinc-500'>
+										<Loader2 size={16} className='animate-spin' /> Loading chat…
+									</div>
+								) : isMobile &&
+								  chatHistory.filter((m) => m.sender === 'user').length === 0 ? (
+									<div className='flex flex-col items-center justify-center px-2 pt-8 pb-4 select-none'>
+										{/* Centered Fire/Flame Logo */}
+										<div className='mb-6 flex items-center justify-center'>
+											<img
+												src={LogoFyr}
+												alt='Fyr Logo'
+												className='h-[88px] w-[88px] object-contain'
+											/>
 										</div>
-									)}
-								</div>
-							) : chatHistory.length === 0 ? (
-								<div className='flex flex-col items-center justify-center px-4 pt-16 pb-8 text-center select-none'>
-									<div className='mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-zinc-200 bg-white shadow-2xs dark:border-zinc-800 dark:bg-zinc-900'>
-										<AgentIconComponent
-											size={30}
-											className={agentColorTextClass(agentIconColor)}
-										/>
+
+										{/* Centered Title */}
+										<h2 className='mb-6 px-4 text-center text-[22px] font-black tracking-tight text-zinc-900 dark:text-white'>
+											{agentName}
+										</h2>
+
+										{/* Row of circular buttons */}
+										<div className='flex w-full max-w-sm flex-wrap items-center justify-center gap-3.5 px-4'>
+											<button
+												aria-label='Draft a research question'
+												title='Research question'
+												type='button'
+												onClick={() =>
+													useSuggestedPrompt(
+														'Research this topic and summarize the key findings: ',
+													)
+												}
+												className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-orange-50/60 text-orange-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-orange-500/20 dark:bg-orange-500/10'>
+												<Flame size={18} />
+											</button>
+											<button
+												aria-label='Draft a comparison request'
+												title='Compare options'
+												type='button'
+												onClick={() =>
+													useSuggestedPrompt(
+														'Compare these options in a clear table: ',
+													)
+												}
+												className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50/60 text-blue-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-blue-500/20 dark:bg-blue-500/10'>
+												<FileText size={18} />
+											</button>
+											<button
+												aria-label='Draft a structured plan request'
+												title='Make a plan'
+												type='button'
+												onClick={() =>
+													useSuggestedPrompt('Make a step-by-step plan for: ')
+												}
+												className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
+												<Layers size={18} />
+											</button>
+											<button
+												aria-label='Draft a web research question'
+												title='Web research question'
+												type='button'
+												onClick={() =>
+													useSuggestedPrompt(
+														'What should I know about this topic? Include sources if available: ',
+													)
+												}
+												className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
+												<Globe size={18} />
+											</button>
+											<button
+												aria-label='Draft a file request'
+												title='Ask for a file'
+												type='button'
+												onClick={() =>
+													useSuggestedPrompt(
+														'Create a downloadable file containing: ',
+													)
+												}
+												className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
+												<Download size={18} />
+											</button>
+											<button
+												aria-label='Draft an image request'
+												title='Describe an image'
+												type='button'
+												onClick={() =>
+													useSuggestedPrompt(
+														'Help me describe an image for: ',
+													)
+												}
+												className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
+												<ImageIcon size={18} />
+											</button>
+										</div>
+
+										{/* Get started section */}
+										{showGetStarted && (
+											<div className='mt-12 w-full px-4'>
+												<div className='mb-4 flex items-center justify-between'>
+													<span className='text-[15px] font-black text-zinc-800 dark:text-zinc-100'>
+														Get started
+													</span>
+													<button
+														type='button'
+														onClick={() => setShowGetStarted(false)}
+														className='text-xs font-bold text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'>
+														Dismiss
+													</button>
+												</div>
+
+												{/* Horizontal scrolling grid container */}
+												<div className='flex [scrollbar-width:none] gap-4 overflow-x-auto scroll-smooth pb-4 [&::-webkit-scrollbar]:hidden'>
+													{/* Card 1 */}
+													<button
+														type='button'
+														onClick={openGetStartedTrigger}
+														className='border-zinc-150 flex max-w-[270px] min-w-[270px] flex-col rounded-2xl border bg-white p-5 text-left shadow-2xs transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:border-zinc-800/80 dark:bg-zinc-900'>
+														<div className='mb-2 flex items-center gap-2 text-zinc-800 dark:text-zinc-200'>
+															<Zap
+																size={16}
+																className='text-zinc-450 dark:text-zinc-400'
+															/>
+															<span className='text-xs font-black'>
+																Set up a trigger
+															</span>
+														</div>
+														<p className='text-[11px] leading-relaxed font-semibold text-zinc-500 dark:text-zinc-400'>
+															Open trigger settings to run this agent on a
+															schedule or from an event.
+														</p>
+													</button>
+
+													{/* Card 2 */}
+													<button
+														type='button'
+														onClick={openGetStartedTool}
+														className='border-zinc-150 flex max-w-[270px] min-w-[270px] flex-col rounded-2xl border bg-white p-5 text-left shadow-2xs transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:border-zinc-800/80 dark:bg-zinc-900'>
+														<div className='mb-2 flex items-center gap-2 text-zinc-800 dark:text-zinc-200'>
+															<Layers
+																size={16}
+																className='text-zinc-455 dark:text-zinc-400'
+															/>
+															<span className='text-xs font-black'>
+																Add a tool
+															</span>
+														</div>
+														<p className='text-[11px] leading-relaxed font-semibold text-zinc-500 dark:text-zinc-400'>
+															Choose a tool or workflow this agent can use
+															while answering.
+														</p>
+													</button>
+												</div>
+											</div>
+										)}
 									</div>
-									<h2 className='text-xl font-black tracking-tight text-zinc-900 dark:text-white'>
-										{agentName || 'Untitled Agent'}
-									</h2>
-									{agentDescription && (
-										<p className='mt-2 max-w-md text-sm font-semibold text-zinc-500 dark:text-zinc-400'>
-											{agentDescription}
-										</p>
-									)}
-								</div>
-							) : (
-								chatHistory.map((message, messageIdx) => {
-									const isUser = message.sender === 'user';
-									// Regenerate only makes sense on the reply that is actually last —
-									// re-running an older turn would strand everything after it.
-									const isLastMessage = messageIdx === chatHistory.length - 1;
-									return (
-										<div
-											key={message.id}
-											className={`group flex w-full ${isUser ? 'justify-end' : 'justify-start'}`}>
+								) : chatHistory.length === 0 ? (
+									<div className='flex flex-col items-center justify-center px-4 pt-16 pb-8 text-center select-none'>
+										<div className='mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-zinc-200 bg-white shadow-2xs dark:border-zinc-800 dark:bg-zinc-900'>
+											<AgentIconComponent
+												size={30}
+												className={agentColorTextClass(agentIconColor)}
+											/>
+										</div>
+										<h2 className='text-xl font-black tracking-tight text-zinc-900 dark:text-white'>
+											{agentName || 'Untitled Agent'}
+										</h2>
+										{agentDescription && (
+											<p className='mt-2 max-w-md text-sm font-semibold text-zinc-500 dark:text-zinc-400'>
+												{agentDescription}
+											</p>
+										)}
+									</div>
+								) : (
+									chatHistory.map((message, messageIdx) => {
+										const isUser = message.sender === 'user';
+										// Regenerate only makes sense on the reply that is actually last —
+										// re-running an older turn would strand everything after it.
+										const isLastMessage = messageIdx === chatHistory.length - 1;
+										return (
 											<div
-												className={`flex gap-3 ${isUser ? 'max-w-[90%] flex-row-reverse sm:max-w-[80%]' : 'w-full max-w-3xl flex-row'}`}>
-												{/* Agent Avatar in body */}
-												{!isUser && (
-													<div
-														className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-zinc-950 text-white dark:border-white/10 dark:bg-zinc-900`}>
-														<AgentIconComponent
-															size={16}
-															className={agentColorTextClass(
-																agentIconColor,
-															)}
-														/>
-													</div>
-												)}
-
-												<div className={`flex min-w-0 flex-col ${isUser ? '' : 'flex-1'}`}>
-													{/* What the agent did to produce this reply, step by step */}
-													{!isUser &&
-														message.timeline &&
-														message.timeline.length > 0 && (
-															<>
-																<UsedSkills
-																	items={message.timeline}
-																	skills={workspaceSkills ?? []}
-																/>
-																<ToolTimeline
-																	items={message.timeline}
-																	tasks={subagentTasks ?? []}
-																	actions={sessionActions}
-																	ws={workspaceId}
-																	className='mb-3'
-																/>
-															</>
-														)}
-
-													{/* Files the agent exported — always shown, never collapsed */}
-													{!isUser &&
-														message.timeline &&
-														message.timeline.length > 0 && (
-															<div className='mb-1.5 flex flex-col gap-1.5'>
-																{message.timeline.map((item) =>
-																	item.kind === 'artifact' ? (
-																		<ArtifactCard
-																			key={item.id}
-																			item={item}
-																			ws={workspaceId}
-																		/>
-																	) : null,
+												key={message.id}
+												className={`group flex w-full ${isUser ? 'justify-end' : 'justify-start'}`}>
+												<div
+													className={`flex gap-3 ${isUser ? 'max-w-[90%] flex-row-reverse sm:max-w-[80%]' : 'w-full max-w-3xl flex-row'}`}>
+													{/* Agent Avatar in body */}
+													{!isUser && (
+														<div
+															className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-zinc-950 text-white dark:border-white/10 dark:bg-zinc-900`}>
+															<AgentIconComponent
+																size={16}
+																className={agentColorTextClass(
+																	agentIconColor,
 																)}
-															</div>
-														)}
-
-													{/* Files the member sent with this message */}
-													{isUser &&
-														message.attachments &&
-														message.attachments.length > 0 && (
-															<MessageAttachments
-																attachments={message.attachments}
-																ws={workspaceId}
 															/>
-														)}
+														</div>
+													)}
 
-													{/* The user's bubble, or the agent's answer as plain prose under its steps */}
-													<div
-														className={`max-w-full min-w-0 text-sm leading-relaxed font-semibold [overflow-wrap:anywhere] ${
-															isUser
-																? 'bg-primary-400/10 dark:bg-primary-400/25 rounded-2xl rounded-tr-none px-4 py-3 text-zinc-950 dark:text-zinc-100'
-																: 'pt-1.5 text-zinc-800 dark:text-zinc-200'
-														}`}>
-														{isUser ? (
-															<p className='whitespace-pre-line'>
-																{message.text}
-															</p>
-														) : (
-															<MessageMarkdown
-																text={message.text}
-															/>
-														)}
+													<div className={`flex min-w-0 flex-col ${isUser ? '' : 'flex-1'}`}>
+														{/* What the agent did to produce this reply, step by step */}
+														{!isUser &&
+															message.timeline &&
+															message.timeline.length > 0 && (
+																<>
+																	<UsedSkills
+																		items={message.timeline}
+																		skills={workspaceSkills ?? []}
+																	/>
+																	<ToolTimeline
+																		items={message.timeline}
+																		tasks={subagentTasks ?? []}
+																		actions={sessionActions}
+																		ws={workspaceId}
+																		className='mb-3'
+																	/>
+																</>
+															)}
 
-														{/* Structured Table for data responses */}
-														{message.type === 'table' &&
-															message.headers &&
-															message.data && (
-																<div className='mt-4 overflow-hidden rounded-xl border border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950'>
-																	<div className='overflow-x-auto'>
-																		<table className='w-full text-left text-xs font-semibold text-zinc-600 dark:text-zinc-400'>
-																			<thead className='border-b border-zinc-200 bg-zinc-50/50 text-[11px] font-black tracking-wider text-zinc-600 uppercase dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400'>
-																				<tr>
-																					{message.headers.map(
-																						(h) => (
-																							<th
-																								key={
-																									h
-																								}
-																								className='px-4 py-2.5 font-bold'>
-																								{h}
-																							</th>
-																						),
-																					)}
-																				</tr>
-																			</thead>
-																			<tbody className='divide-y divide-zinc-200/80 dark:divide-zinc-800'>
-																				{message.data.map(
-																					(row, rIdx) => (
-																						<tr
-																							key={
-																								rIdx
-																							}
-																							className='hover:bg-zinc-50/40 dark:hover:bg-zinc-900/20'>
-																							{message.headers!.map(
-																								(
-																									h,
-																								) => (
-																									<td
-																										key={
-																											h
-																										}
-																										className='px-4 py-2.5 whitespace-nowrap text-zinc-900 dark:text-zinc-100'>
-																										{
-																											row[
-																												h
-																											]
-																										}
-																									</td>
-																								),
-																							)}
-																						</tr>
-																					),
-																				)}
-																			</tbody>
-																		</table>
-																	</div>
+														{/* Files the agent exported — always shown, never collapsed */}
+														{!isUser &&
+															message.timeline &&
+															message.timeline.length > 0 && (
+																<div className='mb-1.5 flex flex-col gap-1.5'>
+																	{message.timeline.map((item) =>
+																		item.kind === 'artifact' ? (
+																			<ArtifactCard
+																				key={item.id}
+																				item={item}
+																				ws={workspaceId}
+																			/>
+																		) : null,
+																	)}
 																</div>
 															)}
 
-														{/* Follow up text */}
-														{message.followUp && (
-															<p className='mt-4 text-xs font-bold text-zinc-500 dark:text-zinc-400'>
-																{message.followUp}
-															</p>
-														)}
-													</div>
+														{/* Files the member sent with this message */}
+														{isUser &&
+															message.attachments &&
+															message.attachments.length > 0 && (
+																<MessageAttachments
+																	attachments={message.attachments}
+																	ws={workspaceId}
+																/>
+															)}
 
-													{message.failed && (
-														<button
-															type='button'
-															aria-label={`Actions for message at ${message.timestamp}`}
-															onClick={regenerateLastReply}
-															disabled={isTyping}
-															className='mt-2 inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-zinc-200 px-3 text-xs font-bold text-zinc-700 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200'>
-															<RefreshCw size={14} /> Retry response
-														</button>
-													)}
-
-													{/* Action Buttons for agent messages */}
-													{!isUser &&
-														message.actions &&
-														message.actions.length > 0 && (
-															<div className='mt-3.5 flex flex-wrap gap-2.5'>
-																{message.actions.map((act) => {
-																	let IconComp = Sparkles;
-																	if (
-																		act.type === 'export_csv' ||
-																		act.type === 'pdf_digest'
-																	)
-																		IconComp = Download;
-																	if (
-																		act.type === 'refine' ||
-																		act.type === 'set_alert'
-																	)
-																		IconComp =
-																			SlidersHorizontal;
-
-																	return (
-																		<button
-																			key={act.label}
-																			onClick={() =>
-																				handleActionClick(
-																					act,
-																				)
-																			}
-																			className='inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-4 py-1.5 text-xs font-black text-zinc-700 shadow-2xs transition hover:bg-zinc-50 active:scale-95 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/80'>
-																			<IconComp
-																				size={12}
-																				className='text-primary-500'
-																			/>
-																			<span>{act.label}</span>
-																		</button>
-																	);
-																})}
-															</div>
-														)}
-
-													{/* Timestamp + per-message actions. The toolbar rides the row's
-												    hover; on touch there is none, so tapping the timestamp pins it. */}
-													<div
-														className={`mt-1.5 flex items-center gap-1.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-														<button
-															type='button'
-															onClick={() =>
-																setActiveMessageId((current) =>
-																	current === message.id
-																		? null
-																		: message.id,
-																)
-															}
-															className='flex min-h-10 items-center gap-1 rounded-md px-2 text-[10px] font-semibold text-zinc-400 md:min-h-0 md:px-0 dark:text-zinc-500'>
-															{message.timestamp}
-															<MoreHorizontal
-																size={14}
-																className='md:hidden'
-															/>
-														</button>
-
-														{message.stopped && (
-															<span className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[9px] font-black tracking-wide text-zinc-500 uppercase dark:bg-zinc-800 dark:text-zinc-400'>
-																Stopped
-															</span>
-														)}
-
+														{/* The user's bubble, or the agent's answer as plain prose under its steps */}
 														<div
-															className={`flex items-center gap-0.5 transition ${
-																activeMessageId === message.id
-																	? 'opacity-100'
-																	: 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100'
+															className={`max-w-full min-w-0 text-sm leading-relaxed font-semibold [overflow-wrap:anywhere] ${
+																isUser
+																	? 'bg-primary-400/10 dark:bg-primary-400/25 rounded-2xl rounded-tr-none px-4 py-3 text-zinc-950 dark:text-zinc-100'
+																	: 'pt-1.5 text-zinc-800 dark:text-zinc-200'
 															}`}>
+															{isUser ? (
+																<p className='whitespace-pre-line'>
+																	{message.skill && (
+																		<SkillCommandTag
+																			skill={message.skill}
+																		/>
+																	)}
+																	{message.text}
+																</p>
+															) : (
+																<MessageMarkdown
+																	text={message.text}
+																/>
+															)}
+
+															{/* Structured Table for data responses */}
+															{message.type === 'table' &&
+																message.headers &&
+																message.data && (
+																	<div className='mt-4 overflow-hidden rounded-xl border border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950'>
+																		<div className='overflow-x-auto'>
+																			<table className='w-full text-left text-xs font-semibold text-zinc-600 dark:text-zinc-400'>
+																				<thead className='border-b border-zinc-200 bg-zinc-50/50 text-[11px] font-black tracking-wider text-zinc-600 uppercase dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400'>
+																					<tr>
+																						{message.headers.map(
+																							(h) => (
+																								<th
+																									key={
+																										h
+																									}
+																									className='px-4 py-2.5 font-bold'>
+																									{h}
+																								</th>
+																							),
+																						)}
+																					</tr>
+																				</thead>
+																				<tbody className='divide-y divide-zinc-200/80 dark:divide-zinc-800'>
+																					{message.data.map(
+																						(row, rIdx) => (
+																							<tr
+																								key={
+																									rIdx
+																								}
+																								className='hover:bg-zinc-50/40 dark:hover:bg-zinc-900/20'>
+																								{message.headers!.map(
+																									(
+																										h,
+																									) => (
+																										<td
+																											key={
+																												h
+																											}
+																											className='px-4 py-2.5 whitespace-nowrap text-zinc-900 dark:text-zinc-100'>
+																											{
+																												row[
+																													h
+																												]
+																											}
+																										</td>
+																									),
+																								)}
+																							</tr>
+																						),
+																					)}
+																				</tbody>
+																			</table>
+																		</div>
+																	</div>
+																)}
+
+															{/* Follow up text */}
+															{message.followUp && (
+																<p className='mt-4 text-xs font-bold text-zinc-500 dark:text-zinc-400'>
+																	{message.followUp}
+																</p>
+															)}
+														</div>
+
+														{message.failed && (
+															<button
+																type='button'
+																aria-label={`Actions for message at ${message.timestamp}`}
+																onClick={regenerateLastReply}
+																disabled={isTyping}
+																className='mt-2 inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-zinc-200 px-3 text-xs font-bold text-zinc-700 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200'>
+																<RefreshCw size={14} /> Retry response
+															</button>
+														)}
+
+														{/* Action Buttons for agent messages */}
+														{!isUser &&
+															message.actions &&
+															message.actions.length > 0 && (
+																<div className='mt-3.5 flex flex-wrap gap-2.5'>
+																	{message.actions.map((act) => {
+																		let IconComp = Sparkles;
+																		if (
+																			act.type === 'export_csv' ||
+																			act.type === 'pdf_digest'
+																		)
+																			IconComp = Download;
+																		if (
+																			act.type === 'refine' ||
+																			act.type === 'set_alert'
+																		)
+																			IconComp =
+																				SlidersHorizontal;
+
+																		return (
+																			<button
+																				key={act.label}
+																				onClick={() =>
+																					handleActionClick(
+																						act,
+																					)
+																				}
+																				className='inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-4 py-1.5 text-xs font-black text-zinc-700 shadow-2xs transition hover:bg-zinc-50 active:scale-95 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/80'>
+																				<IconComp
+																					size={12}
+																					className='text-primary-500'
+																				/>
+																				<span>{act.label}</span>
+																			</button>
+																		);
+																	})}
+																</div>
+															)}
+
+														{/* Timestamp + per-message actions. The toolbar rides the row's
+													    hover; on touch there is none, so tapping the timestamp pins it. */}
+														<div
+															className={`mt-1.5 flex items-center gap-1.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
 															<button
 																type='button'
 																onClick={() =>
-																	copyMessage(message.text)
+																	setActiveMessageId((current) =>
+																		current === message.id
+																			? null
+																			: message.id,
+																	)
 																}
-																title='Copy message'
-																className='flex h-10 w-10 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 md:h-auto md:w-auto md:p-1 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
-																<Copy size={11} />
+																className='flex min-h-10 items-center gap-1 rounded-md px-2 text-[10px] font-semibold text-zinc-400 md:min-h-0 md:px-0 dark:text-zinc-500'>
+																{message.timestamp}
+																<MoreHorizontal
+																	size={14}
+																	className='md:hidden'
+																/>
 															</button>
 
-															{isUser && (
-																<button
-																	aria-label='Edit and resend message'
-																	type='button'
-																	onClick={() =>
-																		editUserMessage(message)
-																	}
-																	disabled={isTyping}
-																	title='Edit and resend'
-																	className='flex h-10 w-10 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 md:h-auto md:w-auto md:p-1 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
-																	<SquarePen size={11} />
-																</button>
+															{message.stopped && (
+																<span className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[9px] font-black tracking-wide text-zinc-500 uppercase dark:bg-zinc-800 dark:text-zinc-400'>
+																	Stopped
+																</span>
 															)}
 
-															{!isUser && isLastMessage && (
+															<div
+																className={`flex items-center gap-0.5 transition ${
+																	activeMessageId === message.id
+																		? 'opacity-100'
+																		: 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100'
+																}`}>
 																<button
 																	type='button'
-																	onClick={regenerateLastReply}
-																	disabled={isTyping}
-																	title='Regenerate reply'
-																	className='flex h-10 w-10 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 md:h-auto md:w-auto md:p-1 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
-																	<RefreshCw size={11} />
+																	onClick={() =>
+																		copyMessage(message.text)
+																	}
+																	title='Copy message'
+																	className='flex h-10 w-10 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 md:h-auto md:w-auto md:p-1 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
+																	<Copy size={11} />
 																</button>
-															)}
+
+																{isUser && (
+																	<button
+																		aria-label='Edit and resend message'
+																		type='button'
+																		onClick={() =>
+																			editUserMessage(message)
+																		}
+																		disabled={isTyping}
+																		title='Edit and resend'
+																		className='flex h-10 w-10 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 md:h-auto md:w-auto md:p-1 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
+																		<SquarePen size={11} />
+																	</button>
+																)}
+
+																{!isUser && currentAgentId && messageIdx > 0 && (
+																	<button
+																		type='button'
+																		aria-label='Save as eval case'
+																		onClick={() =>
+																			saveReplyAsEvalCase(messageIdx)
+																		}
+																		title='Save as eval case'
+																		className='flex h-10 w-10 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 md:h-auto md:w-auto md:p-1 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
+																		<FlaskConical size={11} />
+																	</button>
+																)}
+
+																{!isUser && isLastMessage && (
+																	<button
+																		type='button'
+																		onClick={regenerateLastReply}
+																		disabled={isTyping}
+																		title='Regenerate reply'
+																		className='flex h-10 w-10 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 md:h-auto md:w-auto md:p-1 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
+																		<RefreshCw size={11} />
+																	</button>
+																)}
+															</div>
 														</div>
 													</div>
 												</div>
 											</div>
-										</div>
-									);
-								})
-							)}
+										);
+									})
+								)}
 
-							{/* The reply streaming in — same layout it settles into once finished */}
-							{isTyping && (
-								<div className='flex w-full justify-start'>
-									<div className='flex w-full max-w-3xl flex-row gap-3'>
-										<div
-											className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-zinc-950 text-white dark:border-white/10 dark:bg-zinc-900`}>
-											<AgentIconComponent
-												size={16}
-												className={agentColorTextClass(agentIconColor)}
-											/>
-										</div>
-										<div className='min-w-0 flex-1'>
-											<ToolTimeline
-												items={streamTimeline}
-												tasks={subagentTasks ?? []}
-												actions={sessionActions}
-												ws={workspaceId}
-												className='mb-3'
-											/>
-											{streamTimeline.some((item) => item.kind === 'artifact') && (
-												<div className='mb-3 flex flex-col gap-1.5'>
-													{streamTimeline.map((item) =>
-														item.kind === 'artifact' ? (
-															<ArtifactCard key={item.id} item={item} ws={workspaceId} />
-														) : null,
-													)}
-												</div>
-											)}
-											{streamTimeline.some((item) => item.kind === 'text') ? (
-												<div className='pt-1.5 text-sm leading-relaxed font-semibold text-zinc-800 [overflow-wrap:anywhere] dark:text-zinc-200'>
-													<MessageMarkdown
-														text={streamTimeline
-															.map((item) => (item.kind === 'text' ? item.text : ''))
-															.join('')}
-													/>
-													<span className='ml-0.5 inline-block h-3.5 w-[2px] animate-pulse bg-current align-middle' />
-												</div>
-											) : (
-												!streamTimeline.some(
-													(item) => item.kind === 'tool' && item.status === 'running',
-												) && (
-													<div className='flex min-h-9 items-center gap-2 text-[12.5px] font-bold text-zinc-400 dark:text-zinc-500'>
-														<Loader2 size={13} className='text-primary-500 animate-spin' />
-														{streamTimeline.length === 0 ? 'Thinking…' : 'Working…'}
+								{/* The reply streaming in — same layout it settles into once finished */}
+								{isTyping && (
+									<div className='flex w-full justify-start'>
+										<div className='flex w-full max-w-3xl flex-row gap-3'>
+											<div
+												className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-zinc-950 text-white dark:border-white/10 dark:bg-zinc-900`}>
+												<AgentIconComponent
+													size={16}
+													className={agentColorTextClass(agentIconColor)}
+												/>
+											</div>
+											<div className='min-w-0 flex-1'>
+												<ToolTimeline
+													items={streamTimeline}
+													tasks={subagentTasks ?? []}
+													actions={sessionActions}
+													ws={workspaceId}
+													className='mb-3'
+												/>
+												{streamTimeline.some((item) => item.kind === 'artifact') && (
+													<div className='mb-3 flex flex-col gap-1.5'>
+														{streamTimeline.map((item) =>
+															item.kind === 'artifact' ? (
+																<ArtifactCard key={item.id} item={item} ws={workspaceId} />
+															) : null,
+														)}
 													</div>
-												)
-											)}
+												)}
+												{streamTimeline.some((item) => item.kind === 'text') ? (
+													<div className='pt-1.5 text-sm leading-relaxed font-semibold text-zinc-800 [overflow-wrap:anywhere] dark:text-zinc-200'>
+														<MessageMarkdown
+															text={streamTimeline
+																.map((item) => (item.kind === 'text' ? item.text : ''))
+																.join('')}
+														/>
+														<span className='ml-0.5 inline-block h-3.5 w-[2px] animate-pulse bg-current align-middle' />
+													</div>
+												) : (
+													!streamTimeline.some(
+														(item) => item.kind === 'tool' && item.status === 'running',
+													) && (
+														<div className='flex min-h-9 items-center gap-2 text-[12.5px] font-bold text-zinc-400 dark:text-zinc-500'>
+															<Loader2 size={13} className='text-primary-500 animate-spin' />
+															{streamTimeline.length === 0 ? 'Thinking…' : 'Working…'}
+														</div>
+													)
+												)}
+											</div>
 										</div>
 									</div>
-								</div>
-							)}
+								)}
 
-							{/* A paused turn's waiting actions, and Plan mode's plan up for review */}
-							{!isTyping && conversationId && (
-								<>
-									<AgentApprovalCards
-										actions={pendingActions}
-										busy={isTyping}
-										canRemember={canManageAgents}
-										onDecide={(decisions) => void decideActions(decisions)}
-									/>
-									{proposedPlan && pendingActions.length === 0 && (
-										<AgentPlanCard
-											key={proposedPlan.id}
-											plan={proposedPlan}
-											busy={
-												approvePlanMutation.isPending ||
-												rejectPlanMutation.isPending
-											}
-											onApprove={(skipIds, note) =>
-												void approvePlan(skipIds, note)
-											}
-											onReject={(note) => void rejectPlan(note)}
+								{/* A paused turn's waiting actions, and Plan mode's plan up for review */}
+								{!isTyping && conversationId && (
+									<>
+										<AgentApprovalCards
+											actions={pendingActions}
+											busy={isTyping}
+											canRemember={canManageAgents}
+											onDecide={(decisions) => void decideActions(decisions)}
 										/>
-									)}
-								</>
-							)}
+										{proposedPlan && pendingActions.length === 0 && (
+											<AgentPlanCard
+												key={proposedPlan.id}
+												plan={proposedPlan}
+												busy={
+													approvePlanMutation.isPending ||
+													rejectPlanMutation.isPending
+												}
+												onApprove={(skipIds, note) =>
+													void approvePlan(skipIds, note)
+												}
+												onReject={(note) => void rejectPlan(note)}
+											/>
+										)}
+									</>
+								)}
+							</div>
 						</div>
 						{showLatestButton && (
 							<button
@@ -3510,8 +3639,9 @@ const BuildPage = () => {
 						aria-label='Choose files to attach'
 					/>
 					{isMobile ? (
-						<footer className='border-zinc-150 dark:border-zinc-850 border-t bg-zinc-50/95 px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl dark:bg-zinc-950/95'>
-							<div className='mx-auto flex w-full max-w-4xl flex-col gap-3'>
+						<footer className='border-zinc-150 dark:border-zinc-850 shrink-0 border-t bg-zinc-50/95 px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl dark:bg-zinc-950/95'>
+							<div className='relative mx-auto flex w-full max-w-4xl flex-col gap-3'>
+								<SkillSlashMenu picker={skillPicker} />
 								<ChatAttachmentTray
 									files={chatAttachments}
 									busy={isTyping}
@@ -3520,34 +3650,44 @@ const BuildPage = () => {
 								{/* Chat Input Container */}
 								<div className='flex flex-col rounded-2xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/60'>
 									{/* Input Text Area */}
-									<textarea
-										ref={mobileComposerRef}
-										rows={1}
-										value={chatInput}
-										onChange={(e) => {
-											updateChatInput(e.target.value);
-											autoSizeComposer(e.currentTarget);
-										}}
-										onKeyDown={(e) => {
-											if (
-												e.nativeEvent.isComposing ||
-												e.nativeEvent.keyCode === 229
-											)
-												return;
-											if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-												e.preventDefault();
+									<div className='relative'>
+										<SkillCommandHighlight
+											text={chatInput}
+											token={skillPicker.token}
+											textareaRef={mobileComposerRef}
+											className='px-1 text-base font-semibold'
+										/>
+										<textarea
+											ref={mobileComposerRef}
+											onBlur={skillPicker.close}
+											rows={1}
+											value={chatInput}
+											onChange={(e) => {
+												updateChatInput(e.target.value);
+												autoSizeComposer(e.currentTarget);
+											}}
+											onKeyDown={(e) => {
 												if (
-													(chatInput.trim() || chatAttachments.length) &&
-													!isTyping
-												) {
-													sendChatMessage(chatInput);
-													updateChatInput('');
+													e.nativeEvent.isComposing ||
+													e.nativeEvent.keyCode === 229
+												)
+													return;
+												if (skillPicker.handleKeyDown(e)) return;
+												if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+													e.preventDefault();
+													if (
+														(chatInput.trim() || chatAttachments.length) &&
+														!isTyping
+													) {
+														sendChatMessage(skillPicker.message, undefined, skillPicker.skill);
+														updateChatInput('');
+													}
 												}
-											}
-										}}
-										placeholder='Send a message to your agent'
-										className='placeholder:text-zinc-450 max-h-32 w-full resize-none overflow-y-auto border-none bg-transparent px-1 text-base font-semibold text-zinc-800 outline-none focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
-									/>
+											}}
+											placeholder='Send a message to your agent'
+											className='no-scrollbar placeholder:text-zinc-450 relative block max-h-32 w-full resize-none overflow-y-auto border-none bg-transparent px-1 text-base font-semibold text-zinc-800 outline-none focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
+										/>
+									</div>
 									{/* Bottom Controls Row */}
 									<div className='mt-2 flex items-center justify-between border-t border-zinc-100/50 pt-2 dark:border-zinc-800/50'>
 										{/* Plus button */}
@@ -3599,7 +3739,7 @@ const BuildPage = () => {
 														chatInput.trim() ||
 														chatAttachments.length
 													) {
-														sendChatMessage(chatInput);
+														sendChatMessage(skillPicker.message, undefined, skillPicker.skill);
 														updateChatInput('');
 													}
 												}}
@@ -3644,8 +3784,9 @@ const BuildPage = () => {
 							</div>
 						</footer>
 					) : (
-						<footer className='border-t border-zinc-200 bg-white px-4 py-4 dark:border-white/10 dark:bg-zinc-950/90'>
-							<div className='mx-auto flex w-full max-w-4xl flex-col gap-3'>
+						<footer className='shrink-0 border-t border-zinc-200 bg-white px-4 py-4 dark:border-white/10 dark:bg-zinc-950/90'>
+							<div className='relative mx-auto flex w-full max-w-4xl flex-col gap-3'>
+								<SkillSlashMenu picker={skillPicker} />
 								<ChatAttachmentTray
 									files={chatAttachments}
 									busy={isTyping}
@@ -3661,58 +3802,53 @@ const BuildPage = () => {
 											className='flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-500'>
 											<Paperclip size={18} />
 										</button>
-										{/* Skill checkbox */}
-										<button
-											onClick={() => setSkillEnabled(!skillEnabled)}
-											title='Toggle Skills'
-											className='flex h-9 items-center gap-1.5 rounded-lg border border-zinc-100 bg-zinc-50/50 px-2.5 text-xs font-bold text-zinc-500 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-400 dark:hover:bg-zinc-800'>
-											{skillEnabled ? (
-												<CheckSquare
-													size={14}
-													className='text-primary-600 dark:text-primary-400'
-												/>
-											) : (
-												<Square size={14} />
-											)}
-											<span>Skill</span>
-										</button>
 									</div>
 
 									{/* Chat Input — a textarea, so Shift+Enter can open a new line.
 									    It grows with the message and stops at ~6 rows. */}
-									<textarea
-										ref={composerRef}
-										rows={1}
-										value={chatInput}
-										onChange={(e) => {
-											updateChatInput(e.target.value);
-											autoSizeComposer(e.currentTarget);
-										}}
-										onKeyDown={(e) => {
-											if (
-												e.nativeEvent.isComposing ||
-												e.nativeEvent.keyCode === 229
-											)
-												return;
-											if (e.key === 'Enter' && !e.shiftKey) {
-												e.preventDefault();
+									<div className='relative flex min-w-0 flex-1 self-center'>
+										<SkillCommandHighlight
+											text={chatInput}
+											token={skillPicker.token}
+											textareaRef={composerRef}
+											className='px-3 py-1.5 text-sm font-semibold'
+										/>
+										<textarea
+											ref={composerRef}
+											onBlur={skillPicker.close}
+											rows={1}
+											value={chatInput}
+											onChange={(e) => {
+												updateChatInput(e.target.value);
+												autoSizeComposer(e.currentTarget);
+											}}
+											onKeyDown={(e) => {
 												if (
-													(chatInput.trim() || chatAttachments.length) &&
-													!isTyping
-												) {
-													sendChatMessage(chatInput);
-													updateChatInput('');
-													// The box grew with the draft — put it back to one row.
-													requestAnimationFrame(() => {
-														if (composerRef.current)
-															autoSizeComposer(composerRef.current);
-													});
+													e.nativeEvent.isComposing ||
+													e.nativeEvent.keyCode === 229
+												)
+													return;
+												if (skillPicker.handleKeyDown(e)) return;
+												if (e.key === 'Enter' && !e.shiftKey) {
+													e.preventDefault();
+													if (
+														(chatInput.trim() || chatAttachments.length) &&
+														!isTyping
+													) {
+														sendChatMessage(skillPicker.message, undefined, skillPicker.skill);
+														updateChatInput('');
+														// The box grew with the draft — put it back to one row.
+														requestAnimationFrame(() => {
+															if (composerRef.current)
+																autoSizeComposer(composerRef.current);
+														});
+													}
 												}
-											}
-										}}
-										placeholder='Send a message to your agent...'
-										className='max-h-[9rem] flex-1 resize-none self-center border-none bg-transparent px-3 py-1.5 text-sm font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
-									/>
+											}}
+											placeholder='Send a message to your agent...'
+											className='no-scrollbar relative block max-h-[9rem] w-full resize-none border-none bg-transparent px-3 py-1.5 text-sm font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
+										/>
+									</div>
 
 									{/* Right features: Mic & Send */}
 									<div className='flex items-center gap-3 px-1.5'>
@@ -3737,7 +3873,7 @@ const BuildPage = () => {
 													return;
 												}
 												if (chatInput.trim() || chatAttachments.length) {
-													sendChatMessage(chatInput);
+													sendChatMessage(skillPicker.message, undefined, skillPicker.skill);
 													updateChatInput('');
 												}
 											}}
@@ -3873,7 +4009,7 @@ const BuildPage = () => {
 
 							{/* Settings Body - Render conditionally based on activeSidebarTab */}
 														{activeSidebarTab === 'agent' && (
-								<div className='flex-1 space-y-4 overflow-y-auto bg-zinc-50/40 p-4 dark:bg-zinc-950/20'>
+								<div className='no-scrollbar flex-1 space-y-4 overflow-y-auto bg-zinc-50/40 p-4 dark:bg-zinc-950/20'>
 									{/* Personalization Section */}
 									<div className='space-y-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900/40'>
 										{/* Section Header */}
@@ -4743,7 +4879,7 @@ const BuildPage = () => {
 
 							{/* Chats Tab */}
 														{activeSidebarTab === 'chatDetails' && (
-								<div className='flex-1 overflow-y-auto bg-zinc-50/40 p-4 dark:bg-zinc-950/20'>
+								<div className='no-scrollbar flex-1 overflow-y-auto bg-zinc-50/40 p-4 dark:bg-zinc-950/20'>
 									<AgentChatsPanel
 										ws={workspaceId}
 										agentId={currentAgentId}
@@ -4852,7 +4988,7 @@ const BuildPage = () => {
 
 							{/* Attachable tools. Each row attaches on click — there is no
 							    staged selection to save, so the drawer has no footer. */}
-							<div className='flex-1 space-y-3 overflow-y-auto p-4 dark:bg-zinc-950/10'>
+							<div className='no-scrollbar flex-1 space-y-3 overflow-y-auto p-4 dark:bg-zinc-950/10'>
 								<h4 className='pl-1 text-[10px] font-black tracking-widest text-zinc-400 uppercase'>
 									{toolTab === 'nodes'
 										? 'Available nodes'
@@ -5162,6 +5298,15 @@ const BuildPage = () => {
 				onClose={() => setIsSkillEditorOpen(false)}
 				onCreated={(skill) => handleAttachSkill(skill.id)}
 			/>
+
+			{currentAgentId && (
+				<SaveEvalCaseModal
+					ws={workspaceId}
+					agentId={currentAgentId}
+					draft={evalCaseDraft}
+					onClose={() => setEvalCaseDraft(null)}
+				/>
+			)}
 
 			{currentAgentId && (
 				<SaveAsTemplateModal

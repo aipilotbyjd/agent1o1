@@ -15,9 +15,14 @@ import { AgentSessionEndpoints as E } from './agents.endpoints';
 /** JSON, unless files ride along — then multipart, with each file under
  *  `attachments[]`. */
 const messageBody = (payload: TSendAgentMessageDto): TSendAgentMessageDto | FormData => {
-	if (!payload.attachments?.length) return { message: payload.message };
+	if (!payload.attachments?.length)
+		return {
+			message: payload.message,
+			...(payload.skill_id ? { skill_id: payload.skill_id } : {}),
+		};
 	const form = new FormData();
 	form.append('message', payload.message);
+	if (payload.skill_id) form.append('skill_id', payload.skill_id);
 	payload.attachments.forEach((file) => form.append('attachments[]', file));
 	return form;
 };

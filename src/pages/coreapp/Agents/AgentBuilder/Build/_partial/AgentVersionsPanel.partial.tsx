@@ -128,7 +128,7 @@ const VersionRow = ({
 									className='absolute top-1.5 right-1.5 rounded-md bg-white p-1 text-zinc-400 hover:text-zinc-700 dark:bg-zinc-900 dark:hover:text-zinc-200'>
 									<Copy size={10} />
 								</button>
-								<pre className='max-h-72 overflow-auto rounded-lg bg-white p-2 pr-7 font-mono text-[9px] leading-relaxed text-zinc-600 dark:bg-zinc-900/40 dark:text-zinc-300'>
+								<pre className='no-scrollbar max-h-72 overflow-auto rounded-lg bg-white p-2 pr-7 font-mono text-[9px] leading-relaxed text-zinc-600 dark:bg-zinc-900/40 dark:text-zinc-300'>
 									{fullJson}
 								</pre>
 							</div>

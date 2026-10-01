@@ -172,7 +172,7 @@ export const ApprovalCard = ({
 								<dt className='font-mono text-[11px] font-bold text-zinc-500 dark:text-zinc-400'>
 									{key}
 								</dt>
-								<dd className='max-h-32 overflow-y-auto rounded-md bg-white px-2 py-1 font-mono text-[11px] [overflow-wrap:anywhere] whitespace-pre-wrap text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300'>
+								<dd className='no-scrollbar max-h-32 overflow-y-auto rounded-md bg-white px-2 py-1 font-mono text-[11px] [overflow-wrap:anywhere] whitespace-pre-wrap text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300'>
 									{formatValue(value)}
 								</dd>
 							</div>

@@ -125,11 +125,23 @@ export type TAgentSessionStatus = 'active' | 'archived';
 
 export type TAgentMessageRole = 'user' | 'assistant' | 'tool' | 'system';
 
+/** A skill picked for one message — what the chat shows on that message. */
+export type TChosenSkill = {
+	id: string;
+	name: string;
+	slug: string;
+	icon: string | null;
+	color: string | null;
+	category: string | null;
+};
+
 export type TAgentMessage = {
 	id: string;
 	agent_session_id: string;
 	role: TAgentMessageRole;
 	content: unknown;
+	/** The skill picked for this (user) message with `/`; on the paged transcript only. */
+	skill?: TChosenSkill | null;
 	/** Files a member sent with this (user) message. Present whenever the
 	 *  backend eager-loads them — session detail and the paged transcript. */
 	attachments?: TArtifact[];
@@ -184,6 +196,8 @@ export type TSendAgentMessageDto = {
 	message: string;
 	/** Sent as multipart `attachments[]` — the service builds the `FormData`. */
 	attachments?: File[];
+	/** A skill picked with `/`; its instructions are added to this turn only. */
+	skill_id?: string | null;
 };
 
 /** SSE event names on `POST .../messages/stream`. `delta` chunks concatenate
@@ -295,6 +309,7 @@ export type TAgentMemory = {
 	id: string;
 	agent_id: string;
 	user_id: string | null;
+	agent_session_id: string | null;
 	key: string;
 	value: string;
 	type: string | null;
@@ -315,7 +330,13 @@ export type TUpdateAgentMemoryDto = Partial<TCreateAgentMemoryDto>;
 
 // ─── Eval suites ─────────────────────────────────────────────
 
-export type TEvalAssertionType = 'contains' | 'not_contains' | 'regex' | 'equals' | 'llm_judge';
+export type TEvalAssertionType =
+	| 'contains'
+	| 'not_contains'
+	| 'equals'
+	| 'llm_rubric'
+	| 'tool_called'
+	| 'tool_not_called';
 
 export type TEvalAssertion = { type: TEvalAssertionType; value: string };
 
@@ -345,6 +366,7 @@ export type TAgentEvalSuite = {
 	agent_id: string;
 	name: string;
 	description: string | null;
+	run_on_change: boolean;
 	case_count?: number;
 	cases?: TAgentEvalCase[];
 	created_by: string;
@@ -355,6 +377,7 @@ export type TAgentEvalSuite = {
 export type TCreateAgentEvalSuiteDto = {
 	name: string;
 	description?: string | null;
+	run_on_change?: boolean;
 };
 
 export type TUpdateAgentEvalSuiteDto = Partial<TCreateAgentEvalSuiteDto>;
@@ -372,13 +395,17 @@ export type TAgentEvalCaseResult = {
 
 export type TAgentEvalRunStatus = 'pending' | 'running' | 'completed' | 'failed';
 
+export type TAgentEvalRunTrigger = 'manual' | 'agent_change';
+
 export type TAgentEvalRun = {
 	id: string;
 	agent_eval_suite_id: string;
 	agent_version_id: string;
+	trigger: TAgentEvalRunTrigger;
 	status: TAgentEvalRunStatus;
 	passed: number;
 	failed: number;
+	regressed: boolean;
 	error: string | null;
 	results?: TAgentEvalCaseResult[];
 	triggered_by: string;

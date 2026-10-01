@@ -73,6 +73,7 @@ export type TNotificationEventKey =
 	| 'billing.overage_cap_reached'
 	| 'agent.reflection_run_completed'
 	| 'agent.session_evaluation_notify'
+	| 'agent.eval_regressed'
 	| 'referral.signed_up'
 	| 'referral.reward_granted'
 	| 'referral.milestone_reached'

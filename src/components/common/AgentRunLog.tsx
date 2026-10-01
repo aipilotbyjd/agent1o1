@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { ChevronRight, ExternalLink, Wrench } from 'lucide-react';
 import { useRun } from '@/api/modules/runs';
 import paths from '@/Routes/paths';
-import type { TRun } from '@/types/run.type';
+import type { TRun, TRunAgentContext } from '@/types/run.type';
 
 interface AgentRunLogProps {
 	ws: string;
@@ -30,6 +30,17 @@ const formatOutput = (output: string) => {
 			: output;
 	} catch {
 		return output;
+	}
+};
+
+/** A failed tool call comes back to the model as `{"error": ...}`. */
+const isErrorOutput = (output?: string) => {
+	if (!output) return false;
+	try {
+		const parsed: unknown = JSON.parse(output);
+		return typeof parsed === 'object' && parsed !== null && 'error' in parsed;
+	} catch {
+		return false;
 	}
 };
 
@@ -67,6 +78,7 @@ const ToolCallStep = ({
 }) => {
 	const [expanded, setExpanded] = useState(false);
 	const entries = Object.entries(args);
+	const failed = isErrorOutput(output);
 
 	return (
 		<li className='rounded-xl border border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-900'>
@@ -78,10 +90,18 @@ const ToolCallStep = ({
 					size={12}
 					className={`shrink-0 text-slate-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
 				/>
-				<Wrench size={12} className='text-primary-500 shrink-0' />
+				<Wrench
+					size={12}
+					className={`shrink-0 ${failed ? 'text-rose-500' : 'text-primary-500'}`}
+				/>
 				<span className='truncate text-xs font-extrabold text-slate-800 dark:text-zinc-200'>
 					{prettifyToolName(name)}
 				</span>
+				{failed && (
+					<span className='shrink-0 rounded-full bg-rose-500/10 px-1.5 py-0.5 text-[9px] font-black text-rose-600 uppercase dark:text-rose-400'>
+						Failed
+					</span>
+				)}
 			</button>
 			{expanded && (
 				<div className='space-y-3 border-t border-slate-100 bg-slate-50/60 px-3 py-2.5 dark:border-zinc-800 dark:bg-zinc-950/30'>
@@ -103,7 +123,7 @@ const ToolCallStep = ({
 					)}
 					<Section label='Output'>
 						{output ? (
-							<CodeBlock>{formatOutput(output)}</CodeBlock>
+							<CodeBlock failed={failed}>{formatOutput(output)}</CodeBlock>
 						) : (
 							<p className='text-[11px] font-semibold text-slate-400'>
 								No output recorded.
@@ -113,6 +133,73 @@ const ToolCallStep = ({
 				</div>
 			)}
 		</li>
+	);
+};
+
+const modelLabel = (context: TRunAgentContext) => {
+	if (typeof context.provider === 'string') {
+		return context.model ? `${context.provider} · ${context.model}` : context.provider;
+	}
+	return Object.entries(context.provider)
+		.map(([provider, model]) => `${provider} · ${model}`)
+		.join(' → ');
+};
+
+/** What the turn was sent, collapsed by default since the prompt is long. */
+const TurnContext = ({
+	context,
+	usage,
+}: {
+	context: TRunAgentContext;
+	usage?: { prompt_tokens?: number; completion_tokens?: number } | null;
+}) => {
+	const [expanded, setExpanded] = useState(false);
+
+	return (
+		<div className='rounded-xl border border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-900'>
+			<button
+				type='button'
+				onClick={() => setExpanded((value) => !value)}
+				className='flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left'>
+				<ChevronRight
+					size={12}
+					className={`shrink-0 text-slate-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
+				/>
+				<span className='text-xs font-extrabold text-slate-800 dark:text-zinc-200'>
+					What the agent was sent
+				</span>
+				<span className='ml-auto truncate text-[10px] font-semibold text-slate-400'>
+					{modelLabel(context)}
+					{usage?.prompt_tokens != null &&
+						` · ${usage.prompt_tokens.toLocaleString()} in / ${(usage.completion_tokens ?? 0).toLocaleString()} out tokens`}
+				</span>
+			</button>
+			{expanded && (
+				<div className='space-y-3 border-t border-slate-100 bg-slate-50/60 px-3 py-2.5 dark:border-zinc-800 dark:bg-zinc-950/30'>
+					{context.skill && (
+						<Section label='Skill picked for this message'>
+							<span className='rounded-md bg-white px-1.5 py-0.5 text-[11px] font-bold text-slate-700 dark:bg-zinc-900 dark:text-zinc-200'>
+								{context.skill}
+							</span>
+						</Section>
+					)}
+					<Section label={`Tools offered · ${context.tools.length}`}>
+						<div className='flex flex-wrap gap-1'>
+							{context.tools.map((tool) => (
+								<span
+									key={tool}
+									className='rounded-md bg-white px-1.5 py-0.5 font-mono text-[10.5px] font-bold text-slate-600 dark:bg-zinc-900 dark:text-zinc-300'>
+									{tool}
+								</span>
+							))}
+						</div>
+					</Section>
+					<Section label='System prompt'>
+						<CodeBlock>{context.instructions}</CodeBlock>
+					</Section>
+				</div>
+			)}
+		</div>
 	);
 };
 
@@ -144,6 +231,10 @@ const AgentRunLog = ({ ws, run }: AgentRunLogProps) => {
 								{input.message}
 							</div>
 						</div>
+					)}
+
+					{detail?.agent_context && (
+						<TurnContext context={detail.agent_context} usage={reply?.usage} />
 					)}
 
 					{isLoading ? (

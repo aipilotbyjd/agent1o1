@@ -25,6 +25,7 @@ import {
 	useAgentSessions,
 	useRunAgentSessionEvaluation,
 } from '@/api/modules/agents';
+import { useModelCatalog } from '@/api/modules/catalog';
 import { notify } from '@/api/core';
 import type {
 	TAgentEvaluationSettings,
@@ -133,6 +134,7 @@ const EvaluationSettingsForm = ({
 	settings: TAgentEvaluationSettings;
 }) => {
 	const updateMutation = useUpdateAgentEvaluationSettings(ws, agentId);
+	const { data: modelCatalog } = useModelCatalog();
 	const [form, setForm] = useState({
 		is_enabled: settings.is_enabled,
 		model: settings.model ?? '',
@@ -163,13 +165,25 @@ const EvaluationSettingsForm = ({
 				<span className='text-[9px] font-black uppercase tracking-wide text-zinc-400'>
 					Grader model
 				</span>
-				<input
-					type='text'
+				<select
 					value={form.model}
 					onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))}
-					placeholder='Leave blank to use the workspace default'
-					className={`mt-1 w-full ${fieldClass}`}
-				/>
+					className={`mt-1 w-full ${fieldClass}`}>
+					<option value=''>Same model as the agent</option>
+					{(modelCatalog ?? []).map((entry) => (
+						<option key={entry.slug} value={entry.slug} disabled={!entry.is_available}>
+							{entry.display_name}
+							{entry.is_available ? '' : ' (unavailable)'}
+						</option>
+					))}
+					{form.model && !modelCatalog?.some((entry) => entry.slug === form.model) && (
+						<option value={form.model}>{form.model}</option>
+					)}
+				</select>
+				<p className='mt-1 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+					Also grades AI-judge eval checks and reviews chats for reflections. A stronger model
+					than the agent's own catches more of its mistakes.
+				</p>
 			</div>
 
 			{/* Sentiment */}

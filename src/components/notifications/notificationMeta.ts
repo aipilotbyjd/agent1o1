@@ -7,6 +7,7 @@ import {
 	Hand,
 	PlugZap,
 	Sparkles,
+	TrendingDown,
 	Users,
 	XCircle,
 	type LucideIcon,
@@ -56,6 +57,15 @@ const BY_TYPE: Record<string, TNotificationMeta> = {
 		href: (ws, data) => {
 			const agentId = idFrom(data, 'agent_id');
 			return agentId ? paths.agentInsights(ws, agentId, 'reflections') : null;
+		},
+	},
+	'agent.eval_regressed': {
+		icon: TrendingDown,
+		tone: 'danger',
+		action: 'Open evals',
+		href: (ws, data) => {
+			const agentId = idFrom(data, 'agent_id');
+			return agentId ? paths.agentInsights(ws, agentId, 'evals') : null;
 		},
 	},
 	'agent.session_evaluation_notify': {
