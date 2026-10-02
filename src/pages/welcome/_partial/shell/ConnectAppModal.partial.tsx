@@ -6,6 +6,7 @@ import { useOnboardingStore } from '../../_context/OnboardingStore.context';
 import { useOnboardingWorkspaceId } from '../../_hooks/useOnboardingWorkspace.hook';
 import BrandLogo from '../shared/BrandLogo.partial';
 import type { TConnectorData, TConnectorField } from '@/types/connector.type';
+import { isConnectorUnavailable } from '@/types/connector.type';
 
 /** How long the success tick stays up before the modal dismisses itself. */
 const SUCCESS_DISMISS_MS = 800;
@@ -46,7 +47,7 @@ const ConnectAppModal = () => {
 	);
 
 	const handleConnect = async () => {
-		if (!selectedAppForAuth) return;
+		if (!selectedAppForAuth || isConnectorUnavailable(selectedAppForAuth)) return;
 
 		try {
 			if (isOAuth) {
@@ -178,7 +179,11 @@ const ConnectAppModal = () => {
 								</div>
 							) : (
 								<button
-									disabled={isConnecting || (!isOAuth && missingRequiredField)}
+									disabled={
+										isConnecting ||
+										isConnectorUnavailable(selectedAppForAuth) ||
+										(!isOAuth && missingRequiredField)
+									}
 									onClick={handleConnect}
 									className='flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 text-xs font-black tracking-wide text-white transition-all hover:opacity-90 active:scale-95 disabled:pointer-events-none disabled:opacity-40 dark:bg-zinc-50 dark:text-slate-950'>
 									{isConnecting ? (

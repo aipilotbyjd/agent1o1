@@ -55,6 +55,8 @@ export type TNodeField = {
 	advanced?: boolean;
 	/** picker only — call to action, e.g. "Pick Folder". */
 	pickerLabel?: string;
+	/** code only — the value is a JSON object/array, edited as JSON text. */
+	json?: boolean;
 };
 
 export type TNodeDefinition = {

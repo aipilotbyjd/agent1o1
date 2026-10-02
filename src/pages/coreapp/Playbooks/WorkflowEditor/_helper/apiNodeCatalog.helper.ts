@@ -85,6 +85,7 @@ const schemaToFields = (schema?: INodeSchema): TNodeField[] => {
 		key,
 		label: property.label ?? humanize(key),
 		kind: schemaTypeToFieldKind(property),
+		json: property.type === 'object' || property.type === 'array' || undefined,
 		default: property.default,
 		required: required.has(key),
 		help: property.description,

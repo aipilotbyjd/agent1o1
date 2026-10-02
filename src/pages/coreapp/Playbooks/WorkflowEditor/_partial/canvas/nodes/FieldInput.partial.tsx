@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import type { TNodeField } from '../../../_types/node.type';
 import AccountSelect from './AccountSelect.partial';
@@ -78,8 +78,75 @@ const PickerFieldInput = ({ field, value, onChange, compact }: FieldInputProps) 
 	);
 };
 
+const toJsonText = (value: unknown) =>
+	value === undefined || value === null || typeof value === 'string'
+		? String(value ?? '')
+		: JSON.stringify(value, null, 2);
+
+/**
+ * An object/array field (e.g. request headers) edited as JSON text. Valid
+ * JSON is handed back parsed, so the config keeps its real shape; anything
+ * else is handed back as typed (e.g. a whole `{{variable}}`) and the server
+ * says if it won't take it. The text is kept locally so a parse doesn't
+ * reformat it mid-edit.
+ */
+const JsonFieldInput = ({ field, value, onChange, compact, nodeId }: FieldInputProps) => {
+	const cls = compact ? compactInputClass : inputClass;
+	const [text, setText] = useState(() => toJsonText(value));
+	const lastEmitted = useRef(toJsonText(value));
+
+	// A change from outside (the assistant, an undo) replaces the text.
+	const incoming = toJsonText(value);
+	if (incoming !== lastEmitted.current) {
+		lastEmitted.current = incoming;
+		setText(incoming);
+	}
+
+	const handleChange = (next: unknown) => {
+		const raw = String(next ?? '');
+		setText(raw);
+		let parsed: unknown = raw;
+		try {
+			const candidate: unknown = JSON.parse(raw);
+			if (candidate !== null && typeof candidate === 'object') parsed = candidate;
+		} catch {
+			/* not JSON (yet) — keep the text */
+		}
+		lastEmitted.current = toJsonText(parsed);
+		onChange(parsed);
+	};
+
+	if (nodeId) {
+		return (
+			<ExpressionInput
+				field={field}
+				value={text}
+				onChange={handleChange}
+				compact={compact}
+				nodeId={nodeId}
+				className={cls}
+			/>
+		);
+	}
+
+	return (
+		<textarea
+			rows={field.rows ?? (compact ? 2 : 4)}
+			value={text}
+			onChange={(event) => handleChange(event.target.value)}
+			placeholder={field.placeholder}
+			aria-label={field.label}
+			className={`${cls} font-mono`}
+		/>
+	);
+};
+
 const FieldInput = ({ field, value, onChange, compact, nodeId }: FieldInputProps) => {
 	const cls = compact ? compactInputClass : inputClass;
+
+	if (field.json) {
+		return <JsonFieldInput field={field} value={value} onChange={onChange} compact={compact} nodeId={nodeId} />;
+	}
 
 	if (field.kind === 'picker') {
 		return <PickerFieldInput field={field} value={value} onChange={onChange} compact={compact} />;

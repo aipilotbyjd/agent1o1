@@ -39,9 +39,18 @@ export type TConnector = {
 	color: string | null;
 	auth_type: TConnectorAuthType;
 	is_oauth: boolean;
+	/** `false` when the server has no OAuth client credentials for it, so it
+	 *  can't be connected yet. */
+	is_configured: boolean;
 	fields: TConnectorField[];
 	is_active: boolean;
 };
+
+/** Shown in the catalog but can't be connected until the server is set up. */
+export const isConnectorUnavailable = (connector?: Pick<TConnector, 'is_configured'> | null) =>
+	connector?.is_configured === false;
+
+export const CONNECTOR_UNAVAILABLE_LABEL = 'Not set up';
 
 export type TConnectorCredentialScope = 'team' | 'personal';
 

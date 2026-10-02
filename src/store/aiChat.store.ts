@@ -77,6 +77,9 @@ type TAiChatState = {
 	sessionByWorkflow: Record<string, string>;
 	// The builder session id the bridge has already hydrated chat/canvas from.
 	hydratedSessionId: string | null;
+	// The draft version the canvas was last reconciled with; written by the
+	// editor bridge, sent with draft syncs and restores.
+	draftLockVersion: number | null;
 
 	// Live reply-in-progress: an ordered timeline of reasoning text and tool
 	// calls, exactly as they streamed in. The canvas is live-applied per tool
@@ -95,7 +98,9 @@ type TAiChatState = {
 	 * draft that's behind what the user sees. `createdSession` is set when
 	 * the session was created for this very message.
 	 */
-	beforeSend: ((sessionId: string, createdSession: TBuilderSession | null) => Promise<void>) | null;
+	beforeSend:
+		| ((sessionId: string, createdSession: TBuilderSession | null) => Promise<void>)
+		| null;
 	setBeforeSend: (handler: TAiChatState['beforeSend']) => void;
 
 	// Set by the editor once route params are known so the store can call the API.
@@ -187,7 +192,8 @@ const formatTime = (d: Date) => {
 const mapBackendMessage = (m: TBuilderMessage): TAiChatMessage => ({
 	id: m.id,
 	role: m.role === 'user' ? 'user' : 'assistant',
-	text: m.processing_status === 'failed' ? (m.error_message ?? 'Something went wrong.') : m.content,
+	text:
+		m.processing_status === 'failed' ? (m.error_message ?? 'Something went wrong.') : m.content,
 	timestamp: formatTs(m.created_at),
 	isError: m.processing_status === 'failed',
 	actionsSummary: m.actions && m.actions.length > 0 ? m.actions : undefined,
@@ -233,6 +239,7 @@ export const useAiChatStore = create<TAiChatState>()(
 			workflowId: null,
 			sessionByWorkflow: {},
 			hydratedSessionId: null,
+			draftLockVersion: null,
 			streamTimeline: [],
 			ignoredMessageIds: new Set(),
 			beforeSend: null,
@@ -288,7 +295,11 @@ export const useAiChatStore = create<TAiChatState>()(
 					builderSessionId: null, // fresh conversation → new backend session
 					streamTimeline: [],
 					messages,
-					sessions: syncActiveSessionIntoList(state.sessions, state.activeSessionId, messages),
+					sessions: syncActiveSessionIntoList(
+						state.sessions,
+						state.activeSessionId,
+						messages,
+					),
 				}));
 
 				get().submitPrompt(clean, mode);
@@ -312,7 +323,11 @@ export const useAiChatStore = create<TAiChatState>()(
 					errorText: null,
 					streamTimeline: [],
 					messages,
-					sessions: syncActiveSessionIntoList(state.sessions, state.activeSessionId, messages),
+					sessions: syncActiveSessionIntoList(
+						state.sessions,
+						state.activeSessionId,
+						messages,
+					),
 				}));
 
 				get().submitPrompt(clean, mode);
@@ -330,7 +345,11 @@ export const useAiChatStore = create<TAiChatState>()(
 				const { workspaceId } = get();
 
 				if (!workspaceId) {
-					get().failPending('No active workspace — open a workspace to build workflows.', prompt, mode);
+					get().failPending(
+						'No active workspace — open a workspace to build workflows.',
+						prompt,
+						mode,
+					);
 					return;
 				}
 
@@ -344,14 +363,19 @@ export const useAiChatStore = create<TAiChatState>()(
 				get()
 					.ensureBuilderSession()
 					.then(async (sessionId) => {
-						const reply = await WorkflowBuilderMessageService.send(workspaceId, sessionId, {
-							message: apiPrompt,
-						});
+						const reply = await WorkflowBuilderMessageService.send(
+							workspaceId,
+							sessionId,
+							{
+								message: apiPrompt,
+							},
+						);
 						set({ pendingMessageId: reply.id });
 					})
 					.catch((error: unknown) => {
 						const message =
-							(error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+							(error as { response?: { data?: { message?: string } } })?.response
+								?.data?.message ??
 							'Could not reach the workflow builder. Please try again.';
 						get().failPending(message, prompt, mode);
 					});
@@ -372,7 +396,10 @@ export const useAiChatStore = create<TAiChatState>()(
 				set((state) => ({
 					builderSessionId: session.id,
 					hydratedSessionId: session.id, // freshly created — nothing to re-hydrate
-					sessionByWorkflow: { ...state.sessionByWorkflow, [workflowKey(workflowId)]: session.id },
+					sessionByWorkflow: {
+						...state.sessionByWorkflow,
+						[workflowKey(workflowId)]: session.id,
+					},
 				}));
 				await get().beforeSend?.(session.id, session);
 				return session.id;
@@ -382,12 +409,21 @@ export const useAiChatStore = create<TAiChatState>()(
 				set((state) => {
 					const messages = [
 						...state.messages,
-						{ id: makeId(), role: 'assistant' as const, text, timestamp: getCurrentTimeStr() },
+						{
+							id: makeId(),
+							role: 'assistant' as const,
+							text,
+							timestamp: getCurrentTimeStr(),
+						},
 					];
 					return {
 						isChatActive: true,
 						messages,
-						sessions: syncActiveSessionIntoList(state.sessions, state.activeSessionId, messages),
+						sessions: syncActiveSessionIntoList(
+							state.sessions,
+							state.activeSessionId,
+							messages,
+						),
 					};
 				}),
 
@@ -405,7 +441,9 @@ export const useAiChatStore = create<TAiChatState>()(
 							],
 						};
 					}
-					return { streamTimeline: [...timeline, { kind: 'text', id: makeId(), text: delta }] };
+					return {
+						streamTimeline: [...timeline, { kind: 'text', id: makeId(), text: delta }],
+					};
 				}),
 
 			pushToolCall: (id, toolName, args) =>
@@ -440,8 +478,10 @@ export const useAiChatStore = create<TAiChatState>()(
 						role: 'assistant',
 						text: reply.content,
 						timestamp: formatTs(reply.created_at),
-						timeline: state.streamTimeline.length > 0 ? state.streamTimeline : undefined,
-						actionsSummary: reply.actions && reply.actions.length > 0 ? reply.actions : undefined,
+						timeline:
+							state.streamTimeline.length > 0 ? state.streamTimeline : undefined,
+						actionsSummary:
+							reply.actions && reply.actions.length > 0 ? reply.actions : undefined,
 					};
 
 					const messages = [...state.messages, assistantMsg];
@@ -452,7 +492,11 @@ export const useAiChatStore = create<TAiChatState>()(
 						workflowBuildStep: reply.actions?.length ? 3 : state.workflowBuildStep,
 						streamTimeline: [],
 						messages,
-						sessions: syncActiveSessionIntoList(state.sessions, state.activeSessionId, messages),
+						sessions: syncActiveSessionIntoList(
+							state.sessions,
+							state.activeSessionId,
+							messages,
+						),
 					};
 				});
 			},
@@ -476,16 +520,26 @@ export const useAiChatStore = create<TAiChatState>()(
 						pendingMessageId: null,
 						streamTimeline: [],
 						messages,
-						sessions: syncActiveSessionIntoList(state.sessions, state.activeSessionId, messages),
+						sessions: syncActiveSessionIntoList(
+							state.sessions,
+							state.activeSessionId,
+							messages,
+						),
 					};
 				});
 			},
 
 			hydrateFromBackend: (session) => {
 				const backendMsgs = (session.messages ?? []).filter(
-					(m) => m.role === 'user' || m.processing_status === 'completed' || m.processing_status === 'failed',
+					(m) =>
+						m.role === 'user' ||
+						m.processing_status === 'completed' ||
+						m.processing_status === 'failed',
 				);
-				const messages: TAiChatMessage[] = [WELCOME_MESSAGE, ...backendMsgs.map(mapBackendMessage)];
+				const messages: TAiChatMessage[] = [
+					WELCOME_MESSAGE,
+					...backendMsgs.map(mapBackendMessage),
+				];
 
 				// If the newest message is still processing, keep the thinking state so
 				// the poll/realtime picks it up and appends the reply.
@@ -494,7 +548,8 @@ export const useAiChatStore = create<TAiChatState>()(
 				const stillPending =
 					!!last &&
 					last.role === 'assistant' &&
-					(last.processing_status === 'pending' || last.processing_status === 'processing');
+					(last.processing_status === 'pending' ||
+						last.processing_status === 'processing');
 
 				set((state) => ({
 					builderSessionId: session.id,
@@ -505,7 +560,11 @@ export const useAiChatStore = create<TAiChatState>()(
 					workflowBuildStep: (session.draft_graph?.nodes?.length ?? 0) > 0 ? 3 : 0,
 					errorText: null,
 					messages,
-					sessions: syncActiveSessionIntoList(state.sessions, state.activeSessionId, messages),
+					sessions: syncActiveSessionIntoList(
+						state.sessions,
+						state.activeSessionId,
+						messages,
+					),
 				}));
 			},
 
@@ -533,7 +592,11 @@ export const useAiChatStore = create<TAiChatState>()(
 					builderSessionId: null,
 					streamTimeline: [],
 					messages,
-					sessions: syncActiveSessionIntoList(state.sessions, state.activeSessionId, messages),
+					sessions: syncActiveSessionIntoList(
+						state.sessions,
+						state.activeSessionId,
+						messages,
+					),
 				}));
 			},
 
@@ -552,7 +615,8 @@ export const useAiChatStore = create<TAiChatState>()(
 			/** Archives the current session and starts a fresh backend conversation. */
 			newChat: () => {
 				set((state) => {
-					const { [workflowKey(state.workflowId)]: _removed, ...rest } = state.sessionByWorkflow;
+					const { [workflowKey(state.workflowId)]: _removed, ...rest } =
+						state.sessionByWorkflow;
 					return {
 						isChatActive: false,
 						isThinking: false,
@@ -614,7 +678,10 @@ export const useAiChatStore = create<TAiChatState>()(
 					errorText: null,
 					streamTimeline: [],
 					messages: [WELCOME_MESSAGE],
-					sessionByWorkflow: { ...state.sessionByWorkflow, [workflowKey(state.workflowId)]: id },
+					sessionByWorkflow: {
+						...state.sessionByWorkflow,
+						[workflowKey(state.workflowId)]: id,
+					},
 				}));
 			},
 		}),

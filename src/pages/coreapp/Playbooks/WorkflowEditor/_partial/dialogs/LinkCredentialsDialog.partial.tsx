@@ -11,6 +11,7 @@ import {
 	connectorCredentialKeys,
 } from '@/api/modules/connectors';
 import type { TConnector } from '@/types/connector.type';
+import { CONNECTOR_UNAVAILABLE_LABEL, isConnectorUnavailable } from '@/types/connector.type';
 import type { TCanvasNode } from '../../_types/canvas.type';
 import type { TNodeDefinition } from '../../_types/node.type';
 import { useWorkspaceContext } from '@/context/workspace';
@@ -115,6 +116,7 @@ const LinkCredentialsDialog = () => {
 	// form to enter the key/token manually.
 	const handleConnect = async (nodeId: string, credentialType: string) => {
 		const credType = credTypeByKey[credentialType.toLowerCase()];
+		if (isConnectorUnavailable(credType)) return;
 
 		if (credType?.is_oauth) {
 			setIsConnecting((prev) => ({ ...prev, [nodeId]: true }));
@@ -292,6 +294,7 @@ const LinkCredentialsDialog = () => {
 									const credentialType = getCredentialType(node, def);
 									const credType = credTypeByKey[credentialType.toLowerCase()];
 									const isOAuth = Boolean(credType?.is_oauth);
+									const isUnavailable = isConnectorUnavailable(credType);
 									const form = forms[node.id];
 									const fieldEntries = Object.entries(fieldsSchemaOf(credType)?.properties ?? {});
 
@@ -342,12 +345,15 @@ const LinkCredentialsDialog = () => {
 												{/* Quick Connect Button */}
 												<button
 													type='button'
-													disabled={isConnecting[node.id]}
+													disabled={isConnecting[node.id] || isUnavailable}
+													title={isUnavailable ? `${credType?.name ?? credentialType} isn't set up on this server yet.` : undefined}
 													onClick={() => handleConnect(node.id, credentialType)}
 													className='flex items-center justify-center rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 px-3 py-1.5 text-xs font-bold text-zinc-700 dark:text-zinc-300 shadow-2xs transition active:scale-97 disabled:opacity-50 disabled:cursor-not-allowed'>
 													{isConnecting[node.id]
 														? 'Connecting…'
-														: form
+														: isUnavailable
+															? CONNECTOR_UNAVAILABLE_LABEL
+															: form
 															? 'Cancel'
 															: isOAuth
 																? '+ Connect New'

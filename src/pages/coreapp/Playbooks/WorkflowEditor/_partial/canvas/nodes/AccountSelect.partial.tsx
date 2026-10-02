@@ -8,6 +8,7 @@ import {
 import { useWorkspaceContext } from '@/context/workspace';
 import useOnClickOutside from '@/hooks/useOnClickOutside';
 import type { TConnectorCredential } from '@/types/connector.type';
+import { CONNECTOR_UNAVAILABLE_LABEL, isConnectorUnavailable } from '@/types/connector.type';
 import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
 import NodeIcon from '../../library/NodeIcon.partial';
 import { tintStyle } from '../../library/library.util';
@@ -40,6 +41,7 @@ const AccountSelect = ({ connectorKey, value, onChange }: Props) => {
 
 	const connector = connectors.find((item) => item.key === connectorKey);
 	const appName = connector?.name ?? connectorKey ?? 'app';
+	const isUnavailable = isConnectorUnavailable(connector);
 
 	const accounts = useMemo(
 		() =>
@@ -58,6 +60,11 @@ const AccountSelect = ({ connectorKey, value, onChange }: Props) => {
 	const connectNew = async () => {
 		setOpen(false);
 		setError(undefined);
+
+		if (isUnavailable) {
+			setError(`${appName} isn't set up on this server yet.`);
+			return;
+		}
 
 		if (!connector?.is_oauth) {
 			dispatch({ type: 'SET_LINK_CREDENTIALS_OPEN', open: true });
@@ -88,7 +95,8 @@ const AccountSelect = ({ connectorKey, value, onChange }: Props) => {
 			<div className='flex flex-col gap-1'>
 				<button
 					type='button'
-					disabled={connectOAuth.isPending}
+					disabled={connectOAuth.isPending || isUnavailable}
+					title={isUnavailable ? `${appName} isn't set up on this server yet.` : undefined}
 					onPointerDown={(event) => event.stopPropagation()}
 					onClick={connectNew}
 					className='nodrag flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-zinc-300 bg-white px-3 py-1.5 text-[11px] font-semibold text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800'>
@@ -97,7 +105,11 @@ const AccountSelect = ({ connectorKey, value, onChange }: Props) => {
 					) : (
 						icon
 					)}
-					{connectOAuth.isPending ? 'Waiting for authorization…' : `Connect ${appName}`}
+					{connectOAuth.isPending
+						? 'Waiting for authorization…'
+						: isUnavailable
+							? `${appName}: ${CONNECTOR_UNAVAILABLE_LABEL.toLowerCase()}`
+							: `Connect ${appName}`}
 				</button>
 				{error && <span className='text-[10px] font-medium text-rose-500'>{error}</span>}
 			</div>
@@ -191,7 +203,9 @@ const AccountSelect = ({ connectorKey, value, onChange }: Props) => {
 					<button
 						type='button'
 						onClick={connectNew}
-						className='flex w-full items-center gap-2 border-t border-zinc-100 px-3 py-2 text-[11px] font-semibold text-primary-600 transition hover:bg-zinc-50 dark:border-zinc-800 dark:text-primary-400 dark:hover:bg-zinc-800'>
+						disabled={isUnavailable}
+						title={isUnavailable ? `${appName} isn't set up on this server yet.` : undefined}
+						className='disabled:pointer-events-none disabled:opacity-50 flex w-full items-center gap-2 border-t border-zinc-100 px-3 py-2 text-[11px] font-semibold text-primary-600 transition hover:bg-zinc-50 dark:border-zinc-800 dark:text-primary-400 dark:hover:bg-zinc-800'>
 						<Plus size={13} />
 						Connect new {appName} account
 					</button>

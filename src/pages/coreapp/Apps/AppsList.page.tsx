@@ -39,6 +39,7 @@ import type {
 	TConnectorField,
 	TUpdateConnectorCredentialDto,
 } from '@/types/connector.type';
+import { CONNECTOR_UNAVAILABLE_LABEL, isConnectorUnavailable } from '@/types/connector.type';
 import {
 	useConnectors,
 	useConnectorCredentials,
@@ -494,6 +495,7 @@ const AppsListPage = () => {
 			notify.error('Credential catalog is not ready yet.');
 			return;
 		}
+		if (isConnectorUnavailable(app.connector)) return;
 
 		setSelectedAppForAuth(app);
 		setCredentialName(`My ${app.name} Connection`);
@@ -567,6 +569,7 @@ const AppsListPage = () => {
 						notify.error('Credential catalog is not ready yet.');
 						return;
 					}
+					if (isConnectorUnavailable(appDetails.connector)) return;
 
 					setSelectedAppForAuth(appDetails);
 					setCredentialName(`My ${appDetails.name} Connection`);
@@ -1050,9 +1053,15 @@ const AppsListPage = () => {
 														disabled={
 															createCredentialMutation.isPending ||
 															deleteCredentialMutation.isPending ||
-															connectOAuthMutation.isPending
+															connectOAuthMutation.isPending ||
+															(!app.isConnected && isConnectorUnavailable(app.connector))
 														}
-														className={`h-10 w-full cursor-pointer rounded-xl text-xs font-extrabold transition-all active:scale-95 ${
+														title={
+															!app.isConnected && isConnectorUnavailable(app.connector)
+																? `${app.name} isn't set up on this server yet.`
+																: undefined
+														}
+														className={`h-10 w-full cursor-pointer rounded-xl text-xs font-extrabold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 ${
 															app.isConnected
 																? 'border border-emerald-500/25 bg-emerald-500/10 text-emerald-600 hover:border-red-500/25 hover:bg-red-50/50 hover:text-red-500 dark:bg-emerald-500/5 dark:text-emerald-400 dark:hover:bg-red-950/10 dark:hover:text-red-400'
 																: 'bg-primary-400 text-primary-950 hover:bg-primary-500'
@@ -1061,9 +1070,11 @@ const AppsListPage = () => {
 															? app.isExpired
 																? 'Reconnect'
 																: 'Active'
-															: isOAuthCredentialType(app.connector)
-																? 'Authorize'
-																: 'Connect'}
+															: isConnectorUnavailable(app.connector)
+																? CONNECTOR_UNAVAILABLE_LABEL
+																: isOAuthCredentialType(app.connector)
+																	? 'Authorize'
+																	: 'Connect'}
 													</button>
 												</div>
 											</motion.article>
@@ -1338,10 +1349,18 @@ const AppsListPage = () => {
 												</div>
 												<button
 													onClick={() => handleConnectClick(availableApp)}
-													className='mt-3.5 h-9 w-full cursor-pointer rounded-lg border border-slate-200 bg-white text-[11px] font-black text-slate-700 transition-all hover:border-primary-400 hover:bg-primary-400 hover:text-primary-950 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-primary-400 dark:hover:bg-primary-400 dark:hover:text-primary-950'>
-													{isOAuthCredentialType(availableApp.connector)
-														? 'Authorize'
-														: 'Connect'}
+													disabled={isConnectorUnavailable(availableApp.connector)}
+													title={
+														isConnectorUnavailable(availableApp.connector)
+															? `${availableApp.name} isn't set up on this server yet.`
+															: undefined
+													}
+													className='mt-3.5 h-9 w-full cursor-pointer rounded-lg disabled:pointer-events-none disabled:opacity-50 border border-slate-200 bg-white text-[11px] font-black text-slate-700 transition-all hover:border-primary-400 hover:bg-primary-400 hover:text-primary-950 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-primary-400 dark:hover:bg-primary-400 dark:hover:text-primary-950'>
+													{isConnectorUnavailable(availableApp.connector)
+														? CONNECTOR_UNAVAILABLE_LABEL
+														: isOAuthCredentialType(availableApp.connector)
+															? 'Authorize'
+															: 'Connect'}
 												</button>
 											</div>
 										))

@@ -42,6 +42,8 @@ export type TBuilderMessage = {
 	id: string;
 	session_id: string;
 	draft_version_id: string | null;
+	/** Who sent it — `null` on assistant replies and older messages. */
+	user_id: string | null;
 	role: 'user' | 'assistant';
 	content: string;
 	actions: TBuilderMessageAction[] | null;
@@ -65,6 +67,10 @@ export type TBuilderSession = {
 	created_at: string;
 	updated_at?: string;
 };
+
+/** A session as `GET /workflow-builder-sessions` lists it — without its
+ *  graph; fetch the session to get that. */
+export type TBuilderSessionListItem = Omit<TBuilderSession, 'draft_graph' | 'messages'>;
 
 export type TBuilderDraftVersion = {
 	id: string;
@@ -98,9 +104,22 @@ export type TSyncBuilderDraftDto = TBuilderGraph & { draft_lock_version: number 
 
 export type TSendBuilderMessageDto = { message: string };
 
-export type TPromoteBuilderSessionDto = { name?: string };
+export type TPromoteBuilderSessionDto = {
+	name?: string;
+	/** Replace edits made to the workflow outside the session since it loaded
+	 *  it — without this the server answers 409. */
+	overwrite?: boolean;
+};
 
-export type TListBuilderSessionsParams = { status?: TBuilderSessionStatus };
+/** The lock version the client last loaded — the server answers 409 if the
+ *  draft moved on since, instead of discarding those edits. */
+export type TRestoreBuilderVersionDto = { draft_lock_version?: number | null };
+
+export type TListBuilderSessionsParams = {
+	status?: TBuilderSessionStatus;
+	/** Only sessions the caller created. */
+	mine?: boolean;
+};
 
 // ─── Assist (one-shot helpers; none change the draft) ────────
 

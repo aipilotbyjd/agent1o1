@@ -5,7 +5,7 @@ import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context
 import { useAiChatStore, type TAiChatMessage, type TAiTimelineItem } from '@/store/aiChat.store';
 import { useAuth } from '@/context/auth';
 import { useConfirm } from '@/context/confirm';
-import { messageFromError, notify } from '@/api/core';
+import { ApiError, messageFromError, notify } from '@/api/core';
 import {
 	WorkflowBuilderAssistService,
 	useDeleteWorkflowBuilderSession,
@@ -17,6 +17,7 @@ import {
 } from '@/api/modules/workflow-builder';
 import { versionToExportedWorkflow } from '../../_helper/workflowApiTransform.helper';
 import type { TBuilderDraftVersion, TBuilderMessageAction } from '@/types/workflow-builder.type';
+import type { TWorkflow } from '@/types/workflow.type';
 import {
 	Paperclip,
 	Sparkles,
@@ -59,11 +60,36 @@ import {
 import type { TCanvasNode } from '../../_types/canvas.type';
 
 /** Starter prompts shown in the empty state, before the first message. */
-const STARTER_SUGGESTIONS: { icon: typeof Workflow; label: string; prompt: string; mode: 'build' | 'ask' }[] = [
-	{ icon: Workflow, label: 'Explain this flow to me', prompt: 'Explain what this workflow does, step by step.', mode: 'ask' },
-	{ icon: Bug, label: 'Help me debug this flow', prompt: 'Something in this workflow isn’t working as expected - help me find the issue.', mode: 'ask' },
-	{ icon: Tag, label: 'Rename my nodes to be more descriptive', prompt: 'Rename all the nodes in this workflow to be clearer and more descriptive.', mode: 'build' },
-	{ icon: HelpCircle, label: 'What can you do?', prompt: 'What can you help me with in this workflow builder?', mode: 'ask' },
+const STARTER_SUGGESTIONS: {
+	icon: typeof Workflow;
+	label: string;
+	prompt: string;
+	mode: 'build' | 'ask';
+}[] = [
+	{
+		icon: Workflow,
+		label: 'Explain this flow to me',
+		prompt: 'Explain what this workflow does, step by step.',
+		mode: 'ask',
+	},
+	{
+		icon: Bug,
+		label: 'Help me debug this flow',
+		prompt: 'Something in this workflow isn’t working as expected - help me find the issue.',
+		mode: 'ask',
+	},
+	{
+		icon: Tag,
+		label: 'Rename my nodes to be more descriptive',
+		prompt: 'Rename all the nodes in this workflow to be clearer and more descriptive.',
+		mode: 'build',
+	},
+	{
+		icon: HelpCircle,
+		label: 'What can you do?',
+		prompt: 'What can you help me with in this workflow builder?',
+		mode: 'ask',
+	},
 ];
 
 /** Compact markdown rendering sized for the chat bubble's 13px type scale. */
@@ -73,13 +99,15 @@ const mdComponents: Components = {
 		<strong className='font-bold text-zinc-900 dark:text-white'>{children}</strong>
 	),
 	em: ({ children }) => <em className='italic'>{children}</em>,
-	ul: ({ children }) => <ul className='mb-1.5 ml-4 list-disc space-y-0.5 last:mb-0'>{children}</ul>,
+	ul: ({ children }) => (
+		<ul className='mb-1.5 ml-4 list-disc space-y-0.5 last:mb-0'>{children}</ul>
+	),
 	ol: ({ children }) => (
 		<ol className='mb-1.5 ml-4 list-decimal space-y-0.5 last:mb-0'>{children}</ol>
 	),
 	li: ({ children }) => <li className='pl-0.5'>{children}</li>,
 	code: ({ children }) => (
-		<code className='rounded bg-zinc-100 px-1 py-0.5 font-mono text-[11.5px] text-primary-700 dark:bg-zinc-800 dark:text-primary-400'>
+		<code className='text-primary-700 dark:text-primary-400 rounded bg-zinc-100 px-1 py-0.5 font-mono text-[11.5px] dark:bg-zinc-800'>
 			{children}
 		</code>
 	),
@@ -88,7 +116,7 @@ const mdComponents: Components = {
 			href={href}
 			target='_blank'
 			rel='noreferrer'
-			className='underline underline-offset-2 hover:text-primary-600 dark:hover:text-primary-400'>
+			className='hover:text-primary-600 dark:hover:text-primary-400 underline underline-offset-2'>
 			{children}
 		</a>
 	),
@@ -122,7 +150,10 @@ const describeToolCall = (
 
 	switch (toolName) {
 		case 'add_node':
-			return { Icon: CirclePlus, text: `Add ${prettify(str(args.type) || 'node')} node${args.key ? ` “${str(args.key)}”` : ''}` };
+			return {
+				Icon: CirclePlus,
+				text: `Add ${prettify(str(args.type) || 'node')} node${args.key ? ` “${str(args.key)}”` : ''}`,
+			};
 		case 'update_node':
 			return { Icon: Pencil, text: `Update ${nodeLabel(nodes, args.key)}` };
 		case 'remove_node':
@@ -137,13 +168,19 @@ const describeToolCall = (
 			};
 		}
 		case 'disconnect_nodes':
-			return { Icon: Unlink, text: `Disconnect ${nodeLabel(nodes, args.from)} → ${nodeLabel(nodes, args.to)}` };
+			return {
+				Icon: Unlink,
+				text: `Disconnect ${nodeLabel(nodes, args.from)} → ${nodeLabel(nodes, args.to)}`,
+			};
 		case 'read_draft':
 			return { Icon: Search, text: 'Read the current draft' };
 		case 'list_available_nodes':
 			return { Icon: Search, text: 'Look up available nodes' };
 		case 'inspect_node_schema':
-			return { Icon: Search, text: `Check settings for ${prettify(str(args.type) || 'node')}` };
+			return {
+				Icon: Search,
+				text: `Check settings for ${prettify(str(args.type) || 'node')}`,
+			};
 		case 'inspect_node_output':
 			return {
 				Icon: Search,
@@ -176,7 +213,12 @@ type TAssistKind = 'explain' | 'improve' | 'next';
 
 /** One-shot helpers shown above the input once there's something to work on. */
 const ASSIST_ACTIONS: { kind: TAssistKind; label: string; title: string; Icon: typeof Search }[] = [
-	{ kind: 'explain', label: 'Explain', title: 'Explain what this workflow does, step by step', Icon: BookOpen },
+	{
+		kind: 'explain',
+		label: 'Explain',
+		title: 'Explain what this workflow does, step by step',
+		Icon: BookOpen,
+	},
 	{ kind: 'improve', label: 'Review', title: 'Suggest concrete improvements', Icon: ListChecks },
 	{ kind: 'next', label: 'What’s next?', title: 'Suggest nodes to add next', Icon: Lightbulb },
 ];
@@ -188,7 +230,10 @@ const formatExplanation = (
 	[
 		'**What this workflow does**',
 		result.summary,
-		...result.steps.map((step, index) => `${index + 1}. **${nodeLabel(nodes, step.key)}** — ${step.description}`),
+		...result.steps.map(
+			(step, index) =>
+				`${index + 1}. **${nodeLabel(nodes, step.key)}** — ${step.description}`,
+		),
 	].join('\n\n');
 
 const formatImprovements = (
@@ -270,7 +315,10 @@ const AiBuilderPanel = () => {
 	const sessionTime = (session: { last_activity_at: string | null; created_at: string }) =>
 		Date.parse(session.last_activity_at ?? session.created_at);
 	const sortedSessions = (builderSessions ?? [])
-		.filter((session) => session.workflow_id !== null && String(session.workflow_id) === workflowApiId)
+		.filter(
+			(session) =>
+				session.workflow_id !== null && String(session.workflow_id) === workflowApiId,
+		)
 		.sort((a, b) => sessionTime(b) - sessionTime(a));
 
 	// Undo history for the open chat's draft.
@@ -337,7 +385,10 @@ const AiBuilderPanel = () => {
 		return () => clearTimeout(timer);
 	}, [isThinking, streamTimeline.length, pendingMessageId]);
 	const isSlowReply =
-		isThinking && streamTimeline.length === 0 && !!pendingMessageId && slowMessageId === pendingMessageId;
+		isThinking &&
+		streamTimeline.length === 0 &&
+		!!pendingMessageId &&
+		slowMessageId === pendingMessageId;
 
 	if (!state.ui.aiPanelOpen) return null;
 
@@ -397,14 +448,25 @@ const AiBuilderPanel = () => {
 				const result = await WorkflowBuilderAssistService.explain(workspaceId, sessionId);
 				pushAssistantNote(formatExplanation(result, state.nodes));
 			} else if (kind === 'improve') {
-				const result = await WorkflowBuilderAssistService.suggestImprovements(workspaceId, sessionId);
+				const result = await WorkflowBuilderAssistService.suggestImprovements(
+					workspaceId,
+					sessionId,
+				);
 				pushAssistantNote(formatImprovements(result, state.nodes));
 			} else {
-				const result = await WorkflowBuilderAssistService.suggestNodes(workspaceId, sessionId);
+				const result = await WorkflowBuilderAssistService.suggestNodes(
+					workspaceId,
+					sessionId,
+				);
 				pushAssistantNote(formatNodeSuggestions(result, state.nodes));
 			}
 		} catch (error) {
-			notify.error(messageFromError(error, 'The assistant couldn’t do that right now. Please try again.'));
+			notify.error(
+				messageFromError(
+					error,
+					'The assistant couldn’t do that right now. Please try again.',
+				),
+			);
 		} finally {
 			setAssistBusy(null);
 		}
@@ -416,13 +478,25 @@ const AiBuilderPanel = () => {
 			message: `Put the draft back to “${version.label ?? 'this version'}”? The restore is saved as a new step, so you can undo it the same way.`,
 		});
 		if (!confirmed) return;
-		restoreVersion.mutate(version.id, {
-			onSuccess: () => {
-				rehydrate();
-				setShowVersions(false);
-				notify.success('Draft restored');
+		restoreVersion.mutate(
+			{ versionId: version.id, draftLockVersion: useAiChatStore.getState().draftLockVersion },
+			{
+				onSuccess: () => {
+					rehydrate();
+					setShowVersions(false);
+					notify.success('Draft restored');
+				},
+				onError: (error) => {
+					if (!ApiError.is(error) || !error.isConflict) return;
+					// The assistant changed the draft since it was loaded — show
+					// its latest version rather than restoring over it.
+					rehydrate();
+					notify.info(
+						'The draft changed since you opened it — reloaded the latest version. Try the restore again if you still want it.',
+					);
+				},
 			},
-		});
+		);
 	};
 
 	const handleArchiveSession = (id: string) => {
@@ -460,7 +534,8 @@ const AiBuilderPanel = () => {
 	const handleDeleteSession = async (id: string) => {
 		const confirmed = await confirm({
 			title: 'Delete chat',
-			message: 'This deletes the conversation and its draft for everyone in the workspace. The workflow itself is not changed.',
+			message:
+				'This deletes the conversation and its draft for everyone in the workspace. The workflow itself is not changed.',
 		});
 		if (!confirmed) return;
 		deleteBuilderSession.mutate(id, {
@@ -475,27 +550,58 @@ const AiBuilderPanel = () => {
 	const handlePromoteSession = async (id: string) => {
 		const confirmed = await confirm({
 			title: 'Apply chat draft',
-			message: 'Replace the workflow on the canvas with the draft from this chat? Unsaved canvas edits will be lost.',
+			message:
+				'Replace the workflow on the canvas with the draft from this chat? Unsaved canvas edits will be lost.',
 		});
 		if (!confirmed) return;
 		promoteBuilderSession.mutate(
 			{ id },
 			{
-				onSuccess: (workflow) => {
-					const { nodes, edges } = versionToExportedWorkflow(workflow, undefined, workspaceId);
-					dispatch({ type: 'APPLY_BUILDER_DRAFT', nodes, edges });
-					notify.success('Chat draft applied to the workflow');
-					setShowHistory(false);
+				onSuccess: applyPromotedWorkflow,
+				onError: async (error) => {
+					if (!ApiError.is(error) || !error.isConflict) return;
+					// A 409 also means a reply is still being written — overwriting
+					// can't help with that, so just say so.
+					if (isThinking) {
+						notify.error(error.message);
+						return;
+					}
+					const overwrite = await confirm({
+						title: 'Workflow changed since this chat loaded it',
+						message:
+							'Someone edited this workflow outside the chat since the chat loaded it. Replace those edits with the chat’s draft?',
+						confirmText: 'Replace',
+					});
+					if (!overwrite) return;
+					promoteBuilderSession.mutate(
+						{ id, payload: { overwrite: true } },
+						{
+							onSuccess: applyPromotedWorkflow,
+							onError: (retryError) => {
+								if (ApiError.is(retryError) && retryError.isConflict)
+									notify.error(retryError.message);
+							},
+						},
+					);
 				},
 			},
 		);
 	};
 
+	const applyPromotedWorkflow = (workflow: TWorkflow) => {
+		const { nodes, edges } = versionToExportedWorkflow(workflow, undefined, workspaceId);
+		dispatch({ type: 'APPLY_BUILDER_DRAFT', nodes, edges });
+		notify.success('Chat draft applied to the workflow');
+		setShowHistory(false);
+	};
+
 	// Fallback user avatar image
-	const userAvatar = userData?.image?.org || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80';
+	const userAvatar =
+		userData?.image?.org ||
+		'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80';
 
 	return (
-		<aside className='relative flex h-full w-full flex-col overflow-hidden border-r border-zinc-200 bg-white text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 select-none'>
+		<aside className='relative flex h-full w-full flex-col overflow-hidden border-r border-zinc-200 bg-white text-zinc-900 select-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100'>
 			{/* Header */}
 			<div className='shrink-0 border-b border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950'>
 				<div className='flex items-center justify-between gap-2'>
@@ -505,12 +611,11 @@ const AiBuilderPanel = () => {
 							onClick={() => setShowHistory(true)}
 							title='Chat history'
 							aria-label='Chat history'
-							className='flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 shadow-xs hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
-						>
+							className='flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 shadow-xs hover:bg-zinc-50 hover:text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
 							<History size={14} />
 						</button>
-						<div className='flex h-9 w-9 items-center justify-center rounded-xl bg-primary-400 text-primary-950 shadow-sm shadow-primary-500/40'>
-							<Sparkles size={18} className="fill-white" />
+						<div className='bg-primary-400 text-primary-950 shadow-primary-500/40 flex h-9 w-9 items-center justify-center rounded-xl shadow-sm'>
+							<Sparkles size={18} className='fill-white' />
 						</div>
 						<div>
 							<div className='text-sm font-bold text-zinc-800 dark:text-white'>
@@ -531,26 +636,32 @@ const AiBuilderPanel = () => {
 							disabled={!builderSessionId || isThinking}
 							title='Undo history'
 							aria-label='Undo history'
-							className='flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 shadow-xs hover:bg-zinc-50 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'
-						>
+							className='flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 shadow-xs hover:bg-zinc-50 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
 							<Undo2 size={14} />
 						</button>
 						<button
 							type='button'
 							onClick={handleNewChat}
 							title='New chat'
-							className='flex h-7 items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2 text-[11px] font-bold text-zinc-600 shadow-xs hover:bg-zinc-50 dark:hover:bg-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'
-						>
+							className='flex h-7 items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2 text-[11px] font-bold text-zinc-600 shadow-xs hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800'>
 							<Plus size={12} />
 							<span>New Chat</span>
 						</button>
 						<button
 							type='button'
 							onClick={handleExit}
-							className='flex h-7 items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2 text-[11px] font-bold text-zinc-600 shadow-xs hover:bg-zinc-50 dark:hover:bg-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'
-						>
-							<svg className='h-3 w-3' fill='none' stroke='currentColor' viewBox='0 0 24 24' strokeWidth='2.5'>
-								<path strokeLinecap='round' strokeLinejoin='round' d='M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75' />
+							className='flex h-7 items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2 text-[11px] font-bold text-zinc-600 shadow-xs hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800'>
+							<svg
+								className='h-3 w-3'
+								fill='none'
+								stroke='currentColor'
+								viewBox='0 0 24 24'
+								strokeWidth='2.5'>
+								<path
+									strokeLinecap='round'
+									strokeLinejoin='round'
+									d='M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75'
+								/>
 							</svg>
 							<span>Exit</span>
 						</button>
@@ -559,18 +670,20 @@ const AiBuilderPanel = () => {
 			</div>
 
 			{/* Chat Messages */}
-			<div className='min-h-0 flex-1 overflow-y-auto p-4 space-y-1.5 bg-zinc-50/40 dark:bg-zinc-950/20'>
+			<div className='min-h-0 flex-1 space-y-1.5 overflow-y-auto bg-zinc-50/40 p-4 dark:bg-zinc-950/20'>
 				{messages.length <= 1 && !isThinking && (
 					<motion.div
 						initial={{ opacity: 0, y: 6 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ duration: 0.25 }}
 						className='flex flex-col items-center px-2 pt-6 pb-4 text-center'>
-						<div className='mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-400 text-primary-950 shadow-sm shadow-primary-500/40'>
+						<div className='bg-primary-400 text-primary-950 shadow-primary-500/40 mb-3 flex h-11 w-11 items-center justify-center rounded-2xl shadow-sm'>
 							<Sparkles size={20} className='fill-white' />
 						</div>
 						<h2 className='text-base font-bold text-zinc-800 dark:text-white'>
-							{userData?.name ? `Hey ${userData.name.split(' ')[0]}, how can I help?` : 'How can I help?'}
+							{userData?.name
+								? `Hey ${userData.name.split(' ')[0]}, how can I help?`
+								: 'How can I help?'}
 						</h2>
 						<p className='mt-1 max-w-[240px] text-[12px] leading-relaxed text-zinc-400 dark:text-zinc-500'>
 							Describe what you want to automate, or try one of these:
@@ -585,14 +698,14 @@ const AiBuilderPanel = () => {
 										setMode(suggestion.mode);
 										sendMessage(suggestion.prompt, suggestion.mode);
 									}}
-									className='group flex items-center gap-2.5 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-left text-[12.5px] font-semibold text-zinc-600 shadow-xs transition hover:border-primary-300 hover:bg-primary-50/50 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-primary-700 dark:hover:bg-primary-950/20 dark:hover:text-white'>
-									<span className='flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 transition group-hover:bg-primary-100 group-hover:text-primary-600 dark:bg-zinc-800 dark:text-zinc-400 dark:group-hover:bg-primary-500/15 dark:group-hover:text-primary-400'>
+									className='group hover:border-primary-300 hover:bg-primary-50/50 dark:hover:border-primary-700 dark:hover:bg-primary-950/20 flex items-center gap-2.5 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-left text-[12.5px] font-semibold text-zinc-600 shadow-xs transition hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:text-white'>
+									<span className='group-hover:bg-primary-100 group-hover:text-primary-600 dark:group-hover:bg-primary-500/15 dark:group-hover:text-primary-400 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 transition dark:bg-zinc-800 dark:text-zinc-400'>
 										<suggestion.icon size={13} />
 									</span>
 									{suggestion.label}
 									<ChevronRight
 										size={13}
-										className='ml-auto shrink-0 text-zinc-300 transition group-hover:translate-x-0.5 group-hover:text-primary-500 dark:text-zinc-700'
+										className='group-hover:text-primary-500 ml-auto shrink-0 text-zinc-300 transition group-hover:translate-x-0.5 dark:text-zinc-700'
 									/>
 								</button>
 							))}
@@ -610,7 +723,9 @@ const AiBuilderPanel = () => {
 								transition={{ duration: 0.2, ease: 'easeOut' }}>
 								<ChatMessage
 									message={message}
-									showHeader={index === 0 || messages[index - 1].role !== message.role}
+									showHeader={
+										index === 0 || messages[index - 1].role !== message.role
+									}
 									userAvatar={userAvatar}
 									onRetry={handleRetry}
 									nodes={state.nodes}
@@ -623,24 +738,26 @@ const AiBuilderPanel = () => {
 				{/* Live scratchpad — reasoning + tool calls as they stream, not a bubble */}
 				{isThinking && (
 					<div className='space-y-1.5'>
-						<div className='flex items-center gap-2 text-xs text-zinc-400 dark:text-zinc-500 font-medium'>
-							<div className='flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-950 dark:text-primary-400 animate-pulse'>
+						<div className='flex items-center gap-2 text-xs font-medium text-zinc-400 dark:text-zinc-500'>
+							<div className='bg-primary-100 text-primary-600 dark:bg-primary-950 dark:text-primary-400 flex h-5 w-5 animate-pulse items-center justify-center rounded-full'>
 								<Sparkles size={11} />
 							</div>
-							<span className='font-bold text-zinc-700 dark:text-zinc-300'>Workflow Builder</span>
+							<span className='font-bold text-zinc-700 dark:text-zinc-300'>
+								Workflow Builder
+							</span>
 						</div>
 
 						<div className='pl-7'>
 							{streamTimeline.length === 0 && (
 								<div className='flex items-center gap-1.5 text-[12px] text-zinc-500 dark:text-zinc-400'>
-									<span className='h-1.5 w-1.5 rounded-full bg-primary-400 animate-ping' />
+									<span className='bg-primary-400 h-1.5 w-1.5 animate-ping rounded-full' />
 									Getting started…
 								</div>
 							)}
 							{isSlowReply && (
 								<p className='mt-1.5 text-[11px] leading-relaxed text-zinc-400 dark:text-zinc-500'>
-									Still working — no live updates yet. Bigger changes can take a minute or two; the
-									reply will appear here when it's done.
+									Still working — no live updates yet. Bigger changes can take a
+									minute or two; the reply will appear here when it's done.
 									{import.meta.env.DEV &&
 										' (Local dev: check that a queue worker is listening on the "workflow-builder" queue.)'}
 								</p>
@@ -669,7 +786,11 @@ const AiBuilderPanel = () => {
 												{item.text}
 											</p>
 										) : (
-											<ToolLine key={item.id} item={item} nodes={state.nodes} />
+											<ToolLine
+												key={item.id}
+												item={item}
+												nodes={state.nodes}
+											/>
 										),
 									)}
 								</div>
@@ -704,7 +825,7 @@ const AiBuilderPanel = () => {
 								onClick={() => void runAssist(action.kind)}
 								disabled={isThinking || assistBusy !== null}
 								title={action.title}
-								className='flex items-center gap-1 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-zinc-600 shadow-xs transition hover:border-primary-300 hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-primary-700 dark:hover:text-white'>
+								className='hover:border-primary-300 dark:hover:border-primary-700 flex items-center gap-1 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-zinc-600 shadow-xs transition hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:text-white'>
 								{assistBusy === action.kind ? (
 									<Loader2 size={11} className='animate-spin' />
 								) : (
@@ -718,8 +839,8 @@ const AiBuilderPanel = () => {
 				<div
 					className={`relative rounded-2xl border p-3 shadow-xs transition-colors ${
 						isThinking
-							? 'border-primary-300 bg-primary-50/30 ring-2 ring-primary-200/60 dark:border-primary-700 dark:bg-primary-950/10 dark:ring-primary-900/40'
-							: 'border-zinc-200 bg-zinc-50/50 focus-within:border-primary-300 focus-within:ring-2 focus-within:ring-primary-200/60 dark:border-zinc-800 dark:bg-zinc-900 dark:focus-within:border-primary-700 dark:focus-within:ring-primary-900/40'
+							? 'border-primary-300 bg-primary-50/30 ring-primary-200/60 dark:border-primary-700 dark:bg-primary-950/10 dark:ring-primary-900/40 ring-2'
+							: 'focus-within:border-primary-300 focus-within:ring-primary-200/60 dark:focus-within:border-primary-700 dark:focus-within:ring-primary-900/40 border-zinc-200 bg-zinc-50/50 focus-within:ring-2 dark:border-zinc-800 dark:bg-zinc-900'
 					}`}>
 					{mentionQuery !== null && mentionMatches.length > 0 && (
 						<ul className='absolute bottom-full left-3 z-30 mb-1.5 max-h-40 w-56 overflow-y-auto rounded-lg border border-zinc-200 bg-white py-1 text-[11px] shadow-lg dark:border-zinc-700 dark:bg-zinc-900'>
@@ -732,7 +853,9 @@ const AiBuilderPanel = () => {
 											insertMention(node.data.label || node.data.defKey);
 										}}
 										className='flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800'>
-										<span className='truncate font-medium'>{node.data.label || node.data.defKey}</span>
+										<span className='truncate font-medium'>
+											{node.data.label || node.data.defKey}
+										</span>
 									</button>
 								</li>
 							))}
@@ -753,8 +876,12 @@ const AiBuilderPanel = () => {
 							}
 							if (e.key === 'Escape') setMentionQuery(null);
 						}}
-						placeholder={isThinking ? 'Responding…' : 'Describe what you want to automate today... (@ to reference a node)'}
-						className='w-full min-h-[50px] max-h-[120px] resize-none border-none bg-transparent p-0 text-sm text-zinc-800 placeholder-zinc-400 outline-none focus:ring-0 focus:outline-none disabled:cursor-not-allowed dark:text-zinc-200'
+						placeholder={
+							isThinking
+								? 'Responding…'
+								: 'Describe what you want to automate today... (@ to reference a node)'
+						}
+						className='max-h-[120px] min-h-[50px] w-full resize-none border-none bg-transparent p-0 text-sm text-zinc-800 placeholder-zinc-400 outline-none focus:ring-0 focus:outline-none disabled:cursor-not-allowed dark:text-zinc-200'
 					/>
 
 					{/* Action Buttons inside Input Box */}
@@ -764,8 +891,7 @@ const AiBuilderPanel = () => {
 								type='button'
 								disabled
 								title='Attachments are coming soon'
-								className='flex h-7 w-7 cursor-not-allowed items-center justify-center rounded-lg text-zinc-300 dark:text-zinc-600'
-							>
+								className='flex h-7 w-7 cursor-not-allowed items-center justify-center rounded-lg text-zinc-300 dark:text-zinc-600'>
 								<Paperclip size={14} />
 							</button>
 						</div>
@@ -780,10 +906,12 @@ const AiBuilderPanel = () => {
 									className={`flex items-center gap-1 rounded-md px-2.5 py-1 transition disabled:cursor-not-allowed ${
 										mode === 'build'
 											? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-700 dark:text-white'
-											: 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 dark:text-zinc-500'
-									}`}
-								>
-									<Sparkles size={10} className={mode === 'build' ? 'text-primary-500' : ''} />
+											: 'text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300'
+									}`}>
+									<Sparkles
+										size={10}
+										className={mode === 'build' ? 'text-primary-500' : ''}
+									/>
 									<span>Build</span>
 								</button>
 								<button
@@ -793,9 +921,8 @@ const AiBuilderPanel = () => {
 									className={`rounded-md px-2.5 py-1 transition disabled:cursor-not-allowed ${
 										mode === 'ask'
 											? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-700 dark:text-white'
-											: 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 dark:text-zinc-500'
-									}`}
-								>
+											: 'text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300'
+									}`}>
 									<span>Ask</span>
 								</button>
 							</div>
@@ -806,8 +933,7 @@ const AiBuilderPanel = () => {
 									type='button'
 									onClick={stopThinking}
 									title='Stop'
-									className='flex h-7 w-7 items-center justify-center rounded-full bg-rose-500 text-white transition hover:bg-rose-600 active:scale-95'
-								>
+									className='flex h-7 w-7 items-center justify-center rounded-full bg-rose-500 text-white transition hover:bg-rose-600 active:scale-95'>
 									<Square size={11} fill='currentColor' />
 								</button>
 							) : (
@@ -816,8 +942,7 @@ const AiBuilderPanel = () => {
 									type='button'
 									onClick={handleSend}
 									disabled={!promptInput.trim()}
-									className='flex h-7 w-7 items-center justify-center rounded-full bg-primary-400 text-primary-950 transition hover:bg-primary-500 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed'
-								>
+									className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex h-7 w-7 items-center justify-center rounded-full transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40'>
 									<ArrowUp size={14} strokeWidth={2.5} />
 								</button>
 							)}
@@ -826,13 +951,13 @@ const AiBuilderPanel = () => {
 				</div>
 
 				<div className='mt-2.5 text-center'>
-					<span className='text-[10px] text-zinc-400 dark:text-zinc-500 font-medium'>
+					<span className='text-[10px] font-medium text-zinc-400 dark:text-zinc-500'>
 						Having Trouble?{' '}
-					<a
-						href='mailto:support@agent1o1.com?subject=Workflow%20Builder%20issue'
-						className='underline hover:text-zinc-600 dark:hover:text-zinc-300'>
-						Report an Issue or Bug
-					</a>
+						<a
+							href='mailto:support@agent1o1.com?subject=Workflow%20Builder%20issue'
+							className='underline hover:text-zinc-600 dark:hover:text-zinc-300'>
+							Report an Issue or Bug
+						</a>
 					</span>
 				</div>
 			</div>
@@ -847,8 +972,7 @@ const AiBuilderPanel = () => {
 			<div
 				className={`absolute inset-y-0 left-0 z-30 flex w-[85%] max-w-[280px] flex-col border-r border-zinc-200 bg-white shadow-2xl transition-transform duration-200 ease-out dark:border-zinc-800 dark:bg-zinc-950 ${
 					showHistory ? 'translate-x-0' : '-translate-x-full'
-				}`}
-			>
+				}`}>
 				<div className='flex shrink-0 items-center justify-between border-b border-zinc-200 px-3.5 py-3 dark:border-zinc-800'>
 					<div className='flex items-center gap-1.5 text-sm font-bold text-zinc-800 dark:text-white'>
 						<History size={14} className='text-zinc-400 dark:text-zinc-500' />
@@ -858,8 +982,7 @@ const AiBuilderPanel = () => {
 						type='button'
 						onClick={() => setShowHistory(false)}
 						title='Close'
-						className='flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'
-					>
+						className='flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
 						<X size={14} />
 					</button>
 				</div>
@@ -868,8 +991,7 @@ const AiBuilderPanel = () => {
 					<button
 						type='button'
 						onClick={handleNewChat}
-						className='flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary-400 px-3 py-2 text-xs font-bold text-primary-950 shadow-xs transition hover:bg-primary-500'
-					>
+						className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold shadow-xs transition'>
 						<Plus size={13} />
 						<span>New Chat</span>
 					</button>
@@ -890,7 +1012,7 @@ const AiBuilderPanel = () => {
 					</div>
 				</div>
 
-				<div className='min-h-0 flex-1 overflow-y-auto px-2.5 pb-2.5 space-y-1'>
+				<div className='min-h-0 flex-1 space-y-1 overflow-y-auto px-2.5 pb-2.5'>
 					{isSessionsLoading ? (
 						<div className='flex h-full items-center justify-center text-xs text-zinc-400'>
 							<Loader2 size={14} className='mr-2 animate-spin' />
@@ -916,7 +1038,9 @@ const AiBuilderPanel = () => {
 								key={session.id}
 								role={isArchivedTab ? undefined : 'button'}
 								tabIndex={isArchivedTab ? undefined : 0}
-								onClick={isArchivedTab ? undefined : () => handleLoadSession(session.id)}
+								onClick={
+									isArchivedTab ? undefined : () => handleLoadSession(session.id)
+								}
 								onKeyDown={
 									isArchivedTab
 										? undefined
@@ -934,7 +1058,7 @@ const AiBuilderPanel = () => {
 									className={
 										session.id === builderSessionId
 											? 'text-primary-600 dark:text-primary-400 shrink-0'
-											: 'text-zinc-400 dark:text-zinc-600 shrink-0'
+											: 'shrink-0 text-zinc-400 dark:text-zinc-600'
 									}
 								/>
 								<div className='min-w-0 flex-1'>
@@ -956,7 +1080,7 @@ const AiBuilderPanel = () => {
 											onBlur={() => commitRename(session.id, session.title)}
 											maxLength={255}
 											aria-label='Chat name'
-											className='w-full rounded-md border border-primary-300 bg-white px-1.5 py-0.5 text-xs font-semibold text-zinc-700 outline-none dark:border-primary-700 dark:bg-zinc-900 dark:text-zinc-200'
+											className='border-primary-300 dark:border-primary-700 w-full rounded-md border bg-white px-1.5 py-0.5 text-xs font-semibold text-zinc-700 outline-none dark:bg-zinc-900 dark:text-zinc-200'
 										/>
 									) : (
 										<div className='truncate text-xs font-semibold text-zinc-700 dark:text-zinc-200'>
@@ -975,47 +1099,47 @@ const AiBuilderPanel = () => {
 										aria-label='Unarchive chat'
 										disabled={updateBuilderSession.isPending}
 										onClick={() => handleUnarchiveSession(session.id)}
-										className='flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-zinc-300 opacity-0 transition hover:bg-primary-50 hover:text-primary-600 group-hover:opacity-100 disabled:opacity-40 dark:text-zinc-600 dark:hover:bg-primary-950/30 dark:hover:text-primary-400'>
+										className='hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-950/30 dark:hover:text-primary-400 flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-zinc-300 opacity-0 transition group-hover:opacity-100 disabled:opacity-40 dark:text-zinc-600'>
 										<ArchiveRestore size={12} />
 									</button>
 								) : (
-								<>
-								<button
-									type='button'
-									title='Rename chat'
-									aria-label='Rename chat'
-									onClick={(e) => {
-										e.stopPropagation();
-										startRename(session.id, session.title);
-									}}
-									className='flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-zinc-300 opacity-0 transition hover:bg-zinc-100 hover:text-zinc-600 group-hover:opacity-100 dark:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300'>
-									<Pencil size={12} />
-								</button>
-								<button
-									type='button'
-									title='Apply this chat’s draft to the workflow'
-									aria-label='Apply chat draft to workflow'
-									disabled={promoteBuilderSession.isPending}
-									onClick={(e) => {
-										e.stopPropagation();
-										void handlePromoteSession(session.id);
-									}}
-									className='flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-zinc-300 opacity-0 transition hover:bg-primary-50 hover:text-primary-600 group-hover:opacity-100 disabled:opacity-40 dark:text-zinc-600 dark:hover:bg-primary-950/30 dark:hover:text-primary-400'>
-									<ArrowDownToLine size={12} />
-								</button>
-								<button
-									type='button'
-									title='Archive chat'
-									aria-label='Archive chat'
-									disabled={updateBuilderSession.isPending}
-									onClick={(e) => {
-										e.stopPropagation();
-										handleArchiveSession(session.id);
-									}}
-									className='flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-zinc-300 opacity-0 transition hover:bg-zinc-100 hover:text-zinc-600 group-hover:opacity-100 disabled:opacity-40 dark:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300'>
-									<Archive size={12} />
-								</button>
-								</>
+									<>
+										<button
+											type='button'
+											title='Rename chat'
+											aria-label='Rename chat'
+											onClick={(e) => {
+												e.stopPropagation();
+												startRename(session.id, session.title);
+											}}
+											className='flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-zinc-300 opacity-0 transition group-hover:opacity-100 hover:bg-zinc-100 hover:text-zinc-600 dark:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300'>
+											<Pencil size={12} />
+										</button>
+										<button
+											type='button'
+											title='Apply this chat’s draft to the workflow'
+											aria-label='Apply chat draft to workflow'
+											disabled={promoteBuilderSession.isPending}
+											onClick={(e) => {
+												e.stopPropagation();
+												void handlePromoteSession(session.id);
+											}}
+											className='hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-950/30 dark:hover:text-primary-400 flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-zinc-300 opacity-0 transition group-hover:opacity-100 disabled:opacity-40 dark:text-zinc-600'>
+											<ArrowDownToLine size={12} />
+										</button>
+										<button
+											type='button'
+											title='Archive chat'
+											aria-label='Archive chat'
+											disabled={updateBuilderSession.isPending}
+											onClick={(e) => {
+												e.stopPropagation();
+												handleArchiveSession(session.id);
+											}}
+											className='flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-zinc-300 opacity-0 transition group-hover:opacity-100 hover:bg-zinc-100 hover:text-zinc-600 disabled:opacity-40 dark:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300'>
+											<Archive size={12} />
+										</button>
+									</>
 								)}
 								<button
 									type='button'
@@ -1025,7 +1149,7 @@ const AiBuilderPanel = () => {
 										e.stopPropagation();
 										void handleDeleteSession(session.id);
 									}}
-									className='flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-zinc-300 opacity-0 transition hover:bg-rose-50 hover:text-rose-500 group-hover:opacity-100 dark:text-zinc-600 dark:hover:bg-rose-950/30 dark:hover:text-rose-400'>
+									className='flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-zinc-300 opacity-0 transition group-hover:opacity-100 hover:bg-rose-50 hover:text-rose-500 dark:text-zinc-600 dark:hover:bg-rose-950/30 dark:hover:text-rose-400'>
 									<Trash2 size={12} />
 								</button>
 							</div>
@@ -1044,8 +1168,7 @@ const AiBuilderPanel = () => {
 			<div
 				className={`absolute inset-y-0 right-0 z-30 flex w-[85%] max-w-[300px] flex-col border-l border-zinc-200 bg-white shadow-2xl transition-transform duration-200 ease-out dark:border-zinc-800 dark:bg-zinc-950 ${
 					showVersions ? 'translate-x-0' : 'translate-x-full'
-				}`}
-			>
+				}`}>
 				<div className='flex shrink-0 items-center justify-between border-b border-zinc-200 px-3.5 py-3 dark:border-zinc-800'>
 					<div className='flex items-center gap-1.5 text-sm font-bold text-zinc-800 dark:text-white'>
 						<Undo2 size={14} className='text-zinc-400 dark:text-zinc-500' />
@@ -1055,8 +1178,7 @@ const AiBuilderPanel = () => {
 						type='button'
 						onClick={() => setShowVersions(false)}
 						title='Close'
-						className='flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'
-					>
+						className='flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
 						<X size={14} />
 					</button>
 				</div>
@@ -1083,7 +1205,8 @@ const AiBuilderPanel = () => {
 										{version.label ?? 'Edit'}
 									</div>
 									<div className='text-[10px] text-zinc-400 dark:text-zinc-500'>
-										{formatRelativeTime(Date.parse(version.created_at))} · {version.node_count} node
+										{formatRelativeTime(Date.parse(version.created_at))} ·{' '}
+										{version.node_count} node
 										{version.node_count === 1 ? '' : 's'}
 										{index === 0 && ' · current'}
 									</div>
@@ -1093,7 +1216,7 @@ const AiBuilderPanel = () => {
 										type='button'
 										disabled={restoreVersion.isPending}
 										onClick={() => void handleRestoreVersion(version)}
-										className='shrink-0 rounded-md border border-zinc-200 px-2 py-0.5 text-[10.5px] font-bold text-zinc-600 opacity-0 transition hover:bg-white group-hover:opacity-100 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800'>
+										className='shrink-0 rounded-md border border-zinc-200 px-2 py-0.5 text-[10.5px] font-bold text-zinc-600 opacity-0 transition group-hover:opacity-100 hover:bg-white disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800'>
 										Restore
 									</button>
 								)}
@@ -1134,7 +1257,8 @@ const ChatMessage = ({
 	};
 
 	return (
-		<div className={`group flex gap-2 ${isUser ? 'flex-row-reverse' : ''} ${showHeader ? 'mt-3' : 'mt-0.5'}`}>
+		<div
+			className={`group flex gap-2 ${isUser ? 'flex-row-reverse' : ''} ${showHeader ? 'mt-3' : 'mt-0.5'}`}>
 			<div className='w-6 shrink-0'>
 				{showHeader &&
 					(isUser ? (
@@ -1144,13 +1268,14 @@ const ChatMessage = ({
 							className='h-6 w-6 rounded-full border border-zinc-200 object-cover dark:border-zinc-700'
 						/>
 					) : (
-						<div className='flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-950 dark:text-primary-400'>
+						<div className='bg-primary-100 text-primary-600 dark:bg-primary-950 dark:text-primary-400 flex h-6 w-6 items-center justify-center rounded-full'>
 							<Sparkles size={12} className='fill-current' />
 						</div>
 					))}
 			</div>
 
-			<div className={`flex min-w-0 max-w-[82%] flex-col gap-1 ${isUser ? 'items-end' : 'items-start'}`}>
+			<div
+				className={`flex max-w-[82%] min-w-0 flex-col gap-1 ${isUser ? 'items-end' : 'items-start'}`}>
 				{showHeader && (
 					<div
 						className={`flex items-center gap-1.5 px-1 text-[10.5px] font-bold text-zinc-500 dark:text-zinc-400 ${isUser ? 'flex-row-reverse' : ''}`}>
@@ -1170,13 +1295,13 @@ const ChatMessage = ({
 				<div
 					className={`relative rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed shadow-xs ${
 						isUser
-							? 'rounded-tr-sm border border-primary-200/70 bg-primary-100 text-primary-950 dark:border-primary-500/20 dark:bg-primary-500/15 dark:text-primary-100'
+							? 'border-primary-200/70 bg-primary-100 text-primary-950 dark:border-primary-500/20 dark:bg-primary-500/15 dark:text-primary-100 rounded-tr-sm border'
 							: message.isError
 								? 'rounded-tl-sm border border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-300'
 								: 'rounded-tl-sm border border-zinc-200 bg-white text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 					}`}>
 					{message.isError && (
-						<div className='mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide'>
+						<div className='mb-1.5 flex items-center gap-1.5 text-[11px] font-bold tracking-wide uppercase'>
 							<AlertCircle size={12} />
 							Something went wrong
 						</div>
@@ -1194,8 +1319,7 @@ const ChatMessage = ({
 						<button
 							type='button'
 							onClick={() => onRetry(message.retryPrompt!, message.retryMode)}
-							className='mt-2 flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-2.5 py-1 text-[11px] font-bold text-rose-600 shadow-xs hover:bg-rose-50 dark:border-rose-900/40 dark:bg-zinc-900 dark:text-rose-400 dark:hover:bg-rose-950/30'
-						>
+							className='mt-2 flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-2.5 py-1 text-[11px] font-bold text-rose-600 shadow-xs hover:bg-rose-50 dark:border-rose-900/40 dark:bg-zinc-900 dark:text-rose-400 dark:hover:bg-rose-950/30'>
 							<RotateCcw size={11} />
 							<span>Retry</span>
 						</button>
@@ -1206,7 +1330,7 @@ const ChatMessage = ({
 							type='button'
 							onClick={handleCopy}
 							title='Copy message'
-							className='absolute -bottom-2.5 right-1 flex h-5 w-5 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-400 opacity-0 shadow-xs transition hover:text-zinc-700 group-hover:opacity-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-200'>
+							className='absolute right-1 -bottom-2.5 flex h-5 w-5 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-400 opacity-0 shadow-xs transition group-hover:opacity-100 hover:text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-200'>
 							{copied ? <Check size={10} /> : <Copy size={10} />}
 						</button>
 					)}
@@ -1229,7 +1353,9 @@ const MessageSteps = ({ message, nodes }: { message: TAiChatMessage; nodes: TCan
 	// any genuine reasoning that happened *between* tool calls earlier on.
 	const timeline = message.timeline;
 	const stepItems =
-		timeline && timeline[timeline.length - 1]?.kind === 'text' ? timeline.slice(0, -1) : timeline;
+		timeline && timeline[timeline.length - 1]?.kind === 'text'
+			? timeline.slice(0, -1)
+			: timeline;
 
 	if (!stepItems?.length && !message.actionsSummary?.length) return null;
 
@@ -1255,20 +1381,36 @@ const MessageSteps = ({ message, nodes }: { message: TAiChatMessage; nodes: TCan
 };
 
 /** One line in a historical message's lightweight action summary. */
-const ActionSummaryLine = ({ action, nodes }: { action: TBuilderMessageAction; nodes: TCanvasNode[] }) => {
+const ActionSummaryLine = ({
+	action,
+	nodes,
+}: {
+	action: TBuilderMessageAction;
+	nodes: TCanvasNode[];
+}) => {
 	const entry = (() => {
 		switch (action.type) {
 			case 'node_added':
-				return { Icon: CirclePlus, text: `Added ${nodeLabel(nodes, action.key)}`, tone: 'text-emerald-500' };
+				return {
+					Icon: CirclePlus,
+					text: `Added ${nodeLabel(nodes, action.key)}`,
+					tone: 'text-emerald-500',
+				};
 			case 'node_updated':
-				return { Icon: Pencil, text: `Updated ${nodeLabel(nodes, action.key)}`, tone: 'text-amber-500' };
+				return {
+					Icon: Pencil,
+					text: `Updated ${nodeLabel(nodes, action.key)}`,
+					tone: 'text-amber-500',
+				};
 			case 'node_removed':
 				return { Icon: Trash2, text: `Removed ${action.key}`, tone: 'text-rose-500' };
 			case 'edge_added':
 				return {
 					Icon: action.condition ? GitBranch : Link2,
 					text: `Connected ${nodeLabel(nodes, action.from)} → ${nodeLabel(nodes, action.to)}${
-						action.condition ? ` (${action.condition === 'error' ? 'on error' : action.condition})` : ''
+						action.condition
+							? ` (${action.condition === 'error' ? 'on error' : action.condition})`
+							: ''
 					}`,
 					tone: 'text-primary-500',
 				};
@@ -1300,8 +1442,12 @@ const ToolLine = ({
 	const { Icon, text } = describeToolCall(item.toolName, item.arguments, nodes);
 	return (
 		<div className='flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 dark:text-zinc-400'>
-			{item.status === 'running' && <Loader2 size={11} className='shrink-0 animate-spin text-primary-500' />}
-			{item.status === 'done' && <CheckCircle2 size={11} className='shrink-0 text-emerald-500' />}
+			{item.status === 'running' && (
+				<Loader2 size={11} className='text-primary-500 shrink-0 animate-spin' />
+			)}
+			{item.status === 'done' && (
+				<CheckCircle2 size={11} className='shrink-0 text-emerald-500' />
+			)}
 			{item.status === 'error' && <XCircle size={11} className='shrink-0 text-rose-500' />}
 			<Icon size={11} className='shrink-0 opacity-60' />
 			<span>{text}</span>
@@ -1320,9 +1466,15 @@ const ActiveToolLine = ({
 	const { Icon, text } = describeToolCall(item.toolName, item.arguments, nodes);
 	return (
 		<>
-			{item.status === 'running' && <Loader2 size={13} className='mt-0.5 shrink-0 animate-spin text-primary-500' />}
-			{item.status === 'done' && <CheckCircle2 size={13} className='mt-0.5 shrink-0 text-emerald-500' />}
-			{item.status === 'error' && <XCircle size={13} className='mt-0.5 shrink-0 text-rose-500' />}
+			{item.status === 'running' && (
+				<Loader2 size={13} className='text-primary-500 mt-0.5 shrink-0 animate-spin' />
+			)}
+			{item.status === 'done' && (
+				<CheckCircle2 size={13} className='mt-0.5 shrink-0 text-emerald-500' />
+			)}
+			{item.status === 'error' && (
+				<XCircle size={13} className='mt-0.5 shrink-0 text-rose-500' />
+			)}
 			<span className='flex items-center gap-1.5'>
 				<Icon size={12} className='shrink-0 opacity-60' />
 				{text}
