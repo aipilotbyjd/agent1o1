@@ -12,5 +12,108 @@
 	"Day": "Día",
 	"Week": "Semana",
 	"Month": "Mes",
-	"List": "Lista"
+	"List": "Lista",
+	"assistant": {
+		"title": "{{assistantName}}",
+		"tagline": "{{assistantTagline}}",
+		"greeting": "Hola {{userName}}, soy {{assistantName}}.",
+		"composerPlaceholder": "Pregunta a {{assistantName}} lo que quieras…",
+		"newChat": "Nuevo chat",
+		"newIncognitoChat": "Chat de incógnito",
+		"incognito": "Incógnito",
+		"incognitoHint": "Se elimina después de 24 horas y nunca se usa para aprender sobre ti.",
+		"conversations": "Conversaciones",
+		"noConversations": "Aún no hay conversaciones. Empieza una para hablar con {{assistantName}}.",
+		"untitled": "Chat sin título",
+		"archive": "Archivar",
+		"delete": "Eliminar",
+		"deleteConfirm": "¿Eliminar esta conversación? No se puede deshacer.",
+		"emptyMessages": "Todavía no hay mensajes en esta conversación.",
+		"tabs": {
+			"situations": "{{assistantSituations}}",
+			"daily": "{{assistantDaily}}",
+			"inbox": "{{assistantInbox}}",
+			"prep": "{{assistantPrep}}"
+		},
+		"comingSoon": "Próximamente",
+		"emailLabel": "Escribe a {{assistantName}}",
+		"composerHint": "Enter para enviar · Shift+Enter para una nueva línea",
+		"composerQueueHint": "{{assistantName}} está trabajando — lo que envíes ahora se responderá a continuación.",
+		"send": "Enviar",
+		"stop": "Detener",
+		"thinking": "Pensando…",
+		"usingTool": "Usando {{tool}}…",
+		"usedTools": "Usó {{tools}}",
+		"queuedNotice": "Enviado — {{assistantName}} lo responderá después de la respuesta actual.",
+		"queuedCount_one": "{{count}} mensaje esperando respuesta",
+		"queuedCount_other": "{{count}} mensajes esperando respuesta",
+		"approvalTitle": "{{assistantName}} necesita tu aprobación para continuar",
+		"approve": "Aprobar",
+		"decline": "Rechazar",
+		"memoriesTitle": "Lo que sé de ti",
+		"noMemories": "Nada todavía. Cuéntame sobre ti y lo recordaré.",
+		"forget": "Olvidar esto",
+		"appsTitle": "Apps",
+		"permissions": "Permisos",
+		"permissionsHint": "Elige qué puede hacer {{assistantName}} por su cuenta, qué debe preguntarte antes y qué no debe hacer nunca.",
+		"noApps": "Aún no hay apps conectadas.",
+		"sharedAccount": "{{account}} (compartida)",
+		"connectMore_one": "Conectar {{count}} app más",
+		"connectMore_other": "Conectar {{count}} apps más",
+		"effects": {
+			"read": "Lee datos",
+			"internal": "Solo cambia las notas de {{assistantName}}",
+			"write": "Crea o cambia datos",
+			"external": "Envía o comparte con otros",
+			"destructive": "Elimina datos — siempre pregunta"
+		},
+		"rules": {
+			"allow": "Permitir",
+			"ask": "Preguntar",
+			"deny": "Nunca"
+		},
+		"contextUsed": "Contexto {{percent}}%",
+		"contextOf": "{{used}} de {{window}} tokens (estimado). Los mensajes antiguos se resumen automáticamente.",
+		"contextParts": {
+			"instructions": "Instrucciones y memoria",
+			"tools": "Herramientas",
+			"summary": "Resumen",
+			"conversation": "Conversación"
+		},
+		"summarizedAbove": "Los mensajes anteriores están resumidos para {{assistantName}}",
+		"voiceInput": "Entrada de voz",
+		"stopRecording": "Detener grabación",
+		"recording": "Escuchando… toca el micrófono otra vez para detener.",
+		"micBlocked": "Se bloqueó el acceso al micrófono.",
+		"personalization": "Personalization",
+		"personalizationHint": "How {{assistantName}} writes to you and lays out answers. It also learns from your feedback — every change is kept here.",
+		"styleKinds": {
+			"tone": "Tone",
+			"design": "Design"
+		},
+		"styleHints": {
+			"tone": "Length, formality, language, emoji.",
+			"design": "Bullets, tables, headings, what comes first."
+		},
+		"stylePlaceholders": {
+			"tone": "- Keep answers short\n- No emoji",
+			"design": "- Lead with a one-line summary\n- Use tables for comparisons"
+		},
+		"styleSources": {
+			"owner": "Edited by you",
+			"assistant": "Saved from chat",
+			"feedback": "Learned from feedback",
+			"restore": "Restored"
+		},
+		"save": "Save",
+		"history": "History",
+		"restore": "Restore",
+		"skip": "Skip",
+		"rate": {
+			"up": "Good reply",
+			"down": "Bad reply"
+		},
+		"feedbackPrompt": "What should change? (optional)",
+		"feedbackLearned": "Learned from your feedback"
+	}
 }

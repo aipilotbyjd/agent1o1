@@ -12,6 +12,7 @@ import { useCurrentUser } from '@/api/modules/user';
 import { useLogout } from '@/api/modules/auth';
 import { WorkspaceProvider } from '@/context/workspace';
 import { RealtimeProvider } from '@/context/realtime';
+import { BrandRealtimeSync } from '@/context/brand';
 import pages from '@/Routes/pages';
 import AuthContext from './AuthContext';
 import type { IAuthContextProps } from './auth.types';
@@ -106,6 +107,7 @@ export const AuthProvider = () => {
 		<AuthContext.Provider value={value}>
 			<WorkspaceProvider>
 				<RealtimeProvider>
+					<BrandRealtimeSync />
 					<Outlet />
 				</RealtimeProvider>
 			</WorkspaceProvider>

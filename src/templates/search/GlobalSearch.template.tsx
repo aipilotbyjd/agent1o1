@@ -1,6 +1,7 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import Fuse from 'fuse.js';
+import i18next from 'i18next';
 import classNames from 'classnames';
 import {
 	Search,
@@ -127,11 +128,14 @@ const getFlattenedPageItems = (workspaceId: string): TSearchItem[] => {
 		.map((page) => ({ ...page, to: buildPath(page.to, { workspaceId }) }))
 		.filter((page) => isNavigable(page.to));
 
-	const textById = new Map(flattenPages.map((p) => [p.id, p.text]));
+	// Page text is a `menu` translation key (e.g. the assistant's entry resolves
+	// to its brand name); plain labels have no entry and come back unchanged.
+	const label = (text: string) => i18next.t(text, { ns: 'menu' });
+	const textById = new Map(flattenPages.map((p) => [p.id, label(p.text)]));
 
 	return flattenPages.map((item) => ({
 		id: `page-${item.id}`,
-		label: item.text,
+		label: label(item.text),
 		description: item.parentId ? textById.get(item.parentId) : undefined,
 		category: 'Pages' as TSearchCategory,
 		icon: item.icon ? (
@@ -140,7 +144,7 @@ const getFlattenedPageItems = (workspaceId: string): TSearchItem[] => {
 			<Layout size={16} className='text-zinc-400' />
 		),
 		to: item.to,
-		keywords: [item.to, item.text],
+		keywords: [item.to, label(item.text)],
 	}));
 };
 

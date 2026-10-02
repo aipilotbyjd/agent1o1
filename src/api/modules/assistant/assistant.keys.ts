@@ -1,0 +1,12 @@
+export const assistantKeys = {
+	all: (ws: string) => ['assistant', ws] as const,
+	home: (ws: string) => ['assistant', ws, 'home'] as const,
+	sessions: (ws: string) => ['assistant', ws, 'sessions'] as const,
+	session: (ws: string, id: string) => ['assistant', ws, 'sessions', id] as const,
+	messages: (ws: string, id: string) => ['assistant', ws, 'sessions', id, 'messages'] as const,
+	context: (ws: string, id: string) => ['assistant', ws, 'sessions', id, 'context'] as const,
+	memories: (ws: string) => ['assistant', ws, 'memories'] as const,
+	styles: (ws: string) => ['assistant', ws, 'styles'] as const,
+	apps: (ws: string) => ['assistant', ws, 'apps'] as const,
+	toolRules: (ws: string) => ['assistant', ws, 'tool-rules'] as const,
+};

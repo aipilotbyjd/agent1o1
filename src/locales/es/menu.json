@@ -25,5 +25,6 @@
 	"Education": "Educación",
 	"Reservation": "Reserva",
 	"Mail": "Correo",
-	"Chat": "Charlar"
+	"Chat": "Charlar",
+	"assistantNav": "{{assistantName}}"
 }

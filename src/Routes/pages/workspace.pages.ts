@@ -6,6 +6,13 @@ export const workspace: TPage = {
 	text: 'Workspace',
 	icon: 'Home09',
 	subPages: {
+		assistant: {
+			id: 'assistant',
+			to: ws('assistant'),
+			// A menu translation key, not a label: resolves to the brand name.
+			text: 'assistantNav',
+			icon: 'AiMagic',
+		},
 		dashboard: {
 			id: 'dashboard',
 			to: ws('dashboard'),

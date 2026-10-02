@@ -12,5 +12,108 @@
 	"Day": "يوم",
 	"Week": "أسبوع",
 	"Month": "شهر",
-	"List": "قائمة"
+	"List": "قائمة",
+	"assistant": {
+		"title": "{{assistantName}}",
+		"tagline": "{{assistantTagline}}",
+		"greeting": "مرحبًا {{userName}}، أنا {{assistantName}}.",
+		"composerPlaceholder": "اسأل {{assistantName}} أي شيء…",
+		"newChat": "محادثة جديدة",
+		"newIncognitoChat": "محادثة خفية",
+		"incognito": "خفي",
+		"incognitoHint": "تُحذف بعد 24 ساعة ولا تُستخدم أبدًا للتعرّف عليك.",
+		"conversations": "المحادثات",
+		"noConversations": "لا توجد محادثات بعد. ابدأ واحدة للتحدث مع {{assistantName}}.",
+		"untitled": "محادثة بلا عنوان",
+		"archive": "أرشفة",
+		"delete": "حذف",
+		"deleteConfirm": "حذف هذه المحادثة؟ لا يمكن التراجع عن ذلك.",
+		"emptyMessages": "لا توجد رسائل في هذه المحادثة بعد.",
+		"tabs": {
+			"situations": "{{assistantSituations}}",
+			"daily": "{{assistantDaily}}",
+			"inbox": "{{assistantInbox}}",
+			"prep": "{{assistantPrep}}"
+		},
+		"comingSoon": "قريبًا",
+		"emailLabel": "راسل {{assistantName}}",
+		"composerHint": "Enter للإرسال · Shift+Enter لسطر جديد",
+		"composerQueueHint": "{{assistantName}} يعمل الآن — سيتم الرد على ما ترسله بعد ذلك.",
+		"send": "إرسال",
+		"stop": "إيقاف",
+		"thinking": "يفكر…",
+		"usingTool": "يستخدم {{tool}}…",
+		"usedTools": "استخدم {{tools}}",
+		"queuedNotice": "تم الإرسال — سيرد {{assistantName}} بعد الرد الحالي.",
+		"queuedCount_one": "رسالة واحدة بانتظار الرد",
+		"queuedCount_other": "{{count}} رسائل بانتظار الرد",
+		"approvalTitle": "يحتاج {{assistantName}} إلى موافقتك قبل المتابعة",
+		"approve": "موافقة",
+		"decline": "رفض",
+		"memoriesTitle": "ما أعرفه عنك",
+		"noMemories": "لا شيء بعد. أخبرني عن نفسك وسأتذكر.",
+		"forget": "انسَ هذا",
+		"appsTitle": "التطبيقات",
+		"permissions": "الأذونات",
+		"permissionsHint": "اختر ما يمكن لـ {{assistantName}} فعله بمفرده، وما يجب أن يسألك عنه أولاً، وما لا يجب أن يفعله أبداً.",
+		"noApps": "لا توجد تطبيقات متصلة بعد.",
+		"sharedAccount": "{{account}} (مشترك)",
+		"connectMore_one": "اربط تطبيقاً آخر",
+		"connectMore_other": "اربط {{count}} تطبيقات أخرى",
+		"effects": {
+			"read": "يقرأ البيانات",
+			"internal": "يغيّر ملاحظات {{assistantName}} فقط",
+			"write": "ينشئ البيانات أو يغيّرها",
+			"external": "يرسل أو يشارك مع الآخرين",
+			"destructive": "يحذف البيانات — يسأل دائماً"
+		},
+		"rules": {
+			"allow": "سماح",
+			"ask": "اسأل",
+			"deny": "أبداً"
+		},
+		"contextUsed": "السياق {{percent}}٪",
+		"contextOf": "{{used}} من {{window}} رمز (تقديري). تُلخَّص الرسائل الأقدم تلقائياً.",
+		"contextParts": {
+			"instructions": "التعليمات والذاكرة",
+			"tools": "الأدوات",
+			"summary": "الملخص",
+			"conversation": "المحادثة"
+		},
+		"summarizedAbove": "الرسائل أعلاه ملخّصة لـ {{assistantName}}",
+		"voiceInput": "إدخال صوتي",
+		"stopRecording": "إيقاف التسجيل",
+		"recording": "أستمع… اضغط على الميكروفون مرة أخرى للإيقاف.",
+		"micBlocked": "تم حظر الوصول إلى الميكروفون.",
+		"personalization": "Personalization",
+		"personalizationHint": "How {{assistantName}} writes to you and lays out answers. It also learns from your feedback — every change is kept here.",
+		"styleKinds": {
+			"tone": "Tone",
+			"design": "Design"
+		},
+		"styleHints": {
+			"tone": "Length, formality, language, emoji.",
+			"design": "Bullets, tables, headings, what comes first."
+		},
+		"stylePlaceholders": {
+			"tone": "- Keep answers short\n- No emoji",
+			"design": "- Lead with a one-line summary\n- Use tables for comparisons"
+		},
+		"styleSources": {
+			"owner": "Edited by you",
+			"assistant": "Saved from chat",
+			"feedback": "Learned from feedback",
+			"restore": "Restored"
+		},
+		"save": "Save",
+		"history": "History",
+		"restore": "Restore",
+		"skip": "Skip",
+		"rate": {
+			"up": "Good reply",
+			"down": "Bad reply"
+		},
+		"feedbackPrompt": "What should change? (optional)",
+		"feedbackLearned": "Learned from your feedback"
+	}
 }
