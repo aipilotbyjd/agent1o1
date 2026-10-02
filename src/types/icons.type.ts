@@ -1,3 +1,3 @@
-import { THugeIcons } from './hugeIcons.type';
+import { THugeIcons } from './huge-icons.type';
 
 export type TIcons = THugeIcons | string;

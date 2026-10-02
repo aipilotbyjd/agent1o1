@@ -14,6 +14,9 @@ export type TUser = {
 	name: string;
 	email: string;
 	email_verified_at: string | null;
+	/** Set while an email change awaits confirmation from the new address. */
+	pending_email: string | null;
+	two_factor_enabled: boolean;
 	avatar: string | null;
 	current_workspace_id: string | null;
 	current_workspace: TWorkspace | null;
@@ -33,6 +36,9 @@ export type TRegisterDto = {
 	email: string;
 	password: string;
 	password_confirmation: string;
+	/** From a `?ref=` link — see `referralAttribution.util`. Never blocks signup. */
+	referral_code?: string;
+	referral_visitor_id?: string;
 };
 
 export type TForgotPasswordDto = {
@@ -48,6 +54,7 @@ export type TResetPasswordDto = {
 
 export type TUpdateProfileDto = {
 	name?: string;
+	email?: string;
 };
 
 export type TChangePasswordDto = {
@@ -76,9 +83,20 @@ export type TDisableTwoFactorDto = {
 	current_password: string;
 };
 
-export type TTwoFactorEnableResult = { secret: string; qr_code_svg: string };
+/** Regenerating recovery codes re-checks the password, same as disabling. */
+export type TRegenerateRecoveryCodesDto = {
+	current_password: string;
+};
+
+/** `POST /auth/2fa/enable`. The backend returns the raw otpauth:// URL, not a
+ *  rendered image — the QR is drawn client-side so the TOTP secret never leaves
+ *  the browser. */
+export type TTwoFactorEnableResult = { secret: string; otpauth_url: string };
 export type TTwoFactorConfirmResult = { recovery_codes: string[] };
-export type TTwoFactorRecoveryCodes = { recovery_codes: string[] };
+/** `GET /auth/2fa/recovery-codes` only reports how many codes are left: they are
+ *  hashed at rest, so plaintext is returned once at confirm/regenerate time and
+ *  never again. */
+export type TTwoFactorRecoveryCodes = { recovery_codes_remaining: number };
 
 // ─── Social login ────────────────────────────────────────────
 
@@ -95,8 +113,14 @@ export type TExchangeSocialCodeDto = {
 export type TAuthSession = {
 	id: string;
 	name: string | null;
+	client_name?: string | null;
 	scopes: string[];
 	revoked: boolean;
+	ip_address: string | null;
+	user_agent: string | null;
+	last_used_at: string | null;
+	/** The token this request was made with - revoking it signs you out here. */
+	is_current: boolean;
 	expires_at: string | null;
 	created_at: string;
 };
@@ -114,6 +138,7 @@ export type TAuthEvent = {
 // ─── API keys (workspace-scoped) ─────────────────────────────
 
 export type TApiKeyAbility =
+	| '*'
 	| 'workflows:read'
 	| 'workflows:write'
 	| 'runs:read'

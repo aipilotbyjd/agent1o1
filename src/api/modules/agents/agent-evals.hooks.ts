@@ -71,6 +71,29 @@ export const useCreateAgentEvalCase = (ws: string, agentId: string, suiteId: str
 	});
 };
 
+/** Saves a chat exchange as a case, in an existing suite or a new one made on the spot. */
+export const useSaveChatAsEvalCase = (ws: string, agentId: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: async ({
+			suite,
+			body,
+		}: {
+			suite: { id: string } | { name: string };
+			body: TCreateAgentEvalCaseDto;
+		}) => {
+			const suiteId =
+				'id' in suite
+					? suite.id
+					: (await AgentEvalSuiteService.create(ws, agentId, { name: suite.name })).id;
+			return AgentEvalCaseService.create(ws, agentId, suiteId, body);
+		},
+		// The suites key prefixes every suite's cases, so this refreshes both.
+		onSuccess: () => qc.invalidateQueries({ queryKey: agentEvalKeys.suites(ws, agentId) }),
+		meta: { errorMessage: 'Failed to save the eval case' },
+	});
+};
+
 export const useUpdateAgentEvalCase = (ws: string, agentId: string, suiteId: string) => {
 	const qc = useQueryClient();
 	return useMutation({

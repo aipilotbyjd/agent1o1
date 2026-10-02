@@ -43,6 +43,10 @@ export type TWorkflow = {
 	nodes?: TWorkflowNode[];
 	edges?: TWorkflowEdge[];
 	tags?: TTag[];
+	is_favorite?: boolean;
+	nodes_count?: number;
+	node_types?: string[];
+	last_run_at?: string | null;
 	created_by: string;
 	created_at: string;
 	updated_at: string;

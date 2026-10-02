@@ -33,6 +33,9 @@ export default defineConfig({
 			},
 			workbox: {
 				maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+				// The full Hugeicons set is a lazy fallback (see components/icon/Icon.tsx);
+				// precaching it would download 3 MB in the background for every visitor.
+				globIgnores: ['**/huge-*.js'],
 			},
 		}),
 	],
@@ -51,7 +54,9 @@ export default defineConfig({
 					if (id.includes('MdViewer')) return 'chunk-mdviewer';
 					if (id.includes('react-syntax-highlighter')) return 'chunk-highlighter';
 					if (id.includes('/Icon')) return 'chunk-icon';
-					if (id.includes('node_modules')) return 'vendor';
+					// No catch-all `vendor` chunk: libraries are split with the pages
+					// that import them, so e.g. the workflow canvas and charts are not
+					// downloaded on the login page.
 				},
 			},
 		},

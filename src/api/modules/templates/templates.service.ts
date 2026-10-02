@@ -88,7 +88,7 @@ export const AgentTemplateService = {
 
 	remove: (ws: string, id: string) => axiosClient.delete(AT.delete(ws, id)).then(() => undefined),
 
-	use: (ws: string, id: string, payload?: TUseAgentTemplateDto) =>
+	use: (ws: string, id: string, payload: TUseAgentTemplateDto) =>
 		axiosClient
 			.post<TApiResponse<{ agent: TAgent }>>(AT.use(ws, id), payload)
 			.then(unwrapKey<TAgent>('agent')),

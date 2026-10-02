@@ -27,7 +27,7 @@ import {
 import classNames from 'classnames';
 import { IButtonProps } from './Button';
 import useOnClickOutside from '@/hooks/useOnClickOutside';
-import { TBorderWidth } from '@/types/borderWidth.type';
+import { TBorderWidth } from '@/types/border-width.type';
 import themeConfig from '@/config/theme.config';
 import { TRounded } from '@/types/rounded.type';
 import { TColors } from '@/types/colors.type';

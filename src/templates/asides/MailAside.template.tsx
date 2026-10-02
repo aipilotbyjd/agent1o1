@@ -142,7 +142,7 @@ const MailAsideTemplate = () => {
 						))}
 					</Collapse>
 					<NavSeparator />
-					<NavItem text='Back Dashboard' icon='ArrowLeft01' to={pages.apps.sales.to} />
+					<NavItem text='Back Dashboard' icon='ArrowLeft01' to={pages.workspace.subPages!.dashboard.to} />
 				</Nav>
 			</AsideBody>
 			<AsideFooterPart />

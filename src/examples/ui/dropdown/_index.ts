@@ -22,6 +22,7 @@ import DropdownAvatarGroupExample from '@/examples/ui/dropdown/DropdownAvatarGro
 import DropdownProjectExample from '@/examples/ui/dropdown/DropdownProject.example';
 import DropdownAccountExample from '@/examples/ui/dropdown/DropdownAccount.example';
 import DropdownRangeExample from '@/examples/ui/dropdown/DropdownRange.example';
+import DropdownWorkspaceSwitcherExample from '@/examples/ui/dropdown/DropdownWorkspaceSwitcher.example';
 
 const EX_Dropdown = {
 	Range: DropdownRangeExample,
@@ -48,5 +49,6 @@ const EX_Dropdown = {
 	AvatarGroup: DropdownAvatarGroupExample,
 	Project: DropdownProjectExample,
 	Account: DropdownAccountExample,
+	WorkspaceSwitcher: DropdownWorkspaceSwitcherExample,
 };
 export default EX_Dropdown;

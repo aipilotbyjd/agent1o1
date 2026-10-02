@@ -44,7 +44,8 @@ export const useCreateNode = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (payload: TCreateCustomNodeDto) => NodeService.create(ws, payload),
-		onSuccess: () => qc.invalidateQueries({ queryKey: nodeKeys.lists(ws) }),
+		// `all`, not `lists`: the custom-only list lives under its own key.
+		onSuccess: () => qc.invalidateQueries({ queryKey: nodeKeys.all(ws) }),
 		meta: { errorMessage: 'Failed to create node' },
 	});
 };
@@ -54,10 +55,7 @@ export const useUpdateNode = (ws: string) => {
 	return useMutation({
 		mutationFn: ({ id, body }: { id: string; body: TUpdateCustomNodeDto }) =>
 			NodeService.update(ws, id, body),
-		onSuccess: (_node, { id }) => {
-			qc.invalidateQueries({ queryKey: nodeKeys.lists(ws) });
-			qc.invalidateQueries({ queryKey: nodeKeys.detail(ws, id) });
-		},
+		onSuccess: () => qc.invalidateQueries({ queryKey: nodeKeys.all(ws) }),
 		meta: { errorMessage: 'Failed to update node' },
 	});
 };
@@ -66,7 +64,7 @@ export const useDeleteNode = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (id: string) => NodeService.remove(ws, id),
-		onSuccess: () => qc.invalidateQueries({ queryKey: nodeKeys.lists(ws) }),
+		onSuccess: () => qc.invalidateQueries({ queryKey: nodeKeys.all(ws) }),
 		meta: { errorMessage: 'Failed to delete node' },
 	});
 };

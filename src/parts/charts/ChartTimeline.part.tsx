@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import Chart from '@/components/utils/Chart';
+import Chart, { type IChartProps } from '@/components/utils/Chart';
 import { IChartOptions } from '@/interface/chart.interface';
 
 const ChartTimelinePart = () => {
@@ -124,7 +124,7 @@ const ChartTimelinePart = () => {
 		<Chart
 			options={state.options}
 			series={state.series}
-			type={state.options.chart?.type}
+			type={state.options.chart?.type as IChartProps['type']}
 			height={state.options.chart?.height}
 		/>
 	);

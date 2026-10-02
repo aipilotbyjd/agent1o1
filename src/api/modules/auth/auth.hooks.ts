@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { setToken, clearTokens } from '@/api/core';
 import { userKeys } from '../user/user.keys';
 import {
@@ -11,6 +11,7 @@ import {
 	type TVerifyTwoFactorDto,
 	type TConfirmTwoFactorDto,
 	type TDisableTwoFactorDto,
+	type TRegenerateRecoveryCodesDto,
 	type TExchangeSocialCodeDto,
 	type TSocialProvider,
 } from '@/types/auth.type';
@@ -173,7 +174,8 @@ export const useRevokeSession = () => {
 export const useAuthEvents = (params?: { page?: number; per_page?: number }) =>
 	useQuery({
 		queryKey: ['auth-events', params ?? {}],
-		queryFn: () => AuthService.events(params),
+		queryFn: ({ signal }) => AuthService.events(params, signal),
+		placeholderData: keepPreviousData,
 	});
 
 // ─── Two-factor ──────────────────────────────────────────────
@@ -202,17 +204,22 @@ export const useDisableTwoFactor = () => {
 	});
 };
 
-export const useTwoFactorRecoveryCodes = () =>
+export const useTwoFactorRecoveryCodes = (options?: { enabled?: boolean }) =>
 	useQuery({
 		queryKey: ['auth-2fa-recovery-codes'],
 		queryFn: () => AuthService.twoFactorRecoveryCodes(),
+		enabled: options?.enabled ?? true,
 	});
 
-export const useRegenerateRecoveryCodes = () =>
-	useMutation({
-		mutationFn: () => AuthService.twoFactorRegenerateRecoveryCodes(),
+export const useRegenerateRecoveryCodes = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (payload: TRegenerateRecoveryCodesDto) =>
+			AuthService.twoFactorRegenerateRecoveryCodes(payload),
+		onSuccess: () => qc.invalidateQueries({ queryKey: ['auth-2fa-recovery-codes'] }),
 		meta: { errorMessage: 'Failed to regenerate recovery codes' },
 	});
+};
 
 // ─── Social login ────────────────────────────────────────────
 

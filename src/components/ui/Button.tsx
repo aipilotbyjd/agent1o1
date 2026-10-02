@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import { TColors } from '@/types/colors.type';
 import { TRounded } from '@/types/rounded.type';
 import { TIcons } from '@/types/icons.type';
-import { TBorderWidth } from '@/types/borderWidth.type';
+import { TBorderWidth } from '@/types/border-width.type';
 import themeConfig from '@/config/theme.config';
 import Icon from '@/components/icon/Icon';
 

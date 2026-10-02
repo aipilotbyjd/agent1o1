@@ -12,6 +12,59 @@ import type {
 } from '@/types/agent.type';
 import { AgentSessionEndpoints as E } from './agents.endpoints';
 
+/** JSON, unless files ride along — then multipart, with each file under
+ *  `attachments[]`. */
+const messageBody = (payload: TSendAgentMessageDto): TSendAgentMessageDto | FormData => {
+	if (!payload.attachments?.length)
+		return {
+			message: payload.message,
+			...(payload.skill_id ? { skill_id: payload.skill_id } : {}),
+		};
+	const form = new FormData();
+	form.append('message', payload.message);
+	if (payload.skill_id) form.append('skill_id', payload.skill_id);
+	payload.attachments.forEach((file) => form.append('attachments[]', file));
+	return form;
+};
+
+/**
+ * Reads a server-sent event stream into `{ event, ...data }` objects. Shared
+ * by every endpoint that answers with the turn's events — sending a message,
+ * and deciding on a paused turn's actions (`AgentActionService.decideInChat`).
+ */
+export async function* readEventStream(
+	response: Response,
+): AsyncGenerator<TAgentSessionStreamEvent> {
+	if (!response.ok) {
+		const body = (await response.json().catch(() => null)) as { message?: string } | null;
+		throw new Error(body?.message ?? `Agent request failed (${response.status}).`);
+	}
+	if (!response.body) throw new Error('The agent returned an empty stream.');
+
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder();
+	let buffer = '';
+
+	while (true) {
+		const { done, value } = await reader.read();
+		if (done) break;
+
+		buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
+		const chunks = buffer.split('\n\n');
+		buffer = chunks.pop() ?? '';
+
+		for (const chunk of chunks) {
+			const eventLine = chunk.split('\n').find((line) => line.startsWith('event:'));
+			const dataLine = chunk.split('\n').find((line) => line.startsWith('data:'));
+			if (!eventLine || !dataLine) continue;
+
+			const event = eventLine.replace('event:', '').trim();
+			const data = JSON.parse(dataLine.replace('data:', '').trim());
+			yield { event, ...data } as TAgentSessionStreamEvent;
+		}
+	}
+}
+
 export const AgentSessionService = {
 	list: (ws: string, agentId: string, signal?: AbortSignal) =>
 		axiosClient
@@ -46,62 +99,50 @@ export const AgentSessionService = {
 		signal?: AbortSignal,
 	) =>
 		axiosClient
-			.get<TApiResponse<TAgentMessage[]> & { meta: TPaginationMeta }>(E.messages(ws, agentId, id), {
-				params,
-				signal,
-			})
+			.get<TApiResponse<TAgentMessage[]> & { meta: TPaginationMeta }>(
+				E.messages(ws, agentId, id),
+				{
+					params,
+					signal,
+				},
+			)
 			.then((r) => ({ messages: r.data.data, meta: r.data.meta })),
 
-	sendMessage: (ws: string, agentId: string, id: string, payload: TSendAgentMessageDto) =>
-		axiosClient
-			.post<TApiResponse<{ message: TAgentMessage }>>(E.sendMessage(ws, agentId, id), payload)
-			.then(unwrapKey<TAgentMessage>('message')),
+	sendMessage: (ws: string, agentId: string, id: string, payload: TSendAgentMessageDto) => {
+		const body = messageBody(payload);
+		const config =
+			body instanceof FormData ? { headers: { 'Content-Type': undefined } } : undefined;
+		return axiosClient
+			.post<
+				TApiResponse<{ message: TAgentMessage }>
+			>(E.sendMessage(ws, agentId, id), body, config)
+			.then(unwrapKey<TAgentMessage>('message'));
+	},
 
 	/** Streams one turn over server-sent events — see `TAgentSessionStreamEvent`
 	 *  for the event names on the wire. Uses `fetch` directly since axios has
 	 *  no native SSE support. */
-	streamMessage: async function* (
+	async *streamMessage(
 		ws: string,
 		agentId: string,
 		id: string,
 		payload: TSendAgentMessageDto,
 		signal?: AbortSignal,
 	): AsyncGenerator<TAgentSessionStreamEvent> {
+		const body = messageBody(payload);
 		const response = await fetch(`${apiConfig.baseUrl}${E.streamMessage(ws, agentId, id)}`, {
 			method: 'POST',
 			credentials: 'include',
 			headers: {
-				'Content-Type': 'application/json',
+				// Left unset for multipart so the browser adds the boundary.
+				...(body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
 				Accept: 'text/event-stream',
 				Authorization: `Bearer ${getAccessToken() ?? ''}`,
 			},
-			body: JSON.stringify(payload),
+			body: body instanceof FormData ? body : JSON.stringify(body),
 			signal,
 		});
 
-		if (!response.body) return;
-
-		const reader = response.body.getReader();
-		const decoder = new TextDecoder();
-		let buffer = '';
-
-		while (true) {
-			const { done, value } = await reader.read();
-			if (done) break;
-
-			buffer += decoder.decode(value, { stream: true });
-			const chunks = buffer.split('\n\n');
-			buffer = chunks.pop() ?? '';
-
-			for (const chunk of chunks) {
-				const eventLine = chunk.split('\n').find((line) => line.startsWith('event:'));
-				const dataLine = chunk.split('\n').find((line) => line.startsWith('data:'));
-				if (!eventLine || !dataLine) continue;
-
-				const event = eventLine.replace('event:', '').trim();
-				const data = JSON.parse(dataLine.replace('data:', '').trim());
-				yield { event, ...data } as TAgentSessionStreamEvent;
-			}
-		}
+		yield* readEventStream(response);
 	},
 };

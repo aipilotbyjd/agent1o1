@@ -25,5 +25,8 @@
 			"@/*": ["./src/*"]
 		}
 	},
-	"include": ["src", "./src/declaration.d.ts"]
+	"include": ["src", "./src/declaration.d.ts"],
+	// Template demo components, kept for reference but not part of the app. The one
+	// the app imports (DropdownWorkspaceSwitcher) is still checked via that import.
+	"exclude": ["src/examples"]
 }

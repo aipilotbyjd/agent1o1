@@ -1,3 +1,0 @@
-```tsx
-<Checkbox disabled {...rest} />
-```
