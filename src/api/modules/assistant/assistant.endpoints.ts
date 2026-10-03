@@ -62,3 +62,9 @@ export const AssistantInboxEndpoints = {
 	label: (ws: string, id: string) => `${base(ws)}/inbox/labels/${id}`,
 	accept: (ws: string, id: string) => `${base(ws)}/inbox/messages/${id}/accept`,
 } as const;
+
+export const AssistantTriggerEndpoints = {
+	list: (ws: string) => `${base(ws)}/triggers`,
+	trigger: (ws: string, id: string) => `${base(ws)}/triggers/${id}`,
+	runNow: (ws: string, id: string) => `${base(ws)}/triggers/${id}/run-now`,
+} as const;

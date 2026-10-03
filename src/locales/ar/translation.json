@@ -211,6 +211,31 @@
 		"skipExistingLabels": "اترك البريد الذي وضعت عليه تسميات",
 		"draftingInstructions": "تعليمات الصياغة (اختياري)",
 		"draftingInstructionsPlaceholder": "مثلاً: وقّع باسمي الأول. لا تلتزم بمواعيد.",
-		"disableInbox": "أوقف {{assistantInbox}}"
+		"disableInbox": "أوقف {{assistantInbox}}",
+		"triggersTitle": "المشغّلات",
+		"newTrigger": "مشغّل جديد",
+		"noTriggers": "لا شيء مجدول. اطلب من {{assistantName}} القيام بشيء كل صباح، أو أضف واحداً هنا.",
+		"triggerOn": "المشغّل مفعّل",
+		"triggerDisabled": "أوقف بعد إخفاقات متكررة",
+		"triggerWebhook": "يعمل عند استدعاء رابطه",
+		"nextRun": "التالي: {{time}}",
+		"triggerPaused": "موقوف مؤقتاً",
+		"webhookUrl": "رابط الويب هوك",
+		"triggerTypes": {
+			"schedule": "مجدول",
+			"once": "مرة واحدة",
+			"webhook": "ويب هوك"
+		},
+		"triggerName": "الاسم",
+		"triggerPrompt": "ماذا يفعل {{assistantName}}؟",
+		"triggerPromptPlaceholder": "مثلاً: لخّص بريدي غير المقروء ونبّهني للعاجل.",
+		"triggerPromptWebhook": "مثلاً: وصل عميل جديد: {{payload}} — أضفه إلى قائمتي.",
+		"cronExpression": "تعبير cron",
+		"simpleSchedule": "استخدم الجدولة البسيطة",
+		"advancedSchedule": "استخدم تعبير cron بدلاً من ذلك",
+		"runAt": "التشغيل في",
+		"inTimezone": "الأوقات بتوقيت {{timezone}}.",
+		"webhookHint": "بعد إنشائه ستحصل على رابط. أي شيء يُرسل إليه يُمرر إلى {{assistantName}} حيث تكتب {{payload}}. عامل الرابط ككلمة مرور.",
+		"createTrigger": "أنشئ المشغّل"
 	}
 }

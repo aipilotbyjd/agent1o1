@@ -211,6 +211,31 @@
 		"skipExistingLabels": "No tocar el correo que ya etiqueté",
 		"draftingInstructions": "Instrucciones de redacción (opcional)",
 		"draftingInstructionsPlaceholder": "p. ej. Firma con mi nombre. Nunca te comprometas con fechas.",
-		"disableInbox": "Desactivar {{assistantInbox}}"
+		"disableInbox": "Desactivar {{assistantInbox}}",
+		"triggersTitle": "Disparadores",
+		"newTrigger": "Nuevo disparador",
+		"noTriggers": "Nada programado. Pídele a {{assistantName}} que haga algo cada mañana, o añade uno aquí.",
+		"triggerOn": "Disparador activo",
+		"triggerDisabled": "Desactivado tras fallos repetidos",
+		"triggerWebhook": "Se ejecuta cuando se llama a su URL",
+		"nextRun": "Siguiente: {{time}}",
+		"triggerPaused": "En pausa",
+		"webhookUrl": "URL del webhook",
+		"triggerTypes": {
+			"schedule": "Programado",
+			"once": "Una vez",
+			"webhook": "Webhook"
+		},
+		"triggerName": "Nombre",
+		"triggerPrompt": "¿Qué debe hacer {{assistantName}}?",
+		"triggerPromptPlaceholder": "p. ej. Resume mi correo no leído y marca lo urgente.",
+		"triggerPromptWebhook": "p. ej. Llegó un nuevo cliente: {{payload}} — añádelo a mi lista.",
+		"cronExpression": "Expresión cron",
+		"simpleSchedule": "Usar el programador simple",
+		"advancedSchedule": "Usar una expresión cron",
+		"runAt": "Ejecutar a las",
+		"inTimezone": "Las horas están en {{timezone}}.",
+		"webhookHint": "Al crearlo recibirás una URL. Lo que se envíe por POST se pasa a {{assistantName}} donde escribas {{payload}}. Trata la URL como una contraseña.",
+		"createTrigger": "Crear disparador"
 	}
 }

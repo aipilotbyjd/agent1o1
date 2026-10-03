@@ -211,6 +211,31 @@
 		"skipExistingLabels": "Leave mail I've already labelled alone",
 		"draftingInstructions": "Drafting instructions (optional)",
 		"draftingInstructionsPlaceholder": "e.g. Sign off with my first name. Never commit to dates.",
-		"disableInbox": "Turn off {{assistantInbox}}"
+		"disableInbox": "Turn off {{assistantInbox}}",
+		"triggersTitle": "Triggers",
+		"newTrigger": "New trigger",
+		"noTriggers": "Nothing scheduled. Ask {{assistantName}} to do something every morning, or add one here.",
+		"triggerOn": "Trigger on",
+		"triggerDisabled": "Switched off after repeated failures",
+		"triggerWebhook": "Runs when its URL is called",
+		"nextRun": "Next: {{time}}",
+		"triggerPaused": "Paused",
+		"webhookUrl": "Webhook URL",
+		"triggerTypes": {
+			"schedule": "Schedule",
+			"once": "One time",
+			"webhook": "Webhook"
+		},
+		"triggerName": "Name",
+		"triggerPrompt": "What should {{assistantName}} do?",
+		"triggerPromptPlaceholder": "e.g. Summarise my unread email and flag anything urgent.",
+		"triggerPromptWebhook": "e.g. A new lead came in: {{payload}} — add them to my list.",
+		"cronExpression": "Cron expression",
+		"simpleSchedule": "Use the simple schedule",
+		"advancedSchedule": "Use a cron expression instead",
+		"runAt": "Run at",
+		"inTimezone": "Times are in {{timezone}}.",
+		"webhookHint": "After you create it you'll get a URL. Anything POSTed to it is passed to {{assistantName}} where you write {{payload}}. Treat the URL like a password.",
+		"createTrigger": "Create trigger"
 	}
 }

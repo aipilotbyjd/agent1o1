@@ -352,3 +352,29 @@ export type TInbox = {
 export type TSaveInboxLabelDto = Partial<
 	Pick<TInboxLabel, 'name' | 'definition' | 'color' | 'group' | 'enabled'>
 >;
+
+export type TAssistantTrigger = {
+	id: string;
+	type: 'schedule' | 'once' | 'webhook';
+	name: string;
+	prompt: string;
+	cron: string | null;
+	timezone: string;
+	run_at: string | null;
+	next_run_at: string | null;
+	last_run_at: string | null;
+	status: 'active' | 'paused' | 'disabled';
+	created_by: 'owner' | 'assistant';
+	consecutive_failures: number;
+	webhook_url: string | null;
+};
+
+export type TSaveTriggerDto = {
+	type?: TAssistantTrigger['type'];
+	name?: string;
+	prompt?: string;
+	cron?: string | null;
+	timezone?: string | null;
+	run_at?: string | null;
+	status?: 'active' | 'paused';
+};

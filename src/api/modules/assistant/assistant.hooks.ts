@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+	TSaveTriggerDto,
 	TInbox,
 	TInboxSettings,
 	TSaveInboxLabelDto,
@@ -16,6 +17,7 @@ import type {
 import {
 	AssistantBriefingService,
 	AssistantInboxService,
+	AssistantTriggerService,
 	AssistantMemoryService,
 	AssistantService,
 	AssistantSettingsService,
@@ -458,3 +460,55 @@ export const useAcceptInboxSuggestion = (ws: string) => {
 		meta: { errorMessage: 'Failed to open in chat' },
 	});
 };
+
+export const useAssistantTriggers = (ws: string) =>
+	useQuery({
+		queryKey: assistantKeys.triggers(ws),
+		queryFn: ({ signal }) => AssistantTriggerService.list(ws, signal),
+		enabled: !!ws,
+	});
+
+const useTriggerMutation = <TArgs, TResult>(
+	ws: string,
+	fn: (args: TArgs) => Promise<TResult>,
+	errorMessage: string,
+) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: fn,
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: assistantKeys.triggers(ws) });
+			qc.invalidateQueries({ queryKey: assistantKeys.sessions(ws) });
+		},
+		meta: { errorMessage },
+	});
+};
+
+export const useCreateTrigger = (ws: string) =>
+	useTriggerMutation(
+		ws,
+		(payload: TSaveTriggerDto) => AssistantTriggerService.create(ws, payload),
+		'Failed to create the trigger',
+	);
+
+export const useUpdateTrigger = (ws: string) =>
+	useTriggerMutation(
+		ws,
+		({ id, payload }: { id: string; payload: TSaveTriggerDto }) =>
+			AssistantTriggerService.update(ws, id, payload),
+		'Failed to update the trigger',
+	);
+
+export const useDeleteTrigger = (ws: string) =>
+	useTriggerMutation(
+		ws,
+		(id: string) => AssistantTriggerService.remove(ws, id),
+		'Failed to delete the trigger',
+	);
+
+export const useRunTriggerNow = (ws: string) =>
+	useTriggerMutation(
+		ws,
+		(id: string) => AssistantTriggerService.runNow(ws, id),
+		'Failed to run the trigger',
+	);

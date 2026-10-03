@@ -34,6 +34,7 @@ import ContextMeterPartial from './_partial/ContextMeter.partial';
 import ApprovalCardPartial from './_partial/ApprovalCard.partial';
 import MemoriesPanelPartial from './_partial/MemoriesPanel.partial';
 import AppsPanelPartial from './_partial/AppsPanel.partial';
+import TriggersPanelPartial from './_partial/TriggersPanel.partial';
 import PermissionsModalPartial from './_partial/PermissionsModal.partial';
 import PersonalizationModalPartial from './_partial/PersonalizationModal.partial';
 import { useAssistantConversation } from './_hooks/useAssistantConversation.hook';
@@ -170,6 +171,10 @@ const AssistantHomePage = () => {
 			<AppsPanelPartial
 				workspaceId={currentWorkspaceId}
 				onOpenPermissions={() => setPermissionsOpen(true)}
+			/>
+			<TriggersPanelPartial
+				workspaceId={currentWorkspaceId}
+				onOpenSession={(sessionId) => selectSession(sessionId)}
 			/>
 		</>
 	);

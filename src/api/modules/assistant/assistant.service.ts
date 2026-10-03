@@ -18,6 +18,8 @@ import type {
 	TAssistantToolDescription,
 	TBriefingRun,
 	TDailyReport,
+	TAssistantTrigger,
+	TSaveTriggerDto,
 	TInbox,
 	TInboxSettings,
 	TSaveInboxLabelDto,
@@ -40,6 +42,7 @@ import {
 	AssistantSettingsEndpoints as X,
 	AssistantBriefingEndpoints as B,
 	AssistantInboxEndpoints as N,
+	AssistantTriggerEndpoints as T,
 } from './assistant.endpoints';
 
 export const AssistantService = {
@@ -289,4 +292,28 @@ export const AssistantInboxService = {
 		axiosClient
 			.post<TApiResponse<{ session_id: string }>>(N.accept(ws, id))
 			.then(unwrapKey<string>('session_id')),
+};
+
+export const AssistantTriggerService = {
+	list: (ws: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<{ triggers: TAssistantTrigger[] }>>(T.list(ws), { signal })
+			.then(unwrapKey<TAssistantTrigger[]>('triggers')),
+
+	create: (ws: string, payload: TSaveTriggerDto) =>
+		axiosClient
+			.post<TApiResponse<{ trigger: TAssistantTrigger }>>(T.list(ws), payload)
+			.then(unwrapKey<TAssistantTrigger>('trigger')),
+
+	update: (ws: string, id: string, payload: TSaveTriggerDto) =>
+		axiosClient
+			.patch<TApiResponse<{ trigger: TAssistantTrigger }>>(T.trigger(ws, id), payload)
+			.then(unwrapKey<TAssistantTrigger>('trigger')),
+
+	remove: (ws: string, id: string) => axiosClient.delete(T.trigger(ws, id)).then(() => undefined),
+
+	runNow: (ws: string, id: string) =>
+		axiosClient
+			.post<TApiResponse<{ session_id: string | null; skipped: boolean }>>(T.runNow(ws, id))
+			.then(unwrap<{ session_id: string | null; skipped: boolean }>),
 };

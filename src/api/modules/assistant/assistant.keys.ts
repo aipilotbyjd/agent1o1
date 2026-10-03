@@ -9,6 +9,7 @@ export const assistantKeys = {
 	styles: (ws: string) => ['assistant', ws, 'styles'] as const,
 	daily: (ws: string) => ['assistant', ws, 'daily'] as const,
 	meetingPrep: (ws: string) => ['assistant', ws, 'meeting-prep'] as const,
+	triggers: (ws: string) => ['assistant', ws, 'triggers'] as const,
 	inbox: (ws: string) => ['assistant', ws, 'inbox'] as const,
 	meetings: (ws: string) => ['assistant', ws, 'meetings'] as const,
 	briefingRun: (ws: string, id: string) => ['assistant', ws, 'briefing-runs', id] as const,
