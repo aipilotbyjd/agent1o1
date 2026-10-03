@@ -2,12 +2,16 @@ import { FC, Fragment } from 'react';
 import { NavCollapse, NavItem, NavTitle } from '@/components/layout/Navigation/Nav';
 import { TNavEntry, TNavSection } from '@/Routes/navigation';
 import useResolvePath from '@/hooks/useResolvePath';
+import { useBrand } from '@/context/brand';
+import pages from '@/Routes/pages';
 
 const NavEntry: FC<{ entry: TNavEntry; resolvePath: (to: string) => string }> = ({
 	entry,
 	resolvePath,
 }) => {
+	const brand = useBrand();
 	const { collapsible, subPages, end, ...page } = entry;
+	const text = page.id === pages.workspace.subPages!.assistant.id ? brand.name : page.text;
 
 	if (collapsible && subPages) {
 		return (
@@ -19,7 +23,7 @@ const NavEntry: FC<{ entry: TNavEntry; resolvePath: (to: string) => string }> = 
 		);
 	}
 
-	return <NavItem {...page} to={resolvePath(page.to)} end={end} />;
+	return <NavItem {...page} text={text} to={resolvePath(page.to)} end={end} />;
 };
 
 /**

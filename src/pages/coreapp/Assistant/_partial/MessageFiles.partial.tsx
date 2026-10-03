@@ -1,4 +1,3 @@
-import { useTranslation } from 'react-i18next';
 import { Download, FileText } from 'lucide-react';
 import { useDownloadArtifact } from '@/api/modules/artifacts';
 import type { TAssistantMessageFile } from '@/types/assistant.type';
@@ -17,7 +16,6 @@ const formatSize = (bytes: number) =>
 
 /** Files the assistant handed over in a reply — also kept in Artifacts. */
 const MessageFilesPartial = ({ workspaceId, files }: IMessageFilesProps) => {
-	const { t } = useTranslation();
 	const download = useDownloadArtifact(workspaceId);
 
 	return (
@@ -29,7 +27,7 @@ const MessageFilesPartial = ({ workspaceId, files }: IMessageFilesProps) => {
 					onClick={() =>
 						download.mutate({ artifactId: file.artifact_id, filename: file.filename })
 					}
-					title={t('assistant.downloadFile')}
+					title='Download'
 					className='flex items-center gap-2 rounded-xl border border-zinc-200 px-3 py-2 text-left hover:bg-zinc-50 dark:border-white/10 dark:hover:bg-white/5'>
 					<FileText className='h-4 w-4 shrink-0 text-zinc-400' />
 					<span className='min-w-0'>

@@ -1,7 +1,7 @@
 import { KeyboardEvent, useCallback, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { ArrowUp, Loader2, Mic, Square } from 'lucide-react';
 import { useVoiceRecorder } from '../_hooks/useVoiceRecorder.hook';
+import { useBrand } from '@/context/brand';
 
 interface IComposerProps {
 	onSend: (content: string) => void;
@@ -23,7 +23,7 @@ const ComposerPartial = ({
 	isSending = false,
 	onTranscribe,
 }: IComposerProps) => {
-	const { t } = useTranslation();
+	const brand = useBrand();
 	const [content, setContent] = useState('');
 	const [isTranscribing, setIsTranscribing] = useState(false);
 
@@ -60,7 +60,7 @@ const ComposerPartial = ({
 	return (
 		<div className='rounded-3xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-white/10 dark:bg-white/5'>
 			<label htmlFor='assistant-composer' className='sr-only'>
-				{t('assistant.composerPlaceholder')}
+				Ask {brand.name} anything…
 			</label>
 			<textarea
 				id='assistant-composer'
@@ -68,18 +68,18 @@ const ComposerPartial = ({
 				value={content}
 				onChange={(event) => setContent(event.target.value)}
 				onKeyDown={handleKeyDown}
-				placeholder={t('assistant.composerPlaceholder')}
+				placeholder={`Ask ${brand.name} anything…`}
 				className='w-full resize-none border-0 bg-transparent p-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:ring-0 dark:text-white'
 			/>
 			<div className='flex items-center justify-between gap-3 px-2'>
 				<p className='text-xs text-zinc-500'>
 					{voice.isRecording
-						? t('assistant.recording')
+						? 'Listening… tap the mic again to stop.'
 						: voice.error
-							? t('assistant.micBlocked')
+							? 'Microphone access was blocked.'
 							: isWorking
-								? t('assistant.composerQueueHint')
-								: t('assistant.composerHint')}
+								? `${brand.name} is working — anything you send now is answered next.`
+								: 'Enter to send · Shift+Enter for a new line'}
 				</p>
 				<div className='flex items-center gap-2'>
 					{onTranscribe && voice.isSupported && (
@@ -87,16 +87,8 @@ const ComposerPartial = ({
 							type='button'
 							onClick={voice.isRecording ? voice.stop : voice.start}
 							disabled={isTranscribing}
-							aria-label={
-								voice.isRecording
-									? t('assistant.stopRecording')
-									: t('assistant.voiceInput')
-							}
-							title={
-								voice.isRecording
-									? t('assistant.stopRecording')
-									: t('assistant.voiceInput')
-							}
+							aria-label={voice.isRecording ? 'Stop recording' : 'Voice input'}
+							title={voice.isRecording ? 'Stop recording' : 'Voice input'}
 							className={
 								voice.isRecording
 									? 'inline-flex h-9 w-9 animate-pulse items-center justify-center rounded-full bg-red-500 text-white'
@@ -113,8 +105,8 @@ const ComposerPartial = ({
 						<button
 							type='button'
 							onClick={onStop}
-							aria-label={t('assistant.stop')}
-							title={t('assistant.stop')}
+							aria-label='Stop'
+							title='Stop'
 							className='inline-flex h-9 w-9 items-center justify-center rounded-full border border-zinc-300 text-zinc-700 hover:bg-zinc-100 dark:border-white/20 dark:text-zinc-200 dark:hover:bg-white/10'>
 							<Square className='h-3.5 w-3.5 fill-current' />
 						</button>
@@ -123,8 +115,8 @@ const ComposerPartial = ({
 						type='button'
 						onClick={send}
 						disabled={!content.trim() || isSending}
-						aria-label={t('assistant.send')}
-						title={t('assistant.send')}
+						aria-label='Send'
+						title='Send'
 						className='bg-assistant inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white transition disabled:opacity-40'>
 						<ArrowUp className='h-4 w-4' />
 					</button>

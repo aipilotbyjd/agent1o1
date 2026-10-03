@@ -1,7 +1,11 @@
-import { useTranslation } from 'react-i18next';
+import { useBrand } from '@/context/brand';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import { useAssistantToolRules, useUpdateAssistantToolRules } from '@/api/modules/assistant';
-import type { TAssistantToolDescription, TAssistantToolRule } from '@/types/assistant.type';
+import type {
+	TAssistantToolDescription,
+	TAssistantToolEffect,
+	TAssistantToolRule,
+} from '@/types/assistant.type';
 
 interface IPermissionsModalProps {
 	workspaceId: string;
@@ -10,6 +14,12 @@ interface IPermissionsModalProps {
 }
 
 const RULES: TAssistantToolRule[] = ['allow', 'ask', 'deny'];
+
+const RULE_LABELS: Record<TAssistantToolRule, string> = {
+	allow: 'Allow',
+	ask: 'Ask',
+	deny: 'Never',
+};
 
 /** "Group" a tool by its name's prefix — `gmail_send_email` → `gmail`. */
 const groupOf = (tool: TAssistantToolDescription) =>
@@ -22,7 +32,14 @@ const labelOf = (name: string) => name.replace(/_/g, ' ');
  * ask, so "allow" is not offered for them.
  */
 const PermissionsModalPartial = ({ workspaceId, isOpen, onClose }: IPermissionsModalProps) => {
-	const { t } = useTranslation();
+	const brand = useBrand();
+	const effectLabels: Record<TAssistantToolEffect, string> = {
+		read: 'Reads data',
+		internal: `Changes only ${brand.name}'s own notes`,
+		write: 'Creates or changes data',
+		external: 'Sends or shares with others',
+		destructive: 'Deletes data — always asks',
+	};
 	const { data: tools = [] } = useAssistantToolRules(workspaceId, isOpen);
 	const update = useUpdateAssistantToolRules(workspaceId);
 
@@ -40,10 +57,11 @@ const PermissionsModalPartial = ({ workspaceId, isOpen, onClose }: IPermissionsM
 			<ModalHeader setIsOpen={(open) => !open && onClose()}>
 				<div className='flex flex-col'>
 					<span className='text-lg font-semibold text-zinc-950 dark:text-white'>
-						{t('assistant.permissions')}
+						Permissions
 					</span>
 					<span className='mt-1 text-xs text-zinc-500'>
-						{t('assistant.permissionsHint')}
+						Choose what {brand.name} may do on its own, what it should ask about first,
+						and what it should never do.
 					</span>
 				</div>
 			</ModalHeader>
@@ -65,7 +83,7 @@ const PermissionsModalPartial = ({ workspaceId, isOpen, onClose }: IPermissionsM
 												{labelOf(tool.name)}
 											</p>
 											<p className='text-[11px] text-zinc-500'>
-												{t(`assistant.effects.${tool.effect}`)}
+												{effectLabels[tool.effect]}
 											</p>
 										</div>
 										<div className='flex shrink-0 overflow-hidden rounded-lg border border-zinc-200 dark:border-white/10'>
@@ -82,7 +100,7 @@ const PermissionsModalPartial = ({ workspaceId, isOpen, onClose }: IPermissionsM
 															? 'bg-assistant px-2.5 py-1 text-xs font-semibold text-white'
 															: 'px-2.5 py-1 text-xs text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/5'
 													}>
-													{t(`assistant.rules.${rule}`)}
+													{RULE_LABELS[rule]}
 												</button>
 											))}
 										</div>

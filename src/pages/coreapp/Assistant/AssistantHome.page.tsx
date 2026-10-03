@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext, useParams, useSearchParams } from 'react-router';
-import { useTranslation } from 'react-i18next';
 import { EyeOff, Mail, MessagesSquare, Plus, SlidersHorizontal } from 'lucide-react';
+import { useBrand } from '@/context/brand';
 import Breadcrumb from '@/components/layout/Breadcrumb';
 import Container from '@/components/layout/Container';
 import BrandMark from '@/components/assistant/BrandMark';
 import pages from '@/Routes/pages';
 import { useAuth } from '@/context/auth';
-import { useBrand } from '@/context/brand';
 import { useConfirm } from '@/context/confirm';
 import { useWorkspaceContext } from '@/context/workspace';
 import {
@@ -49,7 +48,6 @@ const SESSION_PARAM = 'session';
  * the server brand (`useBrand`), never from this file.
  */
 const AssistantHomePage = () => {
-	const { t } = useTranslation();
 	const brand = useBrand();
 	const { userData } = useAuth();
 	const { confirm } = useConfirm();
@@ -112,7 +110,8 @@ const AssistantHomePage = () => {
 			{ sessionId, content },
 			{
 				onSuccess: (result) => {
-					if (result.queued) notify.info(t('assistant.queuedNotice'));
+					if (result.queued)
+						notify.info(`Sent — ${brand.name} will answer it after the current reply.`);
 				},
 			},
 		);
@@ -151,8 +150,8 @@ const AssistantHomePage = () => {
 
 	const handleDelete = async (session: TAssistantSession) => {
 		const confirmed = await confirm({
-			title: t('assistant.delete'),
-			message: t('assistant.deleteConfirm'),
+			title: 'Delete',
+			message: "Delete this conversation? This can't be undone.",
 		});
 		if (!confirmed) return;
 		deleteSession.mutate(session.id, {
@@ -168,7 +167,7 @@ const AssistantHomePage = () => {
 				type='button'
 				onClick={() => setPersonalizationOpen(true)}
 				className='rounded-xl border border-zinc-200 px-3 py-2 text-left text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-white/5'>
-				{t('assistant.personalization')}
+				Personalization
 			</button>
 			<AppsPanelPartial
 				workspaceId={currentWorkspaceId}
@@ -192,7 +191,7 @@ const AssistantHomePage = () => {
 					aria-expanded={chatsOpen}
 					className='inline-flex items-center gap-2 rounded-xl border border-zinc-200 px-3 py-1.5 text-sm text-zinc-700 lg:hidden dark:border-white/10 dark:text-zinc-200'>
 					<MessagesSquare className='h-4 w-4' />
-					{t('assistant.conversations')}
+					Conversations
 				</button>
 				<button
 					type='button'
@@ -200,7 +199,7 @@ const AssistantHomePage = () => {
 					aria-expanded={moreOpen}
 					className='inline-flex items-center gap-2 rounded-xl border border-zinc-200 px-3 py-1.5 text-sm text-zinc-700 dark:border-white/10 dark:text-zinc-200'>
 					<SlidersHorizontal className='h-4 w-4' />
-					{t('assistant.settingsAndApps')}
+					Settings & apps
 				</button>
 			</div>
 
@@ -216,20 +215,20 @@ const AssistantHomePage = () => {
 							disabled={createSession.isPending}
 							className='bg-assistant inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-white disabled:opacity-60'>
 							<Plus className='h-4 w-4' />
-							{t('assistant.newChat')}
+							New chat
 						</button>
 						<button
 							type='button'
 							onClick={() => startSession(true)}
 							disabled={createSession.isPending}
-							title={t('assistant.incognitoHint')}
-							aria-label={t('assistant.newIncognitoChat')}
+							title='Deleted after 24 hours and never used to learn about you.'
+							aria-label='Incognito chat'
 							className='inline-flex items-center justify-center rounded-xl border border-zinc-200 px-3 text-zinc-600 hover:bg-zinc-100 disabled:opacity-60 dark:border-white/10 dark:text-zinc-300 dark:hover:bg-white/5'>
 							<EyeOff className='h-4 w-4' />
 						</button>
 					</div>
 					<p className='px-2 text-xs font-semibold tracking-wide text-zinc-400 uppercase'>
-						{t('assistant.conversations')}
+						Conversations
 					</p>
 					<SessionListPartial
 						sessions={sessions}
@@ -281,9 +280,9 @@ const AssistantHomePage = () => {
 							)}
 							{conversation.queuedCount > 0 && (
 								<p className='text-center text-xs text-zinc-500'>
-									{t('assistant.queuedCount', {
-										count: conversation.queuedCount,
-									})}
+									{conversation.queuedCount} message
+									{conversation.queuedCount === 1 ? '' : 's'} waiting to be
+									answered
 								</p>
 							)}
 						</>
@@ -291,9 +290,9 @@ const AssistantHomePage = () => {
 						<div className='flex flex-col items-center gap-3 pt-10 text-center'>
 							<BrandMark size='lg' />
 							<h1 className='text-2xl font-semibold text-zinc-900 dark:text-white'>
-								{t('assistant.greeting', { userName: userData?.firstName ?? '' })}
+								Hi {userData?.firstName ?? ''}, I'm {brand.name}.
 							</h1>
-							<p className='text-zinc-500'>{t('assistant.tagline')}</p>
+							<p className='text-zinc-500'>{brand.tagline}</p>
 						</div>
 					)}
 
@@ -323,7 +322,7 @@ const AssistantHomePage = () => {
 							href={`mailto:${brand.email}`}
 							className='inline-flex items-center gap-2 self-center text-sm text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'>
 							<Mail className='h-4 w-4' />
-							{t('assistant.emailLabel')}: {brand.email}
+							Email {brand.name}: {brand.email}
 						</a>
 					)}
 				</section>

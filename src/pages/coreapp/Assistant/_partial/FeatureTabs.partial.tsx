@@ -1,9 +1,9 @@
 import classNames from 'classnames';
-import { useTranslation } from 'react-i18next';
 import SituationsTabPartial from './SituationsTab.partial';
 import DailyTabPartial from './DailyTab.partial';
 import MeetingsTabPartial from './MeetingsTab.partial';
 import InboxTabPartial from './InboxTab.partial';
+import { useBrand } from '@/context/brand';
 
 export const FEATURE_TABS = ['situations', 'daily', 'inbox', 'prep'] as const;
 export type TFeatureTab = (typeof FEATURE_TABS)[number];
@@ -24,7 +24,13 @@ const FeatureTabsPartial = ({
 	onChange,
 	onOpenSession,
 }: IFeatureTabsProps) => {
-	const { t } = useTranslation();
+	const brand = useBrand();
+	const labels: Record<TFeatureTab, string> = {
+		situations: brand.features.situations,
+		daily: brand.features.daily,
+		inbox: brand.features.inbox,
+		prep: brand.features.meeting_prep,
+	};
 
 	return (
 		<div className='flex flex-col gap-4'>
@@ -41,7 +47,7 @@ const FeatureTabsPartial = ({
 							aria-selected={active === tab}
 							disabled={!available}
 							onClick={() => onChange(tab)}
-							title={available ? undefined : t('assistant.comingSoon')}
+							title={available ? undefined : 'Coming soon'}
 							className={classNames(
 								'-mb-px border-b-2 px-3 py-2 text-sm',
 								active === tab
@@ -49,7 +55,7 @@ const FeatureTabsPartial = ({
 									: 'border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200',
 								!available && 'cursor-not-allowed opacity-50',
 							)}>
-							{t(`assistant.tabs.${tab}`)}
+							{labels[tab]}
 						</button>
 					);
 				})}

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import {
@@ -26,7 +25,6 @@ const InboxLabelsModalPartial = ({
 	onClose,
 	labels,
 }: IInboxLabelsModalProps) => {
-	const { t } = useTranslation();
 	const create = useCreateInboxLabel(workspaceId);
 	const update = useUpdateInboxLabel(workspaceId);
 	const remove = useDeleteInboxLabel(workspaceId);
@@ -43,9 +41,13 @@ const InboxLabelsModalPartial = ({
 			<ModalHeader setIsOpen={(open) => !open && onClose()}>
 				<div className='flex flex-col'>
 					<span className='text-lg font-semibold text-zinc-950 dark:text-white'>
-						{t('assistant.manageLabels')}
+						Labels
 					</span>
-					<span className='mt-1 text-xs text-zinc-500'>{t('assistant.labelsHint')}</span>
+					<span className='mt-1 text-xs text-zinc-500'>
+						{
+							'Describe each label the way you\'d explain it to a new assistant. Mail moves out of your inbox only when every label it gets says "Move out".'
+						}
+					</span>
 				</div>
 			</ModalHeader>
 			<ModalBody>
@@ -64,7 +66,7 @@ const InboxLabelsModalPartial = ({
 											payload: { color: event.target.value },
 										})
 									}
-									aria-label={t('assistant.labelColor')}
+									aria-label='Label colour'
 									className='h-6 w-6 cursor-pointer rounded border-0 bg-transparent p-0'
 								/>
 								<input
@@ -77,7 +79,7 @@ const InboxLabelsModalPartial = ({
 											payload: { name: event.target.value.trim() },
 										})
 									}
-									aria-label={t('assistant.labelName')}
+									aria-label='Label name'
 									className='min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-1 font-semibold hover:border-zinc-200 focus:border-zinc-300 focus:ring-0 dark:hover:border-white/10'
 								/>
 								<select
@@ -91,10 +93,8 @@ const InboxLabelsModalPartial = ({
 										})
 									}
 									className='rounded-lg border border-zinc-200 bg-transparent px-2 py-1 text-xs dark:border-white/10'>
-									<option value='keep'>{t('assistant.labelGroups.keep')}</option>
-									<option value='move_out'>
-										{t('assistant.labelGroups.move_out')}
-									</option>
+									<option value='keep'>Keep in inbox</option>
+									<option value='move_out'>Move out</option>
 								</select>
 								<label className='flex items-center gap-1 text-xs text-zinc-500'>
 									<input
@@ -107,13 +107,13 @@ const InboxLabelsModalPartial = ({
 											})
 										}
 									/>
-									{t('assistant.labelOn')}
+									On
 								</label>
 								{!label.builtin && (
 									<button
 										type='button'
 										onClick={() => remove.mutate(label.id)}
-										aria-label={t('assistant.delete')}
+										aria-label='Delete'
 										className='text-zinc-400 hover:text-red-500'>
 										<Trash2 className='h-4 w-4' />
 									</button>
@@ -130,7 +130,7 @@ const InboxLabelsModalPartial = ({
 										payload: { definition: event.target.value.trim() },
 									})
 								}
-								aria-label={t('assistant.labelDefinition')}
+								aria-label='Label definition'
 								className='rounded-lg border border-zinc-200 bg-transparent p-2 text-xs dark:border-white/10'
 							/>
 						</div>
@@ -140,7 +140,7 @@ const InboxLabelsModalPartial = ({
 						<input
 							value={draft.name}
 							onChange={(event) => setDraft({ ...draft, name: event.target.value })}
-							placeholder={t('assistant.newLabelName')}
+							placeholder='New label name'
 							className='rounded-lg border border-zinc-200 bg-transparent px-2 py-1 dark:border-white/10'
 						/>
 						<textarea
@@ -149,7 +149,7 @@ const InboxLabelsModalPartial = ({
 							onChange={(event) =>
 								setDraft({ ...draft, definition: event.target.value })
 							}
-							placeholder={t('assistant.newLabelDefinition')}
+							placeholder='When should this label be applied?'
 							className='rounded-lg border border-zinc-200 bg-transparent p-2 text-xs dark:border-white/10'
 						/>
 						<button
@@ -159,7 +159,7 @@ const InboxLabelsModalPartial = ({
 								!draft.name.trim() || !draft.definition.trim() || create.isPending
 							}
 							className='bg-assistant self-end rounded-lg px-3 py-1.5 font-semibold text-white disabled:opacity-40'>
-							{t('assistant.addLabel')}
+							Add label
 						</button>
 					</div>
 				</div>

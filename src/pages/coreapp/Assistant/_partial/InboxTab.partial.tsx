@@ -1,12 +1,19 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { Settings2, Tags } from 'lucide-react';
+import { useBrand } from '@/context/brand';
 import { useAcceptInboxSuggestion, useInbox, useToggleInbox } from '@/api/modules/assistant';
 import pages from '@/Routes/pages';
 import useResolvePath from '@/hooks/useResolvePath';
 import type { TInboxMessage } from '@/types/assistant.type';
+
+const DRAFT_STATUSES: Record<NonNullable<TInboxMessage['draft_status']>, string> = {
+	created: 'Draft in Gmail',
+	updated: 'Draft updated',
+	suggested: 'Reply suggested',
+	kept_your_edits: 'Kept your edited draft',
+};
 import InboxLabelsModalPartial from './InboxLabelsModal.partial';
 import InboxSettingsModalPartial from './InboxSettingsModal.partial';
 
@@ -20,7 +27,7 @@ interface IInboxTabProps {
  * out, drafts), and suggested replies to take into chat.
  */
 const InboxTabPartial = ({ workspaceId, onOpenSession }: IInboxTabProps) => {
-	const { t } = useTranslation();
+	const brand = useBrand();
 	const { resolvePath } = useResolvePath();
 	const { data } = useInbox(workspaceId);
 	const toggle = useToggleInbox(workspaceId);
@@ -38,16 +45,20 @@ const InboxTabPartial = ({ workspaceId, onOpenSession }: IInboxTabProps) => {
 	if (!data.config.enabled) {
 		return (
 			<div className='flex flex-col items-start gap-3 rounded-2xl border border-zinc-200 p-4 text-sm dark:border-white/10'>
-				<p className='text-zinc-700 dark:text-zinc-200'>{t('assistant.inboxIntro')}</p>
+				<p className='text-zinc-700 dark:text-zinc-200'>
+					{brand.features.inbox} labels new email as it arrives in your Gmail or Outlook,
+					moves the noise out of your inbox, and drafts replies for you to review. It
+					never sends anything.
+				</p>
 				{!data.available.plan ? (
-					<p className='text-zinc-500'>{t('assistant.inboxNeedsPlan')}</p>
+					<p className='text-zinc-500'>{brand.features.inbox} needs the Pro plan.</p>
 				) : !data.available.gmail_connected && !data.available.outlook_connected ? (
 					<p className='text-zinc-500'>
-						{t('assistant.inboxConnectGmail')}{' '}
+						{'Connect Gmail or Outlook to use it.'}{' '}
 						<Link
 							to={resolvePath(pages.workspace.subPages!.apps.to)}
 							className='underline'>
-							{t('assistant.appsTitle')}
+							Apps
 						</Link>
 					</p>
 				) : (
@@ -63,11 +74,8 @@ const InboxTabPartial = ({ workspaceId, onOpenSession }: IInboxTabProps) => {
 									className='bg-assistant rounded-lg px-3 py-1.5 font-semibold text-white disabled:opacity-50'>
 									{data.available.gmail_connected &&
 									data.available.outlook_connected
-										? t('assistant.enableInboxWith', {
-												provider:
-													provider === 'gmail' ? 'Gmail' : 'Outlook',
-											})
-										: t('assistant.enableInbox')}
+										? `Turn on with ${provider === 'gmail' ? 'Gmail' : 'Outlook'}`
+										: `Turn on ${brand.features.inbox}`}
 								</button>
 							))}
 					</div>
@@ -77,15 +85,15 @@ const InboxTabPartial = ({ workspaceId, onOpenSession }: IInboxTabProps) => {
 	}
 
 	const describeDraft = (message: TInboxMessage) =>
-		message.draft_status ? t(`assistant.draftStatuses.${message.draft_status}`) : null;
+		message.draft_status ? DRAFT_STATUSES[message.draft_status] : null;
 
 	return (
 		<div className='flex flex-col gap-4'>
 			<div className='flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-zinc-200 p-3 text-sm dark:border-white/10'>
 				<span className='text-zinc-600 dark:text-zinc-300'>
-					{t('assistant.inboxWatching', { account: data.config.account })}
+					Watching {data.config.account}
 					{data.config.last_checked_at &&
-						` · ${t('assistant.lastChecked', { time: dayjs(data.config.last_checked_at).format('HH:mm') })}`}
+						` · checked ${dayjs(data.config.last_checked_at).format('HH:mm')}`}
 				</span>
 				<div className='flex gap-2'>
 					<button
@@ -93,13 +101,13 @@ const InboxTabPartial = ({ workspaceId, onOpenSession }: IInboxTabProps) => {
 						onClick={() => setLabelsOpen(true)}
 						className='inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-1.5 dark:border-white/10'>
 						<Tags className='h-4 w-4' />
-						{t('assistant.manageLabels')}
+						Labels
 					</button>
 					<button
 						type='button'
 						onClick={() => setSettingsOpen(true)}
-						aria-label={t('assistant.inboxSettings')}
-						title={t('assistant.inboxSettings')}
+						aria-label={`${brand.features.inbox} settings`}
+						title={`${brand.features.inbox} settings`}
 						className='rounded-lg border border-zinc-200 px-2 dark:border-white/10'>
 						<Settings2 className='h-4 w-4' />
 					</button>
@@ -114,7 +122,7 @@ const InboxTabPartial = ({ workspaceId, onOpenSession }: IInboxTabProps) => {
 
 			{data.messages.length === 0 && (
 				<p className='py-4 text-center text-sm text-zinc-500'>
-					{t('assistant.inboxEmpty')}
+					New email will show up here as it arrives.
 				</p>
 			)}
 
@@ -150,7 +158,7 @@ const InboxTabPartial = ({ workspaceId, onOpenSession }: IInboxTabProps) => {
 							))}
 							{message.archived && (
 								<span className='rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] text-zinc-600 dark:bg-white/5 dark:text-zinc-300'>
-									{t('assistant.movedOut')}
+									Moved out of inbox
 								</span>
 							)}
 							{message.status !== 'classified' && (
@@ -168,7 +176,7 @@ const InboxTabPartial = ({ workspaceId, onOpenSession }: IInboxTabProps) => {
 						{openId === message.id && message.suggestion && (
 							<div className='mt-3 border-t border-zinc-200 pt-3 text-sm dark:border-white/10'>
 								<p className='mb-1 text-xs font-semibold tracking-wide text-zinc-400 uppercase'>
-									{t('assistant.suggestedReply')}
+									Suggested reply
 								</p>
 								<p className='whitespace-pre-wrap text-zinc-800 dark:text-zinc-100'>
 									{message.suggestion}
@@ -180,7 +188,7 @@ const InboxTabPartial = ({ workspaceId, onOpenSession }: IInboxTabProps) => {
 										accept.mutate(message.id, { onSuccess: onOpenSession })
 									}
 									className='mt-2 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-semibold dark:border-white/10'>
-									{t('assistant.openInChat')}
+									Open in chat
 								</button>
 							</div>
 						)}

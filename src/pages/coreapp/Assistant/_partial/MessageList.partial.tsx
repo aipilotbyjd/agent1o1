@@ -1,6 +1,6 @@
 import { Fragment } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Loader2, Wrench } from 'lucide-react';
+import { useBrand } from '@/context/brand';
 import AssistantMarkdown from '@/components/assistant/AssistantMarkdown';
 import BrandMark from '@/components/assistant/BrandMark';
 import type { TAssistantFeedbackRating, TAssistantMessage } from '@/types/assistant.type';
@@ -28,14 +28,14 @@ const MessageListPartial = ({
 	workspaceId,
 	onRate,
 }: IMessageListProps) => {
-	const { t } = useTranslation();
+	const brand = useBrand();
 
 	if (isLoading) return null;
 
 	if (messages.length === 0 && !isWorking) {
 		return (
 			<p className='py-10 text-center text-sm text-zinc-500'>
-				{t('assistant.emptyMessages')}
+				No messages in this conversation yet.
 			</p>
 		);
 	}
@@ -49,7 +49,7 @@ const MessageListPartial = ({
 					{message.compacted === false && messages[index - 1]?.compacted === true && (
 						<p className='flex items-center gap-3 text-[11px] text-zinc-400'>
 							<span className='h-px flex-1 bg-zinc-200 dark:bg-white/10' />
-							{t('assistant.summarizedAbove')}
+							Messages above are summarized for {brand.name}
 							<span className='h-px flex-1 bg-zinc-200 dark:bg-white/10' />
 						</p>
 					)}
@@ -64,13 +64,10 @@ const MessageListPartial = ({
 								{message.tool_calls.length > 0 && (
 									<p className='mb-1 flex items-center gap-1 text-xs text-zinc-400'>
 										<Wrench className='h-3 w-3' />
-										{t('assistant.usedTools', {
-											tools: [
-												...new Set(
-													message.tool_calls.map((call) => call.name),
-												),
-											].join(', '),
-										})}
+										Used{' '}
+										{[
+											...new Set(message.tool_calls.map((call) => call.name)),
+										].join(', ')}
 									</p>
 								)}
 								{message.code_runs && message.code_runs.length > 0 && (
@@ -105,10 +102,8 @@ const MessageListPartial = ({
 						<p className='flex items-center gap-2 text-xs text-zinc-400'>
 							<Loader2 className='h-3 w-3 animate-spin' />
 							{running.length > 0
-								? t('assistant.usingTool', {
-										tool: running[running.length - 1].tool,
-									})
-								: t('assistant.thinking')}
+								? `Using ${running[running.length - 1].tool}…`
+								: 'Thinking…'}
 						</p>
 					</div>
 				</div>

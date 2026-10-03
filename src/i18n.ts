@@ -11,8 +11,6 @@ import esTranslation from './locales/es/translation.json';
 import esMenu from './locales/es/menu.json';
 import arTranslation from './locales/ar/translation.json';
 import arMenu from './locales/ar/menu.json';
-import { DEFAULT_BRAND } from './config/brand.default';
-import { BRAND_CHANGED_EVENT, brandVariables } from './context/brand/brand.i18n';
 
 // don't want to use this?
 // have a look at the Quick start guide
@@ -44,11 +42,6 @@ i18n
 
 		interpolation: {
 			escapeValue: false, // not needed for react as it escapes by default
-			// `{{assistantName}}` & co. — replaced by the server's brand in BrandProvider.
-			defaultVariables: brandVariables(DEFAULT_BRAND),
-		},
-		react: {
-			bindI18n: `languageChanged ${BRAND_CHANGED_EVENT}`,
 		},
 	})
 	.then();

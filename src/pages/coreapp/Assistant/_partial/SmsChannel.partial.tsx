@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Smartphone } from 'lucide-react';
+import { useBrand } from '@/context/brand';
 import { notify } from '@/api/core';
 import {
 	useConfirmSmsVerification,
@@ -19,7 +19,7 @@ const inputClass =
 
 /** Linking a phone by texted code, then texting the assistant's number. */
 const SmsChannelPartial = ({ workspaceId, sms }: ISmsChannelProps) => {
-	const { t } = useTranslation();
+	const brand = useBrand();
 	const start = useStartSmsVerification(workspaceId);
 	const confirm = useConfirmSmsVerification(workspaceId);
 	const remove = useRemoveSmsNumber(workspaceId);
@@ -29,7 +29,7 @@ const SmsChannelPartial = ({ workspaceId, sms }: ISmsChannelProps) => {
 
 	if (!sms.plan) {
 		return (
-			<p className='px-2 text-[11px] text-zinc-500'>{t('assistant.channelsSmsNeedsPlan')}</p>
+			<p className='px-2 text-[11px] text-zinc-500'>Texting needs a plan that includes it.</p>
 		);
 	}
 
@@ -39,17 +39,18 @@ const SmsChannelPartial = ({ workspaceId, sms }: ISmsChannelProps) => {
 				<div className='flex items-center gap-2 text-sm'>
 					<CheckCircle2 className='h-4 w-4 shrink-0 text-emerald-500' />
 					<span className='min-w-0 flex-1 truncate font-medium text-zinc-800 dark:text-zinc-100'>
-						{t('assistant.channelsSmsLinked', { phone: sms.phone })}
+						Texting from {sms.phone}
 					</span>
 					<button
 						type='button'
 						onClick={() => remove.mutate()}
 						className='text-[11px] text-zinc-400 hover:text-rose-500'>
-						{t('assistant.channelsRemove')}
+						Remove
 					</button>
 				</div>
 				<p className='text-[11px] text-zinc-500'>
-					{t('assistant.channelsSmsHint', { number: sms.number })}
+					Text {brand.name} at {sms.number} from your verified phone. Text !stop to stop a
+					reply.
 				</p>
 			</div>
 		);
@@ -63,7 +64,7 @@ const SmsChannelPartial = ({ workspaceId, sms }: ISmsChannelProps) => {
 					type='tel'
 					value={phone}
 					onChange={(e) => setPhone(e.target.value)}
-					placeholder={t('assistant.channelsSmsPhone')}
+					placeholder='+14155550123'
 					className={inputClass}
 				/>
 				<button
@@ -73,12 +74,12 @@ const SmsChannelPartial = ({ workspaceId, sms }: ISmsChannelProps) => {
 						start.mutate(phone.trim(), {
 							onSuccess: () => {
 								setCodeSent(true);
-								notify.success(t('assistant.channelsCodeSent'));
+								notify.success('Code sent. Check your phone.');
 							},
 						})
 					}
 					className='h-8 shrink-0 rounded-lg border border-zinc-200 px-2 text-xs font-medium disabled:opacity-50 dark:border-white/10'>
-					{t('assistant.channelsSendCode')}
+					Send code
 				</button>
 			</div>
 			{codeSent && (
@@ -87,7 +88,7 @@ const SmsChannelPartial = ({ workspaceId, sms }: ISmsChannelProps) => {
 						inputMode='numeric'
 						value={code}
 						onChange={(e) => setCode(e.target.value)}
-						placeholder={t('assistant.channelsSmsCode')}
+						placeholder='6-digit code'
 						className={inputClass}
 					/>
 					<button
@@ -95,12 +96,13 @@ const SmsChannelPartial = ({ workspaceId, sms }: ISmsChannelProps) => {
 						disabled={code.trim().length < 6 || confirm.isPending}
 						onClick={() => confirm.mutate(code.trim())}
 						className='bg-assistant h-8 shrink-0 rounded-lg px-2 text-xs font-semibold text-white disabled:opacity-50'>
-						{t('assistant.channelsVerify')}
+						Verify
 					</button>
 				</div>
 			)}
 			<p className='text-[11px] text-zinc-500'>
-				{t('assistant.channelsSmsHint', { number: sms.number })}
+				Text {brand.name} at {sms.number} from your verified phone. Text !stop to stop a
+				reply.
 			</p>
 		</div>
 	);

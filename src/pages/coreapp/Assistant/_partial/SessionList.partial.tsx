@@ -1,7 +1,7 @@
 import classNames from 'classnames';
-import { useTranslation } from 'react-i18next';
 import { EyeOff, MessageSquare, Trash2 } from 'lucide-react';
 import dayjs from 'dayjs';
+import { useBrand } from '@/context/brand';
 import type { TAssistantSession } from '@/types/assistant.type';
 
 interface ISessionListProps {
@@ -19,12 +19,16 @@ const SessionListPartial = ({
 	onDelete,
 	isLoading = false,
 }: ISessionListProps) => {
-	const { t } = useTranslation();
+	const brand = useBrand();
 
 	if (isLoading) return null;
 
 	if (sessions.length === 0) {
-		return <p className='px-2 py-6 text-sm text-zinc-500'>{t('assistant.noConversations')}</p>;
+		return (
+			<p className='px-2 py-6 text-sm text-zinc-500'>
+				No conversations yet. Start one to talk to {brand.name}.
+			</p>
+		);
 	}
 
 	return (
@@ -41,15 +45,12 @@ const SessionListPartial = ({
 								: 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/5',
 						)}>
 						{session.incognito ? (
-							<EyeOff
-								className='h-4 w-4 shrink-0'
-								aria-label={t('assistant.incognito')}
-							/>
+							<EyeOff className='h-4 w-4 shrink-0' aria-label='Incognito' />
 						) : (
 							<MessageSquare className='h-4 w-4 shrink-0' />
 						)}
 						<span className='min-w-0 flex-1 truncate'>
-							{session.title || t('assistant.untitled')}
+							{session.title || 'Untitled chat'}
 						</span>
 						{session.last_activity_at && (
 							<span className='shrink-0 text-[11px] text-zinc-400'>
@@ -60,7 +61,7 @@ const SessionListPartial = ({
 					<button
 						type='button'
 						onClick={() => onDelete(session)}
-						aria-label={t('assistant.delete')}
+						aria-label='Delete'
 						className='absolute top-1/2 right-2 -translate-y-1/2 rounded-lg p-1 text-zinc-400 opacity-0 transition group-hover:opacity-100 hover:text-red-500 focus:opacity-100'>
 						<Trash2 className='h-4 w-4' />
 					</button>

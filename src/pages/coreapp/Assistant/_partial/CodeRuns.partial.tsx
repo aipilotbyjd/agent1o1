@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronRight, SquareTerminal } from 'lucide-react';
 import type { TAssistantCodeRun } from '@/types/assistant.type';
 
@@ -9,7 +8,6 @@ interface ICodeRunsProps {
 
 /** Code the assistant ran on its cloud computer, with what it printed — collapsed by default. */
 const CodeRunsPartial = ({ runs }: ICodeRunsProps) => {
-	const { t } = useTranslation();
 	const [open, setOpen] = useState<string | null>(null);
 
 	return (
@@ -36,12 +34,8 @@ const CodeRunsPartial = ({ runs }: ICodeRunsProps) => {
 								<ChevronRight className='h-3 w-3' />
 							)}
 							<SquareTerminal className='h-3.5 w-3.5' />
-							<span className='font-medium'>
-								{t('assistant.ranCode', { language: run.language })}
-							</span>
-							{run.output.error && (
-								<span className='text-rose-500'>{t('assistant.codeFailed')}</span>
-							)}
+							<span className='font-medium'>Ran {run.language} code</span>
+							{run.output.error && <span className='text-rose-500'>failed</span>}
 							{run.output.seconds !== undefined && (
 								<span className='ml-auto'>{run.output.seconds}s</span>
 							)}

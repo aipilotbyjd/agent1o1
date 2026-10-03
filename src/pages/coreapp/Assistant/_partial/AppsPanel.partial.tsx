@@ -1,5 +1,4 @@
 import { Link } from 'react-router';
-import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Plug, SlidersHorizontal } from 'lucide-react';
 import { useAssistantApps } from '@/api/modules/assistant';
 import pages from '@/Routes/pages';
@@ -12,7 +11,6 @@ interface IAppsPanelProps {
 
 /** The apps the assistant can work in for this member, and through which account. */
 const AppsPanelPartial = ({ workspaceId, onOpenPermissions }: IAppsPanelProps) => {
-	const { t } = useTranslation();
 	const { resolvePath } = useResolvePath();
 	const { data: apps = [], isLoading } = useAssistantApps(workspaceId);
 
@@ -22,21 +20,19 @@ const AppsPanelPartial = ({ workspaceId, onOpenPermissions }: IAppsPanelProps) =
 	return (
 		<div className='flex flex-col gap-3'>
 			<div className='flex items-center justify-between px-2'>
-				<p className='text-xs font-semibold tracking-wide text-zinc-400 uppercase'>
-					{t('assistant.appsTitle')}
-				</p>
+				<p className='text-xs font-semibold tracking-wide text-zinc-400 uppercase'>Apps</p>
 				<button
 					type='button'
 					onClick={onOpenPermissions}
-					title={t('assistant.permissions')}
-					aria-label={t('assistant.permissions')}
+					title='Permissions'
+					aria-label='Permissions'
 					className='text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'>
 					<SlidersHorizontal className='h-4 w-4' />
 				</button>
 			</div>
 
 			{!isLoading && connected.length === 0 && (
-				<p className='px-2 text-xs text-zinc-500'>{t('assistant.noApps')}</p>
+				<p className='px-2 text-xs text-zinc-500'>No apps connected yet.</p>
 			)}
 
 			<ul className='flex flex-col gap-1'>
@@ -50,9 +46,7 @@ const AppsPanelPartial = ({ workspaceId, onOpenPermissions }: IAppsPanelProps) =
 								{app.name}
 							</span>
 							<span className='block truncate text-[11px] text-zinc-500'>
-								{app.shared
-									? t('assistant.sharedAccount', { account: app.account })
-									: app.account}
+								{app.shared ? `${app.account} (shared)` : app.account}
 							</span>
 						</span>
 					</li>
@@ -64,7 +58,7 @@ const AppsPanelPartial = ({ workspaceId, onOpenPermissions }: IAppsPanelProps) =
 					to={resolvePath(pages.workspace.subPages!.apps.to)}
 					className='inline-flex items-center gap-2 px-2 text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'>
 					<Plug className='h-3.5 w-3.5' />
-					{t('assistant.connectMore', { count: others.length })}
+					Connect {others.length} more app{others.length === 1 ? '' : 's'}
 				</Link>
 			)}
 		</div>

@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useBrand } from '@/context/brand';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import { useToggleInbox, useUpdateInboxSettings } from '@/api/modules/assistant';
 import type { TInboxSettings } from '@/types/assistant.type';
+
+const DRAFT_MODES = {
+	confident: 'When confident — otherwise suggest one here',
+	off: 'Off',
+} as const;
 
 interface IInboxSettingsModalProps {
 	workspaceId: string;
@@ -18,7 +23,7 @@ const InboxSettingsModalPartial = ({
 	onClose,
 	settings,
 }: IInboxSettingsModalProps) => {
-	const { t } = useTranslation();
+	const brand = useBrand();
 	const update = useUpdateInboxSettings(workspaceId);
 	const toggle = useToggleInbox(workspaceId);
 	const [form, setForm] = useState<TInboxSettings>(settings);
@@ -31,21 +36,21 @@ const InboxSettingsModalPartial = ({
 		<Modal isOpen={isOpen} setIsOpen={(open) => !open && onClose()} size='md'>
 			<ModalHeader setIsOpen={(open) => !open && onClose()}>
 				<span className='text-lg font-semibold text-zinc-950 dark:text-white'>
-					{t('assistant.inboxSettings')}
+					{brand.features.inbox} settings
 				</span>
 			</ModalHeader>
 			<ModalBody>
 				<div className='flex flex-col gap-4 pt-2 text-sm'>
 					<div className='flex flex-col gap-1'>
-						<span className='text-xs text-zinc-500'>{t('assistant.draftReplies')}</span>
-						{(['confident', 'off'] as const).map((mode) => (
+						<span className='text-xs text-zinc-500'>Draft replies</span>
+						{(Object.keys(DRAFT_MODES) as (keyof typeof DRAFT_MODES)[]).map((mode) => (
 							<label key={mode} className='flex items-center gap-2'>
 								<input
 									type='radio'
 									checked={form.draft_mode === mode}
 									onChange={() => setForm({ ...form, draft_mode: mode })}
 								/>
-								{t(`assistant.draftModes.${mode}`)}
+								{DRAFT_MODES[mode]}
 							</label>
 						))}
 					</div>
@@ -57,7 +62,7 @@ const InboxSettingsModalPartial = ({
 								setForm({ ...form, known_senders_only: event.target.checked })
 							}
 						/>
-						{t('assistant.knownSendersOnly')}
+						{"Only draft for people I've emailed or my own domain"}
 					</label>
 					<label className='flex items-center gap-2'>
 						<input
@@ -67,11 +72,11 @@ const InboxSettingsModalPartial = ({
 								setForm({ ...form, skip_existing_labels: event.target.checked })
 							}
 						/>
-						{t('assistant.skipExistingLabels')}
+						{"Leave mail I've already labelled alone"}
 					</label>
 					<label className='flex flex-col gap-1'>
 						<span className='text-xs text-zinc-500'>
-							{t('assistant.draftingInstructions')}
+							Drafting instructions (optional)
 						</span>
 						<textarea
 							rows={3}
@@ -80,7 +85,7 @@ const InboxSettingsModalPartial = ({
 							onChange={(event) =>
 								setForm({ ...form, drafting_instructions: event.target.value })
 							}
-							placeholder={t('assistant.draftingInstructionsPlaceholder')}
+							placeholder='e.g. Sign off with my first name. Never commit to dates.'
 							className='rounded-lg border border-zinc-200 bg-transparent p-2 dark:border-white/10'
 						/>
 					</label>
@@ -89,7 +94,7 @@ const InboxSettingsModalPartial = ({
 							type='button'
 							onClick={() => toggle.mutate(false, { onSuccess: onClose })}
 							className='text-sm text-red-600 hover:underline dark:text-red-400'>
-							{t('assistant.disableInbox')}
+							Turn off {brand.features.inbox}
 						</button>
 						<button
 							type='button'
@@ -104,7 +109,7 @@ const InboxSettingsModalPartial = ({
 							}
 							disabled={update.isPending}
 							className='bg-assistant rounded-lg px-4 py-2 font-semibold text-white disabled:opacity-40'>
-							{t('assistant.save')}
+							Save
 						</button>
 					</div>
 				</div>

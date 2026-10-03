@@ -1,5 +1,11 @@
-import { useTranslation } from 'react-i18next';
 import { useAssistantContext } from '@/api/modules/assistant';
+
+const PART_LABELS = {
+	instructions: 'Instructions & memory',
+	tools: 'Tools',
+	summary: 'Summary',
+	conversation: 'Conversation',
+} as const;
 
 interface IContextMeterProps {
 	workspaceId: string;
@@ -11,23 +17,19 @@ interface IContextMeterProps {
  * long conversations are summarized automatically before it runs out.
  */
 const ContextMeterPartial = ({ workspaceId, sessionId }: IContextMeterProps) => {
-	const { t } = useTranslation();
 	const { data: context } = useAssistantContext(workspaceId, sessionId);
 
 	if (!context) return null;
 
-	const breakdown = (['instructions', 'tools', 'summary', 'conversation'] as const)
-		.map(
-			(part) =>
-				`${t(`assistant.contextParts.${part}`)}: ${context.parts[part].toLocaleString()}`,
-		)
+	const breakdown = (Object.keys(PART_LABELS) as (keyof typeof PART_LABELS)[])
+		.map((part) => `${PART_LABELS[part]}: ${context.parts[part].toLocaleString()}`)
 		.join('\n');
 
 	return (
 		<div
 			className='flex items-center gap-2 self-end text-[11px] text-zinc-500'
-			title={`${breakdown}\n${t('assistant.contextOf', { used: context.used_tokens.toLocaleString(), window: context.window_tokens.toLocaleString() })}`}>
-			<span>{t('assistant.contextUsed', { percent: context.percent })}</span>
+			title={`${breakdown}\n${context.used_tokens.toLocaleString()} of ${context.window_tokens.toLocaleString()} tokens (estimate). Older messages are summarized automatically.`}>
+			<span>Context {context.percent}%</span>
 			<span className='h-1.5 w-20 overflow-hidden rounded-full bg-zinc-200 dark:bg-white/10'>
 				<span
 					className={

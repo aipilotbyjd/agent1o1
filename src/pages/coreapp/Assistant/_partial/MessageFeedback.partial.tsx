@@ -1,8 +1,12 @@
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import classNames from 'classnames';
 import { ThumbsDown, ThumbsUp } from 'lucide-react';
 import type { TAssistantFeedback, TAssistantFeedbackRating } from '@/types/assistant.type';
+
+const RATING_LABELS: Record<TAssistantFeedbackRating, string> = {
+	up: 'Good reply',
+	down: 'Bad reply',
+};
 
 interface IMessageFeedbackProps {
 	feedback?: TAssistantFeedback | null;
@@ -15,7 +19,6 @@ interface IMessageFeedbackProps {
  * assistant a lasting preference; a bare rating is just recorded.
  */
 const MessageFeedbackPartial = ({ feedback, onRate, isSaving = false }: IMessageFeedbackProps) => {
-	const { t } = useTranslation();
 	const [commentFor, setCommentFor] = useState<TAssistantFeedbackRating | null>(null);
 	const [comment, setComment] = useState('');
 
@@ -42,8 +45,8 @@ const MessageFeedbackPartial = ({ feedback, onRate, isSaving = false }: IMessage
 							type='button'
 							disabled={isSaving}
 							onClick={() => choose(rating)}
-							aria-label={t(`assistant.rate.${rating}`)}
-							title={t(`assistant.rate.${rating}`)}
+							aria-label={RATING_LABELS[rating]}
+							title={RATING_LABELS[rating]}
 							className={classNames(
 								'rounded p-1 hover:text-zinc-700 dark:hover:text-zinc-200',
 								feedback?.rating === rating && 'text-assistant',
@@ -53,30 +56,28 @@ const MessageFeedbackPartial = ({ feedback, onRate, isSaving = false }: IMessage
 					);
 				})}
 				{feedback?.status === 'applied' && (
-					<span className='text-[11px] text-zinc-500'>
-						{t('assistant.feedbackLearned')}
-					</span>
+					<span className='text-[11px] text-zinc-500'>Learned from your feedback</span>
 				)}
 			</div>
 
 			{commentFor && (
 				<div className='flex items-center gap-2'>
 					<label htmlFor='assistant-feedback-comment' className='sr-only'>
-						{t('assistant.feedbackPrompt')}
+						What should change? (optional)
 					</label>
 					<input
 						id='assistant-feedback-comment'
 						value={comment}
 						onChange={(event) => setComment(event.target.value)}
 						onKeyDown={(event) => event.key === 'Enter' && submit()}
-						placeholder={t('assistant.feedbackPrompt')}
+						placeholder='What should change? (optional)'
 						className='min-w-0 flex-1 rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs focus:border-zinc-400 focus:ring-0 dark:border-white/10 dark:bg-white/5'
 					/>
 					<button
 						type='button'
 						onClick={submit}
 						className='text-xs font-semibold text-zinc-700 dark:text-zinc-200'>
-						{commentFor === 'down' ? t('assistant.send') : t('assistant.save')}
+						{commentFor === 'down' ? 'Send' : 'Save'}
 					</button>
 					<button
 						type='button'
@@ -85,7 +86,7 @@ const MessageFeedbackPartial = ({ feedback, onRate, isSaving = false }: IMessage
 							setCommentFor(null);
 						}}
 						className='text-xs text-zinc-400'>
-						{t('assistant.skip')}
+						Skip
 					</button>
 				</div>
 			)}

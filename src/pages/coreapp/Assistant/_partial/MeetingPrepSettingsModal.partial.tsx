@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useBrand } from '@/context/brand';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import { useUpdateMeetingPrep } from '@/api/modules/assistant';
-import type { TMeetingPrepReport } from '@/types/assistant.type';
+import type { TMeetingPrepReport, TMeetingPrepSettings } from '@/types/assistant.type';
+
+const PREP_SCOPES: Record<TMeetingPrepSettings['scope'], string> = {
+	external_only: 'external meetings',
+	all: 'all meetings',
+};
 
 interface IMeetingPrepSettingsModalProps {
 	workspaceId: string;
@@ -18,7 +23,7 @@ const MeetingPrepSettingsModalPartial = ({
 	onClose,
 	config,
 }: IMeetingPrepSettingsModalProps) => {
-	const { t } = useTranslation();
+	const brand = useBrand();
 	const update = useUpdateMeetingPrep(workspaceId);
 	const [form, setForm] = useState(config);
 
@@ -41,7 +46,7 @@ const MeetingPrepSettingsModalPartial = ({
 		<Modal isOpen={isOpen} setIsOpen={(open) => !open && onClose()} size='md'>
 			<ModalHeader setIsOpen={(open) => !open && onClose()}>
 				<span className='text-lg font-semibold text-zinc-950 dark:text-white'>
-					{t('assistant.prepSettings')}
+					{brand.features.meeting_prep} settings
 				</span>
 			</ModalHeader>
 			<ModalBody>
@@ -54,7 +59,7 @@ const MeetingPrepSettingsModalPartial = ({
 								setForm({ ...form, enabled: event.target.checked })
 							}
 						/>
-						{t('assistant.prepEnabled')}
+						Turn on {brand.features.meeting_prep}
 					</label>
 					<label className='flex items-center gap-2'>
 						<input
@@ -67,11 +72,11 @@ const MeetingPrepSettingsModalPartial = ({
 								})
 							}
 						/>
-						{t('assistant.prepAutomatically')}
+						Prep meetings automatically
 					</label>
 					<label className='flex items-center gap-2'>
 						<span className='text-zinc-600 dark:text-zinc-300'>
-							{t('assistant.minutesBefore')}
+							Minutes before the meeting
 						</span>
 						<input
 							type='number'
@@ -91,9 +96,7 @@ const MeetingPrepSettingsModalPartial = ({
 						/>
 					</label>
 					<div className='flex flex-col gap-1'>
-						<span className='text-xs text-zinc-500'>
-							{t('assistant.meetingsToPrep')}
-						</span>
+						<span className='text-xs text-zinc-500'>Meetings to prep</span>
 						{(['external_only', 'all'] as const).map((scope) => (
 							<label key={scope} className='flex items-center gap-2'>
 								<input
@@ -103,13 +106,13 @@ const MeetingPrepSettingsModalPartial = ({
 										setForm({ ...form, settings: { ...form.settings, scope } })
 									}
 								/>
-								{t(`assistant.prepScopes.${scope}`)}
+								{PREP_SCOPES[scope]}
 							</label>
 						))}
 					</div>
 					<label className='flex flex-col gap-1'>
 						<span className='text-xs text-zinc-500'>
-							{t('assistant.prepInstructions')}
+							What should briefs focus on? (optional)
 						</span>
 						<textarea
 							rows={3}
@@ -129,7 +132,7 @@ const MeetingPrepSettingsModalPartial = ({
 								setForm({ ...form, delivery: { email: event.target.checked } })
 							}
 						/>
-						{t('assistant.emailDelivery')}
+						Also email it to me
 					</label>
 					<div className='flex justify-end'>
 						<button
@@ -137,7 +140,7 @@ const MeetingPrepSettingsModalPartial = ({
 							onClick={save}
 							disabled={update.isPending}
 							className='bg-assistant rounded-lg px-4 py-2 font-semibold text-white disabled:opacity-40'>
-							{t('assistant.save')}
+							Save
 						</button>
 					</div>
 				</div>

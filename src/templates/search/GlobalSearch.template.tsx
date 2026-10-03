@@ -1,7 +1,6 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import Fuse from 'fuse.js';
-import i18next from 'i18next';
 import classNames from 'classnames';
 import {
 	Search,
@@ -41,6 +40,7 @@ import type { TWorkflowTemplate } from '@/types/template.type';
 import type { TArtifact } from '@/types/artifact.type';
 import useResolvePath from '@/hooks/useResolvePath';
 import { useGlobalSearchStore } from '@/store/globalSearch.store';
+import { useBrand } from '@/context/brand';
 import safeStorage from '@/utils/safeStorage.util';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -116,7 +116,7 @@ const settingsPages = pages.settings.subPages!;
 
 const isNavigable = (to: string) => !to.includes('/:');
 
-const getFlattenedPageItems = (workspaceId: string): TSearchItem[] => {
+const getFlattenedPageItems = (workspaceId: string, assistantName: string): TSearchItem[] => {
 	const flattenPages = [
 		pages.workspace as TPage,
 		...getFlattenPages(pages.workspace.subPages as TPages, pages.workspace.id),
@@ -126,16 +126,16 @@ const getFlattenedPageItems = (workspaceId: string): TSearchItem[] => {
 		...getFlattenPages(pages.welcome.subPages as TPages, pages.welcome.id),
 	]
 		.map((page) => ({ ...page, to: buildPath(page.to, { workspaceId }) }))
-		.filter((page) => isNavigable(page.to));
+		.filter((page) => isNavigable(page.to))
+		.map((page) =>
+			page.id === workspacePages.assistant.id ? { ...page, text: assistantName } : page,
+		);
 
-	// Page text is a `menu` translation key (e.g. the assistant's entry resolves
-	// to its brand name); plain labels have no entry and come back unchanged.
-	const label = (text: string) => i18next.t(text, { ns: 'menu' });
-	const textById = new Map(flattenPages.map((p) => [p.id, label(p.text)]));
+	const textById = new Map(flattenPages.map((p) => [p.id, p.text]));
 
 	return flattenPages.map((item) => ({
 		id: `page-${item.id}`,
-		label: label(item.text),
+		label: item.text,
 		description: item.parentId ? textById.get(item.parentId) : undefined,
 		category: 'Pages' as TSearchCategory,
 		icon: item.icon ? (
@@ -144,7 +144,7 @@ const getFlattenedPageItems = (workspaceId: string): TSearchItem[] => {
 			<Layout size={16} className='text-zinc-400' />
 		),
 		to: item.to,
-		keywords: [item.to, label(item.text)],
+		keywords: [item.to, item.text],
 	}));
 };
 
@@ -345,9 +345,13 @@ const CATEGORY_ICONS: Record<TSearchCategory, React.ReactNode> = {
 };
 
 // ─── Build all searchable items ───────────────────────────────────────────────
-const buildSearchItems = (workspaceId: string, live: TLiveRecords): TSearchItem[] => [
+const buildSearchItems = (
+	workspaceId: string,
+	assistantName: string,
+	live: TLiveRecords,
+): TSearchItem[] => [
 	...getQuickActions(workspaceId),
-	...getFlattenedPageItems(workspaceId),
+	...getFlattenedPageItems(workspaceId, assistantName),
 	...workflowItems(workspaceId, live.workflows),
 	...agentItems(workspaceId, live.agents),
 	...templateItems(workspaceId, live.templates),
@@ -370,6 +374,7 @@ const GlobalSearch = () => {
 	const { isOpen, close } = useGlobalSearchStore();
 	const navigate = useNavigate();
 	const { workspaceId } = useResolvePath();
+	const brand = useBrand();
 
 	// Page results are URL templates until the workspace id is substituted, so
 	// the index is rebuilt when the active workspace changes.
@@ -385,13 +390,13 @@ const GlobalSearch = () => {
 
 	const allSearchItems = useMemo(
 		() =>
-			buildSearchItems(workspaceId, {
+			buildSearchItems(workspaceId, brand.name, {
 				workflows,
 				agents,
 				templates,
 				artifacts: artifactPage?.artifacts,
 			}),
-		[workspaceId, workflows, agents, templates, artifactPage],
+		[workspaceId, brand.name, workflows, agents, templates, artifactPage],
 	);
 	const fuse = useMemo(() => new Fuse(allSearchItems, FUSE_OPTIONS), [allSearchItems]);
 	const [query, setQuery] = useState('');

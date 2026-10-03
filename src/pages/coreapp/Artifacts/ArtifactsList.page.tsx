@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link, useOutletContext, useParams } from 'react-router';
-import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, FileDown, Download, Trash2, History, Eye, MoreHorizontal, Share2, Lock } from 'lucide-react';
 import { OutletContextType } from './_layouts/Artifacts.layout';
@@ -224,7 +223,6 @@ const ArtifactCard = ({
 	onDelete: () => void;
 }) => {
 	const [menuOpen, setMenuOpen] = useState(false);
-	const { t } = useTranslation();
 	const brand = useBrand();
 	const { resolvePath } = useResolvePath();
 	const IconComponent = getArtifactIcon(artifact.mime_type);
@@ -260,7 +258,7 @@ const ArtifactCard = ({
 							<Link
 								to={`${resolvePath(pages.workspace.subPages!.assistant.to)}?session=${artifact.assistant_session_id}`}
 								className='block truncate text-[9px] font-extrabold tracking-wider text-slate-400 uppercase hover:text-primary-600 hover:underline dark:text-zinc-500'>
-								{t('assistant.fromChat', { assistantName: brand.name })}
+								From a {brand.name} chat
 							</Link>
 						) : (
 							<span className='block truncate text-[9px] font-extrabold tracking-wider text-slate-400 uppercase dark:text-zinc-500'>

@@ -1,5 +1,5 @@
-import { useTranslation } from 'react-i18next';
 import { Check, Send, X } from 'lucide-react';
+import { useBrand } from '@/context/brand';
 import {
 	useSendSituation,
 	useSituations,
@@ -18,7 +18,7 @@ interface ISituationsTabProps {
  * assistant as a new conversation; steps can be ticked off by hand.
  */
 const SituationsTabPartial = ({ workspaceId, onOpenSession }: ISituationsTabProps) => {
-	const { t } = useTranslation();
+	const brand = useBrand();
 	const { data: situations = [], isLoading } = useSituations(workspaceId);
 	const send = useSendSituation(workspaceId);
 	const update = useUpdateSituation(workspaceId);
@@ -28,7 +28,9 @@ const SituationsTabPartial = ({ workspaceId, onOpenSession }: ISituationsTabProp
 
 	if (situations.length === 0) {
 		return (
-			<p className='py-6 text-center text-sm text-zinc-500'>{t('assistant.noSituations')}</p>
+			<p className='py-6 text-center text-sm text-zinc-500'>
+				Nothing needs you right now. Situations from your Daily report show up here.
+			</p>
 		);
 	}
 
@@ -68,8 +70,8 @@ const SituationsTabPartial = ({ workspaceId, onOpenSession }: ISituationsTabProp
 						<button
 							type='button'
 							onClick={() => update.mutate({ id: situation.id, status: 'dismissed' })}
-							aria-label={t('assistant.dismiss')}
-							title={t('assistant.dismiss')}
+							aria-label='Dismiss'
+							title='Dismiss'
 							className='shrink-0 rounded p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'>
 							<X className='h-4 w-4' />
 						</button>
@@ -116,13 +118,13 @@ const SituationsTabPartial = ({ workspaceId, onOpenSession }: ISituationsTabProp
 							onClick={() => handleSend(situation)}
 							className='bg-assistant inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50'>
 							<Send className='h-3.5 w-3.5' />
-							{t('assistant.sendToAssistant')}
+							Send to {brand.name}
 						</button>
 						<button
 							type='button'
 							onClick={() => update.mutate({ id: situation.id, status: 'done' })}
 							className='rounded-lg border border-zinc-200 px-3 py-1.5 text-sm text-zinc-700 dark:border-white/10 dark:text-zinc-200'>
-							{t('assistant.markDone')}
+							Mark done
 						</button>
 					</div>
 				</li>
