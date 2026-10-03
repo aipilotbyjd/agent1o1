@@ -117,14 +117,12 @@ const ConnectRepositoryDialog = ({ ws, isOpen, onClose }: IConnectRepositoryDial
 	};
 
 	const handleImport = () => {
-		if (!request || !preview?.skills.length || createMutation.isPending) return;
+		if (!request || !preview || !preview.skills.length || createMutation.isPending) return;
 		createMutation.mutate(
 			{ ...request, is_shared: isShared },
 			{
 				onSuccess: () => {
-					notify.success(
-						`Importing ${preview.skills.length} skill${preview.skills.length === 1 ? '' : 's'} from ${preview.repo}…`,
-					);
+					notify.success(`Connected ${preview.repo}. Syncing skills…`);
 					onClose();
 				},
 			},
@@ -143,7 +141,8 @@ const ConnectRepositoryDialog = ({ ws, isOpen, onClose }: IConnectRepositoryDial
 							Import skills from GitHub
 						</span>
 						<span className='mt-1 text-xs leading-normal font-semibold text-zinc-400 dark:text-zinc-500'>
-							They stay in sync when the repository changes.
+							Repository updates are imported automatically. Make an editable copy to
+							customize a skill.
 						</span>
 					</div>
 				</div>
@@ -151,25 +150,29 @@ const ConnectRepositoryDialog = ({ ws, isOpen, onClose }: IConnectRepositoryDial
 			<ModalBody>
 				<div className='pt-2 pb-1'>
 					{preview ? (
-						<PreviewStep
-							preview={preview}
-							isShared={isShared}
-							onToggleShared={setIsShared}
-							showAdvanced={showAdvanced}
-							onToggleAdvanced={() => setShowAdvanced((open) => !open)}
-							branch={branch}
-							path={path}
-							onBranchChange={setBranch}
-							onPathChange={setPath}
-							isRescanning={previewMutation.isPending}
-							rescanError={
-								previewMutation.isError ? errorText(previewMutation.error) : null
-							}
-							onRescan={() => findSkills(preview.repo, { branch, path })}
-							onBack={backToPicking}
-							isImporting={createMutation.isPending}
-							onImport={handleImport}
-						/>
+						<>
+							<PreviewStep
+								preview={preview}
+								isShared={isShared}
+								onToggleShared={setIsShared}
+								showAdvanced={showAdvanced}
+								onToggleAdvanced={() => setShowAdvanced((open) => !open)}
+								branch={branch}
+								path={path}
+								onBranchChange={setBranch}
+								onPathChange={setPath}
+								isRescanning={previewMutation.isPending}
+								rescanError={
+									previewMutation.isError
+										? errorText(previewMutation.error)
+										: null
+								}
+								onRescan={() => findSkills(preview.repo, { branch, path })}
+								onBack={backToPicking}
+								isImporting={createMutation.isPending}
+								onImport={handleImport}
+							/>
+						</>
 					) : (
 						<div className='space-y-3'>
 							<form
@@ -459,7 +462,7 @@ const PreviewStep = ({
 			<button
 				type='button'
 				onClick={onImport}
-				disabled={count === 0 || isImporting}
+				disabled={count === 0 || isImporting || isRescanning}
 				className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 flex h-10 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl text-xs font-black shadow-md transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'>
 				{isImporting && <Loader2 size={13} className='animate-spin' />}
 				{count > 0 ? `Import ${count} skill${count === 1 ? '' : 's'}` : 'Nothing to import'}

@@ -20,10 +20,12 @@ export type TAgentSkill = {
 	instructions: string;
 	is_shared: boolean;
 	version: number;
-	/** Set when the skill is synced from GitHub — then it's read-only here. */
+	/** Set when the skill is synced from GitHub — read-only unless two-way sync is enabled. */
 	skill_source_id: string | null;
+	source_two_way: boolean;
 	source_path: string | null;
 	source_url: string | null;
+	origin_url: string | null;
 	created_at: string;
 	updated_at: string;
 };
@@ -119,9 +121,67 @@ export type TUpdateSkillScriptDto = Partial<TCreateSkillScriptDto>;
 // Skill sources — GitHub repositories skills are synced from
 // ============================================================
 
-export type TSkillSourceStatus = 'pending' | 'syncing' | 'ready' | 'failed';
+export type TSkillSourceStatus =
+	| 'pending'
+	| 'syncing'
+	| 'ready'
+	| 'failed'
+	| 'conflict'
+	| 'forking'
+	| 'cannot_publish';
 
+export type TSkillSourceConflict = {
+	path: string;
+	base: Record<string, string> | null;
+	local: Record<string, string> | null;
+	remote: Record<string, string> | null;
+	commit_sha: string;
+	resolution?: 'local' | 'remote' | 'merged';
+	merged?: Record<string, string>;
+};
+export type TUpdateSkillSourceDto = {
+	two_way: boolean;
+	branch?: string;
+	credential_id?: string | null;
+};
+export type TExportSkillDto = { skill_id: string; path: string };
+export type TResolveSkillSourceDto = Pick<TSkillSourceConflict, 'path' | 'commit_sha'> & {
+	resolution: 'local' | 'remote' | 'merged';
+	files?: Record<string, string>;
+};
+
+export type TRepositoryAccess = {
+	repo: string;
+	branch: string;
+	private: boolean;
+	can_push: boolean;
+	reason: string | null;
+	parent_repo: string | null;
+};
+export type TPublishSkillDto = {
+	repo: string;
+	branch: string;
+	credential_id: string;
+	path: string;
+	keep_synced: boolean;
+};
+export type TSkillUpstream = {
+	repo: string;
+	fork_sha: string;
+	upstream_sha: string;
+	commits_ahead: number;
+	files: { path: string; status: string; patch: string | null }[];
+	files_truncated: boolean;
+};
 export type TSkillSource = {
+	pending_changes: string[];
+	publish_once: boolean;
+	repository_private: boolean | null;
+	upstream_repo: string | null;
+	upstream_branch: string | null;
+	fork_request: { repo: string } | null;
+	two_way: boolean;
+	conflicts: TSkillSourceConflict[];
 	id: string;
 	repo: string;
 	branch: string | null;
@@ -139,6 +199,7 @@ export type TSkillSource = {
 };
 
 export type TCreateSkillSourceDto = {
+	two_way?: boolean;
 	/** `owner/name`, or any GitHub link to it — a folder link also sets branch and path. */
 	repo: string;
 	branch?: string | null;

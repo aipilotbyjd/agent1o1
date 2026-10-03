@@ -147,8 +147,9 @@ const SkillEditorDrawer = ({
 	if (!isOpen) return null;
 
 	const isEdit = !!activeSkillId;
-	// Synced from GitHub: only its look and visibility can change here.
-	const isSynced = isEdit && !!skillDetail?.skill_source_id;
+	// One-way imports stay read-only; two-way skills can be edited.
+	const isLinked = isEdit && !!skillDetail?.skill_source_id;
+	const isSynced = isLinked && !skillDetail?.source_two_way;
 	const isSaving = createMutation.isPending || updateMutation.isPending;
 
 	// Fills the form from a generated draft; nothing is saved until Create.
@@ -309,19 +310,28 @@ const SkillEditorDrawer = ({
 				</div>
 
 				<div className='flex-1 space-y-5 px-6 py-5'>
-					{isSynced && (
+					{isLinked && (
 						<div className='flex items-start gap-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 p-3.5 dark:border-zinc-800 dark:bg-zinc-900/40'>
 							<FolderGit2 size={15} className='text-primary-500 mt-0.5 shrink-0' />
 							<div className='min-w-0 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400'>
-								<p>
-									Its name, description, instructions, references and scripts come
-									from{' '}
-									<code className='font-mono'>
-										{skillDetail?.source_path || 'the repository root'}
-									</code>{' '}
-									and update on every sync. You can still change its category,
-									look and visibility.
-								</p>
+								{!isSynced ? (
+									<p>
+										Two-way sync is enabled. Saved instructions, references and
+										scripts will be pushed to GitHub on the next sync. Conflicts
+										pause syncing for review.
+									</p>
+								) : (
+									<p>
+										Its name, description, instructions, references and scripts
+										come from{' '}
+										<code className='font-mono'>
+											{skillDetail?.source_path || 'the repository root'}
+										</code>{' '}
+										and update on every sync. You can still change its category,
+										look and visibility. Use “Make editable copy” from the skill
+										menu to customize its content.
+									</p>
+								)}
 								{skillDetail?.source_url && (
 									<a
 										href={skillDetail.source_url}
@@ -335,6 +345,18 @@ const SkillEditorDrawer = ({
 						</div>
 					)}
 
+					{!isLinked && skillDetail?.origin_url && (
+						<p className='text-xs text-zinc-500 dark:text-zinc-400'>
+							Independent skill.{' '}
+							<a
+								href={skillDetail.origin_url}
+								target='_blank'
+								rel='noreferrer'
+								className='text-primary-600 dark:text-primary-400 font-semibold'>
+								View source on GitHub
+							</a>
+						</p>
+					)}
 					{!isEdit && (
 						<div className='border-primary-500/20 bg-primary-400/5 space-y-2.5 rounded-2xl border p-4'>
 							<div className='flex items-center gap-1.5'>

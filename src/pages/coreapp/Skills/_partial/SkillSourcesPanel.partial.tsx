@@ -8,6 +8,7 @@ import {
 	Loader2,
 	RefreshCw,
 	Unplug,
+	Settings2,
 } from 'lucide-react';
 import Modal, { ModalHeader, ModalBody } from '@/components/ui/Modal';
 import { notify } from '@/api/core';
@@ -19,6 +20,8 @@ import {
 	useSyncSkillSource,
 } from '@/api/modules/agent-skills';
 import type { TSkillSource } from '@/types/agent-skill.type';
+import { SkillSyncSettingsDialog, SkillConflictsDialog } from './SkillSyncDialogs.partial';
+import { ForkSkillSourceDialog, SkillUpstreamDialog } from './SkillPublishingDialogs.partial';
 import relativeTime from '@/utils/relativeTime.util';
 
 interface ISkillSourcesPanelProps {
@@ -29,18 +32,34 @@ interface ISkillSourcesPanelProps {
 const SkillSourcesPanel = ({ ws }: ISkillSourcesPanelProps) => {
 	const { data: sources } = useSkillSources(ws);
 	const syncMutation = useSyncSkillSource(ws);
+	const [forkId, setForkId] = useState<string | null>(null);
+	const [upstreamId, setUpstreamId] = useState<string | null>(null);
+	const forkSource = sources?.find((s) => s.id === forkId);
+	const upstreamSource = sources?.find((s) => s.id === upstreamId);
+	const [settingsId, setSettingsId] = useState<string | null>(null);
+	const [conflictsId, setConflictsId] = useState<string | null>(null);
+	const settingsSource = sources?.find((s) => s.id === settingsId);
+	const conflictSource = sources?.find((s) => s.id === conflictsId);
 	const [disconnecting, setDisconnecting] = useState<TSkillSource | null>(null);
 	const qc = useQueryClient();
 
-	// The skills list only changes when a sync finishes, so refresh it then.
-	const syncingCount = (sources ?? []).filter(isSkillSourceSyncing).length;
-	const previousSyncingCount = useRef(syncingCount);
+	// Scheduled syncs may finish between polls; compare their completed state too.
+	const sourceRevision = JSON.stringify(
+		(sources ?? []).map((source) => [
+			source.id,
+			source.status,
+			source.last_commit_sha,
+			source.last_synced_at,
+			source.two_way,
+		]),
+	);
+	const previousRevision = useRef(sourceRevision);
 	useEffect(() => {
-		if (syncingCount < previousSyncingCount.current) {
-			qc.invalidateQueries({ queryKey: agentSkillKeys.lists(ws) });
+		if (sourceRevision !== previousRevision.current) {
+			qc.invalidateQueries({ queryKey: agentSkillKeys.all(ws) });
 		}
-		previousSyncingCount.current = syncingCount;
-	}, [syncingCount, qc, ws]);
+		previousRevision.current = sourceRevision;
+	}, [sourceRevision, qc, ws]);
 
 	if (!sources?.length) return null;
 
@@ -49,7 +68,7 @@ const SkillSourcesPanel = ({ ws }: ISkillSourcesPanelProps) => {
 			<div className='mb-3 flex items-center gap-1.5'>
 				<FolderGit2 size={14} className='text-primary-500' />
 				<h2 className='text-xs font-black text-zinc-700 dark:text-zinc-300'>
-					Synced from GitHub
+					GitHub repositories
 				</h2>
 			</div>
 			<div className='space-y-2'>
@@ -66,10 +85,46 @@ const SkillSourcesPanel = ({ ws }: ISkillSourcesPanelProps) => {
 							})
 						}
 						onDisconnect={() => setDisconnecting(source)}
+						onSettings={() => setSettingsId(source.id)}
+						onConflicts={() => setConflictsId(source.id)}
+						onFork={() => setForkId(source.id)}
+						onUpstream={() => setUpstreamId(source.id)}
 					/>
 				))}
 			</div>
 
+			{settingsSource && (
+				<SkillSyncSettingsDialog
+					key={settingsSource.id}
+					ws={ws}
+					source={settingsSource}
+					onClose={() => setSettingsId(null)}
+				/>
+			)}
+			{conflictSource && (
+				<SkillConflictsDialog
+					key={conflictSource.id}
+					ws={ws}
+					source={conflictSource}
+					onClose={() => setConflictsId(null)}
+				/>
+			)}
+			{forkSource && (
+				<ForkSkillSourceDialog
+					key={forkSource.id}
+					ws={ws}
+					source={forkSource}
+					onClose={() => setForkId(null)}
+				/>
+			)}
+			{upstreamSource && (
+				<SkillUpstreamDialog
+					key={upstreamSource.id}
+					ws={ws}
+					source={upstreamSource}
+					onClose={() => setUpstreamId(null)}
+				/>
+			)}
 			<DisconnectDialog
 				ws={ws}
 				source={disconnecting}
@@ -80,6 +135,12 @@ const SkillSourcesPanel = ({ ws }: ISkillSourcesPanelProps) => {
 };
 
 const STATUS_STYLES: Record<TSkillSource['status'], string> = {
+	forking:
+		'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-950/30 dark:text-amber-400',
+	cannot_publish:
+		'border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-500/20 dark:bg-rose-950/30 dark:text-rose-400',
+	conflict:
+		'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-950/30 dark:text-amber-400',
 	pending:
 		'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-950/30 dark:text-amber-400',
 	syncing:
@@ -89,6 +150,9 @@ const STATUS_STYLES: Record<TSkillSource['status'], string> = {
 };
 
 const STATUS_LABELS: Record<TSkillSource['status'], string> = {
+	forking: 'Preparing fork',
+	cannot_publish: 'Cannot publish',
+	conflict: 'Needs review',
 	pending: 'Queued',
 	syncing: 'Syncing',
 	ready: 'Synced',
@@ -100,11 +164,19 @@ const SourceRow = ({
 	isSyncRequested,
 	onSync,
 	onDisconnect,
+	onSettings,
+	onConflicts,
+	onFork,
+	onUpstream,
 }: {
 	source: TSkillSource;
 	isSyncRequested: boolean;
 	onSync: () => void;
 	onDisconnect: () => void;
+	onSettings: () => void;
+	onConflicts: () => void;
+	onFork: () => void;
+	onUpstream: () => void;
 }) => {
 	const isSyncing = isSkillSourceSyncing(source) || isSyncRequested;
 	const syncedAgo = relativeTime(source.last_synced_at);
@@ -135,6 +207,7 @@ const SourceRow = ({
 							<span className='font-mono'>{source.last_commit_sha.slice(0, 7)}</span>
 						)}
 						<span>{source.account ?? 'public access'}</span>
+						<span>{source.two_way ? 'Two-way sync' : 'GitHub → app'}</span>
 					</p>
 				</div>
 				<div className='flex shrink-0 items-center gap-2'>
@@ -143,8 +216,19 @@ const SourceRow = ({
 						{isSkillSourceSyncing(source) && (
 							<Loader2 size={10} className='animate-spin' />
 						)}
-						{STATUS_LABELS[source.status]}
+						{source.status === 'ready' && source.pending_changes?.length
+							? 'Changes waiting'
+							: STATUS_LABELS[source.status]}
 					</span>
+					<button
+						type='button'
+						onClick={onSettings}
+						disabled={isSyncing}
+						aria-label={`Sync settings for ${source.repo}`}
+						title='Sync settings'
+						className='rounded-lg border border-zinc-200 p-1.5 text-zinc-500 disabled:opacity-50 dark:border-zinc-800'>
+						<Settings2 size={12} />
+					</button>
 					<button
 						type='button'
 						onClick={onSync}
@@ -157,6 +241,7 @@ const SourceRow = ({
 					<button
 						type='button'
 						onClick={onDisconnect}
+						disabled={isSyncing}
 						title='Disconnect'
 						aria-label={`Disconnect ${source.repo}`}
 						className='flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:bg-white hover:text-rose-500 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-900'>
@@ -164,11 +249,56 @@ const SourceRow = ({
 					</button>
 				</div>
 			</div>
-			{source.status === 'failed' && source.last_error && (
-				<p className='mt-2 flex items-start gap-1.5 text-[11px] font-semibold text-rose-500'>
-					<AlertCircle size={12} className='mt-px shrink-0' />
-					{source.last_error}
+			{(source.status === 'failed' ||
+				source.status === 'conflict' ||
+				source.status === 'cannot_publish') &&
+				source.last_error && (
+					<p className='mt-2 flex items-start gap-1.5 text-[11px] font-semibold text-rose-500'>
+						<AlertCircle size={12} className='mt-px shrink-0' />
+						{source.last_error}
+					</p>
+				)}
+			{!!source.pending_changes?.length && (
+				<p className='mt-2 text-xs text-zinc-500 dark:text-zinc-400'>
+					{source.pending_changes.length} local skill change
+					{source.pending_changes.length === 1 ? '' : 's'} waiting to publish. Your edits
+					are saved.
 				</p>
+			)}
+			{source.publish_once && (
+				<p className='mt-2 text-xs text-zinc-500 dark:text-zinc-400'>
+					Publishing once. This skill becomes independent after publishing succeeds.
+				</p>
+			)}
+			<div className='mt-2 flex flex-wrap gap-2'>
+				{!source.two_way && (
+					<button
+						type='button'
+						onClick={onFork}
+						disabled={isSyncing && !source.fork_request}
+						className='rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-bold disabled:opacity-50 dark:border-zinc-700'>
+						{source.fork_request ? 'Continue fork setup' : 'Fork and customize'}
+					</button>
+				)}
+				{source.upstream_repo && (
+					<button
+						type='button'
+						onClick={onUpstream}
+						disabled={isSyncing}
+						className='rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-bold disabled:opacity-50 dark:border-zinc-700'>
+						Review original updates
+					</button>
+				)}
+			</div>
+			{(source.conflicts?.length ?? 0) > 0 && (
+				<button
+					type='button'
+					onClick={onConflicts}
+					disabled={isSyncing}
+					className='mt-2 rounded-lg border border-amber-300 px-3 py-1.5 text-xs font-bold text-amber-700 disabled:opacity-50 dark:border-amber-600 dark:text-amber-400'>
+					Review {source.conflicts.length} conflict
+					{source.conflicts.length === 1 ? '' : 's'}
+				</button>
 			)}
 		</div>
 	);

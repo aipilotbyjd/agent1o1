@@ -19,7 +19,7 @@ import Breadcrumb from '@/components/layout/Breadcrumb';
 import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
 import { useWorkspaceContext } from '@/context/workspace';
-import { useAgentSkills, useDeleteAgentSkill } from '@/api/modules/agent-skills';
+import { useAgentSkills, useDeleteAgentSkill, useCopyAgentSkill } from '@/api/modules/agent-skills';
 import type { TAgentSkill } from '@/types/agent-skill.type';
 import ListSkeletonPart from '@/parts/ListSkeleton.part';
 import { notify } from '@/api/core';
@@ -31,6 +31,7 @@ import {
 import SkillEditorDrawer from './_partial/SkillEditorDrawer.partial';
 import AddToAgentDialog from './_partial/AddToAgentDialog.partial';
 import ConnectRepositoryDialog from './_partial/ConnectRepositoryDialog.partial';
+import { PublishSkillDialog } from './_partial/SkillPublishingDialogs.partial';
 import SkillSourcesPanel from './_partial/SkillSourcesPanel.partial';
 
 type TVisibilityFilter = 'All' | 'Personal' | 'Shared';
@@ -60,6 +61,14 @@ const SkillsListPage = () => {
 	// `skills.index` takes no query params — the workspace's whole skill list
 	// comes back at once, so filtering happens client-side.
 	const { data: apiSkills, isLoading } = useAgentSkills(currentWorkspaceId);
+	const copySkillMutation = useCopyAgentSkill(currentWorkspaceId);
+	const copySkill = (id: string) =>
+		copySkillMutation.mutate(id, {
+			onSuccess: (skill) => {
+				notify.success('Editable copy created. Original agent attachments are unchanged.');
+				setEditorState({ open: true, skillId: skill.id });
+			},
+		});
 	const deleteSkillMutation = useDeleteAgentSkill(currentWorkspaceId);
 
 	const [editorState, setEditorState] = useState<{ open: boolean; skillId: string | null }>({
@@ -67,6 +76,7 @@ const SkillsListPage = () => {
 		skillId: null,
 	});
 	const [attachingSkill, setAttachingSkill] = useState<TAgentSkill | null>(null);
+	const [exportingSkill, setExportingSkill] = useState<TAgentSkill | null>(null);
 	const [isConnectOpen, setIsConnectOpen] = useState(false);
 
 	const skillList = useMemo(() => {
@@ -95,7 +105,10 @@ const SkillsListPage = () => {
 					<strong className='font-semibold text-zinc-800 dark:text-zinc-200'>
 						&quot;{skill.name}&quot;
 					</strong>
-					? This action cannot be undone.
+					?{' '}
+					{skill.source_two_way
+						? 'This deletion will also be pushed to GitHub on the next sync.'
+						: 'This action cannot be undone.'}
 				</>
 			),
 		});
@@ -109,7 +122,7 @@ const SkillsListPage = () => {
 		<Container className='relative overflow-x-hidden overflow-y-auto bg-[#F8F9FC] bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:20px_20px] !p-0 dark:bg-zinc-950 dark:bg-[radial-gradient(#27272a_1px,transparent_1px)]'>
 			<div className='mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8'>
 				{/* Header panel */}
-				<div className='mb-8 flex items-center justify-between gap-4'>
+				<div className='mb-8 flex flex-wrap items-center justify-between gap-4'>
 					<h1 className='text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white'>
 						Skills
 					</h1>
@@ -212,6 +225,8 @@ const SkillsListPage = () => {
 									onEdit={() => setEditorState({ open: true, skillId: skill.id })}
 									onAttach={() => setAttachingSkill(skill)}
 									onDelete={() => handleDelete(skill)}
+									onExport={() => setExportingSkill(skill)}
+									onCopy={() => copySkill(skill.id)}
 								/>
 							))}
 						</AnimatePresence>
@@ -232,6 +247,14 @@ const SkillsListPage = () => {
 				onClose={() => setIsConnectOpen(false)}
 			/>
 
+			{exportingSkill && (
+				<PublishSkillDialog
+					key={exportingSkill.id}
+					ws={currentWorkspaceId}
+					skill={exportingSkill}
+					onClose={() => setExportingSkill(null)}
+				/>
+			)}
 			<AddToAgentDialog
 				ws={currentWorkspaceId}
 				skill={attachingSkill}
@@ -246,11 +269,15 @@ const SkillCard = ({
 	onEdit,
 	onAttach,
 	onDelete,
+	onExport,
+	onCopy,
 }: {
 	skill: TAgentSkill;
 	onEdit: () => void;
 	onAttach: () => void;
 	onDelete: () => void;
+	onExport: () => void;
+	onCopy: () => void;
 }) => {
 	const [menuOpen, setMenuOpen] = useState(false);
 	const IconComponent = getSkillIconComponent(skill.icon);
@@ -281,17 +308,48 @@ const SkillCard = ({
 						</span>
 					</div>
 				</div>
-				{/* A synced skill is removed from its repository, not here. */}
-				{!isSynced && (
-					<div className='relative shrink-0'>
-						<button
-							onClick={() => setMenuOpen((o) => !o)}
-							title='More options'
-							className='rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:hover:bg-zinc-900 dark:hover:text-zinc-200'>
-							<MoreHorizontal className='h-4 w-4' />
-						</button>
-						{menuOpen && (
-							<div className='absolute top-8 right-0 z-10 w-32 overflow-hidden rounded-xl border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
+				<div className='relative shrink-0'>
+					<button
+						onClick={() => setMenuOpen((o) => !o)}
+						title='More options'
+						className='rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:hover:bg-zinc-900 dark:hover:text-zinc-200'>
+						<MoreHorizontal className='h-4 w-4' />
+					</button>
+					{menuOpen && (
+						<div className='absolute top-8 right-0 z-10 w-44 overflow-hidden rounded-xl border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
+							{!isSynced && (
+								<button
+									type='button'
+									onClick={() => {
+										setMenuOpen(false);
+										onExport();
+									}}
+									className='flex w-full items-center gap-1.5 px-3 py-2 text-left text-[11px] font-bold text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800'>
+									<FolderGit2 size={12} />
+									Publish to GitHub
+								</button>
+							)}
+							{isSynced && (
+								<button
+									type='button'
+									onClick={() => {
+										setMenuOpen(false);
+										onCopy();
+									}}
+									className='flex w-full items-center px-3 py-2 text-left text-[11px] font-bold text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800'>
+									Make editable copy
+								</button>
+							)}
+							{(skill.origin_url || skill.source_url) && (
+								<a
+									href={skill.origin_url || skill.source_url || undefined}
+									target='_blank'
+									rel='noreferrer'
+									className='block px-3 py-2 text-[11px] font-bold text-zinc-700 dark:text-zinc-300'>
+									View original
+								</a>
+							)}
+							{(!isSynced || skill.source_two_way) && (
 								<button
 									onClick={() => {
 										setMenuOpen(false);
@@ -301,10 +359,10 @@ const SkillCard = ({
 									<Trash2 size={12} />
 									Delete
 								</button>
-							</div>
-						)}
-					</div>
-				)}
+							)}
+						</div>
+					)}
+				</div>
 			</div>
 
 			<p className='mb-4 line-clamp-2 text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-zinc-400'>
@@ -326,7 +384,7 @@ const SkillCard = ({
 						title={skill.source_path || 'Repository root'}
 						className='inline-flex items-center gap-1 rounded-full border border-zinc-200/60 bg-zinc-50/50 px-2.5 py-0.5 text-[9px] font-bold text-zinc-500 dark:border-zinc-800/80 dark:bg-zinc-900/40 dark:text-zinc-400'>
 						<FolderGit2 size={11} />
-						GitHub
+						{skill.source_two_way ? 'GitHub ↔ app' : 'GitHub'}
 					</span>
 				)}
 			</div>
@@ -336,7 +394,7 @@ const SkillCard = ({
 					onClick={onEdit}
 					className='flex h-8 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white text-[11px] font-bold text-slate-700 transition-all hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800'>
 					<Settings2 size={12} className='text-slate-500 dark:text-zinc-400' />
-					Edit
+					{isSynced && !skill.source_two_way ? 'View' : 'Edit'}
 				</button>
 				<button
 					onClick={onAttach}
