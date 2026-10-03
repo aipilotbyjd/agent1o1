@@ -344,3 +344,45 @@ export const useSendSituation = (ws: string) =>
 		(id: string) => AssistantBriefingService.send(ws, id),
 		'Failed to send',
 	);
+
+export const useMeetingPrep = (ws: string) =>
+	useQuery({
+		queryKey: assistantKeys.meetingPrep(ws),
+		queryFn: ({ signal }) => AssistantBriefingService.meetingPrep(ws, signal),
+		enabled: !!ws,
+	});
+
+export const useUpdateMeetingPrep = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (payload: TUpdateBriefingConfigDto) =>
+			AssistantBriefingService.updateMeetingPrep(ws, payload),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: assistantKeys.meetingPrep(ws) });
+			qc.invalidateQueries({ queryKey: assistantKeys.meetings(ws) });
+		},
+		meta: { errorMessage: 'Failed to save' },
+	});
+};
+
+export const useMeetings = (ws: string) =>
+	useQuery({
+		queryKey: assistantKeys.meetings(ws),
+		queryFn: ({ signal }) => AssistantBriefingService.meetings(ws, signal),
+		enabled: !!ws,
+		// While a brief is being written, keep checking until it lands.
+		refetchInterval: (query) =>
+			query.state.data?.meetings.some((meeting) => meeting.prep_status === 'preparing')
+				? 3000
+				: false,
+		refetchIntervalInBackground: true,
+	});
+
+export const usePrepareMeeting = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => AssistantBriefingService.prepare(ws, id),
+		onSuccess: () => qc.invalidateQueries({ queryKey: assistantKeys.meetings(ws) }),
+		meta: { errorMessage: 'Failed to start the brief' },
+	});
+};

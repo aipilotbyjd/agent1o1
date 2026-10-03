@@ -15,6 +15,7 @@ export const useAssistantRealtime = (workspaceId: string, assistantId: string | 
 		return subscribeToAssistant(echo as unknown as IEchoLike, workspaceId, assistantId, () => {
 			qc.invalidateQueries({ queryKey: assistantKeys.daily(workspaceId) });
 			qc.invalidateQueries({ queryKey: ['assistant', workspaceId, 'situations'] });
+			qc.invalidateQueries({ queryKey: assistantKeys.meetings(workspaceId) });
 		});
 	}, [echo, qc, workspaceId, assistantId]);
 };

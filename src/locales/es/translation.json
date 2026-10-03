@@ -149,6 +149,28 @@
 		"runNow": "Ejecutar ahora",
 		"noReports": "Aún no hay reportes.",
 		"sourceFailed": "{{name}} falló",
-		"catchUp": "Resumen"
+		"catchUp": "Resumen",
+		"prepOff": "{{assistantPrep}} está desactivado — aún puedes preparar cualquier reunión.",
+		"prepAuto": "Preparando {{scope}} {{minutes}} minutos antes de empezar.",
+		"prepManual": "La preparación automática está desactivada — usa Preparar ahora.",
+		"prepScopes": {
+			"external_only": "reuniones externas",
+			"all": "todas las reuniones"
+		},
+		"prepSettings": "Ajustes de {{assistantPrep}}",
+		"connectCalendar": "Conecta Google Calendar para ver tus próximas reuniones.",
+		"noMeetings": "No hay reuniones con invitados en los próximos 7 días.",
+		"guests_one": "{{count}} invitado",
+		"guests_other": "{{count}} invitados",
+		"external": "Externa",
+		"openInCalendar": "Abrir en el calendario",
+		"preparing": "Preparando…",
+		"prepareAgain": "Preparar de nuevo",
+		"prepareNow": "Preparar ahora",
+		"prepEnabled": "Activar {{assistantPrep}}",
+		"prepAutomatically": "Preparar reuniones automáticamente",
+		"minutesBefore": "Minutos antes de la reunión",
+		"meetingsToPrep": "Reuniones a preparar",
+		"prepInstructions": "¿En qué deben enfocarse los resúmenes? (opcional)"
 	}
 }

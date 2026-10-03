@@ -18,6 +18,9 @@ import type {
 	TAssistantToolDescription,
 	TBriefingRun,
 	TDailyReport,
+	TMeeting,
+	TMeetingPrepReport,
+	TMeetingsList,
 	TSituation,
 	TUpdateBriefingConfigDto,
 	TAssistantToolRuleUpdate,
@@ -207,6 +210,26 @@ export const AssistantBriefingService = {
 		axiosClient
 			.get<TApiResponse<{ run: TBriefingRun }>>(B.run(ws, id), { signal })
 			.then(unwrapKey<TBriefingRun>('run')),
+
+	meetingPrep: (ws: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<TMeetingPrepReport>>(B.meetingPrep(ws), { signal })
+			.then(unwrap<TMeetingPrepReport>),
+
+	updateMeetingPrep: (ws: string, payload: TUpdateBriefingConfigDto) =>
+		axiosClient
+			.put<TApiResponse<TMeetingPrepReport>>(B.meetingPrep(ws), payload)
+			.then(unwrap<TMeetingPrepReport>),
+
+	meetings: (ws: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<TMeetingsList>>(B.meetings(ws), { signal })
+			.then(unwrap<TMeetingsList>),
+
+	prepare: (ws: string, id: string) =>
+		axiosClient
+			.post<TApiResponse<{ meeting: TMeeting }>>(B.prepare(ws, id))
+			.then(unwrapKey<TMeeting>('meeting')),
 
 	situations: (ws: string, status: string, signal?: AbortSignal) =>
 		axiosClient

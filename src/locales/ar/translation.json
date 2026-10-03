@@ -149,6 +149,28 @@
 		"runNow": "شغّل الآن",
 		"noReports": "لا توجد تقارير بعد.",
 		"sourceFailed": "فشل {{name}}",
-		"catchUp": "المستجدات"
+		"catchUp": "المستجدات",
+		"prepOff": "{{assistantPrep}} متوقف — لا يزال بإمكانك تحضير أي اجتماع أدناه.",
+		"prepAuto": "تحضير {{scope}} قبل {{minutes}} دقيقة من بدئها.",
+		"prepManual": "التحضير التلقائي متوقف — استخدم حضّر الآن.",
+		"prepScopes": {
+			"external_only": "الاجتماعات الخارجية",
+			"all": "كل الاجتماعات"
+		},
+		"prepSettings": "إعدادات {{assistantPrep}}",
+		"connectCalendar": "اربط تقويم Google لرؤية اجتماعاتك القادمة.",
+		"noMeetings": "لا توجد اجتماعات مع ضيوف خلال الأيام السبعة القادمة.",
+		"guests_one": "ضيف واحد",
+		"guests_other": "{{count}} ضيوف",
+		"external": "خارجي",
+		"openInCalendar": "افتح في التقويم",
+		"preparing": "جارٍ التحضير…",
+		"prepareAgain": "حضّر مرة أخرى",
+		"prepareNow": "حضّر الآن",
+		"prepEnabled": "فعّل {{assistantPrep}}",
+		"prepAutomatically": "حضّر الاجتماعات تلقائياً",
+		"minutesBefore": "دقائق قبل الاجتماع",
+		"meetingsToPrep": "الاجتماعات المراد تحضيرها",
+		"prepInstructions": "على ماذا تركز الملخصات؟ (اختياري)"
 	}
 }

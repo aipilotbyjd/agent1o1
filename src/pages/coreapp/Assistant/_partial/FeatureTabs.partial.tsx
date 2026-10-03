@@ -2,11 +2,12 @@ import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
 import SituationsTabPartial from './SituationsTab.partial';
 import DailyTabPartial from './DailyTab.partial';
+import MeetingsTabPartial from './MeetingsTab.partial';
 
 export const FEATURE_TABS = ['situations', 'daily', 'inbox', 'prep'] as const;
 export type TFeatureTab = (typeof FEATURE_TABS)[number];
 
-const AVAILABLE: TFeatureTab[] = ['situations', 'daily'];
+const AVAILABLE: TFeatureTab[] = ['situations', 'daily', 'prep'];
 
 interface IFeatureTabsProps {
 	workspaceId: string;
@@ -56,6 +57,7 @@ const FeatureTabsPartial = ({
 				<SituationsTabPartial workspaceId={workspaceId} onOpenSession={onOpenSession} />
 			)}
 			{active === 'daily' && <DailyTabPartial workspaceId={workspaceId} />}
+			{active === 'prep' && <MeetingsTabPartial workspaceId={workspaceId} />}
 		</div>
 	);
 };

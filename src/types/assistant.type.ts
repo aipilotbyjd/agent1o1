@@ -254,7 +254,9 @@ export type TDailyReport = {
 	runs: TBriefingRun[];
 };
 
-export type TUpdateBriefingConfigDto = Partial<Omit<TBriefingConfig, 'paused'>>;
+export type TUpdateBriefingConfigDto = Partial<Omit<TBriefingConfig, 'paused'>> & {
+	settings?: Partial<TMeetingPrepSettings>;
+};
 
 export type TSituationStep = { id: string; body: string; status: 'todo' | 'done' | 'skipped' };
 
@@ -269,3 +271,36 @@ export type TSituation = {
 	steps: TSituationStep[];
 	created_at: string;
 };
+
+export type TMeetingPrepSettings = {
+	auto: boolean;
+	minutes_before: number;
+	scope: 'external_only' | 'all';
+};
+
+export type TMeetingPrepReport = Omit<TDailyReport, 'config'> & {
+	config: TBriefingConfig & { settings: TMeetingPrepSettings };
+};
+
+export type TMeetingBrief = {
+	run_id: string;
+	status: TBriefingRun['status'];
+	summary: string | null;
+	document: string | null;
+	error: string | null;
+	sources: TBriefingSourceResult[];
+};
+
+export type TMeeting = {
+	id: string;
+	title: string;
+	starts_at: string;
+	ends_at: string | null;
+	attendees: { email: string; name: string | null }[];
+	is_external: boolean;
+	html_link: string | null;
+	prep_status: 'none' | 'preparing' | 'prepared' | 'failed';
+	brief: TMeetingBrief | null;
+};
+
+export type TMeetingsList = { calendar_connected: boolean; meetings: TMeeting[] };

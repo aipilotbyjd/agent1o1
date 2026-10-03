@@ -40,6 +40,9 @@ export const AssistantSettingsEndpoints = {
 
 export const AssistantBriefingEndpoints = {
 	daily: (ws: string) => `${base(ws)}/briefings/daily`,
+	meetingPrep: (ws: string) => `${base(ws)}/briefings/meeting_prep`,
+	meetings: (ws: string) => `${base(ws)}/meetings`,
+	prepare: (ws: string, id: string) => `${base(ws)}/meetings/${id}/prepare`,
 	pause: (ws: string) => `${base(ws)}/briefings/daily/pause`,
 	resume: (ws: string) => `${base(ws)}/briefings/daily/resume`,
 	runNow: (ws: string) => `${base(ws)}/briefings/daily/run-now`,

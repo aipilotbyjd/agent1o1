@@ -149,6 +149,28 @@
 		"runNow": "Run now",
 		"noReports": "No reports yet.",
 		"sourceFailed": "{{name}} failed",
-		"catchUp": "Catch-up"
+		"catchUp": "Catch-up",
+		"prepOff": "{{assistantPrep}} is off — you can still prepare any meeting below.",
+		"prepAuto": "Prepping {{scope}} {{minutes}} minutes before they start.",
+		"prepManual": "Automatic prep is off — use Prepare now.",
+		"prepScopes": {
+			"external_only": "external meetings",
+			"all": "all meetings"
+		},
+		"prepSettings": "{{assistantPrep}} settings",
+		"connectCalendar": "Connect Google Calendar to see your upcoming meetings.",
+		"noMeetings": "No meetings with guests in the next 7 days.",
+		"guests_one": "{{count}} guest",
+		"guests_other": "{{count}} guests",
+		"external": "External",
+		"openInCalendar": "Open in calendar",
+		"preparing": "Preparing…",
+		"prepareAgain": "Prepare again",
+		"prepareNow": "Prepare now",
+		"prepEnabled": "Turn on {{assistantPrep}}",
+		"prepAutomatically": "Prep meetings automatically",
+		"minutesBefore": "Minutes before the meeting",
+		"meetingsToPrep": "Meetings to prep",
+		"prepInstructions": "What should briefs focus on? (optional)"
 	}
 }
