@@ -4,6 +4,7 @@ import type { TApiResponse, TPaginationMeta } from '@/api/core';
 import type {
 	TAssistant,
 	TAssistantApp,
+	TAssistantChannels,
 	TAssistantContext,
 	TAssistantFeedback,
 	TAssistantFeedbackRating,
@@ -21,6 +22,7 @@ import type {
 	TAssistantTrigger,
 	TSaveTriggerDto,
 	TInbox,
+	TInboxProvider,
 	TInboxSettings,
 	TSaveInboxLabelDto,
 	TMeeting,
@@ -43,6 +45,7 @@ import {
 	AssistantBriefingEndpoints as B,
 	AssistantInboxEndpoints as N,
 	AssistantTriggerEndpoints as T,
+	AssistantChannelEndpoints as C,
 } from './assistant.endpoints';
 
 export const AssistantService = {
@@ -273,8 +276,10 @@ export const AssistantInboxService = {
 	update: (ws: string, payload: Partial<TInboxSettings>) =>
 		axiosClient.put<TApiResponse<TInbox>>(N.inbox(ws), payload).then(unwrap<TInbox>),
 
-	enable: (ws: string) =>
-		axiosClient.post<TApiResponse<TInbox>>(N.enable(ws)).then(unwrap<TInbox>),
+	enable: (ws: string, provider?: TInboxProvider) =>
+		axiosClient
+			.post<TApiResponse<TInbox>>(N.enable(ws), provider ? { provider } : {})
+			.then(unwrap<TInbox>),
 
 	disable: (ws: string) =>
 		axiosClient.post<TApiResponse<TInbox>>(N.disable(ws)).then(unwrap<TInbox>),
@@ -316,4 +321,24 @@ export const AssistantTriggerService = {
 		axiosClient
 			.post<TApiResponse<{ session_id: string | null; skipped: boolean }>>(T.runNow(ws, id))
 			.then(unwrap<{ session_id: string | null; skipped: boolean }>),
+};
+
+export const AssistantChannelService = {
+	list: (ws: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<TAssistantChannels>>(C.list(ws), { signal })
+			.then(unwrap<TAssistantChannels>),
+
+	smsStart: (ws: string, phone: string) =>
+		axiosClient.post(C.smsStart(ws), { phone }).then(() => undefined),
+
+	smsConfirm: (ws: string, code: string) =>
+		axiosClient.post(C.smsConfirm(ws), { code }).then(() => undefined),
+
+	smsRemove: (ws: string) => axiosClient.delete(C.sms(ws)).then(() => undefined),
+
+	slackInstallUrl: (ws: string) =>
+		axiosClient
+			.post<TApiResponse<{ url: string }>>(C.slackInstall(ws))
+			.then(unwrapKey<string>('url')),
 };

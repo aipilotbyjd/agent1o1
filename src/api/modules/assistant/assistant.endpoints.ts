@@ -68,3 +68,11 @@ export const AssistantTriggerEndpoints = {
 	trigger: (ws: string, id: string) => `${base(ws)}/triggers/${id}`,
 	runNow: (ws: string, id: string) => `${base(ws)}/triggers/${id}/run-now`,
 } as const;
+
+export const AssistantChannelEndpoints = {
+	list: (ws: string) => `${base(ws)}/channels`,
+	slackInstall: (ws: string) => `${base(ws)}/channels/slack/install`,
+	sms: (ws: string) => `${base(ws)}/channels/sms`,
+	smsStart: (ws: string) => `${base(ws)}/channels/sms/verify-start`,
+	smsConfirm: (ws: string) => `${base(ws)}/channels/sms/verify-confirm`,
+} as const;

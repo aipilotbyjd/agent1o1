@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
 	TSaveTriggerDto,
 	TInbox,
+	TInboxProvider,
 	TInboxSettings,
 	TSaveInboxLabelDto,
 	TSituation,
@@ -16,6 +17,7 @@ import type {
 } from '@/types/assistant.type';
 import {
 	AssistantBriefingService,
+	AssistantChannelService,
 	AssistantInboxService,
 	AssistantTriggerService,
 	AssistantMemoryService,
@@ -418,8 +420,10 @@ const useInboxMutation = <TArgs>(
 export const useToggleInbox = (ws: string) =>
 	useInboxMutation(
 		ws,
-		(on: boolean) =>
-			on ? AssistantInboxService.enable(ws) : AssistantInboxService.disable(ws),
+		(on: boolean | TInboxProvider) =>
+			on === false
+				? AssistantInboxService.disable(ws)
+				: AssistantInboxService.enable(ws, on === true ? undefined : on),
 		'Could not change Smart Inbox',
 	);
 
@@ -511,4 +515,53 @@ export const useRunTriggerNow = (ws: string) =>
 		ws,
 		(id: string) => AssistantTriggerService.runNow(ws, id),
 		'Failed to run the trigger',
+	);
+
+export const useAssistantChannels = (ws: string) =>
+	useQuery({
+		queryKey: assistantKeys.channels(ws),
+		queryFn: ({ signal }) => AssistantChannelService.list(ws, signal),
+		enabled: !!ws,
+	});
+
+/** Sends the browser to Slack's "Add to Slack" screen. */
+export const useInstallAssistantSlack = (ws: string) =>
+	useMutation({
+		mutationFn: () => AssistantChannelService.slackInstallUrl(ws),
+		onSuccess: (url) => window.location.assign(url),
+		meta: { errorMessage: 'Failed to start the Slack install' },
+	});
+
+const useChannelMutation = <TArgs>(
+	ws: string,
+	fn: (args: TArgs) => Promise<void>,
+	errorMessage: string,
+) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: fn,
+		onSuccess: () => qc.invalidateQueries({ queryKey: assistantKeys.channels(ws) }),
+		meta: { errorMessage },
+	});
+};
+
+export const useStartSmsVerification = (ws: string) =>
+	useChannelMutation(
+		ws,
+		(phone: string) => AssistantChannelService.smsStart(ws, phone),
+		'Could not send the code',
+	);
+
+export const useConfirmSmsVerification = (ws: string) =>
+	useChannelMutation(
+		ws,
+		(code: string) => AssistantChannelService.smsConfirm(ws, code),
+		'That code did not work',
+	);
+
+export const useRemoveSmsNumber = (ws: string) =>
+	useChannelMutation(
+		ws,
+		() => AssistantChannelService.smsRemove(ws),
+		'Could not remove the number',
 	);

@@ -41,7 +41,7 @@ const InboxTabPartial = ({ workspaceId, onOpenSession }: IInboxTabProps) => {
 				<p className='text-zinc-700 dark:text-zinc-200'>{t('assistant.inboxIntro')}</p>
 				{!data.available.plan ? (
 					<p className='text-zinc-500'>{t('assistant.inboxNeedsPlan')}</p>
-				) : !data.available.gmail_connected ? (
+				) : !data.available.gmail_connected && !data.available.outlook_connected ? (
 					<p className='text-zinc-500'>
 						{t('assistant.inboxConnectGmail')}{' '}
 						<Link
@@ -51,13 +51,26 @@ const InboxTabPartial = ({ workspaceId, onOpenSession }: IInboxTabProps) => {
 						</Link>
 					</p>
 				) : (
-					<button
-						type='button'
-						onClick={() => toggle.mutate(true)}
-						disabled={toggle.isPending}
-						className='bg-assistant rounded-lg px-3 py-1.5 font-semibold text-white disabled:opacity-50'>
-						{t('assistant.enableInbox')}
-					</button>
+					<div className='flex flex-wrap gap-2'>
+						{(['gmail', 'outlook'] as const)
+							.filter((provider) => data.available[`${provider}_connected`])
+							.map((provider) => (
+								<button
+									key={provider}
+									type='button'
+									onClick={() => toggle.mutate(provider)}
+									disabled={toggle.isPending}
+									className='bg-assistant rounded-lg px-3 py-1.5 font-semibold text-white disabled:opacity-50'>
+									{data.available.gmail_connected &&
+									data.available.outlook_connected
+										? t('assistant.enableInboxWith', {
+												provider:
+													provider === 'gmail' ? 'Gmail' : 'Outlook',
+											})
+										: t('assistant.enableInbox')}
+								</button>
+							))}
+					</div>
 				)}
 			</div>
 		);

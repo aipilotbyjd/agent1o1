@@ -16,4 +16,5 @@ export const assistantKeys = {
 	situations: (ws: string, status: string) => ['assistant', ws, 'situations', status] as const,
 	apps: (ws: string) => ['assistant', ws, 'apps'] as const,
 	toolRules: (ws: string) => ['assistant', ws, 'tool-rules'] as const,
+	channels: (ws: string) => ['assistant', ws, 'channels'] as const,
 };

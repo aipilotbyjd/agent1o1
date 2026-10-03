@@ -57,6 +57,30 @@ export type TAssistantToolCallSummary = {
 	name: string | null;
 };
 
+/** A file the assistant handed over (`export_file`), stored as an artifact. */
+export type TAssistantMessageFile = {
+	artifact_id: string;
+	filename: string;
+	version: number;
+	mime_type: string;
+	size: number;
+};
+
+/** Code the assistant ran on its cloud computer (`run_code`). */
+export type TAssistantCodeRun = {
+	id: string | null;
+	language: string;
+	code: string;
+	output: {
+		stdout?: string;
+		stderr?: string;
+		results?: string[];
+		error?: string;
+		note?: string;
+		seconds?: number;
+	};
+};
+
 export type TAssistantMessage = {
 	id: string;
 	assistant_session_id: string;
@@ -65,6 +89,8 @@ export type TAssistantMessage = {
 	tool_calls: TAssistantToolCallSummary[];
 	tool_call_id: string | null;
 	attachments: unknown[];
+	files?: TAssistantMessageFile[];
+	code_runs?: TAssistantCodeRun[];
 	compacted: boolean;
 	feedback?: TAssistantFeedback | null;
 	created_at: string;
@@ -337,7 +363,7 @@ export type TInboxSettings = {
 };
 
 export type TInbox = {
-	available: { plan: boolean; gmail_connected: boolean };
+	available: { plan: boolean; gmail_connected: boolean; outlook_connected: boolean };
 	config: TInboxSettings & {
 		enabled: boolean;
 		provider: string;
@@ -378,3 +404,17 @@ export type TSaveTriggerDto = {
 	run_at?: string | null;
 	status?: 'active' | 'paused';
 };
+
+/** Where else the owner can reach the assistant. */
+export type TAssistantChannels = {
+	email: { address: string; enabled: boolean };
+	slack: {
+		available: boolean;
+		installed: boolean;
+		team_name: string | null;
+		team_id: string | null;
+	};
+	sms: { available: boolean; plan: boolean; number: string | null; phone: string | null };
+};
+
+export type TInboxProvider = 'gmail' | 'outlook';

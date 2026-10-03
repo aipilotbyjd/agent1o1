@@ -35,6 +35,8 @@ import ApprovalCardPartial from './_partial/ApprovalCard.partial';
 import MemoriesPanelPartial from './_partial/MemoriesPanel.partial';
 import AppsPanelPartial from './_partial/AppsPanel.partial';
 import TriggersPanelPartial from './_partial/TriggersPanel.partial';
+import ChannelsPanelPartial from './_partial/ChannelsPanel.partial';
+import KnowledgePanelPartial from './_partial/KnowledgePanel.partial';
 import PermissionsModalPartial from './_partial/PermissionsModal.partial';
 import PersonalizationModalPartial from './_partial/PersonalizationModal.partial';
 import { useAssistantConversation } from './_hooks/useAssistantConversation.hook';
@@ -176,6 +178,8 @@ const AssistantHomePage = () => {
 				workspaceId={currentWorkspaceId}
 				onOpenSession={(sessionId) => selectSession(sessionId)}
 			/>
+			<KnowledgePanelPartial />
+			<ChannelsPanelPartial workspaceId={currentWorkspaceId} />
 		</>
 	);
 
@@ -247,6 +251,7 @@ const AssistantHomePage = () => {
 								sessionId={activeSessionId}
 							/>
 							<MessageListPartial
+								workspaceId={currentWorkspaceId}
 								messages={conversation.messages}
 								isWorking={conversation.isWorking}
 								draft={conversation.draft}
