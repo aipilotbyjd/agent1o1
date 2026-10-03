@@ -16,6 +16,10 @@ import type {
 	TAssistantSession,
 	TAssistantSessionDetail,
 	TAssistantToolDescription,
+	TBriefingRun,
+	TDailyReport,
+	TSituation,
+	TUpdateBriefingConfigDto,
 	TAssistantToolRuleUpdate,
 	TAssistantTurn,
 	TSendAssistantMessageResult,
@@ -28,6 +32,7 @@ import {
 	AssistantMemoryEndpoints as M,
 	AssistantSessionEndpoints as S,
 	AssistantSettingsEndpoints as X,
+	AssistantBriefingEndpoints as B,
 } from './assistant.endpoints';
 
 export const AssistantService = {
@@ -174,4 +179,59 @@ export const AssistantSettingsService = {
 		axiosClient
 			.put<TApiResponse<{ tools: TAssistantToolDescription[] }>>(X.toolRules(ws), { rules })
 			.then(unwrapKey<TAssistantToolDescription[]>('tools')),
+};
+
+export const AssistantBriefingService = {
+	daily: (ws: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<TDailyReport>>(B.daily(ws), { signal })
+			.then(unwrap<TDailyReport>),
+
+	updateDaily: (ws: string, payload: TUpdateBriefingConfigDto) =>
+		axiosClient
+			.put<TApiResponse<TDailyReport>>(B.daily(ws), payload)
+			.then(unwrap<TDailyReport>),
+
+	pause: (ws: string) =>
+		axiosClient.post<TApiResponse<TDailyReport>>(B.pause(ws)).then(unwrap<TDailyReport>),
+
+	resume: (ws: string) =>
+		axiosClient.post<TApiResponse<TDailyReport>>(B.resume(ws)).then(unwrap<TDailyReport>),
+
+	runNow: (ws: string) =>
+		axiosClient
+			.post<TApiResponse<{ run: TBriefingRun | null }>>(B.runNow(ws))
+			.then(unwrapKey<TBriefingRun | null>('run')),
+
+	run: (ws: string, id: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<{ run: TBriefingRun }>>(B.run(ws, id), { signal })
+			.then(unwrapKey<TBriefingRun>('run')),
+
+	situations: (ws: string, status: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<
+				TApiResponse<{ situations: TSituation[] }>
+			>(B.situations(ws), { params: { status }, signal })
+			.then(unwrapKey<TSituation[]>('situations')),
+
+	updateSituation: (ws: string, id: string, status: TSituation['status']) =>
+		axiosClient
+			.patch<TApiResponse<{ situation: TSituation }>>(B.situation(ws, id), { status })
+			.then(unwrapKey<TSituation>('situation')),
+
+	updateStep: (
+		ws: string,
+		id: string,
+		stepId: string,
+		status: TSituation['steps'][number]['status'],
+	) =>
+		axiosClient
+			.patch<TApiResponse<{ situation: TSituation }>>(B.step(ws, id, stepId), { status })
+			.then(unwrapKey<TSituation>('situation')),
+
+	send: (ws: string, id: string) =>
+		axiosClient
+			.post<TApiResponse<{ situation: TSituation }>>(B.send(ws, id))
+			.then(unwrapKey<TSituation>('situation')),
 };

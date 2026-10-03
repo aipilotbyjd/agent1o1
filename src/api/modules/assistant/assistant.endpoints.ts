@@ -37,3 +37,16 @@ export const AssistantSettingsEndpoints = {
 	restoreStyle: (ws: string, kind: string, revisionId: string) =>
 		`${base(ws)}/styles/${kind}/revisions/${revisionId}/restore`,
 } as const;
+
+export const AssistantBriefingEndpoints = {
+	daily: (ws: string) => `${base(ws)}/briefings/daily`,
+	pause: (ws: string) => `${base(ws)}/briefings/daily/pause`,
+	resume: (ws: string) => `${base(ws)}/briefings/daily/resume`,
+	runNow: (ws: string) => `${base(ws)}/briefings/daily/run-now`,
+	run: (ws: string, id: string) => `${base(ws)}/briefing-runs/${id}`,
+	situations: (ws: string) => `${base(ws)}/situations`,
+	situation: (ws: string, id: string) => `${base(ws)}/situations/${id}`,
+	step: (ws: string, id: string, stepId: string) =>
+		`${base(ws)}/situations/${id}/steps/${stepId}`,
+	send: (ws: string, id: string) => `${base(ws)}/situations/${id}/send`,
+} as const;

@@ -114,6 +114,41 @@
 			"down": "Bad reply"
 		},
 		"feedbackPrompt": "What should change? (optional)",
-		"feedbackLearned": "Learned from your feedback"
+		"feedbackLearned": "Learned from your feedback",
+		"settingsAndApps": "Ajustes y apps",
+		"noSituations": "Nada requiere tu atención ahora. Las situaciones de tu reporte diario aparecen aquí.",
+		"dismiss": "Descartar",
+		"sendToAssistant": "Enviar a {{assistantName}}",
+		"markDone": "Marcar como hecho",
+		"dailySettings": "Ajustes de {{assistantDaily}}",
+		"dailyEnabled": "Envíame un {{assistantDaily}}",
+		"time": "Hora",
+		"timezone": "Zona horaria",
+		"days": "Días",
+		"weekdays": {
+			"1": "Lun",
+			"2": "Mar",
+			"3": "Mié",
+			"4": "Jue",
+			"5": "Vie",
+			"6": "Sáb",
+			"7": "Dom"
+		},
+		"reportApps": "Apps a leer",
+		"allApps": "Todas mis apps conectadas",
+		"selectedApps": "Solo estas apps",
+		"reportInstructions": "¿En qué debe enfocarse? (opcional)",
+		"reportInstructionsPlaceholder": "p. ej. Primero correos de clientes. Omite notificaciones de bots de GitHub.",
+		"emailDelivery": "Envíamelo también por correo",
+		"dailyOff": "{{assistantDaily}} está desactivado. Actívalo en ajustes o ejecútalo ahora.",
+		"dailyPaused": "{{assistantDaily}} está en pausa.",
+		"dailySchedule": "{{assistantDaily}} se ejecuta a las {{time}} ({{timezone}}).",
+		"resume": "Reanudar",
+		"pause": "Pausar",
+		"writingReport": "Escribiendo tu reporte…",
+		"runNow": "Ejecutar ahora",
+		"noReports": "Aún no hay reportes.",
+		"sourceFailed": "{{name}} falló",
+		"catchUp": "Resumen"
 	}
 }

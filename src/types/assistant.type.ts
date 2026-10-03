@@ -214,3 +214,58 @@ export type TAssistantStyle = {
 	version: number;
 	revisions: TAssistantStyleRevision[];
 };
+
+export type TBriefingSchedule = { time: string; days: number[]; timezone: string };
+
+export type TBriefingConfig = {
+	enabled: boolean;
+	paused: boolean;
+	schedule: TBriefingSchedule;
+	connector_scope: 'all' | 'selected';
+	connector_keys: string[];
+	instructions: string | null;
+	delivery: { email: boolean };
+};
+
+export type TBriefingSourceResult = {
+	source: string;
+	name: string;
+	ok: boolean;
+	items?: number;
+	error?: string;
+};
+
+export type TBriefingRun = {
+	id: string;
+	status: 'queued' | 'collecting' | 'writing' | 'completed' | 'failed';
+	trigger: 'schedule' | 'manual';
+	summary: string | null;
+	document: string | null;
+	sources: TBriefingSourceResult[];
+	error: string | null;
+	situations_count: number;
+	created_at: string;
+	delivered_at: string | null;
+};
+
+export type TDailyReport = {
+	config: TBriefingConfig;
+	readable_sources: string[];
+	runs: TBriefingRun[];
+};
+
+export type TUpdateBriefingConfigDto = Partial<Omit<TBriefingConfig, 'paused'>>;
+
+export type TSituationStep = { id: string; body: string; status: 'todo' | 'done' | 'skipped' };
+
+export type TSituation = {
+	id: string;
+	title: string;
+	summary: string | null;
+	next_step: string | null;
+	sources: string[];
+	status: 'open' | 'sent' | 'done' | 'dismissed';
+	session_id: string | null;
+	steps: TSituationStep[];
+	created_at: string;
+};

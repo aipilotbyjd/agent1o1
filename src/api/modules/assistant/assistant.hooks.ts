@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+	TSituation,
+	TUpdateBriefingConfigDto,
 	TAssistantDecision,
 	TAssistantFeedbackRating,
 	TAssistantStyleKind,
@@ -9,6 +11,7 @@ import type {
 	TUpdateAssistantSessionDto,
 } from '@/types/assistant.type';
 import {
+	AssistantBriefingService,
 	AssistantMemoryService,
 	AssistantService,
 	AssistantSettingsService,
@@ -234,3 +237,110 @@ export const useRestoreAssistantStyle = (ws: string) => {
 		meta: { errorMessage: 'Failed to restore' },
 	});
 };
+
+export const useDailyReport = (ws: string) =>
+	useQuery({
+		queryKey: assistantKeys.daily(ws),
+		queryFn: ({ signal }) => AssistantBriefingService.daily(ws, signal),
+		enabled: !!ws,
+		// A report being written refreshes itself until it settles.
+		refetchInterval: (query) =>
+			query.state.data?.runs.some((run) =>
+				['queued', 'collecting', 'writing'].includes(run.status),
+			)
+				? 3000
+				: false,
+		// Only while a report is being written, so it stays cheap.
+		refetchIntervalInBackground: true,
+	});
+
+export const useBriefingRun = (ws: string, id: string | null) =>
+	useQuery({
+		queryKey: assistantKeys.briefingRun(ws, id ?? ''),
+		queryFn: ({ signal }) => AssistantBriefingService.run(ws, id ?? '', signal),
+		enabled: !!ws && !!id,
+	});
+
+const useDailyMutation = <TArgs>(
+	ws: string,
+	fn: (args: TArgs) => Promise<unknown>,
+	errorMessage: string,
+) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: fn,
+		onSuccess: () => qc.invalidateQueries({ queryKey: assistantKeys.daily(ws) }),
+		meta: { errorMessage },
+	});
+};
+
+export const useUpdateDailyReport = (ws: string) =>
+	useDailyMutation(
+		ws,
+		(payload: TUpdateBriefingConfigDto) => AssistantBriefingService.updateDaily(ws, payload),
+		'Failed to save',
+	);
+
+export const usePauseDailyReport = (ws: string) =>
+	useDailyMutation(
+		ws,
+		(paused: boolean) =>
+			paused ? AssistantBriefingService.pause(ws) : AssistantBriefingService.resume(ws),
+		'Failed to update',
+	);
+
+export const useRunDailyReportNow = (ws: string) =>
+	useDailyMutation(ws, () => AssistantBriefingService.runNow(ws), 'Failed to start the report');
+
+export const useSituations = (ws: string, status: TSituation['status'] = 'open') =>
+	useQuery({
+		queryKey: assistantKeys.situations(ws, status),
+		queryFn: ({ signal }) => AssistantBriefingService.situations(ws, status, signal),
+		enabled: !!ws,
+	});
+
+const useSituationMutation = <TArgs>(
+	ws: string,
+	fn: (args: TArgs) => Promise<TSituation>,
+	errorMessage: string,
+) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: fn,
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: ['assistant', ws, 'situations'] });
+			qc.invalidateQueries({ queryKey: assistantKeys.sessions(ws) });
+		},
+		meta: { errorMessage },
+	});
+};
+
+export const useUpdateSituation = (ws: string) =>
+	useSituationMutation(
+		ws,
+		({ id, status }: { id: string; status: TSituation['status'] }) =>
+			AssistantBriefingService.updateSituation(ws, id, status),
+		'Failed to update',
+	);
+
+export const useUpdateSituationStep = (ws: string) =>
+	useSituationMutation(
+		ws,
+		({
+			id,
+			stepId,
+			status,
+		}: {
+			id: string;
+			stepId: string;
+			status: TSituation['steps'][number]['status'];
+		}) => AssistantBriefingService.updateStep(ws, id, stepId, status),
+		'Failed to update',
+	);
+
+export const useSendSituation = (ws: string) =>
+	useSituationMutation(
+		ws,
+		(id: string) => AssistantBriefingService.send(ws, id),
+		'Failed to send',
+	);

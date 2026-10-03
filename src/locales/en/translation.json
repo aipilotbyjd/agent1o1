@@ -114,6 +114,41 @@
 			"down": "Bad reply"
 		},
 		"feedbackPrompt": "What should change? (optional)",
-		"feedbackLearned": "Learned from your feedback"
+		"feedbackLearned": "Learned from your feedback",
+		"settingsAndApps": "Settings & apps",
+		"noSituations": "Nothing needs you right now. Situations from your Daily report show up here.",
+		"dismiss": "Dismiss",
+		"sendToAssistant": "Send to {{assistantName}}",
+		"markDone": "Mark done",
+		"dailySettings": "{{assistantDaily}} settings",
+		"dailyEnabled": "Send me a {{assistantDaily}}",
+		"time": "Time",
+		"timezone": "Timezone",
+		"days": "Days",
+		"weekdays": {
+			"1": "Mon",
+			"2": "Tue",
+			"3": "Wed",
+			"4": "Thu",
+			"5": "Fri",
+			"6": "Sat",
+			"7": "Sun"
+		},
+		"reportApps": "Apps to read",
+		"allApps": "All my connected apps",
+		"selectedApps": "Only these apps",
+		"reportInstructions": "What should it focus on? (optional)",
+		"reportInstructionsPlaceholder": "e.g. Customer emails first. Skip GitHub bot notifications.",
+		"emailDelivery": "Also email it to me",
+		"dailyOff": "{{assistantDaily}} is off. Turn it on in settings, or run one now.",
+		"dailyPaused": "{{assistantDaily}} is paused.",
+		"dailySchedule": "{{assistantDaily}} runs at {{time}} ({{timezone}}).",
+		"resume": "Resume",
+		"pause": "Pause",
+		"writingReport": "Writing your report…",
+		"runNow": "Run now",
+		"noReports": "No reports yet.",
+		"sourceFailed": "{{name}} failed",
+		"catchUp": "Catch-up"
 	}
 }

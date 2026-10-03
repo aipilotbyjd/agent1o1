@@ -45,3 +45,22 @@ export function subscribeToAssistantSession(
 
 	return () => echo.leave(channelName);
 }
+
+/** Mirrors App\Broadcasting\Channels::ASSISTANT_PATTERN. */
+export const assistantChannelName = (workspaceId: string, assistantId: string) =>
+	`workspaces.${workspaceId}.assistants.${assistantId}`;
+
+/** A background report finished or failed (`AssistantBriefingCompleted`). */
+export function subscribeToAssistant(
+	echo: IEchoLike,
+	workspaceId: string,
+	assistantId: string,
+	onBriefing: (event: { run_id: string; status: string }) => void,
+): () => void {
+	const channelName = assistantChannelName(workspaceId, assistantId);
+	echo.private(channelName).listen('.assistant.briefing', (payload) =>
+		onBriefing(payload as { run_id: string; status: string }),
+	);
+
+	return () => echo.leave(channelName);
+}

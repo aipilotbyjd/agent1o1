@@ -114,6 +114,41 @@
 			"down": "Bad reply"
 		},
 		"feedbackPrompt": "What should change? (optional)",
-		"feedbackLearned": "Learned from your feedback"
+		"feedbackLearned": "Learned from your feedback",
+		"settingsAndApps": "الإعدادات والتطبيقات",
+		"noSituations": "لا شيء يحتاجك الآن. ستظهر المواقف من تقريرك اليومي هنا.",
+		"dismiss": "تجاهل",
+		"sendToAssistant": "أرسل إلى {{assistantName}}",
+		"markDone": "تم",
+		"dailySettings": "إعدادات {{assistantDaily}}",
+		"dailyEnabled": "أرسل لي {{assistantDaily}}",
+		"time": "الوقت",
+		"timezone": "المنطقة الزمنية",
+		"days": "الأيام",
+		"weekdays": {
+			"1": "الإثنين",
+			"2": "الثلاثاء",
+			"3": "الأربعاء",
+			"4": "الخميس",
+			"5": "الجمعة",
+			"6": "السبت",
+			"7": "الأحد"
+		},
+		"reportApps": "التطبيقات المقروءة",
+		"allApps": "كل تطبيقاتي المتصلة",
+		"selectedApps": "هذه التطبيقات فقط",
+		"reportInstructions": "على ماذا يركز؟ (اختياري)",
+		"reportInstructionsPlaceholder": "مثلاً: رسائل العملاء أولاً. تجاهل إشعارات روبوتات GitHub.",
+		"emailDelivery": "أرسله لي بالبريد أيضاً",
+		"dailyOff": "{{assistantDaily}} متوقف. فعّله من الإعدادات أو شغّله الآن.",
+		"dailyPaused": "{{assistantDaily}} موقوف مؤقتاً.",
+		"dailySchedule": "يعمل {{assistantDaily}} الساعة {{time}} ({{timezone}}).",
+		"resume": "استئناف",
+		"pause": "إيقاف مؤقت",
+		"writingReport": "جارٍ كتابة تقريرك…",
+		"runNow": "شغّل الآن",
+		"noReports": "لا توجد تقارير بعد.",
+		"sourceFailed": "فشل {{name}}",
+		"catchUp": "المستجدات"
 	}
 }
