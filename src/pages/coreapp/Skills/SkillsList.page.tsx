@@ -11,6 +11,7 @@ import {
 	Lock,
 	Globe,
 	MoreHorizontal,
+	FolderGit2,
 } from 'lucide-react';
 import { OutletContextType } from './_layouts/Skills.layout';
 import { useConfirm } from '@/context/confirm';
@@ -22,9 +23,15 @@ import { useAgentSkills, useDeleteAgentSkill } from '@/api/modules/agent-skills'
 import type { TAgentSkill } from '@/types/agent-skill.type';
 import ListSkeletonPart from '@/parts/ListSkeleton.part';
 import { notify } from '@/api/core';
-import { SKILL_CATEGORIES, getSkillIconComponent, getSkillCategoryColor } from './_helper/skills.constants';
+import {
+	SKILL_CATEGORIES,
+	getSkillIconComponent,
+	getSkillCategoryColor,
+} from './_helper/skills.constants';
 import SkillEditorDrawer from './_partial/SkillEditorDrawer.partial';
 import AddToAgentDialog from './_partial/AddToAgentDialog.partial';
+import ConnectRepositoryDialog from './_partial/ConnectRepositoryDialog.partial';
+import SkillSourcesPanel from './_partial/SkillSourcesPanel.partial';
 
 type TVisibilityFilter = 'All' | 'Personal' | 'Shared';
 
@@ -45,9 +52,9 @@ const SkillsListPage = () => {
 	const currentWorkspaceId = workspaceId || activeWorkspaceId;
 
 	const [searchQuery, setSearchQuery] = useState('');
-	const [selectedCategory, setSelectedCategory] = useState<'All' | (typeof SKILL_CATEGORIES)[number]>(
-		'All',
-	);
+	const [selectedCategory, setSelectedCategory] = useState<
+		'All' | (typeof SKILL_CATEGORIES)[number]
+	>('All');
 	const [visibility, setVisibility] = useState<TVisibilityFilter>('All');
 
 	// `skills.index` takes no query params — the workspace's whole skill list
@@ -60,6 +67,7 @@ const SkillsListPage = () => {
 		skillId: null,
 	});
 	const [attachingSkill, setAttachingSkill] = useState<TAgentSkill | null>(null);
+	const [isConnectOpen, setIsConnectOpen] = useState(false);
 
 	const skillList = useMemo(() => {
 		const rows = apiSkills ?? [];
@@ -69,7 +77,8 @@ const SkillsListPage = () => {
 				!query ||
 				skill.name.toLowerCase().includes(query) ||
 				(skill.description ?? '').toLowerCase().includes(query);
-			const matchesCategory = selectedCategory === 'All' || skill.category === selectedCategory;
+			const matchesCategory =
+				selectedCategory === 'All' || skill.category === selectedCategory;
 			const matchesVisibility =
 				visibility === 'All' ||
 				(visibility === 'Shared' ? skill.is_shared : !skill.is_shared);
@@ -104,26 +113,36 @@ const SkillsListPage = () => {
 					<h1 className='text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white'>
 						Skills
 					</h1>
-					<button
-						onClick={() => setEditorState({ open: true, skillId: null })}
-						className='flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary-400 px-5 text-xs font-bold text-primary-950 shadow-md shadow-primary-500/10 transition-all hover:bg-primary-500 hover:shadow-lg hover:shadow-primary-500/20 active:scale-95 dark:shadow-none'>
-						<Sparkles size={14} className='animate-pulse' />
-						<span>Create Skill</span>
-					</button>
+					<div className='flex shrink-0 items-center gap-2'>
+						<button
+							onClick={() => setIsConnectOpen(true)}
+							className='flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 text-xs font-bold text-slate-700 transition-all hover:bg-slate-50 active:scale-95 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800'>
+							<FolderGit2 size={14} />
+							<span>Import from GitHub</span>
+						</button>
+						<button
+							onClick={() => setEditorState({ open: true, skillId: null })}
+							className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 hover:shadow-primary-500/20 flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl px-5 text-xs font-bold shadow-md transition-all hover:shadow-lg active:scale-95 dark:shadow-none'>
+							<Sparkles size={14} className='animate-pulse' />
+							<span>Create Skill</span>
+						</button>
+					</div>
 				</div>
+
+				<SkillSourcesPanel ws={currentWorkspaceId} />
 
 				{/* Search + filters */}
 				<div className='mb-8 flex flex-col gap-4'>
 					<div className='flex flex-col gap-3 xl:flex-row xl:items-center'>
 						<div className='group relative flex-1'>
-							<Search className='absolute top-3.5 left-4 h-4.5 w-4.5 text-slate-400 transition-colors duration-200 group-focus-within:text-primary-500 dark:text-zinc-500' />
+							<Search className='group-focus-within:text-primary-500 absolute top-3.5 left-4 h-4.5 w-4.5 text-slate-400 transition-colors duration-200 dark:text-zinc-500' />
 							<input
 								type='search'
 								aria-label='Search skills'
 								placeholder='Search skills by name or description...'
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
-								className='block h-12 w-full rounded-2xl border border-zinc-200 bg-white pr-4 pl-12 text-xs font-semibold text-slate-900 shadow-xs outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-primary-500/80 focus:ring-4 focus:ring-primary-500/10 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-primary-500 dark:focus:ring-primary-500/15'
+								className='focus:border-primary-500/80 focus:ring-primary-500/10 dark:focus:border-primary-500 dark:focus:ring-primary-500/15 block h-12 w-full rounded-2xl border border-zinc-200 bg-white pr-4 pl-12 text-xs font-semibold text-slate-900 shadow-xs transition-all duration-200 outline-none placeholder:text-slate-400 focus:ring-4 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500'
 							/>
 						</div>
 
@@ -134,7 +153,7 @@ const SkillsListPage = () => {
 									onClick={() => setVisibility(v)}
 									className={`h-9 cursor-pointer rounded-xl px-4 text-xs font-bold transition-all ${
 										visibility === v
-											? 'bg-gradient-to-r from-primary-400 to-primary-400 text-primary-950'
+											? 'from-primary-400 to-primary-400 text-primary-950 bg-gradient-to-r'
 											: 'text-slate-500 hover:bg-slate-50 dark:text-zinc-400 dark:hover:bg-zinc-900/40'
 									}`}>
 									{v}
@@ -148,7 +167,7 @@ const SkillsListPage = () => {
 							onClick={() => setSelectedCategory('All')}
 							className={`flex h-9 shrink-0 items-center gap-2 rounded-xl px-4 text-xs font-bold transition-all ${
 								selectedCategory === 'All'
-									? 'bg-gradient-to-r from-primary-400 to-primary-400 text-primary-950'
+									? 'from-primary-400 to-primary-400 text-primary-950 bg-gradient-to-r'
 									: 'border border-zinc-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'
 							}`}>
 							All Categories
@@ -159,7 +178,7 @@ const SkillsListPage = () => {
 								onClick={() => setSelectedCategory(cat)}
 								className={`flex h-9 shrink-0 items-center gap-2 rounded-xl px-4 text-xs font-bold transition-all ${
 									selectedCategory === cat
-										? 'bg-gradient-to-r from-primary-400 to-primary-400 text-primary-950'
+										? 'from-primary-400 to-primary-400 text-primary-950 bg-gradient-to-r'
 										: 'border border-zinc-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'
 								}`}>
 								{cat}
@@ -176,7 +195,9 @@ const SkillsListPage = () => {
 				) : skillList.length === 0 ? (
 					<div className='flex flex-col items-center justify-center gap-2 rounded-3xl border border-zinc-200 bg-white py-16 text-center dark:border-zinc-800 dark:bg-zinc-900'>
 						<PuzzleIcon size={28} className='text-slate-300 dark:text-zinc-600' />
-						<p className='text-sm font-bold text-slate-700 dark:text-zinc-300'>No skills yet</p>
+						<p className='text-sm font-bold text-slate-700 dark:text-zinc-300'>
+							No skills yet
+						</p>
 						<p className='text-xs font-semibold text-slate-400 dark:text-zinc-500'>
 							Create your first skill to reuse across agents.
 						</p>
@@ -205,6 +226,12 @@ const SkillsListPage = () => {
 				onClose={() => setEditorState({ open: false, skillId: null })}
 			/>
 
+			<ConnectRepositoryDialog
+				ws={currentWorkspaceId}
+				isOpen={isConnectOpen}
+				onClose={() => setIsConnectOpen(false)}
+			/>
+
 			<AddToAgentDialog
 				ws={currentWorkspaceId}
 				skill={attachingSkill}
@@ -228,6 +255,7 @@ const SkillCard = ({
 	const [menuOpen, setMenuOpen] = useState(false);
 	const IconComponent = getSkillIconComponent(skill.icon);
 	const color = skill.color || getSkillCategoryColor(skill.category);
+	const isSynced = !!skill.skill_source_id;
 
 	return (
 		<motion.div
@@ -236,7 +264,7 @@ const SkillCard = ({
 			animate={{ opacity: 1, y: 0 }}
 			exit={{ opacity: 0, y: 10 }}
 			transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-			className='group relative flex flex-col rounded-2xl border border-slate-200/60 bg-white p-5 transition-all duration-300 hover:-translate-y-1 hover:border-primary-400 hover:shadow-[0_12px_24px_-10px_rgba(16,24,40,0.06)] dark:border-zinc-800/80 dark:bg-zinc-950 dark:hover:border-primary-400/50 dark:hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.5)]'>
+			className='group hover:border-primary-400 dark:hover:border-primary-400/50 relative flex flex-col rounded-2xl border border-slate-200/60 bg-white p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_-10px_rgba(16,24,40,0.06)] dark:border-zinc-800/80 dark:bg-zinc-950 dark:hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.5)]'>
 			<div className='mb-3.5 flex items-start justify-between'>
 				<div className='flex min-w-0 items-center gap-3'>
 					<div
@@ -245,7 +273,7 @@ const SkillCard = ({
 						<IconComponent className='h-5 w-5' style={{ color }} />
 					</div>
 					<div className='min-w-0 space-y-0.5'>
-						<h4 className='truncate text-[13px] leading-snug font-black text-slate-900 transition-colors group-hover:text-primary-600 dark:text-zinc-50 dark:group-hover:text-primary-400'>
+						<h4 className='group-hover:text-primary-600 dark:group-hover:text-primary-400 truncate text-[13px] leading-snug font-black text-slate-900 transition-colors dark:text-zinc-50'>
 							{skill.name}
 						</h4>
 						<span className='block truncate text-[9px] font-extrabold tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
@@ -253,27 +281,30 @@ const SkillCard = ({
 						</span>
 					</div>
 				</div>
-				<div className='relative shrink-0'>
-					<button
-						onClick={() => setMenuOpen((o) => !o)}
-						title='More options'
-						className='rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:hover:bg-zinc-900 dark:hover:text-zinc-200'>
-						<MoreHorizontal className='h-4 w-4' />
-					</button>
-					{menuOpen && (
-						<div className='absolute top-8 right-0 z-10 w-32 overflow-hidden rounded-xl border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
-							<button
-								onClick={() => {
-									setMenuOpen(false);
-									onDelete();
-								}}
-								className='flex w-full cursor-pointer items-center gap-1.5 px-3 py-2 text-left text-[11px] font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20'>
-								<Trash2 size={12} />
-								Delete
-							</button>
-						</div>
-					)}
-				</div>
+				{/* A synced skill is removed from its repository, not here. */}
+				{!isSynced && (
+					<div className='relative shrink-0'>
+						<button
+							onClick={() => setMenuOpen((o) => !o)}
+							title='More options'
+							className='rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:hover:bg-zinc-900 dark:hover:text-zinc-200'>
+							<MoreHorizontal className='h-4 w-4' />
+						</button>
+						{menuOpen && (
+							<div className='absolute top-8 right-0 z-10 w-32 overflow-hidden rounded-xl border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
+								<button
+									onClick={() => {
+										setMenuOpen(false);
+										onDelete();
+									}}
+									className='flex w-full cursor-pointer items-center gap-1.5 px-3 py-2 text-left text-[11px] font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20'>
+									<Trash2 size={12} />
+									Delete
+								</button>
+							</div>
+						)}
+					</div>
+				)}
 			</div>
 
 			<p className='mb-4 line-clamp-2 text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-zinc-400'>
@@ -285,11 +316,19 @@ const SkillCard = ({
 					className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[9px] font-bold ${
 						skill.is_shared
 							? 'border-primary-200 bg-primary-50 text-primary-700 dark:border-primary-500/20 dark:bg-primary-950/20 dark:text-primary-400'
-							: 'border-zinc-200/60 bg-zinc-50/50 text-zinc-450 dark:border-zinc-800/80 dark:bg-zinc-900/40 dark:text-zinc-500'
+							: 'text-zinc-450 border-zinc-200/60 bg-zinc-50/50 dark:border-zinc-800/80 dark:bg-zinc-900/40 dark:text-zinc-500'
 					}`}>
 					{skill.is_shared ? <Globe size={11} /> : <Lock size={11} />}
 					{skill.is_shared ? 'Shared' : 'Personal'}
 				</span>
+				{isSynced && (
+					<span
+						title={skill.source_path || 'Repository root'}
+						className='inline-flex items-center gap-1 rounded-full border border-zinc-200/60 bg-zinc-50/50 px-2.5 py-0.5 text-[9px] font-bold text-zinc-500 dark:border-zinc-800/80 dark:bg-zinc-900/40 dark:text-zinc-400'>
+						<FolderGit2 size={11} />
+						GitHub
+					</span>
+				)}
 			</div>
 
 			<div className='mt-3 flex items-center gap-2'>
@@ -302,7 +341,7 @@ const SkillCard = ({
 				<button
 					onClick={onAttach}
 					title='Add to agent'
-					className='flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl bg-primary-400 text-primary-950 shadow-md shadow-primary-500/10 transition-transform hover:scale-105 hover:bg-primary-500 active:scale-95'>
+					className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl shadow-md transition-transform hover:scale-105 active:scale-95'>
 					<UserPlus size={14} />
 				</button>
 			</div>
