@@ -27,6 +27,10 @@
 
 	--color-primary-foreground: var(--primary-foreground);
 
+	/* The assistant's brand colour — set at runtime from the server brand by
+	 * BrandProvider; the fallback matches config/brand.default.ts. */
+	--color-assistant: var(--assistant-color, #7c3aed);
+
 	/* The zinc scale is deliberately NOT remapped onto semantic tokens.
 	 *
 	 * The template pairs every zinc step across themes — `bg-zinc-100

@@ -33,6 +33,8 @@ export type TArtifact = {
 	mime_type: string;
 	size: number;
 	agent: { id: string; name: string } | null;
+	/** The personal-assistant conversation that made it, if any. */
+	assistant_session_id: string | null;
 	creator: TUser | null;
 	preview_url: string | null;
 	general_access: TArtifactGeneralAccess;

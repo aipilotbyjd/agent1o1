@@ -1,0 +1,78 @@
+const base = (ws: string) => `/workspaces/${ws}/assistant`;
+const session = (ws: string, id: string) => `${base(ws)}/sessions/${id}`;
+
+export const AssistantEndpoints = {
+	show: base,
+	update: base,
+} as const;
+
+export const AssistantSessionEndpoints = {
+	list: (ws: string) => `${base(ws)}/sessions`,
+	create: (ws: string) => `${base(ws)}/sessions`,
+	detail: session,
+	update: session,
+	delete: session,
+	messages: (ws: string, id: string) => `${session(ws, id)}/messages`,
+	context: (ws: string, id: string) => `${session(ws, id)}/context`,
+	feedback: (ws: string, id: string, messageId: string) =>
+		`${session(ws, id)}/messages/${messageId}/feedback`,
+	send: (ws: string, id: string) => `${session(ws, id)}/messages`,
+	turn: (ws: string, id: string, turnId: string) => `${session(ws, id)}/turns/${turnId}`,
+	cancel: (ws: string, id: string, turnId: string) => `${session(ws, id)}/turns/${turnId}/cancel`,
+	decide: (ws: string, id: string, turnId: string) =>
+		`${session(ws, id)}/turns/${turnId}/decisions`,
+} as const;
+
+export const AssistantMemoryEndpoints = {
+	list: (ws: string) => `${base(ws)}/memories`,
+	delete: (ws: string, id: string) => `${base(ws)}/memories/${id}`,
+} as const;
+
+export const AssistantSettingsEndpoints = {
+	apps: (ws: string) => `${base(ws)}/apps`,
+	toolRules: (ws: string) => `${base(ws)}/tool-rules`,
+	transcribe: (ws: string) => `${base(ws)}/transcribe`,
+	styles: (ws: string) => `${base(ws)}/styles`,
+	style: (ws: string, kind: string) => `${base(ws)}/styles/${kind}`,
+	restoreStyle: (ws: string, kind: string, revisionId: string) =>
+		`${base(ws)}/styles/${kind}/revisions/${revisionId}/restore`,
+} as const;
+
+export const AssistantBriefingEndpoints = {
+	daily: (ws: string) => `${base(ws)}/briefings/daily`,
+	meetingPrep: (ws: string) => `${base(ws)}/briefings/meeting_prep`,
+	meetings: (ws: string) => `${base(ws)}/meetings`,
+	prepare: (ws: string, id: string) => `${base(ws)}/meetings/${id}/prepare`,
+	pause: (ws: string) => `${base(ws)}/briefings/daily/pause`,
+	resume: (ws: string) => `${base(ws)}/briefings/daily/resume`,
+	runNow: (ws: string) => `${base(ws)}/briefings/daily/run-now`,
+	run: (ws: string, id: string) => `${base(ws)}/briefing-runs/${id}`,
+	situations: (ws: string) => `${base(ws)}/situations`,
+	situation: (ws: string, id: string) => `${base(ws)}/situations/${id}`,
+	step: (ws: string, id: string, stepId: string) =>
+		`${base(ws)}/situations/${id}/steps/${stepId}`,
+	send: (ws: string, id: string) => `${base(ws)}/situations/${id}/send`,
+} as const;
+
+export const AssistantInboxEndpoints = {
+	inbox: (ws: string) => `${base(ws)}/inbox`,
+	enable: (ws: string) => `${base(ws)}/inbox/enable`,
+	disable: (ws: string) => `${base(ws)}/inbox/disable`,
+	labels: (ws: string) => `${base(ws)}/inbox/labels`,
+	label: (ws: string, id: string) => `${base(ws)}/inbox/labels/${id}`,
+	accept: (ws: string, id: string) => `${base(ws)}/inbox/messages/${id}/accept`,
+} as const;
+
+export const AssistantTriggerEndpoints = {
+	list: (ws: string) => `${base(ws)}/triggers`,
+	trigger: (ws: string, id: string) => `${base(ws)}/triggers/${id}`,
+	runNow: (ws: string, id: string) => `${base(ws)}/triggers/${id}/run-now`,
+} as const;
+
+export const AssistantChannelEndpoints = {
+	list: (ws: string) => `${base(ws)}/channels`,
+	slackInstall: (ws: string) => `${base(ws)}/channels/slack/install`,
+	sms: (ws: string) => `${base(ws)}/channels/sms`,
+	smsStart: (ws: string) => `${base(ws)}/channels/sms/verify-start`,
+	smsConfirm: (ws: string) => `${base(ws)}/channels/sms/verify-confirm`,
+} as const;
