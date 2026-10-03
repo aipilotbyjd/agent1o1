@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+	TInbox,
+	TInboxSettings,
+	TSaveInboxLabelDto,
 	TSituation,
 	TUpdateBriefingConfigDto,
 	TAssistantDecision,
@@ -12,6 +15,7 @@ import type {
 } from '@/types/assistant.type';
 import {
 	AssistantBriefingService,
+	AssistantInboxService,
 	AssistantMemoryService,
 	AssistantService,
 	AssistantSettingsService,
@@ -384,5 +388,73 @@ export const usePrepareMeeting = (ws: string) => {
 		mutationFn: (id: string) => AssistantBriefingService.prepare(ws, id),
 		onSuccess: () => qc.invalidateQueries({ queryKey: assistantKeys.meetings(ws) }),
 		meta: { errorMessage: 'Failed to start the brief' },
+	});
+};
+
+export const useInbox = (ws: string) =>
+	useQuery({
+		queryKey: assistantKeys.inbox(ws),
+		queryFn: ({ signal }) => AssistantInboxService.show(ws, signal),
+		enabled: !!ws,
+		// New mail is checked every two minutes; follow along while it's on.
+		refetchInterval: (query) => (query.state.data?.config.enabled ? 60_000 : false),
+	});
+
+const useInboxMutation = <TArgs>(
+	ws: string,
+	fn: (args: TArgs) => Promise<TInbox>,
+	errorMessage: string,
+) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: fn,
+		onSuccess: (inbox) => qc.setQueryData(assistantKeys.inbox(ws), inbox),
+		meta: { errorMessage },
+	});
+};
+
+export const useToggleInbox = (ws: string) =>
+	useInboxMutation(
+		ws,
+		(on: boolean) =>
+			on ? AssistantInboxService.enable(ws) : AssistantInboxService.disable(ws),
+		'Could not change Smart Inbox',
+	);
+
+export const useUpdateInboxSettings = (ws: string) =>
+	useInboxMutation(
+		ws,
+		(payload: Partial<TInboxSettings>) => AssistantInboxService.update(ws, payload),
+		'Failed to save',
+	);
+
+export const useCreateInboxLabel = (ws: string) =>
+	useInboxMutation(
+		ws,
+		(payload: TSaveInboxLabelDto) => AssistantInboxService.createLabel(ws, payload),
+		'Failed to add the label',
+	);
+
+export const useUpdateInboxLabel = (ws: string) =>
+	useInboxMutation(
+		ws,
+		({ id, payload }: { id: string; payload: TSaveInboxLabelDto }) =>
+			AssistantInboxService.updateLabel(ws, id, payload),
+		'Failed to save the label',
+	);
+
+export const useDeleteInboxLabel = (ws: string) =>
+	useInboxMutation(
+		ws,
+		(id: string) => AssistantInboxService.deleteLabel(ws, id),
+		'Failed to delete the label',
+	);
+
+export const useAcceptInboxSuggestion = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => AssistantInboxService.accept(ws, id),
+		onSuccess: () => qc.invalidateQueries({ queryKey: assistantKeys.sessions(ws) }),
+		meta: { errorMessage: 'Failed to open in chat' },
 	});
 };

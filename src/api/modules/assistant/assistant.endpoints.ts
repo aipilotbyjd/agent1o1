@@ -53,3 +53,12 @@ export const AssistantBriefingEndpoints = {
 		`${base(ws)}/situations/${id}/steps/${stepId}`,
 	send: (ws: string, id: string) => `${base(ws)}/situations/${id}/send`,
 } as const;
+
+export const AssistantInboxEndpoints = {
+	inbox: (ws: string) => `${base(ws)}/inbox`,
+	enable: (ws: string) => `${base(ws)}/inbox/enable`,
+	disable: (ws: string) => `${base(ws)}/inbox/disable`,
+	labels: (ws: string) => `${base(ws)}/inbox/labels`,
+	label: (ws: string, id: string) => `${base(ws)}/inbox/labels/${id}`,
+	accept: (ws: string, id: string) => `${base(ws)}/inbox/messages/${id}/accept`,
+} as const;

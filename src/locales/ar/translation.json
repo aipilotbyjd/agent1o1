@@ -171,6 +171,46 @@
 		"prepAutomatically": "حضّر الاجتماعات تلقائياً",
 		"minutesBefore": "دقائق قبل الاجتماع",
 		"meetingsToPrep": "الاجتماعات المراد تحضيرها",
-		"prepInstructions": "على ماذا تركز الملخصات؟ (اختياري)"
+		"prepInstructions": "على ماذا تركز الملخصات؟ (اختياري)",
+		"inboxIntro": "يضع {{assistantInbox}} تسميات على البريد الجديد في Gmail، ويُخرج الضجيج من صندوقك، ويكتب مسودات ردود لتراجعها. لا يرسل أي شيء أبداً.",
+		"inboxNeedsPlan": "يتطلب {{assistantInbox}} خطة Pro.",
+		"inboxConnectGmail": "اربط Gmail لاستخدامه.",
+		"enableInbox": "فعّل {{assistantInbox}}",
+		"inboxWatching": "يراقب {{account}}",
+		"lastChecked": "آخر فحص {{time}}",
+		"manageLabels": "التسميات",
+		"inboxSettings": "إعدادات {{assistantInbox}}",
+		"inboxEmpty": "سيظهر البريد الجديد هنا عند وصوله.",
+		"movedOut": "أُخرج من الصندوق",
+		"draftStatuses": {
+			"created": "مسودة في Gmail",
+			"updated": "تم تحديث المسودة",
+			"suggested": "رد مقترح",
+			"kept_your_edits": "احتُفظ بمسودتك المعدلة"
+		},
+		"suggestedReply": "الرد المقترح",
+		"openInChat": "افتح في المحادثة",
+		"labelsHint": "صف كل تسمية كما تشرحها لمساعد جديد. يخرج البريد من صندوقك فقط عندما تقول كل تسمياته \"أخرِج\".",
+		"labelColor": "لون التسمية",
+		"labelName": "اسم التسمية",
+		"labelGroups": {
+			"keep": "أبقِ في الصندوق",
+			"move_out": "أخرِج"
+		},
+		"labelOn": "مفعّلة",
+		"labelDefinition": "تعريف التسمية",
+		"newLabelName": "اسم تسمية جديدة",
+		"newLabelDefinition": "متى تُطبق هذه التسمية؟",
+		"addLabel": "أضف تسمية",
+		"draftReplies": "كتابة مسودات الردود",
+		"draftModes": {
+			"confident": "عند الثقة — وإلا اقترحها هنا",
+			"off": "متوقف"
+		},
+		"knownSendersOnly": "فقط لمن راسلتهم أو من نطاقي",
+		"skipExistingLabels": "اترك البريد الذي وضعت عليه تسميات",
+		"draftingInstructions": "تعليمات الصياغة (اختياري)",
+		"draftingInstructionsPlaceholder": "مثلاً: وقّع باسمي الأول. لا تلتزم بمواعيد.",
+		"disableInbox": "أوقف {{assistantInbox}}"
 	}
 }

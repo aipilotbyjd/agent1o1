@@ -171,6 +171,46 @@
 		"prepAutomatically": "Preparar reuniones automáticamente",
 		"minutesBefore": "Minutos antes de la reunión",
 		"meetingsToPrep": "Reuniones a preparar",
-		"prepInstructions": "¿En qué deben enfocarse los resúmenes? (opcional)"
+		"prepInstructions": "¿En qué deben enfocarse los resúmenes? (opcional)",
+		"inboxIntro": "{{assistantInbox}} etiqueta el correo nuevo de tu Gmail, saca el ruido de tu bandeja y redacta respuestas para que las revises. Nunca envía nada.",
+		"inboxNeedsPlan": "{{assistantInbox}} requiere el plan Pro.",
+		"inboxConnectGmail": "Conecta Gmail para usarlo.",
+		"enableInbox": "Activar {{assistantInbox}}",
+		"inboxWatching": "Vigilando {{account}}",
+		"lastChecked": "revisado {{time}}",
+		"manageLabels": "Etiquetas",
+		"inboxSettings": "Ajustes de {{assistantInbox}}",
+		"inboxEmpty": "El correo nuevo aparecerá aquí al llegar.",
+		"movedOut": "Sacado de la bandeja",
+		"draftStatuses": {
+			"created": "Borrador en Gmail",
+			"updated": "Borrador actualizado",
+			"suggested": "Respuesta sugerida",
+			"kept_your_edits": "Se conservó tu borrador editado"
+		},
+		"suggestedReply": "Respuesta sugerida",
+		"openInChat": "Abrir en el chat",
+		"labelsHint": "Describe cada etiqueta como se la explicarías a un nuevo asistente. El correo sale de tu bandeja solo si todas sus etiquetas dicen \"Sacar\".",
+		"labelColor": "Color de la etiqueta",
+		"labelName": "Nombre de la etiqueta",
+		"labelGroups": {
+			"keep": "Mantener en la bandeja",
+			"move_out": "Sacar"
+		},
+		"labelOn": "Activa",
+		"labelDefinition": "Definición de la etiqueta",
+		"newLabelName": "Nombre de la nueva etiqueta",
+		"newLabelDefinition": "¿Cuándo debe aplicarse?",
+		"addLabel": "Añadir etiqueta",
+		"draftReplies": "Redactar respuestas",
+		"draftModes": {
+			"confident": "Cuando esté seguro — si no, sugerirla aquí",
+			"off": "Desactivado"
+		},
+		"knownSendersOnly": "Solo para personas a las que he escrito o de mi dominio",
+		"skipExistingLabels": "No tocar el correo que ya etiqueté",
+		"draftingInstructions": "Instrucciones de redacción (opcional)",
+		"draftingInstructionsPlaceholder": "p. ej. Firma con mi nombre. Nunca te comprometas con fechas.",
+		"disableInbox": "Desactivar {{assistantInbox}}"
 	}
 }

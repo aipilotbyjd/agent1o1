@@ -304,3 +304,51 @@ export type TMeeting = {
 };
 
 export type TMeetingsList = { calendar_connected: boolean; meetings: TMeeting[] };
+
+export type TInboxLabel = {
+	id: string;
+	name: string;
+	definition: string;
+	color: string | null;
+	group: 'keep' | 'move_out';
+	enabled: boolean;
+	builtin: boolean;
+};
+
+export type TInboxMessage = {
+	id: string;
+	from: string | null;
+	subject: string | null;
+	snippet: string | null;
+	received_at: string | null;
+	status: 'classified' | 'skipped' | 'failed';
+	labels: string[];
+	archived: boolean;
+	skipped_reason: string | null;
+	suggestion: string | null;
+	draft_status: 'created' | 'updated' | 'suggested' | 'kept_your_edits' | null;
+};
+
+export type TInboxSettings = {
+	draft_mode: 'confident' | 'off';
+	drafting_instructions: string | null;
+	known_senders_only: boolean;
+	skip_existing_labels: boolean;
+};
+
+export type TInbox = {
+	available: { plan: boolean; gmail_connected: boolean };
+	config: TInboxSettings & {
+		enabled: boolean;
+		provider: string;
+		account: string | null;
+		last_checked_at: string | null;
+		last_error: string | null;
+	};
+	labels: TInboxLabel[];
+	messages: TInboxMessage[];
+};
+
+export type TSaveInboxLabelDto = Partial<
+	Pick<TInboxLabel, 'name' | 'definition' | 'color' | 'group' | 'enabled'>
+>;

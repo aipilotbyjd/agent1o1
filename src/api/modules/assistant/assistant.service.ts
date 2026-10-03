@@ -18,6 +18,9 @@ import type {
 	TAssistantToolDescription,
 	TBriefingRun,
 	TDailyReport,
+	TInbox,
+	TInboxSettings,
+	TSaveInboxLabelDto,
 	TMeeting,
 	TMeetingPrepReport,
 	TMeetingsList,
@@ -36,6 +39,7 @@ import {
 	AssistantSessionEndpoints as S,
 	AssistantSettingsEndpoints as X,
 	AssistantBriefingEndpoints as B,
+	AssistantInboxEndpoints as N,
 } from './assistant.endpoints';
 
 export const AssistantService = {
@@ -257,4 +261,32 @@ export const AssistantBriefingService = {
 		axiosClient
 			.post<TApiResponse<{ situation: TSituation }>>(B.send(ws, id))
 			.then(unwrapKey<TSituation>('situation')),
+};
+
+export const AssistantInboxService = {
+	show: (ws: string, signal?: AbortSignal) =>
+		axiosClient.get<TApiResponse<TInbox>>(N.inbox(ws), { signal }).then(unwrap<TInbox>),
+
+	update: (ws: string, payload: Partial<TInboxSettings>) =>
+		axiosClient.put<TApiResponse<TInbox>>(N.inbox(ws), payload).then(unwrap<TInbox>),
+
+	enable: (ws: string) =>
+		axiosClient.post<TApiResponse<TInbox>>(N.enable(ws)).then(unwrap<TInbox>),
+
+	disable: (ws: string) =>
+		axiosClient.post<TApiResponse<TInbox>>(N.disable(ws)).then(unwrap<TInbox>),
+
+	createLabel: (ws: string, payload: TSaveInboxLabelDto) =>
+		axiosClient.post<TApiResponse<TInbox>>(N.labels(ws), payload).then(unwrap<TInbox>),
+
+	updateLabel: (ws: string, id: string, payload: TSaveInboxLabelDto) =>
+		axiosClient.patch<TApiResponse<TInbox>>(N.label(ws, id), payload).then(unwrap<TInbox>),
+
+	deleteLabel: (ws: string, id: string) =>
+		axiosClient.delete<TApiResponse<TInbox>>(N.label(ws, id)).then(unwrap<TInbox>),
+
+	accept: (ws: string, id: string) =>
+		axiosClient
+			.post<TApiResponse<{ session_id: string }>>(N.accept(ws, id))
+			.then(unwrapKey<string>('session_id')),
 };
