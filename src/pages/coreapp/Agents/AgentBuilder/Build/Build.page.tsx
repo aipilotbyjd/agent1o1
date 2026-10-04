@@ -72,8 +72,8 @@ import MainAppBar, {
 } from '@/pages/coreapp/_partial/MainAppBar.partial';
 import { notify } from '@/api/core';
 import useDarkMode from '@/hooks/useDarkMode';
+import AppLogo from '@/components/AppLogo';
 import DARK_MODE from '@/constants/darkMode.constant';
-import { LogoFyr } from '@/assets/images';
 import pages from '@/Routes/pages';
 import paths, { withWorkspace } from '@/Routes/paths';
 import { useWorkspaceContext } from '@/context/workspace';
@@ -3094,13 +3094,8 @@ const BuildPage = () => {
 								) : isMobile &&
 								  chatHistory.filter((m) => m.sender === 'user').length === 0 ? (
 									<div className='flex flex-col items-center justify-center px-2 pt-8 pb-4 select-none'>
-										{/* Centered Fire/Flame Logo */}
 										<div className='mb-6 flex items-center justify-center'>
-											<img
-												src={LogoFyr}
-												alt='Fyr Logo'
-												className='h-[88px] w-[88px] object-contain'
-											/>
+											<AppLogo className='size-[88px]' rounded='rounded-3xl' alt='' />
 										</div>
 
 										{/* Centered Title */}
