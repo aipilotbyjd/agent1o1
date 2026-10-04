@@ -51,7 +51,7 @@ const workspaceSections = new Set(
 	Object.values(pages.workspace.subPages!).map((page) => relativeToWorkspace(page.to)),
 );
 
-const DropdownWorkspaceSwitcherExample = () => {
+const WorkspaceSwitcher = () => {
 	const navigate = useNavigate();
 	const location = useLocation();
 	const { workspaceId, resolvePath } = useResolvePath();
@@ -297,4 +297,4 @@ const DropdownWorkspaceSwitcherExample = () => {
 	);
 };
 
-export default DropdownWorkspaceSwitcherExample;
+export default WorkspaceSwitcher;

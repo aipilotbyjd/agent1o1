@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router';
 import Header, { HeaderLeft, HeaderRight } from '@/components/layout/Header';
 import { Dispatch, ReactNode, SetStateAction, useState } from 'react';
-import DropdownWorkspaceSwitcher from '@/examples/ui/dropdown/DropdownWorkspaceSwitcher.example';
+import WorkspaceSwitcher from '@/components/layout/WorkspaceSwitcher';
 import NotificationsDropdown from '@/components/notifications/NotificationsDropdown';
 
 export interface OutletContextType {
@@ -18,7 +18,7 @@ const ApprovalsLayout = () => {
 				<HeaderLeft>{headerLeft}</HeaderLeft>
 				<HeaderRight>
 					<NotificationsDropdown />
-					<DropdownWorkspaceSwitcher />
+					<WorkspaceSwitcher />
 				</HeaderRight>
 			</Header>
 			<Outlet context={{ headerLeft, setHeaderLeft }} />
