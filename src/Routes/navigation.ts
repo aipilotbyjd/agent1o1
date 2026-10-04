@@ -23,7 +23,7 @@ const settingsPages = pages.settings.subPages!;
 export const coreAppNavigation: TNavSection[] = [
 	{
 		title: 'Overview',
-		items: [workspacePages.dashboard],
+		items: [workspacePages.assistant, workspacePages.dashboard],
 	},
 	{
 		title: 'Automate',

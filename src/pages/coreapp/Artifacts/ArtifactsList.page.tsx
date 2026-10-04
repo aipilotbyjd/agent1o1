@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useOutletContext, useParams } from 'react-router';
+import { Link, useOutletContext, useParams } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, FileDown, Download, Trash2, History, Eye, MoreHorizontal, Share2, Lock } from 'lucide-react';
 import { OutletContextType } from './_layouts/Artifacts.layout';
@@ -7,6 +7,8 @@ import { useConfirm } from '@/context/confirm';
 import Breadcrumb from '@/components/layout/Breadcrumb';
 import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
+import { useBrand } from '@/context/brand';
+import useResolvePath from '@/hooks/useResolvePath';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useArtifacts, useDeleteArtifact, useDownloadArtifact } from '@/api/modules/artifacts';
 import type { TArtifact, TArtifactMimeCategory } from '@/types/artifact.type';
@@ -221,6 +223,8 @@ const ArtifactCard = ({
 	onDelete: () => void;
 }) => {
 	const [menuOpen, setMenuOpen] = useState(false);
+	const brand = useBrand();
+	const { resolvePath } = useResolvePath();
 	const IconComponent = getArtifactIcon(artifact.mime_type);
 	const color = getArtifactColor(artifact.mime_type);
 
@@ -250,9 +254,17 @@ const ArtifactCard = ({
 						<h4 className='truncate text-[13px] leading-snug font-black text-slate-900 transition-colors group-hover:text-primary-600 dark:text-zinc-50 dark:group-hover:text-primary-400'>
 							{artifact.filename}
 						</h4>
-						<span className='block truncate text-[9px] font-extrabold tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
-							{artifact.agent?.name ?? artifact.creator?.name ?? 'Uploaded manually'}
-						</span>
+						{artifact.assistant_session_id ? (
+							<Link
+								to={`${resolvePath(pages.workspace.subPages!.assistant.to)}?session=${artifact.assistant_session_id}`}
+								className='block truncate text-[9px] font-extrabold tracking-wider text-slate-400 uppercase hover:text-primary-600 hover:underline dark:text-zinc-500'>
+								From a {brand.name} chat
+							</Link>
+						) : (
+							<span className='block truncate text-[9px] font-extrabold tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
+								{artifact.agent?.name ?? artifact.creator?.name ?? 'Uploaded manually'}
+							</span>
+						)}
 					</div>
 				</div>
 				<div className='relative shrink-0'>

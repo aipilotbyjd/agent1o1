@@ -44,6 +44,8 @@ const BlueprintsLayout = lazy(
 	() => import('@/pages/coreapp/Blueprints/_layouts/Blueprints.layout'),
 );
 const BlueprintsListPage = lazy(() => import('@/pages/coreapp/Blueprints/BlueprintsList.page'));
+const AssistantLayout = lazy(() => import('@/pages/coreapp/Assistant/_layouts/Assistant.layout'));
+const AssistantHomePage = lazy(() => import('@/pages/coreapp/Assistant/AssistantHome.page'));
 const VaultLayout = lazy(() => import('@/pages/coreapp/Vault/_layouts/Vault.layout'));
 const SecretsPage = lazy(() => import('@/pages/coreapp/Vault/Secrets.page'));
 
@@ -64,6 +66,7 @@ const dashboardRoute: RouteObject = {
 /** List pages: each gets its own layout wrapper, rendered inside the core-app shell. */
 const listRoutes: RouteObject[] = (
 	[
+		[workspacePages.assistant.to, <AssistantLayout />, <AssistantHomePage />],
 		[workspacePages.playbooks.to, <PlaybooksLayout />, <WorkflowsListPage />],
 		[workspacePages.agents.to, <AgentsLayout />, <AgentsListPage />],
 		[workspacePages.blueprints.to, <BlueprintsLayout />, <BlueprintsListPage />],

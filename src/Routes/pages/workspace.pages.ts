@@ -6,6 +6,12 @@ export const workspace: TPage = {
 	text: 'Workspace',
 	icon: 'Home09',
 	subPages: {
+		assistant: {
+			id: 'assistant',
+			to: ws('assistant'),
+			text: 'Assistant',
+			icon: 'AiMagic',
+		},
 		dashboard: {
 			id: 'dashboard',
 			to: ws('dashboard'),

@@ -154,4 +154,30 @@ export default tseslint.config(
 			'react/react-in-jsx-scope': 'off',
 		},
 	},
+	{
+		// The assistant's name comes from the server brand (useBrand / {{assistantName}}).
+		// Only the offline fallback may spell it — see src/config/brand.default.ts.
+		files: ['src/**/*.{ts,tsx}'],
+		ignores: ['src/config/brand.default.ts'],
+		rules: {
+			'no-restricted-syntax': [
+				'error',
+				{
+					selector: 'Literal[value=/\\bOrb\\b/i]',
+					message:
+						"Don't hard-code the assistant's name — use useBrand() or {{assistantName}}.",
+				},
+				{
+					selector: 'TemplateElement[value.raw=/\\bOrb\\b/i]',
+					message:
+						"Don't hard-code the assistant's name — use useBrand() or {{assistantName}}.",
+				},
+				{
+					selector: 'JSXText[value=/\\bOrb\\b/i]',
+					message:
+						"Don't hard-code the assistant's name — use useBrand() or {{assistantName}}.",
+				},
+			],
+		},
+	},
 );
