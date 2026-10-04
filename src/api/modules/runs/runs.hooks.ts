@@ -36,6 +36,7 @@ export const useCancelRun = (ws: string) => {
 		onSuccess: (_run, id) => {
 			qc.invalidateQueries({ queryKey: runKeys.lists(ws) });
 			qc.invalidateQueries({ queryKey: runKeys.detail(ws, id) });
+			qc.invalidateQueries({ queryKey: ['dashboard', ws] });
 		},
 		meta: { errorMessage: 'Failed to cancel run' },
 	});
@@ -45,7 +46,10 @@ export const useRetryRun = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (id: string) => RunService.retry(ws, id),
-		onSuccess: () => qc.invalidateQueries({ queryKey: runKeys.lists(ws) }),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: runKeys.lists(ws) });
+			qc.invalidateQueries({ queryKey: ['dashboard', ws] });
+		},
 		meta: { errorMessage: 'Failed to retry run' },
 	});
 };
@@ -69,7 +73,12 @@ export const useDecideRunApproval = (ws: string, runId: string) => {
 	return useMutation({
 		mutationFn: ({ approvalId, body }: { approvalId: string; body: TDecideApprovalDto }) =>
 			RunService.decideApproval(ws, runId, approvalId, body),
-		onSuccess: () => qc.invalidateQueries({ queryKey: runKeys.detail(ws, runId) }),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: runKeys.detail(ws, runId) });
+			qc.invalidateQueries({ queryKey: runKeys.lists(ws) });
+			// Pending approvals and the overview counts live under the dashboard keys.
+			qc.invalidateQueries({ queryKey: ['dashboard', ws] });
+		},
 		meta: { errorMessage: 'Failed to record approval decision' },
 	});
 };

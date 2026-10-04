@@ -10,6 +10,9 @@ import type { TUser } from './auth.type';
 
 export type TArtifactGeneralAccess = 'restricted' | 'organization' | 'anyone';
 
+/** Mirrors `ArtifactController::MIME_CATEGORIES`. */
+export type TArtifactMimeCategory = 'images' | 'documents' | 'spreadsheets';
+
 export type TArtifactVersionSummary = {
 	id: string;
 	version: number;
@@ -30,6 +33,8 @@ export type TArtifact = {
 	mime_type: string;
 	size: number;
 	agent: { id: string; name: string } | null;
+	/** The personal-assistant conversation that made it, if any. */
+	assistant_session_id: string | null;
 	creator: TUser | null;
 	preview_url: string | null;
 	general_access: TArtifactGeneralAccess;
@@ -55,4 +60,15 @@ export type TUpdateArtifactAccessDto = {
 
 export type TShareArtifactDto = {
 	user_id: string;
+};
+
+/** Filters `ArtifactController::index` accepts. */
+export type TArtifactListParams = {
+	page?: number;
+	per_page?: number;
+	/** Only artifacts this agent exported — member uploads have no agent. */
+	agent_id?: string;
+	/** Filename LIKE match. */
+	search?: string;
+	mime_category?: TArtifactMimeCategory;
 };

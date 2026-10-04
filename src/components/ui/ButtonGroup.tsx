@@ -1,7 +1,7 @@
 import { Children, cloneElement, FC, HTMLAttributes, ReactElement } from 'react';
 import classNames from 'classnames';
 import { IButtonProps, TButtonDimensions, TButtonVariants } from './Button';
-import { TBorderWidth } from '@/types/borderWidth.type';
+import { TBorderWidth } from '@/types/border-width.type';
 import { TColors } from '@/types/colors.type';
 import { TRounded } from '@/types/rounded.type';
 

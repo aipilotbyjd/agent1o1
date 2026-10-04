@@ -37,6 +37,11 @@ export class ApiError extends Error {
 		return this.status === 422;
 	}
 
+	/** The resource's current state refuses the request (e.g. a stale version). */
+	get isConflict(): boolean {
+		return this.status === 409;
+	}
+
 	get isServer(): boolean {
 		return !!this.status && this.status >= 500;
 	}

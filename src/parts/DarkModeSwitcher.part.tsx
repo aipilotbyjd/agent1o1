@@ -1,6 +1,6 @@
 import { FC } from 'react';
 import classNames from 'classnames';
-import { TDarkMode } from '@/types/darkMode.type';
+import { TDarkMode } from '@/types/dark-mode.type';
 import useAsideStatus from '@/hooks/useAsideStatus';
 import useDarkMode from '@/hooks/useDarkMode';
 import DARK_MODE from '@/constants/darkMode.constant';

@@ -4,10 +4,12 @@ const agent = (ws: string, id: string) => `${base(ws)}/${id}`;
 export const AgentEndpoints = {
 	list: base,
 	create: base,
+	draft: (ws: string) => `${base(ws)}/draft`,
 	detail: agent,
 	update: agent,
 	delete: agent,
 	duplicate: (ws: string, id: string) => `${agent(ws, id)}/duplicate`,
+	improveInstructions: (ws: string, id: string) => `${agent(ws, id)}/instructions/improve`,
 	syncTags: (ws: string, id: string) => `${agent(ws, id)}/tags`,
 } as const;
 
@@ -18,6 +20,8 @@ export const AgentSessionEndpoints = {
 	update: (ws: string, agentId: string, id: string) => `${agent(ws, agentId)}/sessions/${id}`,
 	delete: (ws: string, agentId: string, id: string) => `${agent(ws, agentId)}/sessions/${id}`,
 	messages: (ws: string, agentId: string, id: string) => `${agent(ws, agentId)}/sessions/${id}/messages`,
+	subagentTasks: (ws: string, agentId: string, id: string) =>
+		`${agent(ws, agentId)}/sessions/${id}/subagent-tasks`,
 	sendMessage: (ws: string, agentId: string, id: string) =>
 		`${agent(ws, agentId)}/sessions/${id}/messages`,
 	streamMessage: (ws: string, agentId: string, id: string) =>
@@ -34,6 +38,7 @@ export const AgentVersionEndpoints = {
 export const AgentToolBindingEndpoints = {
 	list: (ws: string, agentId: string) => `${agent(ws, agentId)}/tool-bindings`,
 	create: (ws: string, agentId: string) => `${agent(ws, agentId)}/tool-bindings`,
+	update: (ws: string, agentId: string, id: string) => `${agent(ws, agentId)}/tool-bindings/${id}`,
 	delete: (ws: string, agentId: string, id: string) => `${agent(ws, agentId)}/tool-bindings/${id}`,
 } as const;
 
@@ -41,8 +46,17 @@ export const AgentWorkflowToolEndpoints = {
 	list: (ws: string, agentId: string) => `${agent(ws, agentId)}/workflows`,
 	attach: (ws: string, agentId: string, workflowId: string) =>
 		`${agent(ws, agentId)}/workflows/${workflowId}`,
+	/** Sets the approval rule for running the workflow as a tool. */
+	update: (ws: string, agentId: string, workflowId: string) =>
+		`${agent(ws, agentId)}/workflows/${workflowId}`,
 	detach: (ws: string, agentId: string, workflowId: string) =>
 		`${agent(ws, agentId)}/workflows/${workflowId}`,
+} as const;
+
+export const AgentSubagentEndpoints = {
+	list: (ws: string, agentId: string) => `${agent(ws, agentId)}/subagents`,
+	attach: (ws: string, agentId: string, subagentId: string) => `${agent(ws, agentId)}/subagents/${subagentId}`,
+	detach: (ws: string, agentId: string, subagentId: string) => `${agent(ws, agentId)}/subagents/${subagentId}`,
 } as const;
 
 export const AgentSkillAttachmentEndpoints = {
@@ -61,9 +75,9 @@ export const AgentKnowledgeEndpoints = {
 export const AgentKnowledgeSourceEndpoints = {
 	list: (ws: string, agentId: string) => `${agent(ws, agentId)}/knowledge-sources`,
 	attach: (ws: string, agentId: string, collection: string) =>
-		`${agent(ws, agentId)}/knowledge-sources/${collection}`,
+		`${agent(ws, agentId)}/knowledge-sources/${encodeURIComponent(collection)}`,
 	detach: (ws: string, agentId: string, collection: string) =>
-		`${agent(ws, agentId)}/knowledge-sources/${collection}`,
+		`${agent(ws, agentId)}/knowledge-sources/${encodeURIComponent(collection)}`,
 } as const;
 
 export const AgentMemoryEndpoints = {

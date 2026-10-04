@@ -1,3 +1,0 @@
-```tsx
-<Alert isClosable>...</Alert>
-```

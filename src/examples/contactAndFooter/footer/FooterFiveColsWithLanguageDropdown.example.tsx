@@ -4,7 +4,7 @@ import Dropdown, { DropdownItem, DropdownMenu, DropdownToggle } from '@/componen
 import Button from '@/components/ui/Button';
 import { useTranslation } from 'react-i18next';
 import { useContext } from 'react';
-import ThemeContext from '@/context/themeContext';
+import ThemeContext from '@/context/theme';
 import LANG from '@/constants/lang.constant';
 import Icon from '@/components/icon/Icon';
 import { LogoDark, LogoLight } from '@/assets/images';

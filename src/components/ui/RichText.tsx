@@ -23,7 +23,7 @@ import { createEditor, Descendant, Editor, Element as SlateElement, Transforms }
 import { withHistory, HistoryEditor } from 'slate-history';
 import classNames from 'classnames';
 import Button from '@/components/ui/Button';
-import { TBorderWidth } from '@/types/borderWidth.type';
+import { TBorderWidth } from '@/types/border-width.type';
 import { TColors } from '@/types/colors.type';
 import { TRounded } from '@/types/rounded.type';
 import themeConfig from '@/config/theme.config';

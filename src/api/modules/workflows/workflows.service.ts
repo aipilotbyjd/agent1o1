@@ -12,7 +12,8 @@ import type {
 import { WorkflowEndpoints as E } from './workflows.endpoints';
 
 export const WorkflowService = {
-	// List omits `nodes`/`edges`/`tags` — only detail and duplicate load them.
+	// List omits `nodes`/`edges` — only detail and duplicate load them. `tags`
+	// is the reverse: the list eager-loads it, `show` doesn't.
 	list: (ws: string, _params?: TListParams, signal?: AbortSignal) =>
 		axiosClient
 			.get<TApiResponse<{ workflows: TWorkflow[] }>>(E.list(ws), { signal })
@@ -55,4 +56,7 @@ export const WorkflowService = {
 		axiosClient
 			.delete<TApiResponse<{ node: TWorkflowNode }>>(E.unpinNode(ws, id, nodeId))
 			.then(unwrapKey<TWorkflowNode>('node')),
+
+	setFavorite: (ws: string, id: string, is_favorite: boolean) =>
+		axiosClient.patch(E.favorite(ws, id), { is_favorite }).then(() => undefined),
 };

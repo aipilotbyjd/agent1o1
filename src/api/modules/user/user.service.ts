@@ -25,7 +25,9 @@ export const UserService = {
 		const form = new FormData();
 		form.append('avatar', file);
 		return axiosClient
-			.post<TApiResponse<{ user: TUser }>>(UserEndpoints.uploadAvatar, form)
+			.post<TApiResponse<{ user: TUser }>>(UserEndpoints.uploadAvatar, form, {
+				headers: { 'Content-Type': undefined },
+			})
 			.then(unwrapKey<TUser>('user'));
 	},
 

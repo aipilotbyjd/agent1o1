@@ -1,23 +1,24 @@
 import { Link } from 'react-router';
-import { LogoDark, LogoLight } from '@/assets/images';
 import Icon from '@/components/icon/Icon';
 import { AsideHead } from '@/components/layout/Aside';
 import useAsideStatus from '@/hooks/useAsideStatus';
-import useDarkMode from '@/hooks/useDarkMode';
+import AppLogo from '@/components/AppLogo';
 
 const AsideHeaderPart = () => {
 	const { asideStatus, setAsideStatus } = useAsideStatus();
-	const { isDarkTheme } = useDarkMode();
 
 	return (
 		<AsideHead>
 			{asideStatus && (
-				<Link to='/' aria-label='Logo'>
-					<img
-						src={isDarkTheme ? LogoDark : LogoLight}
-						alt='Agent1o1'
-						className='h-10 transition-all duration-300 ease-in-out'
+				<Link to='/' aria-label='Agent1o1 home' className='flex items-center gap-2.5'>
+					<AppLogo
+						className='size-10 transition-all duration-300 ease-in-out'
+						rounded='rounded-xl'
+						alt=''
 					/>
+					<span className='text-lg font-black tracking-tight text-zinc-950 dark:text-white'>
+						agent1o1
+					</span>
 				</Link>
 			)}
 			<button

@@ -4,7 +4,7 @@ import type {
 	TUpdateConnectorCredentialDto,
 	TInitiateOAuthConnectorDto,
 } from '@/types/connector.type';
-import { ConnectorService } from './connectors.service';
+import { ConnectorService, connectOAuthConnector } from './connectors.service';
 import { connectorKeys, connectorCredentialKeys } from './connectors.keys';
 
 export const useConnectors = () =>
@@ -82,3 +82,18 @@ export const useInitiateOAuthConnector = (ws: string) =>
 		mutationFn: (payload: TInitiateOAuthConnectorDto) => ConnectorService.initiateOAuth(ws, payload),
 		meta: { errorMessage: 'Failed to start connector authorization' },
 	});
+
+/**
+ * The whole OAuth round trip: initiate, drive the popup, and settle once it
+ * reports back. Prefer this over `useInitiateOAuthConnector`, which only hands
+ * back a URL and leaves the navigation to the caller.
+ */
+export const useConnectOAuthConnector = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (payload: Omit<TInitiateOAuthConnectorDto, 'redirect_uri'>) =>
+			connectOAuthConnector(ws, payload),
+		onSuccess: () => qc.invalidateQueries({ queryKey: connectorCredentialKeys.lists(ws) }),
+		meta: { errorMessage: 'Failed to connect app' },
+	});
+};

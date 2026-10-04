@@ -1,11 +1,14 @@
 import { axiosClient } from '@/api/client';
 import { unwrapKey } from '@/api/core';
 import type { TApiResponse } from '@/api/core';
-import type { TNodeCategory, TTriggerPreset, TModelCatalogEntry } from '@/types/catalog.type';
+import type {
+	TNodeCategory,
+	TNodeCategoryWithCount,
+	TTriggerPreset,
+	TModelCatalogEntry,
+} from '@/types/catalog.type';
 import type { TBuiltinNode } from '@/types/node.type';
 import { CatalogEndpoints as E } from './catalog.endpoints';
-
-export type TNodeCategoryWithCount = TNodeCategory & { nodes_count: number; nodes?: TBuiltinNode[] };
 
 export const CatalogService = {
 	nodeCategories: (includeNodes = false, signal?: AbortSignal) =>

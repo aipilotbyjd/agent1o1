@@ -7,8 +7,10 @@ import { notify } from './notify';
 // ------------------------------------------------------------
 // QueryCache/MutationCache are the single owner of error-toast
 // display. Call sites opt into a custom message via
-// `meta.errorMessage`, or opt out entirely via `meta.silent` —
-// never via a hook-level `onError`, which would show it twice.
+// `meta.errorMessage`, or opt out entirely via `meta.silent` (or
+// for some statuses only, via `meta.silentStatuses`, when the call
+// site handles those itself) — never via a hook-level `onError`,
+// which would show it twice.
 // ============================================================
 
 /** Never retry a refusal (4xx) — only retry transient failures (5xx / network / 429). */
@@ -30,6 +32,9 @@ export const createQueryClient = () =>
 		mutationCache: new MutationCache({
 			onError: (error, _vars, _ctx, mutation) => {
 				if (mutation.meta?.silent) return;
+				const silentStatuses = mutation.meta?.silentStatuses as number[] | undefined;
+				if (ApiError.is(error) && error.status && silentStatuses?.includes(error.status))
+					return;
 				const fallback = (mutation.meta?.errorMessage as string) ?? 'Something went wrong';
 				notify.error(ApiError.is(error) ? error.message : fallback);
 			},
