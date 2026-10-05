@@ -54,7 +54,12 @@ const normalizeHue = (color?: string) => {
 	return color;
 };
 
-const schemaTypeToPortType = (type?: string): TPortType => {
+/** A schema `type` may be a union like `['integer', 'null']` — the first non-null wins. */
+const primaryType = (type?: string | string[]) =>
+	Array.isArray(type) ? type.find((candidate) => candidate !== 'null') : type;
+
+const schemaTypeToPortType = (rawType?: string | string[]): TPortType => {
+	const type = primaryType(rawType);
 	if (type === 'string') return 'string';
 	if (type === 'number' || type === 'integer') return 'number';
 	if (type === 'boolean') return 'boolean';
@@ -63,11 +68,45 @@ const schemaTypeToPortType = (type?: string): TPortType => {
 	return 'any';
 };
 
+const isStringList = (property: INodeSchemaProperty) =>
+	primaryType(property.type) === 'array' &&
+	(!property.items || primaryType(property.items.type) === 'string');
+
+/**
+ * Built-in nodes say how a field should be drawn (`x-widget`, `x-options`);
+ * older/custom schemas only carry a JSON type, so that's the fallback.
+ */
 const schemaTypeToFieldKind = (property: INodeSchemaProperty): TFieldKind => {
+	if (property['x-options']) return 'dynamic';
+
+	switch (property['x-widget']) {
+		case 'credential':
+			return 'credential';
+		case 'textarea':
+			return 'longtext';
+		case 'select':
+			return 'select';
+		case 'toggle':
+			return 'toggle';
+		case 'number':
+			return 'number';
+		case 'key-value':
+			return 'kv';
+		case 'json':
+			return 'code';
+		case 'list':
+			return isStringList(property) ? 'list' : 'code';
+		case 'text':
+		case 'emails':
+		case 'datetime':
+			return 'text';
+	}
+
+	const type = primaryType(property.type);
 	if (property.enum?.length) return 'select';
-	if (property.type === 'boolean') return 'toggle';
-	if (property.type === 'number' || property.type === 'integer') return 'number';
-	if (property.type === 'object' || property.type === 'array') return 'code';
+	if (type === 'boolean') return 'toggle';
+	if (type === 'number' || type === 'integer') return 'number';
+	if (type === 'object' || type === 'array') return 'code';
 	return 'text';
 };
 
@@ -78,19 +117,52 @@ const humanize = (value: unknown) => {
 
 const schemaProperties = (schema?: INodeSchema) => schema?.properties ?? {};
 
+const dynamicOptions = (property: INodeSchemaProperty): TNodeField['dynamic'] => {
+	const options = property['x-options'];
+	if (!options) return undefined;
+	const type = primaryType(property.type);
+
+	return {
+		source: options.source,
+		dependsOn: options.depends_on ?? [],
+		uses: options.uses ?? [],
+		multiple: options.multiple,
+		allowCustom: options.allow_custom,
+		valueType: type === 'array' ? 'array' : type === 'integer' ? 'integer' : 'string',
+	};
+};
+
 const schemaToFields = (schema?: INodeSchema): TNodeField[] => {
 	const required = new Set(schema?.required ?? []);
 
-	return Object.entries(schemaProperties(schema)).map(([key, property]) => ({
-		key,
-		label: property.label ?? humanize(key),
-		kind: schemaTypeToFieldKind(property),
-		json: property.type === 'object' || property.type === 'array' || undefined,
-		default: property.default,
-		required: required.has(key),
-		help: property.description,
-		options: property.enum?.map((option) => ({ label: humanize(option), value: option })),
-	}));
+	return Object.entries(schemaProperties(schema))
+		.filter(([, property]) => !property['x-hidden'])
+		.map(([key, property]) => {
+			const kind = schemaTypeToFieldKind(property);
+			const type = primaryType(property.type);
+			const labels = property['x-enum-labels'];
+
+			return {
+				key,
+				label: property.title ?? property.label ?? humanize(key),
+				kind,
+				json: (kind === 'code' && (type === 'object' || type === 'array')) || undefined,
+				kvObject: kind === 'kv' || undefined,
+				credentialType: kind === 'credential' ? property['x-connector'] : undefined,
+				dynamic: dynamicOptions(property),
+				default: property.default,
+				required: required.has(key),
+				help: property.description,
+				placeholder: property['x-placeholder'],
+				advanced: property['x-advanced'] || undefined,
+				min: property.minimum,
+				max: property.maximum,
+				options: property.enum?.map((option) => ({
+					label: labels?.[option] ?? humanize(option),
+					value: option,
+				})),
+			};
+		});
 };
 
 const schemaToPorts = (
@@ -130,7 +202,9 @@ export const mapApiNodeToDefinition = (
 	// type; their category slug is the connector key they resolve against.
 	const credentialType =
 		node.credential_type ??
-		('requires_connector' in apiNode && apiNode.requires_connector ? apiNode.category : undefined);
+		('requires_connector' in apiNode && apiNode.requires_connector
+			? apiNode.category
+			: undefined);
 	const configFields = schemaToFields(node.config_schema ?? node.schema);
 	const inputPorts = schemaToPorts(node.input_schema, 'input', 'any');
 	const outputPorts = schemaToPorts(node.output_schema, 'output', 'any');
@@ -142,6 +216,7 @@ export const mapApiNodeToDefinition = (
 					kind: 'credential' as const,
 					credentialType,
 					required: true,
+					help: configFields.find((field) => field.key === 'credential_id')?.help,
 				},
 				...configFields.filter(
 					(field) => field.key !== 'credential_id' && field.key !== 'access_token',
@@ -169,23 +244,22 @@ export const mapApiCategoryToGroup = (
 ): TNodeCategoryGroup => {
 	const category = apiCategory as INodeCategory;
 	return {
-	id: category.id,
-	slug: category.slug,
-	label: category.name,
-	description: category.description ?? '',
-	icon: category.icon ?? '',
-	color: normalizeHue(category.color),
-	colorHex: category.color,
-	kind: category.kind === 'app' ? 'app' : 'core',
-	order: category.sort_order,
-	nodesCount: category.nodes_count ?? category.nodes?.length ?? 0,
-	nodes: (category.nodes ?? []).map((node) =>
-		mapApiNodeToDefinition(node, category.slug, category.color),
-	),
+		id: category.id,
+		slug: category.slug,
+		label: category.name,
+		description: category.description ?? '',
+		icon: category.icon ?? '',
+		color: normalizeHue(category.color),
+		colorHex: category.color,
+		kind: category.kind === 'app' ? 'app' : 'core',
+		order: category.sort_order,
+		nodesCount: category.nodes_count ?? category.nodes?.length ?? 0,
+		nodes: (category.nodes ?? []).map((node) =>
+			mapApiNodeToDefinition(node, category.slug, category.color),
+		),
 	};
 };
 
 export const mapApiCategoriesToGroups = (
 	categories: Array<INodeCategory | TNodeCategoryWithCount>,
-): TNodeCategoryGroup[] =>
-	categories.map(mapApiCategoryToGroup).sort((a, b) => a.order - b.order);
+): TNodeCategoryGroup[] => categories.map(mapApiCategoryToGroup).sort((a, b) => a.order - b.order);

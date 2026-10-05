@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import type { TNodeField } from '../../../_types/node.type';
 import AccountSelect from './AccountSelect.partial';
+import DynamicSelect from './DynamicSelect.partial';
 import ExpressionInput from './ExpressionInput.partial';
 
 export const inputClass =
@@ -37,7 +38,7 @@ const PickerFieldInput = ({ field, value, onChange, compact }: FieldInputProps) 
 					type='button'
 					aria-label={`Change ${field.label}`}
 					onClick={() => setEntering(true)}
-					className='text-[10px] font-bold text-primary-600 hover:underline dark:text-primary-400'>
+					className='text-primary-600 dark:text-primary-400 text-[10px] font-bold hover:underline'>
 					Change
 				</button>
 				<button
@@ -141,15 +142,206 @@ const JsonFieldInput = ({ field, value, onChange, compact, nodeId }: FieldInputP
 	);
 };
 
+type TKvRow = { key: string; value: string };
+
+/** `{a: 1}` → rows, keeping a trailing empty row to type into. */
+const objectToRows = (value: unknown): TKvRow[] => {
+	const rows =
+		value && typeof value === 'object' && !Array.isArray(value)
+			? Object.entries(value as Record<string, unknown>).map(([key, item]) => ({
+					key,
+					value: typeof item === 'string' ? item : JSON.stringify(item),
+				}))
+			: [];
+	return rows.length ? rows : [{ key: '', value: '' }];
+};
+
+/** Rows → `{key: value}`; rows without a key are dropped. */
+const rowsToObject = (rows: TKvRow[]) =>
+	Object.fromEntries(
+		rows.filter((row) => row.key.trim()).map((row) => [row.key.trim(), row.value]),
+	);
+
+/**
+ * Key/value rows stored as a plain object (request headers, a transform's
+ * output mapping, a sub-workflow's input). Rows live locally so a half-typed
+ * row without a key doesn't vanish on the next render.
+ */
+const KeyValueObjectInput = ({ field, value, onChange, compact }: FieldInputProps) => {
+	const cls = compact ? compactInputClass : inputClass;
+	const [rows, setRows] = useState<TKvRow[]>(() => objectToRows(value));
+	// Compared against the stored value as-is, so a non-string value (`{a: 1}`)
+	// doesn't read as an outside change on every render.
+	const lastEmitted = useRef(JSON.stringify(value ?? {}));
+
+	const incoming = JSON.stringify(value ?? {});
+	if (incoming !== lastEmitted.current) {
+		lastEmitted.current = incoming;
+		setRows(objectToRows(value));
+	}
+
+	const update = (next: TKvRow[]) => {
+		setRows(next);
+		const object = rowsToObject(next);
+		lastEmitted.current = JSON.stringify(object);
+		onChange(object);
+	};
+
+	return (
+		<div className='space-y-1.5'>
+			{rows.map((row, index) => (
+				<div key={index} className='flex items-center gap-1.5'>
+					<input
+						type='text'
+						placeholder='Key'
+						value={row.key}
+						onChange={(event) =>
+							update(
+								rows.map((item, i) =>
+									i === index ? { ...item, key: event.target.value } : item,
+								),
+							)
+						}
+						className={cls}
+						aria-label={`${field.label} key ${index + 1}`}
+					/>
+					<input
+						type='text'
+						placeholder='Value'
+						value={row.value}
+						onChange={(event) =>
+							update(
+								rows.map((item, i) =>
+									i === index ? { ...item, value: event.target.value } : item,
+								),
+							)
+						}
+						className={cls}
+						aria-label={`${field.label} value ${index + 1}`}
+					/>
+					<button
+						type='button'
+						aria-label={`Remove ${field.label} row ${index + 1}`}
+						onClick={() =>
+							update(
+								rows.length > 1
+									? rows.filter((_, i) => i !== index)
+									: [{ key: '', value: '' }],
+							)
+						}
+						className='shrink-0 text-zinc-400 hover:text-rose-500'>
+						<X size={12} />
+					</button>
+				</div>
+			))}
+			<button
+				type='button'
+				onClick={() => setRows([...rows, { key: '', value: '' }])}
+				className='text-[10px] font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400'>
+				+ Add row
+			</button>
+		</div>
+	);
+};
+
+/** A list of strings (e.g. a spreadsheet row's cell values), one input per item. */
+const StringListInput = ({ field, value, onChange, compact }: FieldInputProps) => {
+	const cls = compact ? compactInputClass : inputClass;
+	const items =
+		Array.isArray(value) && value.length ? value.map((item) => String(item ?? '')) : [''];
+
+	const update = (next: string[]) => onChange(next);
+
+	return (
+		<div className='space-y-1.5'>
+			{items.map((item, index) => (
+				<div key={index} className='flex items-center gap-1.5'>
+					<input
+						type='text'
+						value={item}
+						placeholder={
+							field.placeholder ? `${field.placeholder} ${index + 1}` : undefined
+						}
+						onChange={(event) =>
+							update(
+								items.map((current, i) =>
+									i === index ? event.target.value : current,
+								),
+							)
+						}
+						className={cls}
+						aria-label={`${field.label} ${index + 1}`}
+					/>
+					<button
+						type='button'
+						aria-label={`Remove ${field.label} ${index + 1}`}
+						onClick={() =>
+							update(items.length > 1 ? items.filter((_, i) => i !== index) : [])
+						}
+						className='shrink-0 text-zinc-400 hover:text-rose-500'>
+						<X size={12} />
+					</button>
+				</div>
+			))}
+			<button
+				type='button'
+				onClick={() => update([...items, ''])}
+				className='text-[10px] font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400'>
+				+ Add
+			</button>
+		</div>
+	);
+};
+
 const FieldInput = ({ field, value, onChange, compact, nodeId }: FieldInputProps) => {
 	const cls = compact ? compactInputClass : inputClass;
 
+	if (field.kind === 'dynamic' && field.dynamic) {
+		return (
+			<DynamicSelect
+				field={field}
+				value={value}
+				onChange={onChange}
+				compact={compact}
+				nodeId={nodeId}
+				className={cls}
+			/>
+		);
+	}
+
+	if (field.kind === 'list') {
+		return (
+			<StringListInput field={field} value={value} onChange={onChange} compact={compact} />
+		);
+	}
+
+	if (field.kind === 'kv' && field.kvObject) {
+		return (
+			<KeyValueObjectInput
+				field={field}
+				value={value}
+				onChange={onChange}
+				compact={compact}
+			/>
+		);
+	}
+
 	if (field.json) {
-		return <JsonFieldInput field={field} value={value} onChange={onChange} compact={compact} nodeId={nodeId} />;
+		return (
+			<JsonFieldInput
+				field={field}
+				value={value}
+				onChange={onChange}
+				compact={compact}
+				nodeId={nodeId}
+			/>
+		);
 	}
 
 	if (field.kind === 'picker') {
-		return <PickerFieldInput field={field} value={value} onChange={onChange} compact={compact} />;
+		return (
+			<PickerFieldInput field={field} value={value} onChange={onChange} compact={compact} />
+		);
 	}
 
 	// Every text-like field gets the expression editor so upstream values can be
@@ -248,8 +440,14 @@ const FieldInput = ({ field, value, onChange, compact, nodeId }: FieldInputProps
 		return (
 			<input
 				type='number'
-				value={Number(value ?? 0)}
-				onChange={(event) => onChange(Number(event.target.value))}
+				value={value === undefined || value === null || value === '' ? '' : Number(value)}
+				min={field.min}
+				max={field.max}
+				placeholder={field.placeholder}
+				// Cleared → unset, so the node falls back to its own default.
+				onChange={(event) =>
+					onChange(event.target.value === '' ? undefined : Number(event.target.value))
+				}
 				aria-label={field.label}
 				className={cls}
 			/>

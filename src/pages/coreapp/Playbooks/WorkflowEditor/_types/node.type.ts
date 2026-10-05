@@ -37,7 +37,20 @@ export type TFieldKind =
 	| 'kv'
 	| 'credential'
 	| 'model'
-	| 'picker';
+	| 'picker'
+	| 'dynamic'
+	| 'list';
+
+/** A `dynamic` field's live dropdown — see `INodeSchemaOptions`. */
+export type TDynamicFieldOptions = {
+	source: string;
+	dependsOn: string[];
+	uses: string[];
+	multiple: boolean;
+	allowCustom: boolean;
+	/** The config value's shape: an id string, a number (GitHub issues), or a list. */
+	valueType: 'string' | 'integer' | 'array';
+};
 
 export type TNodeField = {
 	key: string;
@@ -57,6 +70,13 @@ export type TNodeField = {
 	pickerLabel?: string;
 	/** code only — the value is a JSON object/array, edited as JSON text. */
 	json?: boolean;
+	/** kv only — store the rows as a `{key: value}` object instead of a row list. */
+	kvObject?: boolean;
+	/** dynamic only — where the choices come from. */
+	dynamic?: TDynamicFieldOptions;
+	/** number only. */
+	min?: number;
+	max?: number;
 };
 
 export type TNodeDefinition = {
