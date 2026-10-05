@@ -24,8 +24,9 @@ export const AgentSessionEndpoints = {
 		`${agent(ws, agentId)}/sessions/${id}/subagent-tasks`,
 	sendMessage: (ws: string, agentId: string, id: string) =>
 		`${agent(ws, agentId)}/sessions/${id}/messages`,
-	streamMessage: (ws: string, agentId: string, id: string) =>
-		`${agent(ws, agentId)}/sessions/${id}/messages/stream`,
+	/** Opens a turn whose reply streams over Reverb (`TAgentSessionStreamEvent`). */
+	startTurn: (ws: string, agentId: string, id: string) =>
+		`${agent(ws, agentId)}/sessions/${id}/turns`,
 } as const;
 
 export const AgentVersionEndpoints = {

@@ -1,6 +1,5 @@
 import { axiosClient } from '@/api/client';
-import { getAccessToken, unwrapKey } from '@/api/core';
-import { apiConfig } from '@/api/core/config';
+import { unwrapKey } from '@/api/core';
 import type { TApiResponse, TPaginationMeta } from '@/api/core';
 import type {
 	TAgentSession,
@@ -10,7 +9,10 @@ import type {
 	TSendAgentMessageDto,
 	TAgentSessionStreamEvent,
 } from '@/types/agent.type';
+import { AgentActionService } from '@/api/modules/agent-actions/agent-actions.service';
+import type { IEchoLike } from '@/api/modules/workflow-builder/workflow-builder.realtime';
 import { AgentSessionEndpoints as E } from './agents.endpoints';
+import { openAgentTurnStream } from './agents.realtime';
 
 /** JSON, unless files ride along — then multipart, with each file under
  *  `attachments[]`. */
@@ -26,44 +28,6 @@ const messageBody = (payload: TSendAgentMessageDto): TSendAgentMessageDto | Form
 	payload.attachments.forEach((file) => form.append('attachments[]', file));
 	return form;
 };
-
-/**
- * Reads a server-sent event stream into `{ event, ...data }` objects. Shared
- * by every endpoint that answers with the turn's events — sending a message,
- * and deciding on a paused turn's actions (`AgentActionService.decideInChat`).
- */
-export async function* readEventStream(
-	response: Response,
-): AsyncGenerator<TAgentSessionStreamEvent> {
-	if (!response.ok) {
-		const body = (await response.json().catch(() => null)) as { message?: string } | null;
-		throw new Error(body?.message ?? `Agent request failed (${response.status}).`);
-	}
-	if (!response.body) throw new Error('The agent returned an empty stream.');
-
-	const reader = response.body.getReader();
-	const decoder = new TextDecoder();
-	let buffer = '';
-
-	while (true) {
-		const { done, value } = await reader.read();
-		if (done) break;
-
-		buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
-		const chunks = buffer.split('\n\n');
-		buffer = chunks.pop() ?? '';
-
-		for (const chunk of chunks) {
-			const eventLine = chunk.split('\n').find((line) => line.startsWith('event:'));
-			const dataLine = chunk.split('\n').find((line) => line.startsWith('data:'));
-			if (!eventLine || !dataLine) continue;
-
-			const event = eventLine.replace('event:', '').trim();
-			const data = JSON.parse(dataLine.replace('data:', '').trim());
-			yield { event, ...data } as TAgentSessionStreamEvent;
-		}
-	}
-}
 
 export const AgentSessionService = {
 	list: (ws: string, agentId: string, signal?: AbortSignal) =>
@@ -119,30 +83,46 @@ export const AgentSessionService = {
 			.then(unwrapKey<TAgentMessage>('message'));
 	},
 
-	/** Streams one turn over server-sent events — see `TAgentSessionStreamEvent`
-	 *  for the event names on the wire. Uses `fetch` directly since axios has
-	 *  no native SSE support. */
+	/**
+	 * Sends a message and streams its reply: the request opens the turn and
+	 * answers right away, and the reply arrives over Reverb on the session's
+	 * channel — `openAgentTurnStream` plays it back as `TAgentSessionStreamEvent`s.
+	 * Aborting stops listening; the turn still finishes on the backend.
+	 */
 	async *streamMessage(
+		echo: IEchoLike | null,
 		ws: string,
 		agentId: string,
 		id: string,
 		payload: TSendAgentMessageDto,
 		signal?: AbortSignal,
 	): AsyncGenerator<TAgentSessionStreamEvent> {
-		const body = messageBody(payload);
-		const response = await fetch(`${apiConfig.baseUrl}${E.streamMessage(ws, agentId, id)}`, {
-			method: 'POST',
-			credentials: 'include',
-			headers: {
-				// Left unset for multipart so the browser adds the boundary.
-				...(body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
-				Accept: 'text/event-stream',
-				Authorization: `Bearer ${getAccessToken() ?? ''}`,
-			},
-			body: body instanceof FormData ? body : JSON.stringify(body),
+		const stream = await openAgentTurnStream(
+			echo,
+			ws,
+			id,
+			(actionIds) =>
+				AgentActionService.forSession(ws, agentId, id, signal).then((actions) =>
+					actions.filter((action) => actionIds.includes(action.id)),
+				),
 			signal,
-		});
+		);
 
-		yield* readEventStream(response);
+		try {
+			const body = messageBody(payload);
+			const response = await axiosClient.post<TApiResponse<{ turn: { run_id: string } }>>(
+				E.startTurn(ws, agentId, id),
+				body,
+				{
+					signal,
+					...(body instanceof FormData ? { headers: { 'Content-Type': undefined } } : {}),
+				},
+			);
+			const turn = unwrapKey<{ run_id: string }>('turn')(response);
+
+			yield* stream.follow(turn.run_id);
+		} finally {
+			stream.close();
+		}
 	},
 };

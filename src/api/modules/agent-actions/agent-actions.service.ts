@@ -1,6 +1,5 @@
 import { axiosClient } from '@/api/client';
-import { getAccessToken, unwrapKey } from '@/api/core';
-import { apiConfig } from '@/api/core/config';
+import { unwrapKey } from '@/api/core';
 import type { TApiResponse, TPaginationMeta } from '@/api/core';
 import type {
 	TAgentAction,
@@ -14,7 +13,8 @@ import type {
 	TWorkspaceAgentPolicy,
 } from '@/types/agent-action.type';
 import type { TAgentSessionStreamEvent } from '@/types/agent.type';
-import { readEventStream } from '@/api/modules/agents/agent-sessions.service';
+import { openAgentTurnStream } from '@/api/modules/agents/agents.realtime';
+import type { IEchoLike } from '@/api/modules/workflow-builder/workflow-builder.realtime';
 import {
 	AgentActionEndpoints as E,
 	AgentPlanEndpoints as P,
@@ -22,8 +22,8 @@ import {
 	WorkspaceAgentPolicyEndpoints as W,
 } from './agent-actions.endpoints';
 
-/** What deciding from the chat answered: the paused turn resumed right there
- *  (its events stream in, exactly like sending a message), or it still has
+/** What deciding from the chat answered: the paused turn resumed (its events
+ *  stream in over Reverb, exactly like sending a message), or it still has
  *  undecided actions and only the decisions were recorded. */
 export type TChatDecisionResult =
 	| { resumed: true; events: AsyncGenerator<TAgentSessionStreamEvent> }
@@ -74,44 +74,48 @@ export const AgentActionService = {
 			.then(unwrapKey<TAgentAction[]>('actions')),
 
 	/**
-	 * Decides from an open chat. When that leaves the paused turn fully
-	 * decided, the backend continues it in the same response as server-sent
-	 * events; otherwise it answers with plain JSON. `fetch` rather than axios,
-	 * for the stream.
+	 * Decides from an open chat. The decisions are recorded right away; when
+	 * that leaves the paused turn fully decided, it carries on on the queue
+	 * and `events` plays its reply from the session's Reverb channel, like
+	 * sending a message. Otherwise only the decisions were recorded.
 	 */
 	async decideInChat(
+		echo: IEchoLike | null,
 		ws: string,
 		agentId: string,
 		sessionId: string,
 		payload: TDecideAgentActionsDto,
 		signal?: AbortSignal,
 	): Promise<TChatDecisionResult> {
-		const response = await fetch(
-			`${apiConfig.baseUrl}${E.decideInChat(ws, agentId, sessionId)}`,
-			{
-				method: 'POST',
-				credentials: 'include',
-				headers: {
-					'Content-Type': 'application/json',
-					Accept: 'text/event-stream, application/json',
-					Authorization: `Bearer ${getAccessToken() ?? ''}`,
-				},
-				body: JSON.stringify(payload),
-				signal,
-			},
+		// Listening starts before the request goes out: the turn can begin
+		// streaming before the answer to this request arrives.
+		const stream = await openAgentTurnStream(
+			echo,
+			ws,
+			sessionId,
+			(actionIds) =>
+				AgentActionService.forSession(ws, agentId, sessionId, signal).then((actions) =>
+					actions.filter((action) => actionIds.includes(action.id)),
+				),
+			signal,
 		);
 
-		if (response.ok && response.headers.get('Content-Type')?.includes('text/event-stream')) {
-			return { resumed: true, events: readEventStream(response) };
+		try {
+			const response = await axiosClient.post<
+				TApiResponse<{ actions: TAgentAction[]; resumed: boolean; run_id: string | null }>
+			>(E.decideInChat(ws, agentId, sessionId), payload, { signal });
+			const { actions, resumed, run_id: runId } = response.data.data;
+
+			if (!resumed || !runId) {
+				stream.close();
+				return { resumed: false, actions };
+			}
+
+			return { resumed: true, events: stream.follow(runId) };
+		} catch (error) {
+			stream.close();
+			throw error;
 		}
-
-		const body = (await response.json().catch(() => null)) as
-			(TApiResponse<{ actions: TAgentAction[] }> & { message?: string }) | null;
-
-		if (!response.ok)
-			throw new Error(body?.message ?? `Could not record the decision (${response.status}).`);
-
-		return { resumed: false, actions: body?.data?.actions ?? [] };
 	},
 };
 
