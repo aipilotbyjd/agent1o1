@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 import type { TCreateAgentSessionDto, TUpdateAgentSessionDto, TSendAgentMessageDto } from '@/types/agent.type';
 import type { TAgentSessionStreamEvent } from '@/types/agent.type';
+import { useRealtime } from '@/context/realtime';
+import type { IEchoLike } from '@/api/modules/workflow-builder/workflow-builder.realtime';
 import { AgentSessionService } from './agent-sessions.service';
 import { agentSessionKeys } from './agents.keys';
 
@@ -72,9 +74,11 @@ export const useSendAgentMessage = (ws: string, agentId: string, id: string) => 
 };
 
 /** Drives a streamed turn — `events` accumulates as they arrive, `send`
- *  starts the stream, `isStreaming` tracks whether one is in flight. */
+ *  starts the turn (its reply arrives over Reverb), `isStreaming` tracks
+ *  whether one is in flight. */
 export const useStreamAgentMessage = (ws: string, agentId: string, id: string) => {
 	const qc = useQueryClient();
+	const { echo } = useRealtime();
 	const [events, setEvents] = useState<TAgentSessionStreamEvent[]>([]);
 	const [isStreaming, setIsStreaming] = useState(false);
 	const abortRef = useRef<AbortController | null>(null);
@@ -88,6 +92,7 @@ export const useStreamAgentMessage = (ws: string, agentId: string, id: string) =
 
 			try {
 				for await (const event of AgentSessionService.streamMessage(
+					echo as unknown as IEchoLike | null,
 					ws,
 					agentId,
 					id,
@@ -101,7 +106,7 @@ export const useStreamAgentMessage = (ws: string, agentId: string, id: string) =
 				qc.invalidateQueries({ queryKey: agentSessionKeys.detail(ws, agentId, id) });
 			}
 		},
-		[ws, agentId, id, qc],
+		[echo, ws, agentId, id, qc],
 	);
 
 	const cancel = useCallback(() => abortRef.current?.abort(), []);

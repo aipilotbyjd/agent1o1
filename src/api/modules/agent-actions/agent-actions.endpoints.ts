@@ -14,7 +14,7 @@ export const AgentActionEndpoints = {
 	/** A conversation's actions (its subagents' included) — the chat's approval cards. */
 	forSession: (ws: string, agentId: string, sessionId: string) =>
 		`${session(ws, agentId, sessionId)}/actions`,
-	/** Deciding from the chat — answers with the resumed turn's SSE when it resumes. */
+	/** Deciding from the chat — says whether the paused turn resumed; its reply streams over Reverb. */
 	decideInChat: (ws: string, agentId: string, sessionId: string) =>
 		`${session(ws, agentId, sessionId)}/actions/decisions`,
 } as const;

@@ -13,6 +13,10 @@ import type {
 export interface IEchoChannelLike {
 	listen: (event: string, cb: (payload: unknown) => void) => IEchoChannelLike;
 	stopListening?: (event: string) => IEchoChannelLike;
+	/** Runs once the server has accepted the subscription (`PusherChannel`). */
+	subscribed?: (cb: () => void) => IEchoChannelLike;
+	/** The underlying Pusher channel, when Echo exposes it. */
+	subscription?: { subscribed?: boolean };
 }
 
 export interface IEchoLike {

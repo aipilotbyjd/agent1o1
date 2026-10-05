@@ -2,11 +2,11 @@
 // Agent Types
 // ------------------------------------------------------------
 // Core agent record plus every sub-resource that hangs off one:
-// sessions/messages (chat, plus streamed turns), versions, tool
+// sessions/messages (chat, plus Reverb-streamed turns), versions, tool
 // bindings, attached workflows/skills, knowledge + knowledge
 // sources, eval suites, memories, reflections, and evaluation
-// settings. `TAgentSessionStreamEvent` documents the SSE wire
-// format for `POST .../sessions/{session}/messages/stream`.
+// settings. `TAgentSessionStreamEvent` is what a streamed turn plays
+// into the chat; the Reverb payloads behind it are `TAgentTurn*Event`.
 // ============================================================
 import type { TArtifact } from './artifact.type';
 import type { TTag } from './tag.type';
@@ -200,9 +200,13 @@ export type TSendAgentMessageDto = {
 	skill_id?: string | null;
 };
 
-/** SSE event names on `POST .../messages/stream`. `delta` chunks concatenate
- *  in order; `complete` carries the persisted message id to reconcile
- *  against the REST transcript; `done` always fires last. */
+/** The events one turn plays into the chat, in order: `delta` chunks
+ *  concatenate; `tool-call` / `tool-result` bracket each tool; `complete`
+ *  carries the persisted message id to reconcile against the REST transcript;
+ *  `done` always fires last. They are built from the Reverb events on the
+ *  session's channel (`streamAgentTurn`), so `arguments` and `output` are
+ *  absent when too big to broadcast and `complete.text` is always null —
+ *  the transcript is the source of truth. */
 export type TAgentSessionStreamEvent =
 	| { event: 'delta'; delta: string }
 	| { event: 'tool-call'; id: string; name: string; arguments: unknown }
@@ -670,14 +674,43 @@ export type TSkillFilters = {
 	is_shared?: boolean;
 };
 
-// The old backend broadcast a reply token by token (`text_delta`, `tool_call`,
-// `tool_result`, `artifact`, and a terminal `agent.message.ready`). This one
-// streams the same turn over server-sent events instead — see
-// `TAgentSessionStreamEvent` above — so those event types are gone.
+// The reply streams over Reverb as `turn.delta` / `turn.tool` / `turn.changed`
+// on the session's private channel — the `TAgentTurn*Event` types below —
+// which `streamAgentTurn` turns into `TAgentSessionStreamEvent`s.
+
+/** `App\Events\Agents\AgentTurnDelta` (`.turn.delta`) — a batched chunk of reply text. */
+export type TAgentTurnDeltaEvent = { run_id: string; text: string };
+
+/** `App\Events\Agents\AgentTurnToolActivity` (`.turn.tool`). `arguments` is
+ *  sent when a call starts and `output` when it finishes, each only when small. */
+export type TAgentTurnToolEvent = {
+	run_id: string;
+	tool_call_id: string;
+	tool: string;
+	phase: 'started' | 'finished';
+	successful?: boolean;
+	denied?: boolean;
+	subagent_task_id?: string;
+	arguments?: Record<string, unknown>;
+	output?: string;
+};
+
+/** `App\Events\Agents\AgentTurnChanged` (`.turn.changed`). Anything but
+ *  `running` means fetch the stored message; `error` is safe to show. */
+export type TAgentTurnChangedEvent = {
+	turn: {
+		run_id: string;
+		agent_session_id: string;
+		status: 'running' | 'awaiting_approval' | 'completed' | 'failed';
+		message_id?: string;
+		pending_action_ids?: string[];
+		error?: string;
+	};
+};
 
 /**
  * One file an agent exported during a turn. Mirrors `ExportArtifactTool`'s
- * JSON return exactly; the SSE `tool-result` event does not carry the tool's
+ * JSON return exactly; the `turn.tool` event only carries a small slice of the tool's
  * payload, so the chat resolves these from `artifacts.index` after the turn
  * completes.
  */

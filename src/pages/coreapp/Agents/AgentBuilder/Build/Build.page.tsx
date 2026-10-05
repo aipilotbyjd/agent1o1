@@ -1089,9 +1089,11 @@ const BuildPage = () => {
 	const [mobileViewportHeight, setMobileViewportHeight] = useState<number | null>(null);
 	const [isMobileKeyboardOpen, setIsMobileKeyboardOpen] = useState(false);
 	const [isTyping, setIsTyping] = useState(false);
-	// Aborts the turn in flight. `streamMessage` already takes an AbortSignal —
-	// this is the Stop button's end of it.
+	// Aborts the turn in flight — the Stop button's end of `streamMessage`'s
+	// AbortSignal. It stops listening; the turn still finishes on the backend.
 	const streamAbortRef = useRef<AbortController | null>(null);
+	// Replies stream over Reverb, on the session's private channel.
+	const { echo } = useRealtime();
 	// Set while Regenerate downloads the original attachments, before the turn starts.
 	const regeneratingRef = useRef(false);
 	// Message whose hover toolbar is pinned open on touch, where there is no hover.
@@ -1783,8 +1785,8 @@ const BuildPage = () => {
 	/**
 	 * Files an `export_artifact` call produced during a turn, as download chips.
 	 *
-	 * The SSE `tool-result` event carries only the tool's id and name, not its
-	 * return value, so the artifact ids are not on the wire. They are read back
+	 * The `turn.tool` event carries at most a short, cut-off `output`, not the
+	 * tool's return value, so the artifact ids are not on the wire. They are read back
 	 * from `artifacts.index` instead, which returns one row per filename group
 	 * at its newest version — see ArtifactController::index's latestPerGroup().
 	 */
@@ -1815,7 +1817,7 @@ const BuildPage = () => {
 	};
 
 	/**
-	 * Plays one turn's server-sent events into the live timeline, then does
+	 * Plays one turn's events (from Reverb) into the live timeline, then does
 	 * the turn's follow-up (exported files, refreshed panels). Shared by
 	 * sending a message and by deciding on a paused turn's actions, which
 	 * answers with the resumed turn's events. `paused` is set when the turn
@@ -1835,8 +1837,8 @@ const BuildPage = () => {
 		let sawComplete = false;
 		let paused = false;
 
-		// The reply arrives as server-sent events on `.../messages/stream` — the
-		// old backend broadcast it over Echo instead, which this one never does.
+		// The reply arrives over Reverb as `turn.*` events on the session's
+		// channel; `openAgentTurnStream` has already turned them into these.
 		for await (const event of events) {
 			if (event.event === 'delta') {
 				setTimeline((prev) => {
@@ -2040,6 +2042,7 @@ const BuildPage = () => {
 
 			const { replyText, paused } = await consumeTurnEvents(
 				AgentSessionService.streamMessage(
+					echo as unknown as IEchoLike | null,
 					workspaceId,
 					agentIdForRun,
 					sessionId,
@@ -2163,9 +2166,9 @@ const BuildPage = () => {
 
 	/**
 	 * Records decisions on the paused turn's actions. When that leaves the turn
-	 * fully decided, the backend carries it on in the same response — streamed
-	 * here like any reply; otherwise only the decisions are recorded and the
-	 * rest of the cards wait.
+	 * fully decided, the backend carries it on from its queue — streamed here
+	 * over Reverb like any reply; otherwise only the decisions are recorded and
+	 * the rest of the cards wait.
 	 */
 	const decideActions = async (decisions: TAgentActionDecision[]) => {
 		const agentIdForRun = currentAgentId;
@@ -2181,6 +2184,7 @@ const BuildPage = () => {
 
 		try {
 			const result = await AgentActionService.decideInChat(
+				echo as unknown as IEchoLike | null,
 				workspaceId,
 				agentIdForRun,
 				sessionId,
@@ -2240,7 +2244,6 @@ const BuildPage = () => {
 	// Actions decided elsewhere — the inbox, an email link, Slack, another tab —
 	// resume the turn on the backend's queue. Follow along: refresh the cards,
 	// and the transcript once the resumed turn has written to it.
-	const { echo } = useRealtime();
 	const onActionsChanged = useEffectEvent(() => {
 		if (!currentAgentId || !conversationId) return;
 		void queryClient.invalidateQueries({
