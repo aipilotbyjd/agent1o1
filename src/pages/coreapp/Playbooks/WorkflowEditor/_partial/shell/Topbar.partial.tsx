@@ -992,6 +992,16 @@ const Topbar = () => {
 					</AnimatePresence>
 				</div>
 
+				<button
+					type='button'
+					aria-label='Toggle runs panel'
+					aria-pressed={state.ui.runPanelOpen}
+					onClick={() => dispatch({ type: 'TOGGLE_RUN_PANEL' })}
+					className={`hidden h-8 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition md:inline-flex ${FOCUS_RING} ${state.ui.runPanelOpen ? 'border-zinc-300 bg-zinc-100 text-zinc-900 dark:border-white/15 dark:bg-white/10 dark:text-white' : 'border-zinc-200 text-zinc-500 hover:bg-zinc-50 dark:border-white/10 dark:text-zinc-400 dark:hover:bg-white/5'}`}>
+					<ListChecks size={14} />
+					Runs
+				</button>
+
 				{/* Primary Run Action */}
 				<EditorTooltip
 					label={

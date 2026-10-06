@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import {
 	Bot,
+	ArrowUpRight,
 	Braces,
 	CheckCircle2,
 	ChevronsDownUp,
@@ -29,7 +30,6 @@ import NodeFields from './NodeFields.partial';
 import NodeColorPicker from './NodeColorPicker.partial';
 import NodeCommentsPanel from './NodeCommentsPanel.partial';
 import NodeInlineTest from './NodeInlineTest.partial';
-import NodeRunIO from './NodeRunIO.partial';
 import NodeToolbar from './NodeToolbar.partial';
 import NodeIOPanel from './NodeIOPanel.partial';
 import NodeOptionsPanel from './NodeOptionsPanel.partial';
@@ -399,13 +399,18 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 					</div>
 				)}
 
-				{/* Resolved input/output from the last run */}
-				<NodeRunIO
-					inputPreview={data.inputPreview}
-					outputPreview={data.outputPreview}
-					pinned={data.pinned}
-					pinnedOutput={data.pinnedOutput}
-				/>
+				{(status === 'success' || status === 'error' || data.pinned) && (
+					<button
+						type='button'
+						onClick={(event) => {
+							event.stopPropagation();
+							dispatch({ type: 'SHOW_RUN_RESULT', nodeId: id, source: 'run' });
+						}}
+						className='nodrag focus-visible:outline-primary-500 mt-3 inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-2 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white'>
+						{status === 'error' ? 'View run details' : 'View result'}
+						<ArrowUpRight size={12} />
+					</button>
+				)}
 
 				{/* Inline node test */}
 				{selected && <NodeInlineTest nodeId={id} defKey={data.defKey} />}

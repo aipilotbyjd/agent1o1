@@ -126,7 +126,7 @@ export type TCanvasNodeData = {
 	testOutput?: unknown;
 	testStatus?: 'idle' | 'running' | 'success' | 'error';
 	// Resolved input the node ran against, error message, and wall time — captured
-	// from a real single-node test run so the card can show input/output/timing.
+	// from a real single-node test run for inspection in the Runs panel.
 	testInput?: unknown;
 	testError?: string;
 	testDurationMs?: number;

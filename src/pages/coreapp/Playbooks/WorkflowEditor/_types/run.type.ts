@@ -21,6 +21,7 @@ export type TNodeRunRecord = {
 	status: 'success' | 'error' | 'skipped';
 	durationMs?: number;
 	output?: unknown;
+	input?: unknown;
 	error?: string;
 };
 

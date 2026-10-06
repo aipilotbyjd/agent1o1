@@ -19,14 +19,14 @@ const loadRunHistory = (key: string): TRunRecord[] => {
 };
 
 /**
- * Strip per-node output payloads before persisting. Outputs can carry sensitive
+ * Strip per-node input and output payloads before persisting. These can carry sensitive
  * data (AI responses, API payloads, scraped content) and bloat the localStorage
  * quota, so only run metadata + node status/timing/error survive a reload.
  */
 const toPersistableHistory = (history: TRunRecord[]): TRunRecord[] =>
 	history.map((record) => ({
 		...record,
-		nodeRuns: record.nodeRuns.map(({ output: _output, ...rest }) => rest),
+		nodeRuns: record.nodeRuns.map(({ output: _output, input: _input, ...rest }) => rest),
 	}));
 
 const saveRunHistory = (key: string, history: TRunRecord[]) => {

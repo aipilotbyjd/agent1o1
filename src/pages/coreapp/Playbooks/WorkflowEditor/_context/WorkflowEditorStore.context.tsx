@@ -126,7 +126,8 @@ export type TWorkflowEditorAction =
 	| { type: 'UNPIN_NODE'; id: string }
 	| { type: 'PUSH_RUN_HISTORY'; record: TRunRecord }
 	| { type: 'CLEAR_RUN_HISTORY' }
-	| { type: 'SET_RUN_PANEL_TAB'; tab: 'console' | 'history' };
+	| { type: 'SET_RUN_PANEL_TAB'; tab: 'console' | 'results' | 'history' }
+	| { type: 'SHOW_RUN_RESULT'; nodeId: string; source: 'run' | 'test' };
 
 export type TWorkflowEditorContextValue = {
 	state: TWorkflowEditorState;
@@ -186,6 +187,8 @@ export const initialWorkflowEditorState: TWorkflowEditorState = {
 		waitingForStep: false,
 		linkCredentialsOpen: false,
 		runPanelTab: 'console',
+		runPanelResultKey: null,
+		runPanelResultRequestId: 0,
 	},
 	history: {
 		past: [],
@@ -529,6 +532,17 @@ export const workflowEditorReducer = (
 		case 'RUN_START':
 			return {
 				...state,
+				nodes: state.nodes.map((node) => ({
+					...node,
+					data: {
+						...node.data,
+						status: 'idle',
+						durationMs: undefined,
+						error: undefined,
+						inputPreview: undefined,
+						outputPreview: undefined,
+					},
+				})),
 				run: {
 					id: action.id,
 					status: 'running',
@@ -537,7 +551,12 @@ export const workflowEditorReducer = (
 					currentNodeId: null,
 					logs: [],
 				},
-				ui: { ...state.ui, runPanelOpen: true },
+				ui: {
+					...state.ui,
+					runPanelOpen: true,
+					runPanelTab: 'console',
+					runPanelResultKey: null,
+				},
 			};
 		case 'RUN_FINISH':
 			return {
@@ -905,6 +924,17 @@ export const workflowEditorReducer = (
 			};
 		case 'CLEAR_RUN_HISTORY':
 			return { ...state, runHistory: [] };
+		case 'SHOW_RUN_RESULT':
+			return {
+				...state,
+				ui: {
+					...state.ui,
+					runPanelOpen: true,
+					runPanelTab: 'results',
+					runPanelResultKey: `${action.nodeId}:${action.source}`,
+					runPanelResultRequestId: (state.ui.runPanelResultRequestId ?? 0) + 1,
+				},
+			};
 		case 'SET_RUN_PANEL_TAB':
 			return { ...state, ui: { ...state.ui, runPanelTab: action.tab } };
 		default:

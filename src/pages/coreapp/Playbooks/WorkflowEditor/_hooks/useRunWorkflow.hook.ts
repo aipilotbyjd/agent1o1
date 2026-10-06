@@ -170,6 +170,7 @@ const useRunWorkflowController = () => {
 								: 'error',
 					durationMs: nodeRun.duration_ms ?? undefined,
 					output: nodeRun.output,
+					input: nodeRun.input,
 					error: nodeRun.error ?? undefined,
 				})),
 				logs: [],
