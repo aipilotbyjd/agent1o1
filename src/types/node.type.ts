@@ -55,3 +55,26 @@ export type TCreateCustomNodeDto = {
 };
 
 export type TUpdateCustomNodeDto = Partial<TCreateCustomNodeDto>;
+
+// ─── Field options (live dropdowns) ──────────────────────────
+
+/** `POST /workspaces/{ws}/nodes/options` — the choices for one node field. */
+export type TNodeOptionsParams = {
+	type: string;
+	field: string;
+	/** The node's current values — the account to use and any fields this one depends on. */
+	config?: Record<string, unknown>;
+	search?: string;
+	cursor?: string;
+};
+
+export type TNodeOption = {
+	value: string | number;
+	label: string;
+	description?: string;
+};
+
+export type TNodeOptionsPage = {
+	options: TNodeOption[];
+	next_cursor: string | null;
+};
