@@ -173,13 +173,24 @@ const schemaToPorts = (
 	const properties = schemaProperties(schema);
 	const entries = Object.entries(properties);
 
-	if (!entries.length && schema) {
-		return [{ id: fallbackName, name: fallbackName, type: fallbackType }];
+	if (!entries.length) {
+		return [
+			{
+				id: fallbackName,
+				name: fallbackName,
+				path: '',
+				type:
+					schemaTypeToPortType(schema?.type) === 'any'
+						? fallbackType
+						: schemaTypeToPortType(schema?.type),
+			},
+		];
 	}
 
 	return entries.map(([key, property]) => ({
 		id: key,
 		name: property.label ?? key,
+		path: key,
 		type: schemaTypeToPortType(property.type),
 		required: schema?.required?.includes(key),
 	}));
@@ -208,6 +219,22 @@ export const mapApiNodeToDefinition = (
 	const configFields = schemaToFields(node.config_schema ?? node.schema);
 	const inputPorts = schemaToPorts(node.input_schema, 'input', 'any');
 	const outputPorts = schemaToPorts(node.output_schema, 'output', 'any');
+	// Built-in catalog entries omit output_schema. These two built-ins have stable
+	// response contracts; successful node results supply any additional fields.
+	if (!node.output_schema && node.type === 'ask_ai') {
+		outputPorts.push(
+			{ id: 'text', name: 'text', path: 'text', type: 'string' },
+			{ id: 'usage', name: 'usage', path: 'usage', type: 'json' },
+		);
+	}
+	if (!node.output_schema && node.type === 'gmail_get_message') {
+		outputPorts.push(
+			{ id: 'id', name: 'id', path: 'id', type: 'string' },
+			{ id: 'threadId', name: 'threadId', path: 'threadId', type: 'string' },
+			{ id: 'snippet', name: 'snippet', path: 'snippet', type: 'string' },
+			{ id: 'payload', name: 'payload', path: 'payload', type: 'json' },
+		);
+	}
 	const fields = credentialType
 		? [
 				{

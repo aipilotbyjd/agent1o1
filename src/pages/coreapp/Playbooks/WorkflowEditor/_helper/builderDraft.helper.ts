@@ -1,3 +1,8 @@
+import {
+	readNodeConfig,
+	serializeNodeConfig,
+	restoreInputConnections,
+} from './dynamicInputs.helper';
 import type {
 	TBuilderGraph,
 	TBuilderGraphEdge,
@@ -46,7 +51,7 @@ export const graphNodeToCanvas = (
 			defKey: node.type,
 			label: label || def?.label || node.type,
 			definition: def,
-			values: node.config ?? {},
+			...readNodeConfig(node.config ?? {}),
 			status: 'idle',
 		},
 	} as TCanvasNode;
@@ -97,7 +102,9 @@ const positionNodes = (
 
 	const occupied = (candidate: TCanvasPosition) =>
 		[...positions.values()].some(
-			(p) => Math.abs(p.x - candidate.x) < COLUMN_GAP / 2 && Math.abs(p.y - candidate.y) < ROW_GAP / 2,
+			(p) =>
+				Math.abs(p.x - candidate.x) < COLUMN_GAP / 2 &&
+				Math.abs(p.y - candidate.y) < ROW_GAP / 2,
 		);
 
 	const freeSlotBelow = (start: TCanvasPosition) => {
@@ -111,7 +118,9 @@ const positionNodes = (
 	for (let pass = 0; pass < graph.nodes.length && positions.size < graph.nodes.length; pass++) {
 		graph.nodes.forEach((node) => {
 			if (positions.has(node.key)) return;
-			const feeder = graph.edges.find((edge) => edge.to === node.key && positions.has(edge.from));
+			const feeder = graph.edges.find(
+				(edge) => edge.to === node.key && positions.has(edge.from),
+			);
 			if (!feeder) return;
 			const from = positions.get(feeder.from)!;
 			positions.set(node.key, freeSlotBelow({ x: from.x + COLUMN_GAP, y: from.y }));
@@ -124,7 +133,10 @@ const positionNodes = (
 			DEFAULT_POSITION.x - COLUMN_GAP,
 			...[...positions.values()].map((p) => p.x),
 		);
-		positions.set(node.key, freeSlotBelow({ x: rightmost + COLUMN_GAP, y: DEFAULT_POSITION.y }));
+		positions.set(
+			node.key,
+			freeSlotBelow({ x: rightmost + COLUMN_GAP, y: DEFAULT_POSITION.y }),
+		);
 	});
 
 	return positions;
@@ -151,13 +163,17 @@ export const builderGraphToCanvas = (
 		const position = positions.get(node.key);
 
 		return existing && existing.data.defKey === node.type
-			? { ...existing, position: position ?? existing.position, data: { ...existing.data, values: node.config ?? {} } }
+			? {
+					...existing,
+					position: position ?? existing.position,
+					data: { ...existing.data, ...readNodeConfig(node.config ?? {}) },
+				}
 			: graphNodeToCanvas(node, position);
 	});
 
 	return {
 		nodes: [...nodes, ...currentNodes.filter(isNoteNode)],
-		edges: graph.edges.map(graphEdgeToCanvas),
+		edges: restoreInputConnections(graph.edges.map(graphEdgeToCanvas), graph.nodes),
 	};
 };
 
@@ -173,11 +189,15 @@ export const canvasToBuilderGraph = (nodes: TCanvasNode[], edges: TCanvasEdge[])
 		nodes: realNodes.map((node) => ({
 			key: node.id,
 			type: node.data.defKey,
-			config: node.data.values ?? {},
+			config: serializeNodeConfig(node, edges),
 			position: { x: Math.round(node.position.x), y: Math.round(node.position.y) },
 		})),
 		edges: edges
 			.filter((edge) => realIds.has(edge.source) && realIds.has(edge.target))
-			.map((edge) => ({ from: edge.source, to: edge.target, condition: edgeCondition(edge) })),
+			.map((edge) => ({
+				from: edge.source,
+				to: edge.target,
+				condition: edgeCondition(edge),
+			})),
 	};
 };

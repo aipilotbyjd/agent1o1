@@ -436,16 +436,20 @@ const useRunWorkflowController = () => {
 		if (state.run.status === 'running' || starting.current) return;
 
 		// Check for missing credentials.
-		const hasMissingCredentials = state.nodes.some((node) => {
+		const missingCredentialNode = state.nodes.find((node) => {
 			const def = getNodeDefinition(node.data.defKey, node.data.definition);
-			return Boolean(def?.requiresCredential) && !node.data.values.credential_id;
+			const field = def?.fields.find((item) => item.kind === 'credential');
+			return Boolean(def?.requiresCredential) && (!field || !node.data.values[field.key]);
 		});
 
 		const isMockEmptyState =
 			state.nodes.length === 0 && state.ui.emptyCanvasView === 'chat-started';
 
-		if (hasMissingCredentials || isMockEmptyState) {
-			dispatch({ type: 'SET_LINK_CREDENTIALS_OPEN', open: true });
+		if (missingCredentialNode || isMockEmptyState) {
+			dispatch({
+				type: 'SET_LINK_CREDENTIALS_OPEN',
+				open: true,
+			});
 			return;
 		}
 

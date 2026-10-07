@@ -1,5 +1,13 @@
 import { useMemo, useState } from 'react';
-import { ArrowDownToLine, ArrowUpFromLine, ChevronRight, GripVertical, Link2, Search, X } from 'lucide-react';
+import {
+	ArrowDownToLine,
+	ArrowUpFromLine,
+	ChevronRight,
+	GripVertical,
+	Link2,
+	Search,
+	X,
+} from 'lucide-react';
 import { PORT_TYPE_COLOR } from '../../../_helper/builder.constants';
 import { buildOutputToken, setTokenDragData } from '../../../_helper/tokenDrag.helper';
 import type { TNodePort } from '../../../_types/node.type';
@@ -103,7 +111,7 @@ const FilterBox = ({
 			onChange={(event) => onChange(event.target.value)}
 			onPointerDown={(event) => event.stopPropagation()}
 			placeholder={placeholder}
-			className='nodrag w-full rounded-lg border border-zinc-200 bg-zinc-50 py-1.5 pr-7 pl-8 text-[11px] font-medium text-zinc-700 outline-none placeholder:text-zinc-400 focus:border-primary-400 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-200 dark:focus:bg-zinc-900'
+			className='nodrag focus:border-primary-400 w-full rounded-lg border border-zinc-200 bg-zinc-50 py-1.5 pr-7 pl-8 text-[11px] font-medium text-zinc-700 outline-none placeholder:text-zinc-400 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-200 dark:focus:bg-zinc-900'
 		/>
 		{value && (
 			<button
@@ -183,7 +191,9 @@ const NodeIOPanel = ({ nodeColor, incoming, outputs }: Props) => {
 						<span className='flex size-6 items-center justify-center rounded-lg bg-sky-500/12 text-sky-500'>
 							<ArrowDownToLine size={13} />
 						</span>
-						<span className='text-[12px] font-bold text-zinc-800 dark:text-zinc-100'>Inputs</span>
+						<span className='text-[12px] font-bold text-zinc-800 dark:text-zinc-100'>
+							Inputs
+						</span>
 						<CountBadge count={incoming.length} tone='in' />
 					</div>
 
@@ -196,7 +206,11 @@ const NodeIOPanel = ({ nodeColor, incoming, outputs }: Props) => {
 					) : (
 						<>
 							{incoming.length > FILTER_THRESHOLD && (
-								<FilterBox value={inputQuery} onChange={setInputQuery} placeholder='Filter inputs…' />
+								<FilterBox
+									value={inputQuery}
+									onChange={setInputQuery}
+									placeholder='Filter inputs…'
+								/>
 							)}
 							{groups.length === 0 ? (
 								<NoMatch query={inputQuery} />
@@ -205,7 +219,9 @@ const NodeIOPanel = ({ nodeColor, incoming, outputs }: Props) => {
 									{groups.map((group) => {
 										const isCollapsed = collapsed[group.sourceId];
 										return (
-											<div key={group.sourceId} className='flex flex-col gap-1.5'>
+											<div
+												key={group.sourceId}
+												className='flex flex-col gap-1.5'>
 												<button
 													type='button'
 													onClick={() => toggleGroup(group.sourceId)}
@@ -218,12 +234,17 @@ const NodeIOPanel = ({ nodeColor, incoming, outputs }: Props) => {
 													/>
 													<span
 														className='h-2 w-2 shrink-0 rounded-full'
-														style={{ backgroundColor: group.sourceColor }}
+														style={{
+															backgroundColor: group.sourceColor,
+														}}
 													/>
 													<span className='truncate text-[10px] font-bold tracking-wide text-zinc-500 uppercase dark:text-zinc-400'>
 														{group.sourceLabel}
 													</span>
-													<CountBadge count={group.items.length} tone='muted' />
+													<CountBadge
+														count={group.items.length}
+														tone='muted'
+													/>
 													<span className='h-px flex-1 bg-zinc-100 dark:bg-zinc-800' />
 												</button>
 
@@ -254,12 +275,14 @@ const NodeIOPanel = ({ nodeColor, incoming, outputs }: Props) => {
 
 				{/* ── OUTPUTS ────────────────────────────── */}
 				<section className='relative flex flex-col gap-2.5 p-3.5'>
-					<span className='pointer-events-none absolute -top-10 -right-8 size-24 rounded-full bg-primary-500/10 blur-2xl' />
+					<span className='bg-primary-500/10 pointer-events-none absolute -top-10 -right-8 size-24 rounded-full blur-2xl' />
 					<div className='flex items-center gap-2'>
-						<span className='flex size-6 items-center justify-center rounded-lg bg-primary-500/12 text-primary-500'>
+						<span className='bg-primary-500/12 text-primary-500 flex size-6 items-center justify-center rounded-lg'>
 							<ArrowUpFromLine size={13} />
 						</span>
-						<span className='text-[12px] font-bold text-zinc-800 dark:text-zinc-100'>Outputs</span>
+						<span className='text-[12px] font-bold text-zinc-800 dark:text-zinc-100'>
+							Outputs
+						</span>
 						<CountBadge count={outputs.length} tone='out' />
 						<span className='ml-auto text-[9px] font-medium text-zinc-400 dark:text-zinc-500'>
 							produced values
@@ -290,7 +313,10 @@ const NodeIOPanel = ({ nodeColor, incoming, outputs }: Props) => {
 											key={port.id}
 											title={`${port.name}: ${port.type}`}
 											className='relative flex items-center gap-2 overflow-hidden rounded-xl border py-2 pr-2.5 pl-3 transition'
-											style={{ borderColor: `${nodeColor}40`, backgroundColor: `${nodeColor}12` }}>
+											style={{
+												borderColor: `${nodeColor}40`,
+												backgroundColor: `${nodeColor}12`,
+											}}>
 											<span
 												className='absolute inset-y-0 left-0 w-1'
 												style={{ backgroundColor: nodeColor }}
@@ -328,7 +354,10 @@ const PortRow = ({
 		<div
 			draggable
 			onDragStart={(event) =>
-				setTokenDragData(event.dataTransfer, buildOutputToken(sourceId, port.name))
+				setTokenDragData(
+					event.dataTransfer,
+					buildOutputToken(sourceId, port.path ?? port.name),
+				)
 			}
 			title={title}
 			className='nodrag group/in relative flex cursor-grab items-center gap-1.5 overflow-hidden rounded-xl border bg-zinc-50/60 py-2 pr-2.5 pl-3 transition-all duration-150 hover:-translate-y-px hover:shadow-md active:translate-y-0 active:cursor-grabbing dark:bg-zinc-900/40'

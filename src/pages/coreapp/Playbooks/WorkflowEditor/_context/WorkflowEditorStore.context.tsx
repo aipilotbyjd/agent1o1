@@ -1,3 +1,6 @@
+import { getOutputPorts } from '../_helper/outputPorts.helper';
+import { canExposeInput, dynamicInputId } from '../_helper/dynamicInputs.helper';
+import { buildOutputToken } from '../_helper/tokenDrag.helper';
 import { createContext } from 'react';
 import { HISTORY_LIMIT } from '../_helper/builder.constants';
 import { getNodeDefinition } from '../_helper/nodeCatalog.constants';
@@ -13,7 +16,6 @@ import type {
 	TCanvasNodeData,
 	TNodeComment,
 	TNodeDefinition,
-	TNodeField,
 	TNodeRunStatus,
 } from '../_types/node.type';
 import type { TRunLog, TRunRecord } from '../_types/run.type';
@@ -39,7 +41,7 @@ export type TWorkflowEditorAction =
 	| { type: 'CLEAR_NODE_SELECTION' }
 	| { type: 'UPDATE_NODE_VALUE'; id: string; fieldKey: string; value: unknown }
 	| { type: 'RENAME_NODE'; id: string; label: string }
-	| { type: 'CONFIGURE_NODE_FIELDS'; id: string; fields: TNodeField[] }
+	| { type: 'CONFIGURE_NODE_INPUTS'; id: string; keys: string[] }
 	| { type: 'DELETE_SELECTED' }
 	| { type: 'DUPLICATE_SELECTED' }
 	| {
@@ -120,7 +122,7 @@ export type TWorkflowEditorAction =
 	| { type: 'SET_STEP_MODE'; enabled: boolean }
 	| { type: 'STEP_WAIT' }
 	| { type: 'STEP_NEXT' }
-	| { type: 'SET_LINK_CREDENTIALS_OPEN'; open: boolean }
+	| { type: 'SET_LINK_CREDENTIALS_OPEN'; open: boolean; nodeId?: string }
 	// Pinned data + run history
 	| { type: 'PIN_NODE_OUTPUT'; id: string; output?: unknown }
 	| { type: 'UNPIN_NODE'; id: string }
@@ -355,6 +357,12 @@ export const workflowEditorReducer = (
 		case 'UPDATE_NODE_VALUE':
 			return {
 				...state,
+				edges: state.edges.map((edge) =>
+					edge.target === action.id &&
+					edge.targetHandle === dynamicInputId(action.fieldKey)
+						? { ...edge, targetHandle: undefined, sourceHandle: undefined }
+						: edge,
+				),
 				workflow: { ...state.workflow, savingState: 'dirty', updatedAt: Date.now() },
 				nodes: state.nodes.map((node) =>
 					node.id === action.id
@@ -433,11 +441,60 @@ export const workflowEditorReducer = (
 					edge.targetHandle === action.targetHandle,
 			);
 			if (exists) return state;
+			const target = state.nodes.find((node) => node.id === action.target);
+			const source = state.nodes.find((node) => node.id === action.source);
+			const fieldKey = target?.data.dynamicInputKeys?.find(
+				(key) => dynamicInputId(key) === action.targetHandle,
+			);
+			const sourceDef = source
+				? getNodeDefinition(source.data.defKey, source.data.definition)
+				: undefined;
+			const sourceOutputs = source ? getOutputPorts(sourceDef, source.data) : [];
+			const output =
+				sourceOutputs.find((port) => port.id === action.sourceHandle) ??
+				(!action.sourceHandle ? sourceOutputs[0] : undefined);
+			if (fieldKey && !output) return state;
 			const next = withHistory(state);
 			return {
 				...next,
+				nodes:
+					fieldKey && output
+						? next.nodes.map((node) =>
+								node.id === action.target
+									? {
+											...node,
+											data: {
+												...node.data,
+												fixedInputValues: {
+													...node.data.fixedInputValues,
+													[fieldKey]:
+														node.data.fixedInputValues &&
+														Object.prototype.hasOwnProperty.call(
+															node.data.fixedInputValues,
+															fieldKey,
+														)
+															? node.data.fixedInputValues[fieldKey]
+															: (node.data.values[fieldKey] ?? null),
+												},
+												values: {
+													...node.data.values,
+													[fieldKey]: buildOutputToken(
+														action.source,
+														output.path ?? output.name,
+													),
+												},
+											},
+										}
+									: node,
+							)
+						: next.nodes,
 				edges: [
-					...next.edges,
+					...next.edges.filter(
+						(edge) =>
+							!fieldKey ||
+							edge.target !== action.target ||
+							edge.targetHandle !== action.targetHandle,
+					),
 					{
 						id: createId('edge'),
 						source: action.source,
@@ -449,8 +506,27 @@ export const workflowEditorReducer = (
 			};
 		}
 		case 'REMOVE_EDGE': {
+			const edge = state.edges.find((item) => item.id === action.id);
+			const target = state.nodes.find((node) => node.id === edge?.target);
+			const key = target?.data.dynamicInputKeys?.find(
+				(item) => dynamicInputId(item) === edge?.targetHandle,
+			);
 			const next = withHistory(state);
-			return { ...next, edges: next.edges.filter((edge) => edge.id !== action.id) };
+			return {
+				...next,
+				edges: next.edges.filter((item) => item.id !== action.id),
+				nodes: key
+					? next.nodes.map((node) => {
+							if (node.id !== edge?.target) return node;
+							const fixedInputValues = { ...node.data.fixedInputValues };
+							const values = { ...node.data.values };
+							if (Object.prototype.hasOwnProperty.call(fixedInputValues, key))
+								values[key] = fixedInputValues[key];
+							delete fixedInputValues[key];
+							return { ...node, data: { ...node.data, values, fixedInputValues } };
+						})
+					: next.nodes,
+			};
 		}
 		case 'AUTO_LAYOUT': {
 			const next = withHistory(state);
@@ -854,35 +930,49 @@ export const workflowEditorReducer = (
 		case 'STEP_NEXT':
 			return { ...state, ui: { ...state.ui, waitingForStep: false } };
 		case 'SET_LINK_CREDENTIALS_OPEN':
-			return { ...state, ui: { ...state.ui, linkCredentialsOpen: action.open } };
-		case 'CONFIGURE_NODE_FIELDS': {
+			return {
+				...state,
+				ui: {
+					...state.ui,
+					linkCredentialsOpen: action.open,
+					linkCredentialsNodeId: action.open ? (action.nodeId ?? null) : null,
+				},
+			};
+		case 'CONFIGURE_NODE_INPUTS': {
+			const node = state.nodes.find((item) => item.id === action.id);
+			if (!node) return state;
+			const def = getNodeDefinition(node.data.defKey, node.data.definition);
+			const keys = (def?.fields ?? [])
+				.filter((field) => canExposeInput(field) && action.keys.includes(field.key))
+				.map((field) => field.key);
+			const removed = (node.data.dynamicInputKeys ?? []).filter((key) => !keys.includes(key));
+			const values = { ...node.data.values };
+			const fixedInputValues = { ...node.data.fixedInputValues };
+			removed.forEach((key) => {
+				if (Object.prototype.hasOwnProperty.call(fixedInputValues, key))
+					values[key] = fixedInputValues[key];
+				delete fixedInputValues[key];
+			});
 			const next = withHistory(state);
 			return {
 				...next,
-				nodes: next.nodes.map((node) =>
-					node.id === action.id
+				nodes: next.nodes.map((item) =>
+					item.id === action.id
 						? {
-								...node,
+								...item,
 								data: {
-									...node.data,
-									definition: {
-										...(node.data.definition ??
-											getNodeDefinition(node.data.defKey)!),
-										fields: action.fields,
-										outputs: action.fields.map((f) => ({
-											id: f.key,
-											name: f.label,
-											type:
-												f.kind === 'toggle'
-													? 'boolean'
-													: f.kind === 'number'
-														? 'number'
-														: 'string',
-										})),
-									},
+									...item.data,
+									dynamicInputKeys: keys,
+									fixedInputValues,
+									values,
 								},
 							}
-						: node,
+						: item,
+				),
+				edges: next.edges.filter(
+					(edge) =>
+						edge.target !== action.id ||
+						!removed.some((key) => edge.targetHandle === dynamicInputId(key)),
 				),
 			};
 		}

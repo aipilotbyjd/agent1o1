@@ -1,3 +1,4 @@
+import { getNodeOutput } from '../../../_helper/outputPorts.helper';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CornerDownLeft } from 'lucide-react';
 import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
@@ -41,7 +42,8 @@ const splitSegments = (text: string): TSegment[] => {
 	let match: RegExpExecArray | null;
 	TOKEN_RE.lastIndex = 0;
 	while ((match = TOKEN_RE.exec(text)) !== null) {
-		if (match.index > last) segments.push({ type: 'text', value: text.slice(last, match.index) });
+		if (match.index > last)
+			segments.push({ type: 'text', value: text.slice(last, match.index) });
 		segments.push({ type: 'token', value: match[0] });
 		last = match.index + match[0].length;
 	}
@@ -88,9 +90,12 @@ const ExpressionInput = ({ field, value, onChange, compact, nodeId, className }:
 	const [activeIndex, setActiveIndex] = useState(0);
 	const [dragOver, setDragOver] = useState(false);
 
-	useEffect(() => () => {
-		if (blurTimer.current) clearTimeout(blurTimer.current);
-	}, []);
+	useEffect(
+		() => () => {
+			if (blurTimer.current) clearTimeout(blurTimer.current);
+		},
+		[],
+	);
 
 	const text = String(value ?? '');
 
@@ -109,7 +114,7 @@ const ExpressionInput = ({ field, value, onChange, compact, nodeId, className }:
 	const runtimeCtx = useMemo(() => {
 		const outputs: TNodeOutputs = {};
 		state.nodes.forEach((node) => {
-			const out = node.data.pinned ? node.data.pinnedOutput : node.data.outputPreview;
+			const out = getNodeOutput(node.data);
 			if (out !== undefined) outputs[node.id] = out;
 		});
 		return buildRuntimeContext(state.nodes, outputs);
@@ -149,7 +154,9 @@ const ExpressionInput = ({ field, value, onChange, compact, nodeId, className }:
 
 	const valueToHtml = (v: string) =>
 		splitSegments(v)
-			.map((segment) => (segment.type === 'token' ? chipHtml(segment.value) : escapeHtml(segment.value)))
+			.map((segment) =>
+				segment.type === 'token' ? chipHtml(segment.value) : escapeHtml(segment.value),
+			)
 			.join('');
 
 	// Render the value into the surface — but never while the user is typing in it,
@@ -398,8 +405,8 @@ const ExpressionInput = ({ field, value, onChange, compact, nodeId, className }:
 			)}
 			{!hasTokens && query === null && variables.length > 0 && (
 				<div className='mt-1 text-[10px] text-zinc-400'>
-					Type <span className='font-mono text-zinc-500 dark:text-zinc-300'>@</span> or drag an
-					input here to insert data.
+					Type <span className='font-mono text-zinc-500 dark:text-zinc-300'>@</span> or
+					drag an input here to insert data.
 				</div>
 			)}
 		</div>

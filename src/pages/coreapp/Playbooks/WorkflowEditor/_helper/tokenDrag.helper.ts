@@ -14,7 +14,7 @@ export const TOKEN_DND_MIME = 'application/x-agent-output-token';
  * rename/duplicate never breaks a dropped reference.
  */
 export const buildOutputToken = (nodeId: string, outputName: string): string =>
-	`{{${nodeId}.output.${outputName}}}`;
+	`{{${nodeId}.output${outputName ? `.${outputName}` : ''}}}`;
 
 /** Write the token onto a drag event's dataTransfer (custom type + text fallback). */
 export const setTokenDragData = (dataTransfer: DataTransfer, token: string): void => {

@@ -1,3 +1,4 @@
+import { getOutputPorts } from '../../../_helper/outputPorts.helper';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import {
 	Folder,
@@ -111,29 +112,32 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 	// Memoized so React Flow's per-frame drag re-renders don't re-scan every edge/node.
 	const incoming = useMemo(
 		() =>
-			Array.from(new Set(state.edges.filter((edge) => edge.target === id).map((edge) => edge.source)))
-				.flatMap((sourceId) => {
-					const sourceNode = state.nodes.find((node) => node.id === sourceId);
-					if (!sourceNode) return [];
-					const sourceDef = getNodeDefinition(sourceNode.data.defKey, sourceNode.data.definition);
-					const sourceOutputs =
-						sourceDef?.outputs && sourceDef.outputs.length > 0
-							? sourceDef.outputs
-							: [{ id: 'out', name: 'output', type: 'any' as const }];
-					const sourceLabel = sourceNode.data.label || sourceDef?.label || 'Node';
-					const sourceColor = getNodeAccentColor(
-						sourceId,
-						sourceNode.data.color as string | undefined,
-						sourceDef?.colorHex,
-					);
-					return sourceOutputs.map((port) => ({
-						id: `${sourceId}:${port.id}`,
-						sourceId,
-						port,
-						sourceLabel,
-						sourceColor,
-					}));
-				}),
+			Array.from(
+				new Set(
+					state.edges.filter((edge) => edge.target === id).map((edge) => edge.source),
+				),
+			).flatMap((sourceId) => {
+				const sourceNode = state.nodes.find((node) => node.id === sourceId);
+				if (!sourceNode) return [];
+				const sourceDef = getNodeDefinition(
+					sourceNode.data.defKey,
+					sourceNode.data.definition,
+				);
+				const sourceOutputs = getOutputPorts(sourceDef, sourceNode.data);
+				const sourceLabel = sourceNode.data.label || sourceDef?.label || 'Node';
+				const sourceColor = getNodeAccentColor(
+					sourceId,
+					sourceNode.data.color as string | undefined,
+					sourceDef?.colorHex,
+				);
+				return sourceOutputs.map((port) => ({
+					id: `${sourceId}:${port.id}`,
+					sourceId,
+					port,
+					sourceLabel,
+					sourceColor,
+				}));
+			}),
 		[state.edges, state.nodes, id],
 	);
 	const nodeIndex = state.nodes.findIndex((node) => node.id === id) + 1;
@@ -177,10 +181,10 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 			whileHover={dragging ? undefined : { y: -2, boxShadow: hoverShadow }}
 			transition={{ duration: dragging ? 0 : 0.18 }}
 			className={[
-				'group relative w-[320px] rounded-[26px] border p-1.5 text-left ring-1 ring-inset ring-white/60 dark:ring-white/[0.03]',
+				'group relative w-[320px] rounded-[26px] border p-1.5 text-left ring-1 ring-white/60 ring-inset dark:ring-white/[0.03]',
 				'bg-white text-zinc-950 dark:bg-zinc-950 dark:text-zinc-100',
 				selected
-					? 'border-primary-500 ring-2 ring-primary-500/15 dark:border-primary-500'
+					? 'border-primary-500 ring-primary-500/15 dark:border-primary-500 ring-2'
 					: 'border-zinc-200 dark:border-zinc-800',
 			].join(' ')}>
 			{/* Top Bar */}
@@ -232,7 +236,7 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 						className={[
 							'flex h-4 w-7 cursor-pointer items-center rounded-full p-0.5 transition-all duration-200',
 							isTriggerActive
-								? 'justify-end bg-primary-400'
+								? 'bg-primary-400 justify-end'
 								: 'justify-start bg-zinc-200 dark:bg-zinc-700',
 						].join(' ')}>
 						<div className='h-3 w-3 animate-none rounded-full bg-white shadow-xs' />
@@ -240,7 +244,7 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 				</div>
 			</div>
 
-			{hasError && <NodeAuthWarning />}
+			{hasError && <NodeAuthWarning nodeId={id} />}
 
 			{/* Main Content Area */}
 			<div
@@ -262,12 +266,12 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 									{brand}
 								</span>
 								{def?.description && (
-								<NodeHelpTip
-									size={10}
-									text={def.description}
-									className='text-primary-500'
-								/>
-							)}
+									<NodeHelpTip
+										size={10}
+										text={def.description}
+										className='text-primary-500'
+									/>
+								)}
 								{creditCost > 0 && (
 									<span
 										title={`Estimated ${creditCost} credit${creditCost === 1 ? '' : 's'} per run`}
@@ -289,7 +293,7 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 										event.stopPropagation();
 										dispatch({ type: 'TOGGLE_NODE_COLLAPSED', id });
 									}}
-									className='nodrag flex h-5 w-5 items-center justify-center rounded text-zinc-400 transition hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/40 dark:hover:text-primary-400'>
+									className='nodrag hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-5 w-5 items-center justify-center rounded text-zinc-400 transition'>
 									{collapsed ? (
 										<ChevronsUpDown size={12} />
 									) : (
@@ -312,7 +316,7 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 
 				{!collapsed && credentialId && (
 					<div className='mt-2'>
-						<NodeCredentialBadge credentialId={credentialId} />
+						<NodeCredentialBadge nodeId={id} credentialId={credentialId} />
 					</div>
 				)}
 
@@ -321,36 +325,34 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 						<NodeFields nodeId={id} fields={def.fields} values={data.values} />
 					</div>
 				)}
-					{!!triggerDetail && (
-						<div className='mt-3 flex flex-col gap-2 border-t border-zinc-100 pt-2.5 dark:border-zinc-800'>
-							<TriggerDetails workspaceId={workspaceId} trigger={triggerDetail} />
-							<div className='mt-1 flex items-center justify-between'>
-								<div
-									className={`flex items-center gap-1.5 text-[10px] font-semibold ${isTriggerActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400 dark:text-zinc-500'}`}>
-									<span
-										className={`h-1.5 w-1.5 rounded-full ${isTriggerActive ? 'animate-pulse bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-600'}`}
-									/>
-									<span>
-										{isTriggerActive
-											? 'Listening for events...'
-											: 'Trigger paused'}
-									</span>
-								</div>
-								<button
-									type='button'
-									onClick={() => {
-										if (triggerId) {
-											deleteTrigger.mutate(triggerId);
-										}
-									}}
-									disabled={deleteTrigger.isPending}
-									className='cursor-pointer text-[9px] font-semibold text-rose-500 hover:text-rose-600 dark:hover:text-rose-400'>
-									Delete Configuration
-								</button>
+				{!!triggerDetail && (
+					<div className='mt-3 flex flex-col gap-2 border-t border-zinc-100 pt-2.5 dark:border-zinc-800'>
+						<TriggerDetails workspaceId={workspaceId} trigger={triggerDetail} />
+						<div className='mt-1 flex items-center justify-between'>
+							<div
+								className={`flex items-center gap-1.5 text-[10px] font-semibold ${isTriggerActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400 dark:text-zinc-500'}`}>
+								<span
+									className={`h-1.5 w-1.5 rounded-full ${isTriggerActive ? 'animate-pulse bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-600'}`}
+								/>
+								<span>
+									{isTriggerActive ? 'Listening for events...' : 'Trigger paused'}
+								</span>
 							</div>
+							<button
+								type='button'
+								onClick={() => {
+									if (triggerId) {
+										deleteTrigger.mutate(triggerId);
+									}
+								}}
+								disabled={deleteTrigger.isPending}
+								className='cursor-pointer text-[9px] font-semibold text-rose-500 hover:text-rose-600 dark:hover:text-rose-400'>
+								Delete Configuration
+							</button>
 						</div>
-					)}
-				</div>
+					</div>
+				)}
+			</div>
 
 			{/* Input Handle */}
 			{def && (
@@ -368,14 +370,12 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 						width: 12,
 						zIndex: 10,
 					}}
-					className='transition-transform duration-150 hover:scale-125 shadow-sm rounded-full cursor-crosshair dark:bg-zinc-900 dark:border-zinc-800'
+					className='cursor-crosshair rounded-full shadow-sm transition-transform duration-150 hover:scale-125 dark:border-zinc-800 dark:bg-zinc-900'
 				/>
 			)}
 
 			{/* Output Handles */}
-			{def && (
-				<PortHandles ports={def.outputs ?? []} type='source' color={color} />
-			)}
+			{def && <PortHandles ports={getOutputPorts(def, data)} type='source' color={color} />}
 
 			{/* Node index badge */}
 			<div className='absolute -bottom-2.5 left-1/2 z-10 flex h-5 w-5 -translate-x-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white text-[9px] font-semibold text-zinc-500 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'>
@@ -392,7 +392,12 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 			)}
 
 			{selected && def && (
-				<NodeIOPanel nodeId={id} nodeColor={color} incoming={incoming} outputs={def.outputs ?? []} />
+				<NodeIOPanel
+					nodeId={id}
+					nodeColor={color}
+					incoming={incoming}
+					outputs={getOutputPorts(def, data)}
+				/>
 			)}
 
 			{selected && (
@@ -403,7 +408,6 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 					credentialId={credentialId ? String(credentialId) : undefined}
 				/>
 			)}
-
 		</motion.div>
 	);
 };

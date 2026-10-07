@@ -3,10 +3,10 @@ import { useConnectorCredential } from '@/api/modules/connectors';
 import { useWorkflowRouteParams } from '../../../_hooks/useWorkflowRouteParams.hook';
 import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
 
-type Props = { credentialId: string };
+type Props = { credentialId: string; nodeId: string };
 
 /** Shows which account/credential this node is currently connected through — Gumloop-style. Click to switch. */
-const NodeCredentialBadge = ({ credentialId }: Props) => {
+const NodeCredentialBadge = ({ credentialId, nodeId }: Props) => {
 	const { dispatch } = useWorkflowEditor();
 	const { workspaceId } = useWorkflowRouteParams();
 	const { data: credential, isLoading } = useConnectorCredential(workspaceId, credentialId);
@@ -22,7 +22,7 @@ const NodeCredentialBadge = ({ credentialId }: Props) => {
 			onPointerDown={(event) => event.stopPropagation()}
 			onClick={(event) => {
 				event.stopPropagation();
-				dispatch({ type: 'SET_LINK_CREDENTIALS_OPEN', open: true });
+				dispatch({ type: 'SET_LINK_CREDENTIALS_OPEN', open: true, nodeId });
 			}}
 			className={[
 				'nodrag flex max-w-full shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold transition',

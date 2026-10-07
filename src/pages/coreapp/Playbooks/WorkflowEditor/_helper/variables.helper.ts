@@ -1,3 +1,5 @@
+import { getOutputPorts } from './outputPorts.helper';
+import { buildOutputToken } from './tokenDrag.helper';
 import { getNodeDefinition } from './nodeCatalog.constants';
 import { getNodeAccentColor } from '../_partial/library/library.util';
 import type { TCanvasEdge, TCanvasNode } from '../_types/canvas.type';
@@ -36,8 +38,12 @@ export const collectUpstreamVariables = (
 
 	return upstream.flatMap((node) => {
 		const def = getNodeDefinition(node.data.defKey, node.data.definition);
-		const nodeColor = getNodeAccentColor(node.id, node.data.color as string | undefined, def?.colorHex);
-		return (def?.outputs ?? []).map((output) => ({
+		const nodeColor = getNodeAccentColor(
+			node.id,
+			node.data.color as string | undefined,
+			def?.colorHex,
+		);
+		return getOutputPorts(def, node.data).map((output) => ({
 			nodeId: node.id,
 			nodeLabel: node.data.label,
 			nodeColor,
@@ -45,7 +51,7 @@ export const collectUpstreamVariables = (
 			// Id-based, stable reference the backend resolver understands
 			// (`{{ node_2.output.city }}`). The friendly label is display-only —
 			// see nodeLabel — so renaming/duplicating a node never breaks tokens.
-			token: `{{${node.id}.output.${output.name}}}`,
+			token: buildOutputToken(node.id, output.path ?? output.name),
 		}));
 	});
 };

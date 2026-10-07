@@ -44,6 +44,7 @@ export type TEditorUiState = {
 	stepMode: boolean;
 	waitingForStep: boolean;
 	linkCredentialsOpen: boolean;
+	linkCredentialsNodeId?: string | null;
 	runPanelTab: 'console' | 'results' | 'history';
 	runPanelResultKey: string | null;
 	runPanelResultRequestId: number;

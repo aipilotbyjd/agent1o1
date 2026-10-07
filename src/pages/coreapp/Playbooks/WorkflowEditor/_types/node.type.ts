@@ -22,6 +22,8 @@ export type TNodeCategory =
 export type TNodePort = {
 	id: string;
 	name: string;
+	/** Actual property path in the output; empty means the complete output. */
+	path?: string;
 	type: TPortType;
 	required?: boolean;
 };
@@ -112,6 +114,9 @@ export type TCanvasNodeData = {
 	label: string;
 	definition?: TNodeDefinition;
 	values: Record<string, unknown>;
+	dynamicInputKeys?: string[];
+	outputPortsSnapshot?: TNodePort[];
+	fixedInputValues?: Record<string, unknown>;
 	status?: TNodeRunStatus;
 	durationMs?: number;
 	error?: string;

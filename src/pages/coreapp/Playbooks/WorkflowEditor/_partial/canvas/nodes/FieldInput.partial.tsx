@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
 import { ChevronDown, X } from 'lucide-react';
 import type { TNodeField } from '../../../_types/node.type';
 import AccountSelect from './AccountSelect.partial';
@@ -245,7 +246,7 @@ const KeyValueObjectInput = ({ field, value, onChange, compact }: FieldInputProp
 };
 
 /** A list of strings (e.g. a spreadsheet row's cell values), one input per item. */
-const StringListInput = ({ field, value, onChange, compact }: FieldInputProps) => {
+const StringListInput = ({ field, value, onChange, compact, nodeId }: FieldInputProps) => {
 	const cls = compact ? compactInputClass : inputClass;
 	const items =
 		Array.isArray(value) && value.length ? value.map((item) => String(item ?? '')) : [''];
@@ -256,22 +257,45 @@ const StringListInput = ({ field, value, onChange, compact }: FieldInputProps) =
 		<div className='space-y-1.5'>
 			{items.map((item, index) => (
 				<div key={index} className='flex items-center gap-1.5'>
-					<input
-						type='text'
-						value={item}
-						placeholder={
-							field.placeholder ? `${field.placeholder} ${index + 1}` : undefined
-						}
-						onChange={(event) =>
-							update(
-								items.map((current, i) =>
-									i === index ? event.target.value : current,
-								),
-							)
-						}
-						className={cls}
-						aria-label={`${field.label} ${index + 1}`}
-					/>
+					{nodeId ? (
+						<div className='min-w-0 flex-1'>
+							<ExpressionInput
+								nodeId={nodeId}
+								field={{
+									...field,
+									kind: 'text',
+									label: `${field.label} ${index + 1}`,
+								}}
+								value={item}
+								onChange={(next) =>
+									update(
+										items.map((current, i) =>
+											i === index ? String(next ?? '') : current,
+										),
+									)
+								}
+								compact={compact}
+								className={cls}
+							/>
+						</div>
+					) : (
+						<input
+							type='text'
+							value={item}
+							placeholder={
+								field.placeholder ? `${field.placeholder} ${index + 1}` : undefined
+							}
+							onChange={(event) =>
+								update(
+									items.map((current, i) =>
+										i === index ? event.target.value : current,
+									),
+								)
+							}
+							className={cls}
+							aria-label={`${field.label} ${index + 1}`}
+						/>
+					)}
 					<button
 						type='button'
 						aria-label={`Remove ${field.label} ${index + 1}`}
@@ -294,7 +318,52 @@ const StringListInput = ({ field, value, onChange, compact }: FieldInputProps) =
 };
 
 const FieldInput = ({ field, value, onChange, compact, nodeId }: FieldInputProps) => {
+	const { state } = useWorkflowEditor();
+	const dynamic = state.nodes
+		.find((node) => node.id === nodeId)
+		?.data.dynamicInputKeys?.includes(field.key);
 	const cls = compact ? compactInputClass : inputClass;
+
+	if (
+		nodeId &&
+		field.kind !== 'credential' &&
+		(dynamic || (typeof value === 'string' && value.includes('{{')))
+	) {
+		return (
+			<ExpressionInput
+				field={{
+					...field,
+					kind: 'text',
+					placeholder: 'Connect an output or insert a variable…',
+				}}
+				value={typeof value === 'object' && value !== null ? JSON.stringify(value) : value}
+				onChange={(next) => {
+					const text = String(next ?? '');
+					if (!text.includes('{{')) {
+						if (field.kind === 'number' && text.trim() && Number.isFinite(Number(text)))
+							return onChange(Number(text));
+						if (field.kind === 'toggle' && ['true', 'false'].includes(text))
+							return onChange(text === 'true');
+						if (
+							field.json ||
+							['list', 'multiselect', 'kv'].includes(field.kind) ||
+							field.dynamic?.valueType === 'array'
+						) {
+							try {
+								return onChange(JSON.parse(text));
+							} catch {
+								/* Keep an unfinished expression editable. */
+							}
+						}
+					}
+					onChange(text);
+				}}
+				compact={compact}
+				nodeId={nodeId}
+				className={cls}
+			/>
+		);
+	}
 
 	if (field.kind === 'dynamic' && field.dynamic) {
 		return (
@@ -311,7 +380,13 @@ const FieldInput = ({ field, value, onChange, compact, nodeId }: FieldInputProps
 
 	if (field.kind === 'list') {
 		return (
-			<StringListInput field={field} value={value} onChange={onChange} compact={compact} />
+			<StringListInput
+				field={field}
+				value={value}
+				onChange={onChange}
+				compact={compact}
+				nodeId={nodeId}
+			/>
 		);
 	}
 

@@ -30,6 +30,9 @@ type Props = {
 	connectorKey?: string;
 	value?: string;
 	onChange: (credentialId: string) => void;
+	/** Open the shared account popup without rendering an inline field. */
+	popupOnly?: boolean;
+	onClose?: () => void;
 };
 
 const isExpired = (credential: TConnectorCredential) =>
@@ -138,7 +141,7 @@ const AccountChoiceCard = ({
 };
 
 /** A compact node field opens a focused chooser, outside the canvas transform. */
-const AccountSelect = ({ connectorKey, value, onChange }: Props) => {
+const AccountSelect = ({ connectorKey, value, onChange, popupOnly = false, onClose }: Props) => {
 	const { activeWorkspaceId } = useWorkspaceContext();
 	const {
 		data: allCredentials = [],
@@ -147,7 +150,7 @@ const AccountSelect = ({ connectorKey, value, onChange }: Props) => {
 		refetch,
 	} = useConnectorCredentials(activeWorkspaceId);
 	const { data: connectors = [] } = useConnectors();
-	const [open, setOpen] = useState(false);
+	const [open, setOpen] = useState(popupOnly);
 	const [adding, setAdding] = useState(false);
 	const [connectionBusy, setConnectionBusy] = useState(false);
 	const [search, setSearch] = useState('');
@@ -213,9 +216,26 @@ const AccountSelect = ({ connectorKey, value, onChange }: Props) => {
 	const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss, role]);
 
 	useEffect(() => {
-		if (!adding && !value && accounts.length === 1 && !isExpired(accounts[0]))
+		if (!popupOnly && !adding && !value && accounts.length === 1 && !isExpired(accounts[0]))
 			onChange(accounts[0].id);
-	}, [value, accounts, onChange, adding]);
+	}, [value, accounts, onChange, adding, popupOnly]);
+
+	useEffect(() => {
+		if (popupOnly && !open) onClose?.();
+	}, [popupOnly, open, onClose]);
+
+	useEffect(() => {
+		if (
+			popupOnly &&
+			open &&
+			!isLoading &&
+			!isError &&
+			accounts.length === 0 &&
+			connector &&
+			!isUnavailable
+		)
+			setAdding(true);
+	}, [popupOnly, open, isLoading, isError, accounts.length, connector, isUnavailable]);
 
 	const connectNew = () => {
 		setError(undefined);
@@ -254,58 +274,59 @@ const AccountSelect = ({ connectorKey, value, onChange }: Props) => {
 			className='nodrag flex flex-col gap-1.5'
 			onPointerDown={(event) => event.stopPropagation()}
 			onKeyDown={(event) => event.stopPropagation()}>
-			<button
-				ref={refs.setReference}
-				type='button'
-				disabled={busy || (empty && isUnavailable)}
-				{...getReferenceProps({
-					onClick: (event) => {
-						event.stopPropagation();
-						if (isError) {
-							setOpen(false);
-							void refetch();
-						} else if (empty) void connectNew();
-					},
-				})}
-				aria-label={
-					empty || isError || busy
-						? title
-						: `${appName} account: ${selected?.name ?? 'Choose an account'}`
-				}
-				aria-haspopup={empty || isError ? undefined : 'dialog'}
-				aria-expanded={empty || isError ? undefined : open}
-				title={subtitle}
-				className={`flex min-h-9 w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:outline-none disabled:opacity-50 ${open ? 'border-zinc-400 bg-zinc-50 dark:border-zinc-500 dark:bg-zinc-800' : 'border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:hover:bg-zinc-800'}`}>
-				{busy ? (
-					<Loader2 size={14} className='shrink-0 animate-spin text-zinc-400' />
-				) : (
-					<UserRound size={14} className='shrink-0 text-zinc-400' />
-				)}
-				<span className='min-w-0 flex-1 truncate text-[11px] font-medium text-zinc-800 dark:text-zinc-100'>
-					{title}
-				</span>
-				{expired && <AlertCircle size={13} className='shrink-0 text-amber-500' />}
-				{!busy && (
-					<span className='ml-1 shrink-0 border-l border-zinc-200 pl-2 text-[10px] font-medium text-zinc-500 dark:border-zinc-700 dark:text-zinc-400'>
-						{empty ? <Plus size={13} /> : 'Change'}
+			<div className={popupOnly ? 'hidden' : undefined}>
+				<button
+					ref={refs.setReference}
+					type='button'
+					disabled={busy || (empty && isUnavailable)}
+					{...getReferenceProps({
+						onClick: (event) => {
+							event.stopPropagation();
+							if (isError) {
+								setOpen(false);
+								void refetch();
+							} else if (empty) void connectNew();
+						},
+					})}
+					aria-label={
+						empty || isError || busy
+							? title
+							: `${appName} account: ${selected?.name ?? 'Choose an account'}`
+					}
+					aria-haspopup={empty || isError ? undefined : 'dialog'}
+					aria-expanded={empty || isError ? undefined : open}
+					title={subtitle}
+					className={`flex min-h-9 w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:outline-none disabled:opacity-50 ${open ? 'border-zinc-400 bg-zinc-50 dark:border-zinc-500 dark:bg-zinc-800' : 'border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:hover:bg-zinc-800'}`}>
+					{busy ? (
+						<Loader2 size={14} className='shrink-0 animate-spin text-zinc-400' />
+					) : (
+						<UserRound size={14} className='shrink-0 text-zinc-400' />
+					)}
+					<span className='min-w-0 flex-1 truncate text-[11px] font-medium text-zinc-800 dark:text-zinc-100'>
+						{title}
 					</span>
+					{expired && <AlertCircle size={13} className='shrink-0 text-amber-500' />}
+					{!busy && (
+						<span className='ml-1 shrink-0 border-l border-zinc-200 pl-2 text-[10px] font-medium text-zinc-500 dark:border-zinc-700 dark:text-zinc-400'>
+							{empty ? <Plus size={13} /> : 'Change'}
+						</span>
+					)}
+				</button>
+				{selected && expired && (
+					<p className='text-[10px] text-amber-700 dark:text-amber-400'>
+						Reconnect this account in Apps before running.
+					</p>
 				)}
-			</button>
-			{selected && expired && (
-				<p className='text-[10px] text-amber-700 dark:text-amber-400'>
-					Reconnect this account in Apps before running.
-				</p>
-			)}
-			{empty && !busy && (
-				<p className='text-[10px] text-zinc-500 dark:text-zinc-400'>{subtitle}</p>
-			)}
-			{error && (
-				<p role='alert' className='text-[10px] text-rose-600 dark:text-rose-400'>
-					{error}
-				</p>
-			)}
-
-			{open && !isError && !busy && (adding || !empty) && (
+				{empty && !busy && (
+					<p className='text-[10px] text-zinc-500 dark:text-zinc-400'>{subtitle}</p>
+				)}
+				{error && (
+					<p role='alert' className='text-[10px] text-rose-600 dark:text-rose-400'>
+						{error}
+					</p>
+				)}
+			</div>
+			{open && (popupOnly || (!isError && !busy && (adding || !empty))) && (
 				<FloatingPortal>
 					<FloatingOverlay
 						lockScroll
@@ -433,15 +454,36 @@ const AccountSelect = ({ connectorKey, value, onChange }: Props) => {
 													</fieldset>
 												);
 											})}
-											{!filteredAccounts.length && (
-												<div className='rounded-xl border border-dashed border-zinc-200 px-4 py-8 text-center dark:border-zinc-700'>
-													<p className='text-sm font-medium'>
-														No accounts found
-													</p>
-													<p className='mt-1 text-xs text-zinc-500'>
-														Try another name or connect a new account.
-													</p>
+											{isLoading ? (
+												<p
+													role='status'
+													className='py-6 text-sm text-zinc-500'>
+													Loading accounts…
+												</p>
+											) : isError ? (
+												<div
+													role='alert'
+													className='py-6 text-sm text-rose-600'>
+													Couldn’t load accounts.{' '}
+													<button
+														type='button'
+														onClick={() => void refetch()}
+														className='underline'>
+														Try again
+													</button>
 												</div>
+											) : (
+												!filteredAccounts.length && (
+													<div className='rounded-xl border border-dashed border-zinc-200 px-4 py-8 text-center dark:border-zinc-700'>
+														<p className='text-sm font-medium'>
+															No accounts found
+														</p>
+														<p className='mt-1 text-xs text-zinc-500'>
+															Try another name or connect a new
+															account.
+														</p>
+													</div>
+												)
 											)}
 											<button
 												type='button'
@@ -504,7 +546,9 @@ const AccountSelect = ({ connectorKey, value, onChange }: Props) => {
 												</button>
 												<button
 													type='button'
-													disabled={!pendingAccount}
+													disabled={
+														isLoading || isError || !pendingAccount
+													}
 													onClick={() => {
 														if (
 															pendingAccount &&

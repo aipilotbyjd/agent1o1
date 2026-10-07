@@ -1,3 +1,5 @@
+import { getOutputPorts } from '../../_helper/outputPorts.helper';
+import { dynamicInputPorts } from '../../_helper/dynamicInputs.helper';
 import {
 	applyNodeChanges,
 	Background,
@@ -74,9 +76,11 @@ const quickAddNodes = [
 
 const getPortType = (node: TCanvasNode | undefined, portId?: string | null): TPortType => {
 	const def = node ? getNodeDefinition(node.data.defKey, node.data.definition) : undefined;
-	const port = [...(def?.inputs ?? []), ...(def?.outputs ?? [])].find(
-		(item) => item.id === portId,
-	);
+	const port = [
+		...(def?.inputs ?? []),
+		...dynamicInputPorts(def, node?.data.dynamicInputKeys),
+		...(node ? getOutputPorts(def, node.data) : []),
+	].find((item) => item.id === portId);
 	return port?.type ?? 'any';
 };
 
