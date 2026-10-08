@@ -399,9 +399,35 @@ export const workflowEditorReducer = (
 			);
 			if (ids.size === 0) return state;
 			const next = withHistory(state);
+			// A field wired from a deleted node goes back to its configured value.
+			const unwired = next.edges.filter(
+				(edge) =>
+					ids.has(edge.source) &&
+					!ids.has(edge.target) &&
+					edge.targetHandle?.startsWith('parameter:'),
+			);
 			return {
 				...next,
-				nodes: next.nodes.filter((node) => !ids.has(node.id)),
+				nodes: next.nodes
+					.filter((node) => !ids.has(node.id))
+					.map((node) => {
+						const keys = (node.data.dynamicInputKeys ?? []).filter((key) =>
+							unwired.some(
+								(edge) =>
+									edge.target === node.id &&
+									edge.targetHandle === dynamicInputId(key),
+							),
+						);
+						if (keys.length === 0) return node;
+						const values = { ...node.data.values };
+						const fixedInputValues = { ...node.data.fixedInputValues };
+						keys.forEach((key) => {
+							if (Object.prototype.hasOwnProperty.call(fixedInputValues, key))
+								values[key] = fixedInputValues[key];
+							delete fixedInputValues[key];
+						});
+						return { ...node, data: { ...node.data, values, fixedInputValues } };
+					}),
 				edges: next.edges.filter((edge) => !ids.has(edge.source) && !ids.has(edge.target)),
 				ui: { ...next.ui, selectedNodeId: null, selectedNodeIds: [] },
 			};

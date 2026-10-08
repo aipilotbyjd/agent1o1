@@ -443,8 +443,8 @@ export const NODE_CATALOG: TNodeDefinition[] = [
 				rows: 6,
 				required: true,
 				supportsVariables: true,
-				help: 'Write your prompt here. Use {{variable}} syntax to inject values from previous nodes.',
-				placeholder: 'Use {{Ask Input.value}} and return a concise answer.',
+				help: 'Write your prompt here. Type @ to insert a value from a previous node.',
+				placeholder: 'Summarize the text below and return a concise answer.',
 			},
 			{
 				key: 'temperature',
@@ -498,7 +498,7 @@ export const NODE_CATALOG: TNodeDefinition[] = [
 				kind: 'text',
 				required: true,
 				supportsVariables: true,
-				help: 'Enter the full URL to scrape. Variables like {{Ask Input.value}} are supported.',
+				help: 'Enter the full URL to scrape. Type @ to insert a value from a previous node.',
 			},
 			{
 				key: 'waitFor',
@@ -566,7 +566,7 @@ export const NODE_CATALOG: TNodeDefinition[] = [
 				kind: 'text',
 				required: true,
 				supportsVariables: true,
-				help: 'Request URL. Variables like {{Ask Input.value}} are supported.',
+				help: 'Request URL. Type @ to insert a value from a previous node.',
 			},
 			{
 				key: 'headers',
@@ -728,7 +728,7 @@ export const NODE_CATALOG: TNodeDefinition[] = [
 				label: 'Message',
 				kind: 'longtext',
 				supportsVariables: true,
-				help: 'Message content. Supports markdown and {{variable}} syntax.',
+				help: 'Message content. Supports markdown; type @ to insert a value from a previous node.',
 			},
 		],
 		requiresCredential: true,

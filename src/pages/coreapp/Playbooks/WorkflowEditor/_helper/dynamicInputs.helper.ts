@@ -53,6 +53,15 @@ export const serializeNodeConfig = (node: TCanvasNode, edges: TCanvasEdge[]) => 
 							sourceHandle: edge.sourceHandle,
 							targetHandle: edge.targetHandle,
 						})),
+					// The graph keeps one edge per node pair, so record which sources
+					// also have an ordinary connection to restore it alongside the wires.
+					flowSources: [
+						...new Set(
+							edges
+								.filter((edge) => edge.target === node.id && !edge.targetHandle)
+								.map((edge) => edge.source),
+						),
+					],
 				},
 			}
 		: {}),
@@ -87,37 +96,63 @@ export const readNodeConfig = (config: Record<string, unknown>) => {
 	};
 };
 
+type TStoredConnection = { source: string; sourceHandle?: string; targetHandle: string };
+
+/**
+ * Turn the graph's plain edges back into the canvas's wired inputs. The
+ * backend keeps a single edge per node pair, so each recorded wire becomes
+ * its own edge next to it, and the plain edge stays only where the node also
+ * had an ordinary connection from that source. A wire whose edge is no longer
+ * in the graph (removed by the assistant, say) is dropped.
+ */
 export const restoreInputConnections = (
 	edges: TCanvasEdge[],
 	configs: { key: string; config?: Record<string, unknown> | null }[],
 ): TCanvasEdge[] => {
-	const result = [...edges];
+	let result = [...edges];
 	for (const node of configs) {
 		const metadata = node.config?.__editorInputs as
-			| { connections?: { source: string; sourceHandle?: string; targetHandle: string }[] }
+			| { connections?: unknown; flowSources?: unknown }
 			| undefined;
 		if (!Array.isArray(metadata?.connections)) continue;
-		for (const connection of metadata.connections) {
-			if (
-				!connection ||
-				typeof connection.source !== 'string' ||
-				typeof connection.targetHandle !== 'string' ||
-				!connection.targetHandle.startsWith('parameter:')
-			)
-				continue;
-			const index = result.findIndex(
+		const connections = metadata.connections.filter(
+			(connection): connection is TStoredConnection =>
+				Boolean(connection) &&
+				typeof connection.source === 'string' &&
+				typeof connection.targetHandle === 'string' &&
+				connection.targetHandle.startsWith('parameter:'),
+		);
+		const flowSources = Array.isArray(metadata.flowSources)
+			? new Set(
+					metadata.flowSources.filter((item): item is string => typeof item === 'string'),
+				)
+			: null;
+		const wired = new Set<string>();
+		for (const connection of connections) {
+			const plain = result.find(
 				(edge) =>
 					edge.source === connection.source &&
 					edge.target === node.key &&
 					!edge.targetHandle,
 			);
-			if (index < 0) continue;
-			result[index] = {
-				...result[index],
+			if (!plain) continue;
+			wired.add(connection.source);
+			result.push({
+				...plain,
+				id: `${plain.id}_${connection.targetHandle}`,
 				sourceHandle: connection.sourceHandle,
 				targetHandle: connection.targetHandle,
-			};
+			});
 		}
+		// Workflows saved before `flowSources` existed had no ordinary edge
+		// alongside a wire, so theirs is dropped as before.
+		result = result.filter(
+			(edge) =>
+				edge.target !== node.key ||
+				edge.targetHandle ||
+				!wired.has(edge.source) ||
+				(flowSources?.has(edge.source) ?? false),
+		);
 	}
 	return result;
 };

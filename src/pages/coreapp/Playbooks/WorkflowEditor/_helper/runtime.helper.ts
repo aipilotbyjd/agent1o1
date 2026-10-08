@@ -22,32 +22,26 @@ const asScopeObject = (value: unknown): Record<string, unknown> => {
 };
 
 /**
- * A resolution scope keyed by node id, mirroring the backend engine's context:
- * `{ node_2: { output: … }, nodes: { node_2: { output: … } } }`. Tokens resolve
- * against this by dotted path, so `{{ node_2.output.city }}` and the namespaced
- * `{{ nodes.node_2.output.city }}` both work.
+ * The templating context, shaped exactly like the backend engine's
+ * (`WorkflowRunner::buildContext`): `{ input, nodes: { <id>: <output> } }`,
+ * so `{{nodes.node_2.city}}` previews the same value a real run resolves.
  */
 export type TRuntimeContext = Record<string, unknown>;
 
 /**
- * Build an id-keyed runtime context from the outputs produced so far. This is the
- * client-side mirror of the backend resolver's scope — references are by stable
- * node **id**, never by label (labels break on rename/duplicate).
+ * Build the context from the outputs produced so far. References are by
+ * stable node **id**, never by label (labels break on rename/duplicate).
  */
 export const buildRuntimeContext = (
 	nodes: TCanvasNode[],
 	outputs: TNodeOutputs,
+	input: Record<string, unknown> = {},
 ): TRuntimeContext => {
-	const ctx: Record<string, unknown> = {};
 	const nodesScope: Record<string, unknown> = {};
 	nodes.forEach((node) => {
-		if (!(node.id in outputs)) return;
-		const scope = { output: outputs[node.id] };
-		ctx[node.id] = scope;
-		nodesScope[node.id] = scope;
+		if (node.id in outputs) nodesScope[node.id] = outputs[node.id];
 	});
-	ctx.nodes = nodesScope;
-	return ctx;
+	return { input, nodes: nodesScope };
 };
 
 /**
@@ -76,9 +70,10 @@ const stringifyToken = (value: unknown): string => {
 	return String(value);
 };
 
-/** Walk a dotted/indexed path (`node_2.output.data.0.id`) into the context. */
+/** Walk a dotted/indexed path (`nodes.node_2.data[0].id`) into the context. */
 const getPath = (ctx: TRuntimeContext, path: string): unknown => {
 	const parts = path
+		.replace(/\[(\d+)\]/g, '.$1')
 		.split('.')
 		.map((p) => p.trim())
 		.filter(Boolean);
@@ -97,48 +92,30 @@ const getPath = (ctx: TRuntimeContext, path: string): unknown => {
 	return cur;
 };
 
-/** Small set of single-argument transforms for preview parity with the backend. */
-const TOKEN_FUNCTIONS: Record<string, (value: unknown) => unknown> = {
-	uppercase: (v) => stringifyToken(v).toUpperCase(),
-	lowercase: (v) => stringifyToken(v).toLowerCase(),
-	trim: (v) => stringifyToken(v).trim(),
-	length: (v) => (Array.isArray(v) || typeof v === 'string' ? v.length : stringifyToken(v).length),
-	json: (v) => JSON.stringify(v),
-};
+// Same charset as the backend's `SafePattern`: a path, nothing else. Anything
+// else stays literal text there, so it does here too.
+const WHOLE_TOKEN_RE = /^\s*\{\{\s*([a-zA-Z0-9_.[\]]+)\s*\}\}\s*$/;
+const EMBEDDED_TOKEN_RE = /\{\{\s*([a-zA-Z0-9_.[\]]*)\s*\}\}/g;
 
 /**
- * Resolve a single token body (the text between `{{ }}`) to its value. Supports
- * dotted/indexed paths and one level of `fn(path)` transform. Returns `undefined`
- * when it can't be resolved so callers can decide how to render the miss.
- */
-const resolveToken = (body: string, ctx: TRuntimeContext): unknown => {
-	const expr = body.trim();
-	const fn = expr.match(/^([a-zA-Z_]\w*)\((.*)\)$/);
-	if (fn && TOKEN_FUNCTIONS[fn[1]]) {
-		const arg = resolveToken(fn[2], ctx);
-		return TOKEN_FUNCTIONS[fn[1]](arg);
-	}
-	return getPath(ctx, expr);
-};
-
-/**
- * Replace every `{{ … }}` token in a string with its resolved value. If the whole
- * string is a single token the raw typed value is returned (preserving arrays/
- * objects/numbers); mixed strings interpolate. Unresolved tokens are left as-is
- * so an in-progress expression still shows in the preview.
+ * Replace every `{{ … }}` token in a string with its resolved value, the way
+ * the backend's `TemplateResolver` does: a string that is a single token
+ * becomes the raw typed value (preserving arrays/objects/numbers); tokens
+ * inside text are stringified. Tokens with no value yet are left as-is so an
+ * in-progress expression still shows in the preview.
  */
 export const resolveExpressions = (input: unknown, ctx: TRuntimeContext): unknown => {
 	if (typeof input !== 'string') return input;
 	if (!input.includes('{{')) return input;
 
-	const single = input.match(/^\s*\{\{([^}]+)\}\}\s*$/);
+	const single = input.match(WHOLE_TOKEN_RE);
 	if (single) {
-		const value = resolveToken(single[1], ctx);
+		const value = getPath(ctx, single[1]);
 		if (value !== undefined) return value;
 	}
 
-	return input.replace(/\{\{([^}]+)\}\}/g, (match, body: string) => {
-		const value = resolveToken(body, ctx);
+	return input.replace(EMBEDDED_TOKEN_RE, (match, body: string) => {
+		const value = getPath(ctx, body);
 		return value === undefined ? match : stringifyToken(value);
 	});
 };
@@ -191,8 +168,7 @@ const sampleFromSchema = (raw: unknown): unknown => {
 		const schema = JSON.parse(raw) as Record<string, unknown>;
 		const out: Record<string, unknown> = {};
 		Object.entries(schema).forEach(([key, type]) => {
-			out[key] =
-				type === 'number' ? 42 : type === 'boolean' ? true : `sample ${key}`;
+			out[key] = type === 'number' ? 42 : type === 'boolean' ? true : `sample ${key}`;
 		});
 		return out;
 	} catch {
@@ -220,9 +196,7 @@ export const executeNode = (
 				const fn = new Function('input', 'items', '$json', `"use strict";\n${code}`);
 				return { output: fn(primaryInput, inputs, primaryInput) };
 			} catch (error) {
-				throw new Error(
-					error instanceof Error ? error.message : 'Code execution failed',
-				);
+				throw new Error(error instanceof Error ? error.message : 'Code execution failed');
 			}
 		}
 		case 'logic.condition':
@@ -249,7 +223,11 @@ export const executeNode = (
 				},
 			};
 		case 'input':
-			return { output: { value: resolvedValues.question ?? resolvedValues.value ?? 'sample input' } };
+			return {
+				output: {
+					value: resolvedValues.question ?? resolvedValues.value ?? 'sample input',
+				},
+			};
 		case 'ai': {
 			const prompt = String(resolvedValues.prompt ?? resolvedValues.goal ?? '');
 			return {
@@ -261,7 +239,9 @@ export const executeNode = (
 		case 'extract':
 			return { output: sampleFromSchema(resolvedValues.schema) };
 		case 'scrape':
-			return { output: `# ${resolvedValues.url ?? 'page'}\n\nFetched markdown content preview.` };
+			return {
+				output: `# ${resolvedValues.url ?? 'page'}\n\nFetched markdown content preview.`,
+			};
 		case 'data':
 			return {
 				output: {
@@ -287,7 +267,13 @@ export const executeNode = (
 			return { output: { items, count: items.length } };
 		}
 		case 'integration':
-			return { output: { sent: true, channel: resolvedValues.channel, message: resolvedValues.message } };
+			return {
+				output: {
+					sent: true,
+					channel: resolvedValues.channel,
+					message: resolvedValues.message,
+				},
+			};
 		case 'output':
 			return { output: primaryInput ?? resolvedValues.name ?? 'result' };
 		default:

@@ -27,6 +27,9 @@ export const getOutputPorts = (
 	const sample = getNodeOutput(data);
 	if (sample !== null && typeof sample === 'object' && !Array.isArray(sample)) {
 		for (const [key, value] of Object.entries(sample)) {
+			// The backend's `{{ }}` paths only allow word characters, so a field
+			// like `X-Request-Id` can't be referenced on its own.
+			if (!/^\w+$/.test(key)) continue;
 			if (!ports.some((port) => (port.path ?? port.name) === key)) {
 				ports.push({
 					id: ports.some((port) => port.id === key) ? `field:${key}` : key,

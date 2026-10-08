@@ -23,7 +23,7 @@ export const useNodeTestRunner = (nodeId: string, defKey: string) => {
 
 	// Sample input for the test: the last output of every upstream node
 	// (from a prior run or pinned data), keyed by that node's id so the backend
-	// can resolve the node's real {{ id.output.* }} tokens.
+	// can resolve the node's real {{nodes.<id>.*}} tokens.
 	const upstreamInput = useMemo<Record<string, unknown>>(() => {
 		const input: Record<string, unknown> = {};
 		const visited = new Set<string>([nodeId]);
