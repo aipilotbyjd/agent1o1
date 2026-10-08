@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { useOutletContext, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -58,6 +57,7 @@ import {
 import { useTags } from '@/api/modules/tags';
 import type { TTag } from '@/types/tag.type';
 import WorkflowTagsModal from './_partial/WorkflowTagsModal.partial';
+import AnchoredMenu, { type TMenuAnchor } from './_partial/AnchoredMenu.partial';
 
 interface IWorkflow {
 	id: string;
@@ -86,7 +86,6 @@ const ROOT_FOLDER_ID = '__root__';
 
 type TListTab = 'all' | 'starred' | 'published' | 'drafts';
 type TSortOption = 'updated' | 'name' | 'lastRun' | 'nodes';
-type TMenuAnchor = { top: number; left: number; flip: boolean };
 
 const LIST_TABS: { id: TListTab; label: string }[] = [
 	{ id: 'all', label: 'All Workflows' },
@@ -305,7 +304,10 @@ const WorkflowsListPage = () => {
 			setActiveFolderMenuId(null);
 			setMenuAnchor(null);
 		};
-		const handleReposition = () => {
+		const handleReposition = (event: Event) => {
+			// Scrolling the menu's own folder list must not close it.
+			if (event.target instanceof Element && event.target.closest('[data-workflow-menu]'))
+				return;
 			setActiveMenuId((current) => (menuAnchorRef.current ? null : current));
 			setMenuAnchor(null);
 		};
@@ -513,21 +515,21 @@ const WorkflowsListPage = () => {
 		e.stopPropagation();
 		const wf = workflows.find((w) => w.id === id);
 		const confirmed = await confirm({
-			title: 'Delete Workflow',
+			title: 'Move to Trash',
 			message: (
 				<>
-					Are you sure you want to delete{' '}
 					<strong className='font-semibold text-zinc-800 dark:text-zinc-200'>
-						{wf ? `"${wf.title}"` : 'this workflow'}
-					</strong>
-					? This action cannot be undone.
+						{wf ? `"${wf.title}"` : 'This workflow'}
+					</strong>{' '}
+					will be moved to the trash. You can restore it from Trash at any time.
 				</>
 			),
+			confirmText: 'Move to trash',
 		});
 		if (!confirmed) return;
 		try {
 			await deleteWorkflowMutation.mutateAsync(id);
-			if (wf) triggerToast(`Deleted workflow "${wf.title}"`, 'info');
+			if (wf) triggerToast(`Moved "${wf.title}" to trash`, 'info');
 		} catch {
 			// Error is surfaced by the mutation hook
 		}
@@ -633,15 +635,15 @@ const WorkflowsListPage = () => {
 		);
 	};
 
-	const renderWorkflowMenu = (workflow: IWorkflow, portaled = false) => (
+	const renderWorkflowMenu = (workflow: IWorkflow, maxHeight: number) => (
 		<motion.div
+			data-workflow-menu
 			initial={{ opacity: 0, scale: 0.95, y: 5 }}
 			animate={{ opacity: 1, scale: 1, y: 0 }}
 			exit={{ opacity: 0, scale: 0.95, y: 5 }}
 			onClick={(e) => e.stopPropagation()}
-			className={`border-border-main bg-bg-card z-50 w-52 rounded-xl border p-1.5 text-left shadow-2xl ${
-				portaled ? '' : 'absolute right-0 mt-2'
-			}`}>
+			style={{ maxHeight }}
+			className='border-border-main bg-bg-card w-52 overflow-y-auto rounded-xl border p-1.5 text-left shadow-2xl'>
 			<button
 				type='button'
 				onClick={() => {
@@ -723,14 +725,15 @@ const WorkflowsListPage = () => {
 					handleDelete(workflow.id, e);
 				}}
 				className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10'>
-				<Trash2 size={12} /> Delete
+				<Trash2 size={12} /> Move to trash
 			</button>
 		</motion.div>
 	);
 
-	// The list view lives inside a horizontally scrolling table, which would clip
-	// an absolutely positioned menu — so rows anchor theirs to the viewport.
-	const renderWorkflowMenuTrigger = (workflow: IWorkflow, anchored = false) => (
+	// Anchored to the viewport through a portal: the table view scrolls
+	// horizontally and would clip an absolutely positioned menu, and in the grid
+	// each card is its own stacking context, so the next card painted over it.
+	const renderWorkflowMenuTrigger = (workflow: IWorkflow) => (
 		<div className='relative'>
 			<button
 				type='button'
@@ -742,17 +745,8 @@ const WorkflowsListPage = () => {
 						setMenuAnchor(null);
 						return;
 					}
-					if (anchored) {
-						const rect = e.currentTarget.getBoundingClientRect();
-						const flip = window.innerHeight - rect.bottom < 280;
-						setMenuAnchor({
-							top: flip ? rect.top - 6 : rect.bottom + 6,
-							left: Math.min(rect.right, window.innerWidth - 12),
-							flip,
-						});
-					} else {
-						setMenuAnchor(null);
-					}
+					const { top, bottom, right } = e.currentTarget.getBoundingClientRect();
+					setMenuAnchor({ top, bottom, right });
 					setActiveMenuId(workflow.id);
 				}}
 				className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white ${
@@ -762,25 +756,12 @@ const WorkflowsListPage = () => {
 				}`}>
 				<MoreVertical size={16} />
 			</button>
-			{anchored ? (
-				menuAnchor &&
-				activeMenuId === workflow.id &&
-				createPortal(
-					<div
-						className='fixed z-[120]'
-						style={{
-							top: menuAnchor.top,
-							left: menuAnchor.left,
-							transform: `translateX(-100%)${menuAnchor.flip ? ' translateY(-100%)' : ''}`,
-						}}>
-						<AnimatePresence>{renderWorkflowMenu(workflow, true)}</AnimatePresence>
-					</div>,
-					document.body,
-				)
-			) : (
-				<AnimatePresence>
-					{activeMenuId === workflow.id && renderWorkflowMenu(workflow)}
-				</AnimatePresence>
+			{menuAnchor && activeMenuId === workflow.id && (
+				<AnchoredMenu anchor={menuAnchor}>
+					{(maxHeight) => (
+						<AnimatePresence>{renderWorkflowMenu(workflow, maxHeight)}</AnimatePresence>
+					)}
+				</AnchoredMenu>
 			)}
 		</div>
 	);
@@ -1843,9 +1824,12 @@ const WorkflowsListPage = () => {
 																				<span className='mt-0.5 truncate text-[10px] font-semibold text-slate-400 dark:text-zinc-500'>
 																					{wf.description}
 																				</span>
-																				{wf.tags.length > 0 && (
+																				{wf.tags.length >
+																					0 && (
 																					<div className='mt-1.5 flex flex-wrap gap-1'>
-																						{renderTagChips(wf)}
+																						{renderTagChips(
+																							wf,
+																						)}
 																					</div>
 																				)}
 																			</div>
@@ -1933,7 +1917,6 @@ const WorkflowsListPage = () => {
 																			</button>
 																			{renderWorkflowMenuTrigger(
 																				wf,
-																				true,
 																			)}
 																		</div>
 																	</td>

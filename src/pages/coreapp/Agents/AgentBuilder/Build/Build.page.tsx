@@ -1540,6 +1540,7 @@ const BuildPage = () => {
 		setIsMoreDropdownOpen(false);
 		if (currentAgentId) {
 			await deleteAgentMutation.mutateAsync(currentAgentId);
+			notify.success(`"${agentName.trim() || 'Agent'}" moved to trash.`);
 		}
 		navigate(toWorkspacePath(pages.workspace.subPages!.agents.to));
 	};
@@ -3017,7 +3018,7 @@ const BuildPage = () => {
 														onClick={handleDeleteAgent}
 													className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/20'>
 													<Trash2 size={13} />
-													Delete Agent
+													Move to Trash
 												</button>
 											</motion.div>
 										</>

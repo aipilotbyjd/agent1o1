@@ -40,7 +40,12 @@ export const coreAppNavigation: TNavSection[] = [
 	},
 	{
 		title: 'Activity',
-		items: [workspacePages.approvals, workspacePages.trail, workspacePages.artifacts],
+		items: [
+			workspacePages.approvals,
+			workspacePages.trail,
+			workspacePages.artifacts,
+			workspacePages.trash,
+		],
 	},
 ];
 

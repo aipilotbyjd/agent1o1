@@ -48,6 +48,7 @@ export const ConfirmProvider: FC<IConfirmProviderProps> = ({ children }) => {
 				confirmText={state.confirmText}
 				cancelText={state.cancelText}
 				tone={state.tone}
+				icon={state.icon}
 				onConfirm={() => settle(true)}
 				onCancel={() => settle(false)}
 			/>

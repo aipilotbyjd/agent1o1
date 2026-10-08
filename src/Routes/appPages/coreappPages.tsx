@@ -46,6 +46,8 @@ const BlueprintsLayout = lazy(
 const BlueprintsListPage = lazy(() => import('@/pages/coreapp/Blueprints/BlueprintsList.page'));
 const AssistantLayout = lazy(() => import('@/pages/coreapp/Assistant/_layouts/Assistant.layout'));
 const AssistantHomePage = lazy(() => import('@/pages/coreapp/Assistant/AssistantHome.page'));
+const TrashLayout = lazy(() => import('@/pages/coreapp/Trash/_layouts/Trash.layout'));
+const TrashPage = lazy(() => import('@/pages/coreapp/Trash/Trash.page'));
 const VaultLayout = lazy(() => import('@/pages/coreapp/Vault/_layouts/Vault.layout'));
 const SecretsPage = lazy(() => import('@/pages/coreapp/Vault/Secrets.page'));
 
@@ -77,6 +79,7 @@ const listRoutes: RouteObject[] = (
 		[workspacePages.approvals.to, <ApprovalsLayout />, <ApprovalsPage />],
 		[workspacePages.trail.to, <TrailLayout />, <TrailListPage />],
 		[workspacePages.artifacts.to, <ArtifactsLayout />, <ArtifactsListPage />],
+		[workspacePages.trash.to, <TrashLayout />, <TrashPage />],
 	] as const
 ).map(([to, layout, page]) => ({
 	path: rel(to),

@@ -203,22 +203,21 @@ const AgentsListPage = () => {
 	const handleDelete = async (id: string) => {
 		const agent = agents.find((a) => a.id === id);
 		const confirmed = await confirm({
-			title: 'Delete Agent',
+			title: 'Move to Trash',
 			message: (
 				<>
-					Are you sure you want to delete{' '}
 					<strong className='font-semibold text-zinc-800 dark:text-zinc-200'>
-						{agent ? `"${agent.name}"` : 'this agent'}
-					</strong>
-					? This action cannot be undone.
+						{agent ? `"${agent.name}"` : 'This agent'}
+					</strong>{' '}
+					will be moved to the trash. You can restore it from Trash at any time.
 				</>
 			),
+			confirmText: 'Move to trash',
 		});
 		if (!confirmed) return;
 
-		// Pull the card now instead of after the round trip. The dialog above is
-		// the safety net, so a failure rolls the list back rather than offering
-		// an undo the backend could not honour anyway.
+		// Pull the card now instead of after the round trip; a failure rolls the
+		// list back.
 		const listKey = agentKeys.list(currentWorkspaceId);
 		const previousAgents = queryClient.getQueryData<TAgent[]>(listKey);
 		queryClient.setQueryData<TAgent[]>(listKey, (rows) =>
@@ -226,7 +225,8 @@ const AgentsListPage = () => {
 		);
 
 		deleteAgentMutation.mutate(id, {
-			onSuccess: () => notify.success(agent ? `"${agent.name}" deleted.` : 'Agent deleted.'),
+			onSuccess: () =>
+				notify.success(agent ? `"${agent.name}" moved to trash.` : 'Agent moved to trash.'),
 			// No toast here — query-client.ts already reports the failure globally.
 			onError: () => {
 				if (previousAgents) queryClient.setQueryData(listKey, previousAgents);
@@ -550,7 +550,7 @@ const AgentsListPage = () => {
 												<button
 													onClick={() => handleDelete(agent.id)}
 													className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition-all hover:border-rose-200 hover:bg-rose-50 hover:text-rose-500 active:scale-95 dark:border-zinc-800 dark:hover:border-rose-900/30 dark:hover:bg-rose-950/20'
-													title='Delete agent'>
+													title='Move to trash'>
 													<Trash2 size={12} />
 												</button>
 											</div>

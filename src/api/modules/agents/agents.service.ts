@@ -43,7 +43,22 @@ export const AgentService = {
 			.patch<TApiResponse<{ agent: TAgent }>>(E.update(ws, id), payload)
 			.then(unwrapKey<TAgent>('agent')),
 
+	// Soft delete: the agent moves to the trash, where it can be restored.
 	remove: (ws: string, id: string) => axiosClient.delete(E.delete(ws, id)).then(() => undefined),
+
+	trash: (ws: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<{ agents: TAgent[] }>>(E.trash(ws), { signal })
+			.then(unwrapKey<TAgent[]>('agents')),
+
+	restore: (ws: string, id: string) =>
+		axiosClient
+			.post<TApiResponse<{ agent: TAgent }>>(E.restore(ws, id))
+			.then(unwrapKey<TAgent>('agent')),
+
+	// Only accepted for an agent already in the trash.
+	forceDelete: (ws: string, id: string) =>
+		axiosClient.delete(E.forceDelete(ws, id)).then(() => undefined),
 
 	duplicate: (ws: string, id: string) =>
 		axiosClient

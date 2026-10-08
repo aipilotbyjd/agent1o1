@@ -18,6 +18,8 @@ export interface IConfirmDialogOptions {
 	cancelText?: string;
 	/** Visual tone. `danger` (default) is used for destructive actions like delete. */
 	tone?: TConfirmTone;
+	/** Replaces the tone's default header icon. */
+	icon?: ReactNode;
 }
 
 export interface IConfirmDialogProps extends IConfirmDialogOptions {
@@ -53,6 +55,7 @@ const ConfirmDialog: FC<IConfirmDialogProps> = (props) => {
 		confirmText = DEFAULTS.confirmText,
 		cancelText = DEFAULTS.cancelText,
 		tone = DEFAULTS.tone,
+		icon,
 	} = props;
 
 	const isDanger = tone === 'danger';
@@ -74,7 +77,7 @@ const ConfirmDialog: FC<IConfirmDialogProps> = (props) => {
 								? 'flex h-9 w-9 items-center justify-center rounded-xl bg-red-100 text-red-600 dark:bg-red-950/30 dark:text-red-400'
 								: 'flex h-9 w-9 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-950/30 dark:text-primary-400'
 						}>
-						{isDanger ? <Trash2 size={16} /> : <AlertTriangle size={16} />}
+						{icon ?? (isDanger ? <Trash2 size={16} /> : <AlertTriangle size={16} />)}
 					</div>
 					<span className='text-lg leading-none font-extrabold tracking-tight text-zinc-950 dark:text-white'>
 						{title}

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createResource } from '@/api/core';
 import type {
 	TDraftAgentDto,
@@ -20,7 +20,7 @@ import { useRuns } from '@/api/modules/runs';
 import { useModelCatalog } from '@/api/modules/catalog';
 import { AgentService } from './agents.service';
 import { AgentMemoryService } from './agent-memory.service';
-import { agentKeys, agentMemoryKeys } from './agents.keys';
+import { agentKeys, agentMemoryKeys, agentTrashKey } from './agents.keys';
 
 const Agents = createResource({
 	service: AgentService,
@@ -32,7 +32,49 @@ export const useAgents = Agents.useList;
 export const useAgent = Agents.useDetail;
 export const useCreateAgent = Agents.useCreate;
 export const useUpdateAgent = Agents.useUpdate;
-export const useDeleteAgent = Agents.useDelete;
+
+// Deleting only moves the agent to the trash, so the trash has to refetch too.
+export const useDeleteAgent = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => AgentService.remove(ws, id),
+		onSuccess: () =>
+			Promise.all([
+				qc.invalidateQueries({ queryKey: agentKeys.lists(ws) }),
+				qc.invalidateQueries({ queryKey: agentTrashKey(ws) }),
+			]),
+		meta: { errorMessage: 'Failed to move agent to trash' },
+	});
+};
+
+export const useAgentTrash = (ws: string) =>
+	useQuery({
+		queryKey: agentTrashKey(ws),
+		queryFn: ({ signal }) => AgentService.trash(ws, signal),
+		enabled: !!ws,
+	});
+
+export const useRestoreAgent = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => AgentService.restore(ws, id),
+		onSuccess: () =>
+			Promise.all([
+				qc.invalidateQueries({ queryKey: agentKeys.lists(ws) }),
+				qc.invalidateQueries({ queryKey: agentTrashKey(ws) }),
+			]),
+		meta: { errorMessage: 'Failed to restore agent' },
+	});
+};
+
+export const useForceDeleteAgent = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => AgentService.forceDelete(ws, id),
+		onSuccess: () => qc.invalidateQueries({ queryKey: agentTrashKey(ws) }),
+		meta: { errorMessage: 'Failed to delete agent permanently' },
+	});
+};
 
 export const useDraftAgent = (ws: string) =>
 	useMutation({

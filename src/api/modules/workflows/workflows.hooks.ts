@@ -8,7 +8,7 @@ import type { TTriggerMechanism } from '@/types/catalog.type';
 import type { TTriggerTargetType } from '@/types/trigger.type';
 import { WorkflowService } from './workflows.service';
 import { WorkflowVersionService } from './workflow-versions.service';
-import { workflowKeys } from './workflows.keys';
+import { workflowKeys, workflowTrashKey } from './workflows.keys';
 
 const Workflows = createResource({
 	service: WorkflowService,
@@ -20,9 +20,51 @@ export const useWorkflows = Workflows.useList;
 export const useWorkflow = Workflows.useDetail;
 export const useCreateWorkflow = Workflows.useCreate;
 export const useUpdateWorkflow = Workflows.useUpdate;
-export const useDeleteWorkflow = Workflows.useDelete;
 
 // ─── Custom actions — not CRUD, so hand-written alongside the factory ──
+
+// Deleting only moves the workflow to the trash, so the trash has to refetch too.
+export const useDeleteWorkflow = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => WorkflowService.remove(ws, id),
+		onSuccess: () =>
+			Promise.all([
+				qc.invalidateQueries({ queryKey: workflowKeys.lists(ws) }),
+				qc.invalidateQueries({ queryKey: workflowTrashKey(ws) }),
+			]),
+		meta: { errorMessage: 'Failed to move workflow to trash' },
+	});
+};
+
+export const useWorkflowTrash = (ws: string) =>
+	useQuery({
+		queryKey: workflowTrashKey(ws),
+		queryFn: ({ signal }) => WorkflowService.trash(ws, signal),
+		enabled: !!ws,
+	});
+
+export const useRestoreWorkflow = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => WorkflowService.restore(ws, id),
+		onSuccess: () =>
+			Promise.all([
+				qc.invalidateQueries({ queryKey: workflowKeys.lists(ws) }),
+				qc.invalidateQueries({ queryKey: workflowTrashKey(ws) }),
+			]),
+		meta: { errorMessage: 'Failed to restore workflow' },
+	});
+};
+
+export const useForceDeleteWorkflow = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => WorkflowService.forceDelete(ws, id),
+		onSuccess: () => qc.invalidateQueries({ queryKey: workflowTrashKey(ws) }),
+		meta: { errorMessage: 'Failed to delete workflow permanently' },
+	});
+};
 
 export const useDuplicateWorkflow = (ws: string) => {
 	const qc = useQueryClient();

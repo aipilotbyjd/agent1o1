@@ -68,6 +68,8 @@ export type TAgent = {
 	created_by: string;
 	created_at: string;
 	updated_at: string;
+	/** Set while the agent is in the trash. */
+	deleted_at: string | null;
 };
 
 export type TCreateAgentDto = {

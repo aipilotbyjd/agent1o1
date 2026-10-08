@@ -78,6 +78,12 @@ export const workspace: TPage = {
 			text: 'Artifacts',
 			icon: 'FileDownload',
 		},
+		trash: {
+			id: 'trash',
+			to: ws('trash'),
+			text: 'Trash',
+			icon: 'Delete02',
+		},
 	},
 };
 

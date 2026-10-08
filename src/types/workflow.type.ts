@@ -50,6 +50,8 @@ export type TWorkflow = {
 	created_by: string;
 	created_at: string;
 	updated_at: string;
+	/** Set while the workflow is in the trash. */
+	deleted_at: string | null;
 };
 
 // ─── Request DTOs ────────────────────────────────────────────
