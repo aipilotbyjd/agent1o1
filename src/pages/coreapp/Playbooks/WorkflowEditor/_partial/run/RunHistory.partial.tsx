@@ -13,7 +13,8 @@ import { useQuery } from '@tanstack/react-query';
 import { RunService, runKeys } from '@/api/modules/runs';
 import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
 import type { TRunRecord } from '../../_types/run.type';
-import RunResult, { OriginalRunData, RunInputDetails } from './RunResult.partial';
+import DataInspector from './DataInspector.partial';
+import StepError from './StepError.partial';
 
 const statusMeta = {
 	success: {
@@ -159,30 +160,26 @@ const RunRow = ({ record }: { record: TRunRecord }) => {
 							</p>
 						)}
 						{node.status === 'success' && node.output !== undefined && (
-							<>
-								<div className='max-h-60 overflow-y-auto'>
-									<RunResult value={node.output} />
-								</div>
-								<OriginalRunData value={node.output} />
-							</>
+							<DataInspector
+								value={node.output}
+								emptyLabel='This step finished but returned no data.'
+								maxHeight='max-h-60'
+							/>
 						)}
-						<RunInputDetails value={node.input} />
-						{node.status === 'error' && (
-							<>
-								<p className='text-xs leading-relaxed text-zinc-500 dark:text-zinc-400'>
-									Review this step’s settings before starting a new run.
-								</p>
-								{node.error && (
-									<details className='mt-3'>
-										<summary className='cursor-pointer text-[11px] text-zinc-500 dark:text-zinc-400'>
-											Error details
-										</summary>
-										<p className='mt-2 text-xs leading-relaxed break-words text-rose-600 dark:text-rose-400'>
-											{node.error}
-										</p>
-									</details>
-								)}
-							</>
+						{node.status === 'error' && <StepError message={node.error} />}
+						{node.input !== undefined && (
+							<details className='mt-3'>
+								<summary className='cursor-pointer text-[11px] font-medium text-zinc-500 dark:text-zinc-400'>
+									Input
+								</summary>
+								<div className='mt-2'>
+									<DataInspector
+										value={node.input}
+										emptyLabel='This step received no input.'
+										maxHeight='max-h-60'
+									/>
+								</div>
+							</details>
 						)}
 					</div>
 				))}

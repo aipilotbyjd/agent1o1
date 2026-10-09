@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { ArrowUpRight, Beaker, Loader2 } from 'lucide-react';
+import { ArrowUpRight, Beaker, Check, Loader2, X } from 'lucide-react';
 import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
 import { useNodeTestRunner } from '../../../_hooks/useNodeTestRunner.hook';
+import { countItems, formatDuration, getHttpFailure } from '../../../_helper/runData.helper';
 
 /** Single-step tests keep the canvas compact; inspection lives in Runs. */
 const NodeInlineTest = ({ nodeId, defKey }: { nodeId: string; defKey: string }) => {
@@ -14,7 +15,12 @@ const NodeInlineTest = ({ nodeId, defKey }: { nodeId: string; defKey: string }) 
 		lastHandledRequest.current = nodeTestRequestId;
 		if (nodeTestRequestNodeId === nodeId) void runTest();
 	}, [nodeTestRequestId, nodeTestRequestNodeId, nodeId, runTest]);
+	const node = state.nodes.find((item) => item.id === nodeId);
 	const hasResult = testStatus === 'success' || testStatus === 'error';
+	const httpFailure = testStatus === 'success' ? getHttpFailure(node?.data.testOutput) : null;
+	const failed = testStatus === 'error' || Boolean(httpFailure);
+	const items = countItems(node?.data.testOutput);
+	const durationMs = node?.data.testDurationMs;
 	return (
 		<div className='nodrag mt-3 flex flex-wrap items-center gap-2'>
 			<button
@@ -44,9 +50,36 @@ const NodeInlineTest = ({ nodeId, defKey }: { nodeId: string; defKey: string }) 
 						event.stopPropagation();
 						dispatch({ type: 'SHOW_RUN_RESULT', nodeId, source: 'test' });
 					}}
-					className={`focus-visible:outline-primary-500 inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-medium hover:underline focus-visible:outline-2 ${testStatus === 'error' ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-500 dark:text-zinc-400'}`}>
-					View test result
-					<ArrowUpRight size={12} />
+					title={
+						httpFailure
+							? `HTTP ${httpFailure.status}${httpFailure.message ? ` · ${httpFailure.message}` : ''}`
+							: failed
+								? node?.data.testError
+								: 'Open the test result'
+					}
+					className={`focus-visible:outline-primary-500 inline-flex min-w-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition focus-visible:outline-2 ${failed ? 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/15' : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/15'}`}>
+					{failed ? (
+						<X size={12} strokeWidth={2.5} />
+					) : (
+						<Check size={12} strokeWidth={2.5} />
+					)}
+					<span className='shrink-0'>{failed ? 'Test failed' : 'Test passed'}</span>
+					{typeof durationMs === 'number' && (
+						<span className='shrink-0 tabular-nums opacity-70'>
+							· {formatDuration(durationMs)}
+						</span>
+					)}
+					{httpFailure && (
+						<span className='shrink-0 font-mono opacity-80'>
+							· HTTP {httpFailure.status}
+						</span>
+					)}
+					{!failed && (
+						<span className='shrink-0 tabular-nums opacity-70'>
+							· {items} item{items === 1 ? '' : 's'}
+						</span>
+					)}
+					<ArrowUpRight size={12} className='shrink-0' />
 				</button>
 			)}
 		</div>
