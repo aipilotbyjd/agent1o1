@@ -13,7 +13,8 @@ export const useAgentKnowledge = (ws: string, agentId: string) =>
 export const useCreateAgentKnowledge = (ws: string, agentId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (payload: TCreateAgentKnowledgeDto) => AgentKnowledgeService.create(ws, agentId, payload),
+		mutationFn: (payload: TCreateAgentKnowledgeDto) =>
+			AgentKnowledgeService.create(ws, agentId, payload),
 		onSuccess: () => qc.invalidateQueries({ queryKey: agentKnowledgeKeys.list(ws, agentId) }),
 		meta: { errorMessage: 'Failed to add knowledge entry' },
 	});
@@ -48,8 +49,10 @@ export const useAgentKnowledgeSources = (ws: string, agentId: string) =>
 export const useAttachAgentKnowledgeSource = (ws: string, agentId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (collection: string) => AgentKnowledgeSourceService.attach(ws, agentId, collection),
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentKnowledgeSourceKeys.list(ws, agentId) }),
+		mutationFn: (collection: string) =>
+			AgentKnowledgeSourceService.attach(ws, agentId, collection),
+		onSuccess: () =>
+			qc.invalidateQueries({ queryKey: agentKnowledgeSourceKeys.list(ws, agentId) }),
 		meta: { errorMessage: 'Failed to attach knowledge source' },
 	});
 };
@@ -57,8 +60,10 @@ export const useAttachAgentKnowledgeSource = (ws: string, agentId: string) => {
 export const useDetachAgentKnowledgeSource = (ws: string, agentId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (collection: string) => AgentKnowledgeSourceService.detach(ws, agentId, collection),
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentKnowledgeSourceKeys.list(ws, agentId) }),
+		mutationFn: (collection: string) =>
+			AgentKnowledgeSourceService.detach(ws, agentId, collection),
+		onSuccess: () =>
+			qc.invalidateQueries({ queryKey: agentKnowledgeSourceKeys.list(ws, agentId) }),
 		meta: { errorMessage: 'Failed to detach knowledge source' },
 	});
 };

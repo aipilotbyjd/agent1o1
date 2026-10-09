@@ -95,4 +95,6 @@ export type TSyncWorkflowTagsDto = {
 	tag_ids: string[];
 };
 
-export type TPinWorkflowNodeDto = { data: unknown; node_run_id?: never } | { node_run_id: string; data?: never };
+export type TPinWorkflowNodeDto =
+	| { data: unknown; node_run_id?: never }
+	| { node_run_id: string; data?: never };

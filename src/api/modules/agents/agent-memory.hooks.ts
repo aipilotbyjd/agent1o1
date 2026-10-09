@@ -13,7 +13,8 @@ export const useAgentMemories = (ws: string, agentId: string) =>
 export const useCreateAgentMemory = (ws: string, agentId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (payload: TCreateAgentMemoryDto) => AgentMemoryService.create(ws, agentId, payload),
+		mutationFn: (payload: TCreateAgentMemoryDto) =>
+			AgentMemoryService.create(ws, agentId, payload),
 		onSuccess: () => qc.invalidateQueries({ queryKey: agentMemoryKeys.list(ws, agentId) }),
 		meta: { errorMessage: 'Failed to create memory' },
 	});

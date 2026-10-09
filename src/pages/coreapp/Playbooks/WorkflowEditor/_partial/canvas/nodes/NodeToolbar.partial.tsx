@@ -58,7 +58,7 @@ const NodeToolbar = ({ nodeId, defKey, label, fields }: Props) => {
 								setRenaming(false);
 							}
 						}}
-						className='w-44 rounded border border-zinc-200 bg-white px-1.5 py-0.5 text-[10px] font-bold text-zinc-800 outline-none focus:border-primary-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100'
+						className='focus:border-primary-400 w-44 rounded border border-zinc-200 bg-white px-1.5 py-0.5 text-[10px] font-bold text-zinc-800 outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100'
 					/>
 				) : (
 					<>
@@ -97,7 +97,11 @@ const NodeToolbar = ({ nodeId, defKey, label, fields }: Props) => {
 							type='button'
 							onClick={handleTest}
 							disabled={!canRun || testStatus === 'running'}
-							title={canRun ? 'Run this node once with the current settings' : 'Save the workflow first'}
+							title={
+								canRun
+									? 'Run this node once with the current settings'
+									: 'Save the workflow first'
+							}
 							className={`${buttonClass} disabled:cursor-not-allowed disabled:opacity-50`}>
 							{testStatus === 'running' ? (
 								<Loader2 size={13} strokeWidth={2.5} className='animate-spin' />

@@ -1,6 +1,4 @@
-import type {
-	TAgentAction,
-} from '@/types/agent-action.type';
+import type { TAgentAction } from '@/types/agent-action.type';
 import type {
 	TAgentMessageCreatedEvent,
 	TAgentSessionStreamEvent,
@@ -8,7 +6,10 @@ import type {
 	TAgentTurnDeltaEvent,
 	TAgentTurnToolEvent,
 } from '@/types/agent.type';
-import type { IEchoChannelLike, IEchoLike } from '@/api/modules/workflow-builder/workflow-builder.realtime';
+import type {
+	IEchoChannelLike,
+	IEchoLike,
+} from '@/api/modules/workflow-builder/workflow-builder.realtime';
 
 /**
  * A chat turn's reply is broadcast on the session's private channel while a

@@ -149,21 +149,23 @@ const ReflectionSettingsForm = ({
 					Apply behaviour
 				</span>
 				<div className='mt-1.5 flex gap-1.5'>
-					{(['review_queue', 'auto_apply'] as TReflectionApplyBehavior[]).map((behavior) => (
-						<button
-							key={behavior}
-							type='button'
-							onClick={() =>
-								updateMutation.mutate(patch({ apply_behavior: behavior }))
-							}
-							className={`rounded-lg px-2.5 py-1 text-[10px] font-black transition ${
-								form.apply_behavior === behavior
-									? 'bg-primary-400 text-primary-950'
-									: 'border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'
-							}`}>
-							{APPLY_BEHAVIOR_LABEL[behavior]}
-						</button>
-					))}
+					{(['review_queue', 'auto_apply'] as TReflectionApplyBehavior[]).map(
+						(behavior) => (
+							<button
+								key={behavior}
+								type='button'
+								onClick={() =>
+									updateMutation.mutate(patch({ apply_behavior: behavior }))
+								}
+								className={`rounded-lg px-2.5 py-1 text-[10px] font-black transition ${
+									form.apply_behavior === behavior
+										? 'bg-primary-400 text-primary-950'
+										: 'border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'
+								}`}>
+								{APPLY_BEHAVIOR_LABEL[behavior]}
+							</button>
+						),
+					)}
 				</div>
 			</div>
 
@@ -308,7 +310,7 @@ const ReflectionCard = ({
 					<button
 						onClick={() => dismissMutation.mutate(reflection.id)}
 						disabled={dismissMutation.isPending}
-						className='rounded-lg border border-zinc-200 bg-white px-3 py-1 text-[10px] font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
+						className='rounded-lg border border-zinc-200 bg-white px-3 py-1 text-[10px] font-bold text-zinc-500 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'>
 						Dismiss
 					</button>
 					<button
@@ -325,7 +327,15 @@ const ReflectionCard = ({
 };
 
 /** Expandable row: reflection run summary + what it produced. */
-const ReflectionRunRow = ({ ws, agentId, run }: { ws: string; agentId: string; run: TReflectionRun }) => {
+const ReflectionRunRow = ({
+	ws,
+	agentId,
+	run,
+}: {
+	ws: string;
+	agentId: string;
+	run: TReflectionRun;
+}) => {
 	const [open, setOpen] = useState(false);
 	// The list only counts reflections; which ones a run produced comes with
 	// the detail, fetched the first time the row is expanded.
@@ -399,7 +409,9 @@ const ReflectionRunRow = ({ ws, agentId, run }: { ws: string; agentId: string; r
 						</p>
 					)}
 					{!isDetailLoading && detail && produced.length === 0 && (
-						<p className='text-[10px] font-semibold text-zinc-400'>This run found nothing to suggest.</p>
+						<p className='text-[10px] font-semibold text-zinc-400'>
+							This run found nothing to suggest.
+						</p>
 					)}
 					{produced.length > 0 && (
 						<div className='space-y-1.5'>
@@ -473,7 +485,7 @@ const AgentReflectionsPanel = ({ ws, agentId, displayMode = 'panel' }: TProps) =
 						className={`rounded-lg border px-2 py-1 transition ${
 							isSettingsOpen
 								? 'border-primary-500/20 bg-primary-400/10 text-primary-600 dark:text-primary-400'
-								: 'border-zinc-200 bg-white text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 dark:border-zinc-800 dark:bg-zinc-900'
+								: 'border-zinc-200 bg-white text-zinc-400 hover:text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:text-zinc-300'
 						}`}>
 						<Settings2 size={12} />
 					</button>

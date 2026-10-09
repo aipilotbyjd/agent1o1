@@ -47,7 +47,7 @@ const AddToAgentDialog = ({ ws, skill, onClose }: IAddToAgentDialogProps) => {
 		<Modal isOpen={!!skill} setIsOpen={(open) => !open && onClose()} size='sm'>
 			<ModalHeader setIsOpen={(open) => !open && onClose()}>
 				<div className='flex items-center gap-3'>
-					<div className='flex h-9 w-9 items-center justify-center rounded-xl bg-primary-400/10 text-primary-600 dark:bg-primary-400/10 dark:text-primary-400'>
+					<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/10 dark:text-primary-400 flex h-9 w-9 items-center justify-center rounded-xl'>
 						<Bot size={16} />
 					</div>
 					<div className='flex flex-col'>
@@ -69,7 +69,7 @@ const AddToAgentDialog = ({ ws, skill, onClose }: IAddToAgentDialogProps) => {
 							placeholder='Search agents...'
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
-							className='block h-9 w-full rounded-xl border border-zinc-200 bg-white pr-3 pl-9 text-xs font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500'
+							className='focus:border-primary-500/80 block h-9 w-full rounded-xl border border-zinc-200 bg-white pr-3 pl-9 text-xs font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500'
 						/>
 					</div>
 
@@ -90,9 +90,9 @@ const AddToAgentDialog = ({ ws, skill, onClose }: IAddToAgentDialogProps) => {
 								type='button'
 								disabled={attachMutation.isPending}
 								onClick={() => handleAttach(agent.id)}
-								className='flex w-full cursor-pointer items-center justify-between rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-left transition-colors hover:border-primary-500/40 hover:bg-primary-400/5 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900'>
+								className='hover:border-primary-500/40 hover:bg-primary-400/5 flex w-full cursor-pointer items-center justify-between rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900'>
 								<div className='flex items-center gap-2.5'>
-									<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-primary-400/10 text-primary-600 dark:text-primary-400'>
+									<div className='bg-primary-400/10 text-primary-600 dark:text-primary-400 flex h-8 w-8 items-center justify-center rounded-lg'>
 										<Bot size={14} />
 									</div>
 									<div>
@@ -104,7 +104,7 @@ const AddToAgentDialog = ({ ws, skill, onClose }: IAddToAgentDialogProps) => {
 										</p>
 									</div>
 								</div>
-								<span className='text-[10px] font-black tracking-wider text-primary-600 uppercase dark:text-primary-400'>
+								<span className='text-primary-600 dark:text-primary-400 text-[10px] font-black tracking-wider uppercase'>
 									Add
 								</span>
 							</button>

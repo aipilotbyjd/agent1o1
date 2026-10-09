@@ -22,21 +22,24 @@ import {
 export const AgentToolBindingService = {
 	list: (ws: string, agentId: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ tool_bindings: TAgentToolBinding[] }>>(TB.list(ws, agentId), { signal })
+			.get<
+				TApiResponse<{ tool_bindings: TAgentToolBinding[] }>
+			>(TB.list(ws, agentId), { signal })
 			.then(unwrapKey<TAgentToolBinding[]>('tool_bindings')),
 
 	create: (ws: string, agentId: string, payload: TCreateAgentToolBindingDto) =>
 		axiosClient
-			.post<TApiResponse<{ tool_binding: TAgentToolBinding }>>(TB.create(ws, agentId), payload)
+			.post<
+				TApiResponse<{ tool_binding: TAgentToolBinding }>
+			>(TB.create(ws, agentId), payload)
 			.then(unwrapKey<TAgentToolBinding>('tool_binding')),
 
 	/** Changes a tool's bound config or its approval rule. */
 	update: (ws: string, agentId: string, id: string, payload: TUpdateAgentToolBindingDto) =>
 		axiosClient
-			.patch<TApiResponse<{ tool_binding: TAgentToolBinding }>>(
-				TB.update(ws, agentId, id),
-				payload,
-			)
+			.patch<
+				TApiResponse<{ tool_binding: TAgentToolBinding }>
+			>(TB.update(ws, agentId, id), payload)
 			.then(unwrapKey<TAgentToolBinding>('tool_binding')),
 
 	remove: (ws: string, agentId: string, id: string) =>
@@ -109,6 +112,8 @@ export const AgentSubagentService = {
 
 	tasks: (ws: string, agentId: string, sessionId: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ tasks: TSubagentTask[] }>>(SE.subagentTasks(ws, agentId, sessionId), { signal })
+			.get<
+				TApiResponse<{ tasks: TSubagentTask[] }>
+			>(SE.subagentTasks(ws, agentId, sessionId), { signal })
 			.then(unwrapKey<TSubagentTask[]>('tasks')),
 };

@@ -26,7 +26,8 @@ export const useAgentToolBindings = (ws: string, agentId: string) =>
 export const useCreateAgentToolBinding = (ws: string, agentId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (payload: TCreateAgentToolBindingDto) => AgentToolBindingService.create(ws, agentId, payload),
+		mutationFn: (payload: TCreateAgentToolBindingDto) =>
+			AgentToolBindingService.create(ws, agentId, payload),
 		onSuccess: () => qc.invalidateQueries({ queryKey: agentToolBindingKeys.list(ws, agentId) }),
 		meta: { errorMessage: 'Failed to attach tool' },
 	});
@@ -63,8 +64,10 @@ export const useAgentWorkflowTools = (ws: string, agentId: string) =>
 export const useAttachAgentWorkflow = (ws: string, agentId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (workflowId: string) => AgentWorkflowToolService.attach(ws, agentId, workflowId),
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentWorkflowToolKeys.list(ws, agentId) }),
+		mutationFn: (workflowId: string) =>
+			AgentWorkflowToolService.attach(ws, agentId, workflowId),
+		onSuccess: () =>
+			qc.invalidateQueries({ queryKey: agentWorkflowToolKeys.list(ws, agentId) }),
 		meta: { errorMessage: 'Failed to attach workflow' },
 	});
 };
@@ -88,8 +91,10 @@ export const useUpdateAgentWorkflowPolicy = (ws: string, agentId: string) => {
 export const useDetachAgentWorkflow = (ws: string, agentId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (workflowId: string) => AgentWorkflowToolService.detach(ws, agentId, workflowId),
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentWorkflowToolKeys.list(ws, agentId) }),
+		mutationFn: (workflowId: string) =>
+			AgentWorkflowToolService.detach(ws, agentId, workflowId),
+		onSuccess: () =>
+			qc.invalidateQueries({ queryKey: agentWorkflowToolKeys.list(ws, agentId) }),
 		meta: { errorMessage: 'Failed to detach workflow' },
 	});
 };
@@ -107,7 +112,8 @@ export const useAttachAgentSkill = (ws: string, agentId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (skillId: string) => AgentSkillAttachmentService.attach(ws, agentId, skillId),
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentSkillAttachmentKeys.list(ws, agentId) }),
+		onSuccess: () =>
+			qc.invalidateQueries({ queryKey: agentSkillAttachmentKeys.list(ws, agentId) }),
 		meta: { errorMessage: 'Failed to attach skill' },
 	});
 };
@@ -116,7 +122,8 @@ export const useDetachAgentSkill = (ws: string, agentId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (skillId: string) => AgentSkillAttachmentService.detach(ws, agentId, skillId),
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentSkillAttachmentKeys.list(ws, agentId) }),
+		onSuccess: () =>
+			qc.invalidateQueries({ queryKey: agentSkillAttachmentKeys.list(ws, agentId) }),
 		meta: { errorMessage: 'Failed to detach skill' },
 	});
 };

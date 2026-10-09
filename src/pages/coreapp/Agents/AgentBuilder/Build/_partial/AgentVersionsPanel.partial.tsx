@@ -61,7 +61,7 @@ const VersionRow = ({
 				) : (
 					<ChevronRight size={13} className='shrink-0 text-zinc-400' />
 				)}
-				<div className='flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400'>
+				<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg'>
 					<GitBranch size={13} />
 				</div>
 				<div className='min-w-0 flex-1'>
@@ -70,7 +70,7 @@ const VersionRow = ({
 							v{version.version}
 						</span>
 						{isCurrent && (
-							<span className='shrink-0 rounded-full bg-primary-400/10 px-1.5 py-0.5 text-[8px] font-black uppercase text-primary-600 dark:text-primary-400'>
+							<span className='bg-primary-400/10 text-primary-600 dark:text-primary-400 shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase'>
 								Current
 							</span>
 						)}
@@ -90,11 +90,13 @@ const VersionRow = ({
 			{open && (
 				<div className='space-y-2 border-t border-zinc-100 p-3 dark:border-zinc-800'>
 					{rows.length === 0 ? (
-						<p className='text-[10px] font-semibold text-zinc-400'>No snapshot recorded.</p>
+						<p className='text-[10px] font-semibold text-zinc-400'>
+							No snapshot recorded.
+						</p>
 					) : (
 						rows.map(({ key, label }) => (
 							<div key={key} className='rounded-lg bg-white p-2 dark:bg-zinc-900/40'>
-								<span className='text-[9px] font-black uppercase tracking-wide text-zinc-400'>
+								<span className='text-[9px] font-black tracking-wide text-zinc-400 uppercase'>
 									{label}
 								</span>
 								<p className='mt-0.5 line-clamp-3 text-[10px] font-semibold text-zinc-600 dark:text-zinc-300'>
@@ -139,7 +141,7 @@ const VersionRow = ({
 							<button
 								onClick={() => restoreMutation.mutate(version.version)}
 								disabled={restoreMutation.isPending}
-								className='flex items-center gap-1 rounded-lg bg-primary-400 px-3 py-1 text-[10px] font-black text-primary-950 hover:bg-primary-500 disabled:opacity-50'>
+								className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex items-center gap-1 rounded-lg px-3 py-1 text-[10px] font-black disabled:opacity-50'>
 								{restoreMutation.isPending ? (
 									<Loader2 size={10} className='animate-spin' />
 								) : (

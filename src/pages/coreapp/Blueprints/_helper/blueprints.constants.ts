@@ -22,7 +22,10 @@ const ICON_MAP: Record<string, LucideIcon> = {
 	marketing: Megaphone,
 };
 
-export const getTemplateIcon = (icon: string | null, kind: 'workflow' | 'agent' | 'collection'): LucideIcon => {
+export const getTemplateIcon = (
+	icon: string | null,
+	kind: 'workflow' | 'agent' | 'collection',
+): LucideIcon => {
 	if (icon && ICON_MAP[icon.toLowerCase()]) return ICON_MAP[icon.toLowerCase()];
 	if (kind === 'workflow') return Workflow;
 	if (kind === 'agent') return Bot;
@@ -35,8 +38,10 @@ export const DEFAULT_TEMPLATE_COLORS: Record<'workflow' | 'agent' | 'collection'
 	collection: '#D97706',
 };
 
-export const getTemplateColor = (color: string | null, kind: 'workflow' | 'agent' | 'collection'): string =>
-	color || DEFAULT_TEMPLATE_COLORS[kind];
+export const getTemplateColor = (
+	color: string | null,
+	kind: 'workflow' | 'agent' | 'collection',
+): string => color || DEFAULT_TEMPLATE_COLORS[kind];
 
 /** Swatches offered by the template/collection form. `color` is max 7 chars on the backend, so hex only. */
 export const TEMPLATE_COLOR_OPTIONS = [

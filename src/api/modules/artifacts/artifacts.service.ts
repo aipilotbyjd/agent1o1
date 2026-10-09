@@ -13,7 +13,9 @@ import { ArtifactEndpoints as E } from './artifacts.endpoints';
 export const ArtifactService = {
 	list: (ws: string, params?: TArtifactListParams, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<TArtifact[]> & { meta: TPaginationMeta }>(E.list(ws), { params, signal })
+			.get<
+				TApiResponse<TArtifact[]> & { meta: TPaginationMeta }
+			>(E.list(ws), { params, signal })
 			.then((r) => ({ artifacts: r.data.data, meta: r.data.meta })),
 
 	detail: (ws: string, id: string, signal?: AbortSignal) =>

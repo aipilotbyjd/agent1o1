@@ -19,7 +19,8 @@ export const useUpdateAgentReflectionSettings = (ws: string, agentId: string) =>
 	return useMutation({
 		mutationFn: (payload: TUpdateReflectionSettingsDto) =>
 			AgentReflectionSettingsService.update(ws, agentId, payload),
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentReflectionKeys.settings(ws, agentId) }),
+		onSuccess: () =>
+			qc.invalidateQueries({ queryKey: agentReflectionKeys.settings(ws, agentId) }),
 		meta: { errorMessage: 'Failed to update reflection settings' },
 	});
 };

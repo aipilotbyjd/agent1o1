@@ -115,7 +115,11 @@ const ConnectAppsStep = () => {
 							</div>
 							<button
 								disabled={isConnected || isUnavailable}
-								title={isUnavailable ? `${app.name} isn't set up on this server yet.` : undefined}
+								title={
+									isUnavailable
+										? `${app.name} isn't set up on this server yet.`
+										: undefined
+								}
 								onClick={() => startAppAuth(app)}
 								className={`flex h-7 items-center justify-center rounded-lg px-3 text-xs font-black transition-all ${
 									isConnected
@@ -124,7 +128,11 @@ const ConnectAppsStep = () => {
 											? 'cursor-not-allowed border border-slate-200 font-bold text-slate-400 dark:border-zinc-800 dark:text-zinc-500'
 											: 'bg-slate-900 text-white hover:opacity-90 active:scale-95 dark:bg-zinc-100 dark:text-slate-950'
 								}`}>
-								{isConnected ? 'Connected' : isUnavailable ? CONNECTOR_UNAVAILABLE_LABEL : 'Connect'}
+								{isConnected
+									? 'Connected'
+									: isUnavailable
+										? CONNECTOR_UNAVAILABLE_LABEL
+										: 'Connect'}
 							</button>
 						</div>
 					);

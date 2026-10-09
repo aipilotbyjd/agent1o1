@@ -55,13 +55,17 @@ export const useNodePin = () => {
 	const storeRow = useCallback(
 		(node: NonNullable<TWorkflow['nodes']>[number]) => {
 			if (!workspaceId || !apiId) return;
-			queryClient.setQueryData<TWorkflow>(workflowKeys.detail(workspaceId, apiId), (current) =>
-				current
-					? {
-							...current,
-							nodes: current.nodes?.map((row) => (row.key === node.key ? node : row)),
-						}
-					: current,
+			queryClient.setQueryData<TWorkflow>(
+				workflowKeys.detail(workspaceId, apiId),
+				(current) =>
+					current
+						? {
+								...current,
+								nodes: current.nodes?.map((row) =>
+									row.key === node.key ? node : row,
+								),
+							}
+						: current,
 			);
 		},
 		[apiId, queryClient, workspaceId],

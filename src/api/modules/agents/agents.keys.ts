@@ -6,7 +6,8 @@ export const agentTrashKey = (ws: string) => [...agentKeys.all(ws), 'trash'] as 
 
 export const agentSessionKeys = {
 	list: (ws: string, agentId: string) => ['agents', ws, agentId, 'sessions'] as const,
-	detail: (ws: string, agentId: string, id: string) => ['agents', ws, agentId, 'sessions', id] as const,
+	detail: (ws: string, agentId: string, id: string) =>
+		['agents', ws, agentId, 'sessions', id] as const,
 };
 
 export const agentVersionKeys = {
@@ -58,16 +59,19 @@ export const agentEvalKeys = {
 };
 
 export const agentReflectionKeys = {
-	settings: (ws: string, agentId: string) => ['agents', ws, agentId, 'reflection-settings'] as const,
+	settings: (ws: string, agentId: string) =>
+		['agents', ws, agentId, 'reflection-settings'] as const,
 	runs: (ws: string, agentId: string) => ['agents', ws, agentId, 'reflection-runs'] as const,
 	run: (ws: string, agentId: string, runId: string) =>
 		['agents', ws, agentId, 'reflection-runs', runId] as const,
 	list: (ws: string, agentId: string) => ['agents', ws, agentId, 'reflections'] as const,
-	detail: (ws: string, agentId: string, id: string) => ['agents', ws, agentId, 'reflections', id] as const,
+	detail: (ws: string, agentId: string, id: string) =>
+		['agents', ws, agentId, 'reflections', id] as const,
 };
 
 export const agentEvaluationKeys = {
-	settings: (ws: string, agentId: string) => ['agents', ws, agentId, 'evaluation-settings'] as const,
+	settings: (ws: string, agentId: string) =>
+		['agents', ws, agentId, 'evaluation-settings'] as const,
 	sessionEvaluations: (ws: string, agentId: string, params?: { grade?: string; page?: number }) =>
 		['agents', ws, agentId, 'session-evaluations', params ?? {}] as const,
 	sessionEvaluation: (ws: string, agentId: string, id: string) =>

@@ -9,7 +9,7 @@ const NodeLoopToggle = ({ nodeId, active }: { nodeId: string; active: boolean })
 			<span
 				className={
 					active
-						? 'text-[10px] font-bold text-primary-600 dark:text-primary-400'
+						? 'text-primary-600 dark:text-primary-400 text-[10px] font-bold'
 						: 'text-[10px] font-bold text-zinc-400'
 				}>
 				Loop Mode
@@ -28,7 +28,7 @@ const NodeLoopToggle = ({ nodeId, active }: { nodeId: string; active: boolean })
 				className={[
 					'flex h-4 w-7 cursor-pointer items-center rounded-full border p-0.5 transition-all duration-200',
 					active
-						? 'justify-end border-primary-400 bg-primary-400'
+						? 'border-primary-400 bg-primary-400 justify-end'
 						: 'justify-start border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800',
 				].join(' ')}>
 				<div

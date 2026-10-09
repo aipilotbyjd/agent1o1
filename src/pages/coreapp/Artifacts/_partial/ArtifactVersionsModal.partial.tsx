@@ -24,7 +24,7 @@ const ArtifactVersionsModal = ({ ws, artifactId, onClose }: IArtifactVersionsMod
 		<Modal isOpen={!!artifactId} setIsOpen={(open) => !open && onClose()} size='sm'>
 			<ModalHeader setIsOpen={(open) => !open && onClose()}>
 				<div className='flex items-center gap-3'>
-					<div className='flex h-9 w-9 items-center justify-center rounded-xl bg-primary-400/10 text-primary-600 dark:text-primary-400'>
+					<div className='bg-primary-400/10 text-primary-600 dark:text-primary-400 flex h-9 w-9 items-center justify-center rounded-xl'>
 						<History size={16} />
 					</div>
 					<div className='flex flex-col'>
@@ -47,9 +47,11 @@ const ArtifactVersionsModal = ({ ws, artifactId, onClose }: IArtifactVersionsMod
 					{artifact?.versions?.map((v) => (
 						<div
 							key={v.id}
-							className='flex items-center justify-between rounded-xl border border-border-main bg-bg-main px-3 py-2.5 dark:bg-zinc-950/40'>
+							className='border-border-main bg-bg-main flex items-center justify-between rounded-xl border px-3 py-2.5 dark:bg-zinc-950/40'>
 							<div>
-								<p className='text-xs font-bold text-slate-800 dark:text-zinc-200'>v{v.version}</p>
+								<p className='text-xs font-bold text-slate-800 dark:text-zinc-200'>
+									v{v.version}
+								</p>
 								<p className='text-[10px] font-semibold text-slate-400 dark:text-zinc-500'>
 									{formatBytes(v.size)}
 								</p>
@@ -57,9 +59,12 @@ const ArtifactVersionsModal = ({ ws, artifactId, onClose }: IArtifactVersionsMod
 							<button
 								aria-label='Download'
 								onClick={() =>
-									downloadMutation.mutate({ artifactId: v.id, filename: artifact.filename })
+									downloadMutation.mutate({
+										artifactId: v.id,
+										filename: artifact.filename,
+									})
 								}
-								className='flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-border-main text-slate-500 hover:bg-slate-50 dark:text-zinc-400 dark:hover:bg-zinc-900'>
+								className='border-border-main flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border text-slate-500 hover:bg-slate-50 dark:text-zinc-400 dark:hover:bg-zinc-900'>
 								<Download size={13} />
 							</button>
 						</div>
@@ -71,7 +76,7 @@ const ArtifactVersionsModal = ({ ws, artifactId, onClose }: IArtifactVersionsMod
 							groupId={artifact.group_id}
 							filename={artifact.filename}
 							accept={extensionOf(artifact.filename)}
-							className='mt-2 flex h-9 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-border-main text-[11px] font-bold text-slate-600 transition-all hover:border-primary-400 hover:text-primary-600 disabled:cursor-not-allowed disabled:opacity-60 dark:text-zinc-300 dark:hover:text-primary-400'
+							className='border-border-main hover:border-primary-400 hover:text-primary-600 dark:hover:text-primary-400 mt-2 flex h-9 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed text-[11px] font-bold text-slate-600 transition-all disabled:cursor-not-allowed disabled:opacity-60 dark:text-zinc-300'
 						/>
 					)}
 				</div>

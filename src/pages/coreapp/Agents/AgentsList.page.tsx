@@ -193,7 +193,9 @@ const AgentsListPage = () => {
 
 			const matchesFolder =
 				activeFolder === 'all' ||
-				(activeFolder === 'none' ? folderOf(agent) === null : folderOf(agent) === activeFolder);
+				(activeFolder === 'none'
+					? folderOf(agent) === null
+					: folderOf(agent) === activeFolder);
 
 			return matchesSearch && matchesCategory && matchesFolder;
 		});
@@ -442,9 +444,15 @@ const AgentsListPage = () => {
 													<Folder
 														size={11}
 														className='shrink-0'
-														style={{ color: agentFolder.color || FOLDER_COLORS[0] }}
+														style={{
+															color:
+																agentFolder.color ||
+																FOLDER_COLORS[0],
+														}}
 													/>
-													<span className='truncate'>{agentFolder.label}</span>
+													<span className='truncate'>
+														{agentFolder.label}
+													</span>
 												</span>
 											)}
 											<span className='inline-flex items-center gap-1 rounded-lg border border-slate-200/50 bg-slate-50/50 px-2 py-1 text-[10px] font-semibold text-slate-600 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-400'>
@@ -590,7 +598,11 @@ const AgentsListPage = () => {
 				ws={currentWorkspaceId}
 				agent={
 					movingAgent
-						? { id: movingAgent.id, name: movingAgent.name, folderId: folderOf(movingAgent) }
+						? {
+								id: movingAgent.id,
+								name: movingAgent.name,
+								folderId: folderOf(movingAgent),
+							}
 						: null
 				}
 				folders={folders}

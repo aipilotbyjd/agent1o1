@@ -1,6 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
-import type { TCreateAgentSessionDto, TUpdateAgentSessionDto, TSendAgentMessageDto } from '@/types/agent.type';
+import type {
+	TCreateAgentSessionDto,
+	TUpdateAgentSessionDto,
+	TSendAgentMessageDto,
+} from '@/types/agent.type';
 import type { TAgentSessionStreamEvent } from '@/types/agent.type';
 import { useRealtime } from '@/context/realtime';
 import type { IEchoLike } from '@/api/modules/workflow-builder/workflow-builder.realtime';
@@ -24,7 +28,8 @@ export const useAgentSession = (ws: string, agentId: string, id: string) =>
 export const useCreateAgentSession = (ws: string, agentId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (payload?: TCreateAgentSessionDto) => AgentSessionService.create(ws, agentId, payload),
+		mutationFn: (payload?: TCreateAgentSessionDto) =>
+			AgentSessionService.create(ws, agentId, payload),
 		onSuccess: () => qc.invalidateQueries({ queryKey: agentSessionKeys.list(ws, agentId) }),
 		meta: { errorMessage: 'Failed to create session' },
 	});
@@ -67,8 +72,10 @@ export const useAgentSessionMessages = (
 export const useSendAgentMessage = (ws: string, agentId: string, id: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (payload: TSendAgentMessageDto) => AgentSessionService.sendMessage(ws, agentId, id, payload),
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentSessionKeys.detail(ws, agentId, id) }),
+		mutationFn: (payload: TSendAgentMessageDto) =>
+			AgentSessionService.sendMessage(ws, agentId, id, payload),
+		onSuccess: () =>
+			qc.invalidateQueries({ queryKey: agentSessionKeys.detail(ws, agentId, id) }),
 		meta: { errorMessage: 'The agent failed to respond' },
 	});
 };

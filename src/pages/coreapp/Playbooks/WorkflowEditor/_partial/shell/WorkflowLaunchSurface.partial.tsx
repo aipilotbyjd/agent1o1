@@ -876,14 +876,14 @@ const WorkflowLaunchSurface = () => {
 							</div>
 
 							<div className='flex flex-1 flex-col items-center justify-center px-6 pb-9 text-center sm:px-10 sm:pb-12'>
-								<div className='mb-7 flex h-16 w-16 items-center justify-center rounded-full bg-[linear-gradient(135deg,#ec4899,#60a5fa)] text-white shadow-lg shadow-primary-500/20'>
+								<div className='shadow-primary-500/20 mb-7 flex h-16 w-16 items-center justify-center rounded-full bg-[linear-gradient(135deg,#ec4899,#60a5fa)] text-white shadow-lg'>
 									<Sparkles size={34} strokeWidth={2.2} />
 								</div>
 								<div className='flex flex-wrap items-center justify-center gap-3'>
 									<div className='text-2xl font-bold tracking-tight text-zinc-950'>
 										Pro Feature
 									</div>
-									<span className='rounded-lg bg-primary-400 px-2.5 py-1 text-xs font-bold text-primary-950 shadow-sm shadow-primary-500/20'>
+									<span className='bg-primary-400 text-primary-950 shadow-primary-500/20 rounded-lg px-2.5 py-1 text-xs font-bold shadow-sm'>
 										Upgrade Required
 									</span>
 								</div>
@@ -894,7 +894,7 @@ const WorkflowLaunchSurface = () => {
 								</p>
 								<button
 									type='button'
-									className='mt-8 flex h-12 items-center gap-3 rounded-xl bg-primary-400 px-6 text-base font-bold text-primary-950 shadow-lg shadow-primary-500/20 transition hover:-translate-y-0.5 hover:bg-primary-500'>
+									className='bg-primary-400 text-primary-950 shadow-primary-500/20 hover:bg-primary-500 mt-8 flex h-12 items-center gap-3 rounded-xl px-6 text-base font-bold shadow-lg transition hover:-translate-y-0.5'>
 									<Sparkles size={18} />
 									Upgrade to Pro
 									<ChevronRight size={19} />
@@ -1236,7 +1236,7 @@ const WorkflowLaunchSurface = () => {
 						<button
 							type='button'
 							title='New Subflow'
-							className='flex h-11 items-center gap-2 rounded-2xl bg-primary-400 px-4 text-sm font-bold text-primary-950 shadow-lg shadow-primary-500/25 transition hover:bg-primary-500 sm:h-12 sm:px-5 sm:text-base'>
+							className='bg-primary-400 text-primary-950 shadow-primary-500/25 hover:bg-primary-500 flex h-11 items-center gap-2 rounded-2xl px-4 text-sm font-bold shadow-lg transition sm:h-12 sm:px-5 sm:text-base'>
 							<Plus size={20} />
 							<span>New Subflow</span>
 						</button>

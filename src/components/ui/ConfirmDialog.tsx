@@ -30,13 +30,14 @@ export interface IConfirmDialogProps extends IConfirmDialogOptions {
 }
 // @end-snippet:: interface
 
-const DEFAULTS: Required<Pick<IConfirmDialogOptions, 'title' | 'confirmText' | 'cancelText' | 'tone'>> =
-	{
-		title: 'Are you sure?',
-		confirmText: 'Delete',
-		cancelText: 'Cancel',
-		tone: 'danger',
-	};
+const DEFAULTS: Required<
+	Pick<IConfirmDialogOptions, 'title' | 'confirmText' | 'cancelText' | 'tone'>
+> = {
+	title: 'Are you sure?',
+	confirmText: 'Delete',
+	cancelText: 'Cancel',
+	tone: 'danger',
+};
 
 /**
  * A reusable confirmation modal. Primarily used to guard destructive actions
@@ -75,7 +76,7 @@ const ConfirmDialog: FC<IConfirmDialogProps> = (props) => {
 						className={
 							isDanger
 								? 'flex h-9 w-9 items-center justify-center rounded-xl bg-red-100 text-red-600 dark:bg-red-950/30 dark:text-red-400'
-								: 'flex h-9 w-9 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-950/30 dark:text-primary-400'
+								: 'bg-primary-100 text-primary-600 dark:bg-primary-950/30 dark:text-primary-400 flex h-9 w-9 items-center justify-center rounded-xl'
 						}>
 						{icon ?? (isDanger ? <Trash2 size={16} /> : <AlertTriangle size={16} />)}
 					</div>

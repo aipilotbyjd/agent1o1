@@ -24,7 +24,13 @@ export type TWorkflowVersion = {
 
 // ─── Interface ───────────────────────────────────────────────
 
-export type TWorkflowInterfaceFieldType = 'string' | 'text' | 'number' | 'boolean' | 'select' | 'json';
+export type TWorkflowInterfaceFieldType =
+	| 'string'
+	| 'text'
+	| 'number'
+	| 'boolean'
+	| 'select'
+	| 'json';
 
 export type TWorkflowInterfaceFieldOption = {
 	value: string;

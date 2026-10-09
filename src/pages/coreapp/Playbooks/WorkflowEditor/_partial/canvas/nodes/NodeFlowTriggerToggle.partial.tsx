@@ -20,7 +20,7 @@ const NodeFlowTriggerToggle = ({ nodeId, active }: { nodeId: string; active: boo
 			onPointerDown={(event) => event.stopPropagation()}>
 			<span className='flex min-w-0 items-center gap-1.5'>
 				{active && (
-					<span className='flex size-4 shrink-0 items-center justify-center rounded-full bg-primary-500 text-white'>
+					<span className='bg-primary-500 flex size-4 shrink-0 items-center justify-center rounded-full text-white'>
 						<Zap size={9} fill='currentColor' strokeWidth={0} />
 					</span>
 				)}
@@ -35,7 +35,7 @@ const NodeFlowTriggerToggle = ({ nodeId, active }: { nodeId: string; active: boo
 				</span>
 				<span
 					title='When on, the flow starts from this node whenever it detects new data - one trigger per flow.'
-					className='shrink-0 text-zinc-400 transition hover:text-primary-500 dark:text-zinc-500'>
+					className='hover:text-primary-500 shrink-0 text-zinc-400 transition dark:text-zinc-500'>
 					<Info size={11} />
 				</span>
 			</span>
@@ -60,7 +60,7 @@ const NodeFlowTriggerToggle = ({ nodeId, active }: { nodeId: string; active: boo
 					className={[
 						'flex h-5 w-9 cursor-pointer items-center rounded-full border p-0.5 transition-all duration-200',
 						active
-							? 'justify-end border-primary-400 bg-primary-400'
+							? 'border-primary-400 bg-primary-400 justify-end'
 							: 'justify-start border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800',
 					].join(' ')}>
 					<span

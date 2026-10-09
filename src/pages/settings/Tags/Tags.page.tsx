@@ -133,7 +133,8 @@ const TagsPage = () => {
 						Tags
 					</h1>
 					<p className='mt-1 text-sm font-medium text-zinc-500 dark:text-zinc-400'>
-						Labels for organising workflows and agents. Changes apply everywhere a tag is used.
+						Labels for organising workflows and agents. Changes apply everywhere a tag
+						is used.
 					</p>
 				</div>
 				<Button
@@ -211,7 +212,10 @@ const TagsPage = () => {
 								<div className='flex min-w-0 items-center gap-4'>
 									<div
 										className='flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl'
-										style={{ backgroundColor: `${tagColor}1f`, color: tagColor }}>
+										style={{
+											backgroundColor: `${tagColor}1f`,
+											color: tagColor,
+										}}>
 										<Tag size={18} />
 									</div>
 									<div className='min-w-0'>
@@ -277,7 +281,9 @@ const TagsPage = () => {
 									dimension='default'
 								/>
 								{nameError && (
-									<p className='mt-1.5 text-xs font-semibold text-red-500'>{nameError}</p>
+									<p className='mt-1.5 text-xs font-semibold text-red-500'>
+										{nameError}
+									</p>
 								)}
 							</div>
 							<div>
@@ -305,7 +311,8 @@ const TagsPage = () => {
 							{editing !== 'new' && editing !== null && (
 								<p className='text-xs font-semibold text-zinc-400'>
 									Used by {plural(editing.workflow_count ?? 0, 'workflow')} and{' '}
-									{plural(editing.agent_count ?? 0, 'agent')}. They all pick up the change.
+									{plural(editing.agent_count ?? 0, 'agent')}. They all pick up
+									the change.
 								</p>
 							)}
 						</div>

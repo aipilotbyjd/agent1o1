@@ -35,7 +35,15 @@ export const AGENT_ICONS = [
 ] as const;
 export type TAgentIcon = (typeof AGENT_ICONS)[number];
 
-export const AGENT_COLORS = ['purple', 'green', 'blue', 'teal', 'orange', 'red', 'rainbow'] as const;
+export const AGENT_COLORS = [
+	'purple',
+	'green',
+	'blue',
+	'teal',
+	'orange',
+	'red',
+	'rainbow',
+] as const;
 export type TAgentColor = (typeof AGENT_COLORS)[number];
 
 export type TAgent = {
@@ -787,7 +795,6 @@ export type TAgentSkillCategory =
 	| 'Automation'
 	| 'Development'
 	| 'Content';
-
 
 export type TSubagentTaskStatus = 'queued' | 'running' | 'completed' | 'failed';
 

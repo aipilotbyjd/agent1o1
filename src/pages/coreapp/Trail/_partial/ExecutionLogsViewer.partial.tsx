@@ -31,9 +31,9 @@ const ExecutionLogsViewer = ({ ws, executionId }: ExecutionLogsViewerProps) => {
 	if (isLoading) {
 		return (
 			<div className='space-y-2.5 py-4'>
-				<div className='dark:bg-zinc-800 h-4 w-3/4 animate-pulse rounded bg-slate-200' />
-				<div className='dark:bg-zinc-800 h-4 w-1/2 animate-pulse rounded bg-slate-200' />
-				<div className='dark:bg-zinc-800 h-4 w-5/6 animate-pulse rounded bg-slate-200' />
+				<div className='h-4 w-3/4 animate-pulse rounded bg-slate-200 dark:bg-zinc-800' />
+				<div className='h-4 w-1/2 animate-pulse rounded bg-slate-200 dark:bg-zinc-800' />
+				<div className='h-4 w-5/6 animate-pulse rounded bg-slate-200 dark:bg-zinc-800' />
 			</div>
 		);
 	}
@@ -47,7 +47,7 @@ const ExecutionLogsViewer = ({ ws, executionId }: ExecutionLogsViewerProps) => {
 	}
 
 	return (
-		<div className='border-slate-150 dark:border-zinc-800 no-scrollbar max-h-96 space-y-4 overflow-y-auto rounded-2xl border bg-slate-50/50 p-4.5 dark:bg-zinc-950/20'>
+		<div className='border-slate-150 no-scrollbar max-h-96 space-y-4 overflow-y-auto rounded-2xl border bg-slate-50/50 p-4.5 dark:border-zinc-800 dark:bg-zinc-950/20'>
 			{logs.map((log, idx) => {
 				const isUser =
 					log.message.startsWith('User: ') || log.message.startsWith('User Input: ');
@@ -70,7 +70,7 @@ const ExecutionLogsViewer = ({ ws, executionId }: ExecutionLogsViewerProps) => {
 							<div
 								className={`max-w-[85%] rounded-2xl border p-3 text-xs leading-relaxed font-semibold shadow-xs ${
 									sender === 'user'
-										? 'rounded-tr-none border-primary-700 bg-primary-400 text-primary-950'
+										? 'border-primary-700 bg-primary-400 text-primary-950 rounded-tr-none'
 										: 'text-slate-850 rounded-tl-none border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 								}`}>
 								{cleanMessage}

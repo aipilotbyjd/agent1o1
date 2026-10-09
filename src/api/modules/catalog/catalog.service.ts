@@ -21,10 +21,13 @@ export const CatalogService = {
 
 	nodeCategory: (id: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ category: TNodeCategory; nodes: TBuiltinNode[]; nodes_count: number }>>(
-				E.nodeCategory(id),
-				{ signal },
-			)
+			.get<
+				TApiResponse<{
+					category: TNodeCategory;
+					nodes: TBuiltinNode[];
+					nodes_count: number;
+				}>
+			>(E.nodeCategory(id), { signal })
 			.then((r) => r.data.data),
 
 	/** Grouped by preset category, e.g. `{ github: [...], stripe: [...] }`. */

@@ -21,21 +21,21 @@ export const NodeRow = ({ node, onAdd }: TNodeProps) => (
 		title={node.description}
 		onDragStart={(event) => startNodeDrag(event, node)}
 		onClick={() => onAdd(node)}
-		className='group flex w-full cursor-grab items-center gap-3.5 rounded-xl border border-transparent p-2.5 text-left transition hover:border-primary-200/70 hover:bg-primary-50/60 hover:shadow-[0_1px_2px_rgba(147,51,234,0.06)] dark:hover:border-primary-500/25 dark:hover:bg-primary-500/[0.07]'>
+		className='group hover:border-primary-200/70 hover:bg-primary-50/60 dark:hover:border-primary-500/25 dark:hover:bg-primary-500/[0.07] flex w-full cursor-grab items-center gap-3.5 rounded-xl border border-transparent p-2.5 text-left transition hover:shadow-[0_1px_2px_rgba(147,51,234,0.06)]'>
 		<span
 			className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-base transition group-hover:scale-105'
 			style={tintStyle(node.colorHex)}>
 			<NodeIcon icon={node.icon} size={16} />
 		</span>
 		<span className='min-w-0 flex-1'>
-			<span className='block truncate text-xs font-bold text-zinc-900 transition group-hover:text-primary-700 dark:text-zinc-100 dark:group-hover:text-primary-300'>
+			<span className='group-hover:text-primary-700 dark:group-hover:text-primary-300 block truncate text-xs font-bold text-zinc-900 transition dark:text-zinc-100'>
 				{node.label}
 			</span>
 			<span className='mt-0.5 line-clamp-2 text-[10px] leading-normal text-zinc-400 dark:text-zinc-500'>
 				{node.description}
 			</span>
 		</span>
-		<span className='flex h-6 w-6 shrink-0 translate-x-1 items-center justify-center rounded-lg bg-primary-100 text-primary-600 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100 dark:bg-primary-400/15 dark:text-primary-300'>
+		<span className='bg-primary-100 text-primary-600 dark:bg-primary-400/15 dark:text-primary-300 flex h-6 w-6 shrink-0 translate-x-1 items-center justify-center rounded-lg opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100'>
 			<Plus size={14} strokeWidth={2.5} />
 		</span>
 	</button>
@@ -137,7 +137,7 @@ export const StateMessage = ({
 
 export const PanelLoader = () => (
 	<div className='flex h-full items-center justify-center text-zinc-400'>
-		<span className='h-5 w-5 animate-spin rounded-full border-2 border-zinc-300 border-t-primary-500' />
+		<span className='border-t-primary-500 h-5 w-5 animate-spin rounded-full border-2 border-zinc-300' />
 	</div>
 );
 
@@ -145,7 +145,7 @@ export const RetryButton = ({ onClick }: { onClick: () => void }) => (
 	<button
 		type='button'
 		onClick={onClick}
-		className='rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold text-primary-600 transition hover:bg-zinc-50 dark:hover:bg-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-primary-400'>
+		className='text-primary-600 dark:text-primary-400 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
 		Try again
 	</button>
 );

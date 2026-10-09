@@ -168,11 +168,11 @@ const ExpressionInput = ({ field, value, onChange, compact, nodeId, className }:
 		const color = missing ? MISSING_CHIP_COLOR : (node?.color ?? DEFAULT_CHIP_COLOR);
 		const style = `border-color:${color}55;background-color:${color}1a;color:${color};`;
 		return (
-			`<span data-token="${escapeAttr(token)}" contenteditable="false" title="${escapeAttr(title)}" style="${style}" class="${CHIP_CLS}">` +
-			(node
-				? `<span class="max-w-[80px] truncate opacity-60">${escapeHtml(node.label)}</span><span class="opacity-30">/</span>`
-				: '') +
-			`<span class="max-w-[120px] truncate">${escapeHtml(label)}</span>` +
+			`<span data-token="${escapeAttr(token)}" contenteditable="false" title="${escapeAttr(title)}" style="${style}" class="${CHIP_CLS}">${
+				node
+					? `<span class="max-w-[80px] truncate opacity-60">${escapeHtml(node.label)}</span><span class="opacity-30">/</span>`
+					: ''
+			}<span class="max-w-[120px] truncate">${escapeHtml(label)}</span>` +
 			`<span data-remove="1" class="${CHIP_X_CLS}">×</span>` +
 			`</span>`
 		);

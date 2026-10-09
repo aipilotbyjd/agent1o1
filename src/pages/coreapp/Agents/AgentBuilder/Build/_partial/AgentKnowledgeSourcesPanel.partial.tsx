@@ -97,7 +97,8 @@ const AgentKnowledgeSourcesPanel = ({ ws, agentId }: TProps) => {
 										{collection}
 									</span>
 									<span className='mt-0.5 truncate text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
-										{chunksLabel(collection) || 'No documents left in this collection'}
+										{chunksLabel(collection) ||
+											'No documents left in this collection'}
 									</span>
 								</div>
 							</div>

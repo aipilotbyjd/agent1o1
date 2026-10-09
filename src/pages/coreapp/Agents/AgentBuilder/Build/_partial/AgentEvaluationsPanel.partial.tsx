@@ -75,7 +75,7 @@ const ToggleRow = ({
 		<div className='flex min-w-0 flex-col'>
 			<span className='text-[11px] font-black text-zinc-800 dark:text-zinc-200'>{label}</span>
 			{hint && (
-				<span className='mt-0.5 text-[10px] font-semibold leading-normal text-zinc-400 dark:text-zinc-400'>
+				<span className='mt-0.5 text-[10px] leading-normal font-semibold text-zinc-400 dark:text-zinc-400'>
 					{hint}
 				</span>
 			)}
@@ -109,13 +109,13 @@ const ListHeader = ({
 	onAdd: () => void;
 }) => (
 	<div className='flex items-center justify-between'>
-		<span className='flex items-center gap-1 text-[9px] font-black uppercase tracking-wide text-zinc-400'>
+		<span className='flex items-center gap-1 text-[9px] font-black tracking-wide text-zinc-400 uppercase'>
 			<Icon size={10} />
 			{label}
 		</span>
 		<button
 			onClick={onAdd}
-			className='flex items-center gap-1 text-[10px] font-bold text-primary-600 hover:text-primary-500 dark:text-primary-400'>
+			className='text-primary-600 hover:text-primary-500 dark:text-primary-400 flex items-center gap-1 text-[10px] font-bold'>
 			<Plus size={10} />
 			<span>Add</span>
 		</button>
@@ -162,7 +162,7 @@ const EvaluationSettingsForm = ({
 			/>
 
 			<div>
-				<span className='text-[9px] font-black uppercase tracking-wide text-zinc-400'>
+				<span className='text-[9px] font-black tracking-wide text-zinc-400 uppercase'>
 					Grader model
 				</span>
 				<select
@@ -181,8 +181,8 @@ const EvaluationSettingsForm = ({
 					)}
 				</select>
 				<p className='mt-1 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-					Also grades AI-judge eval checks and reviews chats for reflections. A stronger model
-					than the agent's own catches more of its mistakes.
+					Also grades AI-judge eval checks and reviews chats for reflections. A stronger
+					model than the agent's own catches more of its mistakes.
 				</p>
 			</div>
 
@@ -197,11 +197,15 @@ const EvaluationSettingsForm = ({
 					<ToggleRow
 						label='Sentiment affects grade'
 						value={form.sentiment_affects_grade}
-						onChange={(next) => updateMutation.mutate(patch({ sentiment_affects_grade: next }))}
+						onChange={(next) =>
+							updateMutation.mutate(patch({ sentiment_affects_grade: next }))
+						}
 					/>
 					<textarea
 						value={form.sentiment_guidance}
-						onChange={(e) => setForm((f) => ({ ...f, sentiment_guidance: e.target.value }))}
+						onChange={(e) =>
+							setForm((f) => ({ ...f, sentiment_guidance: e.target.value }))
+						}
 						placeholder='How to read sentiment for this agent (optional)'
 						rows={2}
 						className={`w-full resize-none ${fieldClass}`}
@@ -213,7 +217,9 @@ const EvaluationSettingsForm = ({
 				label='Suggest tags automatically'
 				hint='Let the grader apply the tags below on its own.'
 				value={form.suggest_tags_automatically}
-				onChange={(next) => updateMutation.mutate(patch({ suggest_tags_automatically: next }))}
+				onChange={(next) =>
+					updateMutation.mutate(patch({ suggest_tags_automatically: next }))
+				}
 			/>
 
 			{/* Criteria */}
@@ -224,7 +230,10 @@ const EvaluationSettingsForm = ({
 					onAdd={() =>
 						setForm((f) => ({
 							...f,
-							criteria: [...f.criteria, { name: '', prompt: '', type: 'boolean', priority: 'flag' }],
+							criteria: [
+								...f.criteria,
+								{ name: '', prompt: '', type: 'boolean', priority: 'flag' },
+							],
 						}))
 					}
 				/>
@@ -253,7 +262,10 @@ const EvaluationSettingsForm = ({
 							<button
 								aria-label='Close'
 								onClick={() =>
-									setForm((f) => ({ ...f, criteria: f.criteria.filter((_, i) => i !== index) }))
+									setForm((f) => ({
+										...f,
+										criteria: f.criteria.filter((_, i) => i !== index),
+									}))
 								}
 								className='shrink-0 text-zinc-400 hover:text-rose-500'>
 								<X size={12} />
@@ -280,7 +292,13 @@ const EvaluationSettingsForm = ({
 									setForm((f) => ({
 										...f,
 										criteria: f.criteria.map((c, i) =>
-											i === index ? { ...c, type: e.target.value as TEvaluationCriterionType } : c,
+											i === index
+												? {
+														...c,
+														type: e.target
+															.value as TEvaluationCriterionType,
+													}
+												: c,
 										),
 									}))
 								}
@@ -298,7 +316,11 @@ const EvaluationSettingsForm = ({
 										...f,
 										criteria: f.criteria.map((c, i) =>
 											i === index
-												? { ...c, priority: e.target.value as TEvaluationCriterionAction }
+												? {
+														...c,
+														priority: e.target
+															.value as TEvaluationCriterionAction,
+													}
 												: c,
 										),
 									}))
@@ -320,7 +342,9 @@ const EvaluationSettingsForm = ({
 				<ListHeader
 					icon={Tag}
 					label='Tags'
-					onAdd={() => setForm((f) => ({ ...f, tags: [...f.tags, { name: '', description: '' }] }))}
+					onAdd={() =>
+						setForm((f) => ({ ...f, tags: [...f.tags, { name: '', description: '' }] }))
+					}
 				/>
 				{form.tags.length === 0 && (
 					<p className='text-[10px] font-semibold text-zinc-400'>No tags yet.</p>
@@ -333,7 +357,9 @@ const EvaluationSettingsForm = ({
 							onChange={(e) =>
 								setForm((f) => ({
 									...f,
-									tags: f.tags.map((t, i) => (i === index ? { ...t, name: e.target.value } : t)),
+									tags: f.tags.map((t, i) =>
+										i === index ? { ...t, name: e.target.value } : t,
+									),
 								}))
 							}
 							placeholder='Tag'
@@ -355,7 +381,12 @@ const EvaluationSettingsForm = ({
 						/>
 						<button
 							aria-label='Close'
-							onClick={() => setForm((f) => ({ ...f, tags: f.tags.filter((_, i) => i !== index) }))}
+							onClick={() =>
+								setForm((f) => ({
+									...f,
+									tags: f.tags.filter((_, i) => i !== index),
+								}))
+							}
 							className='shrink-0 text-zinc-400 hover:text-rose-500'>
 							<X size={12} />
 						</button>
@@ -371,7 +402,10 @@ const EvaluationSettingsForm = ({
 					onAdd={() =>
 						setForm((f) => ({
 							...f,
-							data_points: [...f.data_points, { name: '', data_type: 'string', description: '' }],
+							data_points: [
+								...f.data_points,
+								{ name: '', data_type: 'string', description: '' },
+							],
 						}))
 					}
 				/>
@@ -401,7 +435,11 @@ const EvaluationSettingsForm = ({
 									...f,
 									data_points: f.data_points.map((d, i) =>
 										i === index
-											? { ...d, data_type: e.target.value as TEvaluationDataPointType }
+											? {
+													...d,
+													data_type: e.target
+														.value as TEvaluationDataPointType,
+												}
 											: d,
 									),
 								}))
@@ -454,7 +492,7 @@ const EvaluationSettingsForm = ({
 						})
 					}
 					disabled={updateMutation.isPending}
-					className='flex items-center gap-1 rounded-lg bg-primary-400 px-3 py-1 text-[10px] font-black text-primary-950 hover:bg-primary-500 disabled:opacity-50'>
+					className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex items-center gap-1 rounded-lg px-3 py-1 text-[10px] font-black disabled:opacity-50'>
 					{updateMutation.isPending && <Loader2 size={11} className='animate-spin' />}
 					Save
 				</button>
@@ -470,7 +508,8 @@ const asRows = (value: unknown): TResultRow[] =>
 const textOf = (row: TResultRow, ...keys: string[]) => {
 	for (const key of keys) {
 		const v = row[key];
-		if (v !== undefined && v !== null && v !== '') return typeof v === 'object' ? JSON.stringify(v) : String(v);
+		if (v !== undefined && v !== null && v !== '')
+			return typeof v === 'object' ? JSON.stringify(v) : String(v);
 	}
 	return null;
 };
@@ -504,9 +543,13 @@ const EvaluationDetail = ({ ws, agentId, id }: { ws: string; agentId: string; id
 			)}
 
 			<div className='space-y-1.5'>
-				<span className='text-[9px] font-black tracking-wide text-zinc-400 uppercase'>Criteria</span>
+				<span className='text-[9px] font-black tracking-wide text-zinc-400 uppercase'>
+					Criteria
+				</span>
 				{criteria.length === 0 ? (
-					<p className='text-[10px] font-semibold text-zinc-400'>No criteria were checked.</p>
+					<p className='text-[10px] font-semibold text-zinc-400'>
+						No criteria were checked.
+					</p>
 				) : (
 					criteria.map((row, idx) => {
 						const result = textOf(row, 'result', 'status') ?? 'unknown';
@@ -514,7 +557,8 @@ const EvaluationDetail = ({ ws, agentId, id }: { ws: string; agentId: string; id
 							<div key={idx} className='rounded-lg bg-white p-2 dark:bg-zinc-900/40'>
 								<div className='flex items-center justify-between gap-2'>
 									<span className='truncate text-[10px] font-black text-zinc-700 dark:text-zinc-300'>
-										{textOf(row, 'name', 'criterion', 'id') ?? `Criterion ${idx + 1}`}
+										{textOf(row, 'name', 'criterion', 'id') ??
+											`Criterion ${idx + 1}`}
 									</span>
 									<span
 										className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase ${RESULT_STYLE[result] ?? 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800'}`}>
@@ -582,16 +626,16 @@ const EvaluationCard = ({
 				/>
 				<div className='min-w-0 flex-1'>
 					<div className='flex items-center gap-2'>
-						<span className='truncate text-[11px] font-black capitalize text-zinc-800 dark:text-zinc-200'>
+						<span className='truncate text-[11px] font-black text-zinc-800 capitalize dark:text-zinc-200'>
 							{evaluation.grade ?? evaluation.status}
 						</span>
 						{evaluation.call_successful != null && (
-							<span className='shrink-0 rounded-full bg-zinc-100 px-1.5 py-0.5 text-[8px] font-black uppercase text-zinc-500 dark:bg-zinc-800'>
+							<span className='shrink-0 rounded-full bg-zinc-100 px-1.5 py-0.5 text-[8px] font-black text-zinc-500 uppercase dark:bg-zinc-800'>
 								{evaluation.call_successful ? 'resolved' : 'unresolved'}
 							</span>
 						)}
 						{evaluation.sentiment && (
-							<span className='flex shrink-0 items-center gap-0.5 rounded-full bg-zinc-100 px-1.5 py-0.5 text-[8px] font-black uppercase text-zinc-500 dark:bg-zinc-800'>
+							<span className='flex shrink-0 items-center gap-0.5 rounded-full bg-zinc-100 px-1.5 py-0.5 text-[8px] font-black text-zinc-500 uppercase dark:bg-zinc-800'>
 								<Smile size={8} />
 								{evaluation.sentiment}
 							</span>
@@ -635,7 +679,7 @@ const EvaluationCard = ({
 					{(evaluation.applied_tags ?? []).map((tag) => (
 						<span
 							key={tag}
-							className='rounded-full bg-primary-400/10 px-1.5 py-0.5 text-[8px] font-black uppercase text-primary-600 dark:text-primary-400'>
+							className='bg-primary-400/10 text-primary-600 dark:text-primary-400 rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase'>
 							{tag}
 						</span>
 					))}
@@ -720,7 +764,7 @@ const AgentEvaluationsPanel = ({ ws, agentId }: TProps) => {
 					className={`shrink-0 rounded-lg border px-2 py-1 transition ${
 						isSettingsOpen
 							? 'border-primary-500/20 bg-primary-400/10 text-primary-600 dark:text-primary-400'
-							: 'border-zinc-200 bg-white text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 dark:border-zinc-800 dark:bg-zinc-900'
+							: 'border-zinc-200 bg-white text-zinc-400 hover:text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:text-zinc-300'
 					}`}>
 					<Settings2 size={12} />
 				</button>
@@ -729,7 +773,12 @@ const AgentEvaluationsPanel = ({ ws, agentId }: TProps) => {
 			{/* Settings */}
 			{isSettingsOpen &&
 				(settings ? (
-					<EvaluationSettingsForm key={settings.id} ws={ws} agentId={agentId} settings={settings} />
+					<EvaluationSettingsForm
+						key={settings.id}
+						ws={ws}
+						agentId={agentId}
+						settings={settings}
+					/>
 				) : (
 					<p className='py-4 text-center text-[11px] font-semibold text-zinc-400'>
 						Loading settings…
@@ -754,7 +803,7 @@ const AgentEvaluationsPanel = ({ ws, agentId }: TProps) => {
 					type='button'
 					onClick={() => gradeSession(sessionToGrade)}
 					disabled={!sessionToGrade || runEvaluation.isPending}
-					className='flex shrink-0 items-center gap-1 rounded-lg bg-primary-400 px-2.5 py-1.5 text-[10px] font-black text-primary-950 transition hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-40'>
+					className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-black transition disabled:cursor-not-allowed disabled:opacity-40'>
 					{runEvaluation.isPending ? (
 						<Loader2 size={10} className='animate-spin' />
 					) : (
@@ -767,7 +816,10 @@ const AgentEvaluationsPanel = ({ ws, agentId }: TProps) => {
 			{/* Grade filter */}
 			<div className='flex gap-1.5'>
 				{(
-					[undefined, 'pass', 'fail', 'flag'] as (TAgentSessionEvaluationGrade | undefined)[]
+					[undefined, 'pass', 'fail', 'flag'] as (
+						| TAgentSessionEvaluationGrade
+						| undefined
+					)[]
 				).map((g) => (
 					<button
 						key={g ?? 'all'}
@@ -801,7 +853,8 @@ const AgentEvaluationsPanel = ({ ws, agentId }: TProps) => {
 							onRegrade={gradeSession}
 							isRegrading={
 								runEvaluation.isPending &&
-								String(runEvaluation.variables) === String(evaluation.agent_session_id)
+								String(runEvaluation.variables) ===
+									String(evaluation.agent_session_id)
 							}
 						/>
 					))}

@@ -1,7 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Link, useOutletContext, useParams } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, FileDown, Download, Trash2, History, Eye, MoreHorizontal, Share2, Lock } from 'lucide-react';
+import {
+	Search,
+	FileDown,
+	Download,
+	Trash2,
+	History,
+	Eye,
+	MoreHorizontal,
+	Share2,
+	Lock,
+} from 'lucide-react';
 import { OutletContextType } from './_layouts/Artifacts.layout';
 import { useConfirm } from '@/context/confirm';
 import Breadcrumb from '@/components/layout/Breadcrumb';
@@ -14,7 +24,12 @@ import { useArtifacts, useDeleteArtifact, useDownloadArtifact } from '@/api/modu
 import type { TArtifact, TArtifactMimeCategory } from '@/types/artifact.type';
 import ListSkeletonPart from '@/parts/ListSkeleton.part';
 import { notify } from '@/api/core';
-import { ARTIFACT_CATEGORIES, getArtifactIcon, getArtifactColor, formatBytes } from './_helper/artifacts.constants';
+import {
+	ARTIFACT_CATEGORIES,
+	getArtifactIcon,
+	getArtifactColor,
+	formatBytes,
+} from './_helper/artifacts.constants';
 import ArtifactVersionsModal from './_partial/ArtifactVersionsModal.partial';
 import ArtifactUploadButton from './_partial/ArtifactUploadButton.partial';
 import ArtifactShareModal from './_partial/ArtifactShareModal.partial';
@@ -71,8 +86,8 @@ const ArtifactsListPage = () => {
 					<strong className='font-semibold text-zinc-800 dark:text-zinc-200'>
 						&quot;{artifact.filename}&quot;
 					</strong>
-					? All {artifact.versions_count ?? 1} version(s) will be removed. This action cannot be
-					undone.
+					? All {artifact.versions_count ?? 1} version(s) will be removed. This action
+					cannot be undone.
 				</>
 			),
 		});
@@ -94,20 +109,22 @@ const ArtifactsListPage = () => {
 						ws={ws}
 						label='Upload'
 						multiple
-						className='flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-primary-400 px-4 text-xs font-bold text-primary-950 shadow-md shadow-primary-500/10 transition-all hover:bg-primary-500 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60'
+						className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-4 text-xs font-bold shadow-md transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60'
 					/>
 				</div>
 
 				<div className='mb-8 flex flex-col gap-4'>
 					<div className='group relative flex-1'>
-						<Search className='absolute top-3.5 left-4 h-4.5 w-4.5 text-slate-400 transition-colors duration-200 group-focus-within:text-primary-500 dark:text-zinc-500' />
+						<Search className='group-focus-within:text-primary-500 absolute top-3.5 left-4 h-4.5 w-4.5 text-slate-400 transition-colors duration-200 dark:text-zinc-500' />
 						<input
 							type='search'
 							aria-label='Search artifacts'
 							placeholder='Search artifacts by filename...'
 							value={searchQuery}
-							onChange={(e) => handleFilterChange(() => setSearchQuery(e.target.value))}
-							className='block h-12 w-full rounded-2xl border border-border-main bg-bg-card pr-4 pl-12 text-xs font-semibold text-slate-900 shadow-xs outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-primary-500/80 focus:ring-4 focus:ring-primary-500/10 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-primary-500 dark:focus:ring-primary-500/15'
+							onChange={(e) =>
+								handleFilterChange(() => setSearchQuery(e.target.value))
+							}
+							className='border-border-main bg-bg-card focus:border-primary-500/80 focus:ring-primary-500/10 dark:focus:border-primary-500 dark:focus:ring-primary-500/15 block h-12 w-full rounded-2xl border pr-4 pl-12 text-xs font-semibold text-slate-900 shadow-xs transition-all duration-200 outline-none placeholder:text-slate-400 focus:ring-4 dark:text-zinc-100 dark:placeholder:text-zinc-500'
 						/>
 					</div>
 
@@ -116,19 +133,21 @@ const ArtifactsListPage = () => {
 							onClick={() => handleFilterChange(() => setSelectedCategory('All'))}
 							className={`flex h-9 shrink-0 items-center gap-2 rounded-xl px-4 text-xs font-bold transition-all ${
 								selectedCategory === 'All'
-									? 'bg-gradient-to-r from-primary-400 to-primary-400 text-primary-950'
-									: 'border border-border-main bg-bg-card text-slate-600 hover:bg-slate-50 dark:text-zinc-400'
+									? 'from-primary-400 to-primary-400 text-primary-950 bg-gradient-to-r'
+									: 'border-border-main bg-bg-card border text-slate-600 hover:bg-slate-50 dark:text-zinc-400'
 							}`}>
 							All
 						</button>
 						{ARTIFACT_CATEGORIES.map((cat) => (
 							<button
 								key={cat.value}
-								onClick={() => handleFilterChange(() => setSelectedCategory(cat.value))}
+								onClick={() =>
+									handleFilterChange(() => setSelectedCategory(cat.value))
+								}
 								className={`flex h-9 shrink-0 items-center gap-2 rounded-xl px-4 text-xs font-bold transition-all ${
 									selectedCategory === cat.value
-										? 'bg-gradient-to-r from-primary-400 to-primary-400 text-primary-950'
-										: 'border border-border-main bg-bg-card text-slate-600 hover:bg-slate-50 dark:text-zinc-400'
+										? 'from-primary-400 to-primary-400 text-primary-950 bg-gradient-to-r'
+										: 'border-border-main bg-bg-card border text-slate-600 hover:bg-slate-50 dark:text-zinc-400'
 								}`}>
 								{cat.label}
 							</button>
@@ -141,9 +160,11 @@ const ArtifactsListPage = () => {
 						<ListSkeletonPart count={8} />
 					</div>
 				) : artifactList.length === 0 ? (
-					<div className='flex flex-col items-center justify-center gap-2 rounded-3xl border border-border-main bg-bg-card py-16 text-center'>
+					<div className='border-border-main bg-bg-card flex flex-col items-center justify-center gap-2 rounded-3xl border py-16 text-center'>
 						<FileDown size={28} className='text-slate-300 dark:text-zinc-600' />
-						<p className='text-sm font-bold text-slate-700 dark:text-zinc-300'>No artifacts yet</p>
+						<p className='text-sm font-bold text-slate-700 dark:text-zinc-300'>
+							No artifacts yet
+						</p>
 						<p className='text-xs font-semibold text-slate-400 dark:text-zinc-500'>
 							Files your agents export during conversations will show up here.
 						</p>
@@ -152,7 +173,7 @@ const ArtifactsListPage = () => {
 								ws={ws}
 								label='Upload a file'
 								multiple
-								className='mt-2 flex h-8 cursor-pointer items-center gap-1.5 rounded-xl border border-border-main px-3 text-[11px] font-bold text-slate-600 transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-zinc-300 dark:hover:bg-zinc-900'
+								className='border-border-main mt-2 flex h-8 cursor-pointer items-center gap-1.5 rounded-xl border px-3 text-[11px] font-bold text-slate-600 transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-zinc-300 dark:hover:bg-zinc-900'
 							/>
 						)}
 					</div>
@@ -181,19 +202,20 @@ const ArtifactsListPage = () => {
 						{meta && meta.last_page > 1 && (
 							<div className='flex items-center justify-between'>
 								<span className='text-xs font-semibold text-slate-400 dark:text-zinc-500'>
-									Page {meta.current_page} of {meta.last_page} · {meta.total} artifacts
+									Page {meta.current_page} of {meta.last_page} · {meta.total}{' '}
+									artifacts
 								</span>
 								<div className='flex gap-2'>
 									<button
 										disabled={meta.current_page <= 1}
 										onClick={() => setPage((p) => p - 1)}
-										className='flex h-8 cursor-pointer items-center justify-center rounded-xl border border-border-main px-3 text-[11px] font-bold text-slate-600 transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-300'>
+										className='border-border-main flex h-8 cursor-pointer items-center justify-center rounded-xl border px-3 text-[11px] font-bold text-slate-600 transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-300'>
 										Previous
 									</button>
 									<button
 										disabled={meta.current_page >= meta.last_page}
 										onClick={() => setPage((p) => p + 1)}
-										className='flex h-8 cursor-pointer items-center justify-center rounded-xl border border-border-main px-3 text-[11px] font-bold text-slate-600 transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-300'>
+										className='border-border-main flex h-8 cursor-pointer items-center justify-center rounded-xl border px-3 text-[11px] font-bold text-slate-600 transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-300'>
 										Next
 									</button>
 								</div>
@@ -203,8 +225,16 @@ const ArtifactsListPage = () => {
 				)}
 			</div>
 
-			<ArtifactVersionsModal ws={ws} artifactId={historyArtifactId} onClose={() => setHistoryArtifactId(null)} />
-			<ArtifactShareModal ws={ws} artifact={sharingArtifact} onClose={() => setSharingArtifact(null)} />
+			<ArtifactVersionsModal
+				ws={ws}
+				artifactId={historyArtifactId}
+				onClose={() => setHistoryArtifactId(null)}
+			/>
+			<ArtifactShareModal
+				ws={ws}
+				artifact={sharingArtifact}
+				onClose={() => setSharingArtifact(null)}
+			/>
 		</Container>
 	);
 };
@@ -235,7 +265,7 @@ const ArtifactCard = ({
 			animate={{ opacity: 1, y: 0 }}
 			exit={{ opacity: 0, y: 10 }}
 			transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-			className='group relative flex flex-col rounded-2xl border border-slate-200/60 bg-white p-5 transition-all duration-300 hover:-translate-y-1 hover:border-primary-400 hover:shadow-[0_12px_24px_-10px_rgba(16,24,40,0.06)] dark:border-zinc-800/80 dark:bg-zinc-950 dark:hover:border-primary-400/50 dark:hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.5)]'>
+			className='group hover:border-primary-400 dark:hover:border-primary-400/50 relative flex flex-col rounded-2xl border border-slate-200/60 bg-white p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_-10px_rgba(16,24,40,0.06)] dark:border-zinc-800/80 dark:bg-zinc-950 dark:hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.5)]'>
 			{artifact.preview_url && artifact.mime_type.startsWith('image/') && (
 				<img
 					src={artifact.preview_url}
@@ -251,18 +281,20 @@ const ArtifactCard = ({
 						<IconComponent className='h-5 w-5' style={{ color }} />
 					</div>
 					<div className='min-w-0 space-y-0.5'>
-						<h4 className='truncate text-[13px] leading-snug font-black text-slate-900 transition-colors group-hover:text-primary-600 dark:text-zinc-50 dark:group-hover:text-primary-400'>
+						<h4 className='group-hover:text-primary-600 dark:group-hover:text-primary-400 truncate text-[13px] leading-snug font-black text-slate-900 transition-colors dark:text-zinc-50'>
 							{artifact.filename}
 						</h4>
 						{artifact.assistant_session_id ? (
 							<Link
 								to={`${resolvePath(pages.workspace.subPages!.assistant.to)}?session=${artifact.assistant_session_id}`}
-								className='block truncate text-[9px] font-extrabold tracking-wider text-slate-400 uppercase hover:text-primary-600 hover:underline dark:text-zinc-500'>
+								className='hover:text-primary-600 block truncate text-[9px] font-extrabold tracking-wider text-slate-400 uppercase hover:underline dark:text-zinc-500'>
 								From a {brand.name} chat
 							</Link>
 						) : (
 							<span className='block truncate text-[9px] font-extrabold tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
-								{artifact.agent?.name ?? artifact.creator?.name ?? 'Uploaded manually'}
+								{artifact.agent?.name ??
+									artifact.creator?.name ??
+									'Uploaded manually'}
 							</span>
 						)}
 					</div>
@@ -313,7 +345,7 @@ const ArtifactCard = ({
 			</p>
 
 			<div className='mt-auto flex items-center justify-between border-t border-slate-100/80 pt-3.5 dark:border-zinc-900/60'>
-				<span className='inline-flex items-center gap-1 rounded-full border border-primary-200 bg-primary-50 px-2.5 py-0.5 text-[9px] font-bold text-primary-700 dark:border-primary-500/20 dark:bg-primary-950/20 dark:text-primary-400'>
+				<span className='border-primary-200 bg-primary-50 text-primary-700 dark:border-primary-500/20 dark:bg-primary-950/20 dark:text-primary-400 inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[9px] font-bold'>
 					v{artifact.version}
 					{artifact.general_access === 'restricted' && (
 						<Lock size={9} aria-label='Restricted' className='ml-0.5' />
@@ -322,7 +354,7 @@ const ArtifactCard = ({
 				{(artifact.versions_count ?? 1) > 1 && (
 					<button
 						onClick={onShowVersions}
-						className='flex cursor-pointer items-center gap-1 text-[10px] font-bold text-primary-600 hover:underline dark:text-primary-400'>
+						className='text-primary-600 dark:text-primary-400 flex cursor-pointer items-center gap-1 text-[10px] font-bold hover:underline'>
 						<History size={11} />
 						{artifact.versions_count} versions
 					</button>
@@ -343,7 +375,7 @@ const ArtifactCard = ({
 				<button
 					onClick={onDownload}
 					title='Download'
-					className={`flex h-8 cursor-pointer items-center justify-center rounded-xl bg-primary-400 text-primary-950 shadow-md shadow-primary-500/10 transition-transform hover:scale-105 hover:bg-primary-500 active:scale-95 ${
+					className={`bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 flex h-8 cursor-pointer items-center justify-center rounded-xl shadow-md transition-transform hover:scale-105 active:scale-95 ${
 						artifact.preview_url ? 'w-8' : 'flex-1 gap-1.5 text-[11px] font-bold'
 					}`}>
 					<Download size={14} />

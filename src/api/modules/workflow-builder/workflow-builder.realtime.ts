@@ -65,7 +65,9 @@ export function subscribeToBuilderSession(
 	const channel = builderChannelName(workspaceId, sessionId);
 	const instance = echo.private(channel);
 
-	instance.listen(BUILDER_EVENTS.status, (payload) => handlers.onStatus(payload as TBuilderStatusEvent));
+	instance.listen(BUILDER_EVENTS.status, (payload) =>
+		handlers.onStatus(payload as TBuilderStatusEvent),
+	);
 
 	if (handlers.onDelta) {
 		const onDelta = handlers.onDelta;
@@ -73,11 +75,15 @@ export function subscribeToBuilderSession(
 	}
 	if (handlers.onToolCall) {
 		const onToolCall = handlers.onToolCall;
-		instance.listen(BUILDER_EVENTS.toolCall, (payload) => onToolCall(payload as TBuilderToolCallEvent));
+		instance.listen(BUILDER_EVENTS.toolCall, (payload) =>
+			onToolCall(payload as TBuilderToolCallEvent),
+		);
 	}
 	if (handlers.onToolResult) {
 		const onToolResult = handlers.onToolResult;
-		instance.listen(BUILDER_EVENTS.toolResult, (payload) => onToolResult(payload as TBuilderToolResultEvent));
+		instance.listen(BUILDER_EVENTS.toolResult, (payload) =>
+			onToolResult(payload as TBuilderToolResultEvent),
+		);
 	}
 	if (handlers.onDraft) {
 		const onDraft = handlers.onDraft;

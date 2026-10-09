@@ -22,9 +22,8 @@ export const WorkflowVersionService = {
 	 *  immutable version. */
 	publish: (ws: string, workflowId: string, payload?: TPublishWorkflowDto) =>
 		axiosClient
-			.post<TApiResponse<{ version: TWorkflowVersion; workflow: TWorkflow }>>(
-				E.publish(ws, workflowId),
-				payload,
-			)
+			.post<
+				TApiResponse<{ version: TWorkflowVersion; workflow: TWorkflow }>
+			>(E.publish(ws, workflowId), payload)
 			.then((r) => r.data.data),
 };

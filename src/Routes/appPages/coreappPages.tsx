@@ -68,17 +68,41 @@ const dashboardRoute: RouteObject = {
 /** List pages: each gets its own layout wrapper, rendered inside the core-app shell. */
 const listRoutes: RouteObject[] = (
 	[
-		[workspacePages.assistant.to, <AssistantLayout key='layout' />, <AssistantHomePage key='page' />],
-		[workspacePages.playbooks.to, <PlaybooksLayout key='layout' />, <WorkflowsListPage key='page' />],
+		[
+			workspacePages.assistant.to,
+			<AssistantLayout key='layout' />,
+			<AssistantHomePage key='page' />,
+		],
+		[
+			workspacePages.playbooks.to,
+			<PlaybooksLayout key='layout' />,
+			<WorkflowsListPage key='page' />,
+		],
 		[workspacePages.agents.to, <AgentsLayout key='layout' />, <AgentsListPage key='page' />],
-		[workspacePages.blueprints.to, <BlueprintsLayout key='layout' />, <BlueprintsListPage key='page' />],
+		[
+			workspacePages.blueprints.to,
+			<BlueprintsLayout key='layout' />,
+			<BlueprintsListPage key='page' />,
+		],
 		[workspacePages.skills.to, <SkillsLayout key='layout' />, <SkillsListPage key='page' />],
 		[workspacePages.apps.to, <AppsLayout key='layout' />, <AppsListPage key='page' />],
-		[workspacePages.knowledge.to, <KnowledgeLayout key='layout' />, <KnowledgeListPage key='page' />],
+		[
+			workspacePages.knowledge.to,
+			<KnowledgeLayout key='layout' />,
+			<KnowledgeListPage key='page' />,
+		],
 		[workspacePages.vault.to, <VaultLayout key='layout' />, <SecretsPage key='page' />],
-		[workspacePages.approvals.to, <ApprovalsLayout key='layout' />, <ApprovalsPage key='page' />],
+		[
+			workspacePages.approvals.to,
+			<ApprovalsLayout key='layout' />,
+			<ApprovalsPage key='page' />,
+		],
 		[workspacePages.trail.to, <TrailLayout key='layout' />, <TrailListPage key='page' />],
-		[workspacePages.artifacts.to, <ArtifactsLayout key='layout' />, <ArtifactsListPage key='page' />],
+		[
+			workspacePages.artifacts.to,
+			<ArtifactsLayout key='layout' />,
+			<ArtifactsListPage key='page' />,
+		],
 		[workspacePages.trash.to, <TrashLayout key='layout' />, <TrashPage key='page' />],
 	] as const
 ).map(([to, layout, page]) => ({

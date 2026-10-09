@@ -22,7 +22,8 @@ export const AgentSessionEndpoints = {
 	detail: (ws: string, agentId: string, id: string) => `${agent(ws, agentId)}/sessions/${id}`,
 	update: (ws: string, agentId: string, id: string) => `${agent(ws, agentId)}/sessions/${id}`,
 	delete: (ws: string, agentId: string, id: string) => `${agent(ws, agentId)}/sessions/${id}`,
-	messages: (ws: string, agentId: string, id: string) => `${agent(ws, agentId)}/sessions/${id}/messages`,
+	messages: (ws: string, agentId: string, id: string) =>
+		`${agent(ws, agentId)}/sessions/${id}/messages`,
 	subagentTasks: (ws: string, agentId: string, id: string) =>
 		`${agent(ws, agentId)}/sessions/${id}/subagent-tasks`,
 	sendMessage: (ws: string, agentId: string, id: string) =>
@@ -34,7 +35,8 @@ export const AgentSessionEndpoints = {
 
 export const AgentVersionEndpoints = {
 	list: (ws: string, agentId: string) => `${agent(ws, agentId)}/versions`,
-	detail: (ws: string, agentId: string, version: number) => `${agent(ws, agentId)}/versions/${version}`,
+	detail: (ws: string, agentId: string, version: number) =>
+		`${agent(ws, agentId)}/versions/${version}`,
 	restore: (ws: string, agentId: string, version: number) =>
 		`${agent(ws, agentId)}/versions/${version}/restore`,
 } as const;
@@ -42,8 +44,10 @@ export const AgentVersionEndpoints = {
 export const AgentToolBindingEndpoints = {
 	list: (ws: string, agentId: string) => `${agent(ws, agentId)}/tool-bindings`,
 	create: (ws: string, agentId: string) => `${agent(ws, agentId)}/tool-bindings`,
-	update: (ws: string, agentId: string, id: string) => `${agent(ws, agentId)}/tool-bindings/${id}`,
-	delete: (ws: string, agentId: string, id: string) => `${agent(ws, agentId)}/tool-bindings/${id}`,
+	update: (ws: string, agentId: string, id: string) =>
+		`${agent(ws, agentId)}/tool-bindings/${id}`,
+	delete: (ws: string, agentId: string, id: string) =>
+		`${agent(ws, agentId)}/tool-bindings/${id}`,
 } as const;
 
 export const AgentWorkflowToolEndpoints = {
@@ -59,14 +63,18 @@ export const AgentWorkflowToolEndpoints = {
 
 export const AgentSubagentEndpoints = {
 	list: (ws: string, agentId: string) => `${agent(ws, agentId)}/subagents`,
-	attach: (ws: string, agentId: string, subagentId: string) => `${agent(ws, agentId)}/subagents/${subagentId}`,
-	detach: (ws: string, agentId: string, subagentId: string) => `${agent(ws, agentId)}/subagents/${subagentId}`,
+	attach: (ws: string, agentId: string, subagentId: string) =>
+		`${agent(ws, agentId)}/subagents/${subagentId}`,
+	detach: (ws: string, agentId: string, subagentId: string) =>
+		`${agent(ws, agentId)}/subagents/${subagentId}`,
 } as const;
 
 export const AgentSkillAttachmentEndpoints = {
 	list: (ws: string, agentId: string) => `${agent(ws, agentId)}/skills`,
-	attach: (ws: string, agentId: string, skillId: string) => `${agent(ws, agentId)}/skills/${skillId}`,
-	detach: (ws: string, agentId: string, skillId: string) => `${agent(ws, agentId)}/skills/${skillId}`,
+	attach: (ws: string, agentId: string, skillId: string) =>
+		`${agent(ws, agentId)}/skills/${skillId}`,
+	detach: (ws: string, agentId: string, skillId: string) =>
+		`${agent(ws, agentId)}/skills/${skillId}`,
 } as const;
 
 export const AgentKnowledgeEndpoints = {
@@ -94,13 +102,15 @@ export const AgentMemoryEndpoints = {
 export const AgentEvalEndpoints = {
 	suites: (ws: string, agentId: string) => `${agent(ws, agentId)}/eval-suites`,
 	createSuite: (ws: string, agentId: string) => `${agent(ws, agentId)}/eval-suites`,
-	suite: (ws: string, agentId: string, suiteId: string) => `${agent(ws, agentId)}/eval-suites/${suiteId}`,
+	suite: (ws: string, agentId: string, suiteId: string) =>
+		`${agent(ws, agentId)}/eval-suites/${suiteId}`,
 	updateSuite: (ws: string, agentId: string, suiteId: string) =>
 		`${agent(ws, agentId)}/eval-suites/${suiteId}`,
 	deleteSuite: (ws: string, agentId: string, suiteId: string) =>
 		`${agent(ws, agentId)}/eval-suites/${suiteId}`,
 
-	cases: (ws: string, agentId: string, suiteId: string) => `${agent(ws, agentId)}/eval-suites/${suiteId}/cases`,
+	cases: (ws: string, agentId: string, suiteId: string) =>
+		`${agent(ws, agentId)}/eval-suites/${suiteId}/cases`,
 	createCase: (ws: string, agentId: string, suiteId: string) =>
 		`${agent(ws, agentId)}/eval-suites/${suiteId}/cases`,
 	updateCase: (ws: string, agentId: string, suiteId: string, caseId: string) =>
@@ -108,7 +118,8 @@ export const AgentEvalEndpoints = {
 	deleteCase: (ws: string, agentId: string, suiteId: string, caseId: string) =>
 		`${agent(ws, agentId)}/eval-suites/${suiteId}/cases/${caseId}`,
 
-	runs: (ws: string, agentId: string, suiteId: string) => `${agent(ws, agentId)}/eval-suites/${suiteId}/runs`,
+	runs: (ws: string, agentId: string, suiteId: string) =>
+		`${agent(ws, agentId)}/eval-suites/${suiteId}/runs`,
 	createRun: (ws: string, agentId: string, suiteId: string) =>
 		`${agent(ws, agentId)}/eval-suites/${suiteId}/runs`,
 	run: (ws: string, agentId: string, suiteId: string, runId: string) =>
@@ -121,19 +132,23 @@ export const AgentReflectionEndpoints = {
 
 	runs: (ws: string, agentId: string) => `${agent(ws, agentId)}/reflection-runs`,
 	createRun: (ws: string, agentId: string) => `${agent(ws, agentId)}/reflection-runs`,
-	run: (ws: string, agentId: string, runId: string) => `${agent(ws, agentId)}/reflection-runs/${runId}`,
+	run: (ws: string, agentId: string, runId: string) =>
+		`${agent(ws, agentId)}/reflection-runs/${runId}`,
 
 	list: (ws: string, agentId: string) => `${agent(ws, agentId)}/reflections`,
 	detail: (ws: string, agentId: string, id: string) => `${agent(ws, agentId)}/reflections/${id}`,
-	apply: (ws: string, agentId: string, id: string) => `${agent(ws, agentId)}/reflections/${id}/apply`,
-	dismiss: (ws: string, agentId: string, id: string) => `${agent(ws, agentId)}/reflections/${id}/dismiss`,
+	apply: (ws: string, agentId: string, id: string) =>
+		`${agent(ws, agentId)}/reflections/${id}/apply`,
+	dismiss: (ws: string, agentId: string, id: string) =>
+		`${agent(ws, agentId)}/reflections/${id}/dismiss`,
 } as const;
 
 export const AgentEvaluationEndpoints = {
 	settings: (ws: string, agentId: string) => `${agent(ws, agentId)}/evaluation-settings`,
 	updateSettings: (ws: string, agentId: string) => `${agent(ws, agentId)}/evaluation-settings`,
 
-	sessionEvaluations: (ws: string, agentId: string) => `${agent(ws, agentId)}/session-evaluations`,
+	sessionEvaluations: (ws: string, agentId: string) =>
+		`${agent(ws, agentId)}/session-evaluations`,
 	sessionEvaluation: (ws: string, agentId: string, id: string) =>
 		`${agent(ws, agentId)}/session-evaluations/${id}`,
 	runOnSession: (ws: string, agentId: string, sessionId: string) =>

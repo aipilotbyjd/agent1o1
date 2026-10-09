@@ -14,7 +14,6 @@ const ListSkeletonPart = ({ count = 6 }: { count?: number }) => {
 		<>
 			{Array.from({ length: count }).map((_, i) => (
 				<div
-					// eslint-disable-next-line react/no-array-index-key
 					key={i}
 					aria-hidden
 					className='border-border-main bg-bg-card flex flex-col gap-4 rounded-3xl border p-5'>
@@ -49,11 +48,7 @@ export const ListSkeletonRows = ({ count = 5 }: { count?: number }) => {
 	return (
 		<div className='border-border-main bg-bg-card divide-border-main divide-y overflow-hidden rounded-3xl border'>
 			{Array.from({ length: count }).map((_, i) => (
-				<div
-					// eslint-disable-next-line react/no-array-index-key
-					key={i}
-					aria-hidden
-					className='flex items-center gap-4 px-5 py-4'>
+				<div key={i} aria-hidden className='flex items-center gap-4 px-5 py-4'>
 					<Skeleton className='size-9 shrink-0' rounded='rounded-xl' />
 					<div className='flex min-w-0 grow flex-col gap-2'>
 						<Skeleton className='h-3.5 w-1/3' rounded='rounded-lg' />

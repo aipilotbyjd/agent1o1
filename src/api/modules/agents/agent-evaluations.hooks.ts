@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { TUpdateAgentEvaluationSettingsDto } from '@/types/agent.type';
-import { AgentEvaluationSettingsService, AgentSessionEvaluationService } from './agent-evaluations.service';
+import {
+	AgentEvaluationSettingsService,
+	AgentSessionEvaluationService,
+} from './agent-evaluations.service';
 import { agentEvaluationKeys } from './agents.keys';
 
 export const useAgentEvaluationSettings = (ws: string, agentId: string) =>
@@ -15,7 +18,8 @@ export const useUpdateAgentEvaluationSettings = (ws: string, agentId: string) =>
 	return useMutation({
 		mutationFn: (payload: TUpdateAgentEvaluationSettingsDto) =>
 			AgentEvaluationSettingsService.update(ws, agentId, payload),
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentEvaluationKeys.settings(ws, agentId) }),
+		onSuccess: () =>
+			qc.invalidateQueries({ queryKey: agentEvaluationKeys.settings(ws, agentId) }),
 		meta: { errorMessage: 'Failed to update evaluation settings' },
 	});
 };
@@ -41,8 +45,10 @@ export const useAgentSessionEvaluation = (ws: string, agentId: string, id: strin
 export const useRunAgentSessionEvaluation = (ws: string, agentId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (sessionId: string) => AgentSessionEvaluationService.runOnSession(ws, agentId, sessionId),
-		onSuccess: () => qc.invalidateQueries({ queryKey: ['agents', ws, agentId, 'session-evaluations'] }),
+		mutationFn: (sessionId: string) =>
+			AgentSessionEvaluationService.runOnSession(ws, agentId, sessionId),
+		onSuccess: () =>
+			qc.invalidateQueries({ queryKey: ['agents', ws, agentId, 'session-evaluations'] }),
 		meta: { errorMessage: 'Failed to evaluate session' },
 	});
 };

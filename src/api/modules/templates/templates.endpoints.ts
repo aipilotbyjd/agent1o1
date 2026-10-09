@@ -18,7 +18,8 @@ export const AgentTemplateEndpoints = {
 	update: (w: string, id: string) => `${ws(w)}/agent-templates/${id}`,
 	delete: (w: string, id: string) => `${ws(w)}/agent-templates/${id}`,
 	instantiate: (w: string, id: string) => `${ws(w)}/agent-templates/${id}/use`,
-	saveAgentAsTemplate: (w: string, agentId: string) => `${ws(w)}/agents/${agentId}/save-as-template`,
+	saveAgentAsTemplate: (w: string, agentId: string) =>
+		`${ws(w)}/agents/${agentId}/save-as-template`,
 } as const;
 
 export const TemplateCollectionEndpoints = {

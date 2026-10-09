@@ -65,7 +65,7 @@ const CustomNodesPanel = ({ workspaceId, onAdd }: Props) => {
 					<button
 						type='button'
 						onClick={() => setForm('new')}
-						className='flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold text-primary-600 transition hover:bg-zinc-50 dark:hover:bg-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-primary-400'>
+						className='text-primary-600 dark:text-primary-400 flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
 						<Plus size={13} />
 						Create a custom node
 					</button>
@@ -80,14 +80,14 @@ const CustomNodesPanel = ({ workspaceId, onAdd }: Props) => {
 			<div className='mb-2 flex items-start gap-2 rounded-xl border border-zinc-200 bg-zinc-50/60 px-3 py-2.5 text-[11px] leading-snug text-zinc-500 dark:border-white/[0.06] dark:bg-white/[0.02] dark:text-zinc-400'>
 				<Info size={13} className='mt-px shrink-0 text-zinc-400' />
 				<span>
-					Custom nodes can be placed and saved, but runs can’t execute them yet — a run stops
-					at the first one it reaches.
+					Custom nodes can be placed and saved, but runs can’t execute them yet — a run
+					stops at the first one it reaches.
 				</span>
 			</div>
 			<button
 				type='button'
 				onClick={() => setForm('new')}
-				className='mb-1 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-zinc-200 px-3 py-2 text-xs font-bold text-zinc-500 transition hover:border-primary-300 hover:bg-primary-50/60 hover:text-primary-600 dark:border-white/10 dark:text-zinc-400 dark:hover:border-primary-500/30 dark:hover:bg-primary-500/[0.07] dark:hover:text-primary-300'>
+				className='hover:border-primary-300 hover:bg-primary-50/60 hover:text-primary-600 dark:hover:border-primary-500/30 dark:hover:bg-primary-500/[0.07] dark:hover:text-primary-300 mb-1 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-zinc-200 px-3 py-2 text-xs font-bold text-zinc-500 transition dark:border-white/10 dark:text-zinc-400'>
 				<Plus size={13} />
 				New custom node
 			</button>

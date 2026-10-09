@@ -404,7 +404,9 @@ const ProfilePage = () => {
 										disabled={cancelEmailChange.isPending}
 										onClick={handleCancelEmailChange}
 										className='font-bold text-red-500 hover:underline disabled:opacity-60'>
-										{cancelEmailChange.isPending ? 'Cancelling...' : 'Cancel change'}
+										{cancelEmailChange.isPending
+											? 'Cancelling...'
+											: 'Cancel change'}
 									</button>
 								</div>
 							)}
@@ -423,7 +425,9 @@ const ProfilePage = () => {
 								disabled={isSwitching || workspaces.length === 0}
 								onChange={(e) => switchWorkspace(e.target.value)}
 								className={`${inputClass} appearance-none bg-none pr-11 disabled:cursor-not-allowed disabled:opacity-60`}>
-								{workspaces.length === 0 && <option value=''>{workspaceName}</option>}
+								{workspaces.length === 0 && (
+									<option value=''>{workspaceName}</option>
+								)}
 								{workspaces.map((ws) => (
 									<option key={ws.id} value={ws.id}>
 										{ws.name}

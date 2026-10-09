@@ -342,7 +342,7 @@ const UsagePage = () => {
 						{/* Credit-usage chart (last 30 days) */}
 						<div className='relative hidden pr-2 md:block'>
 							{hoveredPoint && (
-								<div className='border-zinc-200 pointer-events-none absolute -top-12 right-2 z-10 rounded-lg border bg-white p-2 text-[9px] font-bold shadow-md select-none dark:border-zinc-800 dark:bg-zinc-900'>
+								<div className='pointer-events-none absolute -top-12 right-2 z-10 rounded-lg border border-zinc-200 bg-white p-2 text-[9px] font-bold shadow-md select-none dark:border-zinc-800 dark:bg-zinc-900'>
 									<div className='text-[8px] text-zinc-400 uppercase'>
 										{new Date(hoveredPoint.date).toLocaleDateString(undefined, {
 											month: 'short',
@@ -355,7 +355,7 @@ const UsagePage = () => {
 								</div>
 							)}
 
-							<div className='border-zinc-200/45 relative rounded-xl border bg-zinc-50/50 p-3.5 dark:border-zinc-800/60 dark:bg-zinc-900/40'>
+							<div className='relative rounded-xl border border-zinc-200/45 bg-zinc-50/50 p-3.5 dark:border-zinc-800/60 dark:bg-zinc-900/40'>
 								{chart ? (
 									<svg
 										className='h-28 w-60 overflow-visible'
@@ -444,12 +444,16 @@ const UsagePage = () => {
 												y2={CHART_HEIGHT}
 												gradientUnits='userSpaceOnUse'>
 												<stop
-													style={{ stopColor: 'var(--color-primary-400)' }}
+													style={{
+														stopColor: 'var(--color-primary-400)',
+													}}
 													stopOpacity='0.3'
 												/>
 												<stop
 													offset='1'
-													style={{ stopColor: 'var(--color-primary-400)' }}
+													style={{
+														stopColor: 'var(--color-primary-400)',
+													}}
 													stopOpacity='0'
 												/>
 											</linearGradient>
@@ -460,10 +464,16 @@ const UsagePage = () => {
 												x2={CHART_WIDTH}
 												y2='0'
 												gradientUnits='userSpaceOnUse'>
-												<stop style={{ stopColor: 'var(--color-primary-400)' }} />
+												<stop
+													style={{
+														stopColor: 'var(--color-primary-400)',
+													}}
+												/>
 												<stop
 													offset='1'
-													style={{ stopColor: 'var(--color-primary-500)' }}
+													style={{
+														stopColor: 'var(--color-primary-500)',
+													}}
 												/>
 											</linearGradient>
 										</defs>
@@ -515,12 +525,12 @@ const UsagePage = () => {
 									'relative flex min-h-32 cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border bg-white p-5 text-left shadow-xs transition-all duration-300 dark:bg-zinc-950',
 									isSelected
 										? 'border-primary-500/80 ring-primary-500/15 dark:border-primary-400/80 shadow-md ring-2'
-										: 'hover:border-zinc-300/80 border-zinc-100 hover:shadow-sm dark:border-zinc-800 dark:hover:border-zinc-700/80',
+										: 'border-zinc-100 hover:border-zinc-300/80 hover:shadow-sm dark:border-zinc-800 dark:hover:border-zinc-700/80',
 								].join(' ')}>
 								<div className='flex w-full items-start justify-between'>
 									<div className='flex items-center gap-3.5'>
 										<div
-											className={`border-zinc-200/15 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border shadow-xs ${item.iconBg}`}>
+											className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-200/15 shadow-xs ${item.iconBg}`}>
 											<item.icon size={18} />
 										</div>
 										<div>
@@ -533,7 +543,7 @@ const UsagePage = () => {
 										</div>
 									</div>
 									<span
-										className={`border-zinc-200/15 rounded-full border px-2 py-0.5 text-[10px] font-bold ${item.iconBg}`}>
+										className={`rounded-full border border-zinc-200/15 px-2 py-0.5 text-[10px] font-bold ${item.iconBg}`}>
 										{categoryPct}%
 									</span>
 								</div>

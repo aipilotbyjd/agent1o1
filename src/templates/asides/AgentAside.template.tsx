@@ -39,7 +39,10 @@ import GlobalSearch from '@/templates/search/GlobalSearch.template';
 import { notify } from '@/api/core';
 import paths from '@/Routes/paths';
 
-const formatCredits = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
+const formatCredits = new Intl.NumberFormat('en', {
+	notation: 'compact',
+	maximumFractionDigits: 1,
+});
 
 /** A session is created untitled when the builder can't name it; the first
  *  message normally supplies the title. */
@@ -276,7 +279,11 @@ const AgentAsideTemplate = () => {
 							closeAside();
 						}}
 						disabled={!agentId}
-						title={agentId ? 'Runs, analytics, evals, grading and reflections' : 'Open an agent to see its insights'}
+						title={
+							agentId
+								? 'Runs, analytics, evals, grading and reflections'
+								: 'Open an agent to see its insights'
+						}
 						className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50/80 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-zinc-900 ${asideStatus ? '' : 'w-full justify-center'}`}>
 						<span className='relative shrink-0'>
 							<LineChart size={15} className='text-zinc-600 dark:text-zinc-400' />
@@ -449,7 +456,8 @@ const AgentAsideTemplate = () => {
 																session.created_at,
 														)}
 														{/* Another conversation handed this one its task. */}
-														{session.parent_session_id && ' · Subagent task'}
+														{session.parent_session_id &&
+															' · Subagent task'}
 													</p>
 												</button>
 											)}

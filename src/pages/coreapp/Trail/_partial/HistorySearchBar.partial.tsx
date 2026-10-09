@@ -37,19 +37,21 @@ const HistorySearchBar = ({
 	showFilters,
 	onToggleFilters,
 }: HistorySearchBarProps) => {
-	const statusLabel = TRAIL_STATUS_OPTIONS.find((option) => option.value === selectedStatus)?.label;
+	const statusLabel = TRAIL_STATUS_OPTIONS.find(
+		(option) => option.value === selectedStatus,
+	)?.label;
 	const noFilters = selectedType === 'All' && selectedStatus === 'all';
 	return (
 		<div className='flex flex-col gap-3.5 md:flex-row md:items-center'>
 			<div className='group relative flex-1'>
-				<Search className='absolute top-3.5 left-4 h-4.5 w-4.5 text-slate-400 transition-colors duration-200 group-focus-within:text-primary-500' />
+				<Search className='group-focus-within:text-primary-500 absolute top-3.5 left-4 h-4.5 w-4.5 text-slate-400 transition-colors duration-200' />
 				<input
 					type='search'
 					aria-label='Search history'
 					placeholder='Search by title, run type, or date...'
 					value={searchQuery}
 					onChange={(e) => onSearchChange(e.target.value)}
-					className='dark:placeholder:text-zinc-650 block h-12 w-full rounded-2xl border border-slate-200 bg-white/55 pr-4 pl-12 text-xs font-semibold text-slate-900 shadow-xs transition-all duration-200 outline-none placeholder:text-slate-400 focus:border-primary-500/80 focus:bg-white focus:ring-4 focus:ring-primary-500/10 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-100 dark:focus:border-primary-500 dark:focus:bg-zinc-950/60 dark:focus:ring-primary-500/15'
+					className='dark:placeholder:text-zinc-650 focus:border-primary-500/80 focus:ring-primary-500/10 dark:focus:border-primary-500 dark:focus:ring-primary-500/15 block h-12 w-full rounded-2xl border border-slate-200 bg-white/55 pr-4 pl-12 text-xs font-semibold text-slate-900 shadow-xs transition-all duration-200 outline-none placeholder:text-slate-400 focus:bg-white focus:ring-4 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-100 dark:focus:bg-zinc-950/60'
 				/>
 			</div>
 
@@ -58,11 +60,11 @@ const HistorySearchBar = ({
 				<div className='relative'>
 					<button
 						onClick={onToggleFilters}
-						className='dark:text-zinc-350 dark:hover:bg-zinc-800 flex h-12 cursor-pointer items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4.5 text-xs font-black text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900/60'>
+						className='dark:text-zinc-350 flex h-12 cursor-pointer items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4.5 text-xs font-black text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900/60 dark:hover:bg-zinc-800'>
 						<Filter size={14} className='text-slate-400' />
 						<span>Filters</span>
 						{selectedStatus !== 'all' && (
-							<span className='rounded-lg bg-primary-50 px-1.5 py-0.5 text-[10px] text-primary-600 dark:bg-primary-400/10 dark:text-primary-400'>
+							<span className='bg-primary-50 text-primary-600 dark:bg-primary-400/10 dark:text-primary-400 rounded-lg px-1.5 py-0.5 text-[10px]'>
 								{statusLabel}
 							</span>
 						)}
@@ -114,8 +116,8 @@ const HistorySearchBar = ({
 					onClick={onClearFilters}
 					className={`flex h-12 cursor-pointer items-center justify-center rounded-2xl px-5 text-xs font-black transition-all duration-300 ${
 						noFilters
-							? 'bg-linear-to-r from-primary-400 to-primary-400 text-primary-950 shadow-md shadow-primary-500/25 dark:shadow-none'
-							: 'dark:text-zinc-350 dark:hover:bg-zinc-800 border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900/60'
+							? 'from-primary-400 to-primary-400 text-primary-950 shadow-primary-500/25 bg-linear-to-r shadow-md dark:shadow-none'
+							: 'dark:text-zinc-350 border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900/60 dark:hover:bg-zinc-800'
 					}`}>
 					All
 				</button>

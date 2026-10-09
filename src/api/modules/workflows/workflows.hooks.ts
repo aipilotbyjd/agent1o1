@@ -1,9 +1,18 @@
 import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createResource } from '@/api/core';
-import type { TSyncWorkflowTagsDto, TPinWorkflowNodeDto, TStartRunDto } from '@/types/workflow.type';
+import type {
+	TSyncWorkflowTagsDto,
+	TPinWorkflowNodeDto,
+	TStartRunDto,
+} from '@/types/workflow.type';
 import { RunService } from '@/api/modules/runs';
-import { useTriggers, useCreateTrigger, useUpdateTrigger, useDeleteTrigger } from '@/api/modules/triggers';
+import {
+	useTriggers,
+	useCreateTrigger,
+	useUpdateTrigger,
+	useDeleteTrigger,
+} from '@/api/modules/triggers';
 import type { TTriggerMechanism } from '@/types/catalog.type';
 import type { TTriggerTargetType } from '@/types/trigger.type';
 import { WorkflowService } from './workflows.service';
@@ -134,7 +143,9 @@ export const useActivateWorkflow = (ws: string) => {
 export const useDeactivateWorkflow = (_ws: string) =>
 	useMutation({
 		mutationFn: (_id: string): Promise<never> =>
-			Promise.reject(new Error('Deactivating a workflow is not supported by this backend yet')),
+			Promise.reject(
+				new Error('Deactivating a workflow is not supported by this backend yet'),
+			),
 		meta: { errorMessage: 'Deactivating a workflow is not supported yet' },
 	});
 
@@ -174,7 +185,8 @@ export const useWorkflowTrigger = (ws: string, workflowId: string) => {
 	const data = useMemo(
 		() =>
 			(query.data ?? []).filter(
-				(t) => t.target_type === WORKFLOW_TARGET && String(t.target_id) === String(workflowId),
+				(t) =>
+					t.target_type === WORKFLOW_TARGET && String(t.target_id) === String(workflowId),
 			),
 		[query.data, workflowId],
 	);
@@ -273,8 +285,13 @@ export type TLegacyContract = {
 	created_at: TIsoDate;
 };
 
-const useMissingCollection = <T,>() =>
-	useQuery<T[]>({ queryKey: ['unsupported'], queryFn: () => Promise.resolve([]), enabled: false, initialData: [] });
+const useMissingCollection = <T>() =>
+	useQuery<T[]>({
+		queryKey: ['unsupported'],
+		queryFn: () => Promise.resolve([]),
+		enabled: false,
+		initialData: [],
+	});
 
 /** Writes with no counterpart: reject with the reason. */
 const useMissingMutation = (what: string) =>

@@ -5,7 +5,11 @@ import type {
 	TCreateAgentEvalCaseDto,
 	TUpdateAgentEvalCaseDto,
 } from '@/types/agent.type';
-import { AgentEvalSuiteService, AgentEvalCaseService, AgentEvalRunService } from './agent-evals.service';
+import {
+	AgentEvalSuiteService,
+	AgentEvalCaseService,
+	AgentEvalRunService,
+} from './agent-evals.service';
 import { agentEvalKeys } from './agents.keys';
 
 // ─── Suites ───────────────────────────────────────────────────
@@ -27,7 +31,8 @@ export const useAgentEvalSuite = (ws: string, agentId: string, suiteId: string) 
 export const useCreateAgentEvalSuite = (ws: string, agentId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (payload: TCreateAgentEvalSuiteDto) => AgentEvalSuiteService.create(ws, agentId, payload),
+		mutationFn: (payload: TCreateAgentEvalSuiteDto) =>
+			AgentEvalSuiteService.create(ws, agentId, payload),
 		onSuccess: () => qc.invalidateQueries({ queryKey: agentEvalKeys.suites(ws, agentId) }),
 		meta: { errorMessage: 'Failed to create eval suite' },
 	});
@@ -66,7 +71,8 @@ export const useCreateAgentEvalCase = (ws: string, agentId: string, suiteId: str
 	return useMutation({
 		mutationFn: (payload: TCreateAgentEvalCaseDto) =>
 			AgentEvalCaseService.create(ws, agentId, suiteId, payload),
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentEvalKeys.cases(ws, agentId, suiteId) }),
+		onSuccess: () =>
+			qc.invalidateQueries({ queryKey: agentEvalKeys.cases(ws, agentId, suiteId) }),
 		meta: { errorMessage: 'Failed to create eval case' },
 	});
 };
@@ -99,7 +105,8 @@ export const useUpdateAgentEvalCase = (ws: string, agentId: string, suiteId: str
 	return useMutation({
 		mutationFn: ({ caseId, body }: { caseId: string; body: TUpdateAgentEvalCaseDto }) =>
 			AgentEvalCaseService.update(ws, agentId, suiteId, caseId, body),
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentEvalKeys.cases(ws, agentId, suiteId) }),
+		onSuccess: () =>
+			qc.invalidateQueries({ queryKey: agentEvalKeys.cases(ws, agentId, suiteId) }),
 		meta: { errorMessage: 'Failed to update eval case' },
 	});
 };
@@ -108,7 +115,8 @@ export const useDeleteAgentEvalCase = (ws: string, agentId: string, suiteId: str
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (caseId: string) => AgentEvalCaseService.remove(ws, agentId, suiteId, caseId),
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentEvalKeys.cases(ws, agentId, suiteId) }),
+		onSuccess: () =>
+			qc.invalidateQueries({ queryKey: agentEvalKeys.cases(ws, agentId, suiteId) }),
 		meta: { errorMessage: 'Failed to delete eval case' },
 	});
 };
@@ -133,7 +141,8 @@ export const useRunAgentEvalSuite = (ws: string, agentId: string, suiteId: strin
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: () => AgentEvalRunService.create(ws, agentId, suiteId),
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentEvalKeys.runs(ws, agentId, suiteId) }),
+		onSuccess: () =>
+			qc.invalidateQueries({ queryKey: agentEvalKeys.runs(ws, agentId, suiteId) }),
 		meta: { errorMessage: 'Failed to run eval suite' },
 	});
 };

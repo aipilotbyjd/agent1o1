@@ -1,18 +1,27 @@
 import { axiosClient } from '@/api/client';
 import { unwrapKey } from '@/api/core';
 import type { TApiResponse } from '@/api/core';
-import type { TReflectionSettings, TUpdateReflectionSettingsDto, TReflectionRun, TReflection } from '@/types/agent.type';
+import type {
+	TReflectionSettings,
+	TUpdateReflectionSettingsDto,
+	TReflectionRun,
+	TReflection,
+} from '@/types/agent.type';
 import { AgentReflectionEndpoints as E } from './agents.endpoints';
 
 export const AgentReflectionSettingsService = {
 	show: (ws: string, agentId: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ settings: TReflectionSettings }>>(E.settings(ws, agentId), { signal })
+			.get<
+				TApiResponse<{ settings: TReflectionSettings }>
+			>(E.settings(ws, agentId), { signal })
 			.then(unwrapKey<TReflectionSettings>('settings')),
 
 	update: (ws: string, agentId: string, payload: TUpdateReflectionSettingsDto) =>
 		axiosClient
-			.patch<TApiResponse<{ settings: TReflectionSettings }>>(E.updateSettings(ws, agentId), payload)
+			.patch<
+				TApiResponse<{ settings: TReflectionSettings }>
+			>(E.updateSettings(ws, agentId), payload)
 			.then(unwrapKey<TReflectionSettings>('settings')),
 };
 
@@ -37,7 +46,9 @@ export const AgentReflectionRunService = {
 export const AgentReflectionService = {
 	list: (ws: string, agentId: string, params?: { status?: string }, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ reflections: TReflection[] }>>(E.list(ws, agentId), { params, signal })
+			.get<
+				TApiResponse<{ reflections: TReflection[] }>
+			>(E.list(ws, agentId), { params, signal })
 			.then(unwrapKey<TReflection[]>('reflections')),
 
 	detail: (ws: string, agentId: string, id: string, signal?: AbortSignal) =>

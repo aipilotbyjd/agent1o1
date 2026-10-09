@@ -42,7 +42,8 @@ export const useWorkflowTemplate = (ws: string, id: string) =>
 export const useCreateWorkflowTemplate = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (payload: TCreateWorkflowTemplateDto) => WorkflowTemplateService.create(ws, payload),
+		mutationFn: (payload: TCreateWorkflowTemplateDto) =>
+			WorkflowTemplateService.create(ws, payload),
 		onSuccess: () => qc.invalidateQueries({ queryKey: workflowTemplateKeys.lists(ws) }),
 		meta: { errorMessage: 'Failed to create workflow template' },
 	});
@@ -80,8 +81,13 @@ export const useUseWorkflowTemplate = (ws: string) => {
 export const useSaveWorkflowAsTemplate = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: ({ workflowId, body }: { workflowId: string; body?: TSaveWorkflowAsTemplateDto }) =>
-			WorkflowTemplateService.saveWorkflowAsTemplate(ws, workflowId, body),
+		mutationFn: ({
+			workflowId,
+			body,
+		}: {
+			workflowId: string;
+			body?: TSaveWorkflowAsTemplateDto;
+		}) => WorkflowTemplateService.saveWorkflowAsTemplate(ws, workflowId, body),
 		onSuccess: () => qc.invalidateQueries({ queryKey: workflowTemplateKeys.lists(ws) }),
 		meta: { errorMessage: 'Failed to save workflow as template' },
 	});
@@ -170,7 +176,8 @@ export const useTemplateCollection = (ws: string, id: string) =>
 export const useCreateTemplateCollection = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (payload: TCreateTemplateCollectionDto) => TemplateCollectionService.create(ws, payload),
+		mutationFn: (payload: TCreateTemplateCollectionDto) =>
+			TemplateCollectionService.create(ws, payload),
 		onSuccess: () => qc.invalidateQueries({ queryKey: templateCollectionKeys.lists(ws) }),
 		meta: { errorMessage: 'Failed to create collection' },
 	});

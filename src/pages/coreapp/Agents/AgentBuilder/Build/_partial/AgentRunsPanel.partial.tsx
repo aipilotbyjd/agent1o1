@@ -76,7 +76,8 @@ const RunRow = ({ ws, run }: { ws: string; run: TRun }) => {
 						</span>
 					</div>
 					<span className='text-[9px] font-semibold text-zinc-400 capitalize dark:text-zinc-600'>
-						{run.trigger_type.replace(/_/g, ' ')} · {new Date(run.created_at).toLocaleString()}
+						{run.trigger_type.replace(/_/g, ' ')} ·{' '}
+						{new Date(run.created_at).toLocaleString()}
 					</span>
 				</div>
 				<div className='flex shrink-0 flex-col items-end'>

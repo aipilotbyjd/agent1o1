@@ -20,7 +20,9 @@ export const AgentEvalSuiteService = {
 
 	detail: (ws: string, agentId: string, suiteId: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ suite: TAgentEvalSuite }>>(E.suite(ws, agentId, suiteId), { signal })
+			.get<
+				TApiResponse<{ suite: TAgentEvalSuite }>
+			>(E.suite(ws, agentId, suiteId), { signal })
 			.then(unwrapKey<TAgentEvalSuite>('suite')),
 
 	create: (ws: string, agentId: string, payload: TCreateAgentEvalSuiteDto) =>
@@ -30,7 +32,9 @@ export const AgentEvalSuiteService = {
 
 	update: (ws: string, agentId: string, suiteId: string, payload: TUpdateAgentEvalSuiteDto) =>
 		axiosClient
-			.patch<TApiResponse<{ suite: TAgentEvalSuite }>>(E.updateSuite(ws, agentId, suiteId), payload)
+			.patch<
+				TApiResponse<{ suite: TAgentEvalSuite }>
+			>(E.updateSuite(ws, agentId, suiteId), payload)
 			.then(unwrapKey<TAgentEvalSuite>('suite')),
 
 	remove: (ws: string, agentId: string, suiteId: string) =>
@@ -40,12 +44,16 @@ export const AgentEvalSuiteService = {
 export const AgentEvalCaseService = {
 	list: (ws: string, agentId: string, suiteId: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ cases: TAgentEvalCase[] }>>(E.cases(ws, agentId, suiteId), { signal })
+			.get<
+				TApiResponse<{ cases: TAgentEvalCase[] }>
+			>(E.cases(ws, agentId, suiteId), { signal })
 			.then(unwrapKey<TAgentEvalCase[]>('cases')),
 
 	create: (ws: string, agentId: string, suiteId: string, payload: TCreateAgentEvalCaseDto) =>
 		axiosClient
-			.post<TApiResponse<{ case: TAgentEvalCase }>>(E.createCase(ws, agentId, suiteId), payload)
+			.post<
+				TApiResponse<{ case: TAgentEvalCase }>
+			>(E.createCase(ws, agentId, suiteId), payload)
 			.then(unwrapKey<TAgentEvalCase>('case')),
 
 	update: (
@@ -56,7 +64,9 @@ export const AgentEvalCaseService = {
 		payload: TUpdateAgentEvalCaseDto,
 	) =>
 		axiosClient
-			.patch<TApiResponse<{ case: TAgentEvalCase }>>(E.updateCase(ws, agentId, suiteId, caseId), payload)
+			.patch<
+				TApiResponse<{ case: TAgentEvalCase }>
+			>(E.updateCase(ws, agentId, suiteId, caseId), payload)
 			.then(unwrapKey<TAgentEvalCase>('case')),
 
 	remove: (ws: string, agentId: string, suiteId: string, caseId: string) =>
@@ -71,7 +81,9 @@ export const AgentEvalRunService = {
 
 	detail: (ws: string, agentId: string, suiteId: string, runId: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ run: TAgentEvalRun }>>(E.run(ws, agentId, suiteId, runId), { signal })
+			.get<
+				TApiResponse<{ run: TAgentEvalRun }>
+			>(E.run(ws, agentId, suiteId, runId), { signal })
 			.then(unwrapKey<TAgentEvalRun>('run')),
 
 	/** Actually runs the agent against every case in the suite. */

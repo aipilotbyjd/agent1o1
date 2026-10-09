@@ -1,7 +1,10 @@
 import { axiosClient } from '@/api/client';
 import { unwrapKey } from '@/api/core';
 import type { TApiResponse } from '@/api/core';
-import type { TNotificationPreference, TUpsertNotificationPreferenceDto } from '@/types/notification.type';
+import type {
+	TNotificationPreference,
+	TUpsertNotificationPreferenceDto,
+} from '@/types/notification.type';
 import { NotificationPreferenceEndpoints as E } from './notification-preferences.endpoints';
 
 export const NotificationPreferenceService = {

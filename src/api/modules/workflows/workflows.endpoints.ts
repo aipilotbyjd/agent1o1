@@ -14,7 +14,8 @@ export const WorkflowEndpoints = {
 	syncTags: (ws: string, id: string) => `${workflow(ws, id)}/tags`,
 
 	pinNode: (ws: string, id: string, nodeId: string) => `${workflow(ws, id)}/nodes/${nodeId}/pin`,
-	unpinNode: (ws: string, id: string, nodeId: string) => `${workflow(ws, id)}/nodes/${nodeId}/pin`,
+	unpinNode: (ws: string, id: string, nodeId: string) =>
+		`${workflow(ws, id)}/nodes/${nodeId}/pin`,
 
 	favorite: (ws: string, id: string) => `${workflow(ws, id)}/favorite`,
 } as const;

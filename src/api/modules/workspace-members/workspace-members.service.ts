@@ -18,11 +18,14 @@ export const WorkspaceMemberService = {
 	updateRole: (ws: string, userId: string, payload: TUpdateMemberRoleDto) =>
 		axiosClient.patch(E.updateRole(ws, userId), payload).then(() => undefined),
 
-	remove: (ws: string, userId: string) => axiosClient.delete(E.remove(ws, userId)).then(() => undefined),
+	remove: (ws: string, userId: string) =>
+		axiosClient.delete(E.remove(ws, userId)).then(() => undefined),
 
 	invitations: (ws: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ invitations: TWorkspaceInvitation[] }>>(E.invitations(ws), { signal })
+			.get<
+				TApiResponse<{ invitations: TWorkspaceInvitation[] }>
+			>(E.invitations(ws), { signal })
 			.then(unwrapKey<TWorkspaceInvitation[]>('invitations')),
 
 	invite: (ws: string, payload: TInviteMemberDto) =>

@@ -1,7 +1,11 @@
 import { axiosClient } from '@/api/client';
 import { unwrapKey } from '@/api/core';
 import type { TApiResponse } from '@/api/core';
-import type { TAgentMemory, TCreateAgentMemoryDto, TUpdateAgentMemoryDto } from '@/types/agent.type';
+import type {
+	TAgentMemory,
+	TCreateAgentMemoryDto,
+	TUpdateAgentMemoryDto,
+} from '@/types/agent.type';
 import { AgentMemoryEndpoints as E } from './agents.endpoints';
 
 export const AgentMemoryService = {

@@ -86,10 +86,12 @@ export const useWorkflowShellStore = create<TWorkflowShellState>((set) => ({
 		},
 	],
 	addWorkspace: (ws) => set((state) => ({ workspaces: [...state.workspaces, ws] })),
-	updateWorkspace: (id, name) => set((state) => ({
-		workspaces: state.workspaces.map((ws) => ws.id === id ? { ...ws, name } : ws)
-	})),
-	deleteWorkspace: (id) => set((state) => ({
-		workspaces: state.workspaces.filter((ws) => ws.id !== id)
-	})),
+	updateWorkspace: (id, name) =>
+		set((state) => ({
+			workspaces: state.workspaces.map((ws) => (ws.id === id ? { ...ws, name } : ws)),
+		})),
+	deleteWorkspace: (id) =>
+		set((state) => ({
+			workspaces: state.workspaces.filter((ws) => ws.id !== id),
+		})),
 }));

@@ -10,12 +10,20 @@
 export type TReferralStatus = 'pending' | 'verified' | 'activated' | 'converted' | 'rejected';
 
 export type TReferralTrigger =
-	'signup_verified' | 'activated' | 'first_payment' | 'repeat_payment' | 'milestone' | 'manual';
+	| 'signup_verified'
+	| 'activated'
+	| 'first_payment'
+	| 'repeat_payment'
+	| 'milestone'
+	| 'manual';
 
 export type TReferralRecipient = 'referrer' | 'referee';
 
 export type TReferralRewardType =
-	'credits' | 'plan_time' | 'stripe_balance_credit' | 'trial_extension';
+	| 'credits'
+	| 'plan_time'
+	| 'stripe_balance_credit'
+	| 'trial_extension';
 
 export type TReferralRewardStatus = 'awaiting_approval' | 'pending' | 'granted' | 'revoked';
 

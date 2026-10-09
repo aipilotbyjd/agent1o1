@@ -9,7 +9,8 @@ export const RunEndpoints = {
 	retry: (ws: string, id: string) => `${run(ws, id)}/retry`,
 
 	nodeRuns: (ws: string, runId: string) => `${run(ws, runId)}/node-runs`,
-	nodeRun: (ws: string, runId: string, nodeRunId: string) => `${run(ws, runId)}/node-runs/${nodeRunId}`,
+	nodeRun: (ws: string, runId: string, nodeRunId: string) =>
+		`${run(ws, runId)}/node-runs/${nodeRunId}`,
 
 	decideApproval: (ws: string, runId: string, approvalId: string) =>
 		`${run(ws, runId)}/approvals/${approvalId}/decide`,

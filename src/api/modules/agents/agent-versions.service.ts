@@ -13,13 +13,17 @@ export const AgentVersionService = {
 
 	detail: (ws: string, agentId: string, version: number, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ version: TAgentVersion }>>(E.detail(ws, agentId, version), { signal })
+			.get<
+				TApiResponse<{ version: TAgentVersion }>
+			>(E.detail(ws, agentId, version), { signal })
 			.then(unwrapKey<TAgentVersion>('version')),
 
 	/** Rolls forward: restoring produces a new version rather than deleting
 	 *  the ones in between. */
 	restore: (ws: string, agentId: string, version: number) =>
 		axiosClient
-			.post<TApiResponse<{ agent: TAgent; version: TAgentVersion }>>(E.restore(ws, agentId, version))
+			.post<
+				TApiResponse<{ agent: TAgent; version: TAgentVersion }>
+			>(E.restore(ws, agentId, version))
 			.then((r) => r.data.data),
 };

@@ -142,14 +142,17 @@ export const useAgentTriggers = (ws: string, agentId: string) => {
 
 export const useCreateAgentTrigger = (ws: string, agentId: string) => {
 	const m = useCreateTrigger(ws);
-	const inject = (body: Omit<TCreateTriggerDto, 'target_type' | 'target_id'>): TCreateTriggerDto => ({
+	const inject = (
+		body: Omit<TCreateTriggerDto, 'target_type' | 'target_id'>,
+	): TCreateTriggerDto => ({
 		...body,
 		target_type: AGENT_MORPH,
 		target_id: agentId,
 	});
 	return {
 		...m,
-		mutate: (body: Omit<TCreateTriggerDto, 'target_type' | 'target_id'>) => m.mutate(inject(body)),
+		mutate: (body: Omit<TCreateTriggerDto, 'target_type' | 'target_id'>) =>
+			m.mutate(inject(body)),
 		mutateAsync: (body: Omit<TCreateTriggerDto, 'target_type' | 'target_id'>) =>
 			m.mutateAsync(inject(body)),
 	};
@@ -211,7 +214,10 @@ export const useAgentAnalytics = (ws: string, agentId: string) => {
 			by_source[src] = (by_source[src] ?? 0) + 1;
 		});
 
-		const days = new Map<string, { day: string; runs: number; tokens: number; failed: number }>();
+		const days = new Map<
+			string,
+			{ day: string; runs: number; tokens: number; failed: number }
+		>();
 		runs.forEach((r) => {
 			if (!r.started_at) return;
 			const day = r.started_at.slice(0, 10);

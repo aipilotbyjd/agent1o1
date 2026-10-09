@@ -32,7 +32,7 @@ const NodeCommentsPanel = ({
 				className='relative flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-white/[0.08] dark:hover:text-zinc-200'>
 				<MessageSquare size={13} />
 				{comments.length > 0 && (
-					<span className='absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary-400 text-[8px] font-bold text-primary-950'>
+					<span className='bg-primary-400 text-primary-950 absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[8px] font-bold'>
 						{comments.length}
 					</span>
 				)}
@@ -58,7 +58,7 @@ const NodeCommentsPanel = ({
 							<div className='divide-y divide-zinc-100 dark:divide-zinc-800'>
 								{comments.map((comment) => (
 									<div key={comment.id} className='flex items-start gap-2 p-3'>
-										<div className='flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'>
+										<div className='bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold'>
 											{comment.author?.slice(0, 1).toUpperCase() ?? 'U'}
 										</div>
 										<div className='min-w-0 flex-1'>
@@ -100,14 +100,14 @@ const NodeCommentsPanel = ({
 									if (e.key === 'Escape') setOpen(false);
 								}}
 								placeholder='Add a comment…'
-								className='flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1.5 text-xs text-zinc-700 outline-none placeholder:text-zinc-400 focus:border-primary-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200'
+								className='focus:border-primary-400 flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1.5 text-xs text-zinc-700 outline-none placeholder:text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200'
 							/>
 							<button
 								aria-label='Send'
 								type='button'
 								onClick={submit}
 								disabled={!text.trim()}
-								className='flex h-7 w-7 items-center justify-center rounded-lg bg-primary-400 text-primary-950 hover:bg-primary-500 disabled:opacity-40'>
+								className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex h-7 w-7 items-center justify-center rounded-lg disabled:opacity-40'>
 								<Send size={11} />
 							</button>
 						</div>

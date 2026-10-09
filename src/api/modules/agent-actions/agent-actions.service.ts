@@ -133,10 +133,9 @@ export const AgentPlanService = {
 		payload?: TApproveAgentPlanDto,
 	) =>
 		axiosClient
-			.post<TApiResponse<{ plan: TAgentPlan }>>(
-				P.approve(ws, agentId, sessionId, planId),
-				payload ?? {},
-			)
+			.post<
+				TApiResponse<{ plan: TAgentPlan }>
+			>(P.approve(ws, agentId, sessionId, planId), payload ?? {})
 			.then(unwrapKey<TAgentPlan>('plan')),
 
 	reject: (
@@ -147,10 +146,9 @@ export const AgentPlanService = {
 		payload?: TRejectAgentPlanDto,
 	) =>
 		axiosClient
-			.post<TApiResponse<{ plan: TAgentPlan }>>(
-				P.reject(ws, agentId, sessionId, planId),
-				payload ?? {},
-			)
+			.post<
+				TApiResponse<{ plan: TAgentPlan }>
+			>(P.reject(ws, agentId, sessionId, planId), payload ?? {})
 			.then(unwrapKey<TAgentPlan>('plan')),
 };
 

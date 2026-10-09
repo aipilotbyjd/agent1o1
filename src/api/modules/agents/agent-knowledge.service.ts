@@ -7,7 +7,10 @@ import type {
 	TUpdateAgentKnowledgeDto,
 	TAgentKnowledgeSources,
 } from '@/types/agent.type';
-import { AgentKnowledgeEndpoints as K, AgentKnowledgeSourceEndpoints as S } from './agents.endpoints';
+import {
+	AgentKnowledgeEndpoints as K,
+	AgentKnowledgeSourceEndpoints as S,
+} from './agents.endpoints';
 
 export const AgentKnowledgeService = {
 	list: (ws: string, agentId: string, signal?: AbortSignal) =>

@@ -17,7 +17,9 @@ export const WorkspaceProvider = ({ children }: { children?: ReactNode }) => {
 
 	const activeWorkspaceId = user?.current_workspace_id ?? '';
 	const activeWorkspace =
-		user?.current_workspace ?? workspaces?.find((item) => item.id === activeWorkspaceId) ?? null;
+		user?.current_workspace ??
+		workspaces?.find((item) => item.id === activeWorkspaceId) ??
+		null;
 
 	const switchWorkspace = useCallback(
 		async (id: string) => {
@@ -50,6 +52,8 @@ export const WorkspaceProvider = ({ children }: { children?: ReactNode }) => {
 	);
 
 	return (
-		<WorkspaceContext.Provider value={value}>{children ?? <Outlet />}</WorkspaceContext.Provider>
+		<WorkspaceContext.Provider value={value}>
+			{children ?? <Outlet />}
+		</WorkspaceContext.Provider>
 	);
 };
