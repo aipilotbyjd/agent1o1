@@ -41,7 +41,7 @@ import useDarkMode from '@/hooks/useDarkMode';
 import { useCreateWorkflowVersion } from '@/api/modules/workflows';
 import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
 import { ApiError, notify } from '@/api/core';
-import { persistWorkflowDraft } from '../../_helper/persistDraft.helper';
+import { usePersistWorkflowDraft } from '../../_hooks/usePersistWorkflowDraft.hook';
 import { useRunWorkflow } from '../../_hooks/useRunWorkflow.hook';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import pages from '@/Routes/pages';
@@ -366,6 +366,7 @@ const SaveStatusBadge = ({
 };
 
 const Topbar = () => {
+	const persistWorkflowDraft = usePersistWorkflowDraft();
 	const { state, dispatch } = useWorkflowEditor();
 	const { isDarkTheme, setDarkModeStatus } = useDarkMode();
 	const { runWorkflow, stopRun } = useRunWorkflow();
@@ -468,6 +469,13 @@ const Topbar = () => {
 				nodes: state.nodes,
 				edges: state.edges,
 			});
+		} catch (error) {
+			notify.error(ApiError.is(error) ? error.message : 'Could not save the workflow');
+			dispatch({ type: 'SET_SAVE_STATE', savingState: 'error' });
+			publishingRef.current = false;
+			return;
+		}
+		try {
 			const data = await saveVersion.mutateAsync({ workflowId: state.workflow.apiId });
 			const current = stateRef.current;
 			const changed =
@@ -484,8 +492,10 @@ const Topbar = () => {
 				},
 			});
 		} catch (error) {
-			notify.error(ApiError.is(error) ? error.message : 'Could not save the workflow');
-			dispatch({ type: 'SET_SAVE_STATE', savingState: 'error' });
+			notify.error(ApiError.is(error) ? error.message : 'Could not publish the workflow');
+			const current = stateRef.current;
+			const changed = current.nodes !== draft.nodes || current.edges !== draft.edges;
+			dispatch({ type: 'SET_SAVE_STATE', savingState: changed ? 'dirty' : 'saved' });
 		} finally {
 			publishingRef.current = false;
 		}

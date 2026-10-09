@@ -3,10 +3,11 @@ import { useWorkflow, WorkflowService, WorkflowVersionService } from '@/api/modu
 import { RunService } from '@/api/modules/runs';
 import { useConfirm } from '@/context/confirm';
 import type { TNodeRunDetail, TRun, TRunStatus } from '@/types/run.type';
+import type { TWorkflow } from '@/types/workflow.type';
 import { createId } from '../_context/WorkflowEditorStore.context';
 import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
 import { getRunOrder } from '../_helper/runGraph.helper';
-import { persistWorkflowDraft } from '../_helper/persistDraft.helper';
+import { usePersistWorkflowDraft } from './usePersistWorkflowDraft.hook';
 import {
 	buildRuntimeContext,
 	executeNode,
@@ -18,13 +19,15 @@ import {
 import { getNodeDefinition } from '../_helper/nodeCatalog.constants';
 import type { TNodeRunRecord, TRunRecord } from '../_types/run.type';
 import type { TNodeRunStatus } from '../_types/node.type';
-import { notify } from '@/api/core/notify';
+import { messageFromError, notify } from '@/api/core/notify';
+import { useCredentialResolver } from './useCredentialResolver.hook';
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /** Poll quickly during active work, then less often for approval/callback waits. */
 const POLL_INTERVAL_MS = 2000;
 const WAITING_POLL_INTERVAL_MS = 10000;
+const MAX_CONSECUTIVE_POLL_FAILURES = 5;
 
 /** How long a breakpoint waits for a manual step before auto-continuing. */
 const BREAKPOINT_TIMEOUT_MS = 60_000;
@@ -65,6 +68,8 @@ const useRunWorkflowController = () => {
 	// Set once the user has agreed that Run may publish the draft.
 	const publishConfirmed = useRef(false);
 	const { confirm } = useConfirm();
+	const { isMissing: isCredentialMissing } = useCredentialResolver();
+	const persistWorkflowDraft = usePersistWorkflowDraft();
 	const stepResolveRef = useRef<(() => void) | null>(null);
 
 	const ws = state.workflow.workspaceId;
@@ -183,6 +188,7 @@ const useRunWorkflowController = () => {
 		let run = initialRun;
 		let nodeRuns: TNodeRunDetail[] = [];
 		let attempts = 0;
+		let failures = 0;
 		do {
 			if (attempts > 0) {
 				await wait(
@@ -195,6 +201,7 @@ const useRunWorkflowController = () => {
 			try {
 				run = await RunService.detail(ws, run.id);
 				nodeRuns = await RunService.nodeRuns(ws, run.id);
+				failures = 0;
 				for (const nodeRun of nodeRuns) {
 					applyNodeResult(
 						nodeRun.key,
@@ -205,12 +212,15 @@ const useRunWorkflowController = () => {
 						nodeRun.input,
 					);
 				}
-			} catch (error) {
-				console.error('Error polling run:', error);
+			} catch {
+				failures += 1;
+				if (failures >= MAX_CONSECUTIVE_POLL_FAILURES) {
+					return { run, nodeRuns, lostContact: true };
+				}
 			}
 			attempts += 1;
 		} while (ACTIVE_RUN_STATUSES.has(run.status) && !stopped.current);
-		return { run, nodeRuns };
+		return { run, nodeRuns, lostContact: false };
 	};
 
 	/**
@@ -229,6 +239,13 @@ const useRunWorkflowController = () => {
 			});
 
 			const result = await runViaPolling(ws, run);
+			if (result.lostContact) {
+				notify.error(
+					'Lost contact with the server while the run was in progress. It may still be running — check Run History.',
+				);
+				dispatch({ type: 'RUN_FINISH', status: 'error' });
+				return;
+			}
 			await finishRemoteRun(ws, result.run, result.nodeRuns);
 		} catch (error) {
 			const msg = error instanceof Error ? error.message : 'Failed to start run';
@@ -436,11 +453,12 @@ const useRunWorkflowController = () => {
 		if (state.run.status === 'running' || starting.current) return;
 
 		// Check for missing credentials.
-		const missingCredentialNode = state.nodes.find((node) => {
-			const def = getNodeDefinition(node.data.defKey, node.data.definition);
-			const field = def?.fields.find((item) => item.kind === 'credential');
-			return Boolean(def?.requiresCredential) && (!field || !node.data.values[field.key]);
-		});
+		const missingCredentialNode = state.nodes.find((node) =>
+			isCredentialMissing(
+				getNodeDefinition(node.data.defKey, node.data.definition),
+				node.data.values,
+			),
+		);
 
 		const isMockEmptyState =
 			state.nodes.length === 0 && state.ui.emptyCanvasView === 'chat-started';
@@ -490,17 +508,24 @@ const useRunWorkflowController = () => {
 		try {
 			// Runs are pinned to a published version on this backend. Save any
 			// pending canvas edits, then publish the draft if it differs from live.
-			const workflow =
-				state.workflow.savingState === 'saved'
-					? await WorkflowService.detail(ws, wfId)
-					: await persistWorkflowDraft({
-							workspaceId: ws,
-							workflowId: wfId,
-							name: state.workflow.name,
-							description: state.workflow.description,
-							nodes: state.nodes,
-							edges: state.edges,
-						});
+			let workflow: TWorkflow;
+			try {
+				workflow =
+					state.workflow.savingState === 'saved'
+						? await WorkflowService.detail(ws, wfId)
+						: await persistWorkflowDraft({
+								workspaceId: ws,
+								workflowId: wfId,
+								name: state.workflow.name,
+								description: state.workflow.description,
+								nodes: state.nodes,
+								edges: state.edges,
+							});
+			} catch (error) {
+				notify.error(messageFromError(error, 'Could not save the workflow before running'));
+				dispatch({ type: 'SET_SAVE_STATE', savingState: 'error' });
+				return;
+			}
 			if (workflow.has_unpublished_changes || !workflow.current_version_id) {
 				// Publishing replaces the live version — the one triggers and every
 				// other caller run — so ask once per editor session before doing it
@@ -528,12 +553,7 @@ const useRunWorkflowController = () => {
 			}
 			await runRemoteWorkflow(ws, wfId);
 		} catch (error) {
-			notify.error(
-				error instanceof Error
-					? error.message
-					: 'Could not save the workflow before running',
-			);
-			dispatch({ type: 'SET_SAVE_STATE', savingState: 'error' });
+			notify.error(messageFromError(error, 'Could not publish the workflow before running'));
 		} finally {
 			starting.current = false;
 		}

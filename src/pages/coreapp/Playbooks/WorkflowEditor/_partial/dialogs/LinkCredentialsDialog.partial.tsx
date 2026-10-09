@@ -4,20 +4,25 @@ import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context
 import { getNodeDefinition } from '../../_helper/nodeCatalog.constants';
 import AccountSelect from '../canvas/nodes/AccountSelect.partial';
 import Modal from './Modal.partial';
+import { useCredentialResolver } from '../../_hooks/useCredentialResolver.hook';
 
 const CredentialFlow = () => {
 	const { state, dispatch } = useWorkflowEditor();
 	const [selectedNodeId, setSelectedNodeId] = useState(state.ui.linkCredentialsNodeId);
 	const [emptyAccountOpen, setEmptyAccountOpen] = useState(false);
+	const { isMissing: isCredentialMissing } = useCredentialResolver();
 	const close = () => dispatch({ type: 'SET_LINK_CREDENTIALS_OPEN', open: false });
 	const candidates = state.nodes.flatMap((node) => {
 		const def = getNodeDefinition(node.data.defKey, node.data.definition);
 		const field = def?.fields.find((item) => item.kind === 'credential');
-		return field ? [{ node, field, required: def?.requiresCredential }] : [];
+		return field ? [{ node, field }] : [];
 	});
 	const target = candidates.find(({ node }) => node.id === selectedNodeId);
-	const missing = candidates.filter(
-		({ node, field, required }) => required && !node.data.values[field.key],
+	const missing = candidates.filter(({ node }) =>
+		isCredentialMissing(
+			getNodeDefinition(node.data.defKey, node.data.definition),
+			node.data.values,
+		),
 	);
 	const mockEmpty = state.nodes.length === 0 && state.ui.emptyCanvasView === 'chat-started';
 	const returnToOverview = () => {

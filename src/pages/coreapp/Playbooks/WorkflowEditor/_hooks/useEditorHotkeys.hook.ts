@@ -233,5 +233,6 @@ export const useEditorHotkeys = () => {
 		reactFlow,
 		runWorkflow,
 		stopRun,
+		stepNext,
 	]);
 };

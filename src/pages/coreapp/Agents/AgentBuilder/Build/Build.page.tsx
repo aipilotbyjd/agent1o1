@@ -2335,7 +2335,7 @@ const BuildPage = () => {
 		if (!asked) return;
 		setEvalCaseDraft({ input: asked.text, reply: chatHistory[replyIndex].text });
 	};
-	const useSuggestedPrompt = (prompt: string) => {
+	const applySuggestedPrompt = (prompt: string) => {
 		updateChatInput(prompt);
 		requestAnimationFrame(() => mobileComposerRef.current?.focus());
 	};
@@ -3114,7 +3114,7 @@ const BuildPage = () => {
 												title='Research question'
 												type='button'
 												onClick={() =>
-													useSuggestedPrompt(
+													applySuggestedPrompt(
 														'Research this topic and summarize the key findings: ',
 													)
 												}
@@ -3126,7 +3126,7 @@ const BuildPage = () => {
 												title='Compare options'
 												type='button'
 												onClick={() =>
-													useSuggestedPrompt(
+													applySuggestedPrompt(
 														'Compare these options in a clear table: ',
 													)
 												}
@@ -3138,7 +3138,7 @@ const BuildPage = () => {
 												title='Make a plan'
 												type='button'
 												onClick={() =>
-													useSuggestedPrompt('Make a step-by-step plan for: ')
+													applySuggestedPrompt('Make a step-by-step plan for: ')
 												}
 												className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
 												<Layers size={18} />
@@ -3148,7 +3148,7 @@ const BuildPage = () => {
 												title='Web research question'
 												type='button'
 												onClick={() =>
-													useSuggestedPrompt(
+													applySuggestedPrompt(
 														'What should I know about this topic? Include sources if available: ',
 													)
 												}
@@ -3160,7 +3160,7 @@ const BuildPage = () => {
 												title='Ask for a file'
 												type='button'
 												onClick={() =>
-													useSuggestedPrompt(
+													applySuggestedPrompt(
 														'Create a downloadable file containing: ',
 													)
 												}
@@ -3172,7 +3172,7 @@ const BuildPage = () => {
 												title='Describe an image'
 												type='button'
 												onClick={() =>
-													useSuggestedPrompt(
+													applySuggestedPrompt(
 														'Help me describe an image for: ',
 													)
 												}

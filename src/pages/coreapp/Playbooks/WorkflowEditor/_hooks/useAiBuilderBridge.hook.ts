@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { useRealtime } from '@/context/realtime';
 import { ApiError, notify } from '@/api/core';
 import { useAiChatStore } from '@/store/aiChat.store';
@@ -81,7 +81,9 @@ export const useAiBuilderBridge = () => {
 
 	// Latest canvas, read from callbacks that outlive a render.
 	const canvasRef = useRef({ nodes: state.nodes, edges: state.edges });
-	canvasRef.current = { nodes: state.nodes, edges: state.edges };
+	useLayoutEffect(() => {
+		canvasRef.current = { nodes: state.nodes, edges: state.edges };
+	});
 
 	// The draft (as JSON) last known to match the server, so an unchanged
 	// canvas isn't synced back.
@@ -122,16 +124,22 @@ export const useAiBuilderBridge = () => {
 
 		refreshingRef.current = true;
 		try {
-			const session = await WorkflowBuilderSessionService.detail(workspaceId, sessionId);
-			applySessionDraft(session);
-		} catch {
-			/* the next draft event or the final reconciliation retries */
+			do {
+				refreshAgainRef.current = false;
+				const currentSessionId = useAiChatStore.getState().builderSessionId;
+				if (!currentSessionId) break;
+				try {
+					const session = await WorkflowBuilderSessionService.detail(
+						workspaceId,
+						currentSessionId,
+					);
+					applySessionDraft(session);
+				} catch {
+					/* the next draft event or the final reconciliation retries */
+				}
+			} while (refreshAgainRef.current);
 		} finally {
 			refreshingRef.current = false;
-			if (refreshAgainRef.current) {
-				refreshAgainRef.current = false;
-				void refreshDraft();
-			}
 		}
 	}, [workspaceId, applySessionDraft]);
 

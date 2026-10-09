@@ -41,6 +41,7 @@ import NodeLoopToggle from './NodeLoopToggle.partial';
 import NodeAuthWarning from './NodeAuthWarning.partial';
 import NodeCredentialBadge from './NodeCredentialBadge.partial';
 import NodeHelpTip from './NodeHelpTip.partial';
+import { useCredentialResolver } from '../../../_hooks/useCredentialResolver.hook';
 import TriggerDetails from './TriggerDetails.partial';
 import { tintStyle, getNodeAccentColor } from '../../library/library.util';
 
@@ -146,7 +147,8 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 	const credentialId = credentialField
 		? (data.values[credentialField.key] as string | undefined)
 		: undefined;
-	const hasError = Boolean(def?.requiresCredential) && !credentialId;
+	const { isMissing: isCredentialMissing } = useCredentialResolver();
+	const hasError = isCredentialMissing(def, data.values);
 	const brand = brandNameMap[data.defKey] || 'Trigger';
 	const color = colorMap[data.defKey] || DEFAULT_TRIGGER_COLOR;
 	const creditCost = getNodeCreditCost(def);

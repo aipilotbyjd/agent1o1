@@ -61,9 +61,7 @@ export const useNodeTestRunner = (nodeId: string, defKey: string) => {
 				nodeId: String(savedNode.id),
 				body: {
 					config: node?.data.values ?? {},
-					nodes: Object.fromEntries(
-						Object.entries(upstreamInput).map(([key, output]) => [key, { output }]),
-					),
+					nodes: upstreamInput,
 				},
 			});
 

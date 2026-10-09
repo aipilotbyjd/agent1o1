@@ -11,7 +11,17 @@ import { ApiError } from '@/api/core/errors';
 
 type TErrorBody = {
 	message?: string;
-	errors?: Record<string, string[]>;
+	errors?: Record<string, string[]> | string[];
+};
+
+const MAX_LISTED_ERRORS = 3;
+
+// Graph validation answers with a plain list of reasons instead of a field map.
+const withListedErrors = (message: string, errors: string[]) => {
+	if (errors.length === 0) return message;
+	const listed = errors.slice(0, MAX_LISTED_ERRORS).join(' ');
+	const more = errors.length - MAX_LISTED_ERRORS;
+	return `${message} ${listed}${more > 0 ? ` (+${more} more)` : ''}`;
 };
 
 export const normalizeError = (client: AxiosInstance) => {
@@ -21,9 +31,13 @@ export const normalizeError = (client: AxiosInstance) => {
 			const status = error.response?.status;
 			const message =
 				error.response?.data?.message || error.message || 'Something went wrong';
-			const fields = error.response?.data?.errors;
+			const errors = error.response?.data?.errors;
 
-			return Promise.reject(new ApiError(status, message, fields));
+			return Promise.reject(
+				Array.isArray(errors)
+					? new ApiError(status, withListedErrors(message, errors))
+					: new ApiError(status, message, errors),
+			);
 		},
 	);
 };

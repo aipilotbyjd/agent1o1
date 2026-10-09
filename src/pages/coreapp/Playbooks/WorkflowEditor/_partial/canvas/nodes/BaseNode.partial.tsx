@@ -43,6 +43,7 @@ import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.cont
 import type { TCanvasNode } from '../../../_types/canvas.type';
 import type { TNodeComment, TNodePort } from '../../../_types/node.type';
 import type { TValidationIssue } from '../../../_helper/validation.helper';
+import { useCredentialResolver } from '../../../_hooks/useCredentialResolver.hook';
 
 const iconMap = {
 	'trigger.webhook': Webhook,
@@ -195,7 +196,8 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 	const credentialId = credentialField
 		? (data.values[credentialField.key] as string | undefined)
 		: undefined;
-	const needsAuth = Boolean(def?.requiresCredential) && !credentialId;
+	const { isMissing: isCredentialMissing } = useCredentialResolver();
+	const needsAuth = isCredentialMissing(def, data.values);
 	// Integration-style nodes (and anything explicitly flagged) can be promoted to
 	// the flow's entry trigger — Gumloop's "Activate as flow trigger" strip.
 	const canBeTrigger = Boolean(def?.supportsTrigger || def?.requiresCredential);

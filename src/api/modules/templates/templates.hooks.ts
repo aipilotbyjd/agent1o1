@@ -71,7 +71,7 @@ export const useUseWorkflowTemplate = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: ({ id, body }: { id: string; body?: TUseWorkflowTemplateDto }) =>
-			WorkflowTemplateService.use(ws, id, body),
+			WorkflowTemplateService.instantiate(ws, id, body),
 		onSuccess: () => qc.invalidateQueries({ queryKey: workflowKeys.lists(ws) }),
 		meta: { errorMessage: 'Failed to create workflow from template' },
 	});
@@ -135,7 +135,7 @@ export const useUseAgentTemplate = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: ({ id, body }: { id: string; body: TUseAgentTemplateDto }) =>
-			AgentTemplateService.use(ws, id, body),
+			AgentTemplateService.instantiate(ws, id, body),
 		onSuccess: () => qc.invalidateQueries({ queryKey: agentKeys.lists(ws) }),
 		meta: { errorMessage: 'Failed to create agent from template' },
 	});
@@ -199,7 +199,7 @@ export const useUseTemplateCollection = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: ({ id, body }: { id: string; body?: TUseTemplateCollectionDto }) =>
-			TemplateCollectionService.use(ws, id, body),
+			TemplateCollectionService.instantiate(ws, id, body),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: workflowKeys.lists(ws) });
 			qc.invalidateQueries({ queryKey: agentKeys.lists(ws) });

@@ -51,9 +51,9 @@ export const WorkflowTemplateService = {
 
 	remove: (ws: string, id: string) => axiosClient.delete(WT.delete(ws, id)).then(() => undefined),
 
-	use: (ws: string, id: string, payload?: TUseWorkflowTemplateDto) =>
+	instantiate: (ws: string, id: string, payload?: TUseWorkflowTemplateDto) =>
 		axiosClient
-			.post<TApiResponse<{ workflow: TWorkflow }>>(WT.use(ws, id), payload)
+			.post<TApiResponse<{ workflow: TWorkflow }>>(WT.instantiate(ws, id), payload)
 			.then(unwrapKey<TWorkflow>('workflow')),
 
 	saveWorkflowAsTemplate: (ws: string, workflowId: string, payload?: TSaveWorkflowAsTemplateDto) =>
@@ -88,9 +88,9 @@ export const AgentTemplateService = {
 
 	remove: (ws: string, id: string) => axiosClient.delete(AT.delete(ws, id)).then(() => undefined),
 
-	use: (ws: string, id: string, payload: TUseAgentTemplateDto) =>
+	instantiate: (ws: string, id: string, payload: TUseAgentTemplateDto) =>
 		axiosClient
-			.post<TApiResponse<{ agent: TAgent }>>(AT.use(ws, id), payload)
+			.post<TApiResponse<{ agent: TAgent }>>(AT.instantiate(ws, id), payload)
 			.then(unwrapKey<TAgent>('agent')),
 
 	saveAgentAsTemplate: (ws: string, agentId: string, payload?: TSaveAgentAsTemplateDto) =>
@@ -125,9 +125,9 @@ export const TemplateCollectionService = {
 
 	remove: (ws: string, id: string) => axiosClient.delete(TC.delete(ws, id)).then(() => undefined),
 
-	use: (ws: string, id: string, payload?: TUseTemplateCollectionDto) =>
+	instantiate: (ws: string, id: string, payload?: TUseTemplateCollectionDto) =>
 		axiosClient
-			.post<TApiResponse<{ workflows: TWorkflow[]; agents: TAgent[] }>>(TC.use(ws, id), payload)
+			.post<TApiResponse<{ workflows: TWorkflow[]; agents: TAgent[] }>>(TC.instantiate(ws, id), payload)
 			.then((r) => r.data.data),
 
 	addItem: (ws: string, id: string, payload: TAddTemplateCollectionItemDto) =>
