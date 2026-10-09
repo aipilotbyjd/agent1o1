@@ -4,6 +4,8 @@ import type { TApiResponse } from '@/api/core';
 import type {
 	TConnector,
 	TConnectorCredential,
+	TConnectorCredentialTestResult,
+	TConnectorCredentialUsage,
 	TCreateConnectorCredentialDto,
 	TUpdateConnectorCredentialDto,
 	TInitiateOAuthConnectorDto,
@@ -56,8 +58,13 @@ export const ConnectorService = {
 			>(E.credential(ws, id), payload)
 			.then(unwrapKey<TConnectorCredential>('connector_credential')),
 
-	deleteCredential: (ws: string, id: string) =>
-		axiosClient.delete(E.credential(ws, id)).then(() => undefined),
+	/** With `replaceWith`, everything pinned to this account moves there first. */
+	deleteCredential: (ws: string, id: string, replaceWith?: string) =>
+		axiosClient
+			.delete(E.credential(ws, id), {
+				data: replaceWith ? { replace_with: replaceWith } : undefined,
+			})
+			.then(() => undefined),
 
 	setDefaultCredential: (ws: string, id: string) =>
 		axiosClient
@@ -65,6 +72,23 @@ export const ConnectorService = {
 				TApiResponse<{ connector_credential: TConnectorCredential }>
 			>(E.setDefaultCredential(ws, id))
 			.then(unwrapKey<TConnectorCredential>('connector_credential')),
+
+	testCredential: (ws: string, id: string) =>
+		axiosClient
+			.post<
+				TApiResponse<{
+					result: TConnectorCredentialTestResult;
+					connector_credential: TConnectorCredential;
+				}>
+			>(E.testCredential(ws, id))
+			.then((r) => r.data.data),
+
+	credentialUsage: (ws: string, id: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<{ usage: TConnectorCredentialUsage }>>(E.credentialUsage(ws, id), {
+				signal,
+			})
+			.then(unwrapKey<TConnectorCredentialUsage>('usage')),
 
 	initiateOAuth: (ws: string, payload: TInitiateOAuthConnectorDto) =>
 		axiosClient

@@ -153,7 +153,10 @@ const BY_TYPE: Record<string, TNotificationMeta> = {
 		icon: PlugZap,
 		tone: 'warning',
 		action: 'Reconnect app',
-		href: (ws) => paths.apps(ws),
+		href: (ws, data) => {
+			const credentialId = idFrom(data, 'connector_credential_id');
+			return credentialId ? `${paths.apps(ws)}?account=${credentialId}` : paths.apps(ws);
+		},
 	},
 };
 
