@@ -17,6 +17,10 @@ export type TAiProvider = {
 	label: string;
 	key_url: string;
 	key_placeholder: string | null;
+	/** What a key for this provider starts with, when it has a fixed shape. */
+	key_prefix: string | null;
+	/** Short "where do I find my key" steps. */
+	key_guide: string[];
 	/** Display names of the catalog models a key for this provider runs. */
 	models: string[];
 	/** A key for this provider also embeds knowledge-base documents and searches. */
@@ -85,4 +89,14 @@ export type TAiKeyPolicy = {
 export type TUpdateAiKeyPolicyDto = {
 	platform_usage?: TPlatformKeyUsage;
 	allow_personal_keys?: boolean;
+};
+
+type TCatalogModelSummary = { id: string; display_name: string };
+
+/** What saving a proposed key policy would change — judged on the workspace's team keys. */
+export type TAiKeyPolicyImpact = {
+	unavailable_models: TCatalogModelSummary[];
+	affected_agents: { id: string; name: string; model: string }[];
+	models_losing_backup: TCatalogModelSummary[];
+	ignored_personal_keys: number;
 };

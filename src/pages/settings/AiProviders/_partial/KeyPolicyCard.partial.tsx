@@ -1,8 +1,19 @@
+import { useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
-import { useAiKeyPolicy, useUpdateAiKeyPolicy } from '@/api/modules/ai-providers';
-import type { TPlatformKeyUsage } from '@/types/ai-provider.type';
+import {
+	useAiKeyPolicy,
+	usePreviewAiKeyPolicy,
+	useUpdateAiKeyPolicy,
+} from '@/api/modules/ai-providers';
+import type {
+	TAiKeyPolicyImpact,
+	TPlatformKeyUsage,
+	TUpdateAiKeyPolicyDto,
+} from '@/types/ai-provider.type';
 import Checkbox from '@/components/form/Checkbox';
 import Spinner from '@/components/ui/Spinner';
+import { hasImpact, isStricter } from '../_helper/policyImpact.helper';
+import PolicyImpactModal from './PolicyImpactModal.partial';
 
 const usageOptions: { value: TPlatformKeyUsage; label: string; description: string }[] = [
 	{
@@ -26,19 +37,48 @@ const usageOptions: { value: TPlatformKeyUsage; label: string; description: stri
 const KeyPolicyCard = ({ ws }: { ws: string }) => {
 	const { data: policy, isLoading } = useAiKeyPolicy(ws);
 	const updatePolicy = useUpdateAiKeyPolicy(ws);
+	const previewPolicy = usePreviewAiKeyPolicy(ws);
+	const [pending, setPending] = useState<{
+		change: TUpdateAiKeyPolicyDto;
+		impact: TAiKeyPolicyImpact;
+	} | null>(null);
 
 	if (isLoading || !policy) {
 		return (
-			<div className='mb-8 flex items-center justify-center rounded-2xl border border-zinc-100 bg-white py-10 dark:border-zinc-800 dark:bg-zinc-950/40'>
+			<div className='flex items-center justify-center rounded-2xl border border-zinc-100 bg-white py-10 dark:border-zinc-800 dark:bg-zinc-950/40'>
 				<Spinner color='primary' className='size-6' />
 			</div>
 		);
 	}
 
-	const canEdit = policy.can_manage && !updatePolicy.isPending;
+	const canEdit = policy.can_manage && !updatePolicy.isPending && !previewPolicy.isPending;
+
+	const requestChange = async (change: TUpdateAiKeyPolicyDto) => {
+		if (!isStricter(policy, change)) {
+			updatePolicy.mutate(change);
+			return;
+		}
+		try {
+			const impact = await previewPolicy.mutateAsync(change);
+			if (hasImpact(impact)) setPending({ change, impact });
+			else updatePolicy.mutate(change);
+		} catch {
+			// Toast is handled by the API hook.
+		}
+	};
+
+	const confirmPending = async () => {
+		if (!pending) return;
+		try {
+			await updatePolicy.mutateAsync(pending.change);
+			setPending(null);
+		} catch {
+			// Toast is handled by the API hook.
+		}
+	};
 
 	return (
-		<section className='mb-8 rounded-2xl border border-zinc-100 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-950/40'>
+		<section className='rounded-2xl border border-zinc-100 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-950/40'>
 			<div className='flex items-start justify-between gap-3'>
 				<div className='flex items-start gap-3'>
 					<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'>
@@ -55,7 +95,9 @@ const KeyPolicyCard = ({ ws }: { ws: string }) => {
 						</p>
 					</div>
 				</div>
-				{updatePolicy.isPending && <Spinner color='primary' className='size-4' />}
+				{(updatePolicy.isPending || previewPolicy.isPending) && (
+					<Spinner color='primary' className='size-4' />
+				)}
 			</div>
 
 			<p className='mt-5 text-[10px] font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
@@ -76,7 +118,7 @@ const KeyPolicyCard = ({ ws }: { ws: string }) => {
 							aria-label={option.label}
 							disabled={!canEdit}
 							onClick={() =>
-								!selected && updatePolicy.mutate({ platform_usage: option.value })
+								!selected && requestChange({ platform_usage: option.value })
 							}
 							className={`rounded-xl border p-3 text-left transition disabled:cursor-default ${
 								selected
@@ -108,11 +150,20 @@ const KeyPolicyCard = ({ ws }: { ws: string }) => {
 					name='allow_personal_keys'
 					checked={policy.allow_personal_keys}
 					disabled={!canEdit}
-					onChange={(e) => updatePolicy.mutate({ allow_personal_keys: e.target.checked })}
+					onChange={(e) => requestChange({ allow_personal_keys: e.target.checked })}
 					label='Allow personal keys'
 					description='Members can add keys only they use. When off, existing personal keys are kept but not used.'
 				/>
 			</div>
+
+			{pending && (
+				<PolicyImpactModal
+					impact={pending.impact}
+					isSaving={updatePolicy.isPending}
+					onConfirm={confirmPending}
+					onCancel={() => setPending(null)}
+				/>
+			)}
 		</section>
 	);
 };

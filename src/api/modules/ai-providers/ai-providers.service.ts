@@ -5,6 +5,7 @@ import type {
 	TAiProviderCredential,
 	TAiProviderCredentialCheck,
 	TAiKeyPolicy,
+	TAiKeyPolicyImpact,
 	TAiProvidersResult,
 	TCreateAiProviderCredentialDto,
 	TUpdateAiKeyPolicyDto,
@@ -58,6 +59,18 @@ export const AiProviderService = {
 		axiosClient
 			.put<TApiResponse<{ policy: TAiKeyPolicy }>>(E.policy(ws), payload)
 			.then(unwrapKey<TAiKeyPolicy>('policy')),
+
+	previewPolicy: (ws: string, payload: TUpdateAiKeyPolicyDto) =>
+		axiosClient
+			.post<TApiResponse<{ impact: TAiKeyPolicyImpact }>>(E.policyPreview(ws), payload)
+			.then(unwrapKey<TAiKeyPolicyImpact>('impact')),
+
+	restore: (ws: string, id: string) =>
+		axiosClient
+			.post<
+				TApiResponse<{ ai_provider_credential: TAiProviderCredential }>
+			>(E.restore(ws, id))
+			.then(unwrapKey<TAiProviderCredential>('ai_provider_credential')),
 
 	validate: (ws: string, id: string) =>
 		axiosClient

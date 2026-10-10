@@ -69,6 +69,15 @@ export const useDeleteAiProviderCredential = (ws: string) => {
 	});
 };
 
+export const useRestoreAiProviderCredential = (ws: string) => {
+	const invalidate = useInvalidateKeys(ws);
+	return useMutation({
+		mutationFn: (id: string) => AiProviderService.restore(ws, id),
+		onSuccess: invalidate,
+		meta: { errorMessage: 'Failed to restore key' },
+	});
+};
+
 export const useSetDefaultAiProviderCredential = (ws: string) => {
 	const invalidate = useInvalidateKeys(ws);
 	return useMutation({
@@ -106,3 +115,10 @@ export const useUpdateAiKeyPolicy = (ws: string) => {
 		meta: { errorMessage: 'Failed to update AI key policy' },
 	});
 };
+
+export const usePreviewAiKeyPolicy = (ws: string) =>
+	useMutation({
+		mutationFn: (payload: TUpdateAiKeyPolicyDto) =>
+			AiProviderService.previewPolicy(ws, payload),
+		meta: { errorMessage: 'Failed to check what this change affects' },
+	});
