@@ -24,7 +24,8 @@ import { workflowKeys } from '../workflows/workflows.keys';
 export const useWorkflowBuilderSessions = (ws: string, status?: TBuilderSessionStatus) =>
 	useQuery({
 		queryKey: builderSessionKeys.list(ws, status),
-		queryFn: ({ signal }) => WorkflowBuilderSessionService.list(ws, status ? { status } : undefined, signal),
+		queryFn: ({ signal }) =>
+			WorkflowBuilderSessionService.list(ws, status ? { status } : undefined, signal),
 		enabled: !!ws,
 	});
 
@@ -38,7 +39,8 @@ export const useWorkflowBuilderSession = (ws: string, id: string) =>
 export const useCreateWorkflowBuilderSession = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (payload: TCreateBuilderSessionDto) => WorkflowBuilderSessionService.create(ws, payload),
+		mutationFn: (payload: TCreateBuilderSessionDto) =>
+			WorkflowBuilderSessionService.create(ws, payload),
 		onSuccess: () => qc.invalidateQueries({ queryKey: builderSessionKeys.lists(ws) }),
 		meta: { errorMessage: 'Failed to create session' },
 	});
@@ -76,7 +78,8 @@ export const usePromoteWorkflowBuilderSession = (ws: string) => {
 			qc.invalidateQueries({ queryKey: workflowKeys.lists(ws) });
 			qc.setQueryData(workflowKeys.detail(ws, String(workflow.id)), workflow);
 		},
-		meta: { errorMessage: 'Failed to publish workflow' },
+		// A 409 (workflow edited elsewhere) is handled by the caller.
+		meta: { errorMessage: 'Failed to apply the chat draft', silentStatuses: [409] },
 	});
 };
 
@@ -85,7 +88,8 @@ export const useSendWorkflowBuilderMessage = (ws: string, sessionId: string) => 
 	return useMutation({
 		mutationFn: (payload: TSendBuilderMessageDto) =>
 			WorkflowBuilderMessageService.send(ws, sessionId, payload),
-		onSuccess: () => qc.invalidateQueries({ queryKey: builderSessionKeys.detail(ws, sessionId) }),
+		onSuccess: () =>
+			qc.invalidateQueries({ queryKey: builderSessionKeys.detail(ws, sessionId) }),
 		meta: { errorMessage: 'Failed to send message' },
 	});
 };
@@ -102,12 +106,22 @@ export const useWorkflowBuilderVersions = (ws: string, sessionId: string, enable
 export const useRestoreWorkflowBuilderVersion = (ws: string, sessionId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (versionId: string) => WorkflowBuilderVersionService.restore(ws, sessionId, versionId),
+		mutationFn: ({
+			versionId,
+			draftLockVersion,
+		}: {
+			versionId: string;
+			draftLockVersion?: number | null;
+		}) =>
+			WorkflowBuilderVersionService.restore(ws, sessionId, versionId, {
+				draft_lock_version: draftLockVersion ?? undefined,
+			}),
 		onSuccess: (session) => {
 			qc.setQueryData(builderSessionKeys.detail(ws, sessionId), session);
 			qc.invalidateQueries({ queryKey: builderSessionKeys.versions(ws, sessionId) });
 		},
-		meta: { errorMessage: 'Failed to restore that version' },
+		// A 409 (draft moved on since) is handled by the caller.
+		meta: { errorMessage: 'Failed to restore that version', silentStatuses: [409] },
 	});
 };
 
@@ -115,7 +129,8 @@ export const useRestoreWorkflowBuilderVersion = (ws: string, sessionId: string) 
 
 export const useSuggestBuilderNodes = (ws: string, sessionId: string) =>
 	useMutation({
-		mutationFn: (note?: string) => WorkflowBuilderAssistService.suggestNodes(ws, sessionId, note),
+		mutationFn: (note?: string) =>
+			WorkflowBuilderAssistService.suggestNodes(ws, sessionId, note),
 		meta: { errorMessage: 'Could not get suggestions' },
 	});
 

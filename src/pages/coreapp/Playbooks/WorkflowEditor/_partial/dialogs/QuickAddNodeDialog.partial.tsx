@@ -4,7 +4,7 @@ import { Box, Search, Sparkles } from 'lucide-react';
 import { useNodeCategories } from '@/api/modules/catalog';
 import { mapApiCategoriesToGroups } from '../../_helper/apiNodeCatalog.helper';
 import { NODE_GROUPS } from '../../_helper/nodeGroups.constants';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import type { TNodeDefinition } from '../../_types/node.type';
 import Modal from './Modal.partial';
 

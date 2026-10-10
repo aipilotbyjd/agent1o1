@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useReactFlow } from '@xyflow/react';
-import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from './useWorkflowEditor.hook';
 import { useRunWorkflow } from '../_hooks/useRunWorkflow.hook';
 
 export const isTypingTarget = (target: EventTarget | null) => {
@@ -233,5 +233,6 @@ export const useEditorHotkeys = () => {
 		reactFlow,
 		runWorkflow,
 		stopRun,
+		stepNext,
 	]);
 };

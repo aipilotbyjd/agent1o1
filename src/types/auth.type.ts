@@ -36,6 +36,9 @@ export type TRegisterDto = {
 	email: string;
 	password: string;
 	password_confirmation: string;
+	/** From a `?ref=` link — see `referralAttribution.util`. Never blocks signup. */
+	referral_code?: string;
+	referral_visitor_id?: string;
 };
 
 export type TForgotPasswordDto = {

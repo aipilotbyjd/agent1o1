@@ -59,6 +59,7 @@ export default tseslint.config(
 					custom: 'enforce',
 					explicitSpread: 'enforce',
 					exceptions: [
+						'FilePreview',
 						'NavItem',
 						'NavCollapse',
 						'Icon',
@@ -96,7 +97,33 @@ export default tseslint.config(
 					depth: 3,
 				},
 			],
-			'jsx-a11y/control-has-associated-label': 'warn',
+			'jsx-a11y/control-has-associated-label': [
+				'warn',
+				{
+					ignoreElements: [
+						'audio',
+						'canvas',
+						'embed',
+						'input',
+						'textarea',
+						'tr',
+						'video',
+					],
+					ignoreRoles: [
+						'grid',
+						'listbox',
+						'menu',
+						'menubar',
+						'radiogroup',
+						'row',
+						'tablist',
+						'toolbar',
+						'tree',
+						'treegrid',
+					],
+					includeRoles: ['alert', 'dialog'],
+				},
+			],
 			'react-hooks/exhaustive-deps': 'error',
 			'react-hooks/rules-of-hooks': 'error',
 			'react/function-component-definition': [
@@ -147,11 +174,47 @@ export default tseslint.config(
 		rules: {
 			'@typescript-eslint/ban-ts-comment': 'off',
 			'@typescript-eslint/ban-ts-ignore': 'off',
+			'@typescript-eslint/no-unused-vars': [
+				'error',
+				{
+					argsIgnorePattern: '^_',
+					varsIgnorePattern: '^_',
+					caughtErrorsIgnorePattern: '^_',
+					destructuredArrayIgnorePattern: '^_',
+					ignoreRestSiblings: true,
+				},
+			],
 			'react/jsx-curly-brace-presence': ['warn', { props: 'never', children: 'ignore' }],
 			'react/self-closing-comp': ['warn', { component: true, html: false }],
 			'template-curly-spacing': ['error', 'never'],
 			'prefer-template': 'error',
 			'react/react-in-jsx-scope': 'off',
+		},
+	},
+	{
+		// The assistant's name comes from the server brand (useBrand / {{assistantName}}).
+		// Only the offline fallback may spell it — see src/config/brand.default.ts.
+		files: ['src/**/*.{ts,tsx}'],
+		ignores: ['src/config/brand.default.ts'],
+		rules: {
+			'no-restricted-syntax': [
+				'error',
+				{
+					selector: 'Literal[value=/\\bOrb\\b/i]',
+					message:
+						"Don't hard-code the assistant's name — use useBrand() or {{assistantName}}.",
+				},
+				{
+					selector: 'TemplateElement[value.raw=/\\bOrb\\b/i]',
+					message:
+						"Don't hard-code the assistant's name — use useBrand() or {{assistantName}}.",
+				},
+				{
+					selector: 'JSXText[value=/\\bOrb\\b/i]',
+					message:
+						"Don't hard-code the assistant's name — use useBrand() or {{assistantName}}.",
+				},
+			],
 		},
 	},
 );

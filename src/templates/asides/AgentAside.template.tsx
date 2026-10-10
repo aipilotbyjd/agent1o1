@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router';
 import {
 	ArrowLeft,
 	Plus,
-	Folder,
+	Images,
 	LineChart,
 	Mail,
 	MessageSquare,
@@ -33,13 +33,16 @@ import {
 	useAgentSessions,
 	useDeleteAgentSession,
 	useUpdateAgentSession,
-} from '@/api/modules/agents';
+} from '@/api/modules/agent-sessions';
 import type { TAgentSession } from '@/types/agent.type';
 import GlobalSearch from '@/templates/search/GlobalSearch.template';
 import { notify } from '@/api/core';
 import paths from '@/Routes/paths';
 
-const formatCredits = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
+const formatCredits = new Intl.NumberFormat('en', {
+	notation: 'compact',
+	maximumFractionDigits: 1,
+});
 
 /** A session is created untitled when the builder can't name it; the first
  *  message normally supplies the title. */
@@ -254,16 +257,20 @@ const AgentAsideTemplate = () => {
 				<div className='flex flex-col gap-1 px-3'>
 					<button
 						type='button'
-						title='Files this workspace has generated'
-						onClick={() => navigate(`/${workspaceId}/artifacts`)}
+						title='Images and files from your agent chats'
+						onClick={() => {
+							if (!workspaceId) return;
+							navigate(paths.library(workspaceId));
+							closeAside();
+						}}
 						className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50/80 dark:text-zinc-300 dark:hover:bg-zinc-900 ${asideStatus ? '' : 'w-full justify-center'}`}>
 						<span className='relative shrink-0'>
-							<Folder size={15} className='text-zinc-600 dark:text-zinc-400' />
+							<Images size={15} className='text-zinc-600 dark:text-zinc-400' />
 							{!asideStatus && (
 								<span className='absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-zinc-400 ring-2 ring-white dark:bg-zinc-500 dark:ring-zinc-950' />
 							)}
 						</span>
-						{asideStatus && <span className='truncate'>Files Generated</span>}
+						{asideStatus && <span className='truncate'>Library</span>}
 					</button>
 					<button
 						onClick={() => {
@@ -272,7 +279,11 @@ const AgentAsideTemplate = () => {
 							closeAside();
 						}}
 						disabled={!agentId}
-						title={agentId ? 'Runs, analytics, evals, grading and reflections' : 'Open an agent to see its insights'}
+						title={
+							agentId
+								? 'Runs, analytics, evals, grading and reflections'
+								: 'Open an agent to see its insights'
+						}
 						className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50/80 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-zinc-900 ${asideStatus ? '' : 'w-full justify-center'}`}>
 						<span className='relative shrink-0'>
 							<LineChart size={15} className='text-zinc-600 dark:text-zinc-400' />
@@ -365,6 +376,7 @@ const AgentAsideTemplate = () => {
 						<div className='mt-2 px-3'>
 							<div className='relative flex items-center rounded-xl border border-zinc-200 bg-white px-2.5 py-1.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900/60'>
 								<input
+									aria-label='Search'
 									type='text'
 									placeholder='Search'
 									value={recentSearch}
@@ -412,6 +424,7 @@ const AgentAsideTemplate = () => {
 											{isRenaming ? (
 												<input
 													autoFocus
+													aria-label='Chat name'
 													value={renameDraft}
 													onChange={(e) => setRenameDraft(e.target.value)}
 													onBlur={() => commitRename(session)}
@@ -445,7 +458,8 @@ const AgentAsideTemplate = () => {
 																session.created_at,
 														)}
 														{/* Another conversation handed this one its task. */}
-														{session.parent_session_id && ' · Subagent task'}
+														{session.parent_session_id &&
+															' · Subagent task'}
 													</p>
 												</button>
 											)}

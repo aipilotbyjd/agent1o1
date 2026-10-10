@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { isAxiosError } from 'axios';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { useRealtime } from '@/context/realtime';
-import { notify } from '@/api/core';
+import { ApiError, notify } from '@/api/core';
 import { useAiChatStore } from '@/store/aiChat.store';
 import {
 	WorkflowBuilderMessageService,
@@ -12,7 +11,7 @@ import {
 	type IEchoLike,
 } from '@/api/modules/workflow-builder/workflow-builder.realtime';
 import type { TBuilderMessage, TBuilderSession } from '@/types/workflow-builder.type';
-import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from './useWorkflowEditor.hook';
 import { useWorkflowRouteParams } from './useWorkflowRouteParams.hook';
 import { builderGraphToCanvas, canvasToBuilderGraph } from '../_helper/builderDraft.helper';
 
@@ -20,6 +19,13 @@ const POLL_INTERVAL_MS = 2500;
 /** Comfortably above the backend job's 300s timeout. */
 const POLL_TIMEOUT_MS = 6 * 60_000;
 const DRAFT_SYNC_DEBOUNCE_MS = 1500;
+
+/** The session's draft version the canvas was last reconciled with — what a
+ *  canvas sync (or a restore) must send so the server can refuse a stale one.
+ *  Kept in the store so the builder panel can send it too. */
+const getLockVersion = () => useAiChatStore.getState().draftLockVersion;
+const setLockVersion = (draftLockVersion: number | null) =>
+	useAiChatStore.setState({ draftLockVersion });
 
 const isTerminal = (message: TBuilderMessage) =>
 	message.processing_status === 'completed' || message.processing_status === 'failed';
@@ -75,11 +81,10 @@ export const useAiBuilderBridge = () => {
 
 	// Latest canvas, read from callbacks that outlive a render.
 	const canvasRef = useRef({ nodes: state.nodes, edges: state.edges });
-	canvasRef.current = { nodes: state.nodes, edges: state.edges };
+	useLayoutEffect(() => {
+		canvasRef.current = { nodes: state.nodes, edges: state.edges };
+	});
 
-	// The session's draft version the canvas was last reconciled with — what a
-	// canvas sync must send so the server can refuse a stale one.
-	const lockVersionRef = useRef<number | null>(null);
 	// The draft (as JSON) last known to match the server, so an unchanged
 	// canvas isn't synced back.
 	const lastSyncedRef = useRef('');
@@ -99,7 +104,7 @@ export const useAiBuilderBridge = () => {
 	/** Put the server's draft on the canvas, keeping the user's layout. */
 	const applySessionDraft = useCallback(
 		(session: TBuilderSession) => {
-			lockVersionRef.current = session.draft_lock_version;
+			setLockVersion(session.draft_lock_version);
 			const next = builderGraphToCanvas(session.draft_graph, canvasRef.current.nodes);
 			lastSyncedRef.current = JSON.stringify(canvasToBuilderGraph(next.nodes, next.edges));
 			if (next.nodes.length === 0 && canvasRef.current.nodes.length === 0) return;
@@ -119,16 +124,22 @@ export const useAiBuilderBridge = () => {
 
 		refreshingRef.current = true;
 		try {
-			const session = await WorkflowBuilderSessionService.detail(workspaceId, sessionId);
-			applySessionDraft(session);
-		} catch {
-			/* the next draft event or the final reconciliation retries */
+			do {
+				refreshAgainRef.current = false;
+				const currentSessionId = useAiChatStore.getState().builderSessionId;
+				if (!currentSessionId) break;
+				try {
+					const session = await WorkflowBuilderSessionService.detail(
+						workspaceId,
+						currentSessionId,
+					);
+					applySessionDraft(session);
+				} catch {
+					/* the next draft event or the final reconciliation retries */
+				}
+			} while (refreshAgainRef.current);
 		} finally {
 			refreshingRef.current = false;
-			if (refreshAgainRef.current) {
-				refreshAgainRef.current = false;
-				void refreshDraft();
-			}
 		}
 	}, [workspaceId, applySessionDraft]);
 
@@ -162,7 +173,8 @@ export const useAiBuilderBridge = () => {
 	 */
 	const syncCanvas = useCallback(
 		async (sessionId: string) => {
-			if (!workspaceId || lockVersionRef.current === null) return;
+			const lockVersion = getLockVersion();
+			if (!workspaceId || lockVersion === null) return;
 
 			const graph = canvasToBuilderGraph(canvasRef.current.nodes, canvasRef.current.edges);
 			const snapshot = JSON.stringify(graph);
@@ -174,13 +186,13 @@ export const useAiBuilderBridge = () => {
 					sessionId,
 					{
 						...graph,
-						draft_lock_version: lockVersionRef.current,
+						draft_lock_version: lockVersion,
 					},
 				);
-				lockVersionRef.current = session.draft_lock_version;
+				setLockVersion(session.draft_lock_version);
 				lastSyncedRef.current = snapshot;
 			} catch (error) {
-				if (isAxiosError(error) && error.response?.status === 409) {
+				if (ApiError.is(error) && error.isConflict) {
 					const session = await WorkflowBuilderSessionService.detail(
 						workspaceId,
 						sessionId,
@@ -204,7 +216,7 @@ export const useAiBuilderBridge = () => {
 		setBeforeSend(async (sessionId, created) => {
 			if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
 			if (created) {
-				lockVersionRef.current = created.draft_lock_version;
+				setLockVersion(created.draft_lock_version);
 				lastSyncedRef.current = JSON.stringify(created.draft_graph);
 			}
 			await syncCanvas(sessionId);
@@ -232,7 +244,7 @@ export const useAiBuilderBridge = () => {
 				const canvasHasNodes =
 					canvasToBuilderGraph(canvasRef.current.nodes, []).nodes.length > 0;
 				if (session.draft_graph.nodes.length === 0 && canvasHasNodes) {
-					lockVersionRef.current = session.draft_lock_version;
+					setLockVersion(session.draft_lock_version);
 					lastSyncedRef.current = JSON.stringify(session.draft_graph);
 					void syncCanvas(session.id);
 					return;
@@ -257,7 +269,7 @@ export const useAiBuilderBridge = () => {
 
 	// No session (new chat) means no draft version to sync against yet.
 	useEffect(() => {
-		if (!builderSessionId) lockVersionRef.current = null;
+		if (!builderSessionId) setLockVersion(null);
 	}, [builderSessionId]);
 
 	// Realtime — instant when broadcasting is healthy.

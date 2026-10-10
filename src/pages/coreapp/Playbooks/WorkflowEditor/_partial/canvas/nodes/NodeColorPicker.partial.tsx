@@ -1,6 +1,6 @@
 import { Palette, X } from 'lucide-react';
 import { useState } from 'react';
-import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 
 const PRESET_COLORS = [
 	{ label: 'Default', value: null },
@@ -37,6 +37,7 @@ const NodeColorPicker = ({ nodeId, currentColor }: { nodeId: string; currentColo
 			{open && (
 				<div
 					className='absolute top-8 right-0 z-50 w-48 rounded-xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-700 dark:bg-zinc-900'
+					role='presentation'
 					onClick={(e) => e.stopPropagation()}>
 					<div className='mb-2 flex items-center justify-between px-1'>
 						<span className='text-[11px] font-bold text-zinc-500'>Node color</span>
@@ -65,7 +66,7 @@ const NodeColorPicker = ({ nodeId, currentColor }: { nodeId: string; currentColo
 								className={[
 									'h-8 w-full rounded-lg border-2 transition hover:scale-105',
 									currentColor === preset.value
-										? 'border-primary-500 ring-2 ring-primary-500/30'
+										? 'border-primary-500 ring-primary-500/30 ring-2'
 										: 'border-transparent',
 									preset.value === null ? 'bg-zinc-100 dark:bg-zinc-700' : '',
 								].join(' ')}

@@ -46,5 +46,11 @@ const hashString = (value: string) => {
  * from the palette (stable per node id) so every node still stands apart
  * even when nothing was color-picked manually.
  */
-export const getNodeAccentColor = (nodeId: string, explicitColor?: string, defColorHex?: string): string =>
-	explicitColor ?? defColorHex ?? NODE_COLOR_PALETTE[hashString(nodeId) % NODE_COLOR_PALETTE.length];
+export const getNodeAccentColor = (
+	nodeId: string,
+	explicitColor?: string,
+	defColorHex?: string,
+): string =>
+	explicitColor ??
+	defColorHex ??
+	NODE_COLOR_PALETTE[hashString(nodeId) % NODE_COLOR_PALETTE.length];

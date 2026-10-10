@@ -1,7 +1,11 @@
 import { axiosClient } from '@/api/client';
 import { unwrap } from '@/api/core';
 import type { TApiResponse } from '@/api/core';
-import type { TNotification, TUnreadCount, TNotificationEventCatalogEntry } from '@/types/notification.type';
+import type {
+	TNotification,
+	TUnreadCount,
+	TNotificationEventCatalogEntry,
+} from '@/types/notification.type';
 import { NotificationEndpoints as E } from './notifications.endpoints';
 
 export const NotificationService = {
@@ -23,9 +27,7 @@ export const NotificationService = {
 			.then(unwrap<TUnreadCount>),
 
 	markRead: (id: string) =>
-		axiosClient
-			.post<TApiResponse<TNotification>>(E.markRead(id))
-			.then(unwrap<TNotification>),
+		axiosClient.post<TApiResponse<TNotification>>(E.markRead(id)).then(unwrap<TNotification>),
 
 	markAllRead: () => axiosClient.post(E.markAllRead).then(() => undefined),
 

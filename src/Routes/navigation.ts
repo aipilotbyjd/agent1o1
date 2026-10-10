@@ -23,7 +23,7 @@ const settingsPages = pages.settings.subPages!;
 export const coreAppNavigation: TNavSection[] = [
 	{
 		title: 'Overview',
-		items: [workspacePages.dashboard],
+		items: [workspacePages.assistant, workspacePages.dashboard],
 	},
 	{
 		title: 'Automate',
@@ -40,7 +40,12 @@ export const coreAppNavigation: TNavSection[] = [
 	},
 	{
 		title: 'Activity',
-		items: [workspacePages.trail, workspacePages.artifacts],
+		items: [
+			workspacePages.approvals,
+			workspacePages.trail,
+			workspacePages.artifacts,
+			workspacePages.trash,
+		],
 	},
 ];
 
@@ -48,7 +53,12 @@ export const coreAppNavigation: TNavSection[] = [
 export const settingsNavigation: TNavSection[] = [
 	{
 		title: 'Account',
-		items: [settingsPages.profile, settingsPages.security, settingsPages.notifications],
+		items: [
+			settingsPages.profile,
+			settingsPages.security,
+			settingsPages.notifications,
+			settingsPages.referrals,
+		],
 	},
 	{
 		title: 'Workspace',
@@ -56,8 +66,10 @@ export const settingsNavigation: TNavSection[] = [
 			settingsPages.workspace,
 			settingsPages.members,
 			settingsPages.apiKeys,
+			settingsPages.aiProviders,
 			settingsPages.notificationChannels,
 			settingsPages.tags,
+			settingsPages.agentPolicy,
 		],
 	},
 	{

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft, Search, Sparkles, X } from 'lucide-react';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { useWorkflowRouteParams } from '../../_hooks/useWorkflowRouteParams.hook';
 import { mapApiCategoriesToGroups } from '../../_helper/apiNodeCatalog.helper';
 import type { TNodeCategoryGroup } from '../../_helper/apiNodeCatalog.helper';
@@ -24,16 +24,15 @@ const NodeLibrary = () => {
 	const [query, setQuery] = useState('');
 	const [debouncedQuery, setDebouncedQuery] = useState('');
 	const [selected, setSelected] = useState<TNodeCategoryGroup | null>(null);
-	const prevIntentRef = useRef<typeof state.ui.leftPanelIntent | null>(null);
+	const [appliedIntent, setAppliedIntent] = useState<typeof state.ui.leftPanelIntent | null>(
+		null,
+	);
 
 	const { data: categories } = useNodeCategories();
 
-	useEffect(() => {
-		if (!categories) return;
-		const intent = state.ui.leftPanelIntent;
-		if (prevIntentRef.current === intent) return;
-		prevIntentRef.current = intent;
-
+	const intent = state.ui.leftPanelIntent;
+	if (categories && appliedIntent !== intent) {
+		setAppliedIntent(intent);
 		if (intent === 'trigger') {
 			const groups = mapApiCategoriesToGroups(categories);
 			const triggersGroup = groups.find((g) => g.slug === 'triggers-events');
@@ -41,7 +40,7 @@ const NodeLibrary = () => {
 		} else {
 			setSelected(null);
 		}
-	}, [categories, state.ui.leftPanelIntent]);
+	}
 
 	useEffect(() => {
 		const id = setTimeout(() => setDebouncedQuery(query.trim()), SEARCH_DEBOUNCE_MS);
@@ -113,7 +112,7 @@ const NodeLibrary = () => {
 						type='button'
 						onClick={() => dispatch({ type: 'TOGGLE_LEFT_PANEL' })}
 						aria-label='Close node library'
-						className='flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-200 sm:h-6 sm:w-6 sm:rounded-lg dark:border-zinc-800 dark:bg-zinc-900'>
+						className='flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 sm:h-6 sm:w-6 sm:rounded-lg dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
 						<X size={13} />
 					</button>
 				</div>
@@ -126,7 +125,7 @@ const NodeLibrary = () => {
 						type='button'
 						onClick={() => dispatch({ type: 'TOGGLE_LEFT_PANEL' })}
 						aria-label='Close node library'
-						className='flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-200 sm:h-6 sm:w-6 sm:rounded-lg dark:border-zinc-800 dark:bg-zinc-900'>
+						className='flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 sm:h-6 sm:w-6 sm:rounded-lg dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
 						<X size={13} />
 					</button>
 				</div>

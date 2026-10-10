@@ -4,6 +4,8 @@ import type { TApiResponse } from '@/api/core';
 import type {
 	TConnector,
 	TConnectorCredential,
+	TConnectorCredentialTestResult,
+	TConnectorCredentialUsage,
 	TCreateConnectorCredentialDto,
 	TUpdateConnectorCredentialDto,
 	TInitiateOAuthConnectorDto,
@@ -24,43 +26,69 @@ export const ConnectorService = {
 
 	credentials: (ws: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ connector_credentials: TConnectorCredential[] }>>(E.credentials(ws), {
-				signal,
-			})
+			.get<TApiResponse<{ connector_credentials: TConnectorCredential[] }>>(
+				E.credentials(ws),
+				{
+					signal,
+				},
+			)
 			.then(unwrapKey<TConnectorCredential[]>('connector_credentials')),
 
 	credential: (ws: string, id: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ connector_credential: TConnectorCredential }>>(E.credential(ws, id), {
-				signal,
-			})
+			.get<TApiResponse<{ connector_credential: TConnectorCredential }>>(
+				E.credential(ws, id),
+				{
+					signal,
+				},
+			)
 			.then(unwrapKey<TConnectorCredential>('connector_credential')),
 
 	createCredential: (ws: string, payload: TCreateConnectorCredentialDto) =>
 		axiosClient
-			.post<TApiResponse<{ connector_credential: TConnectorCredential }>>(
-				E.credentials(ws),
-				payload,
-			)
+			.post<
+				TApiResponse<{ connector_credential: TConnectorCredential }>
+			>(E.credentials(ws), payload)
 			.then(unwrapKey<TConnectorCredential>('connector_credential')),
 
 	updateCredential: (ws: string, id: string, payload: TUpdateConnectorCredentialDto) =>
 		axiosClient
-			.patch<TApiResponse<{ connector_credential: TConnectorCredential }>>(
-				E.credential(ws, id),
-				payload,
-			)
+			.patch<
+				TApiResponse<{ connector_credential: TConnectorCredential }>
+			>(E.credential(ws, id), payload)
 			.then(unwrapKey<TConnectorCredential>('connector_credential')),
 
-	deleteCredential: (ws: string, id: string) =>
-		axiosClient.delete(E.credential(ws, id)).then(() => undefined),
+	/** With `replaceWith`, everything pinned to this account moves there first. */
+	deleteCredential: (ws: string, id: string, replaceWith?: string) =>
+		axiosClient
+			.delete(E.credential(ws, id), {
+				data: replaceWith ? { replace_with: replaceWith } : undefined,
+			})
+			.then(() => undefined),
 
 	setDefaultCredential: (ws: string, id: string) =>
 		axiosClient
-			.post<TApiResponse<{ connector_credential: TConnectorCredential }>>(
-				E.setDefaultCredential(ws, id),
-			)
+			.post<
+				TApiResponse<{ connector_credential: TConnectorCredential }>
+			>(E.setDefaultCredential(ws, id))
 			.then(unwrapKey<TConnectorCredential>('connector_credential')),
+
+	testCredential: (ws: string, id: string) =>
+		axiosClient
+			.post<
+				TApiResponse<{
+					result: TConnectorCredentialTestResult;
+					connector_credential: TConnectorCredential;
+				}>
+			>(E.testCredential(ws, id))
+			.then((r) => r.data.data),
+
+	credentialUsage: (ws: string, id: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<{ usage: TConnectorCredentialUsage }>>(E.credentialUsage(ws, id), {
+				signal,
+			})
+			.then(unwrapKey<TConnectorCredentialUsage>('usage')),
 
 	initiateOAuth: (ws: string, payload: TInitiateOAuthConnectorDto) =>
 		axiosClient
@@ -78,8 +106,7 @@ export const ConnectorService = {
 // back here. See `pages/coreapp/Apps/OAuthComplete.page.tsx` for the other half.
 // ============================================================
 
-const OAUTH_POPUP_FEATURES =
-	'width=600,height=700,left=400,top=100,scrollbars=yes,resizable=yes';
+const OAUTH_POPUP_FEATURES = 'width=600,height=700,left=400,top=100,scrollbars=yes,resizable=yes';
 
 /** Matches the state row's TTL in `OAuthConnectorFlowService`, with slack. */
 const OAUTH_TIMEOUT_MS = 15 * 60 * 1000;
@@ -104,15 +131,24 @@ export const connectOAuthConnector = async (
 	ws: string,
 	payload: Omit<TInitiateOAuthConnectorDto, 'redirect_uri'>,
 ): Promise<TOAuthCompleteMessage> => {
-	const { authorize_url } = await ConnectorService.initiateOAuth(ws, {
-		...payload,
-		redirect_uri: `${window.location.origin}${CONNECTOR_OAUTH_REDIRECT_PATH}`,
-	});
-
-	const popup = window.open(authorize_url, 'oauth_connect', OAUTH_POPUP_FEATURES);
-
+	// Open during the user's click, before awaiting the API, so popup blockers
+	// do not mistake the provider window for an unsolicited redirect.
+	const popup = window.open('about:blank', 'oauth_connect', OAUTH_POPUP_FEATURES);
 	if (!popup) {
 		throw new ApiError(undefined, 'Popup blocked. Allow popups for this site and try again.');
+	}
+	let authorizeUrl: string;
+	try {
+		const result = await ConnectorService.initiateOAuth(ws, {
+			...payload,
+			redirect_uri: `${window.location.origin}${CONNECTOR_OAUTH_REDIRECT_PATH}`,
+		});
+		authorizeUrl = result.authorize_url;
+		if (popup.closed)
+			throw new ApiError(undefined, 'Authorization window was closed before it finished.');
+	} catch (cause) {
+		popup.close();
+		throw cause;
 	}
 
 	return new Promise<TOAuthCompleteMessage>((resolve, reject) => {
@@ -128,7 +164,7 @@ export const connectOAuthConnector = async (
 		function onMessage(event: MessageEvent) {
 			// Only ever trust our own origin — the popup navigates through the
 			// provider's domain before landing back on us.
-			if (event.origin !== window.location.origin) return;
+			if (event.origin !== window.location.origin || event.source !== popup) return;
 			const data = event.data as TOAuthCompleteMessage | undefined;
 			if (data?.type !== 'OAUTH_COMPLETE') return;
 
@@ -153,5 +189,12 @@ export const connectOAuthConnector = async (
 		}, OAUTH_TIMEOUT_MS);
 
 		window.addEventListener('message', onMessage);
+		try {
+			popup.location.href = authorizeUrl;
+		} catch (cause) {
+			cleanup();
+			popup.close();
+			reject(cause);
+		}
 	});
 };

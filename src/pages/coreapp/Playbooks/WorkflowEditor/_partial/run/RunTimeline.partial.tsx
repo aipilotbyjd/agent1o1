@@ -25,7 +25,7 @@ const RunTimeline = ({ run }: { run: TRunState }) => {
 	const config = statusConfig[run.status] ?? statusConfig.idle;
 
 	return (
-		<div className='flex items-center gap-3 text-xs'>
+		<div className='flex flex-wrap items-center gap-x-3 gap-y-1 text-xs'>
 			<span
 				className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-bold uppercase ${config.color}`}>
 				<Icon icon={config.icon} className='text-xs' />

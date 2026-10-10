@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { ComponentType, ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Building2, Calendar, ChevronDown, Globe, Link2, ShieldCheck, Trash2 } from 'lucide-react';
@@ -71,12 +71,12 @@ const WorkspacePage = () => {
 	const [timezone, setTimezone] = useState(DEFAULT_TIMEZONE);
 	const [isDangerZoneOpen, setIsDangerZoneOpen] = useState(false);
 
-	useEffect(() => {
-		if (activeWorkspace) {
-			setWorkspaceName(activeWorkspace.name);
-			setTimezone(DEFAULT_TIMEZONE);
-		}
-	}, [activeWorkspace]);
+	const [syncedWorkspace, setSyncedWorkspace] = useState<typeof activeWorkspace | null>(null);
+	if (activeWorkspace && syncedWorkspace !== activeWorkspace) {
+		setSyncedWorkspace(activeWorkspace);
+		setWorkspaceName(activeWorkspace.name);
+		setTimezone(DEFAULT_TIMEZONE);
+	}
 
 	const isDirty = useMemo(() => {
 		if (!activeWorkspace) return false;

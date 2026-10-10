@@ -22,6 +22,8 @@ export type TNodeCategory =
 export type TNodePort = {
 	id: string;
 	name: string;
+	/** Actual property path in the output; empty means the complete output. */
+	path?: string;
 	type: TPortType;
 	required?: boolean;
 };
@@ -37,7 +39,20 @@ export type TFieldKind =
 	| 'kv'
 	| 'credential'
 	| 'model'
-	| 'picker';
+	| 'picker'
+	| 'dynamic'
+	| 'list';
+
+/** A `dynamic` field's live dropdown — see `INodeSchemaOptions`. */
+export type TDynamicFieldOptions = {
+	source: string;
+	dependsOn: string[];
+	uses: string[];
+	multiple: boolean;
+	allowCustom: boolean;
+	/** The config value's shape: an id string, a number (GitHub issues), or a list. */
+	valueType: 'string' | 'integer' | 'array';
+};
 
 export type TNodeField = {
 	key: string;
@@ -55,6 +70,15 @@ export type TNodeField = {
 	advanced?: boolean;
 	/** picker only — call to action, e.g. "Pick Folder". */
 	pickerLabel?: string;
+	/** code only — the value is a JSON object/array, edited as JSON text. */
+	json?: boolean;
+	/** kv only — store the rows as a `{key: value}` object instead of a row list. */
+	kvObject?: boolean;
+	/** dynamic only — where the choices come from. */
+	dynamic?: TDynamicFieldOptions;
+	/** number only. */
+	min?: number;
+	max?: number;
 };
 
 export type TNodeDefinition = {
@@ -90,6 +114,9 @@ export type TCanvasNodeData = {
 	label: string;
 	definition?: TNodeDefinition;
 	values: Record<string, unknown>;
+	dynamicInputKeys?: string[];
+	outputPortsSnapshot?: TNodePort[];
+	fixedInputValues?: Record<string, unknown>;
 	status?: TNodeRunStatus;
 	durationMs?: number;
 	error?: string;
@@ -104,7 +131,7 @@ export type TCanvasNodeData = {
 	testOutput?: unknown;
 	testStatus?: 'idle' | 'running' | 'success' | 'error';
 	// Resolved input the node ran against, error message, and wall time — captured
-	// from a real single-node test run so the card can show input/output/timing.
+	// from a real single-node test run for inspection in the Runs panel.
 	testInput?: unknown;
 	testError?: string;
 	testDurationMs?: number;

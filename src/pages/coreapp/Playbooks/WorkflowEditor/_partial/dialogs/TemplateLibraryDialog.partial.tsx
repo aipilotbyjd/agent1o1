@@ -1,6 +1,7 @@
+import { activateOnKey } from '@/utils/activateOnKey.util';
 import { useState } from 'react';
 import { Search, Zap } from 'lucide-react';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import Modal from './Modal.partial';
 
 type TTemplate = {
@@ -136,23 +137,24 @@ const TemplateLibraryDialog = () => {
 						className='absolute top-1/2 left-3 -translate-y-1/2 text-zinc-400'
 					/>
 					<input
+						aria-label='Search templates…'
 						type='text'
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
 						placeholder='Search templates…'
-						className='w-full rounded-xl border border-zinc-200 bg-zinc-50 py-2 pr-3 pl-9 text-sm outline-none placeholder:text-zinc-400 focus:border-primary-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100'
+						className='focus:border-primary-400 w-full rounded-xl border border-zinc-200 bg-zinc-50 py-2 pr-3 pl-9 text-sm outline-none placeholder:text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100'
 					/>
 				</div>
 
 				{/* Category chips */}
-				<div className='flex items-center gap-2 overflow-x-auto pb-1 -mx-5 px-5 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
+				<div className='-mx-5 flex [scrollbar-width:none] scrollbar-none items-center gap-2 overflow-x-auto px-5 pb-1 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden'>
 					{CATEGORIES.map((cat) => (
 						<button
 							key={cat}
 							type='button'
 							onClick={() => setActiveCategory(cat)}
 							className={[
-								'rounded-full px-3 py-1 text-xs font-semibold transition shrink-0',
+								'shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition',
 								activeCategory === cat
 									? 'bg-primary-400 text-primary-950'
 									: 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700',
@@ -167,11 +169,14 @@ const TemplateLibraryDialog = () => {
 					{filtered.map((template) => (
 						<div
 							key={template.id}
+							role='button'
+							tabIndex={0}
 							onClick={() => applyTemplate(template)}
-							className='group flex cursor-pointer flex-col justify-between rounded-xl border border-zinc-200 bg-white p-4 transition-all hover:border-primary-300 hover:shadow-md hover:shadow-primary-500/20 active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-primary-800/50'>
+							onKeyDown={activateOnKey(() => applyTemplate(template))}
+							className='group hover:border-primary-300 hover:shadow-primary-500/20 dark:hover:border-primary-800/50 flex cursor-pointer flex-col justify-between rounded-xl border border-zinc-200 bg-white p-4 transition-all hover:shadow-md active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-900'>
 							<div>
 								<div className='mb-1 flex items-start justify-between gap-2'>
-									<div className='text-sm font-bold text-zinc-800 transition-colors group-hover:text-primary-600 dark:text-zinc-100 dark:group-hover:text-primary-400'>
+									<div className='group-hover:text-primary-600 dark:group-hover:text-primary-400 text-sm font-bold text-zinc-800 transition-colors dark:text-zinc-100'>
 										{template.name}
 									</div>
 									{template.badge && (
@@ -199,7 +204,7 @@ const TemplateLibraryDialog = () => {
 									)}
 								</div>
 							</div>
-							<div className='mt-4 flex items-center gap-1.5 text-xs font-bold text-primary-600 opacity-100 transition-all sm:opacity-0 sm:group-hover:opacity-100 dark:text-primary-400'>
+							<div className='text-primary-600 dark:text-primary-400 mt-4 flex items-center gap-1.5 text-xs font-bold opacity-100 transition-all sm:opacity-0 sm:group-hover:opacity-100'>
 								<Zap size={12} fill='currentColor' />
 								<span>Use Template</span>
 							</div>

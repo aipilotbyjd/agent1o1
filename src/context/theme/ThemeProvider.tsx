@@ -45,22 +45,14 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 	const [darkModeStatus, setDarkModeStatus] = useState<TDarkMode | null>(
 		(safeStorage.get('theme') || DARK_MODE.SYSTEM) as TDarkMode,
 	);
-	const [isDarkTheme, setIsDarkTheme] = useState<boolean>(darkModeStatus === DARK_MODE.DARK);
+	const isDarkTheme =
+		darkModeStatus === DARK_MODE.DARK ||
+		(darkModeStatus === DARK_MODE.SYSTEM &&
+			window.matchMedia(`(prefers-color-scheme: ${DARK_MODE.DARK})`).matches);
 	useLayoutEffect(() => {
 		safeStorage.set('theme', darkModeStatus as string);
-
-		if (
-			darkModeStatus === DARK_MODE.DARK ||
-			(darkModeStatus === DARK_MODE.SYSTEM &&
-				window.matchMedia(`(prefers-color-scheme: ${DARK_MODE.DARK})`).matches)
-		) {
-			document.documentElement.classList.add(DARK_MODE.DARK);
-			setIsDarkTheme(true);
-		} else {
-			document.documentElement.classList.remove(DARK_MODE.DARK);
-			setIsDarkTheme(false);
-		}
-	}, [darkModeStatus]);
+		document.documentElement.classList.toggle(DARK_MODE.DARK, isDarkTheme);
+	}, [darkModeStatus, isDarkTheme]);
 	useEffect(() => {
 		const metaTag = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
 
@@ -88,16 +80,21 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 			safeStorage.set('bolt_asideStatus', asideStatus?.toString());
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [asideStatus]);
-	useEffect(() => {
-		if (Number(theme.screens.md.replace('rem', '')) * 16 > Number(width)) setAsideStatus(false);
-		return () => {
+	// Narrow screens start with the aside closed; widening again restores the
+	// stored preference.
+	const [asideForWidth, setAsideForWidth] = useState<typeof width | null>(null);
+	if (asideForWidth !== width) {
+		const isNarrow = Number(theme.screens.md.replace('rem', '')) * 16 > Number(width);
+		const isFirstWidth = asideForWidth === null;
+		setAsideForWidth(width);
+		if (isNarrow) setAsideStatus(false);
+		else if (!isFirstWidth)
 			setAsideStatus(
 				safeStorage.get('bolt_asideStatus')
 					? safeStorage.get('bolt_asideStatus') === 'true'
 					: true,
 			);
-		};
-	}, [width]);
+	}
 
 	/**
 	 * Font Size

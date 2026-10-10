@@ -2,10 +2,10 @@ import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { notify } from '@/api/core';
 import { WorkflowService, workflowKeys } from '@/api/modules/workflows';
-import { WorkflowDiagnosticsService } from '@/api/modules/workflow-builder';
 import type { TWorkflow } from '@/types/workflow.type';
-import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
-import { buildGraphPayload, toPinPayload } from '../_helper/workflowApiTransform.helper';
+import { useWorkflowEditor } from './useWorkflowEditor.hook';
+import { toPinPayload } from '../_helper/workflowApiTransform.helper';
+import { usePersistWorkflowDraft } from './usePersistWorkflowDraft.hook';
 
 /**
  * Pin/unpin a node's output on the server as well as on the canvas.
@@ -18,6 +18,7 @@ import { buildGraphPayload, toPinPayload } from '../_helper/workflowApiTransform
 export const useNodePin = () => {
 	const { state, dispatch } = useWorkflowEditor();
 	const queryClient = useQueryClient();
+	const persistWorkflowDraft = usePersistWorkflowDraft();
 	const { workspaceId, apiId } = state.workflow;
 
 	const resolveRowId = useCallback(
@@ -28,28 +29,43 @@ export const useNodePin = () => {
 			const row = cached?.nodes?.find((node) => node.key === key);
 			if (row) return String(row.id);
 
-			const saved = await WorkflowDiagnosticsService.replaceGraph(
+			const saved = await persistWorkflowDraft({
 				workspaceId,
-				apiId,
-				buildGraphPayload(state.nodes, state.edges),
-			);
-			queryClient.setQueryData(detailKey, saved);
+				workflowId: apiId,
+				name: state.workflow.name,
+				description: state.workflow.description,
+				nodes: state.nodes,
+				edges: state.edges,
+			});
 			const savedRow = saved.nodes?.find((node) => node.key === key);
 			return savedRow ? String(savedRow.id) : null;
 		},
-		[apiId, queryClient, state.edges, state.nodes, workspaceId],
+		[
+			apiId,
+			persistWorkflowDraft,
+			queryClient,
+			state.edges,
+			state.nodes,
+			state.workflow.description,
+			state.workflow.name,
+			workspaceId,
+		],
 	);
 
 	const storeRow = useCallback(
 		(node: NonNullable<TWorkflow['nodes']>[number]) => {
 			if (!workspaceId || !apiId) return;
-			queryClient.setQueryData<TWorkflow>(workflowKeys.detail(workspaceId, apiId), (current) =>
-				current
-					? {
-							...current,
-							nodes: current.nodes?.map((row) => (row.key === node.key ? node : row)),
-						}
-					: current,
+			queryClient.setQueryData<TWorkflow>(
+				workflowKeys.detail(workspaceId, apiId),
+				(current) =>
+					current
+						? {
+								...current,
+								nodes: current.nodes?.map((row) =>
+									row.key === node.key ? node : row,
+								),
+							}
+						: current,
 			);
 		},
 		[apiId, queryClient, workspaceId],

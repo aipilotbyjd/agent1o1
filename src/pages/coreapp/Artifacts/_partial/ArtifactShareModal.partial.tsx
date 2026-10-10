@@ -51,7 +51,7 @@ const ArtifactShareModal = ({ ws, artifact, onClose }: IArtifactShareModalProps)
 		<Modal isOpen={!!artifact} setIsOpen={(open) => !open && onClose()} size='sm'>
 			<ModalHeader setIsOpen={(open) => !open && onClose()}>
 				<div className='flex items-center gap-3'>
-					<div className='flex h-9 w-9 items-center justify-center rounded-xl bg-primary-400/10 text-primary-600 dark:text-primary-400'>
+					<div className='bg-primary-400/10 text-primary-600 dark:text-primary-400 flex h-9 w-9 items-center justify-center rounded-xl'>
 						<Share2 size={16} />
 					</div>
 					<div className='flex flex-col'>
@@ -108,7 +108,9 @@ const ShareBody = ({ ws, artifact }: { ws: string; artifact: TArtifact }) => {
 			{
 				onSuccess: () =>
 					notify.success(
-						value === 'restricted' ? 'Access restricted.' : 'Shared with the workspace.',
+						value === 'restricted'
+							? 'Access restricted.'
+							: 'Shared with the workspace.',
 					),
 				onError: () => setAccess(previous),
 			},
@@ -133,7 +135,8 @@ const ShareBody = ({ ws, artifact }: { ws: string; artifact: TArtifact }) => {
 		removeShare.mutate(
 			{ id: artifact.id, userId },
 			{
-				onSuccess: () => setShares((list) => list.filter((s) => String(s.user_id) !== userId)),
+				onSuccess: () =>
+					setShares((list) => list.filter((s) => String(s.user_id) !== userId)),
 			},
 		);
 	};
@@ -142,7 +145,8 @@ const ShareBody = ({ ws, artifact }: { ws: string; artifact: TArtifact }) => {
 		<div className='space-y-5 pt-2'>
 			{!canShare && (
 				<p className='rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-700 dark:border-amber-500/20 dark:bg-amber-950/20 dark:text-amber-400'>
-					Only the person who created this file or a workspace manager can change its sharing.
+					Only the person who created this file or a workspace manager can change its
+					sharing.
 				</p>
 			)}
 
@@ -166,7 +170,11 @@ const ShareBody = ({ ws, artifact }: { ws: string; artifact: TArtifact }) => {
 							} ${!canShare && !active ? 'opacity-50' : ''}`}>
 							<Icon
 								size={15}
-								className={active ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400'}
+								className={
+									active
+										? 'text-primary-600 dark:text-primary-400'
+										: 'text-slate-400'
+								}
 							/>
 							<span className='flex flex-col'>
 								<span className='text-xs font-bold text-slate-800 dark:text-zinc-200'>
@@ -187,8 +195,8 @@ const ShareBody = ({ ws, artifact }: { ws: string; artifact: TArtifact }) => {
 				</p>
 				{access !== 'restricted' && (
 					<p className='text-[10px] font-semibold text-slate-400 dark:text-zinc-500'>
-						Everyone in the workspace can already see this. People you add keep access if you
-						switch to Restricted later.
+						Everyone in the workspace can already see this. People you add keep access
+						if you switch to Restricted later.
 					</p>
 				)}
 				<div className='flex gap-2'>
@@ -197,9 +205,11 @@ const ShareBody = ({ ws, artifact }: { ws: string; artifact: TArtifact }) => {
 						value={selectedUserId}
 						disabled={!canShare || candidates.length === 0}
 						onChange={(e) => setSelectedUserId(e.target.value)}
-						className='h-9 min-w-0 flex-1 rounded-xl border border-border-main bg-bg-card px-2.5 text-xs font-semibold text-slate-700 outline-none focus:border-primary-500 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-200'>
+						className='border-border-main bg-bg-card focus:border-primary-500 h-9 min-w-0 flex-1 rounded-xl border px-2.5 text-xs font-semibold text-slate-700 outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-200'>
 						<option value=''>
-							{candidates.length === 0 ? 'No other members to add' : 'Choose a member…'}
+							{candidates.length === 0
+								? 'No other members to add'
+								: 'Choose a member…'}
 						</option>
 						{candidates.map((m) => (
 							<option key={m.user_id} value={String(m.user_id)}>
@@ -212,7 +222,7 @@ const ShareBody = ({ ws, artifact }: { ws: string; artifact: TArtifact }) => {
 						type='button'
 						disabled={!canShare || !selectedUserId || addShare.isPending}
 						onClick={handleAdd}
-						className='flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-primary-400 px-3 text-[11px] font-bold text-primary-950 transition-all hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-50'>
+						className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-3 text-[11px] font-bold transition-all disabled:cursor-not-allowed disabled:opacity-50'>
 						<UserPlus size={13} />
 						Add
 					</button>
@@ -223,7 +233,7 @@ const ShareBody = ({ ws, artifact }: { ws: string; artifact: TArtifact }) => {
 						{shares.map((share) => (
 							<div
 								key={share.user_id}
-								className='flex items-center justify-between rounded-xl border border-border-main bg-bg-main px-3 py-2 dark:bg-zinc-950/40'>
+								className='border-border-main bg-bg-main flex items-center justify-between rounded-xl border px-3 py-2 dark:bg-zinc-950/40'>
 								<div className='min-w-0'>
 									<p className='truncate text-xs font-bold text-slate-800 dark:text-zinc-200'>
 										{share.user?.name ?? 'Member'}

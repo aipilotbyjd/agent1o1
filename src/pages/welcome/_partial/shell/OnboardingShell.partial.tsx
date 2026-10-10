@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import OnboardingProvider from '../../_context/OnboardingProvider.context';
-import { useOnboardingStore } from '../../_context/OnboardingStore.context';
+import { useOnboardingStore } from '../../_hooks/useOnboardingStore.hook';
 import { TOTAL_STEPS, ROLES } from '../../_helper/onboarding.constants';
 import { parseEmails, isValidEmail } from '../../_helper/onboarding.helper';
 import { useOnboardingNavigation } from '../../_hooks/useOnboardingNavigation.hook';
@@ -19,10 +19,8 @@ import ConnectAppsStep from '../steps/ConnectAppsStep.partial';
 import DiscoveryStep from '../steps/DiscoveryStep.partial';
 
 import { useOnboardingState } from '@/api/modules/onboarding';
-import { useEffect } from 'react';
 import type { TOnboardingStep } from '../../_types/onboarding.type';
-import { LogoDark, LogoLight } from '@/assets/images';
-import useDarkMode from '@/hooks/useDarkMode';
+import AppLogo from '@/components/AppLogo';
 import { useAuth } from '@/context/auth';
 
 const mapStepKeyToIndex = (key: string): TOnboardingStep => {
@@ -47,14 +45,13 @@ const mapStepKeyToIndex = (key: string): TOnboardingStep => {
 };
 
 const OnboardingShellInner = () => {
-	const { isDarkTheme } = useDarkMode();
 	const { userData } = useAuth();
 	const { state, dispatch } = useOnboardingStore();
 	const { data: onboardingData, isLoading } = useOnboardingState();
-	const [initialized, setInitialized] = useState(false);
+	const initialized = useRef(false);
 
 	useEffect(() => {
-		if (onboardingData && !initialized) {
+		if (onboardingData && !initialized.current) {
 			const stepIndex = mapStepKeyToIndex(onboardingData.current_step);
 			const workspace = userData?.current_workspace;
 
@@ -77,9 +74,9 @@ const OnboardingShellInner = () => {
 						: null),
 				},
 			});
-			setInitialized(true);
+			initialized.current = true;
 		}
-	}, [onboardingData, initialized, dispatch, userData]);
+	}, [onboardingData, dispatch, userData]);
 
 	const {
 		currentStep: step,
@@ -165,11 +162,12 @@ const OnboardingShellInner = () => {
 
 			<header className='relative z-10 hidden w-full px-6 py-5 sm:block'>
 				<div className='mx-auto flex max-w-7xl items-center justify-between'>
-					<img
-						src={isDarkTheme ? LogoDark : LogoLight}
-						alt='agent1o1'
-						className='h-10 transition-all duration-300 ease-in-out'
-					/>
+					<span className='flex items-center gap-2.5'>
+						<AppLogo className='size-10' rounded='rounded-xl' alt='' />
+						<span className='text-lg font-black tracking-tight text-zinc-950 dark:text-white'>
+							agent1o1
+						</span>
+					</span>
 					{step > 1 && (
 						<button
 							type='button'
@@ -195,11 +193,12 @@ const OnboardingShellInner = () => {
 							<div>
 								{/* Mobile Header (only visible on mobile) */}
 								<div className='mb-6 flex items-center justify-between sm:hidden'>
-									<img
-										src={isDarkTheme ? LogoDark : LogoLight}
-										alt='agent1o1'
-										className='h-9 transition-all duration-300 ease-in-out'
-									/>
+									<span className='flex items-center gap-2'>
+										<AppLogo className='size-9' rounded='rounded-xl' alt='' />
+										<span className='text-base font-black tracking-tight text-zinc-950 dark:text-white'>
+											agent1o1
+										</span>
+									</span>
 									{step > 1 && (
 										<button
 											type='button'

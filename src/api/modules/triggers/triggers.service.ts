@@ -1,7 +1,12 @@
 import { axiosClient } from '@/api/client';
 import { unwrapKey } from '@/api/core';
 import type { TApiResponse, TListParams } from '@/api/core';
-import type { TTrigger, TTriggerEvent, TCreateTriggerDto, TUpdateTriggerDto } from '@/types/trigger.type';
+import type {
+	TTrigger,
+	TTriggerEvent,
+	TCreateTriggerDto,
+	TUpdateTriggerDto,
+} from '@/types/trigger.type';
 import { TriggerEndpoints as E } from './triggers.endpoints';
 
 export const TriggerService = {

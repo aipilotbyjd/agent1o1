@@ -1,14 +1,23 @@
 import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createResource } from '@/api/core';
-import type { TSyncWorkflowTagsDto, TPinWorkflowNodeDto, TStartRunDto } from '@/types/workflow.type';
+import type {
+	TSyncWorkflowTagsDto,
+	TPinWorkflowNodeDto,
+	TStartRunDto,
+} from '@/types/workflow.type';
 import { RunService } from '@/api/modules/runs';
-import { useTriggers, useCreateTrigger, useUpdateTrigger, useDeleteTrigger } from '@/api/modules/triggers';
+import {
+	useTriggers,
+	useCreateTrigger,
+	useUpdateTrigger,
+	useDeleteTrigger,
+} from '@/api/modules/triggers';
 import type { TTriggerMechanism } from '@/types/catalog.type';
 import type { TTriggerTargetType } from '@/types/trigger.type';
 import { WorkflowService } from './workflows.service';
 import { WorkflowVersionService } from './workflow-versions.service';
-import { workflowKeys } from './workflows.keys';
+import { workflowKeys, workflowTrashKey } from './workflows.keys';
 
 const Workflows = createResource({
 	service: WorkflowService,
@@ -20,9 +29,51 @@ export const useWorkflows = Workflows.useList;
 export const useWorkflow = Workflows.useDetail;
 export const useCreateWorkflow = Workflows.useCreate;
 export const useUpdateWorkflow = Workflows.useUpdate;
-export const useDeleteWorkflow = Workflows.useDelete;
 
 // ─── Custom actions — not CRUD, so hand-written alongside the factory ──
+
+// Deleting only moves the workflow to the trash, so the trash has to refetch too.
+export const useDeleteWorkflow = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => WorkflowService.remove(ws, id),
+		onSuccess: () =>
+			Promise.all([
+				qc.invalidateQueries({ queryKey: workflowKeys.lists(ws) }),
+				qc.invalidateQueries({ queryKey: workflowTrashKey(ws) }),
+			]),
+		meta: { errorMessage: 'Failed to move workflow to trash' },
+	});
+};
+
+export const useWorkflowTrash = (ws: string) =>
+	useQuery({
+		queryKey: workflowTrashKey(ws),
+		queryFn: ({ signal }) => WorkflowService.trash(ws, signal),
+		enabled: !!ws,
+	});
+
+export const useRestoreWorkflow = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => WorkflowService.restore(ws, id),
+		onSuccess: () =>
+			Promise.all([
+				qc.invalidateQueries({ queryKey: workflowKeys.lists(ws) }),
+				qc.invalidateQueries({ queryKey: workflowTrashKey(ws) }),
+			]),
+		meta: { errorMessage: 'Failed to restore workflow' },
+	});
+};
+
+export const useForceDeleteWorkflow = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => WorkflowService.forceDelete(ws, id),
+		onSuccess: () => qc.invalidateQueries({ queryKey: workflowTrashKey(ws) }),
+		meta: { errorMessage: 'Failed to delete workflow permanently' },
+	});
+};
 
 export const useDuplicateWorkflow = (ws: string) => {
 	const qc = useQueryClient();
@@ -92,7 +143,9 @@ export const useActivateWorkflow = (ws: string) => {
 export const useDeactivateWorkflow = (_ws: string) =>
 	useMutation({
 		mutationFn: (_id: string): Promise<never> =>
-			Promise.reject(new Error('Deactivating a workflow is not supported by this backend yet')),
+			Promise.reject(
+				new Error('Deactivating a workflow is not supported by this backend yet'),
+			),
 		meta: { errorMessage: 'Deactivating a workflow is not supported yet' },
 	});
 
@@ -132,7 +185,8 @@ export const useWorkflowTrigger = (ws: string, workflowId: string) => {
 	const data = useMemo(
 		() =>
 			(query.data ?? []).filter(
-				(t) => t.target_type === WORKFLOW_TARGET && String(t.target_id) === String(workflowId),
+				(t) =>
+					t.target_type === WORKFLOW_TARGET && String(t.target_id) === String(workflowId),
 			),
 		[query.data, workflowId],
 	);
@@ -231,8 +285,13 @@ export type TLegacyContract = {
 	created_at: TIsoDate;
 };
 
-const useMissingCollection = <T,>() =>
-	useQuery<T[]>({ queryKey: ['unsupported'], queryFn: () => Promise.resolve([]), enabled: false, initialData: [] });
+const useMissingCollection = <T>() =>
+	useQuery<T[]>({
+		queryKey: ['unsupported'],
+		queryFn: () => Promise.resolve([]),
+		enabled: false,
+		initialData: [],
+	});
 
 /** Writes with no counterpart: reject with the reason. */
 const useMissingMutation = (what: string) =>

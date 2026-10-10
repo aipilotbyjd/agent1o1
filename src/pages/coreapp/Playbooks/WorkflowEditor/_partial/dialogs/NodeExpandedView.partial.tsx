@@ -1,6 +1,6 @@
 import { X, Maximize2, Info, SlidersHorizontal, FlaskConical, Coins } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { getNodeDefinition } from '../../_helper/nodeCatalog.constants';
 import { getNodeCreditCost } from '../../_helper/builder.constants';
 import NodeFields from '../canvas/nodes/NodeFields.partial';
@@ -22,7 +22,11 @@ const NodeExpandedView = () => {
 	const brand = (def?.key.split('.')[0] ?? def?.category ?? 'node')
 		.replace(/[_-]+/g, ' ')
 		.replace(/\b\w/g, (letter) => letter.toUpperCase());
-	const effectiveColorHex = getNodeAccentColor(node.id, node.data.color as string | undefined, def?.colorHex);
+	const effectiveColorHex = getNodeAccentColor(
+		node.id,
+		node.data.color as string | undefined,
+		def?.colorHex,
+	);
 	const creditCost = getNodeCreditCost(def);
 	const credentialField = def?.fields.find((field) => field.kind === 'credential');
 	const credentialId = credentialField
@@ -48,7 +52,7 @@ const NodeExpandedView = () => {
 				exit={{ scale: 0.95, opacity: 0, x: '-50%', y: 8 }}
 				transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
 				onClick={(e) => e.stopPropagation()}
-				className='fixed inset-y-4 left-1/2 z-50 flex w-[92vw] max-w-2xl flex-col overflow-hidden rounded-[28px] border border-zinc-200 bg-white shadow-[0_2px_4px_rgba(24,24,27,0.05),0_32px_64px_-12px_rgba(24,24,27,0.35)] dark:border-white/10 dark:bg-zinc-950 sm:inset-y-8 md:inset-y-12 lg:inset-y-16'>
+				className='fixed inset-y-4 left-1/2 z-50 flex w-[92vw] max-w-2xl flex-col overflow-hidden rounded-[28px] border border-zinc-200 bg-white shadow-[0_2px_4px_rgba(24,24,27,0.05),0_32px_64px_-12px_rgba(24,24,27,0.35)] sm:inset-y-8 md:inset-y-12 lg:inset-y-16 dark:border-white/10 dark:bg-zinc-950'>
 				{/* Header */}
 				<div
 					className='relative shrink-0 overflow-hidden border-b border-zinc-200 px-7 py-5 dark:border-white/[0.06]'
@@ -56,7 +60,7 @@ const NodeExpandedView = () => {
 						backgroundColor: effectiveColorHex ? `${effectiveColorHex}0a` : undefined,
 					}}>
 					<div className='flex items-start justify-between gap-4'>
-						<div className='flex flex-1 min-w-0 items-start gap-4'>
+						<div className='flex min-w-0 flex-1 items-start gap-4'>
 							<div
 								className='flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-sm'
 								style={tintStyle(effectiveColorHex)}>
@@ -89,7 +93,10 @@ const NodeExpandedView = () => {
 								</p>
 								{credentialId && (
 									<div className='mt-2'>
-										<NodeCredentialBadge credentialId={credentialId} />
+										<NodeCredentialBadge
+											nodeId={node.id}
+											credentialId={credentialId}
+										/>
 									</div>
 								)}
 							</div>
@@ -111,7 +118,7 @@ const NodeExpandedView = () => {
 						<div className='space-y-5'>
 							<div className='rounded-2xl border border-zinc-200 bg-zinc-50/60 p-5 dark:border-zinc-800 dark:bg-white/[0.02]'>
 								<div className='mb-4 flex items-center gap-2'>
-									<span className='flex h-6 w-6 items-center justify-center rounded-lg bg-primary-500/12 text-primary-500'>
+									<span className='bg-primary-500/12 text-primary-500 flex h-6 w-6 items-center justify-center rounded-lg'>
 										<SlidersHorizontal size={13} />
 									</span>
 									<h3 className='text-[13px] font-bold text-zinc-900 dark:text-white'>
@@ -152,7 +159,7 @@ const NodeExpandedView = () => {
 						onClick={() =>
 							dispatch({ type: 'SET_NODE_DOC', open: true, nodeId: node.id })
 						}
-						className='flex items-center gap-1.5 text-[12px] font-semibold text-zinc-500 transition hover:text-primary-600 dark:text-zinc-400 dark:hover:text-primary-400'>
+						className='hover:text-primary-600 dark:hover:text-primary-400 flex items-center gap-1.5 text-[12px] font-semibold text-zinc-500 transition dark:text-zinc-400'>
 						<Info size={14} />
 						View documentation
 					</button>

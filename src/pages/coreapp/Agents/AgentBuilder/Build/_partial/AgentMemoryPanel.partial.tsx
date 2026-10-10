@@ -6,7 +6,8 @@ import {
 	useUpdateAgentMemory,
 	useDeleteAgentMemory,
 	useClearAgentMemories,
-} from '@/api/modules/agents';
+} from '@/api/modules/agent-memory';
+import paths from '@/Routes/paths';
 import type { TAgentMemory } from '@/types/agent.type';
 
 type TProps = {
@@ -87,7 +88,7 @@ const AgentMemoryPanel = ({ ws, agentId }: TProps) => {
 						resetForm();
 						setIsFormOpen(true);
 					}}
-					className='flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black text-primary-600 hover:bg-zinc-50 dark:border-primary-500/20 dark:bg-zinc-900 dark:text-primary-400 dark:hover:bg-zinc-800'>
+					className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
 					<Plus size={10} />
 					<span>Add</span>
 				</button>
@@ -111,34 +112,39 @@ const AgentMemoryPanel = ({ ws, agentId }: TProps) => {
 						<span className='text-[11px] font-black text-zinc-700 dark:text-zinc-300'>
 							{editingId ? 'Edit memory' : 'New memory'}
 						</span>
-						<button aria-label='Close' onClick={resetForm} className='text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
+						<button
+							aria-label='Close'
+							onClick={resetForm}
+							className='text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
 							<X size={13} />
 						</button>
 					</div>
 					<input
+						aria-label='Key (e.g. preferred_tone)'
 						type='text'
 						value={form.key}
 						onChange={(e) => setForm((f) => ({ ...f, key: e.target.value }))}
 						placeholder='Key (e.g. preferred_tone)'
-						className='w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+						className='focus:border-primary-500/50 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 					/>
 					<textarea
+						aria-label='Value'
 						value={form.value}
 						onChange={(e) => setForm((f) => ({ ...f, value: e.target.value }))}
 						placeholder='Value'
 						rows={3}
-						className='w-full resize-none rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+						className='focus:border-primary-500/50 w-full resize-none rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 					/>
 					<div className='flex justify-end gap-2'>
 						<button
 							onClick={resetForm}
-							className='rounded-lg border border-zinc-200 bg-white px-3 py-1 text-[10px] font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
+							className='rounded-lg border border-zinc-200 bg-white px-3 py-1 text-[10px] font-bold text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'>
 							Cancel
 						</button>
 						<button
 							onClick={handleSubmit}
 							disabled={isSaving || !form.key.trim() || !form.value.trim()}
-							className='flex items-center gap-1 rounded-lg bg-primary-400 px-3 py-1 text-[10px] font-black text-primary-950 hover:bg-primary-500 disabled:opacity-50'>
+							className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex items-center gap-1 rounded-lg px-3 py-1 text-[10px] font-black disabled:opacity-50'>
 							{isSaving && <Loader2 size={11} className='animate-spin' />}
 							Save
 						</button>
@@ -159,7 +165,7 @@ const AgentMemoryPanel = ({ ws, agentId }: TProps) => {
 						<div
 							key={memory.id}
 							className='flex items-start gap-3 rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
-							<div className='mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400'>
+							<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg'>
 								<Brain size={13} />
 							</div>
 							<div className='min-w-0 flex-1'>
@@ -167,12 +173,27 @@ const AgentMemoryPanel = ({ ws, agentId }: TProps) => {
 									<span className='truncate font-mono text-[11px] font-black text-zinc-800 dark:text-zinc-200'>
 										{memory.key}
 									</span>
-									<span className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[8px] font-black uppercase text-zinc-500 dark:bg-zinc-800'>
+									<span className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[8px] font-black text-zinc-500 uppercase dark:bg-zinc-800'>
 										{memory.user_id === null ? 'agent' : 'user'}
 									</span>
 								</div>
 								<p className='mt-0.5 line-clamp-2 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400'>
 									{memory.value}
+								</p>
+								<p className='mt-1 text-[9px] font-semibold text-zinc-400 dark:text-zinc-600'>
+									{memory.agent_session_id && agentId ? (
+										<>
+											<a
+												href={`${paths.editAgent(ws, agentId)}?session=${memory.agent_session_id}`}
+												className='hover:text-primary-600 dark:hover:text-primary-400 underline-offset-2 hover:underline'>
+												Saved in a chat
+											</a>
+											{' · '}
+										</>
+									) : (
+										'Updated '
+									)}
+									{new Date(memory.updated_at).toLocaleDateString()}
 								</p>
 							</div>
 							<div className='flex shrink-0 items-center gap-2'>
@@ -181,7 +202,9 @@ const AgentMemoryPanel = ({ ws, agentId }: TProps) => {
 									title='Edit'
 									aria-label={`Edit ${memory.key}`}
 									className={`hover:text-primary-600 dark:hover:text-primary-400 ${
-										editingId === memory.id ? 'text-primary-600 dark:text-primary-400' : 'text-zinc-400'
+										editingId === memory.id
+											? 'text-primary-600 dark:text-primary-400'
+											: 'text-zinc-400'
 									}`}>
 									<Pencil size={12} />
 								</button>

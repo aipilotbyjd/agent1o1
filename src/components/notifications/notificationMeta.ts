@@ -3,9 +3,11 @@ import {
 	Coins,
 	CreditCard,
 	Gauge,
+	Gift,
 	Hand,
 	PlugZap,
 	Sparkles,
+	TrendingDown,
 	Users,
 	XCircle,
 	type LucideIcon,
@@ -55,6 +57,15 @@ const BY_TYPE: Record<string, TNotificationMeta> = {
 		href: (ws, data) => {
 			const agentId = idFrom(data, 'agent_id');
 			return agentId ? paths.agentInsights(ws, agentId, 'reflections') : null;
+		},
+	},
+	'agent.eval_regressed': {
+		icon: TrendingDown,
+		tone: 'danger',
+		action: 'Open evals',
+		href: (ws, data) => {
+			const agentId = idFrom(data, 'agent_id');
+			return agentId ? paths.agentInsights(ws, agentId, 'evals') : null;
 		},
 	},
 	'agent.session_evaluation_notify': {
@@ -114,11 +125,38 @@ const BY_TYPE: Record<string, TNotificationMeta> = {
 		action: 'View plans',
 		href: (ws) => paths.billingPlans(ws),
 	},
+	'referral.signed_up': {
+		icon: Gift,
+		tone: 'info',
+		action: 'View referrals',
+		href: (ws) => paths.referrals(ws),
+	},
+	'referral.reward_granted': {
+		icon: Gift,
+		tone: 'success',
+		action: 'View rewards',
+		href: (ws) => paths.referrals(ws),
+	},
+	'referral.milestone_reached': {
+		icon: Gift,
+		tone: 'success',
+		action: 'View referrals',
+		href: (ws) => paths.referrals(ws),
+	},
+	'referral.plan_time_ending': {
+		icon: Gift,
+		tone: 'warning',
+		action: 'View plans',
+		href: (ws) => paths.billingPlans(ws),
+	},
 	'connector.credential_expired': {
 		icon: PlugZap,
 		tone: 'warning',
 		action: 'Reconnect app',
-		href: (ws) => paths.apps(ws),
+		href: (ws, data) => {
+			const credentialId = idFrom(data, 'connector_credential_id');
+			return credentialId ? `${paths.apps(ws)}?account=${credentialId}` : paths.apps(ws);
+		},
 	},
 };
 

@@ -28,7 +28,9 @@ const StatTile = ({
 	<div className='rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
 		<div className='flex items-center gap-1.5'>
 			<Icon size={12} className={accent} />
-			<span className='text-[9px] font-black uppercase tracking-wide text-zinc-400'>{label}</span>
+			<span className='text-[9px] font-black tracking-wide text-zinc-400 uppercase'>
+				{label}
+			</span>
 		</div>
 		<span className='mt-1 block text-lg font-black text-zinc-900 dark:text-white'>{value}</span>
 	</div>
@@ -85,7 +87,12 @@ const AgentAnalyticsPanel = ({ ws, agentId }: TProps) => {
 					value={fmtNum(totals.total_runs)}
 					accent='text-primary-500'
 				/>
-				<StatTile icon={CheckCircle2} label='Success' value={successPct} accent='text-emerald-500' />
+				<StatTile
+					icon={CheckCircle2}
+					label='Success'
+					value={successPct}
+					accent='text-emerald-500'
+				/>
 				<StatTile
 					icon={XCircle}
 					label='Failed'
@@ -103,13 +110,13 @@ const AgentAnalyticsPanel = ({ ws, agentId }: TProps) => {
 			{/* Tokens + latency detail */}
 			<div className='grid grid-cols-2 gap-2 rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
 				<div>
-					<span className='text-[9px] font-black uppercase text-zinc-400'>Avg / run</span>
+					<span className='text-[9px] font-black text-zinc-400 uppercase'>Avg / run</span>
 					<span className='block text-xs font-black text-zinc-800 dark:text-zinc-200'>
 						{fmtNum(Math.round(tokens.avg_per_run))} cr
 					</span>
 				</div>
 				<div>
-					<span className='flex items-center gap-1 text-[9px] font-black uppercase text-zinc-400'>
+					<span className='flex items-center gap-1 text-[9px] font-black text-zinc-400 uppercase'>
 						<Clock size={9} /> Avg latency
 					</span>
 					<span className='block text-xs font-black text-zinc-800 dark:text-zinc-200'>
@@ -117,13 +124,17 @@ const AgentAnalyticsPanel = ({ ws, agentId }: TProps) => {
 					</span>
 				</div>
 				<div>
-					<span className='text-[9px] font-black uppercase text-zinc-400'>Runs settled</span>
+					<span className='text-[9px] font-black text-zinc-400 uppercase'>
+						Runs settled
+					</span>
 					<span className='block text-xs font-black text-zinc-800 dark:text-zinc-200'>
 						{fmtNum(totals.completed)} / {fmtNum(totals.failed)}
 					</span>
 				</div>
 				<div>
-					<span className='text-[9px] font-black uppercase text-zinc-400'>Max latency</span>
+					<span className='text-[9px] font-black text-zinc-400 uppercase'>
+						Max latency
+					</span>
 					<span className='block text-xs font-black text-zinc-800 dark:text-zinc-200'>
 						{fmtMs(latency.max_duration_ms)}
 					</span>
@@ -133,11 +144,11 @@ const AgentAnalyticsPanel = ({ ws, agentId }: TProps) => {
 			{/* By source */}
 			{sources.length > 0 && (
 				<div className='rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
-					<span className='text-[9px] font-black uppercase text-zinc-400'>By source</span>
+					<span className='text-[9px] font-black text-zinc-400 uppercase'>By source</span>
 					<div className='mt-2 space-y-1.5'>
 						{sources.map(([source, count]) => (
 							<div key={source} className='flex items-center justify-between'>
-								<span className='text-[10px] font-bold capitalize text-zinc-600 dark:text-zinc-300'>
+								<span className='text-[10px] font-bold text-zinc-600 capitalize dark:text-zinc-300'>
 									{source}
 								</span>
 								<span className='text-[10px] font-black text-zinc-800 dark:text-zinc-200'>
@@ -152,7 +163,9 @@ const AgentAnalyticsPanel = ({ ws, agentId }: TProps) => {
 			{/* By day mini bar chart */}
 			{by_day.length > 0 && (
 				<div className='rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
-					<span className='text-[9px] font-black uppercase text-zinc-400'>Runs per day</span>
+					<span className='text-[9px] font-black text-zinc-400 uppercase'>
+						Runs per day
+					</span>
 					<div className='mt-3 flex h-24 items-end gap-1'>
 						{by_day.map((d) => (
 							<div
@@ -161,11 +174,15 @@ const AgentAnalyticsPanel = ({ ws, agentId }: TProps) => {
 								className='flex flex-1 flex-col items-center gap-1'>
 								<div className='flex w-full flex-1 items-end'>
 									<div
-										className='w-full rounded-t bg-primary-400 dark:bg-primary-500'
-										style={{ height: `${Math.max(4, (d.runs / maxDayRuns) * 100)}%` }}
+										className='bg-primary-400 dark:bg-primary-500 w-full rounded-t'
+										style={{
+											height: `${Math.max(4, (d.runs / maxDayRuns) * 100)}%`,
+										}}
 									/>
 								</div>
-								<span className='text-[7px] font-bold text-zinc-400'>{d.day.slice(5)}</span>
+								<span className='text-[7px] font-bold text-zinc-400'>
+									{d.day.slice(5)}
+								</span>
 							</div>
 						))}
 					</div>

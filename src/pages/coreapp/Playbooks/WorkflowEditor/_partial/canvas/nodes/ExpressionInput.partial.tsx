@@ -1,8 +1,15 @@
+import { getNodeOutput } from '../../../_helper/outputPorts.helper';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CornerDownLeft } from 'lucide-react';
-import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 import { collectUpstreamVariables } from '../../../_helper/variables.helper';
-import { getTokenFromDrop, TOKEN_DND_MIME } from '../../../_helper/tokenDrag.helper';
+import {
+	getTokenFromDrop,
+	parseNodeToken,
+	TOKEN_DND_MIME,
+} from '../../../_helper/tokenDrag.helper';
+import { getNodeDefinition } from '../../../_helper/nodeCatalog.constants';
+import { getNodeAccentColor } from '../../library/library.util';
 import { buildRuntimeContext, resolveExpressions } from '../../../_helper/runtime.helper';
 import type { TNodeField } from '../../../_types/node.type';
 import type { TNodeOutputs } from '../../../_helper/runtime.helper';
@@ -26,6 +33,7 @@ const CHIP_CLS =
 	'mx-0.5 my-0.5 inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 align-middle text-[10px] font-semibold select-none';
 const CHIP_X_CLS = 'ml-0.5 cursor-pointer rounded-full px-0.5 opacity-70 hover:opacity-100';
 const DEFAULT_CHIP_COLOR = '#10b981';
+const MISSING_CHIP_COLOR = '#f43f5e';
 
 const prettify = (raw: string) =>
 	raw.replace(/[_-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
@@ -41,7 +49,8 @@ const splitSegments = (text: string): TSegment[] => {
 	let match: RegExpExecArray | null;
 	TOKEN_RE.lastIndex = 0;
 	while ((match = TOKEN_RE.exec(text)) !== null) {
-		if (match.index > last) segments.push({ type: 'text', value: text.slice(last, match.index) });
+		if (match.index > last)
+			segments.push({ type: 'text', value: text.slice(last, match.index) });
 		segments.push({ type: 'token', value: match[0] });
 		last = match.index + match[0].length;
 	}
@@ -72,7 +81,7 @@ const domToValue = (root: Node): string => {
 };
 
 /**
- * Inline expression editor. Renders `{{node.output.field}}` tokens as chips right
+ * Inline expression editor. Renders `{{nodes.<id>.field}}` tokens as chips right
  * inside an editable surface (Gumloop-style), so you can drag values in, type text
  * around them, and delete a chip with Backspace or its ✕ — all in one field. The
  * underlying value stays the `{{…}}` string, with a live resolved preview below.
@@ -88,9 +97,12 @@ const ExpressionInput = ({ field, value, onChange, compact, nodeId, className }:
 	const [activeIndex, setActiveIndex] = useState(0);
 	const [dragOver, setDragOver] = useState(false);
 
-	useEffect(() => () => {
-		if (blurTimer.current) clearTimeout(blurTimer.current);
-	}, []);
+	useEffect(
+		() => () => {
+			if (blurTimer.current) clearTimeout(blurTimer.current);
+		},
+		[],
+	);
 
 	const text = String(value ?? '');
 
@@ -99,17 +111,27 @@ const ExpressionInput = ({ field, value, onChange, compact, nodeId, className }:
 		[nodeId, state.nodes, state.edges],
 	);
 
-	// token → upstream node label + color, so a chip can show where the value comes from.
+	// node id → label + color, so a chip can show where its value comes from.
 	const tokenNode = useMemo(() => {
 		const map = new Map<string, { label: string; color: string }>();
-		variables.forEach((v) => map.set(v.token, { label: v.nodeLabel, color: v.nodeColor }));
+		state.nodes.forEach((node) => {
+			const def = getNodeDefinition(node.data.defKey, node.data.definition);
+			map.set(node.id, {
+				label: node.data.label,
+				color: getNodeAccentColor(
+					node.id,
+					node.data.color as string | undefined,
+					def?.colorHex,
+				),
+			});
+		});
 		return map;
-	}, [variables]);
+	}, [state.nodes]);
 
 	const runtimeCtx = useMemo(() => {
 		const outputs: TNodeOutputs = {};
 		state.nodes.forEach((node) => {
-			const out = node.data.pinned ? node.data.pinnedOutput : node.data.outputPreview;
+			const out = getNodeOutput(node.data);
 			if (out !== undefined) outputs[node.id] = out;
 		});
 		return buildRuntimeContext(state.nodes, outputs);
@@ -129,19 +151,28 @@ const ExpressionInput = ({ field, value, onChange, compact, nodeId, className }:
 
 	/** Build the HTML for one token chip. */
 	const chipHtml = (token: string) => {
-		const inner = token.replace(/^\{\{/, '').replace(/\}\}$/, '');
-		const name = inner.split('.').pop() ?? inner;
-		const node = tokenNode.get(token);
-		const label = prettify(name);
-		const title = `${node ? `${node.label} / ` : ''}${label}`;
-		const color = node?.color ?? DEFAULT_CHIP_COLOR;
+		const inner = token.replace(/^\{\{\s*/, '').replace(/\s*\}\}$/, '');
+		const ref = parseNodeToken(token);
+		const node = ref ? tokenNode.get(ref.nodeId) : undefined;
+		const missing = Boolean(ref && !node);
+		const name = ref
+			? ref.path
+					.split(/[.[\]]/)
+					.filter(Boolean)
+					.pop()
+			: inner.split('.').pop();
+		const label = ref && !ref.path ? 'Output' : prettify(name ?? inner);
+		const title = missing
+			? `${inner} — this node no longer exists, so the value will be empty`
+			: `${node ? `${node.label} / ` : ''}${label}`;
+		const color = missing ? MISSING_CHIP_COLOR : (node?.color ?? DEFAULT_CHIP_COLOR);
 		const style = `border-color:${color}55;background-color:${color}1a;color:${color};`;
 		return (
-			`<span data-token="${escapeAttr(token)}" contenteditable="false" title="${escapeAttr(title)}" style="${style}" class="${CHIP_CLS}">` +
-			(node
-				? `<span class="max-w-[80px] truncate opacity-60">${escapeHtml(node.label)}</span><span class="opacity-30">/</span>`
-				: '') +
-			`<span class="max-w-[120px] truncate">${escapeHtml(label)}</span>` +
+			`<span data-token="${escapeAttr(token)}" contenteditable="false" title="${escapeAttr(title)}" style="${style}" class="${CHIP_CLS}">${
+				node
+					? `<span class="max-w-[80px] truncate opacity-60">${escapeHtml(node.label)}</span><span class="opacity-30">/</span>`
+					: ''
+			}<span class="max-w-[120px] truncate">${escapeHtml(label)}</span>` +
 			`<span data-remove="1" class="${CHIP_X_CLS}">×</span>` +
 			`</span>`
 		);
@@ -149,7 +180,9 @@ const ExpressionInput = ({ field, value, onChange, compact, nodeId, className }:
 
 	const valueToHtml = (v: string) =>
 		splitSegments(v)
-			.map((segment) => (segment.type === 'token' ? chipHtml(segment.value) : escapeHtml(segment.value)))
+			.map((segment) =>
+				segment.type === 'token' ? chipHtml(segment.value) : escapeHtml(segment.value),
+			)
 			.join('');
 
 	// Render the value into the surface — but never while the user is typing in it,
@@ -398,8 +431,8 @@ const ExpressionInput = ({ field, value, onChange, compact, nodeId, className }:
 			)}
 			{!hasTokens && query === null && variables.length > 0 && (
 				<div className='mt-1 text-[10px] text-zinc-400'>
-					Type <span className='font-mono text-zinc-500 dark:text-zinc-300'>@</span> or drag an
-					input here to insert data.
+					Type <span className='font-mono text-zinc-500 dark:text-zinc-300'>@</span> or
+					drag an input here to insert data.
 				</div>
 			)}
 		</div>

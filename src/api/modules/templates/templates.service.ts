@@ -36,7 +36,9 @@ export const WorkflowTemplateService = {
 
 	detail: (ws: string, id: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ workflow_template: TWorkflowTemplate }>>(WT.detail(ws, id), { signal })
+			.get<
+				TApiResponse<{ workflow_template: TWorkflowTemplate }>
+			>(WT.detail(ws, id), { signal })
 			.then(unwrapKey<TWorkflowTemplate>('workflow_template')),
 
 	create: (ws: string, payload: TCreateWorkflowTemplateDto) =>
@@ -46,22 +48,27 @@ export const WorkflowTemplateService = {
 
 	update: (ws: string, id: string, payload: TUpdateWorkflowTemplateDto) =>
 		axiosClient
-			.patch<TApiResponse<{ workflow_template: TWorkflowTemplate }>>(WT.update(ws, id), payload)
+			.patch<
+				TApiResponse<{ workflow_template: TWorkflowTemplate }>
+			>(WT.update(ws, id), payload)
 			.then(unwrapKey<TWorkflowTemplate>('workflow_template')),
 
 	remove: (ws: string, id: string) => axiosClient.delete(WT.delete(ws, id)).then(() => undefined),
 
-	use: (ws: string, id: string, payload?: TUseWorkflowTemplateDto) =>
+	instantiate: (ws: string, id: string, payload?: TUseWorkflowTemplateDto) =>
 		axiosClient
-			.post<TApiResponse<{ workflow: TWorkflow }>>(WT.use(ws, id), payload)
+			.post<TApiResponse<{ workflow: TWorkflow }>>(WT.instantiate(ws, id), payload)
 			.then(unwrapKey<TWorkflow>('workflow')),
 
-	saveWorkflowAsTemplate: (ws: string, workflowId: string, payload?: TSaveWorkflowAsTemplateDto) =>
+	saveWorkflowAsTemplate: (
+		ws: string,
+		workflowId: string,
+		payload?: TSaveWorkflowAsTemplateDto,
+	) =>
 		axiosClient
-			.post<TApiResponse<{ workflow_template: TWorkflowTemplate }>>(
-				WT.saveWorkflowAsTemplate(ws, workflowId),
-				payload,
-			)
+			.post<
+				TApiResponse<{ workflow_template: TWorkflowTemplate }>
+			>(WT.saveWorkflowAsTemplate(ws, workflowId), payload)
 			.then(unwrapKey<TWorkflowTemplate>('workflow_template')),
 };
 
@@ -88,46 +95,55 @@ export const AgentTemplateService = {
 
 	remove: (ws: string, id: string) => axiosClient.delete(AT.delete(ws, id)).then(() => undefined),
 
-	use: (ws: string, id: string, payload: TUseAgentTemplateDto) =>
+	instantiate: (ws: string, id: string, payload: TUseAgentTemplateDto) =>
 		axiosClient
-			.post<TApiResponse<{ agent: TAgent }>>(AT.use(ws, id), payload)
+			.post<TApiResponse<{ agent: TAgent }>>(AT.instantiate(ws, id), payload)
 			.then(unwrapKey<TAgent>('agent')),
 
 	saveAgentAsTemplate: (ws: string, agentId: string, payload?: TSaveAgentAsTemplateDto) =>
 		axiosClient
-			.post<TApiResponse<{ agent_template: TAgentTemplate }>>(
-				AT.saveAgentAsTemplate(ws, agentId),
-				payload,
-			)
+			.post<
+				TApiResponse<{ agent_template: TAgentTemplate }>
+			>(AT.saveAgentAsTemplate(ws, agentId), payload)
 			.then(unwrapKey<TAgentTemplate>('agent_template')),
 };
 
 export const TemplateCollectionService = {
 	list: (ws: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ template_collections: TTemplateCollection[] }>>(TC.list(ws), { signal })
+			.get<
+				TApiResponse<{ template_collections: TTemplateCollection[] }>
+			>(TC.list(ws), { signal })
 			.then(unwrapKey<TTemplateCollection[]>('template_collections')),
 
 	detail: (ws: string, id: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ template_collection: TTemplateCollection }>>(TC.detail(ws, id), { signal })
+			.get<
+				TApiResponse<{ template_collection: TTemplateCollection }>
+			>(TC.detail(ws, id), { signal })
 			.then(unwrapKey<TTemplateCollection>('template_collection')),
 
 	create: (ws: string, payload: TCreateTemplateCollectionDto) =>
 		axiosClient
-			.post<TApiResponse<{ template_collection: TTemplateCollection }>>(TC.create(ws), payload)
+			.post<
+				TApiResponse<{ template_collection: TTemplateCollection }>
+			>(TC.create(ws), payload)
 			.then(unwrapKey<TTemplateCollection>('template_collection')),
 
 	update: (ws: string, id: string, payload: TUpdateTemplateCollectionDto) =>
 		axiosClient
-			.patch<TApiResponse<{ template_collection: TTemplateCollection }>>(TC.update(ws, id), payload)
+			.patch<
+				TApiResponse<{ template_collection: TTemplateCollection }>
+			>(TC.update(ws, id), payload)
 			.then(unwrapKey<TTemplateCollection>('template_collection')),
 
 	remove: (ws: string, id: string) => axiosClient.delete(TC.delete(ws, id)).then(() => undefined),
 
-	use: (ws: string, id: string, payload?: TUseTemplateCollectionDto) =>
+	instantiate: (ws: string, id: string, payload?: TUseTemplateCollectionDto) =>
 		axiosClient
-			.post<TApiResponse<{ workflows: TWorkflow[]; agents: TAgent[] }>>(TC.use(ws, id), payload)
+			.post<
+				TApiResponse<{ workflows: TWorkflow[]; agents: TAgent[] }>
+			>(TC.instantiate(ws, id), payload)
 			.then((r) => r.data.data),
 
 	addItem: (ws: string, id: string, payload: TAddTemplateCollectionItemDto) =>

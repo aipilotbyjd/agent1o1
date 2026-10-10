@@ -1,10 +1,11 @@
 import { Loader2, Search } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { useConnectors, useConnectorCredentials } from '@/api/modules/connectors';
-import { useOnboardingStore } from '../../_context/OnboardingStore.context';
+import { useOnboardingStore } from '../../_hooks/useOnboardingStore.hook';
 import { useOnboardingWorkspaceId } from '../../_hooks/useOnboardingWorkspace.hook';
 import BrandLogo from '../shared/BrandLogo.partial';
 import type { TConnector } from '@/types/connector.type';
+import { CONNECTOR_UNAVAILABLE_LABEL, isConnectorUnavailable } from '@/types/connector.type';
 
 const ConnectAppsStep = () => {
 	const { state, dispatch } = useOnboardingStore();
@@ -45,7 +46,7 @@ const ConnectAppsStep = () => {
 	);
 
 	const startAppAuth = (connector: TConnector) => {
-		if (connectedConnectorIds.has(connector.id)) return;
+		if (connectedConnectorIds.has(connector.id) || isConnectorUnavailable(connector)) return;
 		dispatch({
 			type: 'SET_FIELD',
 			payload: { authSuccess: false, selectedAppForAuth: connector },
@@ -68,6 +69,7 @@ const ConnectAppsStep = () => {
 				<div className='relative flex-1'>
 					<Search className='absolute top-3 left-3 h-4 w-4 text-slate-400' />
 					<input
+						aria-label='Search apps to connect...'
 						type='text'
 						placeholder='Search apps to connect...'
 						value={appSearch}
@@ -98,6 +100,7 @@ const ConnectAppsStep = () => {
 
 				{filteredApps.map((app) => {
 					const isConnected = connectedConnectorIds.has(app.id);
+					const isUnavailable = !isConnected && isConnectorUnavailable(app);
 					return (
 						<div
 							key={app.id}
@@ -112,14 +115,25 @@ const ConnectAppsStep = () => {
 								</div>
 							</div>
 							<button
-								disabled={isConnected}
+								disabled={isConnected || isUnavailable}
+								title={
+									isUnavailable
+										? `${app.name} isn't set up on this server yet.`
+										: undefined
+								}
 								onClick={() => startAppAuth(app)}
 								className={`flex h-7 items-center justify-center rounded-lg px-3 text-xs font-black transition-all ${
 									isConnected
 										? 'border border-emerald-500/20 bg-emerald-500/10 font-bold text-emerald-600 dark:text-emerald-400'
-										: 'bg-slate-900 text-white hover:opacity-90 active:scale-95 dark:bg-zinc-100 dark:text-slate-950'
+										: isUnavailable
+											? 'cursor-not-allowed border border-slate-200 font-bold text-slate-400 dark:border-zinc-800 dark:text-zinc-500'
+											: 'bg-slate-900 text-white hover:opacity-90 active:scale-95 dark:bg-zinc-100 dark:text-slate-950'
 								}`}>
-								{isConnected ? 'Connected' : 'Connect'}
+								{isConnected
+									? 'Connected'
+									: isUnavailable
+										? CONNECTOR_UNAVAILABLE_LABEL
+										: 'Connect'}
 							</button>
 						</div>
 					);

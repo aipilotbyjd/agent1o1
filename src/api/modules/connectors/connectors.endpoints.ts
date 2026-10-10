@@ -14,5 +14,9 @@ export const ConnectorEndpoints = {
 	credential: (ws: string, id: string) => `/workspaces/${ws}/connector-credentials/${id}`,
 	setDefaultCredential: (ws: string, id: string) =>
 		`/workspaces/${ws}/connector-credentials/${id}/default`,
+	testCredential: (ws: string, id: string) =>
+		`/workspaces/${ws}/connector-credentials/${id}/test`,
+	credentialUsage: (ws: string, id: string) =>
+		`/workspaces/${ws}/connector-credentials/${id}/usage`,
 	initiateOAuth: (ws: string) => `/workspaces/${ws}/connector-credentials/oauth/initiate`,
 } as const;

@@ -45,11 +45,11 @@ const HistoryDetailDrawer = ({
 						animate={{ x: 0 }}
 						exit={{ x: '100%' }}
 						transition={{ type: 'spring' as const, stiffness: 260, damping: 28 }}
-						className='dark:border-zinc-800 fixed top-0 right-0 z-50 flex h-full w-full max-w-lg flex-col border-l border-slate-200 bg-white font-sans shadow-2xl dark:bg-[#0f111a]'>
+						className='fixed top-0 right-0 z-50 flex h-full w-full max-w-lg flex-col border-l border-slate-200 bg-white font-sans shadow-2xl dark:border-zinc-800 dark:bg-[#0f111a]'>
 						{/* Drawer header */}
 						<div className='flex items-center justify-between border-b border-slate-100 p-6 dark:border-zinc-800/80'>
 							<div className='flex items-center gap-3'>
-								<div className='flex h-9 w-9 items-center justify-center rounded-xl border border-primary-100 bg-primary-50 text-primary-600 dark:border-primary-900/30 dark:bg-primary-950/20 dark:text-primary-400'>
+								<div className='border-primary-100 bg-primary-50 text-primary-600 dark:border-primary-900/30 dark:bg-primary-950/20 dark:text-primary-400 flex h-9 w-9 items-center justify-center rounded-xl border'>
 									<Activity size={17} />
 								</div>
 								<h2 className='text-lg font-black text-slate-900 dark:text-white'>
@@ -62,7 +62,7 @@ const HistoryDetailDrawer = ({
 							<button
 								aria-label='Close'
 								onClick={onClose}
-								className='hover:text-slate-655 dark:hover:bg-zinc-800 cursor-pointer rounded-xl p-2 text-slate-400 transition hover:bg-slate-100'>
+								className='hover:text-slate-655 cursor-pointer rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 dark:hover:bg-zinc-800'>
 								<X size={18} />
 							</button>
 						</div>
@@ -75,7 +75,7 @@ const HistoryDetailDrawer = ({
 									Summary
 								</h3>
 								<div className='grid grid-cols-3 gap-3'>
-									<div className='dark:border-zinc-800 rounded-2xl border border-slate-200/50 bg-slate-50 p-3.5 text-left dark:bg-zinc-950/30'>
+									<div className='rounded-2xl border border-slate-200/50 bg-slate-50 p-3.5 text-left dark:border-zinc-800 dark:bg-zinc-950/30'>
 										<span className='mb-1 block text-[9px] font-black tracking-wider text-slate-400 uppercase'>
 											Source
 										</span>
@@ -84,7 +84,7 @@ const HistoryDetailDrawer = ({
 											{selectedDetails.type}
 										</span>
 									</div>
-									<div className='dark:border-zinc-800 rounded-2xl border border-slate-200/50 bg-slate-50 p-3.5 text-left dark:bg-zinc-950/30'>
+									<div className='rounded-2xl border border-slate-200/50 bg-slate-50 p-3.5 text-left dark:border-zinc-800 dark:bg-zinc-950/30'>
 										<span className='mb-1 block text-[9px] font-black tracking-wider text-slate-400 uppercase'>
 											Started
 										</span>
@@ -93,7 +93,7 @@ const HistoryDetailDrawer = ({
 											{selectedDetails.timestamp.split('•')[0].trim()}
 										</span>
 									</div>
-									<div className='dark:border-zinc-800 rounded-2xl border border-slate-200/50 bg-slate-50 p-3.5 text-left dark:bg-zinc-950/30'>
+									<div className='rounded-2xl border border-slate-200/50 bg-slate-50 p-3.5 text-left dark:border-zinc-800 dark:bg-zinc-950/30'>
 										<span className='mb-1 block text-[9px] font-black tracking-wider text-slate-400 uppercase'>
 											Credits
 										</span>
@@ -112,20 +112,24 @@ const HistoryDetailDrawer = ({
 								</h3>
 
 								{selectedDetails.chatTranscript ? (
-									<div className='border-slate-150 dark:border-zinc-800 space-y-4 rounded-2xl border bg-slate-50/50 p-4.5 dark:bg-zinc-950/20'>
+									<div className='border-slate-150 space-y-4 rounded-2xl border bg-slate-50/50 p-4.5 dark:border-zinc-800 dark:bg-zinc-950/20'>
 										{selectedDetails.chatTranscript.map((log, idx) => (
 											<div
 												key={idx}
 												className={`flex flex-col gap-1.5 ${
-													log.sender === 'user' ? 'items-end' : 'items-start'
+													log.sender === 'user'
+														? 'items-end'
+														: 'items-start'
 												}`}>
 												<span className='text-[9px] font-black tracking-wider text-slate-400 uppercase'>
-													{log.sender === 'user' ? 'User Input' : 'Agent Response'}
+													{log.sender === 'user'
+														? 'User Input'
+														: 'Agent Response'}
 												</span>
 												<div
 													className={`max-w-[85%] rounded-2xl border p-3 text-xs leading-relaxed font-semibold shadow-xs ${
 														log.sender === 'user'
-															? 'bg-primary-400 border-primary-700 rounded-tr-none text-primary-950'
+															? 'bg-primary-400 border-primary-700 text-primary-950 rounded-tr-none'
 															: 'text-slate-850 rounded-tl-none border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 													}`}>
 													{log.text}
@@ -134,7 +138,7 @@ const HistoryDetailDrawer = ({
 										))}
 									</div>
 								) : run && run.runnable_type !== 'workflow' ? (
-									<div className='border-slate-150 dark:border-zinc-800 rounded-2xl border bg-slate-50/50 p-4.5 dark:bg-zinc-950/20'>
+									<div className='border-slate-150 rounded-2xl border bg-slate-50/50 p-4.5 dark:border-zinc-800 dark:bg-zinc-950/20'>
 										<AgentRunLog ws={activeWorkspaceId} run={run} />
 									</div>
 								) : (
@@ -159,7 +163,7 @@ const HistoryDetailDrawer = ({
 							)}
 							<button
 								onClick={() => onCopyUrl(selectedDetails.id)}
-								className='dark:hover:bg-zinc-800 flex h-11 cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4.5 text-xs font-black text-slate-700 shadow-xs transition hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'>
+								className='flex h-11 cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4.5 text-xs font-black text-slate-700 shadow-xs transition hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800'>
 								{copied ? (
 									<Check size={14} className='text-primary-500' />
 								) : (

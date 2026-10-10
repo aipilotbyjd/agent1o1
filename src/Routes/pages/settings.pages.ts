@@ -24,6 +24,12 @@ export const settings: TPage = {
 			text: 'Notifications',
 			icon: 'Notification01',
 		},
+		referrals: {
+			id: 'referralsSettings',
+			to: ws('settings/referrals'),
+			text: 'Refer & earn',
+			icon: 'Gift',
+		},
 		workspace: {
 			id: 'workspaceGeneralSettings',
 			to: ws('settings/workspace'),
@@ -42,6 +48,12 @@ export const settings: TPage = {
 			text: 'API Keys',
 			icon: 'Lock',
 		},
+		aiProviders: {
+			id: 'aiProvidersSettings',
+			to: ws('settings/ai-providers'),
+			text: 'AI Providers',
+			icon: 'AiChip',
+		},
 		notificationChannels: {
 			id: 'notificationChannelsSettings',
 			to: ws('settings/notification-channels'),
@@ -53,6 +65,12 @@ export const settings: TPage = {
 			to: ws('settings/tags'),
 			text: 'Tags',
 			icon: 'Tag01',
+		},
+		agentPolicy: {
+			id: 'agentPolicySettings',
+			to: ws('settings/agent-policy'),
+			text: 'Agent Policy',
+			icon: 'Shield01',
 		},
 		billing: {
 			id: 'billingSettings',

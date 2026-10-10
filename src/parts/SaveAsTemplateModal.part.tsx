@@ -9,7 +9,12 @@ import {
 	useWorkflowTemplates,
 } from '@/api/modules/templates';
 import Button from '@/components/ui/Button';
-import Modal, { ModalHeader, ModalBody, ModalFooter, ModalFooterChild } from '@/components/ui/Modal';
+import Modal, {
+	ModalHeader,
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+} from '@/components/ui/Modal';
 
 const inputClass =
 	'h-11 w-full rounded-xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-800 shadow-xs outline-none placeholder:text-zinc-400 focus:border-primary-400 focus:ring-4 focus:ring-primary-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-primary-500 dark:focus:ring-primary-500/25';
@@ -167,7 +172,8 @@ const SaveAsTemplateForm = ({
 						</div>
 						<div>
 							<label htmlFor='template-description' className={labelClass}>
-								Description <span className='font-semibold text-zinc-400'>(optional)</span>
+								Description{' '}
+								<span className='font-semibold text-zinc-400'>(optional)</span>
 							</label>
 							<textarea
 								id='template-description'
@@ -181,7 +187,8 @@ const SaveAsTemplateForm = ({
 						</div>
 						<div>
 							<label htmlFor='template-category' className={labelClass}>
-								Category <span className='font-semibold text-zinc-400'>(optional)</span>
+								Category{' '}
+								<span className='font-semibold text-zinc-400'>(optional)</span>
 							</label>
 							<input
 								id='template-category'

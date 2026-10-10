@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useDryRunWorkflow, useValidateWorkflow } from '@/api/modules/workflow-builder';
 import type { TWorkflowDryRun, TWorkflowValidationResult } from '@/types/workflow-builder.type';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { buildGraphPayload } from '../../_helper/workflowApiTransform.helper';
 
 type TDryRun = TWorkflowDryRun;

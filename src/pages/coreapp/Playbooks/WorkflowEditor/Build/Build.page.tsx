@@ -29,7 +29,7 @@ import { useAutosave } from '../_hooks/useAutosave.hook';
 import { useEditorHotkeys } from '../_hooks/useEditorHotkeys.hook';
 import { useWorkflowApiLoader } from '../_hooks/useWorkflowApiLoader.hook';
 import { useWorkflowRouteParams } from '../_hooks/useWorkflowRouteParams.hook';
-import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../_hooks/useWorkflowEditor.hook';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import { Boxes, Maximize2, PlaySquare, Sparkles } from 'lucide-react';
 
@@ -49,7 +49,7 @@ const BuildPage = () => {
 	const apiState = useWorkflowApiLoader(workspaceId, workflowId);
 	const [leftPanelWidth, setLeftPanelWidth] = useState(320);
 	const [aiPanelWidth, setAiPanelWidth] = useState(400);
-	const [runPanelHeight, setRunPanelHeight] = useState(300);
+	const [runPanelWidth, setRunPanelWidth] = useState(440);
 
 	const openMobileNodes = () => {
 		if (state.ui.runPanelOpen) dispatch({ type: 'TOGGLE_RUN_PANEL' });
@@ -261,33 +261,33 @@ const BuildPage = () => {
 									<Canvas />
 									<ActionBar />
 								</div>
+								{state.ui.runPanelOpen &&
+									(isMobile ? (
+										<motion.div
+											initial={{ y: '100%', opacity: 0 }}
+											animate={{ y: 0, opacity: 1 }}
+											exit={{ y: '100%', opacity: 0 }}
+											transition={{ duration: 0.2 }}
+											className='absolute inset-x-0 top-[18%] bottom-0 z-50 overflow-hidden rounded-t-3xl border-t border-white/10 bg-zinc-950 shadow-2xl'>
+											<RunPanel />
+										</motion.div>
+									) : (
+										<Resizable
+											size={{ width: runPanelWidth, height: '100%' }}
+											minWidth={320}
+											maxWidth='45vw'
+											enable={{ left: true }}
+											onResize={(_e, _direction, ref) => {
+												setRunPanelWidth(ref.offsetWidth);
+											}}
+											onResizeStop={(_, __, ref) =>
+												setRunPanelWidth(ref.offsetWidth)
+											}
+											className='min-h-0 shrink-0 border-l border-zinc-200 dark:border-white/10'>
+											<RunPanel />
+										</Resizable>
+									))}
 							</div>
-							{state.ui.runPanelOpen &&
-								(isMobile ? (
-									<motion.div
-										initial={{ y: '100%', opacity: 0 }}
-										animate={{ y: 0, opacity: 1 }}
-										exit={{ y: '100%', opacity: 0 }}
-										transition={{ duration: 0.2 }}
-										className='absolute inset-x-0 top-[18%] bottom-0 z-50 overflow-hidden rounded-t-3xl border-t border-white/10 bg-zinc-950 shadow-2xl'>
-										<RunPanel />
-									</motion.div>
-								) : (
-									<Resizable
-										size={{ width: '100%', height: runPanelHeight }}
-										minHeight={180}
-										maxHeight='58vh'
-										enable={{ top: true }}
-										onResize={(_e, _direction, ref) => {
-											setRunPanelHeight(ref.offsetHeight);
-										}}
-										onResizeStop={(_, __, ref) =>
-											setRunPanelHeight(ref.offsetHeight)
-										}
-										className='shrink-0'>
-										<RunPanel />
-									</Resizable>
-								))}
 						</div>
 
 						{/* Mobile editor dock: the four most-used canvas actions stay reachable

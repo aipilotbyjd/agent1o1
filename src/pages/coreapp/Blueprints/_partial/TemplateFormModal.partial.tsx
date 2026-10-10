@@ -17,7 +17,12 @@ import {
 import { useWorkflows } from '@/api/modules/workflows';
 import type { TAgentTemplate, TTemplateCollection, TWorkflowTemplate } from '@/types/template.type';
 import Button from '@/components/ui/Button';
-import Modal, { ModalHeader, ModalBody, ModalFooter, ModalFooterChild } from '@/components/ui/Modal';
+import Modal, {
+	ModalHeader,
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+} from '@/components/ui/Modal';
 import { TEMPLATE_COLOR_OPTIONS } from '../_helper/blueprints.constants';
 
 const inputClass =
@@ -118,8 +123,11 @@ const TemplateForm = ({
 	const { data: collections } = useTemplateCollections(kind === 'collection' ? ws : '');
 	const categories = useMemo(() => {
 		const list: { category: string | null }[] =
-			(kind === 'workflow' ? workflowTemplates : kind === 'agent' ? agentTemplates : collections) ??
-			[];
+			(kind === 'workflow'
+				? workflowTemplates
+				: kind === 'agent'
+					? agentTemplates
+					: collections) ?? [];
 		return Array.from(
 			new Set(list.map((t) => t.category).filter((c): c is string => !!c)),
 		).sort();
@@ -151,8 +159,15 @@ const TemplateForm = ({
 			if (kind === 'workflow') {
 				if (isEdit) await updateWorkflow.mutateAsync({ id: item.id, body: fields });
 				else if (sourceWorkflowId)
-					await saveWorkflowAs.mutateAsync({ workflowId: sourceWorkflowId, body: fields });
-				else await createWorkflow.mutateAsync({ ...fields, graph: { nodes: [], edges: [] } });
+					await saveWorkflowAs.mutateAsync({
+						workflowId: sourceWorkflowId,
+						body: fields,
+					});
+				else
+					await createWorkflow.mutateAsync({
+						...fields,
+						graph: { nodes: [], edges: [] },
+					});
 			} else if (kind === 'agent') {
 				if (isEdit) await updateAgent.mutateAsync({ id: item.id, body: fields });
 				else
@@ -269,7 +284,8 @@ const TemplateForm = ({
 								</div>
 								<div>
 									<label htmlFor='tpl-temperature' className={labelClass}>
-										Temperature <span className={optionalClass}>(optional, 0 to 1)</span>
+										Temperature{' '}
+										<span className={optionalClass}>(optional, 0 to 1)</span>
 									</label>
 									<input
 										id='tpl-temperature'

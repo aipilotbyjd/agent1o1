@@ -172,7 +172,7 @@ const TrailListPage = () => {
 	return (
 		<Container className='relative overflow-x-hidden overflow-y-auto bg-[#f8f9fc] !p-0 dark:bg-zinc-950'>
 			{/* Background decorative glows */}
-			<div className='pointer-events-none absolute top-[-10%] right-[-10%] -z-10 h-[45%] w-[45%] rounded-full bg-gradient-to-tr from-primary-400/5 to-primary-400/5 blur-[120px]' />
+			<div className='from-primary-400/5 to-primary-400/5 pointer-events-none absolute top-[-10%] right-[-10%] -z-10 h-[45%] w-[45%] rounded-full bg-gradient-to-tr blur-[120px]' />
 			<div className='pointer-events-none absolute bottom-[-10%] left-[-10%] -z-10 h-[45%] w-[45%] rounded-full bg-gradient-to-br from-emerald-500/5 to-cyan-500/5 blur-[120px]' />
 
 			<div className='mx-auto flex w-full max-w-7xl flex-col space-y-6 p-4 sm:p-6 md:p-8'>
@@ -231,7 +231,7 @@ const TrailListPage = () => {
 					) : (
 						<div className='no-scrollbar flex flex-col'>
 							{/* Desktop table */}
-							<div className='hidden md:block no-scrollbar overflow-x-auto'>
+							<div className='no-scrollbar hidden overflow-x-auto md:block'>
 								<div className='min-w-[768px]'>
 									{/* Table header */}
 									<div className='grid grid-cols-12 gap-4 border-b border-slate-100 bg-[#fafbfe]/70 px-6 py-4.5 text-left text-[11px] font-black tracking-wider text-slate-400 uppercase dark:border-zinc-800/80 dark:bg-zinc-950/20'>
@@ -262,7 +262,7 @@ const TrailListPage = () => {
 							</div>
 
 							{/* Mobile card list */}
-							<div className='block md:hidden divide-y divide-slate-100 dark:divide-zinc-800/60'>
+							<div className='block divide-y divide-slate-100 md:hidden dark:divide-zinc-800/60'>
 								{paginatedItems.map((item) => {
 									const displayItem = toDisplay(item);
 									return (

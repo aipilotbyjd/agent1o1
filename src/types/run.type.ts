@@ -64,6 +64,16 @@ export type TRunAgent = {
 	color: string | null;
 };
 
+/** What an agent chat turn was sent; `provider` is a failover chain for a catalog model. */
+export type TRunAgentContext = {
+	provider: string | Record<string, string>;
+	model: string | null;
+	/** A skill picked for this turn with `/`; absent on turns recorded before it existed. */
+	skill?: string | null;
+	instructions: string;
+	tools: string[];
+};
+
 export type TRun = {
 	id: string;
 	workspace_id: string;
@@ -82,6 +92,8 @@ export type TRun = {
 	agent?: TRunAgent | null;
 	/** An `agent_session` run's reply, on `GET .../runs/{id}` only; null if the turn failed. */
 	agent_reply?: TAgentMessage | null;
+	/** On `GET .../runs/{id}` only; null for runs recorded before it existed. */
+	agent_context?: TRunAgentContext | null;
 	triggered_by: string | null;
 	loop_index: number | null;
 	started_at: string | null;

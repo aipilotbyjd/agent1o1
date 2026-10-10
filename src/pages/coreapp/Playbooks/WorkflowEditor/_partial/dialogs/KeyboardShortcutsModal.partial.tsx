@@ -1,4 +1,4 @@
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import Modal from './Modal.partial';
 
 const SHORTCUTS = [

@@ -1,10 +1,30 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, Plus, Trash2, FileText, Code2, Pencil, Loader2 } from 'lucide-react';
-import type { TAgentSkill, TAgentSkillReference, TAgentSkillScript } from '@/types/agent-skill.type';
+import {
+	X,
+	Plus,
+	Trash2,
+	FileText,
+	Code2,
+	Pencil,
+	Loader2,
+	Sparkles,
+	FolderGit2,
+	ExternalLink,
+} from 'lucide-react';
+import type {
+	TAgentSkill,
+	TAgentSkillReference,
+	TAgentSkillScript,
+	TSkillDraftReference,
+	TSkillDraftScript,
+} from '@/types/agent-skill.type';
+import { notify } from '@/api/core';
+import { useModelCatalog } from '@/api/modules/catalog';
 import {
 	useAgentSkill,
 	useCreateAgentSkill,
+	useDraftAgentSkill,
 	useUpdateAgentSkill,
 	useSkillReferences,
 	useCreateSkillReference,
@@ -47,7 +67,13 @@ const emptyScript = {
 	code: '',
 };
 
-const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEditorDrawerProps) => {
+const SkillEditorDrawer = ({
+	ws,
+	isOpen,
+	skillId,
+	onClose,
+	onCreated,
+}: ISkillEditorDrawerProps) => {
 	const [createdSkillId, setCreatedSkillId] = useState<string | null>(null);
 	const activeSkillId = skillId ?? createdSkillId;
 
@@ -55,6 +81,8 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 	const { data: references } = useSkillReferences(ws, activeSkillId ?? '');
 	const { data: scripts } = useSkillScripts(ws, activeSkillId ?? '');
 	const createMutation = useCreateAgentSkill(ws);
+	const draftMutation = useDraftAgentSkill(ws);
+	const { data: modelCatalog } = useModelCatalog(ws);
 	const updateMutation = useUpdateAgentSkill(ws);
 	const addReferenceMutation = useCreateSkillReference(ws, activeSkillId ?? '');
 	const updateReferenceMutation = useUpdateSkillReference(ws, activeSkillId ?? '');
@@ -64,6 +92,16 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 	const removeScriptMutation = useDeleteSkillScript(ws, activeSkillId ?? '');
 
 	const [form, setForm] = useState(emptyForm);
+	// A generated draft's extras, held until the skill is created with them.
+	const [generatePrompt, setGeneratePrompt] = useState('');
+	const [generateModelId, setGenerateModelId] = useState('');
+	const [draftTags, setDraftTags] = useState<string[]>([]);
+	const [draftReferences, setDraftReferences] = useState<TSkillDraftReference[]>([]);
+	const [draftScripts, setDraftScripts] = useState<TSkillDraftScript[]>([]);
+
+	const modelOptions = useMemo(() => modelCatalog ?? [], [modelCatalog]);
+	const selectedModelId =
+		generateModelId || (modelOptions.find((m) => m.is_available) ?? modelOptions[0])?.id || '';
 	const [newReference, setNewReference] = useState({ title: '', content: '' });
 	const [newScript, setNewScript] = useState(emptyScript);
 	// The one reference / script being edited in place, if any.
@@ -76,17 +114,22 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 		({ id: string; is_enabled: boolean } & typeof emptyScript) | null
 	>(null);
 
-	useEffect(() => {
+	const resetKey = `${isOpen}:${skillId ?? ''}:${skillDetail?.id ?? ''}`;
+	const [syncedResetKey, setSyncedResetKey] = useState<string | null>(null);
+	if (syncedResetKey !== resetKey) {
+		setSyncedResetKey(resetKey);
 		if (!isOpen) {
 			setCreatedSkillId(null);
 			setForm(emptyForm);
+			setGeneratePrompt('');
+			setDraftTags([]);
+			setDraftReferences([]);
+			setDraftScripts([]);
 			setNewReference({ title: '', content: '' });
 			setNewScript(emptyScript);
 			setEditingReference(null);
 			setEditingScript(null);
-			return;
-		}
-		if (skillDetail) {
+		} else if (skillDetail) {
 			setForm({
 				name: skillDetail.name,
 				description: skillDetail.description ?? '',
@@ -99,13 +142,46 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 		} else if (!skillId) {
 			setForm(emptyForm);
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [isOpen, skillId, skillDetail?.id]);
+	}
 
 	if (!isOpen) return null;
 
 	const isEdit = !!activeSkillId;
+	// One-way imports stay read-only; two-way skills can be edited.
+	const isLinked = isEdit && !!skillDetail?.skill_source_id;
+	const isSynced = isLinked && !skillDetail?.source_two_way;
 	const isSaving = createMutation.isPending || updateMutation.isPending;
+
+	// Fills the form from a generated draft; nothing is saved until Create.
+	const handleGenerate = async () => {
+		const prompt = generatePrompt.trim();
+		if (!prompt || draftMutation.isPending) return;
+		if (!selectedModelId) {
+			notify.error('No model is available to generate the skill.');
+			return;
+		}
+		try {
+			const draft = await draftMutation.mutateAsync({
+				prompt,
+				model_catalog_id: selectedModelId,
+			});
+			setForm((f) => ({
+				...f,
+				name: draft.name,
+				description: draft.description,
+				category: draft.category,
+				icon: draft.icon,
+				color: draft.color,
+				instructions: draft.instructions,
+			}));
+			setDraftTags(draft.tags);
+			setDraftReferences(draft.references);
+			setDraftScripts(draft.scripts);
+			notify.success('Skill drafted. Review it, then create it.');
+		} catch {
+			// The mutation's own error toast has already told the user.
+		}
+	};
 
 	const handleSave = () => {
 		if (!form.name.trim() || !form.instructions.trim()) return;
@@ -121,14 +197,24 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 		};
 
 		if (activeSkillId) {
-			updateMutation.mutate({ id: activeSkillId, body }, { onSuccess: () => onClose() });
+			const { category, icon, color, is_shared } = body;
+			updateMutation.mutate(
+				{ id: activeSkillId, body: isSynced ? { category, icon, color, is_shared } : body },
+				{ onSuccess: () => onClose() },
+			);
 		} else {
-			createMutation.mutate(body, {
-				onSuccess: (created) => {
-					setCreatedSkillId(created.id);
-					onCreated?.(created);
+			createMutation.mutate(
+				{ ...body, tags: draftTags, references: draftReferences, scripts: draftScripts },
+				{
+					onSuccess: (created) => {
+						setDraftTags([]);
+						setDraftReferences([]);
+						setDraftScripts([]);
+						setCreatedSkillId(created.id);
+						onCreated?.(created);
+					},
 				},
-			});
+			);
 		}
 	};
 
@@ -208,9 +294,11 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 							{isEdit ? 'Edit Skill' : 'Create Skill'}
 						</h2>
 						<p className='mt-0.5 text-xs font-semibold text-zinc-400 dark:text-zinc-500'>
-							{isEdit
-								? 'Update instructions, references, and scripts.'
-								: 'Save the base skill first, then add references and scripts.'}
+							{isSynced
+								? 'Synced from GitHub. Edit it in the repository.'
+								: isEdit
+									? 'Update instructions, references, and scripts.'
+									: 'Generate it from a description, or write it yourself.'}
 						</p>
 					</div>
 					<button
@@ -222,41 +310,159 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 				</div>
 
 				<div className='flex-1 space-y-5 px-6 py-5'>
+					{isLinked && (
+						<div className='flex items-start gap-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 p-3.5 dark:border-zinc-800 dark:bg-zinc-900/40'>
+							<FolderGit2 size={15} className='text-primary-500 mt-0.5 shrink-0' />
+							<div className='min-w-0 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400'>
+								{!isSynced ? (
+									<p>
+										Two-way sync is enabled. Saved instructions, references and
+										scripts will be pushed to GitHub on the next sync. Conflicts
+										pause syncing for review.
+									</p>
+								) : (
+									<p>
+										Its name, description, instructions, references and scripts
+										come from{' '}
+										<code className='font-mono'>
+											{skillDetail?.source_path || 'the repository root'}
+										</code>{' '}
+										and update on every sync. You can still change its category,
+										look and visibility. Use “Make editable copy” from the skill
+										menu to customize its content.
+									</p>
+								)}
+								{skillDetail?.source_url && (
+									<a
+										href={skillDetail.source_url}
+										target='_blank'
+										rel='noreferrer'
+										className='text-primary-600 dark:text-primary-400 mt-1.5 inline-flex items-center gap-1 font-bold hover:underline'>
+										Open in GitHub <ExternalLink size={11} />
+									</a>
+								)}
+							</div>
+						</div>
+					)}
+
+					{!isLinked && skillDetail?.origin_url && (
+						<p className='text-xs text-zinc-500 dark:text-zinc-400'>
+							Independent skill.{' '}
+							<a
+								href={skillDetail.origin_url}
+								target='_blank'
+								rel='noreferrer'
+								className='text-primary-600 dark:text-primary-400 font-semibold'>
+								View source on GitHub
+							</a>
+						</p>
+					)}
+					{!isEdit && (
+						<div className='border-primary-500/20 bg-primary-400/5 space-y-2.5 rounded-2xl border p-4'>
+							<div className='flex items-center gap-1.5'>
+								<Sparkles size={13} className='text-primary-500' />
+								<h3 className='text-xs font-black text-zinc-700 dark:text-zinc-300'>
+									Generate with AI
+								</h3>
+							</div>
+							<textarea
+								aria-label='Describe the skill'
+								value={generatePrompt}
+								onChange={(e) => setGeneratePrompt(e.target.value)}
+								onKeyDown={(e) => {
+									if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+										e.preventDefault();
+										void handleGenerate();
+									}
+								}}
+								rows={3}
+								maxLength={4000}
+								placeholder='Describe the process, e.g. "How we triage support tickets: severity rules, escalation, and the reply template"'
+								className='focus:border-primary-500/80 block w-full resize-none rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
+							/>
+							<div className='flex gap-2'>
+								<select
+									aria-label='Model'
+									value={selectedModelId}
+									onChange={(e) => setGenerateModelId(e.target.value)}
+									className='focus:border-primary-500/80 block h-9 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-2 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'>
+									{modelOptions.map((model) => (
+										<option
+											key={model.id}
+											value={model.id}
+											disabled={!model.is_available}>
+											{model.display_name}
+										</option>
+									))}
+								</select>
+								<button
+									type='button'
+									onClick={() => void handleGenerate()}
+									disabled={!generatePrompt.trim() || draftMutation.isPending}
+									className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-4 text-[11px] font-black active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'>
+									{draftMutation.isPending ? (
+										<Loader2 size={12} className='animate-spin' />
+									) : (
+										<Sparkles size={12} />
+									)}
+									{draftMutation.isPending ? 'Generating…' : 'Generate'}
+								</button>
+							</div>
+						</div>
+					)}
+
 					<div>
-						<label className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+						<label
+							htmlFor='skilleditordrawer-name'
+							className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 							Name
 						</label>
 						<input
+							id='skilleditordrawer-name'
+							aria-label='e.g. Competitor Research'
 							type='text'
 							value={form.name}
+							readOnly={isSynced}
 							onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
 							placeholder='e.g. Competitor Research'
-							className='block h-10 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-xs font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-100'
+							className='focus:border-primary-500/80 block h-10 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-xs font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-100'
 						/>
 					</div>
 
 					<div>
-						<label className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+						<label
+							htmlFor='skilleditordrawer-description'
+							className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 							Description
 						</label>
 						<textarea
+							id='skilleditordrawer-description'
+							aria-label='Short summary shown on the skill card'
 							value={form.description}
-							onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+							readOnly={isSynced}
+							onChange={(e) =>
+								setForm((f) => ({ ...f, description: e.target.value }))
+							}
 							rows={2}
 							placeholder='Short summary shown on the skill card'
-							className='block w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-100'
+							className='focus:border-primary-500/80 block w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-100'
 						/>
 					</div>
 
 					<div className='grid grid-cols-2 gap-4'>
 						<div>
-							<label className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+							<label
+								htmlFor='skilleditordrawer-category'
+								className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 								Category
 							</label>
 							<select
+								id='skilleditordrawer-category'
 								value={form.category}
-								onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-								className='block h-10 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-xs font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-100'>
+								onChange={(e) =>
+									setForm((f) => ({ ...f, category: e.target.value }))
+								}
+								className='focus:border-primary-500/80 block h-10 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-xs font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-100'>
 								{SKILL_CATEGORIES.map((cat) => (
 									<option key={cat} value={cat}>
 										{cat}
@@ -266,9 +472,9 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 						</div>
 
 						<div>
-							<label className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+							<span className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 								Visibility
-							</label>
+							</span>
 							<button
 								type='button'
 								onClick={() => setForm((f) => ({ ...f, is_shared: !f.is_shared }))}
@@ -283,9 +489,9 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 					</div>
 
 					<div>
-						<label className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+						<span className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 							Icon
-						</label>
+						</span>
 						<div className='flex flex-wrap gap-2'>
 							{SKILL_ICON_OPTIONS.map(({ name, Icon }) => (
 								<button
@@ -306,14 +512,16 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 					</div>
 
 					<div>
-						<label className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+						<span className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 							Color
-						</label>
+						</span>
 						<div className='flex flex-wrap gap-2'>
 							{SKILL_COLOR_OPTIONS.map((color) => (
 								<button
 									key={color}
 									type='button'
+									aria-label={`Color ${color}`}
+									aria-pressed={form.color === color}
 									onClick={() => setForm((f) => ({ ...f, color }))}
 									style={{ backgroundColor: color }}
 									className={`h-8 w-8 cursor-pointer rounded-xl transition-all ${
@@ -327,22 +535,58 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 					</div>
 
 					<div>
-						<label className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+						<label
+							htmlFor='skilleditordrawer-instructions'
+							className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 							Instructions
 						</label>
 						<textarea
+							id='skilleditordrawer-instructions'
+							aria-label='What should an agent do when this skill is attached?'
 							value={form.instructions}
-							onChange={(e) => setForm((f) => ({ ...f, instructions: e.target.value }))}
+							readOnly={isSynced}
+							onChange={(e) =>
+								setForm((f) => ({ ...f, instructions: e.target.value }))
+							}
 							rows={6}
 							placeholder='What should an agent do when this skill is attached?'
-							className='block w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-100'
+							className='focus:border-primary-500/80 block w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-100'
 						/>
 					</div>
+
+					{!isEdit && draftReferences.length > 0 && (
+						<DraftItemList
+							icon={<FileText size={13} className='text-primary-500' />}
+							title='References'
+							items={draftReferences.map((r) => ({
+								label: r.title,
+								detail: r.content,
+							}))}
+							onRemove={(index) =>
+								setDraftReferences((list) => list.filter((_, i) => i !== index))
+							}
+						/>
+					)}
+
+					{!isEdit && draftScripts.length > 0 && (
+						<DraftItemList
+							icon={<Code2 size={13} className='text-primary-500' />}
+							title='Scripts'
+							items={draftScripts.map((x) => ({
+								label: x.name,
+								badge: x.language,
+								detail: x.description || x.code,
+							}))}
+							onRemove={(index) =>
+								setDraftScripts((list) => list.filter((_, i) => i !== index))
+							}
+						/>
+					)}
 
 					<button
 						onClick={handleSave}
 						disabled={isSaving || !form.name.trim() || !form.instructions.trim()}
-						className='flex h-10 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-primary-400 text-xs font-black text-primary-950 shadow-md shadow-primary-500/10 transition-all hover:bg-primary-500 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'>
+						className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 flex h-10 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl text-xs font-black shadow-md transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'>
 						{isEdit ? 'Save Changes' : 'Create Skill'}
 					</button>
 
@@ -362,24 +606,36 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 										editingReference?.id === ref.id ? (
 											<div
 												key={ref.id}
-												className='space-y-2 rounded-xl border border-primary-500/40 bg-white p-3 dark:bg-zinc-900'>
+												className='border-primary-500/40 space-y-2 rounded-xl border bg-white p-3 dark:bg-zinc-900'>
 												<input
 													type='text'
 													aria-label='Reference title'
 													value={editingReference.title}
 													onChange={(e) =>
-														setEditingReference((r) => r && { ...r, title: e.target.value })
+														setEditingReference(
+															(r) =>
+																r && {
+																	...r,
+																	title: e.target.value,
+																},
+														)
 													}
-													className='block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
+													className='focus:border-primary-500/80 block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
 												/>
 												<textarea
 													aria-label='Reference content'
 													rows={6}
 													value={editingReference.content}
 													onChange={(e) =>
-														setEditingReference((r) => r && { ...r, content: e.target.value })
+														setEditingReference(
+															(r) =>
+																r && {
+																	...r,
+																	content: e.target.value,
+																},
+														)
 													}
-													className='block w-full resize-y rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
+													className='focus:border-primary-500/80 block w-full resize-y rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
 												/>
 												<div className='flex justify-end gap-2'>
 													<button
@@ -394,9 +650,12 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 															!editingReference.title.trim() ||
 															!editingReference.content.trim()
 														}
-														className='flex h-7 cursor-pointer items-center gap-1 rounded-lg bg-primary-400 px-3 text-[11px] font-black text-primary-950 hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-50'>
+														className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex h-7 cursor-pointer items-center gap-1 rounded-lg px-3 text-[11px] font-black disabled:cursor-not-allowed disabled:opacity-50'>
 														{updateReferenceMutation.isPending && (
-															<Loader2 size={11} className='animate-spin' />
+															<Loader2
+																size={11}
+																className='animate-spin'
+															/>
 														)}
 														Save
 													</button>
@@ -414,16 +673,19 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 														{ref.content}
 													</p>
 												</div>
-												<div className='flex shrink-0 items-center gap-2'>
+												<div
+													className={`flex shrink-0 items-center gap-2 ${isSynced ? 'hidden' : ''}`}>
 													<button
 														aria-label={`Edit ${ref.title}`}
 														onClick={() => startEditReference(ref)}
-														className='cursor-pointer text-zinc-300 hover:text-primary-600 dark:text-zinc-600 dark:hover:text-primary-400'>
+														className='hover:text-primary-600 dark:hover:text-primary-400 cursor-pointer text-zinc-300 dark:text-zinc-600'>
 														<Pencil size={12} />
 													</button>
 													<button
 														aria-label='Delete'
-														onClick={() => removeReferenceMutation.mutate(ref.id)}
+														onClick={() =>
+															removeReferenceMutation.mutate(ref.id)
+														}
 														className='cursor-pointer text-zinc-300 hover:text-rose-500 dark:text-zinc-600'>
 														<Trash2 size={13} />
 													</button>
@@ -433,28 +695,40 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 									)}
 								</div>
 
-								<div className='space-y-2 rounded-xl border border-dashed border-zinc-200 p-3 dark:border-zinc-800'>
+								<div
+									className={`space-y-2 rounded-xl border border-dashed border-zinc-200 p-3 dark:border-zinc-800 ${isSynced ? 'hidden' : ''}`}>
 									<input
+										aria-label='Reference title'
 										type='text'
 										placeholder='Reference title'
 										value={newReference.title}
 										onChange={(e) =>
-											setNewReference((r) => ({ ...r, title: e.target.value }))
+											setNewReference((r) => ({
+												...r,
+												title: e.target.value,
+											}))
 										}
-										className='block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
+										className='focus:border-primary-500/80 block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
 									/>
 									<textarea
+										aria-label='Reference content'
 										placeholder='Reference content'
 										rows={2}
 										value={newReference.content}
 										onChange={(e) =>
-											setNewReference((r) => ({ ...r, content: e.target.value }))
+											setNewReference((r) => ({
+												...r,
+												content: e.target.value,
+											}))
 										}
-										className='block w-full resize-none rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
+										className='focus:border-primary-500/80 block w-full resize-none rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
 									/>
 									<button
 										onClick={handleAddReference}
-										disabled={!newReference.title.trim() || !newReference.content.trim()}
+										disabled={
+											!newReference.title.trim() ||
+											!newReference.content.trim()
+										}
 										className='flex h-8 w-full cursor-pointer items-center justify-center gap-1 rounded-lg border border-zinc-200 text-[11px] font-bold text-zinc-600 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900'>
 										<Plus size={12} /> Add reference
 									</button>
@@ -475,16 +749,22 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 										editingScript?.id === script.id ? (
 											<div
 												key={script.id}
-												className='space-y-2 rounded-xl border border-primary-500/40 bg-white p-3 dark:bg-zinc-900'>
+												className='border-primary-500/40 space-y-2 rounded-xl border bg-white p-3 dark:bg-zinc-900'>
 												<div className='flex gap-2'>
 													<input
 														type='text'
 														aria-label='Script name'
 														value={editingScript.name}
 														onChange={(e) =>
-															setEditingScript((x) => x && { ...x, name: e.target.value })
+															setEditingScript(
+																(x) =>
+																	x && {
+																		...x,
+																		name: e.target.value,
+																	},
+															)
 														}
-														className='block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
+														className='focus:border-primary-500/80 block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
 													/>
 													<select
 														aria-label='Script language'
@@ -499,7 +779,7 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 																	},
 															)
 														}
-														className='block h-8 shrink-0 rounded-lg border border-zinc-200 bg-white px-2 text-[11px] font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'>
+														className='focus:border-primary-500/80 block h-8 shrink-0 rounded-lg border border-zinc-200 bg-white px-2 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'>
 														{SKILL_SCRIPT_LANGUAGES.map((lang) => (
 															<option key={lang} value={lang}>
 																{lang}
@@ -513,18 +793,27 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 													placeholder='Short description'
 													value={editingScript.description}
 													onChange={(e) =>
-														setEditingScript((x) => x && { ...x, description: e.target.value })
+														setEditingScript(
+															(x) =>
+																x && {
+																	...x,
+																	description: e.target.value,
+																},
+														)
 													}
-													className='block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
+													className='focus:border-primary-500/80 block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
 												/>
 												<textarea
 													aria-label='Script code'
 													rows={8}
 													value={editingScript.code}
 													onChange={(e) =>
-														setEditingScript((x) => x && { ...x, code: e.target.value })
+														setEditingScript(
+															(x) =>
+																x && { ...x, code: e.target.value },
+														)
 													}
-													className='block w-full resize-y rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-[11px] font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
+													className='focus:border-primary-500/80 block w-full resize-y rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
 												/>
 												<div className='flex items-center justify-between gap-2'>
 													<label className='flex cursor-pointer items-center gap-1.5 text-[11px] font-bold text-zinc-600 dark:text-zinc-300'>
@@ -534,7 +823,12 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 															checked={editingScript.is_enabled}
 															onChange={(e) =>
 																setEditingScript(
-																	(x) => x && { ...x, is_enabled: e.target.checked },
+																	(x) =>
+																		x && {
+																			...x,
+																			is_enabled:
+																				e.target.checked,
+																		},
 																)
 															}
 															className='accent-primary-500'
@@ -554,9 +848,12 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 																!editingScript.name.trim() ||
 																!editingScript.code.trim()
 															}
-															className='flex h-7 cursor-pointer items-center gap-1 rounded-lg bg-primary-400 px-3 text-[11px] font-black text-primary-950 hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-50'>
+															className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex h-7 cursor-pointer items-center gap-1 rounded-lg px-3 text-[11px] font-black disabled:cursor-not-allowed disabled:opacity-50'>
 															{updateScriptMutation.isPending && (
-																<Loader2 size={11} className='animate-spin' />
+																<Loader2
+																	size={11}
+																	className='animate-spin'
+																/>
 															)}
 															Save
 														</button>
@@ -583,16 +880,19 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 														{script.description}
 													</p>
 												</div>
-												<div className='flex shrink-0 items-center gap-2'>
+												<div
+													className={`flex shrink-0 items-center gap-2 ${isSynced ? 'hidden' : ''}`}>
 													<button
 														aria-label={`Edit ${script.name}`}
 														onClick={() => startEditScript(script)}
-														className='cursor-pointer text-zinc-300 hover:text-primary-600 dark:text-zinc-600 dark:hover:text-primary-400'>
+														className='hover:text-primary-600 dark:hover:text-primary-400 cursor-pointer text-zinc-300 dark:text-zinc-600'>
 														<Pencil size={12} />
 													</button>
 													<button
 														aria-label='Delete'
-														onClick={() => removeScriptMutation.mutate(script.id)}
+														onClick={() =>
+															removeScriptMutation.mutate(script.id)
+														}
 														className='cursor-pointer text-zinc-300 hover:text-rose-500 dark:text-zinc-600'>
 														<Trash2 size={13} />
 													</button>
@@ -602,16 +902,21 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 									)}
 								</div>
 
-								<div className='space-y-2 rounded-xl border border-dashed border-zinc-200 p-3 dark:border-zinc-800'>
+								<div
+									className={`space-y-2 rounded-xl border border-dashed border-zinc-200 p-3 dark:border-zinc-800 ${isSynced ? 'hidden' : ''}`}>
 									<div className='flex gap-2'>
 										<input
+											aria-label='Script name'
 											type='text'
 											placeholder='Script name'
 											value={newScript.name}
 											onChange={(e) =>
-												setNewScript((s) => ({ ...s, name: e.target.value }))
+												setNewScript((s) => ({
+													...s,
+													name: e.target.value,
+												}))
 											}
-											className='block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
+											className='focus:border-primary-500/80 block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
 										/>
 										<select
 											value={newScript.language}
@@ -622,7 +927,7 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 														.value as (typeof SKILL_SCRIPT_LANGUAGES)[number],
 												}))
 											}
-											className='block h-8 shrink-0 rounded-lg border border-zinc-200 bg-white px-2 text-[11px] font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'>
+											className='focus:border-primary-500/80 block h-8 shrink-0 rounded-lg border border-zinc-200 bg-white px-2 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'>
 											{SKILL_SCRIPT_LANGUAGES.map((lang) => (
 												<option key={lang} value={lang}>
 													{lang}
@@ -631,22 +936,27 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 										</select>
 									</div>
 									<input
+										aria-label='Short description'
 										type='text'
 										placeholder='Short description'
 										value={newScript.description}
 										onChange={(e) =>
-											setNewScript((s) => ({ ...s, description: e.target.value }))
+											setNewScript((s) => ({
+												...s,
+												description: e.target.value,
+											}))
 										}
-										className='block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
+										className='focus:border-primary-500/80 block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
 									/>
 									<textarea
+										aria-label='Code'
 										placeholder='Code'
 										rows={3}
 										value={newScript.code}
 										onChange={(e) =>
 											setNewScript((s) => ({ ...s, code: e.target.value }))
 										}
-										className='block w-full resize-none rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-[11px] font-semibold text-zinc-900 outline-none focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
+										className='focus:border-primary-500/80 block w-full resize-none rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
 									/>
 									<button
 										onClick={handleAddScript}
@@ -663,5 +973,55 @@ const SkillEditorDrawer = ({ ws, isOpen, skillId, onClose, onCreated }: ISkillEd
 		</AnimatePresence>
 	);
 };
+
+/** A generated draft's references or scripts, saved along with the skill. */
+const DraftItemList = ({
+	icon,
+	title,
+	items,
+	onRemove,
+}: {
+	icon: React.ReactNode;
+	title: string;
+	items: { label: string; badge?: string; detail: string }[];
+	onRemove: (index: number) => void;
+}) => (
+	<div>
+		<div className='mb-2.5 flex items-center gap-1.5'>
+			{icon}
+			<h3 className='text-xs font-black text-zinc-700 dark:text-zinc-300'>{title}</h3>
+			<span className='text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
+				· saved with the skill
+			</span>
+		</div>
+		<div className='space-y-2'>
+			{items.map((item, index) => (
+				<div
+					key={`${item.label}-${index}`}
+					className='flex items-start justify-between gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/40'>
+					<div className='min-w-0'>
+						<p className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
+							{item.label}
+							{item.badge && (
+								<span className='ml-1.5 rounded bg-zinc-100 px-1.5 py-0.5 text-[9px] font-black tracking-wider text-zinc-500 uppercase dark:bg-zinc-800 dark:text-zinc-400'>
+									{item.badge}
+								</span>
+							)}
+						</p>
+						<p className='mt-0.5 line-clamp-2 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500'>
+							{item.detail}
+						</p>
+					</div>
+					<button
+						aria-label={`Remove ${item.label}`}
+						onClick={() => onRemove(index)}
+						className='shrink-0 cursor-pointer text-zinc-300 hover:text-rose-500 dark:text-zinc-600'>
+						<Trash2 size={13} />
+					</button>
+				</div>
+			))}
+		</div>
+	</div>
+);
 
 export default SkillEditorDrawer;

@@ -1,3 +1,4 @@
+import { activateOnKey } from '@/utils/activateOnKey.util';
 import { Calendar, Link2, MoreVertical } from 'lucide-react';
 import type { DisplayItem } from '../_types/history.type';
 import type { IHistoryItem } from '../_types/history.type';
@@ -15,9 +16,15 @@ const HistoryTableRow = ({ displayItem, isSelected, onSelect }: HistoryTableRowP
 
 	return (
 		<div
+			role='button'
+			tabIndex={0}
+			aria-pressed={isSelected}
 			onClick={onSelect}
+			onKeyDown={activateOnKey(onSelect)}
 			className={`grid cursor-pointer grid-cols-12 items-center gap-4 px-6 py-4.5 transition-all duration-300 hover:bg-slate-50/50 dark:hover:bg-zinc-800/20 ${
-				isSelected ? 'border-l-4 border-primary-500 bg-primary-400/[0.02] dark:bg-primary-400/[0.02]' : ''
+				isSelected
+					? 'border-primary-500 bg-primary-400/[0.02] dark:bg-primary-400/[0.02] border-l-4'
+					: ''
 			}`}>
 			{/* Activity col */}
 			<div className='col-span-5 flex min-w-0 items-center gap-4'>
@@ -30,10 +37,10 @@ const HistoryTableRow = ({ displayItem, isSelected, onSelect }: HistoryTableRowP
 					<IconComponent className='h-5.5 w-5.5' />
 				</div>
 				<div className='flex min-w-0 flex-col items-start'>
-					<span className='w-full truncate text-[14px] font-black text-slate-850 dark:text-white leading-tight mb-0.5'>
+					<span className='text-slate-850 mb-0.5 w-full truncate text-[14px] leading-tight font-black dark:text-white'>
 						{displayItem.title}
 					</span>
-					<span className='dark:text-zinc-550 text-[10.5px] font-bold text-slate-400 uppercase tracking-wider'>
+					<span className='dark:text-zinc-550 text-[10.5px] font-bold tracking-wider text-slate-400 uppercase'>
 						{displayItem.type === 'Chat' ? 'Chat Activity' : 'Workflow Run'}
 					</span>
 				</div>
@@ -44,8 +51,8 @@ const HistoryTableRow = ({ displayItem, isSelected, onSelect }: HistoryTableRowP
 				<span
 					className={`inline-flex items-center rounded-lg px-2.5 py-1 text-[9px] font-black tracking-widest ${
 						displayItem.type === 'Chat'
-							? 'border border-primary-100 bg-primary-50 text-primary-600 dark:border-primary-900/30 dark:bg-primary-950/30 dark:text-primary-400'
-							: 'border border-primary-100 bg-primary-50 text-primary-600 dark:border-primary-900/30 dark:bg-primary-950/30 dark:text-primary-400'
+							? 'border-primary-100 bg-primary-50 text-primary-600 dark:border-primary-900/30 dark:bg-primary-950/30 dark:text-primary-400 border'
+							: 'border-primary-100 bg-primary-50 text-primary-600 dark:border-primary-900/30 dark:bg-primary-950/30 dark:text-primary-400 border'
 					}`}>
 					{displayItem.type === 'Chat' ? 'CHAT' : 'WORKFLOW'}
 				</span>
@@ -54,8 +61,8 @@ const HistoryTableRow = ({ displayItem, isSelected, onSelect }: HistoryTableRowP
 			{/* Connections col */}
 			<div className='text-slate-655 col-span-2 flex items-center justify-start gap-1.5 text-xs font-bold dark:text-zinc-400'>
 				<div className='flex h-7 items-center gap-1.5 rounded-lg border border-slate-100 bg-slate-50/50 px-2 dark:border-zinc-800 dark:bg-zinc-950/40'>
-					<Link2 size={12} className='shrink-0 text-primary-500' />
-					<span className='dark:text-zinc-250 font-black text-slate-750'>
+					<Link2 size={12} className='text-primary-500 shrink-0' />
+					<span className='dark:text-zinc-250 text-slate-750 font-black'>
 						{displayItem.credits} cr
 					</span>
 				</div>
@@ -73,7 +80,7 @@ const HistoryTableRow = ({ displayItem, isSelected, onSelect }: HistoryTableRowP
 					type='button'
 					aria-label='More actions'
 					onClick={(e) => e.stopPropagation()}
-					className='rounded-lg p-1.5 text-slate-400 hover:bg-slate-50 hover:text-slate-750 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
+					className='hover:text-slate-750 rounded-lg p-1.5 text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
 					<MoreVertical size={16} />
 				</button>
 			</div>

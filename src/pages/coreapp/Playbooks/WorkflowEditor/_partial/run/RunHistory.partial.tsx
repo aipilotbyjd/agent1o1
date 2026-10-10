@@ -1,104 +1,223 @@
+import {
+	Check,
+	ChevronDown,
+	CircleAlert,
+	History,
+	Loader2,
+	RotateCw,
+	Square,
+	Trash2,
+} from 'lucide-react';
 import { useState } from 'react';
-import { CheckCircle2, ChevronDown, ChevronRight, Clock, RotateCw, Trash2, XCircle } from 'lucide-react';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
-import { useRunWorkflow } from '../../_hooks/useRunWorkflow.hook';
+import { useQuery } from '@tanstack/react-query';
+import { RunService, runKeys } from '@/api/modules/runs';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import type { TRunRecord } from '../../_types/run.type';
+import DataInspector from './DataInspector.partial';
+import StepError from './StepError.partial';
 
-const statusMeta: Record<TRunRecord['status'], { label: string; cls: string; icon: typeof CheckCircle2 }> = {
-	success: { label: 'Success', cls: 'text-emerald-400', icon: CheckCircle2 },
-	error: { label: 'Failed', cls: 'text-rose-400', icon: XCircle },
-	stopped: { label: 'Stopped', cls: 'text-amber-400', icon: Clock },
+const statusMeta = {
+	success: {
+		label: 'Completed',
+		cls: 'text-emerald-600 dark:text-emerald-400',
+		bg: 'bg-emerald-50 dark:bg-emerald-500/10',
+		icon: Check,
+	},
+	error: {
+		label: 'Needs attention',
+		cls: 'text-rose-600 dark:text-rose-400',
+		bg: 'bg-rose-50 dark:bg-rose-500/10',
+		icon: CircleAlert,
+	},
+	stopped: {
+		label: 'Stopped',
+		cls: 'text-amber-600 dark:text-amber-400',
+		bg: 'bg-amber-50 dark:bg-amber-500/10',
+		icon: Square,
+	},
 };
-
 const RunRow = ({ record }: { record: TRunRecord }) => {
+	const { state } = useWorkflowEditor();
 	const [open, setOpen] = useState(false);
+	const workspaceId = state.workflow.workspaceId ?? '';
+	// Practice runs only exist locally. Fetch server results on demand for real runs.
+	const isRemote = Boolean(workspaceId) && !record.id.startsWith('run_');
+	const resultQuery = useQuery({
+		queryKey: runKeys.nodeRuns(workspaceId, record.id),
+		queryFn: ({ signal }) => RunService.nodeRuns(workspaceId, record.id, signal),
+		enabled: open && isRemote,
+		staleTime: 60_000,
+		retry: 1,
+	});
+	const nodeRuns =
+		resultQuery.data?.map((node) => ({
+			nodeId: node.key,
+			label:
+				record.nodeRuns.find((saved) => saved.nodeId === node.key)?.label ??
+				state.nodes.find((step) => step.id === node.key)?.data.label ??
+				node.key,
+			status:
+				node.status === 'completed'
+					? 'success'
+					: node.status === 'skipped'
+						? 'skipped'
+						: 'error',
+			output: node.output,
+			input: node.input,
+			error: node.error ?? undefined,
+		})) ?? record.nodeRuns;
 	const meta = statusMeta[record.status];
 	const Icon = meta.icon;
-	const total = record.nodeRuns.reduce((acc, n) => acc + (n.durationMs ?? 0), 0);
-	const skipped = record.nodeRuns.filter((n) => n.status === 'skipped').length;
-
+	const completed = record.nodeRuns.filter((node) => node.status === 'success').length;
 	return (
-		<div className='rounded-lg border border-white/10 bg-white/[0.025]'>
-			<button
-				type='button'
-				onClick={() => setOpen((v) => !v)}
-				className='flex w-full items-center gap-2 px-3 py-2 text-left'>
-				{open ? <ChevronDown size={13} className='text-zinc-500' /> : <ChevronRight size={13} className='text-zinc-500' />}
-				<Icon size={14} className={meta.cls} />
-				<span className={`text-xs font-bold ${meta.cls}`}>{meta.label}</span>
-				<span className='text-[11px] text-zinc-500'>
-					{new Date(record.startedAt).toLocaleTimeString()}
+		<details
+			onToggle={(event) => {
+				if (event.target === event.currentTarget) setOpen(event.currentTarget.open);
+			}}
+			className='group border-b border-zinc-100 last:border-0 dark:border-white/[0.06]'>
+			<summary className='flex cursor-pointer list-none items-center gap-3 py-4 [&::-webkit-details-marker]:hidden'>
+				<span
+					className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${meta.bg} ${meta.cls}`}>
+					<Icon size={15} />
 				</span>
-				<span className='ml-auto text-[11px] text-zinc-500'>
-					{record.nodeRuns.length} nodes{skipped ? ` · ${skipped} skipped` : ''} · {total}ms
+				<div className='min-w-0 flex-1'>
+					<p className='text-xs font-medium'>
+						{new Date(record.startedAt).toLocaleString([], {
+							month: 'short',
+							day: 'numeric',
+							hour: '2-digit',
+							minute: '2-digit',
+						})}
+					</p>
+					<p className={`mt-1 text-[11px] ${meta.cls}`}>
+						{meta.label}
+						<span className='text-zinc-400'>
+							{' '}
+							· {completed}/{record.nodeRuns.length} steps
+						</span>
+					</p>
+				</div>
+				<span className='text-[11px] text-zinc-500 tabular-nums dark:text-zinc-400'>
+					{(Math.max(0, record.finishedAt - record.startedAt) / 1000).toFixed(1)}s
 				</span>
-			</button>
-
-			{open && (
-				<div className='space-y-1 border-t border-white/10 px-3 py-2'>
-					{record.nodeRuns.map((node) => (
-						<div key={node.nodeId} className='flex items-start gap-2 text-[11px]'>
+				<ChevronDown size={13} className='text-zinc-400 transition group-open:rotate-180' />
+			</summary>
+			<div className='mb-4 space-y-4 rounded-lg bg-zinc-50 p-4 dark:bg-white/[0.025]'>
+				{isRemote && resultQuery.isFetching && (
+					<p
+						role='status'
+						className='flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400'>
+						<Loader2 size={13} className='animate-spin' />
+						Loading saved results…
+					</p>
+				)}
+				{isRemote && resultQuery.isError && (
+					<div
+						role='alert'
+						className='rounded-lg border border-rose-200 p-3 dark:border-rose-500/20'>
+						<p className='text-xs leading-relaxed text-zinc-600 dark:text-zinc-400'>
+							Could not load saved results. Your run summary is still available.
+						</p>
+						<button
+							type='button'
+							onClick={() => void resultQuery.refetch()}
+							className='mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400'>
+							<RotateCw size={12} />
+							Try again
+						</button>
+					</div>
+				)}
+				{!nodeRuns.length && !resultQuery.isFetching && (
+					<p className='text-xs text-zinc-500'>No step details were recorded.</p>
+				)}
+				{nodeRuns.map((node, index) => (
+					<div
+						key={node.nodeId}
+						className='border-b border-zinc-200 pb-4 last:border-0 last:pb-0 dark:border-white/[0.06]'>
+						<div className='mb-3 flex items-start justify-between gap-3'>
+							<h4 className='text-xs font-medium break-words'>
+								<span className='mr-2 text-zinc-400'>{index + 1}.</span>
+								{node.label}
+							</h4>
 							<span
-								className={`mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full ${
-									node.status === 'success'
-										? 'bg-emerald-400'
-										: node.status === 'error'
-											? 'bg-rose-400'
-											: 'bg-zinc-600'
-								}`}
-							/>
-							<span className='w-32 shrink-0 truncate text-zinc-300'>{node.label}</span>
-							<span className='truncate font-mono text-zinc-500'>
-								{node.status === 'error'
-									? node.error
-									: node.status === 'skipped'
-										? 'skipped'
-										: JSON.stringify(node.output)}
+								className={`shrink-0 text-[10px] ${node.status === 'error' ? statusMeta.error.cls : 'text-zinc-500 dark:text-zinc-400'}`}>
+								{node.status === 'success'
+									? 'Done'
+									: node.status === 'error'
+										? 'Needs attention'
+										: 'Skipped'}
 							</span>
 						</div>
-					))}
-				</div>
-			)}
-		</div>
+						{node.status === 'success' && node.output === undefined && (
+							<p className='text-xs text-zinc-500 dark:text-zinc-400'>
+								{isRemote
+									? resultQuery.isFetching
+										? 'Retrieving this result…'
+										: resultQuery.isError
+											? 'This result could not be loaded.'
+											: 'No saved result is available for this step.'
+									: 'Practice results are only available until the editor reloads.'}
+							</p>
+						)}
+						{node.status === 'success' && node.output !== undefined && (
+							<DataInspector
+								value={node.output}
+								emptyLabel='This step finished but returned no data.'
+								maxHeight='max-h-60'
+							/>
+						)}
+						{node.status === 'error' && <StepError message={node.error} />}
+						{node.input !== undefined && (
+							<details className='mt-3'>
+								<summary className='cursor-pointer text-[11px] font-medium text-zinc-500 dark:text-zinc-400'>
+									Input
+								</summary>
+								<div className='mt-2'>
+									<DataInspector
+										value={node.input}
+										emptyLabel='This step received no input.'
+										maxHeight='max-h-60'
+									/>
+								</div>
+							</details>
+						)}
+					</div>
+				))}
+			</div>
+		</details>
 	);
 };
-
 const RunHistory = () => {
 	const { state, dispatch } = useWorkflowEditor();
-	const { runWorkflow } = useRunWorkflow();
 	const history = state.runHistory;
-
-	if (!history.length) {
+	if (!history.length)
 		return (
-			<div className='flex h-32 items-center justify-center rounded-lg border border-dashed border-white/10 text-xs text-zinc-500'>
-				No runs yet - execute the workflow to build history
+			<div className='py-12 text-center'>
+				<span className='mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-zinc-200 text-zinc-400 dark:border-white/10'>
+					<History size={20} />
+				</span>
+				<h3 className='mt-4 text-sm font-medium'>No past runs</h3>
+				<p className='mt-2 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400'>
+					Completed and stopped runs will appear here.
+				</p>
 			</div>
 		);
-	}
-
 	return (
-		<div className='space-y-2'>
-			<div className='flex items-center justify-between'>
-				<div className='text-xs font-semibold tracking-[0.16em] text-zinc-600 uppercase'>
-					{history.length} past run{history.length === 1 ? '' : 's'}
+		<div>
+			<div className='mb-1 flex items-center justify-between gap-2'>
+				<div>
+					<h3 className='text-sm font-semibold'>Run history</h3>
+					<p className='mt-1 text-[11px] text-zinc-500 dark:text-zinc-400'>
+						{history.length} recorded run{history.length === 1 ? '' : 's'}
+					</p>
 				</div>
-				<div className='flex items-center gap-2'>
-					<button
-						type='button'
-						onClick={() => void runWorkflow()}
-						disabled={state.run.status === 'running'}
-						className='flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-300 hover:bg-emerald-500/20 disabled:opacity-50'>
-						<RotateCw size={12} />
-						Replay
-					</button>
-					<button
-						type='button'
-						onClick={() => dispatch({ type: 'CLEAR_RUN_HISTORY' })}
-						className='flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1 text-xs font-bold text-zinc-400 hover:bg-white/[0.06] hover:text-white'>
-						<Trash2 size={12} />
-						Clear
-					</button>
-				</div>
+				<button
+					type='button'
+					onClick={() => dispatch({ type: 'CLEAR_RUN_HISTORY' })}
+					className='inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-white/5 dark:hover:text-zinc-300'>
+					<Trash2 size={12} />
+					Clear
+				</button>
 			</div>
 			{history.map((record) => (
 				<RunRow key={record.id} record={record} />
@@ -106,5 +225,4 @@ const RunHistory = () => {
 		</div>
 	);
 };
-
 export default RunHistory;

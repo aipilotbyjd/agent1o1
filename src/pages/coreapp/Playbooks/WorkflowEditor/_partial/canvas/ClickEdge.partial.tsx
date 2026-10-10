@@ -1,5 +1,5 @@
 import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type EdgeProps } from '@xyflow/react';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import type { TCanvasEdge } from '../../_types/canvas.type';
 
 const ClickEdge = ({
@@ -95,18 +95,34 @@ const ClickEdge = ({
 			{/* Big flowing data pulses travelling along the connection */}
 			{dotDelays.map((delay) => (
 				<g key={delay} className='pointer-events-none'>
-					<circle r={isEmphasized ? 11 : 9} fill={stroke} opacity={0.3} className='blur-[3px]'>
-						<animateMotion dur='1.8s' repeatCount='indefinite' begin={`-${delay}s`} rotate='auto'>
+					<circle
+						r={isEmphasized ? 11 : 9}
+						fill={stroke}
+						opacity={0.3}
+						className='blur-[3px]'>
+						<animateMotion
+							dur='1.8s'
+							repeatCount='indefinite'
+							begin={`-${delay}s`}
+							rotate='auto'>
 							<mpath href={`#${pathId}`} />
 						</animateMotion>
 					</circle>
 					<circle r={isEmphasized ? 6 : 5} fill={stroke} opacity={0.9}>
-						<animateMotion dur='1.8s' repeatCount='indefinite' begin={`-${delay}s`} rotate='auto'>
+						<animateMotion
+							dur='1.8s'
+							repeatCount='indefinite'
+							begin={`-${delay}s`}
+							rotate='auto'>
 							<mpath href={`#${pathId}`} />
 						</animateMotion>
 					</circle>
 					<circle r={isEmphasized ? 3 : 2.5} fill='white'>
-						<animateMotion dur='1.8s' repeatCount='indefinite' begin={`-${delay}s`} rotate='auto'>
+						<animateMotion
+							dur='1.8s'
+							repeatCount='indefinite'
+							begin={`-${delay}s`}
+							rotate='auto'>
 							<mpath href={`#${pathId}`} />
 						</animateMotion>
 					</circle>
@@ -149,7 +165,7 @@ const ClickEdge = ({
 							'h-5 w-5 rounded-full border text-[10px] leading-none shadow transition',
 							'border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-100',
 							'dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700',
-							selected ? 'ring-2 ring-primary-400/50' : '',
+							selected ? 'ring-primary-400/50 ring-2' : '',
 						].join(' ')}>
 						x
 					</button>

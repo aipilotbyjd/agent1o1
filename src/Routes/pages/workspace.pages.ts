@@ -6,6 +6,12 @@ export const workspace: TPage = {
 	text: 'Workspace',
 	icon: 'Home09',
 	subPages: {
+		assistant: {
+			id: 'assistant',
+			to: ws('assistant'),
+			text: 'Assistant',
+			icon: 'AiMagic',
+		},
 		dashboard: {
 			id: 'dashboard',
 			to: ws('dashboard'),
@@ -54,6 +60,12 @@ export const workspace: TPage = {
 			text: 'Vault',
 			icon: 'Lock',
 		},
+		approvals: {
+			id: 'approvals',
+			to: ws('approvals'),
+			text: 'Approvals',
+			icon: 'CheckmarkCircle02',
+		},
 		trail: {
 			id: 'trail',
 			to: ws('trail'),
@@ -65,6 +77,12 @@ export const workspace: TPage = {
 			to: ws('artifacts'),
 			text: 'Artifacts',
 			icon: 'FileDownload',
+		},
+		trash: {
+			id: 'trash',
+			to: ws('trash'),
+			text: 'Trash',
+			icon: 'Delete02',
 		},
 	},
 };
@@ -137,6 +155,12 @@ export const agentEditor: TPage = {
 			to: ws('agents/:agentId/insights'),
 			text: 'Agent Insights',
 			icon: 'Sparkles',
+		},
+		library: {
+			id: 'library',
+			to: ws('library'),
+			text: 'Library',
+			icon: 'Image01',
 		},
 	},
 };

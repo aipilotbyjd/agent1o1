@@ -9,12 +9,43 @@
 export const TOKEN_DND_MIME = 'application/x-agent-output-token';
 
 /**
- * Build the id-based expression token for a node output, matching
- * `collectUpstreamVariables` exactly (`{{node_2.output.city}}`). Id-based so
- * rename/duplicate never breaks a dropped reference.
+ * Build the expression token for a node output in the form the backend
+ * resolves: its templating context is `{ input, nodes: { <id>: <output> } }`,
+ * so `{{nodes.node_2.city}}` reads a field and `{{nodes.node_2}}` the whole
+ * output. Id-based so rename/duplicate never breaks a dropped reference.
  */
-export const buildOutputToken = (nodeId: string, outputName: string): string =>
-	`{{${nodeId}.output.${outputName}}}`;
+export const buildOutputToken = (nodeId: string, outputPath: string): string =>
+	`{{nodes.${nodeId}${outputPath ? `.${outputPath}` : ''}}}`;
+
+const NODE_TOKEN_RE = /^\{\{\s*nodes\.([A-Za-z0-9_]+)((?:\.[A-Za-z0-9_]+|\[\d+\])*)\s*\}\}$/;
+
+/** The node and output path a `{{nodes.<id>.<path>}}` token points at, or null. */
+export const parseNodeToken = (token: string): { nodeId: string; path: string } | null => {
+	const match = token.match(NODE_TOKEN_RE);
+	return match ? { nodeId: match[1], path: match[2].replace(/^\./, '') } : null;
+};
+
+const LEGACY_TOKEN_RE = /\{\{\s*([A-Za-z0-9_]+)\.output((?:\.[A-Za-z0-9_]+|\[\d+\])*)\s*\}\}/g;
+
+/**
+ * Rewrite the editor's old `{{<id>.output.<path>}}` form, which the backend
+ * never resolved, to `{{nodes.<id>.<path>}}` — for workflow files exported
+ * before the change. Only ids of nodes in the same workflow are touched.
+ */
+export const upgradeLegacyTokens = (value: unknown, nodeIds: Set<string>): unknown => {
+	if (typeof value === 'string')
+		return value.includes('{{')
+			? value.replace(LEGACY_TOKEN_RE, (match, id: string, path: string) =>
+					nodeIds.has(id) ? `{{nodes.${id}${path}}}` : match,
+				)
+			: value;
+	if (Array.isArray(value)) return value.map((item) => upgradeLegacyTokens(item, nodeIds));
+	if (value && typeof value === 'object')
+		return Object.fromEntries(
+			Object.entries(value).map(([key, item]) => [key, upgradeLegacyTokens(item, nodeIds)]),
+		);
+	return value;
+};
 
 /** Write the token onto a drag event's dataTransfer (custom type + text fallback). */
 export const setTokenDragData = (dataTransfer: DataTransfer, token: string): void => {

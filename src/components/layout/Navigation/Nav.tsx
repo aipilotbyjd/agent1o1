@@ -187,7 +187,7 @@ export const NavItem: FC<INavItemProps> = (props) => {
 		to,
 		end = true,
 		className,
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 		subPages,
 		iconColor,
 		isActiveOverwrite,
@@ -320,7 +320,6 @@ interface INavCollapseProps extends HTMLAttributes<HTMLLIElement> {
 	subPages?: unknown;
 }
 export const NavCollapse: FC<INavCollapseProps> = (props) => {
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const { children, icon, text, className, to, subPages, iconColor, ...rest } = props;
 
 	const { t } = useTranslation('menu');
@@ -441,7 +440,7 @@ interface INavUserProps extends HTMLAttributes<HTMLLIElement> {
 }
 export const NavUser: FC<INavUserProps> = (props) => {
 	// TODO
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 	const { children, image, text, to, className, ...rest } = props;
 
 	const { t } = useTranslation('menu');

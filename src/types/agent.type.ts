@@ -2,14 +2,15 @@
 // Agent Types
 // ------------------------------------------------------------
 // Core agent record plus every sub-resource that hangs off one:
-// sessions/messages (chat, plus streamed turns), versions, tool
+// sessions/messages (chat, plus Reverb-streamed turns), versions, tool
 // bindings, attached workflows/skills, knowledge + knowledge
 // sources, eval suites, memories, reflections, and evaluation
-// settings. `TAgentSessionStreamEvent` documents the SSE wire
-// format for `POST .../sessions/{session}/messages/stream`.
+// settings. `TAgentSessionStreamEvent` is what a streamed turn plays
+// into the chat; the Reverb payloads behind it are `TAgentTurn*Event`.
 // ============================================================
 import type { TArtifact } from './artifact.type';
 import type { TTag } from './tag.type';
+import type { TAgentAction, TApprovalPolicy, TAutonomyMode } from './agent-action.type';
 
 export const AGENT_ICONS = [
 	'bot',
@@ -34,7 +35,15 @@ export const AGENT_ICONS = [
 ] as const;
 export type TAgentIcon = (typeof AGENT_ICONS)[number];
 
-export const AGENT_COLORS = ['purple', 'green', 'blue', 'teal', 'orange', 'red', 'rainbow'] as const;
+export const AGENT_COLORS = [
+	'purple',
+	'green',
+	'blue',
+	'teal',
+	'orange',
+	'red',
+	'rainbow',
+] as const;
 export type TAgentColor = (typeof AGENT_COLORS)[number];
 
 export type TAgent = {
@@ -56,12 +65,19 @@ export type TAgent = {
 	allow_self_updates: boolean;
 	allow_skill_editing: boolean;
 	allow_self_clone: boolean;
+	/** How freely the agent may act — see `TAutonomyMode`. */
+	autonomy_mode: TAutonomyMode;
+	/** Test run: actions are simulated, nothing is really sent or changed. */
+	test_mode: boolean;
+	allow_web_fetch: boolean;
 	tags?: TTag[];
 	sessions_count?: number;
 	last_used_at?: string | null;
 	created_by: string;
 	created_at: string;
 	updated_at: string;
+	/** Set while the agent is in the trash. */
+	deleted_at: string | null;
 };
 
 export type TCreateAgentDto = {
@@ -80,6 +96,9 @@ export type TCreateAgentDto = {
 	allow_self_updates?: boolean;
 	allow_skill_editing?: boolean;
 	allow_self_clone?: boolean;
+	autonomy_mode?: TAutonomyMode;
+	test_mode?: boolean;
+	allow_web_fetch?: boolean;
 };
 
 export type TUpdateAgentDto = Partial<TCreateAgentDto>;
@@ -116,11 +135,23 @@ export type TAgentSessionStatus = 'active' | 'archived';
 
 export type TAgentMessageRole = 'user' | 'assistant' | 'tool' | 'system';
 
+/** A skill picked for one message — what the chat shows on that message. */
+export type TChosenSkill = {
+	id: string;
+	name: string;
+	slug: string;
+	icon: string | null;
+	color: string | null;
+	category: string | null;
+};
+
 export type TAgentMessage = {
 	id: string;
 	agent_session_id: string;
 	role: TAgentMessageRole;
 	content: unknown;
+	/** The skill picked for this (user) message with `/`; on the paged transcript only. */
+	skill?: TChosenSkill | null;
 	/** Files a member sent with this (user) message. Present whenever the
 	 *  backend eager-loads them — session detail and the paged transcript. */
 	attachments?: TArtifact[];
@@ -131,6 +162,10 @@ export type TAgentMessage = {
 	/** Tool call id → the subagent task that `invoke_agent` call started. */
 	subagent_task_ids: Record<string, string>;
 	usage: { prompt_tokens?: number; completion_tokens?: number } | null;
+	/** True while the turn waits for its actions to be decided. */
+	awaiting_approval?: boolean;
+	/** The tool calls it is waiting on. */
+	pending_tool_call_ids?: string[];
 	created_at: string;
 };
 
@@ -145,6 +180,12 @@ export type TAgentSession = {
 	status: TAgentSessionStatus;
 	last_activity_at: string;
 	messages_count?: number;
+	/** Actions in this conversation waiting for a decision (list endpoint only). */
+	pending_actions_count?: number;
+	/** This conversation's own mode; null runs under the agent's. */
+	autonomy_mode?: TAutonomyMode | null;
+	/** This conversation's own Test run switch; null follows the agent. */
+	test_mode?: boolean | null;
 	messages?: TAgentMessage[];
 	created_at: string;
 };
@@ -156,17 +197,26 @@ export type TCreateAgentSessionDto = {
 export type TUpdateAgentSessionDto = {
 	title?: string | null;
 	status?: TAgentSessionStatus;
+	/** Tightening needs chat access; loosening past the agent needs agent.manage. */
+	autonomy_mode?: TAutonomyMode | null;
+	test_mode?: boolean | null;
 };
 
 export type TSendAgentMessageDto = {
 	message: string;
 	/** Sent as multipart `attachments[]` — the service builds the `FormData`. */
 	attachments?: File[];
+	/** A skill picked with `/`; its instructions are added to this turn only. */
+	skill_id?: string | null;
 };
 
-/** SSE event names on `POST .../messages/stream`. `delta` chunks concatenate
- *  in order; `complete` carries the persisted message id to reconcile
- *  against the REST transcript; `done` always fires last. */
+/** The events one turn plays into the chat, in order: `delta` chunks
+ *  concatenate; `tool-call` / `tool-result` bracket each tool; `complete`
+ *  carries the persisted message id to reconcile against the REST transcript;
+ *  `done` always fires last. They are built from the Reverb events on the
+ *  session's channel (`streamAgentTurn`), so `arguments` and `output` are
+ *  absent when too big to broadcast and `complete.text` is always null —
+ *  the transcript is the source of truth. */
 export type TAgentSessionStreamEvent =
 	| { event: 'delta'; delta: string }
 	| { event: 'tool-call'; id: string; name: string; arguments: unknown }
@@ -177,8 +227,20 @@ export type TAgentSessionStreamEvent =
 			result?: { task_id?: string };
 			output: string;
 			successful: boolean;
+			/** The call was not run: a person rejected it, or it expired. */
+			denied?: boolean;
 	  }
-	| { event: 'complete'; run_id: string; status: string; message_id: string | null; text: string | null }
+	/** The turn paused: these actions wait for a decision. */
+	| { event: 'approval-required'; actions: TAgentAction[] }
+	/** `status` is `awaiting_approval` when the turn paused rather than finished. */
+	| {
+			event: 'complete';
+			run_id: string;
+			status: string;
+			message_id: string | null;
+			text: string | null;
+			pending_action_ids?: string[];
+	  }
 	| { event: 'error'; message: string }
 	| { event: 'done' };
 
@@ -201,6 +263,7 @@ export type TAgentToolBinding = {
 	node_type: string;
 	config: Record<string, unknown> | null;
 	exposed_fields: string[] | null;
+	approval_policy: TApprovalPolicy | null;
 	created_at: string;
 };
 
@@ -208,6 +271,13 @@ export type TCreateAgentToolBindingDto = {
 	node_type: string;
 	config?: Record<string, unknown> | null;
 	exposed_fields?: string[] | null;
+	approval_policy?: TApprovalPolicy | null;
+};
+
+export type TUpdateAgentToolBindingDto = {
+	config?: Record<string, unknown> | null;
+	exposed_fields?: string[] | null;
+	approval_policy?: TApprovalPolicy | null;
 };
 
 // ─── Knowledge ───────────────────────────────────────────────
@@ -253,6 +323,7 @@ export type TAgentMemory = {
 	id: string;
 	agent_id: string;
 	user_id: string | null;
+	agent_session_id: string | null;
 	key: string;
 	value: string;
 	type: string | null;
@@ -273,7 +344,13 @@ export type TUpdateAgentMemoryDto = Partial<TCreateAgentMemoryDto>;
 
 // ─── Eval suites ─────────────────────────────────────────────
 
-export type TEvalAssertionType = 'contains' | 'not_contains' | 'regex' | 'equals' | 'llm_judge';
+export type TEvalAssertionType =
+	| 'contains'
+	| 'not_contains'
+	| 'equals'
+	| 'llm_rubric'
+	| 'tool_called'
+	| 'tool_not_called';
 
 export type TEvalAssertion = { type: TEvalAssertionType; value: string };
 
@@ -303,6 +380,7 @@ export type TAgentEvalSuite = {
 	agent_id: string;
 	name: string;
 	description: string | null;
+	run_on_change: boolean;
 	case_count?: number;
 	cases?: TAgentEvalCase[];
 	created_by: string;
@@ -313,6 +391,7 @@ export type TAgentEvalSuite = {
 export type TCreateAgentEvalSuiteDto = {
 	name: string;
 	description?: string | null;
+	run_on_change?: boolean;
 };
 
 export type TUpdateAgentEvalSuiteDto = Partial<TCreateAgentEvalSuiteDto>;
@@ -330,13 +409,17 @@ export type TAgentEvalCaseResult = {
 
 export type TAgentEvalRunStatus = 'pending' | 'running' | 'completed' | 'failed';
 
+export type TAgentEvalRunTrigger = 'manual' | 'agent_change';
+
 export type TAgentEvalRun = {
 	id: string;
 	agent_eval_suite_id: string;
 	agent_version_id: string;
+	trigger: TAgentEvalRunTrigger;
 	status: TAgentEvalRunStatus;
 	passed: number;
 	failed: number;
+	regressed: boolean;
 	error: string | null;
 	results?: TAgentEvalCaseResult[];
 	triggered_by: string;
@@ -601,14 +684,43 @@ export type TSkillFilters = {
 	is_shared?: boolean;
 };
 
-// The old backend broadcast a reply token by token (`text_delta`, `tool_call`,
-// `tool_result`, `artifact`, and a terminal `agent.message.ready`). This one
-// streams the same turn over server-sent events instead — see
-// `TAgentSessionStreamEvent` above — so those event types are gone.
+// The reply streams over Reverb as `turn.delta` / `turn.tool` / `turn.changed`
+// on the session's private channel — the `TAgentTurn*Event` types below —
+// which `streamAgentTurn` turns into `TAgentSessionStreamEvent`s.
+
+/** `App\Events\Agents\AgentTurnDelta` (`.turn.delta`) — a batched chunk of reply text. */
+export type TAgentTurnDeltaEvent = { run_id: string; text: string };
+
+/** `App\Events\Agents\AgentTurnToolActivity` (`.turn.tool`). `arguments` is
+ *  sent when a call starts and `output` when it finishes, each only when small. */
+export type TAgentTurnToolEvent = {
+	run_id: string;
+	tool_call_id: string;
+	tool: string;
+	phase: 'started' | 'finished';
+	successful?: boolean;
+	denied?: boolean;
+	subagent_task_id?: string;
+	arguments?: Record<string, unknown>;
+	output?: string;
+};
+
+/** `App\Events\Agents\AgentTurnChanged` (`.turn.changed`). Anything but
+ *  `running` means fetch the stored message; `error` is safe to show. */
+export type TAgentTurnChangedEvent = {
+	turn: {
+		run_id: string;
+		agent_session_id: string;
+		status: 'running' | 'awaiting_approval' | 'completed' | 'failed';
+		message_id?: string;
+		pending_action_ids?: string[];
+		error?: string;
+	};
+};
 
 /**
  * One file an agent exported during a turn. Mirrors `ExportArtifactTool`'s
- * JSON return exactly; the SSE `tool-result` event does not carry the tool's
+ * JSON return exactly; the `turn.tool` event only carries a small slice of the tool's
  * payload, so the chat resolves these from `artifacts.index` after the turn
  * completes.
  */
@@ -683,7 +795,6 @@ export type TAgentSkillCategory =
 	| 'Automation'
 	| 'Development'
 	| 'Content';
-
 
 export type TSubagentTaskStatus = 'queued' | 'running' | 'completed' | 'failed';
 

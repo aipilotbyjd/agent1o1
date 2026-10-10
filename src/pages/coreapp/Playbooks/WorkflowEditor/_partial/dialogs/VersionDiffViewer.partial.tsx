@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Plus, Minus, Circle } from 'lucide-react';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import Modal from './Modal.partial';
 import type { TCanvasNode } from '../../_types/canvas.type';
 
@@ -60,10 +60,13 @@ const VersionDiffViewer = () => {
 					<>
 						{/* Version selector */}
 						<div>
-							<label className='mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400'>
+							<label
+								htmlFor='versiondiffviewer-compare-current-with-history-s'
+								className='mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400'>
 								Compare current with history snapshot:
 							</label>
 							<select
+								id='versiondiffviewer-compare-current-with-history-s'
 								value={selectedVersion}
 								onChange={(e) => setSelectedVersion(Number(e.target.value))}
 								className='w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100'>

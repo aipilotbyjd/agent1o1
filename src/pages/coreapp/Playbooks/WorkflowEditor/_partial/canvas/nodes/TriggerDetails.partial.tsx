@@ -27,7 +27,8 @@ const TriggerDetails = ({ workspaceId, trigger }: Props) => {
 	// Only fetched once the list is opened; an empty id keeps the query disabled.
 	const events = useTriggerEvents(workspaceId, eventsOpen ? trigger.id : '');
 
-	const webhookUrl = trigger.type === 'webhook' && trigger.token ? webhookUrlFor(trigger.token) : '';
+	const webhookUrl =
+		trigger.type === 'webhook' && trigger.token ? webhookUrlFor(trigger.token) : '';
 
 	const handleCopy = async () => {
 		try {
@@ -73,7 +74,7 @@ const TriggerDetails = ({ workspaceId, trigger }: Props) => {
 									stop(event);
 									handleCopy();
 								}}
-								className='flex h-5 w-5 cursor-pointer items-center justify-center rounded text-zinc-400 transition hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/40 dark:hover:text-primary-400'>
+								className='hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-5 w-5 cursor-pointer items-center justify-center rounded text-zinc-400 transition'>
 								<Copy size={11} />
 							</button>
 							<button
@@ -84,8 +85,11 @@ const TriggerDetails = ({ workspaceId, trigger }: Props) => {
 									stop(event);
 									handleRotate();
 								}}
-								className='flex h-5 w-5 cursor-pointer items-center justify-center rounded text-zinc-400 transition hover:bg-primary-100 hover:text-primary-600 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-primary-900/40 dark:hover:text-primary-400'>
-								<RefreshCw size={11} className={rotateToken.isPending ? 'animate-spin' : ''} />
+								className='hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-5 w-5 cursor-pointer items-center justify-center rounded text-zinc-400 transition disabled:cursor-not-allowed disabled:opacity-50'>
+								<RefreshCw
+									size={11}
+									className={rotateToken.isPending ? 'animate-spin' : ''}
+								/>
 							</button>
 						</div>
 					</div>
@@ -117,7 +121,7 @@ const TriggerDetails = ({ workspaceId, trigger }: Props) => {
 						stop(event);
 						handleRun();
 					}}
-					className='flex cursor-pointer items-center gap-1 rounded-md border border-zinc-200 bg-white px-1.5 py-0.5 text-[9px] font-semibold text-zinc-600 transition hover:border-primary-300 hover:text-primary-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:text-primary-400'>
+					className='hover:border-primary-300 hover:text-primary-600 dark:hover:text-primary-400 flex cursor-pointer items-center gap-1 rounded-md border border-zinc-200 bg-white px-1.5 py-0.5 text-[9px] font-semibold text-zinc-600 transition disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300'>
 					<Play size={9} />
 					{runTrigger.isPending ? 'Queuing…' : 'Run now'}
 				</button>
@@ -139,20 +143,24 @@ const TriggerDetails = ({ workspaceId, trigger }: Props) => {
 							key={event.id}
 							title={event.error ?? undefined}
 							className='flex items-center gap-1.5 rounded-md bg-white/70 px-1.5 py-1 text-[9px] dark:bg-zinc-900/70'>
-							<span className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusDot[event.status]}`} />
+							<span
+								className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusDot[event.status]}`}
+							/>
 							<span className='font-semibold text-zinc-700 capitalize dark:text-zinc-300'>
 								{event.status}
 							</span>
 							<span className='text-zinc-400'>· {event.source}</span>
 							<span className='ml-auto shrink-0 text-zinc-400'>
-								{formatDistanceToNow(new Date(event.created_at), { addSuffix: true })}
+								{formatDistanceToNow(new Date(event.created_at), {
+									addSuffix: true,
+								})}
 							</span>
 							{event.run_id && (
 								<Link
 									to={paths.trail(workspaceId, event.run_id)}
 									title='Open this run in Trail'
 									onClick={stop}
-									className='shrink-0 text-zinc-400 hover:text-primary-600 dark:hover:text-primary-400'>
+									className='hover:text-primary-600 dark:hover:text-primary-400 shrink-0 text-zinc-400'>
 									<ExternalLink size={9} />
 								</Link>
 							)}

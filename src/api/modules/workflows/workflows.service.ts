@@ -34,7 +34,22 @@ export const WorkflowService = {
 			.patch<TApiResponse<{ workflow: TWorkflow }>>(E.update(ws, id), payload)
 			.then(unwrapKey<TWorkflow>('workflow')),
 
+	// Soft delete: the workflow moves to the trash, where it can be restored.
 	remove: (ws: string, id: string) => axiosClient.delete(E.delete(ws, id)).then(() => undefined),
+
+	trash: (ws: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<{ workflows: TWorkflow[] }>>(E.trash(ws), { signal })
+			.then(unwrapKey<TWorkflow[]>('workflows')),
+
+	restore: (ws: string, id: string) =>
+		axiosClient
+			.post<TApiResponse<{ workflow: TWorkflow }>>(E.restore(ws, id))
+			.then(unwrapKey<TWorkflow>('workflow')),
+
+	// Only accepted for a workflow already in the trash.
+	forceDelete: (ws: string, id: string) =>
+		axiosClient.delete(E.forceDelete(ws, id)).then(() => undefined),
 
 	duplicate: (ws: string, id: string) =>
 		axiosClient

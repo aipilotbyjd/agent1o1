@@ -2,8 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate, useRouteError } from 'react-router';
 import dayjs from 'dayjs';
 import Button from '@/components/ui/Button';
-import { LogoDark, LogoLight } from '@/assets/images';
-import useDarkMode from '@/hooks/useDarkMode';
+import AppLogo from '@/components/AppLogo';
 
 const RELOAD_FLAG = 'route-error-chunk-reload';
 
@@ -22,7 +21,6 @@ const isChunkLoadError = (error: unknown) =>
 const RouteErrorPage = () => {
 	const error = useRouteError();
 	const navigate = useNavigate();
-	const { isDarkTheme } = useDarkMode();
 	const isChunkError = isChunkLoadError(error);
 
 	useEffect(() => {
@@ -51,11 +49,12 @@ const RouteErrorPage = () => {
 	return (
 		<div className='flex h-full min-h-screen flex-col items-center justify-stretch p-8'>
 			<button aria-label='Homepage' onClick={() => navigate('/')}>
-				<img
-					src={isDarkTheme ? LogoDark : LogoLight}
-					alt='Boltify'
-					className='h-18 cursor-pointer transition-all duration-300 ease-in-out'
-				/>
+				<span className='flex cursor-pointer items-center gap-3'>
+					<AppLogo className='size-14' rounded='rounded-2xl' alt='' />
+					<span className='text-3xl font-black tracking-tight text-zinc-950 dark:text-white'>
+						agent1o1
+					</span>
+				</span>
 			</button>
 			<div className='flex h-full flex-col items-center justify-center gap-4 text-center'>
 				<div className='text-4xl font-bold'>Something went wrong.</div>

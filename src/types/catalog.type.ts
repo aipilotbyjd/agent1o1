@@ -20,7 +20,10 @@ export type TNodeCategory = {
 	kind: string;
 };
 
-export type TNodeCategoryWithCount = TNodeCategory & { nodes_count: number; nodes?: TBuiltinNode[] };
+export type TNodeCategoryWithCount = TNodeCategory & {
+	nodes_count: number;
+	nodes?: TBuiltinNode[];
+};
 
 export type TTriggerMechanism = 'webhook' | 'schedule' | 'manual' | 'polling' | 'event';
 

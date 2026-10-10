@@ -26,7 +26,8 @@ export const useWorkflowVersion = (ws: string, workflowId: string, version: stri
 export const usePublishWorkflowVersion = (ws: string, workflowId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (payload?: TPublishWorkflowDto) => WorkflowVersionService.publish(ws, workflowId, payload),
+		mutationFn: (payload?: TPublishWorkflowDto) =>
+			WorkflowVersionService.publish(ws, workflowId, payload),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: keys.list(ws, workflowId) });
 			qc.invalidateQueries({ queryKey: workflowKeys.detail(ws, workflowId) });

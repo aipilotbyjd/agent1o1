@@ -172,6 +172,7 @@ const ResetPasswordPage = () => {
 									className='size-4 shrink-0 text-zinc-400'
 								/>
 								<input
+									aria-label='Enter new password'
 									type={showPassword ? 'text' : 'password'}
 									className='input-clean w-full border-0 border-none bg-transparent p-0 font-mono text-sm text-zinc-950 shadow-none placeholder:font-sans placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
 									id='password'
@@ -213,6 +214,7 @@ const ResetPasswordPage = () => {
 									className='size-4 shrink-0 text-zinc-400'
 								/>
 								<input
+									aria-label='Confirm new password'
 									type={showConfirm ? 'text' : 'password'}
 									className='input-clean w-full border-0 border-none bg-transparent p-0 font-mono text-sm text-zinc-950 shadow-none placeholder:font-sans placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
 									id='password_confirmation'

@@ -22,11 +22,14 @@ const ProfilePage = lazy(() => import('@/pages/settings/Profile/Profile.page'));
 const SecurityPage = lazy(() => import('@/pages/settings/Security/Security.page'));
 const MembersPage = lazy(() => import('@/pages/settings/Members/Members.page'));
 const ApiKeysPage = lazy(() => import('@/pages/settings/ApiKeys/ApiKeys.page'));
+const AiProvidersPage = lazy(() => import('@/pages/settings/AiProviders/AiProviders.page'));
 const NotificationsPage = lazy(() => import('@/pages/settings/Notifications/Notifications.page'));
 const NotificationChannelsPage = lazy(
 	() => import('@/pages/settings/NotificationChannels/NotificationChannels.page'),
 );
 const TagsPage = lazy(() => import('@/pages/settings/Tags/Tags.page'));
+const ReferralsPage = lazy(() => import('@/pages/settings/Referrals/Referrals.page'));
+const AgentPolicyPage = lazy(() => import('@/pages/settings/AgentPolicy/AgentPolicy.page'));
 
 /** Registered as a child of the `/:workspaceId` guard, alongside the core-app shell. */
 const SettingsPages: RouteObject[] = [
@@ -41,14 +44,17 @@ const SettingsPages: RouteObject[] = [
 			{ path: rel(settingsPages.profile.to), element: <ProfilePage /> },
 			{ path: rel(settingsPages.security.to), element: <SecurityPage /> },
 			{ path: rel(settingsPages.notifications.to), element: <NotificationsPage /> },
+			{ path: rel(settingsPages.referrals.to), element: <ReferralsPage /> },
 			{ path: rel(settingsPages.workspace.to), element: <WorkspacePage /> },
 			{ path: rel(settingsPages.members.to), element: <MembersPage /> },
 			{ path: rel(settingsPages.apiKeys.to), element: <ApiKeysPage /> },
+			{ path: rel(settingsPages.aiProviders.to), element: <AiProvidersPage /> },
 			{
 				path: rel(settingsPages.notificationChannels.to),
 				element: <NotificationChannelsPage />,
 			},
 			{ path: rel(settingsPages.tags.to), element: <TagsPage /> },
+			{ path: rel(settingsPages.agentPolicy.to), element: <AgentPolicyPage /> },
 			{
 				path: rel(settingsPages.billing.to),
 				element: <BillingLayout />,

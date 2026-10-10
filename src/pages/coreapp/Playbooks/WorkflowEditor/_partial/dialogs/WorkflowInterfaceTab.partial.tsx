@@ -77,7 +77,13 @@ const initialValues = (iface: TWorkflowInterface): Record<string, unknown> =>
 		]),
 	);
 
-const WorkflowInterfaceTab = ({ workspaceId, workflowId }: { workspaceId: string; workflowId: string }) => {
+const WorkflowInterfaceTab = ({
+	workspaceId,
+	workflowId,
+}: {
+	workspaceId: string;
+	workflowId: string;
+}) => {
 	const { data: iface, isLoading, dataUpdatedAt } = useWorkflowInterface(workspaceId, workflowId);
 
 	if (isLoading || !iface) {
@@ -90,7 +96,14 @@ const WorkflowInterfaceTab = ({ workspaceId, workflowId }: { workspaceId: string
 	}
 
 	// Remount on every server version so the local draft starts from it.
-	return <InterfaceEditor key={dataUpdatedAt} iface={iface} workspaceId={workspaceId} workflowId={workflowId} />;
+	return (
+		<InterfaceEditor
+			key={dataUpdatedAt}
+			iface={iface}
+			workspaceId={workspaceId}
+			workflowId={workflowId}
+		/>
+	);
 };
 
 const InterfaceEditor = ({
@@ -110,7 +123,9 @@ const InterfaceEditor = ({
 	const [lastRunId, setLastRunId] = useState<string | null>(null);
 
 	const updateField = (index: number, patch: Partial<TDraftField>) =>
-		setFields((current) => current.map((field, i) => (i === index ? { ...field, ...patch } : field)));
+		setFields((current) =>
+			current.map((field, i) => (i === index ? { ...field, ...patch } : field)),
+		);
 
 	const keyErrors = fields.map((field, index) => {
 		const key = field.key.trim();
@@ -160,7 +175,8 @@ const InterfaceEditor = ({
 	};
 
 	const isDirty =
-		JSON.stringify(fields.map(fromDraft)) !== JSON.stringify(iface.fields.map((f) => fromDraft(toDraft(f))));
+		JSON.stringify(fields.map(fromDraft)) !==
+		JSON.stringify(iface.fields.map((f) => fromDraft(toDraft(f))));
 
 	return (
 		<div className='space-y-6'>
@@ -176,7 +192,9 @@ const InterfaceEditor = ({
 			<div className='space-y-3 rounded-xl border border-zinc-200 bg-zinc-50/20 p-4 dark:border-zinc-800 dark:bg-zinc-900/20'>
 				<div className='flex items-center justify-between gap-3'>
 					<div className='flex items-center gap-2'>
-						<h4 className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>Fields</h4>
+						<h4 className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
+							Fields
+						</h4>
 						<span
 							title={
 								iface.source === 'declared'
@@ -219,25 +237,33 @@ const InterfaceEditor = ({
 											aria-label='Field key'
 											placeholder='key'
 											value={field.key}
-											onChange={(e) => updateField(index, { key: e.target.value })}
+											onChange={(e) =>
+												updateField(index, { key: e.target.value })
+											}
 											className={`${inputClass} font-mono`}
 										/>
 										{keyErrors[index] && (
-											<p className='mt-0.5 text-[10px] text-rose-500'>{keyErrors[index]}</p>
+											<p className='mt-0.5 text-[10px] text-rose-500'>
+												{keyErrors[index]}
+											</p>
 										)}
 									</div>
 									<input
 										aria-label='Field label'
 										placeholder='Label'
 										value={field.label ?? ''}
-										onChange={(e) => updateField(index, { label: e.target.value })}
+										onChange={(e) =>
+											updateField(index, { label: e.target.value })
+										}
 										className={inputClass}
 									/>
 									<select
 										aria-label='Field type'
 										value={field.type}
 										onChange={(e) =>
-											updateField(index, { type: e.target.value as TWorkflowInterfaceFieldType })
+											updateField(index, {
+												type: e.target.value as TWorkflowInterfaceFieldType,
+											})
 										}
 										className={inputClass}>
 										{FIELD_TYPES.map((type) => (
@@ -250,7 +276,11 @@ const InterfaceEditor = ({
 										type='button'
 										title='Remove field'
 										aria-label='Remove field'
-										onClick={() => setFields((current) => current.filter((_, i) => i !== index))}
+										onClick={() =>
+											setFields((current) =>
+												current.filter((_, i) => i !== index),
+											)
+										}
 										className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-950/30'>
 										<Trash2 size={13} />
 									</button>
@@ -260,14 +290,18 @@ const InterfaceEditor = ({
 										aria-label='Help text'
 										placeholder='Help text (optional)'
 										value={field.help ?? ''}
-										onChange={(e) => updateField(index, { help: e.target.value })}
+										onChange={(e) =>
+											updateField(index, { help: e.target.value })
+										}
 										className={inputClass}
 									/>
 									<label className='flex items-center gap-1.5 text-[11px] font-semibold text-zinc-600 dark:text-zinc-400'>
 										<input
 											type='checkbox'
 											checked={Boolean(field.required)}
-											onChange={(e) => updateField(index, { required: e.target.checked })}
+											onChange={(e) =>
+												updateField(index, { required: e.target.checked })
+											}
 										/>
 										Required
 									</label>
@@ -277,7 +311,9 @@ const InterfaceEditor = ({
 										aria-label='Dropdown options'
 										placeholder='Options, comma separated'
 										value={field.optionsText}
-										onChange={(e) => updateField(index, { optionsText: e.target.value })}
+										onChange={(e) =>
+											updateField(index, { optionsText: e.target.value })
+										}
 										className={inputClass}
 									/>
 								)}
@@ -292,7 +328,14 @@ const InterfaceEditor = ({
 						onClick={() =>
 							setFields((current) => [
 								...current,
-								{ key: '', label: '', type: 'string', required: false, help: '', optionsText: '' },
+								{
+									key: '',
+									label: '',
+									type: 'string',
+									required: false,
+									help: '',
+									optionsText: '',
+								},
 							])
 						}
 						className='flex items-center gap-1 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-white/[0.04]'>
@@ -304,7 +347,11 @@ const InterfaceEditor = ({
 						onClick={handleSave}
 						disabled={!isDirty || hasErrors || updateInterface.isPending}
 						className='flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200'>
-						{updateInterface.isPending ? <Loader2 size={13} className='animate-spin' /> : <Save size={13} />}
+						{updateInterface.isPending ? (
+							<Loader2 size={13} className='animate-spin' />
+						) : (
+							<Save size={13} />
+						)}
 						Save form
 					</button>
 				</div>
@@ -315,7 +362,9 @@ const InterfaceEditor = ({
 				onSubmit={handleRun}
 				className='space-y-3 rounded-xl border border-zinc-200 bg-zinc-50/20 p-4 dark:border-zinc-800 dark:bg-zinc-900/20'>
 				<div>
-					<h4 className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>Run with this form</h4>
+					<h4 className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
+						Run with this form
+					</h4>
 					<p className='text-[11px] text-zinc-500'>
 						{iface.published
 							? 'Runs the published version with the values below.'
@@ -327,10 +376,13 @@ const InterfaceEditor = ({
 				{iface.fields.map((field) => {
 					const id = `iface-${field.key}`;
 					const value = values[field.key];
-					const setValue = (next: unknown) => setValues((current) => ({ ...current, [field.key]: next }));
+					const setValue = (next: unknown) =>
+						setValues((current) => ({ ...current, [field.key]: next }));
 					return (
 						<div key={field.key} className='space-y-1'>
-							<label htmlFor={id} className='block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300'>
+							<label
+								htmlFor={id}
+								className='block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300'>
 								{field.label || field.key}
 								{field.required && <span className='text-rose-500'> *</span>}
 							</label>
@@ -374,7 +426,9 @@ const InterfaceEditor = ({
 									className={inputClass}
 								/>
 							)}
-							{field.help && <p className='text-[10px] text-zinc-400'>{field.help}</p>}
+							{field.help && (
+								<p className='text-[10px] text-zinc-400'>{field.help}</p>
+							)}
 						</div>
 					);
 				})}

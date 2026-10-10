@@ -14,6 +14,7 @@ import {
 	FlaskConical,
 	ListChecks,
 	Pencil,
+	TrendingDown,
 } from 'lucide-react';
 import {
 	useAgentEvalSuites,
@@ -28,7 +29,7 @@ import {
 	useAgentEvalRuns,
 	useAgentEvalRun,
 	useRunAgentEvalSuite,
-} from '@/api/modules/agents';
+} from '@/api/modules/agent-eval-suites';
 import type {
 	TAgentEvalCase,
 	TAgentEvalSuite,
@@ -43,13 +44,32 @@ type TProps = {
 	agentId?: string;
 };
 
-const ASSERTION_TYPES: { id: TEvalAssertionType; label: string }[] = [
-	{ id: 'contains', label: 'Contains' },
-	{ id: 'not_contains', label: 'Not contains' },
-	{ id: 'equals', label: 'Equals' },
-	{ id: 'regex', label: 'Regex' },
-	{ id: 'llm_judge', label: 'LLM judge' },
+const ASSERTION_TYPES: { id: TEvalAssertionType; label: string; placeholder: string }[] = [
+	{ id: 'contains', label: 'Contains', placeholder: 'Text the reply must contain' },
+	{ id: 'not_contains', label: 'Not contains', placeholder: 'Text the reply must not contain' },
+	{ id: 'equals', label: 'Equals', placeholder: 'The exact reply' },
+	{
+		id: 'llm_rubric',
+		label: 'AI judge',
+		placeholder: 'e.g. Politely declines and offers a human',
+	},
+	{ id: 'tool_called', label: 'Calls tool', placeholder: 'Tool name, e.g. remember' },
+	{ id: 'tool_not_called', label: 'Skips tool', placeholder: 'Tool name, e.g. send_email' },
 ];
+
+const assertionLabel = (type: string) =>
+	ASSERTION_TYPES.find((option) => option.id === type)?.label ?? type.replace(/_/g, ' ');
+
+type TGradedAssertion = { type: string; value: string; passed: boolean };
+
+/** The backend stores graded assertions as JSON; read them defensively. */
+const failedAssertions = (assertions: unknown): TGradedAssertion[] =>
+	Array.isArray(assertions)
+		? assertions.filter(
+				(a): a is TGradedAssertion =>
+					typeof a === 'object' && a !== null && (a as TGradedAssertion).passed === false,
+			)
+		: [];
 
 const RUN_STATUS_STYLE: Record<string, { icon: typeof CheckCircle2; className: string }> = {
 	completed: { icon: CheckCircle2, className: 'text-emerald-500' },
@@ -69,6 +89,32 @@ const emptyCaseForm = {
 	input: '',
 	assertions: [{ type: 'contains' as TEvalAssertionType, value: '' }] as TEvalAssertion[],
 };
+
+const RunOnChangeToggle = ({
+	value,
+	onChange,
+}: {
+	value: boolean;
+	onChange: (value: boolean) => void;
+}) => (
+	<label className='flex cursor-pointer items-start gap-2'>
+		<input
+			type='checkbox'
+			checked={value}
+			onChange={(e) => onChange(e.target.checked)}
+			className='accent-primary-500 mt-0.5'
+		/>
+		<span>
+			<span className='block text-[11px] font-bold text-zinc-700 dark:text-zinc-300'>
+				Re-run when the agent changes
+			</span>
+			<span className='block text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+				Runs a couple of minutes after an edit to instructions, model or settings. Actions
+				are simulated, and you're notified if fewer cases pass than before.
+			</span>
+		</span>
+	</label>
+);
 
 /** Expandable row: eval run summary + on-demand per-case results. */
 const EvalRunRow = ({
@@ -98,10 +144,19 @@ const EvalRunRow = ({
 				)}
 				<RunStatusBadge status={run.status} />
 				<div className='min-w-0 flex-1'>
-					<span className='truncate text-[11px] font-black capitalize text-zinc-800 dark:text-zinc-200'>
-						{run.status}
-					</span>
+					<div className='flex items-center gap-1.5'>
+						<span className='truncate text-[11px] font-black text-zinc-800 capitalize dark:text-zinc-200'>
+							{run.status}
+						</span>
+						{run.regressed && (
+							<span className='flex shrink-0 items-center gap-0.5 rounded-full bg-rose-500/10 px-1.5 py-0.5 text-[8px] font-black text-rose-600 uppercase dark:text-rose-400'>
+								<TrendingDown size={9} />
+								Worse
+							</span>
+						)}
+					</div>
 					<span className='block text-[9px] font-semibold text-zinc-400 dark:text-zinc-600'>
+						{run.trigger === 'agent_change' ? 'After an agent change · ' : ''}
 						{new Date(run.created_at).toLocaleString()}
 					</span>
 				</div>
@@ -110,7 +165,9 @@ const EvalRunRow = ({
 						{run.passed} / {total || 0}
 					</span>
 					{run.failed > 0 && (
-						<span className='text-[9px] font-bold text-rose-500'>{run.failed} failed</span>
+						<span className='text-[9px] font-bold text-rose-500'>
+							{run.failed} failed
+						</span>
 					)}
 				</div>
 			</button>
@@ -118,7 +175,9 @@ const EvalRunRow = ({
 			{open && (
 				<div className='border-t border-zinc-100 p-3 dark:border-zinc-800'>
 					{isLoading ? (
-						<p className='text-center text-[10px] font-semibold text-zinc-400'>Loading results…</p>
+						<p className='text-center text-[10px] font-semibold text-zinc-400'>
+							Loading results…
+						</p>
 					) : (
 						<div className='space-y-2'>
 							{run.error && (
@@ -127,16 +186,24 @@ const EvalRunRow = ({
 								</p>
 							)}
 							{(detail?.results ?? []).length === 0 ? (
-								<p className='text-[10px] font-semibold text-zinc-400'>No case results recorded.</p>
+								<p className='text-[10px] font-semibold text-zinc-400'>
+									No case results recorded.
+								</p>
 							) : (
 								(detail?.results ?? []).map((result) => (
 									<div
 										key={result.id}
 										className='flex items-start gap-2 rounded-lg bg-white p-2 dark:bg-zinc-900/40'>
 										{result.passed ? (
-											<CheckCircle2 size={12} className='mt-0.5 shrink-0 text-emerald-500' />
+											<CheckCircle2
+												size={12}
+												className='mt-0.5 shrink-0 text-emerald-500'
+											/>
 										) : (
-											<XCircle size={12} className='mt-0.5 shrink-0 text-rose-500' />
+											<XCircle
+												size={12}
+												className='mt-0.5 shrink-0 text-rose-500'
+											/>
 										)}
 										<div className='min-w-0 flex-1'>
 											<span className='truncate text-[10px] font-black text-zinc-700 dark:text-zinc-300'>
@@ -152,6 +219,16 @@ const EvalRunRow = ({
 														{result.output}
 													</p>
 												)
+											)}
+											{failedAssertions(result.assertions).map(
+												(assertion, index) => (
+													<p
+														key={index}
+														className='mt-0.5 truncate text-[9px] font-bold text-rose-500'>
+														Failed: {assertionLabel(assertion.type)} “
+														{assertion.value}”
+													</p>
+												),
 											)}
 										</div>
 									</div>
@@ -182,7 +259,7 @@ const SuiteDetail = ({
 	// Set while the case form edits an existing case instead of adding one.
 	const [editingCaseId, setEditingCaseId] = useState<string | null>(null);
 	const [isEditingSuite, setIsEditingSuite] = useState(false);
-	const [suiteForm, setSuiteForm] = useState({ name: '', description: '' });
+	const [suiteForm, setSuiteForm] = useState({ name: '', description: '', run_on_change: true });
 
 	// The list row goes stale if the suite changes while it is open; the detail
 	// is the current name/description.
@@ -234,7 +311,11 @@ const SuiteDetail = ({
 	};
 
 	const startEditSuite = () => {
-		setSuiteForm({ name: current.name, description: current.description ?? '' });
+		setSuiteForm({
+			name: current.name,
+			description: current.description ?? '',
+			run_on_change: current.run_on_change,
+		});
 		setIsEditingSuite(true);
 	};
 
@@ -242,7 +323,11 @@ const SuiteDetail = ({
 		if (!suiteForm.name.trim()) return;
 		await updateSuiteMutation.mutateAsync({
 			suiteId: String(suite.id),
-			body: { name: suiteForm.name.trim(), description: suiteForm.description.trim() || null },
+			body: {
+				name: suiteForm.name.trim(),
+				description: suiteForm.description.trim() || null,
+				run_on_change: suiteForm.run_on_change,
+			},
 		});
 		setIsEditingSuite(false);
 	};
@@ -252,11 +337,16 @@ const SuiteDetail = ({
 			{/* Header */}
 			<div className='flex items-center justify-between gap-2'>
 				<div className='flex min-w-0 items-center gap-2'>
-					<button aria-label='Previous' onClick={onBack} className='shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
+					<button
+						aria-label='Previous'
+						onClick={onBack}
+						className='shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
 						<ChevronLeft size={14} />
 					</button>
 					<div className='min-w-0'>
-						<h4 className='truncate text-xs font-black text-zinc-900 dark:text-white'>{current.name}</h4>
+						<h4 className='truncate text-xs font-black text-zinc-900 dark:text-white'>
+							{current.name}
+						</h4>
 						<p className='truncate text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
 							{current.description || 'No description.'}
 						</p>
@@ -273,7 +363,7 @@ const SuiteDetail = ({
 				<button
 					onClick={() => runMutation.mutate()}
 					disabled={runMutation.isPending || items.length === 0}
-					className='flex shrink-0 items-center gap-1 rounded-lg bg-primary-400 px-2.5 py-1 text-[10px] font-black text-primary-950 hover:bg-primary-500 disabled:opacity-50'>
+					className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-black disabled:opacity-50'>
 					{runMutation.isPending ? (
 						<Loader2 size={10} className='animate-spin' />
 					) : (
@@ -287,36 +377,51 @@ const SuiteDetail = ({
 			{isEditingSuite && (
 				<div className='space-y-2.5 rounded-xl border border-zinc-100 bg-zinc-50/40 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
 					<div className='flex items-center justify-between'>
-						<span className='text-[11px] font-black text-zinc-700 dark:text-zinc-300'>Edit suite</span>
-						<button aria-label='Close' onClick={() => setIsEditingSuite(false)} className='text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
+						<span className='text-[11px] font-black text-zinc-700 dark:text-zinc-300'>
+							Edit suite
+						</span>
+						<button
+							aria-label='Close'
+							onClick={() => setIsEditingSuite(false)}
+							className='text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
 							<X size={13} />
 						</button>
 					</div>
 					<input
+						aria-label='Suite name (e.g. tone regression)'
 						type='text'
 						value={suiteForm.name}
 						onChange={(e) => setSuiteForm((f) => ({ ...f, name: e.target.value }))}
 						placeholder='Suite name (e.g. tone regression)'
-						className='w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+						className='focus:border-primary-500/50 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 					/>
 					<textarea
+						aria-label='Description (optional)'
 						value={suiteForm.description}
-						onChange={(e) => setSuiteForm((f) => ({ ...f, description: e.target.value }))}
+						onChange={(e) =>
+							setSuiteForm((f) => ({ ...f, description: e.target.value }))
+						}
 						placeholder='Description (optional)'
 						rows={2}
-						className='w-full resize-none rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+						className='focus:border-primary-500/50 w-full resize-none rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+					/>
+					<RunOnChangeToggle
+						value={suiteForm.run_on_change}
+						onChange={(run_on_change) => setSuiteForm((f) => ({ ...f, run_on_change }))}
 					/>
 					<div className='flex justify-end gap-2'>
 						<button
 							onClick={() => setIsEditingSuite(false)}
-							className='rounded-lg border border-zinc-200 bg-white px-3 py-1 text-[10px] font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
+							className='rounded-lg border border-zinc-200 bg-white px-3 py-1 text-[10px] font-bold text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'>
 							Cancel
 						</button>
 						<button
 							onClick={handleSuiteSubmit}
 							disabled={updateSuiteMutation.isPending || !suiteForm.name.trim()}
-							className='flex items-center gap-1 rounded-lg bg-primary-400 px-3 py-1 text-[10px] font-black text-primary-950 hover:bg-primary-500 disabled:opacity-50'>
-							{updateSuiteMutation.isPending && <Loader2 size={11} className='animate-spin' />}
+							className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex items-center gap-1 rounded-lg px-3 py-1 text-[10px] font-black disabled:opacity-50'>
+							{updateSuiteMutation.isPending && (
+								<Loader2 size={11} className='animate-spin' />
+							)}
 							Save
 						</button>
 					</div>
@@ -325,7 +430,7 @@ const SuiteDetail = ({
 
 			{/* Cases */}
 			<div className='flex items-center justify-between'>
-				<span className='text-[9px] font-black uppercase tracking-wide text-zinc-400'>
+				<span className='text-[9px] font-black tracking-wide text-zinc-400 uppercase'>
 					Cases ({items.length})
 				</span>
 				<button
@@ -333,7 +438,7 @@ const SuiteDetail = ({
 						resetForm();
 						setIsFormOpen(true);
 					}}
-					className='flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black text-primary-600 hover:bg-zinc-50 dark:border-primary-500/20 dark:bg-zinc-900 dark:text-primary-400 dark:hover:bg-zinc-800'>
+					className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
 					<Plus size={10} />
 					<span>Add</span>
 				</button>
@@ -346,28 +451,33 @@ const SuiteDetail = ({
 						<span className='text-[11px] font-black text-zinc-700 dark:text-zinc-300'>
 							{editingCaseId ? 'Edit case' : 'New case'}
 						</span>
-						<button aria-label='Close' onClick={resetForm} className='text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
+						<button
+							aria-label='Close'
+							onClick={resetForm}
+							className='text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
 							<X size={13} />
 						</button>
 					</div>
 					<input
+						aria-label='Case name (e.g. greets by name)'
 						type='text'
 						value={form.name}
 						onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
 						placeholder='Case name (e.g. greets by name)'
-						className='w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+						className='focus:border-primary-500/50 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 					/>
 					<textarea
+						aria-label='Input message sent to the agent'
 						value={form.input}
 						onChange={(e) => setForm((f) => ({ ...f, input: e.target.value }))}
 						placeholder='Input message sent to the agent'
 						rows={3}
-						className='w-full resize-none rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+						className='focus:border-primary-500/50 w-full resize-none rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 					/>
 
 					{/* Assertions */}
 					<div className='space-y-1.5'>
-						<span className='text-[9px] font-black uppercase tracking-wide text-zinc-400'>
+						<span className='text-[9px] font-black tracking-wide text-zinc-400 uppercase'>
 							Assertions
 						</span>
 						{form.assertions.map((assertion, index) => (
@@ -378,11 +488,17 @@ const SuiteDetail = ({
 										setForm((f) => ({
 											...f,
 											assertions: f.assertions.map((a, i) =>
-												i === index ? { ...a, type: e.target.value as TEvalAssertionType } : a,
+												i === index
+													? {
+															...a,
+															type: e.target
+																.value as TEvalAssertionType,
+														}
+													: a,
 											),
 										}))
 									}
-									className='shrink-0 rounded-lg border border-zinc-200 bg-white px-2 py-1.5 text-[10px] font-bold text-zinc-600 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'>
+									className='focus:border-primary-500/50 shrink-0 rounded-lg border border-zinc-200 bg-white px-2 py-1.5 text-[10px] font-bold text-zinc-600 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'>
 									{ASSERTION_TYPES.map(({ id, label }) => (
 										<option key={id} value={id}>
 											{label}
@@ -390,6 +506,11 @@ const SuiteDetail = ({
 									))}
 								</select>
 								<input
+									aria-label={
+										ASSERTION_TYPES.find(
+											(option) => option.id === assertion.type,
+										)?.placeholder ?? 'Expected value'
+									}
 									type='text'
 									value={assertion.value}
 									onChange={(e) =>
@@ -400,8 +521,12 @@ const SuiteDetail = ({
 											),
 										}))
 									}
-									placeholder='Expected value'
-									className='min-w-0 flex-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+									placeholder={
+										ASSERTION_TYPES.find(
+											(option) => option.id === assertion.type,
+										)?.placeholder ?? 'Expected value'
+									}
+									className='focus:border-primary-500/50 min-w-0 flex-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 								/>
 								{form.assertions.length > 1 && (
 									<button
@@ -409,7 +534,9 @@ const SuiteDetail = ({
 										onClick={() =>
 											setForm((f) => ({
 												...f,
-												assertions: f.assertions.filter((_, i) => i !== index),
+												assertions: f.assertions.filter(
+													(_, i) => i !== index,
+												),
 											}))
 										}
 										className='shrink-0 text-zinc-400 hover:text-rose-500'>
@@ -425,7 +552,7 @@ const SuiteDetail = ({
 									assertions: [...f.assertions, { type: 'contains', value: '' }],
 								}))
 							}
-							className='flex items-center gap-1 text-[10px] font-bold text-primary-600 hover:text-primary-500 dark:text-primary-400'>
+							className='text-primary-600 hover:text-primary-500 dark:text-primary-400 flex items-center gap-1 text-[10px] font-bold'>
 							<Plus size={10} />
 							<span>Add assertion</span>
 						</button>
@@ -434,7 +561,7 @@ const SuiteDetail = ({
 					<div className='flex justify-end gap-2'>
 						<button
 							onClick={resetForm}
-							className='rounded-lg border border-zinc-200 bg-white px-3 py-1 text-[10px] font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
+							className='rounded-lg border border-zinc-200 bg-white px-3 py-1 text-[10px] font-bold text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'>
 							Cancel
 						</button>
 						<button
@@ -445,7 +572,7 @@ const SuiteDetail = ({
 								!form.input.trim() ||
 								form.assertions.every((a) => !a.value.trim())
 							}
-							className='flex items-center gap-1 rounded-lg bg-primary-400 px-3 py-1 text-[10px] font-black text-primary-950 hover:bg-primary-500 disabled:opacity-50'>
+							className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex items-center gap-1 rounded-lg px-3 py-1 text-[10px] font-black disabled:opacity-50'>
 							{isSaving && <Loader2 size={11} className='animate-spin' />}
 							Save
 						</button>
@@ -466,7 +593,7 @@ const SuiteDetail = ({
 						<div
 							key={evalCase.id}
 							className='flex items-start gap-3 rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
-							<div className='mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400'>
+							<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg'>
 								<ListChecks size={13} />
 							</div>
 							<div className='min-w-0 flex-1'>
@@ -480,8 +607,8 @@ const SuiteDetail = ({
 									{(evalCase.assertions ?? []).map((assertion, index) => (
 										<span
 											key={index}
-											className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[8px] font-black uppercase text-zinc-500 dark:bg-zinc-800'>
-											{assertion.type.replace('_', ' ')}
+											className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[8px] font-black text-zinc-500 uppercase dark:bg-zinc-800'>
+											{assertionLabel(assertion.type)}
 										</span>
 									))}
 								</div>
@@ -507,7 +634,7 @@ const SuiteDetail = ({
 
 			{/* Run history */}
 			<div className='pt-1'>
-				<span className='text-[9px] font-black uppercase tracking-wide text-zinc-400'>
+				<span className='text-[9px] font-black tracking-wide text-zinc-400 uppercase'>
 					Eval runs
 				</span>
 			</div>
@@ -520,7 +647,13 @@ const SuiteDetail = ({
 			) : (
 				<div className='space-y-2'>
 					{(runs ?? []).map((run) => (
-						<EvalRunRow key={run.id} ws={ws} agentId={agentId} suiteId={suite.id} run={run} />
+						<EvalRunRow
+							key={run.id}
+							ws={ws}
+							agentId={agentId}
+							suiteId={suite.id}
+							run={run}
+						/>
 					))}
 				</div>
 			)}
@@ -536,7 +669,7 @@ const SuiteDetail = ({
 const AgentEvalsPanel = ({ ws, agentId }: TProps) => {
 	const [openSuiteId, setOpenSuiteId] = useState<string | null>(null);
 	const [isFormOpen, setIsFormOpen] = useState(false);
-	const [form, setForm] = useState({ name: '', description: '' });
+	const [form, setForm] = useState({ name: '', description: '', run_on_change: true });
 
 	const { data: suites, isLoading } = useAgentEvalSuites(ws, agentId ?? '');
 	const createMutation = useCreateAgentEvalSuite(ws, agentId ?? '');
@@ -565,7 +698,7 @@ const AgentEvalsPanel = ({ ws, agentId }: TProps) => {
 	}
 
 	const resetForm = () => {
-		setForm({ name: '', description: '' });
+		setForm({ name: '', description: '', run_on_change: true });
 		setIsFormOpen(false);
 	};
 
@@ -574,6 +707,7 @@ const AgentEvalsPanel = ({ ws, agentId }: TProps) => {
 		await createMutation.mutateAsync({
 			name: form.name.trim(),
 			description: form.description.trim() || null,
+			run_on_change: form.run_on_change,
 		});
 		resetForm();
 	};
@@ -593,7 +727,7 @@ const AgentEvalsPanel = ({ ws, agentId }: TProps) => {
 						resetForm();
 						setIsFormOpen(true);
 					}}
-					className='flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black text-primary-600 hover:bg-zinc-50 dark:border-primary-500/20 dark:bg-zinc-900 dark:text-primary-400 dark:hover:bg-zinc-800'>
+					className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
 					<Plus size={10} />
 					<span>Add</span>
 				</button>
@@ -603,36 +737,49 @@ const AgentEvalsPanel = ({ ws, agentId }: TProps) => {
 			{isFormOpen && (
 				<div className='space-y-2.5 rounded-xl border border-zinc-100 bg-zinc-50/40 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
 					<div className='flex items-center justify-between'>
-						<span className='text-[11px] font-black text-zinc-700 dark:text-zinc-300'>New suite</span>
-						<button aria-label='Close' onClick={resetForm} className='text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
+						<span className='text-[11px] font-black text-zinc-700 dark:text-zinc-300'>
+							New suite
+						</span>
+						<button
+							aria-label='Close'
+							onClick={resetForm}
+							className='text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
 							<X size={13} />
 						</button>
 					</div>
 					<input
+						aria-label='Suite name (e.g. tone regression)'
 						type='text'
 						value={form.name}
 						onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
 						placeholder='Suite name (e.g. tone regression)'
-						className='w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+						className='focus:border-primary-500/50 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 					/>
 					<textarea
+						aria-label='Description (optional)'
 						value={form.description}
 						onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
 						placeholder='Description (optional)'
 						rows={2}
-						className='w-full resize-none rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+						className='focus:border-primary-500/50 w-full resize-none rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
+					/>
+					<RunOnChangeToggle
+						value={form.run_on_change}
+						onChange={(run_on_change) => setForm((f) => ({ ...f, run_on_change }))}
 					/>
 					<div className='flex justify-end gap-2'>
 						<button
 							onClick={resetForm}
-							className='rounded-lg border border-zinc-200 bg-white px-3 py-1 text-[10px] font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
+							className='rounded-lg border border-zinc-200 bg-white px-3 py-1 text-[10px] font-bold text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'>
 							Cancel
 						</button>
 						<button
 							onClick={handleSubmit}
 							disabled={createMutation.isPending || !form.name.trim()}
-							className='flex items-center gap-1 rounded-lg bg-primary-400 px-3 py-1 text-[10px] font-black text-primary-950 hover:bg-primary-500 disabled:opacity-50'>
-							{createMutation.isPending && <Loader2 size={11} className='animate-spin' />}
+							className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex items-center gap-1 rounded-lg px-3 py-1 text-[10px] font-black disabled:opacity-50'>
+							{createMutation.isPending && (
+								<Loader2 size={11} className='animate-spin' />
+							)}
 							Save
 						</button>
 					</div>
@@ -655,7 +802,7 @@ const AgentEvalsPanel = ({ ws, agentId }: TProps) => {
 							<button
 								onClick={() => setOpenSuiteId(String(suite.id))}
 								className='flex min-w-0 flex-1 items-start gap-3 text-left'>
-								<div className='mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400'>
+								<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg'>
 									<FlaskConical size={13} />
 								</div>
 								<div className='min-w-0 flex-1'>
@@ -663,7 +810,7 @@ const AgentEvalsPanel = ({ ws, agentId }: TProps) => {
 										<span className='truncate text-[11px] font-black text-zinc-800 dark:text-zinc-200'>
 											{suite.name}
 										</span>
-										<span className='shrink-0 rounded-full bg-zinc-100 px-1.5 py-0.5 text-[8px] font-black uppercase text-zinc-500 dark:bg-zinc-800'>
+										<span className='shrink-0 rounded-full bg-zinc-100 px-1.5 py-0.5 text-[8px] font-black text-zinc-500 uppercase dark:bg-zinc-800'>
 											{suite.case_count ?? suite.cases?.length ?? 0} cases
 										</span>
 									</div>

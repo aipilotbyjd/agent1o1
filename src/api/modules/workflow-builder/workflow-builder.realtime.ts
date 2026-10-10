@@ -8,11 +8,15 @@ import type {
 
 /**
  * Minimal structural type for a Laravel Echo instance, so this module (and
- * `agents.realtime`) compiles without a hard dependency on `laravel-echo`.
+ * `agent-sessions.realtime`) compiles without a hard dependency on `laravel-echo`.
  */
 export interface IEchoChannelLike {
 	listen: (event: string, cb: (payload: unknown) => void) => IEchoChannelLike;
 	stopListening?: (event: string) => IEchoChannelLike;
+	/** Runs once the server has accepted the subscription (`PusherChannel`). */
+	subscribed?: (cb: () => void) => IEchoChannelLike;
+	/** The underlying Pusher channel, when Echo exposes it. */
+	subscription?: { subscribed?: boolean };
 }
 
 export interface IEchoLike {
@@ -61,7 +65,9 @@ export function subscribeToBuilderSession(
 	const channel = builderChannelName(workspaceId, sessionId);
 	const instance = echo.private(channel);
 
-	instance.listen(BUILDER_EVENTS.status, (payload) => handlers.onStatus(payload as TBuilderStatusEvent));
+	instance.listen(BUILDER_EVENTS.status, (payload) =>
+		handlers.onStatus(payload as TBuilderStatusEvent),
+	);
 
 	if (handlers.onDelta) {
 		const onDelta = handlers.onDelta;
@@ -69,11 +75,15 @@ export function subscribeToBuilderSession(
 	}
 	if (handlers.onToolCall) {
 		const onToolCall = handlers.onToolCall;
-		instance.listen(BUILDER_EVENTS.toolCall, (payload) => onToolCall(payload as TBuilderToolCallEvent));
+		instance.listen(BUILDER_EVENTS.toolCall, (payload) =>
+			onToolCall(payload as TBuilderToolCallEvent),
+		);
 	}
 	if (handlers.onToolResult) {
 		const onToolResult = handlers.onToolResult;
-		instance.listen(BUILDER_EVENTS.toolResult, (payload) => onToolResult(payload as TBuilderToolResultEvent));
+		instance.listen(BUILDER_EVENTS.toolResult, (payload) =>
+			onToolResult(payload as TBuilderToolResultEvent),
+		);
 	}
 	if (handlers.onDraft) {
 		const onDraft = handlers.onDraft;

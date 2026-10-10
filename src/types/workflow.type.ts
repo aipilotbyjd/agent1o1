@@ -50,6 +50,8 @@ export type TWorkflow = {
 	created_by: string;
 	created_at: string;
 	updated_at: string;
+	/** Set while the workflow is in the trash. */
+	deleted_at: string | null;
 };
 
 // ─── Request DTOs ────────────────────────────────────────────
@@ -93,4 +95,6 @@ export type TSyncWorkflowTagsDto = {
 	tag_ids: string[];
 };
 
-export type TPinWorkflowNodeDto = { data: unknown; node_run_id?: never } | { node_run_id: string; data?: never };
+export type TPinWorkflowNodeDto =
+	| { data: unknown; node_run_id?: never }
+	| { node_run_id: string; data?: never };

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createResource } from '@/api/core';
 import type {
 	TDraftAgentDto,
@@ -19,8 +19,7 @@ import {
 import { useRuns } from '@/api/modules/runs';
 import { useModelCatalog } from '@/api/modules/catalog';
 import { AgentService } from './agents.service';
-import { AgentMemoryService } from './agent-memory.service';
-import { agentKeys, agentMemoryKeys } from './agents.keys';
+import { agentKeys, agentTrashKey } from './agents.keys';
 
 const Agents = createResource({
 	service: AgentService,
@@ -32,7 +31,49 @@ export const useAgents = Agents.useList;
 export const useAgent = Agents.useDetail;
 export const useCreateAgent = Agents.useCreate;
 export const useUpdateAgent = Agents.useUpdate;
-export const useDeleteAgent = Agents.useDelete;
+
+// Deleting only moves the agent to the trash, so the trash has to refetch too.
+export const useDeleteAgent = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => AgentService.remove(ws, id),
+		onSuccess: () =>
+			Promise.all([
+				qc.invalidateQueries({ queryKey: agentKeys.lists(ws) }),
+				qc.invalidateQueries({ queryKey: agentTrashKey(ws) }),
+			]),
+		meta: { errorMessage: 'Failed to move agent to trash' },
+	});
+};
+
+export const useAgentTrash = (ws: string) =>
+	useQuery({
+		queryKey: agentTrashKey(ws),
+		queryFn: ({ signal }) => AgentService.trash(ws, signal),
+		enabled: !!ws,
+	});
+
+export const useRestoreAgent = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => AgentService.restore(ws, id),
+		onSuccess: () =>
+			Promise.all([
+				qc.invalidateQueries({ queryKey: agentKeys.lists(ws) }),
+				qc.invalidateQueries({ queryKey: agentTrashKey(ws) }),
+			]),
+		meta: { errorMessage: 'Failed to restore agent' },
+	});
+};
+
+export const useForceDeleteAgent = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => AgentService.forceDelete(ws, id),
+		onSuccess: () => qc.invalidateQueries({ queryKey: agentTrashKey(ws) }),
+		meta: { errorMessage: 'Failed to delete agent permanently' },
+	});
+};
 
 export const useDraftAgent = (ws: string) =>
 	useMutation({
@@ -72,14 +113,12 @@ export const useSyncAgentTags = (ws: string, id: string) => {
 
 // ── AgentBuilder compatibility layer ──────────────────────────────────────────
 // The builder was written against the old API, where triggers, runs, analytics,
-// the model catalog and skills all hung off an agent. This backend models them
+// and the model catalog all hung off an agent. This backend models them
 // as workspace-level resources in their own modules, with agents addressed
 // polymorphically (`target_type`/`runnable_type` === 'agent').
 //
 // These adapters keep the builder's original call signatures — (ws, agentId) —
 // and map them onto the real endpoints, so the UI needed no changes.
-
-export { useAgentSkills, useCreateAgentSkill } from '@/api/modules/agent-skills';
 
 /** The morph alias the backend stores for an Agent (see AppServiceProvider). */
 const AGENT_MORPH = 'agent';
@@ -100,14 +139,17 @@ export const useAgentTriggers = (ws: string, agentId: string) => {
 
 export const useCreateAgentTrigger = (ws: string, agentId: string) => {
 	const m = useCreateTrigger(ws);
-	const inject = (body: Omit<TCreateTriggerDto, 'target_type' | 'target_id'>): TCreateTriggerDto => ({
+	const inject = (
+		body: Omit<TCreateTriggerDto, 'target_type' | 'target_id'>,
+	): TCreateTriggerDto => ({
 		...body,
 		target_type: AGENT_MORPH,
 		target_id: agentId,
 	});
 	return {
 		...m,
-		mutate: (body: Omit<TCreateTriggerDto, 'target_type' | 'target_id'>) => m.mutate(inject(body)),
+		mutate: (body: Omit<TCreateTriggerDto, 'target_type' | 'target_id'>) =>
+			m.mutate(inject(body)),
 		mutateAsync: (body: Omit<TCreateTriggerDto, 'target_type' | 'target_id'>) =>
 			m.mutateAsync(inject(body)),
 	};
@@ -169,7 +211,10 @@ export const useAgentAnalytics = (ws: string, agentId: string) => {
 			by_source[src] = (by_source[src] ?? 0) + 1;
 		});
 
-		const days = new Map<string, { day: string; runs: number; tokens: number; failed: number }>();
+		const days = new Map<
+			string,
+			{ day: string; runs: number; tokens: number; failed: number }
+		>();
 		runs.forEach((r) => {
 			if (!r.started_at) return;
 			const day = r.started_at.slice(0, 10);
@@ -216,28 +261,12 @@ export const useAgentAnalytics = (ws: string, agentId: string) => {
 	return { ...query, data };
 };
 
-/** Provider is filtered client-side — the catalog endpoint takes no argument. */
-export const useAgentMetaModels = (_ws: string, provider?: string) => {
-	const query = useModelCatalog();
+/** Provider is filtered client-side — the catalog endpoint only takes the workspace. */
+export const useAgentMetaModels = (ws: string, provider?: string) => {
+	const query = useModelCatalog(ws);
 	const data = useMemo<TModelCatalogEntry[]>(() => {
 		const rows = query.data ?? [];
 		return provider ? rows.filter((m) => m.brand === provider) : rows;
 	}, [query.data, provider]);
 	return { ...query, data };
-};
-
-/**
- * No bulk-delete endpoint exists — memories are removed one at a time, so this
- * reads the current list and fans out deletes.
- */
-export const useClearAgentMemories = (ws: string, agentId: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: async () => {
-			const memories = await AgentMemoryService.list(ws, agentId);
-			await Promise.all(memories.map((m) => AgentMemoryService.remove(ws, agentId, m.id)));
-		},
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentMemoryKeys.list(ws, agentId) }),
-		meta: { errorMessage: 'Failed to clear memories' },
-	});
 };

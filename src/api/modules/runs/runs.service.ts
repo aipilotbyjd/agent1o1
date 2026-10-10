@@ -35,9 +35,7 @@ export const RunService = {
 			.then(unwrapKey<TRun>('run')),
 
 	retry: (ws: string, id: string) =>
-		axiosClient
-			.post<TApiResponse<{ run: TRun }>>(E.retry(ws, id))
-			.then(unwrapKey<TRun>('run')),
+		axiosClient.post<TApiResponse<{ run: TRun }>>(E.retry(ws, id)).then(unwrapKey<TRun>('run')),
 
 	nodeRuns: (ws: string, runId: string, signal?: AbortSignal) =>
 		axiosClient
@@ -46,14 +44,15 @@ export const RunService = {
 
 	nodeRun: (ws: string, runId: string, nodeRunId: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ node_run: TNodeRunDetail }>>(E.nodeRun(ws, runId, nodeRunId), { signal })
+			.get<
+				TApiResponse<{ node_run: TNodeRunDetail }>
+			>(E.nodeRun(ws, runId, nodeRunId), { signal })
 			.then(unwrapKey<TNodeRunDetail>('node_run')),
 
 	decideApproval: (ws: string, runId: string, approvalId: string, payload: TDecideApprovalDto) =>
 		axiosClient
-			.post<TApiResponse<{ approval: TWorkflowApproval }>>(
-				E.decideApproval(ws, runId, approvalId),
-				payload,
-			)
+			.post<
+				TApiResponse<{ approval: TWorkflowApproval }>
+			>(E.decideApproval(ws, runId, approvalId), payload)
 			.then(unwrapKey<TWorkflowApproval>('approval')),
 };

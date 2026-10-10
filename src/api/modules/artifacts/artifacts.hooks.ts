@@ -58,7 +58,8 @@ export const useAddArtifactShare = (ws: string) => {
 	return useMutation({
 		mutationFn: ({ id, body }: { id: string; body: TShareArtifactDto }) =>
 			ArtifactService.addShare(ws, id, body),
-		onSuccess: (_artifact, { id }) => qc.invalidateQueries({ queryKey: artifactKeys.detail(ws, id) }),
+		onSuccess: (_artifact, { id }) =>
+			qc.invalidateQueries({ queryKey: artifactKeys.detail(ws, id) }),
 		meta: { errorMessage: 'Failed to share artifact' },
 	});
 };
@@ -68,7 +69,8 @@ export const useRemoveArtifactShare = (ws: string) => {
 	return useMutation({
 		mutationFn: ({ id, userId }: { id: string; userId: string }) =>
 			ArtifactService.removeShare(ws, id, userId),
-		onSuccess: (_void, { id }) => qc.invalidateQueries({ queryKey: artifactKeys.detail(ws, id) }),
+		onSuccess: (_void, { id }) =>
+			qc.invalidateQueries({ queryKey: artifactKeys.detail(ws, id) }),
 		meta: { errorMessage: 'Failed to remove share' },
 	});
 };

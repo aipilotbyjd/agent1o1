@@ -1,4 +1,4 @@
-import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from './useWorkflowEditor.hook';
 
 export const useNodeSelection = () => {
 	const { state, dispatch } = useWorkflowEditor();

@@ -33,15 +33,15 @@ import {
 	Zap,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import DARK_MODE from '@/constants/darkMode.constant';
 import useDarkMode from '@/hooks/useDarkMode';
 import { useCreateWorkflowVersion } from '@/api/modules/workflows';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { ApiError, notify } from '@/api/core';
-import { persistWorkflowDraft } from '../../_helper/persistDraft.helper';
+import { usePersistWorkflowDraft } from '../../_hooks/usePersistWorkflowDraft.hook';
 import { useRunWorkflow } from '../../_hooks/useRunWorkflow.hook';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import pages from '@/Routes/pages';
@@ -95,9 +95,11 @@ export const EditorTooltip = ({
 
 	// Never leave a tooltip hanging over a menu that just opened, and never let a
 	// pending timer fire after the trigger unmounts.
-	useEffect(() => {
+	const [wasDisabled, setWasDisabled] = useState(disabled);
+	if (wasDisabled !== disabled) {
+		setWasDisabled(disabled);
 		if (disabled) setVisible(false);
-	}, [disabled]);
+	}
 
 	useEffect(
 		() => () => {
@@ -157,9 +159,11 @@ export const EditableWorkflowName = ({
 	const [draft, setDraft] = useState(name);
 	const inputRef = useRef<HTMLInputElement>(null);
 
-	useEffect(() => {
+	const [syncedName, setSyncedName] = useState(name);
+	if (syncedName !== name) {
+		setSyncedName(name);
 		setDraft(name);
-	}, [name]);
+	}
 
 	useEffect(() => {
 		if (isEditing) {
@@ -183,6 +187,7 @@ export const EditableWorkflowName = ({
 		return (
 			<input
 				ref={inputRef}
+				aria-label='Workflow name'
 				value={draft}
 				onChange={(e) => setDraft(e.target.value)}
 				onBlur={commit}
@@ -333,7 +338,11 @@ const SaveStatusBadge = ({
 			<AnimatePresence>
 				{isOpen && (
 					<>
-						<div className='fixed inset-0 z-40' onClick={() => setIsOpen(false)} />
+						<div
+							aria-hidden='true'
+							className='fixed inset-0 z-40'
+							onClick={() => setIsOpen(false)}
+						/>
 						<motion.div
 							initial={{ opacity: 0, y: 4, scale: 0.96 }}
 							animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -366,6 +375,7 @@ const SaveStatusBadge = ({
 };
 
 const Topbar = () => {
+	const persistWorkflowDraft = usePersistWorkflowDraft();
 	const { state, dispatch } = useWorkflowEditor();
 	const { isDarkTheme, setDarkModeStatus } = useDarkMode();
 	const { runWorkflow, stopRun } = useRunWorkflow();
@@ -390,27 +400,27 @@ const Topbar = () => {
 	const [isSaveAsTemplateOpen, setIsSaveAsTemplateOpen] = useState(false);
 	const [runSeconds, setRunSeconds] = useState(0);
 	const stateRef = useRef(state);
-	stateRef.current = state;
+	useLayoutEffect(() => {
+		stateRef.current = state;
+	});
 	const publishingRef = useRef(false);
 
 	const isRunning = state.run.status === 'running';
 	const isRunDisabled = state.nodes.length === 0 && state.ui.emptyCanvasView !== 'chat-started';
 
 	// Live Run Timer
+	const [timedRun, setTimedRun] = useState(isRunning);
+	if (timedRun !== isRunning) {
+		setTimedRun(isRunning);
+		setRunSeconds(0);
+	}
 	useEffect(() => {
-		let timer: number | null = null;
-		if (isRunning) {
-			const start = Date.now();
-			setRunSeconds(0);
-			timer = window.setInterval(() => {
-				setRunSeconds(Math.floor((Date.now() - start) / 1000));
-			}, 500);
-		} else {
-			setRunSeconds(0);
-		}
-		return () => {
-			if (timer) clearInterval(timer);
-		};
+		if (!isRunning) return;
+		const start = Date.now();
+		const timer = window.setInterval(() => {
+			setRunSeconds(Math.floor((Date.now() - start) / 1000));
+		}, 500);
+		return () => clearInterval(timer);
 	}, [isRunning]);
 
 	// Escape closes whichever topbar menu is open.
@@ -468,6 +478,13 @@ const Topbar = () => {
 				nodes: state.nodes,
 				edges: state.edges,
 			});
+		} catch (error) {
+			notify.error(ApiError.is(error) ? error.message : 'Could not save the workflow');
+			dispatch({ type: 'SET_SAVE_STATE', savingState: 'error' });
+			publishingRef.current = false;
+			return;
+		}
+		try {
 			const data = await saveVersion.mutateAsync({ workflowId: state.workflow.apiId });
 			const current = stateRef.current;
 			const changed =
@@ -484,8 +501,10 @@ const Topbar = () => {
 				},
 			});
 		} catch (error) {
-			notify.error(ApiError.is(error) ? error.message : 'Could not save the workflow');
-			dispatch({ type: 'SET_SAVE_STATE', savingState: 'error' });
+			notify.error(ApiError.is(error) ? error.message : 'Could not publish the workflow');
+			const current = stateRef.current;
+			const changed = current.nodes !== draft.nodes || current.edges !== draft.edges;
+			dispatch({ type: 'SET_SAVE_STATE', savingState: changed ? 'dirty' : 'saved' });
 		} finally {
 			publishingRef.current = false;
 		}
@@ -722,7 +741,11 @@ const Topbar = () => {
 					<AnimatePresence>
 						{isShareDropdownOpen && (
 							<>
-								<div className='fixed inset-0 z-40' onClick={() => closeMenu()} />
+								<div
+									aria-hidden='true'
+									className='fixed inset-0 z-40'
+									onClick={() => closeMenu()}
+								/>
 								<motion.div
 									initial={{ opacity: 0, y: 4, scale: 0.96 }}
 									animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -847,7 +870,11 @@ const Topbar = () => {
 					<AnimatePresence>
 						{isSaveDropdownOpen && (
 							<>
-								<div className='fixed inset-0 z-40' onClick={() => closeMenu()} />
+								<div
+									aria-hidden='true'
+									className='fixed inset-0 z-40'
+									onClick={() => closeMenu()}
+								/>
 								<motion.div
 									initial={{ opacity: 0, y: 4, scale: 0.96 }}
 									animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -992,6 +1019,16 @@ const Topbar = () => {
 					</AnimatePresence>
 				</div>
 
+				<button
+					type='button'
+					aria-label='Toggle runs panel'
+					aria-pressed={state.ui.runPanelOpen}
+					onClick={() => dispatch({ type: 'TOGGLE_RUN_PANEL' })}
+					className={`hidden h-8 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition md:inline-flex ${FOCUS_RING} ${state.ui.runPanelOpen ? 'border-zinc-300 bg-zinc-100 text-zinc-900 dark:border-white/15 dark:bg-white/10 dark:text-white' : 'border-zinc-200 text-zinc-500 hover:bg-zinc-50 dark:border-white/10 dark:text-zinc-400 dark:hover:bg-white/5'}`}>
+					<ListChecks size={14} />
+					Runs
+				</button>
+
 				{/* Primary Run Action */}
 				<EditorTooltip
 					label={
@@ -1043,7 +1080,11 @@ const Topbar = () => {
 					<AnimatePresence>
 						{isMobileMenuOpen && (
 							<>
-								<div className='fixed inset-0 z-40' onClick={() => closeMenu()} />
+								<div
+									aria-hidden='true'
+									className='fixed inset-0 z-40'
+									onClick={() => closeMenu()}
+								/>
 								<motion.div
 									initial={{ opacity: 0, y: 4, scale: 0.96 }}
 									animate={{ opacity: 1, y: 0, scale: 1 }}

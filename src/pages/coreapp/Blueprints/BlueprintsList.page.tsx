@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOutletContext, useNavigate, useParams } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -158,8 +158,8 @@ const GraphPreview = ({
 						top: `${node.y}px`,
 						transform: 'translate(-50%, -50%)',
 					}}
-					className='flex max-w-[150px] items-center gap-2 overflow-hidden rounded-lg border border-primary-200 bg-white px-3 py-1.5 shadow-xs dark:border-zinc-800 dark:bg-zinc-950'>
-					<div className='h-2 w-2 shrink-0 rounded-full bg-primary-400' />
+					className='border-primary-200 flex max-w-[150px] items-center gap-2 overflow-hidden rounded-lg border bg-white px-3 py-1.5 shadow-xs dark:border-zinc-800 dark:bg-zinc-950'>
+					<div className='bg-primary-400 h-2 w-2 shrink-0 rounded-full' />
 					<div className='truncate text-[10px] font-bold text-zinc-800 select-none dark:text-zinc-200'>
 						{node.data?.label || node.name || node.type || 'Action'}
 					</div>
@@ -202,8 +202,14 @@ const BlueprintsListPage = () => {
 	const { data: collections, isLoading: isCollsLoading } = useTemplateCollections(ws);
 
 	// Fetch details when previewId is active. The hooks self-guard on an empty id.
-	const { data: wfDetail } = useWorkflowTemplate(ws, previewId && activeTab === 'workflows' ? previewId : '');
-	const { data: agentDetail } = useAgentTemplate(ws, previewId && activeTab === 'agents' ? previewId : '');
+	const { data: wfDetail } = useWorkflowTemplate(
+		ws,
+		previewId && activeTab === 'workflows' ? previewId : '',
+	);
+	const { data: agentDetail } = useAgentTemplate(
+		ws,
+		previewId && activeTab === 'agents' ? previewId : '',
+	);
 	const { data: collectionDetail } = useTemplateCollection(
 		ws,
 		previewId && activeTab === 'collections' ? previewId : '',
@@ -244,51 +250,61 @@ const BlueprintsListPage = () => {
 	/** Templates and collections both carry `name` and `created_at`; only the two
 	 *  template kinds carry `usage_count`, so collections fall back to their
 	 *  item count for Popularity. */
-	const bySortMode = <TItem extends { name: string; created_at?: string }>(
-		a: TItem,
-		b: TItem,
-	) => {
-		if (sortMode === 'alpha') return a.name.localeCompare(b.name);
-		if (sortMode === 'popular') {
-			const weight = (item: TItem) =>
-				(item as { usage_count?: number; item_count?: number }).usage_count ??
-				(item as { item_count?: number }).item_count ??
-				0;
-			return weight(b) - weight(a) || a.name.localeCompare(b.name);
-		}
-		return (b.created_at ?? '').localeCompare(a.created_at ?? '');
-	};
+	const bySortMode = useCallback(
+		<TItem extends { name: string; created_at?: string }>(a: TItem, b: TItem) => {
+			if (sortMode === 'alpha') return a.name.localeCompare(b.name);
+			if (sortMode === 'popular') {
+				const weight = (item: TItem) =>
+					(item as { usage_count?: number; item_count?: number }).usage_count ??
+					(item as { item_count?: number }).item_count ??
+					0;
+				return weight(b) - weight(a) || a.name.localeCompare(b.name);
+			}
+			return (b.created_at ?? '').localeCompare(a.created_at ?? '');
+		},
+		[sortMode],
+	);
 
 	const filteredWorkflows = useMemo(
 		() =>
-			(workflows ?? []).filter(
-				(t) =>
-					(!query || t.name.toLowerCase().includes(query) || (t.description ?? '').toLowerCase().includes(query)) &&
-					(!selectedCategory || (t.category ?? 'uncategorized') === selectedCategory),
-			)
+			(workflows ?? [])
+				.filter(
+					(t) =>
+						(!query ||
+							t.name.toLowerCase().includes(query) ||
+							(t.description ?? '').toLowerCase().includes(query)) &&
+						(!selectedCategory || (t.category ?? 'uncategorized') === selectedCategory),
+				)
 				.slice()
 				.sort(bySortMode),
-		[workflows, query, selectedCategory, sortMode],
+		[workflows, query, selectedCategory, bySortMode],
 	);
 	const filteredAgents = useMemo(
 		() =>
-			(agents ?? []).filter(
-				(t) =>
-					(!query || t.name.toLowerCase().includes(query) || (t.description ?? '').toLowerCase().includes(query)) &&
-					(!selectedCategory || (t.category ?? 'uncategorized') === selectedCategory),
-			)
+			(agents ?? [])
+				.filter(
+					(t) =>
+						(!query ||
+							t.name.toLowerCase().includes(query) ||
+							(t.description ?? '').toLowerCase().includes(query)) &&
+						(!selectedCategory || (t.category ?? 'uncategorized') === selectedCategory),
+				)
 				.slice()
 				.sort(bySortMode),
-		[agents, query, selectedCategory, sortMode],
+		[agents, query, selectedCategory, bySortMode],
 	);
 	const filteredCollections = useMemo(
 		() =>
-			(collections ?? []).filter(
-				(c) => !query || c.name.toLowerCase().includes(query) || (c.description ?? '').toLowerCase().includes(query),
-			)
+			(collections ?? [])
+				.filter(
+					(c) =>
+						!query ||
+						c.name.toLowerCase().includes(query) ||
+						(c.description ?? '').toLowerCase().includes(query),
+				)
 				.slice()
 				.sort(bySortMode),
-		[collections, query, sortMode],
+		[collections, query, bySortMode],
 	);
 
 	const totalTemplates = (workflows?.length ?? 0) + (agents?.length ?? 0);
@@ -376,11 +392,11 @@ const BlueprintsListPage = () => {
 
 			<div className='mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8'>
 				{/* Hero header banner */}
-				<div className='relative mb-8 overflow-hidden rounded-3xl border border-primary-500/20 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600 px-6 py-8 text-[#101828] shadow-xl sm:px-10 sm:py-12 dark:border-zinc-800 dark:bg-gradient-to-r dark:from-[#111315] dark:via-[#141619] dark:to-[#0d0e10] dark:text-white'>
+				<div className='border-primary-500/20 from-primary-400 via-primary-500 to-primary-600 relative mb-8 overflow-hidden rounded-3xl border bg-gradient-to-r px-6 py-8 text-[#101828] shadow-xl sm:px-10 sm:py-12 dark:border-zinc-800 dark:bg-gradient-to-r dark:from-[#111315] dark:via-[#141619] dark:to-[#0d0e10] dark:text-white'>
 					<div className='grid grid-cols-1 items-center gap-8 lg:grid-cols-12'>
 						<div className='relative z-10 lg:col-span-8'>
 							<div className='mb-4 flex items-center gap-3'>
-								<div className='inline-block rounded-md border border-white/30 bg-white/40 px-2.5 py-1 text-[10px] font-bold tracking-wider text-[#101828] uppercase backdrop-blur-md dark:border-primary-500/20 dark:bg-primary-950/30 dark:text-primary-400'>
+								<div className='dark:border-primary-500/20 dark:bg-primary-950/30 dark:text-primary-400 inline-block rounded-md border border-white/30 bg-white/40 px-2.5 py-1 text-[10px] font-bold tracking-wider text-[#101828] uppercase backdrop-blur-md'>
 									Ready to use
 								</div>
 							</div>
@@ -388,14 +404,14 @@ const BlueprintsListPage = () => {
 								Blueprints
 							</h1>
 							<p className='mb-6 max-w-2xl text-xs leading-relaxed text-zinc-700 sm:text-sm dark:text-zinc-400'>
-								Turn any workflow, agent, or bundle of both into a reusable template - then spin
-								up new ones from it in one click.
+								Turn any workflow, agent, or bundle of both into a reusable template
+								- then spin up new ones from it in one click.
 							</p>
 
 							<div className='mt-6 flex flex-wrap items-center gap-4'>
 								<div className='flex items-center gap-3 rounded-2xl border border-white/20 bg-white/40 px-4 py-2.5 shadow-xs backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/60'>
 									<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-white/50 dark:bg-zinc-800'>
-										<Workflow className='h-4.5 w-4.5 text-[#101828] dark:text-primary-400' />
+										<Workflow className='dark:text-primary-400 h-4.5 w-4.5 text-[#101828]' />
 									</div>
 									<div>
 										<div className='text-sm leading-none font-extrabold text-[#101828] dark:text-white'>
@@ -409,7 +425,7 @@ const BlueprintsListPage = () => {
 
 								<div className='flex items-center gap-3 rounded-2xl border border-white/20 bg-white/40 px-4 py-2.5 shadow-xs backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/60'>
 									<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-white/50 dark:bg-zinc-800'>
-										<Layers className='h-4.5 w-4.5 text-[#101828] dark:text-primary-400' />
+										<Layers className='dark:text-primary-400 h-4.5 w-4.5 text-[#101828]' />
 									</div>
 									<div>
 										<div className='text-sm leading-none font-extrabold text-[#101828] dark:text-white'>
@@ -423,7 +439,7 @@ const BlueprintsListPage = () => {
 
 								<div className='flex items-center gap-3 rounded-2xl border border-white/20 bg-white/40 px-4 py-2.5 shadow-xs backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/60'>
 									<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-white/50 dark:bg-zinc-800'>
-										<Sparkles className='h-4.5 w-4.5 text-[#101828] dark:text-primary-400' />
+										<Sparkles className='dark:text-primary-400 h-4.5 w-4.5 text-[#101828]' />
 									</div>
 									<div>
 										<div className='text-sm leading-none font-extrabold text-[#101828] dark:text-white'>
@@ -439,15 +455,17 @@ const BlueprintsListPage = () => {
 
 						{/* 3D graphic column */}
 						<div className='pointer-events-none relative hidden h-56 justify-center select-none lg:col-span-4 lg:flex'>
-							<div className='relative flex h-64 w-64 items-center justify-center' style={{ perspective: '1000px' }}>
-								<div className='animate-3d-float absolute flex h-36 w-36 items-center justify-center rounded-3xl border border-white/25 bg-gradient-to-br from-primary-400 to-primary-500 shadow-[0_25px_50px_-12px_rgba(196,238,61,0.25)]'>
+							<div
+								className='relative flex h-64 w-64 items-center justify-center'
+								style={{ perspective: '1000px' }}>
+								<div className='animate-3d-float from-primary-400 to-primary-500 absolute flex h-36 w-36 items-center justify-center rounded-3xl border border-white/25 bg-gradient-to-br shadow-[0_25px_50px_-12px_rgba(196,238,61,0.25)]'>
 									<div className='pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-tr from-white/15 via-transparent to-transparent' />
 									<Sparkles className='h-16 w-16 text-zinc-900 drop-shadow-[0_0_12px_rgba(255,255,255,0.7)]' />
 								</div>
 								<div className='animate-3d-float-teal absolute top-28 left-4 flex h-12 w-12 items-center justify-center rounded-xl border border-white/20 bg-gradient-to-tr from-[#7B37FC] to-[#501EE3] shadow-lg'>
 									<Workflow className='h-5 w-5 text-white' />
 								</div>
-								<div className='animate-3d-float-coral absolute top-12 right-6 flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 bg-gradient-to-tr from-orange-400 to-primary-400 shadow-lg'>
+								<div className='animate-3d-float-coral to-primary-400 absolute top-12 right-6 flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 bg-gradient-to-tr from-orange-400 shadow-lg'>
 									<Cpu className='h-4.5 w-4.5 text-white' />
 								</div>
 							</div>
@@ -462,7 +480,7 @@ const BlueprintsListPage = () => {
 							onClick={() => setTab('workflows')}
 							className={`flex shrink-0 cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200 ${
 								activeTab === 'workflows'
-									? 'border border-primary-500/20 bg-primary-50 text-primary-600 shadow-2xs dark:border-primary-800/40 dark:bg-primary-950/30 dark:text-primary-400'
+									? 'border-primary-500/20 bg-primary-50 text-primary-600 dark:border-primary-800/40 dark:bg-primary-950/30 dark:text-primary-400 border shadow-2xs'
 									: 'border border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
 							}`}>
 							<Workflow className='h-3.5 w-3.5' />
@@ -472,7 +490,7 @@ const BlueprintsListPage = () => {
 							onClick={() => setTab('agents')}
 							className={`flex shrink-0 cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200 ${
 								activeTab === 'agents'
-									? 'border border-primary-500/20 bg-primary-50 text-primary-600 shadow-2xs dark:border-primary-800/40 dark:bg-primary-950/30 dark:text-primary-400'
+									? 'border-primary-500/20 bg-primary-50 text-primary-600 dark:border-primary-800/40 dark:bg-primary-950/30 dark:text-primary-400 border shadow-2xs'
 									: 'border border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
 							}`}>
 							<Cpu className='h-3.5 w-3.5' />
@@ -482,7 +500,7 @@ const BlueprintsListPage = () => {
 							onClick={() => setTab('collections')}
 							className={`flex shrink-0 cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200 ${
 								activeTab === 'collections'
-									? 'border border-primary-500/20 bg-primary-50 text-primary-600 shadow-2xs dark:border-primary-800/40 dark:bg-primary-950/30 dark:text-primary-400'
+									? 'border-primary-500/20 bg-primary-50 text-primary-600 dark:border-primary-800/40 dark:bg-primary-950/30 dark:text-primary-400 border shadow-2xs'
 									: 'border border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
 							}`}>
 							<Layers className='h-3.5 w-3.5' />
@@ -494,11 +512,12 @@ const BlueprintsListPage = () => {
 						<div className='relative w-full sm:w-64'>
 							<Search className='pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-zinc-600' />
 							<input
+								aria-label={`Search ${activeTab}...`}
 								type='text'
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
 								placeholder={`Search ${activeTab}...`}
-								className='shadow-3xs w-full rounded-xl border border-zinc-200/80 bg-white py-2 pr-4 pl-9 text-xs text-zinc-700 focus:ring-1 focus:ring-primary-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:focus:ring-primary-600'
+								className='shadow-3xs focus:ring-primary-500 dark:focus:ring-primary-600 w-full rounded-xl border border-zinc-200/80 bg-white py-2 pr-4 pl-9 text-xs text-zinc-700 focus:ring-1 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300'
 							/>
 						</div>
 
@@ -508,9 +527,12 @@ const BlueprintsListPage = () => {
 								<select
 									value={selectedCategory}
 									onChange={(e) => setSelectedCategory(e.target.value)}
-									className='shadow-3xs w-full cursor-pointer appearance-none rounded-xl bg-none border border-zinc-200/80 bg-white py-2 pr-8 pl-9 text-xs text-zinc-700 focus:ring-1 focus:ring-primary-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300'>
+									className='shadow-3xs focus:ring-primary-500 w-full cursor-pointer appearance-none rounded-xl border border-zinc-200/80 bg-white bg-none py-2 pr-8 pl-9 text-xs text-zinc-700 focus:ring-1 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300'>
 									<option value=''>All Categories</option>
-									{(activeTab === 'workflows' ? wfCategories : agentCategories).map((cat) => (
+									{(activeTab === 'workflows'
+										? wfCategories
+										: agentCategories
+									).map((cat) => (
 										<option key={cat.category} value={cat.category}>
 											{cat.category} ({cat.count})
 										</option>
@@ -527,7 +549,11 @@ const BlueprintsListPage = () => {
 					<div className='mb-6 flex items-center justify-between gap-2'>
 						<div className='flex items-center gap-2'>
 							<h2 className='text-sm font-bold text-zinc-800 dark:text-zinc-200'>
-								{activeTab === 'workflows' ? 'All Workflows' : activeTab === 'agents' ? 'All Agents' : 'All Collections'}
+								{activeTab === 'workflows'
+									? 'All Workflows'
+									: activeTab === 'agents'
+										? 'All Agents'
+										: 'All Collections'}
 							</h2>
 							<span className='rounded-full bg-zinc-200/50 px-2.5 py-0.5 text-[10px] font-extrabold text-zinc-500 dark:bg-zinc-800/80 dark:text-zinc-400'>
 								{activeTab === 'workflows'
@@ -551,7 +577,7 @@ const BlueprintsListPage = () => {
 													: 'collection',
 									})
 								}
-								className='flex h-[30px] shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-primary-400 px-3.5 text-xs font-black text-primary-950 shadow-xs transition-all hover:bg-primary-500 active:scale-95'>
+								className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex h-[30px] shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-3.5 text-xs font-black shadow-xs transition-all active:scale-95'>
 								<Plus size={13} />
 								{activeTab === 'collections' ? 'New collection' : 'New template'}
 							</button>
@@ -561,11 +587,13 @@ const BlueprintsListPage = () => {
 								<select
 									value={sortMode}
 									onChange={(e) =>
-										setSortMode(e.target.value as 'latest' | 'popular' | 'alpha')
+										setSortMode(
+											e.target.value as 'latest' | 'popular' | 'alpha',
+										)
 									}
 									aria-label='Sort templates'
 									style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
-									className='shadow-3xs cursor-pointer appearance-none rounded-xl bg-none border border-zinc-200/80 bg-white py-1.5 pr-8 pl-3 text-[11px] text-zinc-600 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400'>
+									className='shadow-3xs cursor-pointer appearance-none rounded-xl border border-zinc-200/80 bg-white bg-none py-1.5 pr-8 pl-3 text-[11px] text-zinc-600 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400'>
 									<option value='latest'>Latest Added</option>
 									<option value='popular'>Popularity</option>
 									<option value='alpha'>Alphabetical</option>
@@ -580,7 +608,7 @@ const BlueprintsListPage = () => {
 									onClick={() => setViewMode('grid')}
 									aria-pressed={viewMode === 'grid'}
 									title='Grid view'
-									className={`cursor-pointer ${viewMode === 'grid' ? 'text-primary-600 shadow-3xs rounded-md bg-white p-1.5 dark:bg-zinc-800 dark:text-primary-400' : 'rounded-md p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'}`}>
+									className={`cursor-pointer ${viewMode === 'grid' ? 'text-primary-600 shadow-3xs dark:text-primary-400 rounded-md bg-white p-1.5 dark:bg-zinc-800' : 'rounded-md p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'}`}>
 									<Grid className='h-3.5 w-3.5' />
 								</button>
 								<button
@@ -588,7 +616,7 @@ const BlueprintsListPage = () => {
 									onClick={() => setViewMode('list')}
 									aria-pressed={viewMode === 'list'}
 									title='List view'
-									className={`cursor-pointer ${viewMode === 'list' ? 'text-primary-600 shadow-3xs rounded-md bg-white p-1.5 dark:bg-zinc-800 dark:text-primary-400' : 'rounded-md p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'}`}>
+									className={`cursor-pointer ${viewMode === 'list' ? 'text-primary-600 shadow-3xs dark:text-primary-400 rounded-md bg-white p-1.5 dark:bg-zinc-800' : 'rounded-md p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'}`}>
 									<List className='h-3.5 w-3.5' />
 								</button>
 							</div>
@@ -630,7 +658,9 @@ const BlueprintsListPage = () => {
 											isUsePending={useWorkflowTemplateMutation.isPending}
 											onPreview={() => setPreviewId(wf.id)}
 											onUse={() => handleUseWorkflow(wf)}
-											onEdit={() => setFormTarget({ kind: 'workflow', item: wf })}
+											onEdit={() =>
+												setFormTarget({ kind: 'workflow', item: wf })
+											}
 											onDelete={() => handleDeleteWorkflow(wf)}
 										/>
 									))}
@@ -650,7 +680,9 @@ const BlueprintsListPage = () => {
 											isUsePending={useAgentTemplateMutation.isPending}
 											onPreview={() => setPreviewId(agent.id)}
 											onUse={() => handleUseAgent(agent)}
-											onEdit={() => setFormTarget({ kind: 'agent', item: agent })}
+											onEdit={() =>
+												setFormTarget({ kind: 'agent', item: agent })
+											}
 											onDelete={() => handleDeleteAgent(agent)}
 										/>
 									))}
@@ -670,7 +702,9 @@ const BlueprintsListPage = () => {
 											isUsePending={useCollectionMutation.isPending}
 											onPreview={() => setPreviewId(coll.id)}
 											onUse={() => handleUseCollection(coll)}
-											onEdit={() => setFormTarget({ kind: 'collection', item: coll })}
+											onEdit={() =>
+												setFormTarget({ kind: 'collection', item: coll })
+											}
 											onDelete={() => handleDeleteCollection(coll)}
 										/>
 									))}
@@ -705,7 +739,11 @@ const BlueprintsListPage = () => {
 								className='absolute top-4 right-4 rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-900'>
 								<X className='h-5 w-5' />
 							</button>
-							{(activeTab === 'workflows' ? wfDetail : activeTab === 'agents' ? agentDetail : collectionDetail) && (
+							{(activeTab === 'workflows'
+								? wfDetail
+								: activeTab === 'agents'
+									? agentDetail
+									: collectionDetail) && (
 								<button
 									aria-label='Edit details'
 									title='Edit details'
@@ -715,7 +753,10 @@ const BlueprintsListPage = () => {
 										else if (activeTab === 'agents' && agentDetail)
 											setFormTarget({ kind: 'agent', item: agentDetail });
 										else if (collectionDetail)
-											setFormTarget({ kind: 'collection', item: collectionDetail });
+											setFormTarget({
+												kind: 'collection',
+												item: collectionDetail,
+											});
 									}}
 									className='absolute top-4 right-14 rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-900'>
 									<Pencil className='h-4.5 w-4.5' />
@@ -729,7 +770,7 @@ const BlueprintsListPage = () => {
 									<>
 										{!wfDetail ? (
 											<div className='flex h-full flex-col items-center justify-center gap-2'>
-												<Loader2 className='h-6 w-6 animate-spin text-primary-500' />
+												<Loader2 className='text-primary-500 h-6 w-6 animate-spin' />
 												<span className='text-xs text-zinc-500'>
 													Fetching template metadata...
 												</span>
@@ -739,9 +780,16 @@ const BlueprintsListPage = () => {
 												{/* Header info */}
 												<div className='flex items-center gap-4'>
 													<div
-														style={{ backgroundColor: `${wfDetail.color ?? '#C4EE3D'}15` }}
+														style={{
+															backgroundColor: `${wfDetail.color ?? '#C4EE3D'}15`,
+														}}
 														className='flex h-12 w-12 items-center justify-center rounded-xl border border-zinc-100 dark:border-zinc-800'>
-														<Workflow className='h-6 w-6' style={{ color: wfDetail.color ?? undefined }} />
+														<Workflow
+															className='h-6 w-6'
+															style={{
+																color: wfDetail.color ?? undefined,
+															}}
+														/>
 													</div>
 													<div>
 														<h2 className='text-lg font-bold text-zinc-800 dark:text-zinc-100'>
@@ -749,11 +797,15 @@ const BlueprintsListPage = () => {
 														</h2>
 														<div className='mt-1 flex items-center gap-2'>
 															<span className='text-xs text-zinc-400 capitalize'>
-																{wfDetail.category ?? 'uncategorized'}
+																{wfDetail.category ??
+																	'uncategorized'}
 															</span>
-															<span className='text-zinc-300 dark:text-zinc-700'>•</span>
+															<span className='text-zinc-300 dark:text-zinc-700'>
+																•
+															</span>
 															<span className='text-[10px] text-zinc-400'>
-																{wfDetail.usage_count || 0} active deployments
+																{wfDetail.usage_count || 0} active
+																deployments
 															</span>
 														</div>
 													</div>
@@ -776,8 +828,14 @@ const BlueprintsListPage = () => {
 														Workflow Graph Preview
 													</h3>
 													<GraphPreview
-														nodes={(wfDetail.graph?.nodes as IPreviewNode[]) || []}
-														edges={(wfDetail.graph?.edges as IPreviewEdge[]) || []}
+														nodes={
+															(wfDetail.graph
+																?.nodes as IPreviewNode[]) || []
+														}
+														edges={
+															(wfDetail.graph
+																?.edges as IPreviewEdge[]) || []
+														}
 													/>
 												</div>
 
@@ -788,7 +846,9 @@ const BlueprintsListPage = () => {
 														variant='solid'
 														dimension='lg'
 														className='flex w-full cursor-pointer items-center justify-center gap-2 py-3 text-sm font-bold shadow-lg transition-all hover:shadow-xl'
-														isLoading={useWorkflowTemplateMutation.isPending}
+														isLoading={
+															useWorkflowTemplateMutation.isPending
+														}
 														onClick={() => {
 															setPreviewId(null);
 															handleUseWorkflow(wfDetail);
@@ -809,17 +869,27 @@ const BlueprintsListPage = () => {
 									<>
 										{!agentDetail ? (
 											<div className='flex h-full flex-col items-center justify-center gap-2'>
-												<Loader2 className='h-6 w-6 animate-spin text-primary-500' />
-												<span className='text-xs text-zinc-500'>Fetching agent metadata...</span>
+												<Loader2 className='text-primary-500 h-6 w-6 animate-spin' />
+												<span className='text-xs text-zinc-500'>
+													Fetching agent metadata...
+												</span>
 											</div>
 										) : (
 											<div className='flex flex-col gap-6'>
 												{/* Header info */}
 												<div className='flex items-center gap-4'>
 													<div
-														style={{ backgroundColor: `${agentDetail.color ?? '#C4EE3D'}15` }}
+														style={{
+															backgroundColor: `${agentDetail.color ?? '#C4EE3D'}15`,
+														}}
 														className='flex h-12 w-12 items-center justify-center rounded-xl border border-zinc-100 dark:border-zinc-800'>
-														<Cpu className='h-6 w-6' style={{ color: agentDetail.color ?? undefined }} />
+														<Cpu
+															className='h-6 w-6'
+															style={{
+																color:
+																	agentDetail.color ?? undefined,
+															}}
+														/>
 													</div>
 													<div>
 														<h2 className='text-lg font-bold text-zinc-800 dark:text-zinc-100'>
@@ -827,11 +897,15 @@ const BlueprintsListPage = () => {
 														</h2>
 														<div className='mt-1 flex items-center gap-2'>
 															<span className='text-xs text-zinc-400 capitalize'>
-																{agentDetail.category ?? 'uncategorized'}
+																{agentDetail.category ??
+																	'uncategorized'}
 															</span>
-															<span className='text-zinc-300 dark:text-zinc-700'>•</span>
+															<span className='text-zinc-300 dark:text-zinc-700'>
+																•
+															</span>
 															<span className='text-[10px] text-zinc-400'>
-																{agentDetail.usage_count || 0} deploys
+																{agentDetail.usage_count || 0}{' '}
+																deploys
 															</span>
 														</div>
 													</div>
@@ -855,11 +929,14 @@ const BlueprintsListPage = () => {
 															Model Provider
 														</div>
 														<div className='text-xs font-bold text-zinc-800 capitalize dark:text-zinc-200'>
-															{agentDetail.config.provider || 'Anthropic'}
+															{agentDetail.config.provider ||
+																'Anthropic'}
 														</div>
 													</div>
 													<div className='rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900'>
-														<div className='mb-1 text-[10px] font-bold text-zinc-400 uppercase'>LLM Model</div>
+														<div className='mb-1 text-[10px] font-bold text-zinc-400 uppercase'>
+															LLM Model
+														</div>
 														<div className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
 															{agentDetail.config.model || '-'}
 														</div>
@@ -872,46 +949,69 @@ const BlueprintsListPage = () => {
 														Agent Parameters
 													</h3>
 													<div className='grid grid-cols-4 gap-2.5'>
-														<ParamTile label='Temp' value={agentDetail.config.temperature} />
-														<ParamTile label='Max Tokens' value={agentDetail.config.settings?.max_tokens} />
-														<ParamTile label='Max Steps' value={agentDetail.config.settings?.max_steps} />
+														<ParamTile
+															label='Temp'
+															value={agentDetail.config.temperature}
+														/>
+														<ParamTile
+															label='Max Tokens'
+															value={
+																agentDetail.config.settings
+																	?.max_tokens
+															}
+														/>
+														<ParamTile
+															label='Max Steps'
+															value={
+																agentDetail.config.settings
+																	?.max_steps
+															}
+														/>
 														<ParamTile
 															label='Timeout'
-															value={agentDetail.config.settings?.timeout_seconds}
+															value={
+																agentDetail.config.settings
+																	?.timeout_seconds
+															}
 															suffix='s'
 														/>
 													</div>
 												</div>
 
 												{/* Pre-packaged tools */}
-												{agentDetail.config.tool_bindings && agentDetail.config.tool_bindings.length > 0 && (
-													<div>
-														<h3 className='mb-2 text-xs font-bold tracking-wider text-zinc-800 uppercase dark:text-zinc-200'>
-															Available System Tools
-														</h3>
-														<div className='flex flex-col gap-2'>
-															{(agentDetail.config.tool_bindings as TToolBinding[]).map((t, idx) => (
-																<div
-																	key={idx}
-																	className='flex gap-2.5 rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900'>
-																	<div className='flex h-7 w-7 shrink-0 items-center justify-center rounded border border-primary-100 bg-primary-50 text-primary-500 dark:border-primary-900 dark:bg-primary-950/20'>
-																		<Settings className='animate-spin-slow h-4 w-4' />
-																	</div>
-																	<div>
-																		<div className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
-																			{t?.name ?? `Tool ${idx + 1}`}
+												{agentDetail.config.tool_bindings &&
+													agentDetail.config.tool_bindings.length > 0 && (
+														<div>
+															<h3 className='mb-2 text-xs font-bold tracking-wider text-zinc-800 uppercase dark:text-zinc-200'>
+																Available System Tools
+															</h3>
+															<div className='flex flex-col gap-2'>
+																{(
+																	agentDetail.config
+																		.tool_bindings as TToolBinding[]
+																).map((t, idx) => (
+																	<div
+																		key={idx}
+																		className='flex gap-2.5 rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900'>
+																		<div className='border-primary-100 bg-primary-50 text-primary-500 dark:border-primary-900 dark:bg-primary-950/20 flex h-7 w-7 shrink-0 items-center justify-center rounded border'>
+																			<Settings className='animate-spin-slow h-4 w-4' />
 																		</div>
-																		{t?.description && (
-																			<div className='mt-0.5 text-[10px] leading-relaxed text-zinc-500 dark:text-zinc-400'>
-																				{t.description}
+																		<div>
+																			<div className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
+																				{t?.name ??
+																					`Tool ${idx + 1}`}
 																			</div>
-																		)}
+																			{t?.description && (
+																				<div className='mt-0.5 text-[10px] leading-relaxed text-zinc-500 dark:text-zinc-400'>
+																					{t.description}
+																				</div>
+																			)}
+																		</div>
 																	</div>
-																</div>
-															))}
+																))}
+															</div>
 														</div>
-													</div>
-												)}
+													)}
 
 												{/* System Prompt */}
 												{agentDetail.config.instructions && (
@@ -932,7 +1032,9 @@ const BlueprintsListPage = () => {
 														variant='solid'
 														dimension='lg'
 														className='flex w-full cursor-pointer items-center justify-center gap-2 py-3 text-sm font-bold shadow-lg transition-all hover:shadow-xl'
-														isLoading={useAgentTemplateMutation.isPending}
+														isLoading={
+															useAgentTemplateMutation.isPending
+														}
 														onClick={() => {
 															setPreviewId(null);
 															handleUseAgent(agentDetail);
@@ -953,27 +1055,44 @@ const BlueprintsListPage = () => {
 									<>
 										{!collectionDetail ? (
 											<div className='flex h-full flex-col items-center justify-center gap-2'>
-												<Loader2 className='h-6 w-6 animate-spin text-primary-500' />
-												<span className='text-xs text-zinc-500'>Fetching collection stack...</span>
+												<Loader2 className='text-primary-500 h-6 w-6 animate-spin' />
+												<span className='text-xs text-zinc-500'>
+													Fetching collection stack...
+												</span>
 											</div>
 										) : (
 											<div className='flex flex-col gap-6'>
 												{/* Header info */}
 												<div className='flex items-center gap-4'>
 													<div
-														style={{ backgroundColor: `${collectionDetail.color ?? '#F59E0B'}15` }}
+														style={{
+															backgroundColor: `${collectionDetail.color ?? '#F59E0B'}15`,
+														}}
 														className='flex h-12 w-12 items-center justify-center rounded-xl border border-zinc-100 dark:border-zinc-800'>
-														<Layers className='h-6 w-6' style={{ color: collectionDetail.color ?? undefined }} />
+														<Layers
+															className='h-6 w-6'
+															style={{
+																color:
+																	collectionDetail.color ??
+																	undefined,
+															}}
+														/>
 													</div>
 													<div>
 														<h2 className='text-lg font-bold text-zinc-800 dark:text-zinc-100'>
 															{collectionDetail.name}
 														</h2>
 														<div className='mt-1 flex items-center gap-2'>
-															<span className='text-xs text-zinc-400'>Template Stack</span>
-															<span className='text-zinc-300 dark:text-zinc-700'>•</span>
+															<span className='text-xs text-zinc-400'>
+																Template Stack
+															</span>
+															<span className='text-zinc-300 dark:text-zinc-700'>
+																•
+															</span>
 															<span className='text-[10px] text-zinc-400'>
-																{collectionDetail.items?.length ?? 0} assets included
+																{collectionDetail.items?.length ??
+																	0}{' '}
+																assets included
 															</span>
 														</div>
 													</div>
@@ -985,12 +1104,16 @@ const BlueprintsListPage = () => {
 														About this Bundle
 													</h3>
 													<p className='text-xs leading-relaxed text-zinc-600 dark:text-zinc-400'>
-														{collectionDetail.description || 'No description provided.'}
+														{collectionDetail.description ||
+															'No description provided.'}
 													</p>
 												</div>
 
 												{/* List of items included — add, remove, reorder */}
-												<CollectionItemsEditor ws={ws} collection={collectionDetail} />
+												<CollectionItemsEditor
+													ws={ws}
+													collection={collectionDetail}
+												/>
 
 												{/* Deploy Collection action */}
 												<div className='mt-4 border-t border-zinc-200 pt-6 dark:border-zinc-800'>
@@ -1004,7 +1127,9 @@ const BlueprintsListPage = () => {
 															setPreviewId(null);
 															handleUseCollection(collectionDetail);
 														}}>
-														{!useCollectionMutation.isPending && <Play className='h-4 w-4 fill-current' />}
+														{!useCollectionMutation.isPending && (
+															<Play className='h-4 w-4 fill-current' />
+														)}
 														Deploy Collection
 													</Button>
 												</div>
@@ -1030,11 +1155,21 @@ const BlueprintsListPage = () => {
 type TToolBinding = { name?: string; description?: string } | null;
 
 /** `config.settings` is a free-form bag; tolerate a missing/odd value. */
-const ParamTile = ({ label, value, suffix = '' }: { label: string; value?: unknown; suffix?: string }) => (
+const ParamTile = ({
+	label,
+	value,
+	suffix = '',
+}: {
+	label: string;
+	value?: unknown;
+	suffix?: string;
+}) => (
 	<div className='rounded-lg border border-zinc-100 bg-white p-2.5 text-center dark:border-zinc-800 dark:bg-zinc-900/40'>
 		<div className='mb-0.5 text-[9px] font-bold text-zinc-400 uppercase'>{label}</div>
 		<div className='text-xs font-bold text-zinc-800 dark:text-zinc-100'>
-			{value === null || value === undefined || value === '' ? '-' : `${String(value)}${suffix}`}
+			{value === null || value === undefined || value === ''
+				? '-'
+				: `${String(value)}${suffix}`}
 		</div>
 	</div>
 );
@@ -1077,8 +1212,14 @@ const CatalogCard = ({
 	onDelete: () => void;
 }) => {
 	const [menuOpen, setMenuOpen] = useState(false);
-	const hoverBorder = hoverColor === 'primary' ? 'hover:border-primary-400 dark:hover:border-primary-400/50' : 'hover:border-amber-400 dark:hover:border-amber-400/50';
-	const hoverText = hoverColor === 'primary' ? 'group-hover:text-primary-600 dark:group-hover:text-primary-400' : 'group-hover:text-amber-600 dark:group-hover:text-amber-400';
+	const hoverBorder =
+		hoverColor === 'primary'
+			? 'hover:border-primary-400 dark:hover:border-primary-400/50'
+			: 'hover:border-amber-400 dark:hover:border-amber-400/50';
+	const hoverText =
+		hoverColor === 'primary'
+			? 'group-hover:text-primary-600 dark:group-hover:text-primary-400'
+			: 'group-hover:text-amber-600 dark:group-hover:text-amber-400';
 
 	return (
 		<motion.div
@@ -1097,7 +1238,8 @@ const CatalogCard = ({
 						<Icon className='h-5 w-5' style={{ color }} />
 					</div>
 					<div className='min-w-0 space-y-0.5'>
-						<h4 className={`truncate text-[13px] leading-snug font-black text-slate-900 transition-colors dark:text-zinc-50 ${hoverText}`}>
+						<h4
+							className={`truncate text-[13px] leading-snug font-black text-slate-900 transition-colors dark:text-zinc-50 ${hoverText}`}>
 							{name}
 						</h4>
 						<span className='block truncate text-[9px] font-extrabold tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
@@ -1162,7 +1304,7 @@ const CatalogCard = ({
 					onUse();
 				}}
 				disabled={isUsePending}
-				className='mt-3 flex h-8 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-primary-400 text-[11px] font-black text-primary-950 transition-all hover:bg-primary-500 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'>
+				className='bg-primary-400 text-primary-950 hover:bg-primary-500 mt-3 flex h-8 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl text-[11px] font-black transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'>
 				<Play size={12} />
 				Use
 			</button>

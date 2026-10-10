@@ -1,3 +1,4 @@
+import { serializeNodeConfig, restoreInputConnections } from './dynamicInputs.helper';
 import type {
 	TReplaceGraphDto,
 	TWorkflow,
@@ -29,7 +30,7 @@ export const buildGraphPayload = (nodes: TCanvasNode[], edges: TCanvasEdge[]): T
 		nodes: executableNodes.map((node) => ({
 			key: node.id,
 			type: node.data.defKey,
-			config: node.data.values ?? {},
+			config: serializeNodeConfig(node, edges),
 			position: { x: node.position.x, y: node.position.y },
 		})),
 		edges: edges
@@ -100,6 +101,9 @@ export const versionToExportedWorkflow = (
 			savingState: 'saved',
 		},
 		nodes: draftNodes.map(draftNodeToCanvas),
-		edges: draftEdgesToCanvas(draftNodes, workflow.edges ?? []),
+		edges: restoreInputConnections(
+			draftEdgesToCanvas(draftNodes, workflow.edges ?? []),
+			draftNodes,
+		),
 	};
 };

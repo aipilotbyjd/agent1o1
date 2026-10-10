@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useWorkflow, useWorkflowVersions } from '@/api/modules/workflows';
 import { versionToExportedWorkflow } from '../_helper/workflowApiTransform.helper';
-import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from './useWorkflowEditor.hook';
 import { useNodeCategories } from '@/api/modules/catalog';
 import { mapApiCategoriesToGroups } from '../_helper/apiNodeCatalog.helper';
 import { NODE_CATALOG_MAP } from '../_helper/nodeCatalog.constants';
 
 export const useWorkflowApiLoader = (workspaceId: string, workflowId: string) => {
-	const { dispatch } = useWorkflowEditor();
+	const { state, dispatch } = useWorkflowEditor();
 	const loadedKey = useRef<string | null>(null);
 	const workflowQuery = useWorkflow(workspaceId, workflowId);
 	const versionsQuery = useWorkflowVersions(workspaceId, workflowId);
@@ -79,7 +79,7 @@ export const useWorkflowApiLoader = (workspaceId: string, workflowId: string) =>
 			versionsQuery.isLoading ||
 			categoriesLoading ||
 			(Boolean(workspaceId && workflowId && workflowQuery.data) &&
-				loadedKey.current !== `${workspaceId}:${workflowId}`),
+				state.workflow.apiId !== workflowId),
 		isError: workflowQuery.isError,
 		retry: () => void workflowQuery.refetch(),
 		workflow: workflowQuery.data,

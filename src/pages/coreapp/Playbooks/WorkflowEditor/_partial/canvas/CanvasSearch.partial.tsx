@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { Search, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 
 const CanvasSearch = () => {
 	const { state, dispatch } = useWorkflowEditor();
@@ -44,6 +44,7 @@ const CanvasSearch = () => {
 				<div className='flex items-center gap-2 border-b border-zinc-100 px-3 py-2 dark:border-white/[0.06]'>
 					<Search size={15} className='shrink-0 text-zinc-400' />
 					<input
+						aria-label='Search nodes by label, type, or description…'
 						ref={inputRef}
 						type='text'
 						value={query}
@@ -91,7 +92,7 @@ const CanvasSearch = () => {
 											type='button'
 											onClick={() => zoomToNode(node.id)}
 											className='flex w-full items-center gap-3 px-3 py-2 text-left transition hover:bg-zinc-50 dark:hover:bg-white/[0.04]'>
-											<span className='flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-xs font-black text-primary-700 dark:bg-primary-400/15 dark:text-primary-300'>
+											<span className='bg-primary-100 text-primary-700 dark:bg-primary-400/15 dark:text-primary-300 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-black'>
 												{node.data.label.slice(0, 1).toUpperCase()}
 											</span>
 											<div className='min-w-0 flex-1'>

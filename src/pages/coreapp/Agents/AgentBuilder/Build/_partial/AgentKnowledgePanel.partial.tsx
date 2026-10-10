@@ -5,7 +5,7 @@ import {
 	useCreateAgentKnowledge,
 	useUpdateAgentKnowledge,
 	useDeleteAgentKnowledge,
-} from '@/api/modules/agents';
+} from '@/api/modules/agent-knowledge';
 import type { TAgentKnowledge, TAgentKnowledgeSourceType } from '@/types/agent.type';
 import { notify } from '@/api/core';
 
@@ -138,6 +138,7 @@ const AgentKnowledgePanel = ({ ws, agentId }: TProps) => {
 
 			{/* Search */}
 			<input
+				aria-label='Search knowledge…'
 				type='text'
 				value={search}
 				onChange={(e) => setSearch(e.target.value)}
@@ -184,6 +185,7 @@ const AgentKnowledgePanel = ({ ws, agentId }: TProps) => {
 						/>
 					)}
 					<input
+						aria-label='Title'
 						type='text'
 						value={form.title}
 						onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
@@ -192,6 +194,7 @@ const AgentKnowledgePanel = ({ ws, agentId }: TProps) => {
 					/>
 					{form.source_type === 'url' && (
 						<input
+							aria-label='https://source-url.com'
 							type='url'
 							value={form.source_url}
 							onChange={(e) => setForm((f) => ({ ...f, source_url: e.target.value }))}
@@ -200,6 +203,7 @@ const AgentKnowledgePanel = ({ ws, agentId }: TProps) => {
 						/>
 					)}
 					<textarea
+						aria-label='Content the agent should know…'
 						value={form.content}
 						onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
 						placeholder='Content the agent should know…'
@@ -209,7 +213,7 @@ const AgentKnowledgePanel = ({ ws, agentId }: TProps) => {
 					<div className='flex justify-end gap-2'>
 						<button
 							onClick={resetForm}
-							className='rounded-lg border border-zinc-200 bg-white px-3 py-1 text-[10px] font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
+							className='rounded-lg border border-zinc-200 bg-white px-3 py-1 text-[10px] font-bold text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'>
 							Cancel
 						</button>
 						<button
