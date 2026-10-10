@@ -7,7 +7,7 @@ import WorkspaceContext from './WorkspaceContext';
 import type { IWorkspaceContextProps } from './workspace.types';
 
 export const WorkspaceProvider = ({ children }: { children?: ReactNode }) => {
-	const { isAuthenticated } = useAuth();
+	const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
 	const { data: user, isLoading: isUserLoading } = useCurrentUser(isAuthenticated);
 
 	const { data: workspaces, isLoading: isListLoading } = useWorkspaces({
@@ -34,7 +34,7 @@ export const WorkspaceProvider = ({ children }: { children?: ReactNode }) => {
 			activeWorkspaceId,
 			activeWorkspace,
 			workspaces: workspaces ?? [],
-			isLoading: isAuthenticated && (isUserLoading || isListLoading),
+			isLoading: isAuthLoading || (isAuthenticated && (isUserLoading || isListLoading)),
 			isSwitching: switchMutation.isPending,
 			hasWorkspace: !!activeWorkspaceId,
 			switchWorkspace,
@@ -44,6 +44,7 @@ export const WorkspaceProvider = ({ children }: { children?: ReactNode }) => {
 			activeWorkspace,
 			workspaces,
 			isAuthenticated,
+			isAuthLoading,
 			isUserLoading,
 			isListLoading,
 			switchMutation.isPending,

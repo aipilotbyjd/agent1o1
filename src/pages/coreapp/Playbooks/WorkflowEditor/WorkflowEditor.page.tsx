@@ -1,7 +1,6 @@
+import { useEditorWorkspaceId } from './_hooks/useEditorWorkspaceId.hook';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { useWorkspaceContext } from '@/context/workspace';
-import { useWorkflowRouteParams } from './_hooks/useWorkflowRouteParams.hook';
 import { WorkflowService } from '@/api/modules/workflows/workflows.service';
 import paths from '@/Routes/paths';
 import WorkflowEditorLayout from './_layouts/WorkflowEditorLayout.layout';
@@ -14,9 +13,7 @@ const WorkflowEditorPage = () => {
 	// so it had to read one from context. Here the route is `/:workspaceId/playbooks/new`,
 	// so the URL is the source of truth - same as every other part of this editor,
 	// which already reads `useWorkflowRouteParams`. Context stays as the fallback.
-	const { workspaceId: routeWorkspaceId } = useWorkflowRouteParams();
-	const { activeWorkspaceId: contextWorkspaceId } = useWorkspaceContext();
-	const activeWorkspaceId = routeWorkspaceId || contextWorkspaceId;
+	const activeWorkspaceId = useEditorWorkspaceId();
 	const navigate = useNavigate();
 	const [error, setError] = useState<string | null>(null);
 	const [attempt, setAttempt] = useState(0);

@@ -1,9 +1,9 @@
+import { useEditorWorkspaceId } from '../../../_hooks/useEditorWorkspaceId.hook';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { AlertCircle, Check, ChevronDown, Loader2, Search, X } from 'lucide-react';
 import { ApiError } from '@/api/core';
 import { useNodeOptions } from '@/api/modules/nodes';
-import { useWorkspaceContext } from '@/context/workspace';
 import useOnClickOutside from '@/hooks/useOnClickOutside';
 import type { TNodeOption } from '@/types/node.type';
 import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
@@ -59,7 +59,7 @@ const DynamicSelect = ({ field, value, onChange, compact, nodeId, className }: P
 	const dynamic = field.dynamic!;
 	const listboxId = useId();
 	const { state } = useWorkflowEditor();
-	const { activeWorkspaceId } = useWorkspaceContext();
+	const activeWorkspaceId = useEditorWorkspaceId();
 	const node = state.nodes.find((item) => item.id === nodeId);
 	const nodeValues = (node?.data.values ?? {}) as Record<string, unknown>;
 	const siblingLabel = (key: string) =>

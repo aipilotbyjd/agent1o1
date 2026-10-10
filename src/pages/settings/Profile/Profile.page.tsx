@@ -423,7 +423,12 @@ const ProfilePage = () => {
 								aria-label='Current Workspace'
 								value={activeWorkspaceId}
 								disabled={isSwitching || workspaces.length === 0}
-								onChange={(e) => switchWorkspace(e.target.value)}
+								onChange={async (e) => {
+									const targetId = e.target.value;
+									const [, , ...rest] = window.location.pathname.split('/');
+									await switchWorkspace(targetId);
+									navigate(`/${targetId}/${rest.join('/')}`);
+								}}
 								className={`${inputClass} appearance-none bg-none pr-11 disabled:cursor-not-allowed disabled:opacity-60`}>
 								{workspaces.length === 0 && (
 									<option value=''>{workspaceName}</option>

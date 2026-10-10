@@ -13,7 +13,7 @@ const NodeCredentialBadge = ({ credentialId, nodeId }: Props) => {
 
 	if (isLoading || !credential) return null;
 
-	const expired = credential.expires_at ? new Date(credential.expires_at) < new Date() : false;
+	const expired = credential.is_expired;
 
 	return (
 		<button

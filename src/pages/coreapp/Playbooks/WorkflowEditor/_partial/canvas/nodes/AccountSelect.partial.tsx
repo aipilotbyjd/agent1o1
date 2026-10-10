@@ -1,3 +1,4 @@
+import { useEditorWorkspaceId } from '../../../_hooks/useEditorWorkspaceId.hook';
 import { useEffect, useId, useMemo, useState } from 'react';
 import {
 	AlertCircle,
@@ -21,7 +22,6 @@ import {
 	useRole,
 } from '@floating-ui/react';
 import { useConnectorCredentials, useConnectors } from '@/api/modules/connectors';
-import { useWorkspaceContext } from '@/context/workspace';
 import type { TConnectorCredential } from '@/types/connector.type';
 import { isConnectorUnavailable } from '@/types/connector.type';
 import AccountConnectionSetup from './AccountConnectionSetup.partial';
@@ -35,9 +35,7 @@ type Props = {
 	onClose?: () => void;
 };
 
-const isExpired = (credential: TConnectorCredential) =>
-	credential.is_expired ||
-	(credential.expires_at ? new Date(credential.expires_at) < new Date() : false);
+const isExpired = (credential: TConnectorCredential) => credential.is_expired;
 
 const accountScope = (credential: TConnectorCredential) =>
 	credential.scope === 'team' ? 'Shared with team' : 'Personal account';
@@ -142,7 +140,7 @@ const AccountChoiceCard = ({
 
 /** A compact node field opens a focused chooser, outside the canvas transform. */
 const AccountSelect = ({ connectorKey, value, onChange, popupOnly = false, onClose }: Props) => {
-	const { activeWorkspaceId } = useWorkspaceContext();
+	const activeWorkspaceId = useEditorWorkspaceId();
 	const {
 		data: allCredentials = [],
 		isLoading,

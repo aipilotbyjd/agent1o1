@@ -1,3 +1,4 @@
+import { useEditorWorkspaceId } from '../../../_hooks/useEditorWorkspaceId.hook';
 import { useId, useState } from 'react';
 import {
 	ArrowLeft,
@@ -13,7 +14,6 @@ import {
 	X,
 } from 'lucide-react';
 import { useConnectOAuthConnector, useCreateConnectorCredential } from '@/api/modules/connectors';
-import { useWorkspaceContext } from '@/context/workspace';
 import type { TConnector, TConnectorData, TConnectorCredentialScope } from '@/types/connector.type';
 
 type Props = {
@@ -35,7 +35,7 @@ const AccountConnectionSetup = ({
 	headingId,
 	descriptionId,
 }: Props) => {
-	const { activeWorkspaceId } = useWorkspaceContext();
+	const activeWorkspaceId = useEditorWorkspaceId();
 	const oauth = useConnectOAuthConnector(activeWorkspaceId);
 	const create = useCreateConnectorCredential(activeWorkspaceId);
 	const [name, setName] = useState('');

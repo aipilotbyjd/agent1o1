@@ -1,3 +1,4 @@
+import { useEditorWorkspaceId } from '../../_hooks/useEditorWorkspaceId.hook';
 import { useState } from 'react';
 import {
 	AlertCircle,
@@ -9,7 +10,6 @@ import {
 	Play,
 	Terminal,
 } from 'lucide-react';
-import { useWorkspaceContext } from '@/context/workspace';
 import { useNodeSandbox } from '@/api/modules/node-sandbox';
 
 const MAX_CODE_CHARS = 50_000;
@@ -33,7 +33,7 @@ interface NodeSandboxProps {
 }
 
 const NodeSandbox = ({ code }: NodeSandboxProps) => {
-	const { activeWorkspaceId } = useWorkspaceContext();
+	const activeWorkspaceId = useEditorWorkspaceId();
 	const sandbox = useNodeSandbox(activeWorkspaceId);
 
 	const [inputJson, setInputJson] = useState('{}');

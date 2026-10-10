@@ -1,13 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-	authEvents,
-	clearTokens,
-	getAccessToken,
-	hasValidToken,
-	TOKEN_CHANGE_EVENT,
-} from '@/api/core';
+import { authEvents, clearTokens, getAccessToken, TOKEN_CHANGE_EVENT } from '@/api/core';
 import { useCurrentUser } from '@/api/modules/user';
 import { useLogout } from '@/api/modules/auth';
 import { WorkspaceProvider } from '@/context/workspace';
@@ -21,7 +15,7 @@ export const AuthProvider = () => {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const [accessToken, setAccessToken] = useState<string | null>(() => getAccessToken());
-	const hasActiveToken = !!accessToken && hasValidToken();
+	const hasActiveToken = !!accessToken;
 	const {
 		data: userData,
 		isLoading: isCurrentUserLoading,
