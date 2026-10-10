@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
 	AlertTriangle,
+	BookOpen,
 	CheckCircle2,
 	Cpu,
 	KeyRound,
@@ -229,8 +230,16 @@ const AiProvidersPage = () => {
 												)}
 											</div>
 										) : (
-											<p className='mt-1 text-xs font-medium text-zinc-400 dark:text-zinc-500'>
-												No models in the catalog use this provider yet.
+											!provider.covers_knowledge_base && (
+												<p className='mt-1 text-xs font-medium text-zinc-400 dark:text-zinc-500'>
+													No models in the catalog use this provider yet.
+												</p>
+											)
+										)}
+										{provider.covers_knowledge_base && (
+											<p className='mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400'>
+												<BookOpen size={13} />
+												Also used for knowledge base uploads and searches
 											</p>
 										)}
 									</div>

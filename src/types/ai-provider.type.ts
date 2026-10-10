@@ -19,6 +19,8 @@ export type TAiProvider = {
 	key_placeholder: string | null;
 	/** Display names of the catalog models a key for this provider runs. */
 	models: string[];
+	/** A key for this provider also embeds knowledge-base documents and searches. */
+	covers_knowledge_base: boolean;
 };
 
 export type TAiProvidersResult = {
