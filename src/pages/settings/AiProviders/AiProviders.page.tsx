@@ -34,6 +34,7 @@ import Spinner from '@/components/ui/Spinner';
 import { primaryBtn } from '../_shared/buttons';
 import AddKeyModal from './_partial/AddKeyModal.partial';
 import EditKeyModal from './_partial/EditKeyModal.partial';
+import KeyPolicyCard from './_partial/KeyPolicyCard.partial';
 
 const MAX_MODEL_CHIPS = 4;
 
@@ -72,7 +73,7 @@ const steps = [
 	{
 		icon: Cpu,
 		title: 'Our key',
-		body: 'Used when there is no key of yours, and billed in credits.',
+		body: "Used when your keys can't run a call, if the key policy below allows it. Billed in credits.",
 	},
 ];
 
@@ -169,6 +170,8 @@ const AiProvidersPage = () => {
 					and processing time are still billed in credits.
 				</p>
 			</div>
+
+			<KeyPolicyCard ws={ws} />
 
 			{isLoading ? (
 				<div className='flex flex-col items-center justify-center rounded-2xl border border-zinc-200 bg-white py-20 dark:border-zinc-700 dark:bg-zinc-900'>
@@ -359,6 +362,11 @@ const KeyRow = ({
 						<span className='rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'>
 							{credential.scope === 'personal' ? 'Only you' : 'Team'}
 						</span>
+						{credential.ignored_by_policy && (
+							<span className='rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-bold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'>
+								Not used: personal keys are off
+							</span>
+						)}
 						{showDefault && credential.is_default && (
 							<span className='bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-400 rounded-full px-2 py-0.5 text-[11px] font-bold'>
 								Default

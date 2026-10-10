@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
 	TCreateAiProviderCredentialDto,
+	TUpdateAiKeyPolicyDto,
 	TUpdateAiProviderCredentialDto,
 } from '@/types/ai-provider.type';
 import { catalogKeys } from '@/api/modules/catalog';
@@ -83,5 +84,25 @@ export const useValidateAiProviderCredential = (ws: string) => {
 		mutationFn: (id: string) => AiProviderService.validate(ws, id),
 		onSuccess: invalidate,
 		meta: { errorMessage: 'Failed to check key' },
+	});
+};
+
+export const useAiKeyPolicy = (ws: string) =>
+	useQuery({
+		queryKey: aiProviderKeys.policy(ws),
+		queryFn: ({ signal }) => AiProviderService.policy(ws, signal),
+		enabled: !!ws,
+	});
+
+/** The policy decides what can be added and which models are usable, so all of it is refetched. */
+export const useUpdateAiKeyPolicy = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (payload: TUpdateAiKeyPolicyDto) => AiProviderService.updatePolicy(ws, payload),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: aiProviderKeys.all(ws) });
+			qc.invalidateQueries({ queryKey: catalogKeys.modelCatalogs() });
+		},
+		meta: { errorMessage: 'Failed to update AI key policy' },
 	});
 };

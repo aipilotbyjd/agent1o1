@@ -4,8 +4,10 @@ import type { TApiResponse } from '@/api/core';
 import type {
 	TAiProviderCredential,
 	TAiProviderCredentialCheck,
+	TAiKeyPolicy,
 	TAiProvidersResult,
 	TCreateAiProviderCredentialDto,
+	TUpdateAiKeyPolicyDto,
 	TUpdateAiProviderCredentialDto,
 } from '@/types/ai-provider.type';
 import { AiProviderEndpoints as E } from './ai-providers.endpoints';
@@ -46,6 +48,16 @@ export const AiProviderService = {
 				TApiResponse<{ ai_provider_credential: TAiProviderCredential }>
 			>(E.setDefault(ws, id))
 			.then(unwrapKey<TAiProviderCredential>('ai_provider_credential')),
+
+	policy: (ws: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<{ policy: TAiKeyPolicy }>>(E.policy(ws), { signal })
+			.then(unwrapKey<TAiKeyPolicy>('policy')),
+
+	updatePolicy: (ws: string, payload: TUpdateAiKeyPolicyDto) =>
+		axiosClient
+			.put<TApiResponse<{ policy: TAiKeyPolicy }>>(E.policy(ws), payload)
+			.then(unwrapKey<TAiKeyPolicy>('policy')),
 
 	validate: (ws: string, id: string) =>
 		axiosClient

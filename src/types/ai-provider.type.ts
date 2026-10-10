@@ -41,6 +41,8 @@ export type TAiProviderCredential = {
 	validation_message: string | null;
 	last_validated_at: string | null;
 	last_used_at: string | null;
+	/** A personal key kept while the workspace has personal keys turned off — never used. */
+	ignored_by_policy: boolean;
 	can_manage: boolean;
 	created_by: string | null;
 	created_at: string;
@@ -63,4 +65,24 @@ export type TUpdateAiProviderCredentialDto = {
 export type TAiProviderCredentialCheck = {
 	result: { ok: boolean; message: string };
 	ai_provider_credential: TAiProviderCredential;
+};
+
+/**
+ * When AI calls may still run on the platform's keys (and cost token credits):
+ * `fallback` — the workspace's key first, the platform's as backup;
+ * `when_no_key` — the platform's only for models no workspace key covers;
+ * `never` — only the workspace's own keys.
+ */
+export type TPlatformKeyUsage = 'fallback' | 'when_no_key' | 'never';
+
+export type TAiKeyPolicy = {
+	platform_usage: TPlatformKeyUsage;
+	allow_personal_keys: boolean;
+	can_manage: boolean;
+	updated_at: string | null;
+};
+
+export type TUpdateAiKeyPolicyDto = {
+	platform_usage?: TPlatformKeyUsage;
+	allow_personal_keys?: boolean;
 };
