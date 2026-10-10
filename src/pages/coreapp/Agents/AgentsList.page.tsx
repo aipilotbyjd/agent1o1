@@ -118,7 +118,7 @@ const AgentsListPage = () => {
 	const currentWorkspaceId = workspaceId || activeWorkspaceId;
 
 	const { data: apiAgents, isLoading } = useAgents(currentWorkspaceId);
-	const { data: modelCatalog } = useModelCatalog();
+	const { data: modelCatalog } = useModelCatalog(currentWorkspaceId);
 	const { data: apiFolders } = useFolders(currentWorkspaceId, 'agent');
 	const folders = useMemo(() => flattenFolders(apiFolders), [apiFolders]);
 	const deleteAgentMutation = useDeleteAgent(currentWorkspaceId);

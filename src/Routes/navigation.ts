@@ -66,6 +66,7 @@ export const settingsNavigation: TNavSection[] = [
 			settingsPages.workspace,
 			settingsPages.members,
 			settingsPages.apiKeys,
+			settingsPages.aiProviders,
 			settingsPages.notificationChannels,
 			settingsPages.tags,
 			settingsPages.agentPolicy,

@@ -261,9 +261,9 @@ export const useAgentAnalytics = (ws: string, agentId: string) => {
 	return { ...query, data };
 };
 
-/** Provider is filtered client-side — the catalog endpoint takes no argument. */
-export const useAgentMetaModels = (_ws: string, provider?: string) => {
-	const query = useModelCatalog();
+/** Provider is filtered client-side — the catalog endpoint only takes the workspace. */
+export const useAgentMetaModels = (ws: string, provider?: string) => {
+	const query = useModelCatalog(ws);
 	const data = useMemo<TModelCatalogEntry[]>(() => {
 		const rows = query.data ?? [];
 		return provider ? rows.filter((m) => m.brand === provider) : rows;

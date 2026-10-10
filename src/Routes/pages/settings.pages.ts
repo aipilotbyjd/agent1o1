@@ -48,6 +48,12 @@ export const settings: TPage = {
 			text: 'API Keys',
 			icon: 'Lock',
 		},
+		aiProviders: {
+			id: 'aiProvidersSettings',
+			to: ws('settings/ai-providers'),
+			text: 'AI Providers',
+			icon: 'AiChip',
+		},
 		notificationChannels: {
 			id: 'notificationChannelsSettings',
 			to: ws('settings/notification-channels'),

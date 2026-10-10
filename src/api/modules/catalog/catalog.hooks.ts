@@ -33,9 +33,9 @@ export const useTriggerPresets = () =>
 		staleTime: STALE_TIME,
 	});
 
-export const useModelCatalog = () =>
+export const useModelCatalog = (ws?: string) =>
 	useQuery({
-		queryKey: catalogKeys.modelCatalog(),
-		queryFn: ({ signal }) => CatalogService.modelCatalog(signal),
+		queryKey: catalogKeys.modelCatalog(ws),
+		queryFn: ({ signal }) => CatalogService.modelCatalog(ws, signal),
 		staleTime: STALE_TIME,
 	});

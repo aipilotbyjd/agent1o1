@@ -22,6 +22,7 @@ const ProfilePage = lazy(() => import('@/pages/settings/Profile/Profile.page'));
 const SecurityPage = lazy(() => import('@/pages/settings/Security/Security.page'));
 const MembersPage = lazy(() => import('@/pages/settings/Members/Members.page'));
 const ApiKeysPage = lazy(() => import('@/pages/settings/ApiKeys/ApiKeys.page'));
+const AiProvidersPage = lazy(() => import('@/pages/settings/AiProviders/AiProviders.page'));
 const NotificationsPage = lazy(() => import('@/pages/settings/Notifications/Notifications.page'));
 const NotificationChannelsPage = lazy(
 	() => import('@/pages/settings/NotificationChannels/NotificationChannels.page'),
@@ -47,6 +48,7 @@ const SettingsPages: RouteObject[] = [
 			{ path: rel(settingsPages.workspace.to), element: <WorkspacePage /> },
 			{ path: rel(settingsPages.members.to), element: <MembersPage /> },
 			{ path: rel(settingsPages.apiKeys.to), element: <ApiKeysPage /> },
+			{ path: rel(settingsPages.aiProviders.to), element: <AiProvidersPage /> },
 			{
 				path: rel(settingsPages.notificationChannels.to),
 				element: <NotificationChannelsPage />,

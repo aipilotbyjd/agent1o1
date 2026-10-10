@@ -134,7 +134,7 @@ const EvaluationSettingsForm = ({
 	settings: TAgentEvaluationSettings;
 }) => {
 	const updateMutation = useUpdateAgentEvaluationSettings(ws, agentId);
-	const { data: modelCatalog } = useModelCatalog();
+	const { data: modelCatalog } = useModelCatalog(ws);
 	const [form, setForm] = useState({
 		is_enabled: settings.is_enabled,
 		model: settings.model ?? '',

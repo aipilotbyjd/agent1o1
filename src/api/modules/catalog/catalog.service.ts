@@ -38,8 +38,12 @@ export const CatalogService = {
 			})
 			.then(unwrapKey<Record<string, TTriggerPreset[]>>('presets')),
 
-	modelCatalog: (signal?: AbortSignal) =>
+	/** With `ws`, `is_available` also counts that workspace's own provider keys. */
+	modelCatalog: (ws?: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ model_catalog: TModelCatalogEntry[] }>>(E.modelCatalog, { signal })
+			.get<TApiResponse<{ model_catalog: TModelCatalogEntry[] }>>(E.modelCatalog, {
+				params: ws ? { workspace_id: ws } : undefined,
+				signal,
+			})
 			.then(unwrapKey<TModelCatalogEntry[]>('model_catalog')),
 };
