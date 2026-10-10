@@ -48,16 +48,15 @@ const OAuthCallbackPage = () => {
 	const code = searchParams.get('code');
 	const providerError = searchParams.get('error');
 
-	const [error, setError] = useState<string | null>(providerError);
+	const [exchangeError, setError] = useState<string | null>(null);
+	const error =
+		providerError ??
+		(code ? exchangeError : 'This sign-in link is missing its code. Please try again.');
 	// The code burns on first use, and StrictMode runs effects twice in dev.
 	const hasExchanged = useRef(false);
 
 	useEffect(() => {
-		if (providerError) return;
-		if (!code) {
-			setError('This sign-in link is missing its code. Please try again.');
-			return;
-		}
+		if (providerError || !code) return;
 		if (hasExchanged.current) return;
 		hasExchanged.current = true;
 

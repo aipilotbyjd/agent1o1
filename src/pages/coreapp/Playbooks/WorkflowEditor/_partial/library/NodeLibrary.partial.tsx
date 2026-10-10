@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft, Search, Sparkles, X } from 'lucide-react';
 import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
 import { useWorkflowRouteParams } from '../../_hooks/useWorkflowRouteParams.hook';
@@ -24,16 +24,15 @@ const NodeLibrary = () => {
 	const [query, setQuery] = useState('');
 	const [debouncedQuery, setDebouncedQuery] = useState('');
 	const [selected, setSelected] = useState<TNodeCategoryGroup | null>(null);
-	const prevIntentRef = useRef<typeof state.ui.leftPanelIntent | null>(null);
+	const [appliedIntent, setAppliedIntent] = useState<typeof state.ui.leftPanelIntent | null>(
+		null,
+	);
 
 	const { data: categories } = useNodeCategories();
 
-	useEffect(() => {
-		if (!categories) return;
-		const intent = state.ui.leftPanelIntent;
-		if (prevIntentRef.current === intent) return;
-		prevIntentRef.current = intent;
-
+	const intent = state.ui.leftPanelIntent;
+	if (categories && appliedIntent !== intent) {
+		setAppliedIntent(intent);
 		if (intent === 'trigger') {
 			const groups = mapApiCategoriesToGroups(categories);
 			const triggersGroup = groups.find((g) => g.slug === 'triggers-events');
@@ -41,7 +40,7 @@ const NodeLibrary = () => {
 		} else {
 			setSelected(null);
 		}
-	}, [categories, state.ui.leftPanelIntent]);
+	}
 
 	useEffect(() => {
 		const id = setTimeout(() => setDebouncedQuery(query.trim()), SEARCH_DEBOUNCE_MS);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import { useUpdateKnowledgeSource } from '@/api/modules/knowledge-base';
 import type { TKnowledgeSource } from '@/types/knowledge-base.type';
@@ -26,10 +26,14 @@ const EditKnowledgeSourceDialog = ({
 	const [name, setName] = useState('');
 	const [config, setConfig] = useState<Record<string, string>>({});
 
-	useEffect(() => {
+	const [syncedSource, setSyncedSource] = useState<TKnowledgeSource | null | undefined>(
+		undefined,
+	);
+	if (syncedSource !== source) {
+		setSyncedSource(source);
 		setName(source?.name ?? '');
 		setConfig(source?.config ?? {});
-	}, [source]);
+	}
 
 	if (!source) return null;
 

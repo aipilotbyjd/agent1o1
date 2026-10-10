@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Copy, Eye, EyeOff, Key, Lock, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { useWorkspaceContext } from '@/context/workspace';
 import {
@@ -46,15 +46,16 @@ const SecretModal = ({ open, target, isPending, onClose, onSubmit }: SecretModal
 	const [description, setDescription] = useState('');
 	const [showValue, setShowValue] = useState(false);
 
-	useEffect(() => {
-		if (open) {
-			setKey(target?.key ?? '');
-			setValue(target?.value ?? '');
-			setIsSecret(target?.is_secret ?? true);
-			setDescription(target?.description ?? '');
-			setShowValue(false);
-		}
-	}, [open, target]);
+	const [syncedTarget, setSyncedTarget] = useState<typeof target | false>(false);
+	if (!open && syncedTarget !== false) setSyncedTarget(false);
+	if (open && syncedTarget !== target) {
+		setSyncedTarget(target);
+		setKey(target?.key ?? '');
+		setValue(target?.value ?? '');
+		setIsSecret(target?.is_secret ?? true);
+		setDescription(target?.description ?? '');
+		setShowValue(false);
+	}
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();

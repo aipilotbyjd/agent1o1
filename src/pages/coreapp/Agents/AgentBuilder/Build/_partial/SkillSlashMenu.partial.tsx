@@ -107,15 +107,14 @@ export const useSkillPicker = ({
 	const firstPickable = Math.max(0, matches.findIndex(canPick));
 
 	// Once the text moves on from where the menu was closed, a fresh `/` opens it again.
-	useEffect(() => {
-		if (dismissedFor !== null && input !== dismissedFor) setDismissedFor(null);
-	}, [input, dismissedFor]);
+	if (dismissedFor !== null && input !== dismissedFor) setDismissedFor(null);
 
-	useEffect(() => {
+	// Only a new query resets the highlight; availability is read at that moment.
+	const [highlightedFor, setHighlightedFor] = useState<typeof query | undefined>(undefined);
+	if (highlightedFor !== query) {
+		setHighlightedFor(query);
 		setActiveIndex(firstPickable);
-		// Only a new query resets the highlight; availability is read at that moment.
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [query]);
+	}
 
 	const pick = (item: TSlashItem) => {
 		if (item.kind === 'command') {

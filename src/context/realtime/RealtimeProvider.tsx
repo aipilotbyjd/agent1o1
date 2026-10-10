@@ -80,6 +80,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
 			},
 		});
 
+		// eslint-disable-next-line react-hooks/set-state-in-effect
 		setEcho(newEcho);
 
 		const channel = newEcho.private(`workspace.${activeWorkspaceId}`);

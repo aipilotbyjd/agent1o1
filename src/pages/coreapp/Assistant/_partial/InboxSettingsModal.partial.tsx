@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useBrand } from '@/context/brand';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import { useToggleInbox, useUpdateInboxSettings } from '@/api/modules/assistant';
@@ -28,9 +28,12 @@ const InboxSettingsModalPartial = ({
 	const toggle = useToggleInbox(workspaceId);
 	const [form, setForm] = useState<TInboxSettings>(settings);
 
-	useEffect(() => {
-		if (isOpen) setForm(settings);
-	}, [isOpen, settings]);
+	const [syncedSettings, setSyncedSettings] = useState<TInboxSettings | null>(null);
+	if (!isOpen && syncedSettings !== null) setSyncedSettings(null);
+	if (isOpen && syncedSettings !== settings) {
+		setSyncedSettings(settings);
+		setForm(settings);
+	}
 
 	return (
 		<Modal isOpen={isOpen} setIsOpen={(open) => !open && onClose()} size='md'>

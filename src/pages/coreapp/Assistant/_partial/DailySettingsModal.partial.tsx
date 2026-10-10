@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useBrand } from '@/context/brand';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import { useAssistantApps, useUpdateDailyReport } from '@/api/modules/assistant';
@@ -47,8 +47,10 @@ const DailySettingsModalPartial = ({
 	const [form, setForm] = useState<TBriefingConfig>(config);
 	const zones = useMemo(() => timezones(), []);
 
-	useEffect(() => {
-		if (!isOpen) return;
+	const [syncedConfig, setSyncedConfig] = useState<TBriefingConfig | null>(null);
+	if (!isOpen && syncedConfig !== null) setSyncedConfig(null);
+	if (isOpen && syncedConfig !== config) {
+		setSyncedConfig(config);
 		const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 		setForm({
 			...config,
@@ -61,7 +63,7 @@ const DailySettingsModalPartial = ({
 						: config.schedule.timezone,
 			},
 		});
-	}, [isOpen, config]);
+	}
 
 	const readableApps = apps.filter((app) => app.connected && readableSources.includes(app.key));
 

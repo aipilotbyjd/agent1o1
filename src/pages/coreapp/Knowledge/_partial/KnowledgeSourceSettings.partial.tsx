@@ -53,7 +53,11 @@ const KnowledgeSourceSettingsPartial = ({
 		return () => clearTimeout(timer);
 	}, [search]);
 
-	useEffect(() => setSearch(''), [type]);
+	const [searchType, setSearchType] = useState(type);
+	if (searchType !== type) {
+		setSearchType(type);
+		setSearch('');
+	}
 
 	const options = useKnowledgeSourceOptions(
 		ws,

@@ -77,19 +77,25 @@ const ConnectRepositoryDialog = ({ ws, isOpen, onClose }: IConnectRepositoryDial
 	const previewMutation = usePreviewSkillSource(ws);
 	const createMutation = useCreateSkillSource(ws);
 
+	const [wasOpen, setWasOpen] = useState(isOpen);
+	if (wasOpen !== isOpen) {
+		setWasOpen(isOpen);
+		if (!isOpen) {
+			setCredentialId(null);
+			setQuery('');
+			setRequest(null);
+			setPreview(null);
+			setShowAdvanced(false);
+			setBranch('');
+			setPath('');
+			setIsShared(true);
+		}
+	}
+
+	const resetPreview = previewMutation.reset;
 	useEffect(() => {
-		if (isOpen) return;
-		setCredentialId(null);
-		setQuery('');
-		setRequest(null);
-		setPreview(null);
-		setShowAdvanced(false);
-		setBranch('');
-		setPath('');
-		setIsShared(true);
-		previewMutation.reset();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [isOpen]);
+		if (!isOpen) resetPreview();
+	}, [isOpen, resetPreview]);
 
 	const findSkills = (repo: string, overrides: { branch?: string; path?: string } = {}) => {
 		if (!repo.trim() || previewMutation.isPending) return;

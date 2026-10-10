@@ -1,4 +1,4 @@
-import { createElement, useEffect, useState, type ReactNode } from 'react';
+import { createElement, useEffect, useMemo, type ReactNode } from 'react';
 import { Loader2, X } from 'lucide-react';
 import {
 	fileIconFor,
@@ -9,17 +9,17 @@ import {
 
 /** A local `File` as an image URL for its thumbnail, revoked when it changes or unmounts. */
 export const useObjectUrl = (file: File | null | undefined) => {
-	const [url, setUrl] = useState<string | null>(null);
+	const url = useMemo(
+		() => (file && isImageFile(file.type, file.name) ? URL.createObjectURL(file) : null),
+		[file],
+	);
 
-	useEffect(() => {
-		if (!file || !isImageFile(file.type, file.name)) {
-			setUrl(null);
-			return;
-		}
-		const objectUrl = URL.createObjectURL(file);
-		setUrl(objectUrl);
-		return () => URL.revokeObjectURL(objectUrl);
-	}, [file]);
+	useEffect(
+		() => () => {
+			if (url) URL.revokeObjectURL(url);
+		},
+		[url],
+	);
 
 	return url;
 };

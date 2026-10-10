@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { FlaskConical, Loader2 } from 'lucide-react';
 import { notify } from '@/api/core';
 import { useAgentEvalSuites, useSaveChatAsEvalCase } from '@/api/modules/agents';
@@ -39,17 +39,20 @@ const SaveEvalCaseModal = ({
 	const [name, setName] = useState('');
 	const [expectation, setExpectation] = useState('');
 
-	useEffect(() => {
-		if (!draft) return;
-		setName(draft.input.slice(0, 60));
-		setExpectation('');
-	}, [draft]);
+	const [syncedDraft, setSyncedDraft] = useState<typeof draft | undefined>(undefined);
+	if (syncedDraft !== draft) {
+		setSyncedDraft(draft);
+		if (draft) {
+			setName(draft.input.slice(0, 60));
+			setExpectation('');
+		}
+	}
 
-	useEffect(() => {
-		setSuiteId((current) =>
-			current === NEW_SUITE && suites?.length ? String(suites[0].id) : current,
-		);
-	}, [suites]);
+	const [syncedSuites, setSyncedSuites] = useState<typeof suites | null>(null);
+	if (syncedSuites !== suites) {
+		setSyncedSuites(suites);
+		if (suiteId === NEW_SUITE && suites?.length) setSuiteId(String(suites[0].id));
+	}
 
 	const canSave = !!draft && !!name.trim() && !!expectation.trim() && !save.isPending;
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
 	X,
@@ -114,7 +114,10 @@ const SkillEditorDrawer = ({
 		({ id: string; is_enabled: boolean } & typeof emptyScript) | null
 	>(null);
 
-	useEffect(() => {
+	const resetKey = `${isOpen}:${skillId ?? ''}:${skillDetail?.id ?? ''}`;
+	const [syncedResetKey, setSyncedResetKey] = useState<string | null>(null);
+	if (syncedResetKey !== resetKey) {
+		setSyncedResetKey(resetKey);
 		if (!isOpen) {
 			setCreatedSkillId(null);
 			setForm(emptyForm);
@@ -126,9 +129,7 @@ const SkillEditorDrawer = ({
 			setNewScript(emptyScript);
 			setEditingReference(null);
 			setEditingScript(null);
-			return;
-		}
-		if (skillDetail) {
+		} else if (skillDetail) {
 			setForm({
 				name: skillDetail.name,
 				description: skillDetail.description ?? '',
@@ -141,8 +142,7 @@ const SkillEditorDrawer = ({
 		} else if (!skillId) {
 			setForm(emptyForm);
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [isOpen, skillId, skillDetail?.id]);
+	}
 
 	if (!isOpen) return null;
 

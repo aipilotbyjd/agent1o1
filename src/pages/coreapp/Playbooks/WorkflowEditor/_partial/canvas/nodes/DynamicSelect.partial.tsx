@@ -80,9 +80,11 @@ const DynamicSelect = ({ field, value, onChange, compact, nodeId, className }: P
 	}, [search]);
 
 	// A `{{variable}}` set from outside (the assistant, an import) can't be a list choice.
-	useEffect(() => {
+	const [checkedValue, setCheckedValue] = useState(value);
+	if (checkedValue !== value) {
+		setCheckedValue(value);
 		if (isTemplate(value)) setManual(true);
-	}, [value]);
+	}
 
 	const missingDependency = dynamic.dependsOn.find((key) => isBlank(nodeValues[key]));
 	const templatedDependency = dynamic.dependsOn.find((key) => isTemplate(nodeValues[key]));
@@ -121,7 +123,11 @@ const DynamicSelect = ({ field, value, onChange, compact, nodeId, className }: P
 		options.find((option) => String(option.value) === selected)?.label ?? selected;
 
 	// The highlighted row resets whenever the list changes under it.
-	useEffect(() => setActiveIndex(-1), [options, open]);
+	const [highlightSource, setHighlightSource] = useState({ options, open });
+	if (highlightSource.options !== options || highlightSource.open !== open) {
+		setHighlightSource({ options, open });
+		setActiveIndex(-1);
+	}
 
 	/** Saves the selection in the config's own shape; empty removes the key. */
 	const emit = (values: string[]) => {

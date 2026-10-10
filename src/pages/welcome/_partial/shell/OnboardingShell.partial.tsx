@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import OnboardingProvider from '../../_context/OnboardingProvider.context';
 import { useOnboardingStore } from '../../_context/OnboardingStore.context';
@@ -19,7 +19,6 @@ import ConnectAppsStep from '../steps/ConnectAppsStep.partial';
 import DiscoveryStep from '../steps/DiscoveryStep.partial';
 
 import { useOnboardingState } from '@/api/modules/onboarding';
-import { useEffect } from 'react';
 import type { TOnboardingStep } from '../../_types/onboarding.type';
 import AppLogo from '@/components/AppLogo';
 import { useAuth } from '@/context/auth';
@@ -49,10 +48,10 @@ const OnboardingShellInner = () => {
 	const { userData } = useAuth();
 	const { state, dispatch } = useOnboardingStore();
 	const { data: onboardingData, isLoading } = useOnboardingState();
-	const [initialized, setInitialized] = useState(false);
+	const initialized = useRef(false);
 
 	useEffect(() => {
-		if (onboardingData && !initialized) {
+		if (onboardingData && !initialized.current) {
 			const stepIndex = mapStepKeyToIndex(onboardingData.current_step);
 			const workspace = userData?.current_workspace;
 
@@ -75,9 +74,9 @@ const OnboardingShellInner = () => {
 						: null),
 				},
 			});
-			setInitialized(true);
+			initialized.current = true;
 		}
-	}, [onboardingData, initialized, dispatch, userData]);
+	}, [onboardingData, dispatch, userData]);
 
 	const {
 		currentStep: step,

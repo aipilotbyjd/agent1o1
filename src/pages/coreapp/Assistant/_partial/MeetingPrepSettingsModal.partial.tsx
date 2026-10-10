@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useBrand } from '@/context/brand';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import { useUpdateMeetingPrep } from '@/api/modules/assistant';
@@ -27,9 +27,12 @@ const MeetingPrepSettingsModalPartial = ({
 	const update = useUpdateMeetingPrep(workspaceId);
 	const [form, setForm] = useState(config);
 
-	useEffect(() => {
-		if (isOpen) setForm(config);
-	}, [isOpen, config]);
+	const [syncedConfig, setSyncedConfig] = useState<typeof config | null>(null);
+	if (!isOpen && syncedConfig !== null) setSyncedConfig(null);
+	if (isOpen && syncedConfig !== config) {
+		setSyncedConfig(config);
+		setForm(config);
+	}
 
 	const save = () =>
 		update.mutate(

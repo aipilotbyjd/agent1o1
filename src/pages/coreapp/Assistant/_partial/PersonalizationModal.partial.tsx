@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import dayjs from 'dayjs';
 import { useBrand } from '@/context/brand';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
@@ -54,9 +54,12 @@ const PersonalizationModalPartial = ({
 
 	const style = styles.find((entry) => entry.kind === kind);
 
-	useEffect(() => {
+	const styleKey = `${style?.version ?? ''}:${style?.notes ?? ''}`;
+	const [syncedStyleKey, setSyncedStyleKey] = useState<string | null>(null);
+	if (syncedStyleKey !== styleKey) {
+		setSyncedStyleKey(styleKey);
 		setDraft(style?.notes ?? '');
-	}, [style?.notes, style?.version]);
+	}
 
 	const isDirty = draft.trim() !== (style?.notes ?? '').trim();
 

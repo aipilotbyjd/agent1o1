@@ -95,9 +95,11 @@ export const EditorTooltip = ({
 
 	// Never leave a tooltip hanging over a menu that just opened, and never let a
 	// pending timer fire after the trigger unmounts.
-	useEffect(() => {
+	const [wasDisabled, setWasDisabled] = useState(disabled);
+	if (wasDisabled !== disabled) {
+		setWasDisabled(disabled);
 		if (disabled) setVisible(false);
-	}, [disabled]);
+	}
 
 	useEffect(
 		() => () => {
@@ -157,9 +159,11 @@ export const EditableWorkflowName = ({
 	const [draft, setDraft] = useState(name);
 	const inputRef = useRef<HTMLInputElement>(null);
 
-	useEffect(() => {
+	const [syncedName, setSyncedName] = useState(name);
+	if (syncedName !== name) {
+		setSyncedName(name);
 		setDraft(name);
-	}, [name]);
+	}
 
 	useEffect(() => {
 		if (isEditing) {
@@ -400,20 +404,18 @@ const Topbar = () => {
 	const isRunDisabled = state.nodes.length === 0 && state.ui.emptyCanvasView !== 'chat-started';
 
 	// Live Run Timer
+	const [timedRun, setTimedRun] = useState(isRunning);
+	if (timedRun !== isRunning) {
+		setTimedRun(isRunning);
+		setRunSeconds(0);
+	}
 	useEffect(() => {
-		let timer: number | null = null;
-		if (isRunning) {
-			const start = Date.now();
-			setRunSeconds(0);
-			timer = window.setInterval(() => {
-				setRunSeconds(Math.floor((Date.now() - start) / 1000));
-			}, 500);
-		} else {
-			setRunSeconds(0);
-		}
-		return () => {
-			if (timer) clearInterval(timer);
-		};
+		if (!isRunning) return;
+		const start = Date.now();
+		const timer = window.setInterval(() => {
+			setRunSeconds(Math.floor((Date.now() - start) / 1000));
+		}, 500);
+		return () => clearInterval(timer);
 	}, [isRunning]);
 
 	// Escape closes whichever topbar menu is open.

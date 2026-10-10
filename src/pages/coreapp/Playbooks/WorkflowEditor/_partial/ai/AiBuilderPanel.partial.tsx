@@ -350,9 +350,13 @@ const AiBuilderPanel = () => {
 	const activeTextTarget = activeItem?.kind === 'text' ? activeItem.text : '';
 	const [displayedActiveText, setDisplayedActiveText] = useState('');
 	const displayedRef = useRef('');
+	const [typedFor, setTypedFor] = useState(activeItem?.id);
+	if (typedFor !== activeItem?.id) {
+		setTypedFor(activeItem?.id);
+		setDisplayedActiveText('');
+	}
 	useEffect(() => {
 		displayedRef.current = '';
-		setDisplayedActiveText('');
 	}, [activeItem?.id]);
 	useEffect(() => {
 		if (!isThinking || activeItem?.kind !== 'text') return;

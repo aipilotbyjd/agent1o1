@@ -27,10 +27,9 @@ const AgentDataPanel = ({ ws, agentId }: TProps) => {
 	// it once, then clear so re-renders don't drag the user back here.
 	const requestedSection = useAgentBuilderStore((state) => state.requestedDataSection);
 	const clearRequestedSection = useAgentBuilderStore((state) => state.clearRequestedDataSection);
+	if (requestedSection && section !== requestedSection) setSection(requestedSection);
 	useEffect(() => {
-		if (!requestedSection) return;
-		setSection(requestedSection);
-		clearRequestedSection();
+		if (requestedSection) clearRequestedSection();
 	}, [requestedSection, clearRequestedSection]);
 
 	return (

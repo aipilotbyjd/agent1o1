@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useBrand } from '@/context/brand';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import { useCreateTrigger } from '@/api/modules/assistant';
@@ -57,15 +57,18 @@ const TriggerModalPartial = ({ workspaceId, isOpen, onClose }: ITriggerModalProp
 	const [cron, setCron] = useState('');
 	const [runAt, setRunAt] = useState('');
 
-	useEffect(() => {
-		if (!isOpen) return;
-		setType('schedule');
-		setName('');
-		setPrompt('');
-		setAdvanced(false);
-		setCron('');
-		setRunAt('');
-	}, [isOpen]);
+	const [wasOpen, setWasOpen] = useState(isOpen);
+	if (wasOpen !== isOpen) {
+		setWasOpen(isOpen);
+		if (isOpen) {
+			setType('schedule');
+			setName('');
+			setPrompt('');
+			setAdvanced(false);
+			setCron('');
+			setRunAt('');
+		}
+	}
 
 	const save = () =>
 		create.mutate(

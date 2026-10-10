@@ -33,11 +33,13 @@ export const useAssistantConversation = (workspaceId: string, sessionId: string)
 	const activeTurn = sessionQuery.data?.active_turn ?? null;
 	const isWorking = activeTurn !== null && IN_FLIGHT.includes(activeTurn.status);
 
-	useEffect(() => {
+	const [conversationFor, setConversationFor] = useState(sessionId);
+	if (conversationFor !== sessionId) {
+		setConversationFor(sessionId);
 		setDraft('');
 		setTools([]);
 		setLastError(null);
-	}, [sessionId]);
+	}
 
 	useEffect(() => {
 		if (!echo || !workspaceId || !sessionId) return undefined;

@@ -424,12 +424,18 @@ const WorkflowLaunchSurface = () => {
 		window.setTimeout(() => setCopiedInterfaceUrl(false), 1600);
 	};
 
+	const typingKey = hasUserEditedPrompt ? null : activePrompt;
+	const [typingFor, setTypingFor] = useState<string | null>(null);
+	if (typingFor !== typingKey) {
+		setTypingFor(typingKey);
+		if (typingKey !== null) setTypedText('');
+	}
+
 	useEffect(() => {
 		if (hasUserEditedPrompt) return undefined;
 
 		let charIndex = 0;
 		let cycleTimer: number | undefined;
-		setTypedText('');
 
 		const typingTimer = window.setInterval(() => {
 			charIndex += 1;

@@ -1218,22 +1218,20 @@ const BuildPage = () => {
 		!!parentSessionId &&
 		!!agentSessions?.some((session) => String(session.id) === String(parentSessionId));
 
-	useEffect(() => {
-		if (!conversationId) {
-			if (loadedSessionId === null) return;
-
+	if (!conversationId) {
+		if (loadedSessionId !== null) {
 			setLoadedSessionId(null);
 			setChatHistory([]);
-			return;
 		}
-
-		if (loadedSessionId === conversationId) return;
-		if (!openedSession || String(openedSession.id) !== String(conversationId)) return;
-
+	} else if (
+		loadedSessionId !== conversationId &&
+		openedSession &&
+		String(openedSession.id) === String(conversationId)
+	) {
 		setLoadedSessionId(conversationId);
 		setChatHistory(transcriptToMessages(openedSession.messages ?? []));
 		setIsPreviewMode(true);
-	}, [conversationId, openedSession, loadedSessionId]);
+	}
 
 	// An unsent message survives a chat switch, a tab change and a reload — it is
 	// parked per agent and per chat, so two chats never share one draft.
@@ -1385,10 +1383,9 @@ const BuildPage = () => {
 	const [instructionsChange, setInstructionsChange] = useState('');
 	const [agentModel, setAgentModel] = useState('');
 
-	useEffect(() => {
-		if (agentModel || modelOptions.length === 0) return;
+	if (!agentModel && modelOptions.length > 0) {
 		setAgentModel((modelOptions.find((m) => m.isAvailable) ?? modelOptions[0]).id);
-	}, [agentModel, modelOptions]);
+	}
 	const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
 	const [allowSelfUpdates, setAllowSelfUpdates] = useState(false);
 	const [allowSkillEditing, setAllowSkillEditing] = useState(true);
@@ -1493,8 +1490,9 @@ const BuildPage = () => {
 		setDarkModeStatus(isDarkTheme ? DARK_MODE.LIGHT : DARK_MODE.DARK);
 	};
 
-	useEffect(() => {
-		if (!existingAgent) return;
+	const [syncedAgent, setSyncedAgent] = useState<typeof existingAgent | null>(null);
+	if (existingAgent && syncedAgent !== existingAgent) {
+		setSyncedAgent(existingAgent);
 		setAgentName(existingAgent.name);
 		setAgentDescription(existingAgent.description ?? '');
 		setAgentInstructions(existingAgent.instructions ?? '');
@@ -1506,7 +1504,7 @@ const BuildPage = () => {
 		if (existingAgent.model_catalog_id) {
 			setAgentModel(existingAgent.model_catalog_id);
 		}
-	}, [existingAgent]);
+	}
 
 	// Returns the persisted agent's id so callers (chat, settings) can use it immediately.
 	const ensureAgentPersisted = async (overrides?: {

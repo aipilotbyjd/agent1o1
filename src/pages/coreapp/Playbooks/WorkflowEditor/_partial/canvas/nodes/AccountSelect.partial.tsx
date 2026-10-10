@@ -227,18 +227,23 @@ const AccountSelect = ({ connectorKey, value, onChange, popupOnly = false, onClo
 		if (popupOnly && !open) onClose?.();
 	}, [popupOnly, open, onClose]);
 
-	useEffect(() => {
-		if (
-			popupOnly &&
-			open &&
-			!isLoading &&
-			!isError &&
-			accounts.length === 0 &&
-			connector &&
-			!isUnavailable
-		)
-			setAdding(true);
-	}, [popupOnly, open, isLoading, isError, accounts.length, connector, isUnavailable]);
+	// An empty account list opens straight into "connect", once per change of
+	// what it depends on, so cancelling it sticks.
+	const shouldStartAdding = Boolean(
+		popupOnly &&
+		open &&
+		!isLoading &&
+		!isError &&
+		accounts.length === 0 &&
+		connector &&
+		!isUnavailable,
+	);
+	const addingKey = `${popupOnly}:${open}:${isLoading}:${isError}:${accounts.length}:${connector?.id ?? ''}:${isUnavailable}`;
+	const [syncedAddingKey, setSyncedAddingKey] = useState<string | null>(null);
+	if (syncedAddingKey !== addingKey) {
+		setSyncedAddingKey(addingKey);
+		if (shouldStartAdding) setAdding(true);
+	}
 
 	const connectNew = () => {
 		setError(undefined);

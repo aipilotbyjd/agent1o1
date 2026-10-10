@@ -28,9 +28,11 @@ const ConnectAppModal = () => {
 	const close = () => dispatch({ type: 'SET_FIELD', payload: { selectedAppForAuth: null } });
 
 	// Each app opens with a blank form.
-	useEffect(() => {
+	const [formFor, setFormFor] = useState(selectedAppForAuth?.id);
+	if (formFor !== selectedAppForAuth?.id) {
+		setFormFor(selectedAppForAuth?.id);
 		setFieldValues({});
-	}, [selectedAppForAuth?.id]);
+	}
 
 	// Let the tick land, then get out of the way.
 	useEffect(() => {

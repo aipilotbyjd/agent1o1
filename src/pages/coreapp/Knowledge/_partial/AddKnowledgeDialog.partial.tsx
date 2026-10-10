@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import {
@@ -58,19 +58,26 @@ const AddKnowledgeDialog = ({
 	const app = apps?.find((candidate) => candidate.type === kind);
 
 	// Each app starts on the member's first account, with nothing picked.
-	useEffect(() => {
+	const [syncedPick, setSyncedPick] = useState<{ kind: TKnowledgeKind; app: typeof app } | null>(
+		null,
+	);
+	if (syncedPick?.kind !== kind || syncedPick.app !== app) {
+		setSyncedPick({ kind, app });
 		setCredentialId(app?.accounts[0]?.id);
 		setConfig({});
 		// A name filled in from the last pick belongs to that app.
 		if (!nameTouched) setName('');
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [kind, app]);
+	}
 
-	useEffect(() => {
-		if (!isOpen) return;
-		setKind(initialKind);
-		setCollection(defaultCollection ?? '');
-	}, [isOpen, initialKind, defaultCollection]);
+	const openKey = isOpen ? `${initialKind}:${defaultCollection ?? ''}` : null;
+	const [syncedOpenKey, setSyncedOpenKey] = useState<string | null>(null);
+	if (syncedOpenKey !== openKey) {
+		setSyncedOpenKey(openKey);
+		if (isOpen) {
+			setKind(initialKind);
+			setCollection(defaultCollection ?? '');
+		}
+	}
 
 	if (!isOpen) return null;
 
