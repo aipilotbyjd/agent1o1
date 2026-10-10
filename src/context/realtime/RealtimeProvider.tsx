@@ -33,13 +33,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
 	}, []);
 
 	useEffect(() => {
-		if (!token || !activeWorkspaceId) {
-			if (echo) {
-				echo.disconnect();
-				setEcho(null);
-			}
-			return;
-		}
+		if (!token || !activeWorkspaceId) return;
 
 		const apiUrl = import.meta.env.VITE_API_URL || 'https://agent1o1.test/api/v1';
 		const apiBase = apiUrl.replace('/api/v1', '');
@@ -100,8 +94,9 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
 
 		return () => {
 			newEcho.disconnect();
+			setEcho(null);
 		};
-	}, [activeWorkspaceId, token]);
+	}, [activeWorkspaceId, token, qc]);
 
 	return <RealtimeContext.Provider value={{ echo }}>{children}</RealtimeContext.Provider>;
 };

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams } from 'react-router';
 import { Link } from 'react-router';
 import {
@@ -115,6 +116,7 @@ const BillingOverviewPage = () => {
 	const cancelSubscription = useCancelSubscription(workspaceId!);
 	const resumeSubscription = useResumeSubscription(workspaceId!);
 	const { confirm } = useConfirm();
+	const [now] = useState(Date.now);
 
 	const toWorkspacePath = (to: string) => withWorkspace(to, workspaceId!);
 
@@ -167,7 +169,7 @@ const BillingOverviewPage = () => {
 	const statusCfg = status ? statusConfig[status] : null;
 
 	const cancelsAt = subscription?.ends_at;
-	const cancelsAtInFuture = cancelsAt ? new Date(cancelsAt).getTime() > Date.now() : false;
+	const cancelsAtInFuture = cancelsAt ? new Date(cancelsAt).getTime() > now : false;
 	const canCancel =
 		!!subscription &&
 		!isLifetime &&

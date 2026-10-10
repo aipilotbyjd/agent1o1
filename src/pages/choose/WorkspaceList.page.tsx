@@ -234,7 +234,7 @@ const WorkspacesPage = () => {
 		const newParams = new URLSearchParams(searchParams);
 		newParams.delete('create');
 		setSearchParams(newParams, { replace: true });
-	}, []);
+	}, [searchParams, setSearchParams]);
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {

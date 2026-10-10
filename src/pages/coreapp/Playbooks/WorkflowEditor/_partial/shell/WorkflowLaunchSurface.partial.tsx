@@ -45,14 +45,14 @@ import {
 	X,
 	GitBranch,
 	FileText,
+	type LucideIcon,
 } from 'lucide-react';
-import { ComponentType } from 'react';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 
 interface ILaunchTrigger {
 	label: string;
 	description: string;
-	icon: ComponentType<any>;
+	icon: LucideIcon;
 	tone: string;
 }
 

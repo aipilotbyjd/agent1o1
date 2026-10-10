@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOutletContext, useNavigate, useParams } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -250,20 +250,20 @@ const BlueprintsListPage = () => {
 	/** Templates and collections both carry `name` and `created_at`; only the two
 	 *  template kinds carry `usage_count`, so collections fall back to their
 	 *  item count for Popularity. */
-	const bySortMode = <TItem extends { name: string; created_at?: string }>(
-		a: TItem,
-		b: TItem,
-	) => {
-		if (sortMode === 'alpha') return a.name.localeCompare(b.name);
-		if (sortMode === 'popular') {
-			const weight = (item: TItem) =>
-				(item as { usage_count?: number; item_count?: number }).usage_count ??
-				(item as { item_count?: number }).item_count ??
-				0;
-			return weight(b) - weight(a) || a.name.localeCompare(b.name);
-		}
-		return (b.created_at ?? '').localeCompare(a.created_at ?? '');
-	};
+	const bySortMode = useCallback(
+		<TItem extends { name: string; created_at?: string }>(a: TItem, b: TItem) => {
+			if (sortMode === 'alpha') return a.name.localeCompare(b.name);
+			if (sortMode === 'popular') {
+				const weight = (item: TItem) =>
+					(item as { usage_count?: number; item_count?: number }).usage_count ??
+					(item as { item_count?: number }).item_count ??
+					0;
+				return weight(b) - weight(a) || a.name.localeCompare(b.name);
+			}
+			return (b.created_at ?? '').localeCompare(a.created_at ?? '');
+		},
+		[sortMode],
+	);
 
 	const filteredWorkflows = useMemo(
 		() =>
@@ -277,7 +277,7 @@ const BlueprintsListPage = () => {
 				)
 				.slice()
 				.sort(bySortMode),
-		[workflows, query, selectedCategory, sortMode],
+		[workflows, query, selectedCategory, bySortMode],
 	);
 	const filteredAgents = useMemo(
 		() =>
@@ -291,7 +291,7 @@ const BlueprintsListPage = () => {
 				)
 				.slice()
 				.sort(bySortMode),
-		[agents, query, selectedCategory, sortMode],
+		[agents, query, selectedCategory, bySortMode],
 	);
 	const filteredCollections = useMemo(
 		() =>
@@ -304,7 +304,7 @@ const BlueprintsListPage = () => {
 				)
 				.slice()
 				.sort(bySortMode),
-		[collections, query, sortMode],
+		[collections, query, bySortMode],
 	);
 
 	const totalTemplates = (workflows?.length ?? 0) + (agents?.length ?? 0);

@@ -147,6 +147,16 @@ export default tseslint.config(
 		rules: {
 			'@typescript-eslint/ban-ts-comment': 'off',
 			'@typescript-eslint/ban-ts-ignore': 'off',
+			'@typescript-eslint/no-unused-vars': [
+				'error',
+				{
+					argsIgnorePattern: '^_',
+					varsIgnorePattern: '^_',
+					caughtErrorsIgnorePattern: '^_',
+					destructuredArrayIgnorePattern: '^_',
+					ignoreRestSiblings: true,
+				},
+			],
 			'react/jsx-curly-brace-presence': ['warn', { props: 'never', children: 'ignore' }],
 			'react/self-closing-comp': ['warn', { component: true, html: false }],
 			'template-curly-spacing': ['error', 'never'],

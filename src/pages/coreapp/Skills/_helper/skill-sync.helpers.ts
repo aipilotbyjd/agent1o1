@@ -3,7 +3,7 @@ import type { TSkillSourceConflict } from '@/types/agent-skill.type';
 export const isValidSkillExportPath = (path: string) =>
 	path.length > 0 &&
 	path.length <= 200 &&
-	!/(^\/|\\|[\x00-\x1f\x7f]|(^|\/)\.{1,2}(\/|$)|\/\/|\/$)/.test(path);
+	!/(^\/|\\|\p{Cc}|(^|\/)\.{1,2}(\/|$)|\/\/|\/$)/u.test(path);
 
 export const conflictFingerprint = (conflict: TSkillSourceConflict) =>
 	JSON.stringify([conflict.commit_sha, conflict.local, conflict.remote]);

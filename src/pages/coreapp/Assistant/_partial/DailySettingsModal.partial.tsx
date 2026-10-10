@@ -45,7 +45,7 @@ const DailySettingsModalPartial = ({
 	const update = useUpdateDailyReport(workspaceId);
 	const { data: apps = [] } = useAssistantApps(workspaceId);
 	const [form, setForm] = useState<TBriefingConfig>(config);
-	const zones = useMemo(timezones, []);
+	const zones = useMemo(() => timezones(), []);
 
 	useEffect(() => {
 		if (!isOpen) return;

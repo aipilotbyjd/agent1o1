@@ -987,6 +987,8 @@ const ArtifactCard = ({
 	);
 };
 
+const messageId = (prefix: string) => `${prefix}-${Date.now()}`;
+
 const BuildPage = () => {
 	const { agentId: routeAgentId, workspaceId: routeWorkspaceId } = useParams<{
 		agentId?: string;
@@ -2019,7 +2021,7 @@ const BuildPage = () => {
 		setShowLatestButton(false);
 
 		const userMsg: TMessage = {
-			id: `user-${Date.now()}`,
+			id: messageId('user'),
 			sender: 'user',
 			text: prompt,
 			retryText: trimmed,
@@ -2098,7 +2100,7 @@ const BuildPage = () => {
 				.join('');
 
 			const agentMsg: TMessage = {
-				id: `agent-${Date.now()}`,
+				id: messageId('agent'),
 				sender: 'agent',
 				text: replyText || streamedText || (paused ? AWAITING_APPROVAL_TEXT : ''),
 				timestamp: new Date().toLocaleTimeString([], {
@@ -2136,7 +2138,7 @@ const BuildPage = () => {
 				setChatHistory((prev) => [
 					...prev,
 					{
-						id: `agent-stopped-${Date.now()}`,
+						id: messageId('agent-stopped'),
 						sender: 'agent',
 						text: partialText || '_Stopped before the agent replied._',
 						timestamp: new Date().toLocaleTimeString([], {
@@ -2158,7 +2160,7 @@ const BuildPage = () => {
 				setChatHistory((prev) => [
 					...prev,
 					{
-						id: `agent-error-${Date.now()}`,
+						id: messageId('agent-error'),
 						sender: 'agent',
 						text: "Sorry, I couldn't process that - please try again.",
 						timeline: partial.length > 0 ? partial : undefined,
