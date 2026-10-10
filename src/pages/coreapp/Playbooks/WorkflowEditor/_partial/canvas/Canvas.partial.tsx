@@ -16,7 +16,7 @@ import {
 	type OnConnectEnd,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
 	Bot,
@@ -156,10 +156,10 @@ const Canvas = () => {
 	// the ResizeObserver reports back. Rebuilding every node object on each selection
 	// change or drag frame therefore made the whole canvas blink out for ~120ms.
 	// Each node keeps its previous object unless one of its own inputs changed.
-	const nodeIdentityCache = useRef(new Map<string, TCanvasNode>());
-	const nodeSourceCache = useRef(new Map<string, TCanvasNode>());
+	const [nodeIdentityCache] = useState(() => new Map<string, TCanvasNode>());
+	const [nodeSourceCache] = useState(() => new Map<string, TCanvasNode>());
 	const storeNodes = useMemo(() => {
-		const cache = nodeIdentityCache.current;
+		const cache = nodeIdentityCache;
 		const seen = new Set<string>();
 		const result = state.nodes.map((node) => {
 			seen.add(node.id);
@@ -175,7 +175,7 @@ const Canvas = () => {
 				cached.position === node.position &&
 				cached.data.isActiveRunNode === isActiveRunNode &&
 				cached.data.validationIssues === validationIssues &&
-				nodeSourceCache.current.get(node.id) === node
+				nodeSourceCache.get(node.id) === node
 			) {
 				return cached;
 			}
@@ -190,17 +190,24 @@ const Canvas = () => {
 				},
 			} as TCanvasNode;
 			cache.set(node.id, next);
-			nodeSourceCache.current.set(node.id, node);
+			nodeSourceCache.set(node.id, node);
 			return next;
 		});
 		cache.forEach((_, id) => {
 			if (!seen.has(id)) {
 				cache.delete(id);
-				nodeSourceCache.current.delete(id);
+				nodeSourceCache.delete(id);
 			}
 		});
 		return result;
-	}, [issuesByNode, state.nodes, state.run.currentNodeId, state.ui.selectedNodeIds]);
+	}, [
+		issuesByNode,
+		nodeIdentityCache,
+		nodeSourceCache,
+		state.nodes,
+		state.run.currentNodeId,
+		state.ui.selectedNodeIds,
+	]);
 
 	// React Flow owns node positions while the user is interacting; the reducer store
 	// stays the source of truth and receives the move once the drag ends. Feeding
@@ -208,7 +215,9 @@ const Canvas = () => {
 	// what stops the canvas from blinking.
 	const [flowNodes, setFlowNodes] = useState<TCanvasNode[]>(() => storeNodes);
 	const flowNodesRef = useRef(flowNodes);
-	flowNodesRef.current = flowNodes;
+	useLayoutEffect(() => {
+		flowNodesRef.current = flowNodes;
+	});
 	const isDraggingRef = useRef(false);
 
 	// Re-seed from the store whenever it changes for a reason other than an in-flight
@@ -216,7 +225,9 @@ const Canvas = () => {
 	// that lands mid-drag is remembered and applied once the drag finishes, so an AI
 	// builder edit during a drag is not silently dropped.
 	const storeNodesRef = useRef(storeNodes);
-	storeNodesRef.current = storeNodes;
+	useLayoutEffect(() => {
+		storeNodesRef.current = storeNodes;
+	});
 	const pendingReseedRef = useRef(false);
 	useEffect(() => {
 		if (isDraggingRef.current) {
@@ -230,7 +241,9 @@ const Canvas = () => {
 	// Mirrors the current selection so onNodesChange can apply select-diffs without
 	// depending on (and re-creating the callback on) selection state itself.
 	const selectionRef = useRef<string[]>([]);
-	selectionRef.current = state.ui.selectedNodeIds;
+	useLayoutEffect(() => {
+		selectionRef.current = state.ui.selectedNodeIds;
+	});
 
 	const onNodesChange = useCallback(
 		(changes: NodeChange<TCanvasNode>[]) => {

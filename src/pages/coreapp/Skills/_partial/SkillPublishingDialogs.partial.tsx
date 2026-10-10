@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import Modal, { ModalHeader, ModalBody } from '@/components/ui/Modal';
 import { ApiError, notify } from '@/api/core';
@@ -259,7 +259,9 @@ export const ForkSkillSourceDialog = ({
 	const qc = useQueryClient();
 	const completed = useRef(false);
 	const closeRef = useRef(onClose);
-	closeRef.current = onClose;
+	useLayoutEffect(() => {
+		closeRef.current = onClose;
+	});
 	useEffect(() => {
 		if (source.two_way && !source.fork_request && !completed.current) {
 			completed.current = true;

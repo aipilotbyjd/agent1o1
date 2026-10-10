@@ -33,7 +33,7 @@ import {
 	Zap,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import DARK_MODE from '@/constants/darkMode.constant';
@@ -391,7 +391,9 @@ const Topbar = () => {
 	const [isSaveAsTemplateOpen, setIsSaveAsTemplateOpen] = useState(false);
 	const [runSeconds, setRunSeconds] = useState(0);
 	const stateRef = useRef(state);
-	stateRef.current = state;
+	useLayoutEffect(() => {
+		stateRef.current = state;
+	});
 	const publishingRef = useRef(false);
 
 	const isRunning = state.run.status === 'running';

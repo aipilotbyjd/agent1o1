@@ -159,7 +159,10 @@ const AccountSelect = ({ connectorKey, value, onChange, popupOnly = false, onClo
 	const radioName = useId();
 	const [error, setError] = useState<string>();
 	const headingId = useId();
-	const { refs, context } = useFloating({
+	const {
+		refs: { setReference, setFloating },
+		context,
+	} = useFloating({
 		open,
 		onOpenChange: (next) => {
 			setOpen(next);
@@ -276,7 +279,7 @@ const AccountSelect = ({ connectorKey, value, onChange, popupOnly = false, onClo
 			onKeyDown={(event) => event.stopPropagation()}>
 			<div className={popupOnly ? 'hidden' : undefined}>
 				<button
-					ref={refs.setReference}
+					ref={setReference}
 					type='button'
 					disabled={busy || (empty && isUnavailable)}
 					{...getReferenceProps({
@@ -333,7 +336,7 @@ const AccountSelect = ({ connectorKey, value, onChange, popupOnly = false, onClo
 						className='fixed inset-0 z-[9999] grid items-center justify-items-center overflow-y-auto bg-zinc-950/45 p-4 backdrop-blur-[3px] sm:p-8'>
 						<FloatingFocusManager context={context}>
 							<div
-								ref={refs.setFloating}
+								ref={setFloating}
 								{...getFloatingProps({
 									onPointerDown: (event) => event.stopPropagation(),
 									onClick: (event) => event.stopPropagation(),

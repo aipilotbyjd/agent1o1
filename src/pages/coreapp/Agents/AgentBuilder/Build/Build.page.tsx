@@ -1160,7 +1160,7 @@ const BuildPage = () => {
 		if (linkedSessionId) openSession(linkedSessionId);
 	}, [linkedSessionId, openSession]);
 
-	const loadedSessionRef = useRef<string | null>(null);
+	const [loadedSessionId, setLoadedSessionId] = useState<string | null>(null);
 
 	const {
 		data: openedSession,
@@ -1220,20 +1220,20 @@ const BuildPage = () => {
 
 	useEffect(() => {
 		if (!conversationId) {
-			if (loadedSessionRef.current === null) return;
+			if (loadedSessionId === null) return;
 
-			loadedSessionRef.current = null;
+			setLoadedSessionId(null);
 			setChatHistory([]);
 			return;
 		}
 
-		if (loadedSessionRef.current === conversationId) return;
+		if (loadedSessionId === conversationId) return;
 		if (!openedSession || String(openedSession.id) !== String(conversationId)) return;
 
-		loadedSessionRef.current = conversationId;
+		setLoadedSessionId(conversationId);
 		setChatHistory(transcriptToMessages(openedSession.messages ?? []));
 		setIsPreviewMode(true);
-	}, [conversationId, openedSession]);
+	}, [conversationId, openedSession, loadedSessionId]);
 
 	// An unsent message survives a chat switch, a tab change and a reload — it is
 	// parked per agent and per chat, so two chats never share one draft.
@@ -1267,7 +1267,7 @@ const BuildPage = () => {
 					: undefined,
 			run: () => {
 				newSession();
-				loadedSessionRef.current = null;
+				setLoadedSessionId(null);
 				setChatHistory([]);
 			},
 		},
@@ -2070,7 +2070,7 @@ const BuildPage = () => {
 					exact: true,
 				});
 				// This transcript is already on screen — keep the loader off it.
-				loadedSessionRef.current = sessionId;
+				setLoadedSessionId(sessionId);
 				openSession(sessionId);
 			}
 			setChatHistory((prev) => [...prev, userMsg]);
@@ -2977,7 +2977,7 @@ const BuildPage = () => {
 														// Leaves the stored session intact — it stays in the
 														// aside's Recents; the next message opens a new one.
 														newSession();
-														loadedSessionRef.current = null;
+														setLoadedSessionId(null);
 														setChatHistory([]);
 														notify.success('Chat history cleared!');
 													}}
@@ -3133,7 +3133,7 @@ const BuildPage = () => {
 										/>
 									)}
 								{conversationId &&
-								loadedSessionRef.current !== conversationId &&
+								loadedSessionId !== conversationId &&
 								isSessionError ? (
 									<div
 										role='alert'
@@ -3147,7 +3147,7 @@ const BuildPage = () => {
 										</button>
 									</div>
 								) : conversationId &&
-								  loadedSessionRef.current !== conversationId &&
+								  loadedSessionId !== conversationId &&
 								  isSessionPending ? (
 									<div
 										role='status'

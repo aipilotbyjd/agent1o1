@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
 import { ChevronDown, X } from 'lucide-react';
 import type { TNodeField } from '../../../_types/node.type';
@@ -95,12 +95,12 @@ const toJsonText = (value: unknown) =>
 const JsonFieldInput = ({ field, value, onChange, compact, nodeId }: FieldInputProps) => {
 	const cls = compact ? compactInputClass : inputClass;
 	const [text, setText] = useState(() => toJsonText(value));
-	const lastEmitted = useRef(toJsonText(value));
+	const [lastEmitted, setLastEmitted] = useState(() => toJsonText(value));
 
 	// A change from outside (the assistant, an undo) replaces the text.
 	const incoming = toJsonText(value);
-	if (incoming !== lastEmitted.current) {
-		lastEmitted.current = incoming;
+	if (incoming !== lastEmitted) {
+		setLastEmitted(incoming);
 		setText(incoming);
 	}
 
@@ -114,7 +114,7 @@ const JsonFieldInput = ({ field, value, onChange, compact, nodeId }: FieldInputP
 		} catch {
 			/* not JSON (yet) — keep the text */
 		}
-		lastEmitted.current = toJsonText(parsed);
+		setLastEmitted(toJsonText(parsed));
 		onChange(parsed);
 	};
 
@@ -173,18 +173,18 @@ const KeyValueObjectInput = ({ field, value, onChange, compact }: FieldInputProp
 	const [rows, setRows] = useState<TKvRow[]>(() => objectToRows(value));
 	// Compared against the stored value as-is, so a non-string value (`{a: 1}`)
 	// doesn't read as an outside change on every render.
-	const lastEmitted = useRef(JSON.stringify(value ?? {}));
+	const [lastEmitted, setLastEmitted] = useState(() => JSON.stringify(value ?? {}));
 
 	const incoming = JSON.stringify(value ?? {});
-	if (incoming !== lastEmitted.current) {
-		lastEmitted.current = incoming;
+	if (incoming !== lastEmitted) {
+		setLastEmitted(incoming);
 		setRows(objectToRows(value));
 	}
 
 	const update = (next: TKvRow[]) => {
 		setRows(next);
 		const object = rowsToObject(next);
-		lastEmitted.current = JSON.stringify(object);
+		setLastEmitted(JSON.stringify(object));
 		onChange(object);
 	};
 
