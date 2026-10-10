@@ -11,13 +11,13 @@ import type {
 import type { TApprovalPolicy } from '@/types/agent-action.type';
 import type { TWorkflow } from '@/types/workflow.type';
 import type { TAgentSkill } from '@/types/agent-skill.type';
+import { AgentSessionEndpoints as SE } from '@/api/modules/agent-sessions/agent-sessions.endpoints';
 import {
 	AgentToolBindingEndpoints as TB,
 	AgentWorkflowToolEndpoints as WF,
 	AgentSkillAttachmentEndpoints as SK,
 	AgentSubagentEndpoints as SA,
-	AgentSessionEndpoints as SE,
-} from './agents.endpoints';
+} from './agent-tools.endpoints';
 
 export const AgentToolBindingService = {
 	list: (ws: string, agentId: string, signal?: AbortSignal) =>

@@ -13,7 +13,7 @@ import type {
 	TWorkspaceAgentPolicy,
 } from '@/types/agent-action.type';
 import type { TAgentSessionStreamEvent } from '@/types/agent.type';
-import { openAgentTurnStream } from '@/api/modules/agents/agents.realtime';
+import { openAgentTurnStream } from '@/api/modules/agent-sessions/agent-sessions.realtime';
 import type { IEchoLike } from '@/api/modules/workflow-builder/workflow-builder.realtime';
 import {
 	AgentActionEndpoints as E,

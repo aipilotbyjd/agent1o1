@@ -12,7 +12,7 @@ import {
 	agentWorkflowToolKeys,
 	agentSkillAttachmentKeys,
 	agentSubagentKeys,
-} from './agents.keys';
+} from './agent-tools.keys';
 
 // ─── Tool bindings ───────────────────────────────────────────
 

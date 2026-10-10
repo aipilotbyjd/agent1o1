@@ -86,9 +86,6 @@ import {
 	useUpdateAgent,
 	useDeleteAgent,
 	useDuplicateAgent,
-	useAgentSkills,
-	useAttachAgentSkill,
-	useDetachAgentSkill,
 	useAgentTriggers,
 	useCreateAgentTrigger,
 	useUpdateAgentTrigger,
@@ -97,6 +94,15 @@ import {
 	useAgentMetaModels,
 	useDraftAgent,
 	useImproveAgentInstructions,
+	agentKeys,
+	useAgents,
+} from '@/api/modules/agents';
+import { agentMemoryKeys } from '@/api/modules/agent-memory';
+import { agentSessionKeys, useAgentSessions } from '@/api/modules/agent-sessions';
+import { useAgentSkills } from '@/api/modules/agent-skills';
+import {
+	useAttachAgentSkill,
+	useDetachAgentSkill,
 	useAgentSkillAttachments,
 	useAgentToolBindings,
 	useCreateAgentToolBinding,
@@ -104,19 +110,14 @@ import {
 	useAgentWorkflowTools,
 	useAttachAgentWorkflow,
 	useDetachAgentWorkflow,
-	agentKeys,
-	agentVersionKeys,
 	agentSkillAttachmentKeys,
-	agentMemoryKeys,
-	agentSessionKeys,
 	agentSubagentKeys,
-	useAgents,
-	useAgentSessions,
 	useAgentSubagents,
 	useAttachSubagent,
 	useDetachSubagent,
 	useSubagentTasks,
-} from '@/api/modules/agents';
+} from '@/api/modules/agent-tools';
+import { agentVersionKeys } from '@/api/modules/agent-versions';
 import { agentSkillKeys } from '@/api/modules/agent-skills';
 import {
 	getSkillCategoryColor,
@@ -133,8 +134,7 @@ import type { TTrigger } from '@/types/trigger.type';
 import { AGENT_COLORS, AGENT_ICONS } from '@/types/agent.type';
 import type { TAgentColor, TAgentIcon, TAgentTriggerType } from '@/types/agent.type';
 import type { TAgentTemplate } from '@/types/template.type';
-import { useAgentSession } from '@/api/modules/agents';
-import { AgentSessionService } from '@/api/modules/agents/agent-sessions.service';
+import { AgentSessionService, useAgentSession } from '@/api/modules/agent-sessions';
 import { useDownloadArtifact, ArtifactService } from '@/api/modules/artifacts';
 import type { TWorkflow } from '@/types/workflow.type';
 import type { TArtifact } from '@/types/artifact.type';

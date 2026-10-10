@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { agentKeys } from '@/api/modules/agents/agents.keys';
 import { AgentVersionService } from './agent-versions.service';
-import { agentVersionKeys, agentKeys } from './agents.keys';
+import { agentVersionKeys } from './agent-versions.keys';
 
 export const useAgentVersions = (ws: string, agentId: string) =>
 	useQuery({

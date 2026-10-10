@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react';
 import { Bot, Search } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Modal, { ModalHeader, ModalBody } from '@/components/ui/Modal';
-import { useAgents, AgentSkillAttachmentService } from '@/api/modules/agents';
-import { agentSkillAttachmentKeys } from '@/api/modules/agents/agents.keys';
+import { useAgents } from '@/api/modules/agents';
+import { AgentSkillAttachmentService, agentSkillAttachmentKeys } from '@/api/modules/agent-tools';
 import type { TAgentSkill } from '@/types/agent-skill.type';
 
 interface IAddToAgentDialogProps {

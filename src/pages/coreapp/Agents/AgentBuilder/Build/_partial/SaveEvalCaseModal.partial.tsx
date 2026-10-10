@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { FlaskConical, Loader2 } from 'lucide-react';
 import { notify } from '@/api/core';
-import { useAgentEvalSuites, useSaveChatAsEvalCase } from '@/api/modules/agents';
+import { useAgentEvalSuites, useSaveChatAsEvalCase } from '@/api/modules/agent-eval-suites';
 import Modal, { ModalHeader, ModalBody } from '@/components/ui/Modal';
 
 const NEW_SUITE = '__new__';

@@ -22,9 +22,9 @@ import {
 	useUpdateAgentEvaluationSettings,
 	useAgentSessionEvaluations,
 	useAgentSessionEvaluation,
-	useAgentSessions,
 	useRunAgentSessionEvaluation,
-} from '@/api/modules/agents';
+} from '@/api/modules/agent-session-evaluations';
+import { useAgentSessions } from '@/api/modules/agent-sessions';
 import { useModelCatalog } from '@/api/modules/catalog';
 import { notify } from '@/api/core';
 import type {

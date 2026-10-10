@@ -33,7 +33,7 @@ import {
 	useAgentSessions,
 	useDeleteAgentSession,
 	useUpdateAgentSession,
-} from '@/api/modules/agents';
+} from '@/api/modules/agent-sessions';
 import type { TAgentSession } from '@/types/agent.type';
 import GlobalSearch from '@/templates/search/GlobalSearch.template';
 import { notify } from '@/api/core';

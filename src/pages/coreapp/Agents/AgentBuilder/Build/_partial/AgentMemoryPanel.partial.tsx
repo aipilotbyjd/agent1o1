@@ -6,7 +6,7 @@ import {
 	useUpdateAgentMemory,
 	useDeleteAgentMemory,
 	useClearAgentMemories,
-} from '@/api/modules/agents';
+} from '@/api/modules/agent-memory';
 import paths from '@/Routes/paths';
 import type { TAgentMemory } from '@/types/agent.type';
 

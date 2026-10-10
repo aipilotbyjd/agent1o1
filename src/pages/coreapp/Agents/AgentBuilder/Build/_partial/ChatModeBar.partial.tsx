@@ -11,7 +11,7 @@ import {
 	Zap,
 	type LucideIcon,
 } from 'lucide-react';
-import { useUpdateAgentSession } from '@/api/modules/agents';
+import { useUpdateAgentSession } from '@/api/modules/agent-sessions';
 import { AUTONOMY_MODES, AUTONOMY_MODE_META, type TAutonomyMode } from '@/types/agent-action.type';
 import type { TAgent, TAgentSession } from '@/types/agent.type';
 

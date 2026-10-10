@@ -3,7 +3,7 @@ import { unwrapKey } from '@/api/core';
 import type { TApiResponse } from '@/api/core';
 import type { TAgentVersion } from '@/types/agent.type';
 import type { TAgent } from '@/types/agent.type';
-import { AgentVersionEndpoints as E } from './agents.endpoints';
+import { AgentVersionEndpoints as E } from './agent-versions.endpoints';
 
 export const AgentVersionService = {
 	list: (ws: string, agentId: string, signal?: AbortSignal) =>

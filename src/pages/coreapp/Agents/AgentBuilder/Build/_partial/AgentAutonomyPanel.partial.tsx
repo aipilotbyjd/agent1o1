@@ -1,12 +1,11 @@
 import { FlaskConical, Globe, Lightbulb, ShieldCheck } from 'lucide-react';
+import { useAgent, useUpdateAgent } from '@/api/modules/agents';
 import {
-	useAgent,
 	useAgentToolBindings,
 	useAgentWorkflowTools,
-	useUpdateAgent,
 	useUpdateAgentToolBinding,
 	useUpdateAgentWorkflowPolicy,
-} from '@/api/modules/agents';
+} from '@/api/modules/agent-tools';
 import {
 	useAgentTrustSuggestions,
 	useApplyAgentTrustSuggestion,

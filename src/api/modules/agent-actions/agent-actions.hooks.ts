@@ -6,7 +6,10 @@ import type {
 	TRejectAgentPlanDto,
 	TUpdateWorkspaceAgentPolicyDto,
 } from '@/types/agent-action.type';
-import { agentToolBindingKeys, agentWorkflowToolKeys } from '@/api/modules/agents/agents.keys';
+import {
+	agentToolBindingKeys,
+	agentWorkflowToolKeys,
+} from '@/api/modules/agent-tools/agent-tools.keys';
 import { dashboardKeys } from '@/api/modules/dashboard/dashboard.keys';
 import {
 	AgentActionService,

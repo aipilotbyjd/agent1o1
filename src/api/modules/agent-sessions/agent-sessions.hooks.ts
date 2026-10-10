@@ -9,7 +9,7 @@ import type { TAgentSessionStreamEvent } from '@/types/agent.type';
 import { useRealtime } from '@/context/realtime';
 import type { IEchoLike } from '@/api/modules/workflow-builder/workflow-builder.realtime';
 import { AgentSessionService } from './agent-sessions.service';
-import { agentSessionKeys } from './agents.keys';
+import { agentSessionKeys } from './agent-sessions.keys';
 
 export const useAgentSessions = (ws: string, agentId: string) =>
 	useQuery({

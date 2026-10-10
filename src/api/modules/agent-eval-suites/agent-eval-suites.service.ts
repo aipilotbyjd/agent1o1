@@ -10,7 +10,7 @@ import type {
 	TUpdateAgentEvalCaseDto,
 	TAgentEvalRun,
 } from '@/types/agent.type';
-import { AgentEvalEndpoints as E } from './agents.endpoints';
+import { AgentEvalSuiteEndpoints as E } from './agent-eval-suites.endpoints';
 
 export const AgentEvalSuiteService = {
 	list: (ws: string, agentId: string, signal?: AbortSignal) =>

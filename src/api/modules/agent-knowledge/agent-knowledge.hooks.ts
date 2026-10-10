@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { TCreateAgentKnowledgeDto, TUpdateAgentKnowledgeDto } from '@/types/agent.type';
 import { AgentKnowledgeService, AgentKnowledgeSourceService } from './agent-knowledge.service';
-import { agentKnowledgeKeys, agentKnowledgeSourceKeys } from './agents.keys';
+import { agentKnowledgeKeys, agentKnowledgeSourceKeys } from './agent-knowledge.keys';
 
 export const useAgentKnowledge = (ws: string, agentId: string) =>
 	useQuery({

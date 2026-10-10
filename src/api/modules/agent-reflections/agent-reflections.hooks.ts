@@ -5,7 +5,7 @@ import {
 	AgentReflectionRunService,
 	AgentReflectionService,
 } from './agent-reflections.service';
-import { agentReflectionKeys } from './agents.keys';
+import { agentReflectionKeys } from './agent-reflections.keys';
 
 export const useAgentReflectionSettings = (ws: string, agentId: string) =>
 	useQuery({

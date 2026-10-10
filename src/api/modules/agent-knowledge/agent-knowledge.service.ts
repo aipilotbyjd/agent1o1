@@ -10,7 +10,7 @@ import type {
 import {
 	AgentKnowledgeEndpoints as K,
 	AgentKnowledgeSourceEndpoints as S,
-} from './agents.endpoints';
+} from './agent-knowledge.endpoints';
 
 export const AgentKnowledgeService = {
 	list: (ws: string, agentId: string, signal?: AbortSignal) =>

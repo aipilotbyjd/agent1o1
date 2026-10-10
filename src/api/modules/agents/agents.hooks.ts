@@ -19,8 +19,7 @@ import {
 import { useRuns } from '@/api/modules/runs';
 import { useModelCatalog } from '@/api/modules/catalog';
 import { AgentService } from './agents.service';
-import { AgentMemoryService } from './agent-memory.service';
-import { agentKeys, agentMemoryKeys, agentTrashKey } from './agents.keys';
+import { agentKeys, agentTrashKey } from './agents.keys';
 
 const Agents = createResource({
 	service: AgentService,
@@ -114,14 +113,12 @@ export const useSyncAgentTags = (ws: string, id: string) => {
 
 // ── AgentBuilder compatibility layer ──────────────────────────────────────────
 // The builder was written against the old API, where triggers, runs, analytics,
-// the model catalog and skills all hung off an agent. This backend models them
+// and the model catalog all hung off an agent. This backend models them
 // as workspace-level resources in their own modules, with agents addressed
 // polymorphically (`target_type`/`runnable_type` === 'agent').
 //
 // These adapters keep the builder's original call signatures — (ws, agentId) —
 // and map them onto the real endpoints, so the UI needed no changes.
-
-export { useAgentSkills, useCreateAgentSkill } from '@/api/modules/agent-skills';
 
 /** The morph alias the backend stores for an Agent (see AppServiceProvider). */
 const AGENT_MORPH = 'agent';
@@ -272,20 +269,4 @@ export const useAgentMetaModels = (_ws: string, provider?: string) => {
 		return provider ? rows.filter((m) => m.brand === provider) : rows;
 	}, [query.data, provider]);
 	return { ...query, data };
-};
-
-/**
- * No bulk-delete endpoint exists — memories are removed one at a time, so this
- * reads the current list and fans out deletes.
- */
-export const useClearAgentMemories = (ws: string, agentId: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: async () => {
-			const memories = await AgentMemoryService.list(ws, agentId);
-			await Promise.all(memories.map((m) => AgentMemoryService.remove(ws, agentId, m.id)));
-		},
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentMemoryKeys.list(ws, agentId) }),
-		meta: { errorMessage: 'Failed to clear memories' },
-	});
 };

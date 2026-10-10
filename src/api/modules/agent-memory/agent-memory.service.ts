@@ -6,7 +6,7 @@ import type {
 	TCreateAgentMemoryDto,
 	TUpdateAgentMemoryDto,
 } from '@/types/agent.type';
-import { AgentMemoryEndpoints as E } from './agents.endpoints';
+import { AgentMemoryEndpoints as E } from './agent-memory.endpoints';
 
 export const AgentMemoryService = {
 	list: (ws: string, agentId: string, signal?: AbortSignal) =>

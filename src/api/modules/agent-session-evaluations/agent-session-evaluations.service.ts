@@ -6,7 +6,7 @@ import type {
 	TUpdateAgentEvaluationSettingsDto,
 	TAgentSessionEvaluation,
 } from '@/types/agent.type';
-import { AgentEvaluationEndpoints as E } from './agents.endpoints';
+import { AgentSessionEvaluationEndpoints as E } from './agent-session-evaluations.endpoints';
 
 export const AgentEvaluationSettingsService = {
 	show: (ws: string, agentId: string, signal?: AbortSignal) =>

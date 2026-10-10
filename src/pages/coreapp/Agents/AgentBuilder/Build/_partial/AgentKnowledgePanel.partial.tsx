@@ -5,7 +5,7 @@ import {
 	useCreateAgentKnowledge,
 	useUpdateAgentKnowledge,
 	useDeleteAgentKnowledge,
-} from '@/api/modules/agents';
+} from '@/api/modules/agent-knowledge';
 import type { TAgentKnowledge, TAgentKnowledgeSourceType } from '@/types/agent.type';
 import { notify } from '@/api/core';
 

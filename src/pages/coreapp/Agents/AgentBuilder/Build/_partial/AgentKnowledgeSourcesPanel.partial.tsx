@@ -6,7 +6,7 @@ import {
 	useAgentKnowledgeSources,
 	useAttachAgentKnowledgeSource,
 	useDetachAgentKnowledgeSource,
-} from '@/api/modules/agents';
+} from '@/api/modules/agent-knowledge';
 import { useKnowledgeCollections } from '@/api/modules/knowledge-base';
 
 type TProps = {

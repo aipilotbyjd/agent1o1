@@ -29,7 +29,7 @@ import {
 	useAgentEvalRuns,
 	useAgentEvalRun,
 	useRunAgentEvalSuite,
-} from '@/api/modules/agents';
+} from '@/api/modules/agent-eval-suites';
 import type {
 	TAgentEvalCase,
 	TAgentEvalSuite,

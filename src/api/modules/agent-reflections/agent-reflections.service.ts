@@ -7,7 +7,7 @@ import type {
 	TReflectionRun,
 	TReflection,
 } from '@/types/agent.type';
-import { AgentReflectionEndpoints as E } from './agents.endpoints';
+import { AgentReflectionEndpoints as E } from './agent-reflections.endpoints';
 
 export const AgentReflectionSettingsService = {
 	show: (ws: string, agentId: string, signal?: AbortSignal) =>

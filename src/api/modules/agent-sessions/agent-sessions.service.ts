@@ -11,8 +11,8 @@ import type {
 } from '@/types/agent.type';
 import { AgentActionService } from '@/api/modules/agent-actions/agent-actions.service';
 import type { IEchoLike } from '@/api/modules/workflow-builder/workflow-builder.realtime';
-import { AgentSessionEndpoints as E } from './agents.endpoints';
-import { openAgentTurnStream } from './agents.realtime';
+import { AgentSessionEndpoints as E } from './agent-sessions.endpoints';
+import { openAgentTurnStream } from './agent-sessions.realtime';
 
 /** JSON, unless files ride along — then multipart, with each file under
  *  `attachments[]`. */

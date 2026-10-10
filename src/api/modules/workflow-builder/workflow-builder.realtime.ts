@@ -8,7 +8,7 @@ import type {
 
 /**
  * Minimal structural type for a Laravel Echo instance, so this module (and
- * `agents.realtime`) compiles without a hard dependency on `laravel-echo`.
+ * `agent-sessions.realtime`) compiles without a hard dependency on `laravel-echo`.
  */
 export interface IEchoChannelLike {
 	listen: (event: string, cb: (payload: unknown) => void) => IEchoChannelLike;

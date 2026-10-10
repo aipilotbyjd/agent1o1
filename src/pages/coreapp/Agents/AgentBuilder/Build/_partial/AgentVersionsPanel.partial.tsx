@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, GitBranch, RotateCcw, Loader2, User, Copy } from 'lucide-react';
-import { useAgentVersions, useAgentVersion, useRestoreAgentVersion } from '@/api/modules/agents';
+import {
+	useAgentVersions,
+	useAgentVersion,
+	useRestoreAgentVersion,
+} from '@/api/modules/agent-versions';
 import { notify } from '@/api/core';
 import type { TAgentVersion } from '@/types/agent.type';
 

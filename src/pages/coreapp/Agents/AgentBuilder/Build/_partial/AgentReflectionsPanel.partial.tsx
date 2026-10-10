@@ -24,7 +24,7 @@ import {
 	useAgentReflections,
 	useApplyAgentReflection,
 	useDismissAgentReflection,
-} from '@/api/modules/agents';
+} from '@/api/modules/agent-reflections';
 import type {
 	TReflection,
 	TReflectionRun,

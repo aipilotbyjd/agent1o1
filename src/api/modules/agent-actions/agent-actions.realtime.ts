@@ -1,5 +1,5 @@
 import type { IEchoLike } from '@/api/modules/workflow-builder/workflow-builder.realtime';
-import { agentSessionChannelName } from '@/api/modules/agents/agents.realtime';
+import { agentSessionChannelName } from '@/api/modules/agent-sessions/agent-sessions.realtime';
 
 /**
  * `App\Events\Agents\AgentActionsRequested` / `AgentActionsChanged`, on the
