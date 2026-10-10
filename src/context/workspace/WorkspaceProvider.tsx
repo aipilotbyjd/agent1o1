@@ -23,7 +23,7 @@ export const WorkspaceProvider = ({ children }: { children?: ReactNode }) => {
 
 	const switchWorkspace = useCallback(
 		async (id: string) => {
-			if (!id || id === activeWorkspaceId) return;
+			if (!id || String(id) === String(activeWorkspaceId)) return;
 			await switchMutation.mutateAsync({ workspace_id: id });
 		},
 		[switchMutation, activeWorkspaceId],

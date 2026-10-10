@@ -59,7 +59,7 @@ const WorkspaceSwitcher = () => {
 
 	let workspaces: { id: string; name: string; slug: string; [key: string]: unknown }[] = [];
 	let activeWorkspaceId: string | undefined = undefined;
-	let switchWorkspace: ((id: string) => void) | undefined = undefined;
+	let switchWorkspace: ((id: string) => Promise<void>) | undefined = undefined;
 
 	try {
 		const workspaceCtx = useWorkspaceContext();
@@ -103,7 +103,11 @@ const WorkspaceSwitcher = () => {
 		if (targetId === activeWorkspaceId) return;
 
 		const target = targetPathFor(targetId);
-		await switchWorkspace?.(targetId);
+		try {
+			await switchWorkspace?.(targetId);
+		} catch {
+			return;
+		}
 		navigate(target);
 	};
 

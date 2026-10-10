@@ -1,4 +1,4 @@
-import { createElement, useEffect, useMemo, type ReactNode } from 'react';
+import { createElement, useEffect, useState, type ReactNode } from 'react';
 import { Loader2, X } from 'lucide-react';
 import {
 	fileIconFor,
@@ -9,19 +9,17 @@ import {
 
 /** A local `File` as an image URL for its thumbnail, revoked when it changes or unmounts. */
 const useObjectUrl = (file: File | null | undefined) => {
-	const url = useMemo(
-		() => (file && isImageFile(file.type, file.name) ? URL.createObjectURL(file) : null),
-		[file],
-	);
+	const [thumbnail, setThumbnail] = useState<{ file: File; url: string } | null>(null);
 
-	useEffect(
-		() => () => {
-			if (url) URL.revokeObjectURL(url);
-		},
-		[url],
-	);
+	useEffect(() => {
+		if (!file || !isImageFile(file.type, file.name)) return;
+		const url = URL.createObjectURL(file);
+		// eslint-disable-next-line react-hooks/set-state-in-effect
+		setThumbnail({ file, url });
+		return () => URL.revokeObjectURL(url);
+	}, [file]);
 
-	return url;
+	return thumbnail && thumbnail.file === file ? thumbnail.url : null;
 };
 
 type TFilePreviewProps = {

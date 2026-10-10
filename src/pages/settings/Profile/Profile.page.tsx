@@ -426,7 +426,11 @@ const ProfilePage = () => {
 								onChange={async (e) => {
 									const targetId = e.target.value;
 									const [, , ...rest] = window.location.pathname.split('/');
-									await switchWorkspace(targetId);
+									try {
+										await switchWorkspace(targetId);
+									} catch {
+										return;
+									}
 									navigate(`/${targetId}/${rest.join('/')}`);
 								}}
 								className={`${inputClass} appearance-none bg-none pr-11 disabled:cursor-not-allowed disabled:opacity-60`}>

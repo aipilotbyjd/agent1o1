@@ -68,5 +68,3 @@ export const isTokenExpired = (): boolean => {
 	if (!expiry) return true;
 	return Date.now() / 1000 > expiry - 30; // 30-second buffer
 };
-
-export const hasValidToken = (): boolean => !!getAccessToken() && !isTokenExpired();

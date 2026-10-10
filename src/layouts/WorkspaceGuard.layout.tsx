@@ -10,28 +10,35 @@ import pages from '@/Routes/pages';
  *
  * The URL decides the workspace: opening a link to another workspace the member
  * belongs to makes it their current one, so every page and the sidebar agree.
+ * Only a change of the URL's workspace is reconciled; a switcher that moves the
+ * current workspace and then navigates is not switched back in between.
  */
 const WorkspaceGuardLayout = () => {
 	const { workspaceId } = useParams<{ workspaceId: string }>();
 	const { workspaces, isLoading, activeWorkspaceId, switchWorkspace } = useWorkspaceContext();
-	const attemptedFor = useRef<string | null>(null);
-	const [failedFor, setFailedFor] = useState<string | null>(null);
+	const [syncedFor, setSyncedFor] = useState<string | null>(null);
+	const switchingFor = useRef<string | null>(null);
 
 	// Ids are typed `string` here but Laravel sends them as numbers, so the raw
 	// comparison never matched and every workspace bounced straight back to the
 	// chooser.
 	const isMember = workspaces.some((w) => String(w.id) === String(workspaceId));
-	const needsSwitch =
-		!isLoading &&
-		isMember &&
-		!!workspaceId &&
-		String(activeWorkspaceId) !== String(workspaceId) &&
-		failedFor !== workspaceId;
+	const isUnsynced = !isLoading && isMember && !!workspaceId && syncedFor !== workspaceId;
+	const isActive = String(activeWorkspaceId) === String(workspaceId);
+
+	if (isUnsynced && isActive) setSyncedFor(workspaceId);
+
+	const needsSwitch = isUnsynced && !isActive;
 
 	useEffect(() => {
-		if (!needsSwitch || !workspaceId || attemptedFor.current === workspaceId) return;
-		attemptedFor.current = workspaceId;
-		switchWorkspace(workspaceId).catch(() => setFailedFor(workspaceId));
+		if (!needsSwitch || !workspaceId || switchingFor.current === workspaceId) return;
+		switchingFor.current = workspaceId;
+		switchWorkspace(workspaceId)
+			.catch(() => undefined)
+			.finally(() => {
+				switchingFor.current = null;
+				setSyncedFor(workspaceId);
+			});
 	}, [needsSwitch, switchWorkspace, workspaceId]);
 
 	if (!isLoading && !isMember) {

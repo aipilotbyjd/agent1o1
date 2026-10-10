@@ -158,7 +158,11 @@ const NotificationsDropdown = () => {
 
 		setIsOpen(false);
 		if (notification.workspace_id && notification.workspace_id !== activeWorkspaceId) {
-			await switchWorkspace(notification.workspace_id);
+			try {
+				await switchWorkspace(notification.workspace_id);
+			} catch {
+				return;
+			}
 		}
 		navigate(href);
 	};
