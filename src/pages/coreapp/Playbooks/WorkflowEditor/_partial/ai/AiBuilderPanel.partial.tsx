@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown, { type Components } from 'react-markdown';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { useAiChatStore, type TAiChatMessage, type TAiTimelineItem } from '@/store/aiChat.store';
 import { useAuth } from '@/context/auth';
 import { useConfirm } from '@/context/confirm';
@@ -866,6 +866,11 @@ const AiBuilderPanel = () => {
 						</ul>
 					)}
 					<textarea
+						aria-label={
+							isThinking
+								? 'Responding…'
+								: 'Describe what you want to automate today... (@ to reference a node)'
+						}
 						ref={textareaRef}
 						value={promptInput}
 						disabled={isThinking}
@@ -968,6 +973,7 @@ const AiBuilderPanel = () => {
 
 			{/* Chat History Sidebar (slide-in overlay) */}
 			<div
+				aria-hidden='true'
 				className={`absolute inset-0 z-20 bg-black/20 backdrop-blur-[1px] transition-opacity dark:bg-black/40 ${
 					showHistory ? 'opacity-100' : 'pointer-events-none opacity-0'
 				}`}
@@ -1164,6 +1170,7 @@ const AiBuilderPanel = () => {
 
 			{/* Undo history (slide-in overlay) */}
 			<div
+				aria-hidden='true'
 				className={`absolute inset-0 z-20 bg-black/20 backdrop-blur-[1px] transition-opacity dark:bg-black/40 ${
 					showVersions ? 'opacity-100' : 'pointer-events-none opacity-0'
 				}`}

@@ -59,6 +59,7 @@ export default tseslint.config(
 					custom: 'enforce',
 					explicitSpread: 'enforce',
 					exceptions: [
+						'FilePreview',
 						'NavItem',
 						'NavCollapse',
 						'Icon',
@@ -96,7 +97,33 @@ export default tseslint.config(
 					depth: 3,
 				},
 			],
-			'jsx-a11y/control-has-associated-label': 'warn',
+			'jsx-a11y/control-has-associated-label': [
+				'warn',
+				{
+					ignoreElements: [
+						'audio',
+						'canvas',
+						'embed',
+						'input',
+						'textarea',
+						'tr',
+						'video',
+					],
+					ignoreRoles: [
+						'grid',
+						'listbox',
+						'menu',
+						'menubar',
+						'radiogroup',
+						'row',
+						'tablist',
+						'toolbar',
+						'tree',
+						'treegrid',
+					],
+					includeRoles: ['alert', 'dialog'],
+				},
+			],
 			'react-hooks/exhaustive-deps': 'error',
 			'react-hooks/rules-of-hooks': 'error',
 			'react/function-component-definition': [

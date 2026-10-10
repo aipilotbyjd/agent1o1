@@ -12,10 +12,8 @@ import { notify } from '@/api/core';
 import { useAgents } from '@/api/modules/agents';
 import { useWorkspace } from '@/api/modules/workspaces';
 import { useAgentActionInbox, useDecideAgentActions } from '@/api/modules/agent-actions';
-import {
-	ApprovalCard,
-	prettifyActionTool,
-} from '@/pages/coreapp/Agents/AgentBuilder/Build/_partial/AgentApprovalCards.partial';
+import { ApprovalCard } from '@/pages/coreapp/Agents/AgentBuilder/Build/_partial/AgentApprovalCards.partial';
+import { prettifyActionTool } from '@/pages/coreapp/Agents/AgentBuilder/Build/_helper/actionTool.helper';
 import type {
 	TAgentAction,
 	TAgentActionDecision,

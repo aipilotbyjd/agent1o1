@@ -176,6 +176,7 @@ const ReflectionSettingsForm = ({
 						Schedule (cron)
 					</span>
 					<input
+						aria-label='0 3 * * *'
 						type='text'
 						value={form.schedule_cron}
 						onChange={(e) => setForm((f) => ({ ...f, schedule_cron: e.target.value }))}
@@ -204,6 +205,7 @@ const ReflectionSettingsForm = ({
 					Extra instructions
 				</span>
 				<textarea
+					aria-label='What the reviewer should pay attention to (optional)'
 					value={form.extra_instructions}
 					onChange={(e) => setForm((f) => ({ ...f, extra_instructions: e.target.value }))}
 					placeholder='What the reviewer should pay attention to (optional)'

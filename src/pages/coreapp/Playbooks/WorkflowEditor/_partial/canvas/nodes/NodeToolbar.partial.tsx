@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Copy, Loader2, Pencil, Play, SlidersHorizontal, Trash2 } from 'lucide-react';
-import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 import { useNodeTestRunner } from '../../../_hooks/useNodeTestRunner.hook';
 import ConfigureInputsDialog from '../../dialogs/ConfigureInputsDialog.partial';
 import type { TNodeField } from '../../../_types/node.type';

@@ -22,7 +22,7 @@ import {
 	FormInput,
 	Zap,
 } from 'lucide-react';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import { useWorkflowRouteParams } from '../../_hooks/useWorkflowRouteParams.hook';
 import { useConfirm } from '@/context/confirm';
@@ -443,11 +443,15 @@ const WorkflowGovernanceModal = () => {
 									</label>
 
 									<div className='space-y-1'>
-										<label className='block text-[10px] font-bold text-zinc-500 uppercase dark:text-zinc-400'>
+										<label
+											htmlFor='workflowgovernancemodal-password-access-optional'
+											className='block text-[10px] font-bold text-zinc-500 uppercase dark:text-zinc-400'>
 											Password Access (Optional)
 										</label>
 										<div className='relative'>
 											<input
+												id='workflowgovernancemodal-password-access-optional'
+												aria-label='Create password protection'
 												type='password'
 												placeholder='Create password protection'
 												value={sharePassword}
@@ -465,10 +469,13 @@ const WorkflowGovernanceModal = () => {
 									</div>
 
 									<div className='space-y-1'>
-										<label className='block text-[10px] font-bold text-zinc-500 uppercase dark:text-zinc-400'>
+										<label
+											htmlFor='workflowgovernancemodal-expiration-date-optional'
+											className='block text-[10px] font-bold text-zinc-500 uppercase dark:text-zinc-400'>
 											Expiration Date (Optional)
 										</label>
 										<input
+											id='workflowgovernancemodal-expiration-date-optional'
 											type='date'
 											value={shareExpiresAt}
 											onChange={(e) => setShareExpiresAt(e.target.value)}
@@ -554,6 +561,7 @@ const WorkflowGovernanceModal = () => {
 													<input
 														type='text'
 														readOnly
+														aria-label='Share link'
 														value={share.share_url}
 														className='flex-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs outline-none select-all dark:border-zinc-800 dark:bg-zinc-950'
 													/>
@@ -622,10 +630,14 @@ const WorkflowGovernanceModal = () => {
 									Request Production Approval
 								</h4>
 								<div className='space-y-1.5'>
-									<label className='block text-[10px] font-bold text-zinc-500 uppercase dark:text-zinc-400'>
+									<label
+										htmlFor='workflowgovernancemodal-request-notes-audit-context'
+										className='block text-[10px] font-bold text-zinc-500 uppercase dark:text-zinc-400'>
 										Request Notes / Audit Context
 									</label>
 									<textarea
+										id='workflowgovernancemodal-request-notes-audit-context'
+										aria-label="Describe changes e.g. 'Optimized prompt token usage and resolved Google Calendar trigger mapping error'"
 										rows={2}
 										placeholder="Describe changes e.g. 'Optimized prompt token usage and resolved Google Calendar trigger mapping error'"
 										value={approvalNotes}
@@ -714,6 +726,7 @@ const WorkflowGovernanceModal = () => {
 													{isPending && (
 														<div className='space-y-2 border-t border-zinc-200 pt-3 dark:border-zinc-800'>
 															<input
+																aria-label='Optional reviewer notes...'
 																type='text'
 																placeholder='Optional reviewer notes...'
 																value={reviewNotes[appr.id] || ''}
@@ -812,10 +825,13 @@ const WorkflowGovernanceModal = () => {
 								</h4>
 								<div className='grid gap-4 sm:grid-cols-2'>
 									<div className='space-y-1'>
-										<label className='block text-[10px] font-bold text-zinc-500 uppercase dark:text-zinc-400'>
+										<label
+											htmlFor='workflowgovernancemodal-select-version'
+											className='block text-[10px] font-bold text-zinc-500 uppercase dark:text-zinc-400'>
 											Select Version
 										</label>
 										<select
+											id='workflowgovernancemodal-select-version'
 											value={releaseVersion}
 											onChange={(e) => setReleaseVersion(e.target.value)}
 											className='focus:border-primary-400 w-full rounded-lg border border-zinc-200 bg-zinc-50/50 px-3 py-1.5 text-xs text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
@@ -834,10 +850,13 @@ const WorkflowGovernanceModal = () => {
 									</div>
 
 									<div className='space-y-1'>
-										<label className='block text-[10px] font-bold text-zinc-500 uppercase dark:text-zinc-400'>
+										<label
+											htmlFor='workflowgovernancemodal-target-environment'
+											className='block text-[10px] font-bold text-zinc-500 uppercase dark:text-zinc-400'>
 											Target Environment
 										</label>
 										<select
+											id='workflowgovernancemodal-target-environment'
 											value={releaseEnv}
 											onChange={(e) => setReleaseEnv(e.target.value)}
 											className='focus:border-primary-400 w-full rounded-lg border border-zinc-200 bg-zinc-50/50 px-3 py-1.5 text-xs text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'>
@@ -849,10 +868,14 @@ const WorkflowGovernanceModal = () => {
 								</div>
 
 								<div className='space-y-1.5'>
-									<label className='block text-[10px] font-bold text-zinc-500 uppercase dark:text-zinc-400'>
+									<label
+										htmlFor='workflowgovernancemodal-release-notes-changelog'
+										className='block text-[10px] font-bold text-zinc-500 uppercase dark:text-zinc-400'>
 										Release Notes / Changelog
 									</label>
 									<textarea
+										id='workflowgovernancemodal-release-notes-changelog'
+										aria-label='Optional notes describing this release deployment'
 										rows={2}
 										placeholder='Optional notes describing this release deployment'
 										value={releaseNotes}

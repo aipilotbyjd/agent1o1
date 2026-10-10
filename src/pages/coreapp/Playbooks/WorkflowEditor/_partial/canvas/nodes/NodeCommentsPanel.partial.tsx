@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { MessageSquare, Send, Trash2 } from 'lucide-react';
-import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 import type { TNodeComment } from '../../../_types/node.type';
 
 const NodeCommentsPanel = ({
@@ -41,6 +41,7 @@ const NodeCommentsPanel = ({
 			{open && (
 				<div
 					className='absolute top-8 right-0 z-50 w-72 rounded-xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900'
+					role='presentation'
 					onClick={(e) => e.stopPropagation()}>
 					<div className='border-b border-zinc-100 px-3 py-2 dark:border-zinc-800'>
 						<span className='text-xs font-bold text-zinc-600 dark:text-zinc-300'>
@@ -92,6 +93,7 @@ const NodeCommentsPanel = ({
 					<div className='border-t border-zinc-100 p-2 dark:border-zinc-800'>
 						<div className='flex items-center gap-2'>
 							<input
+								aria-label='Add a comment…'
 								type='text'
 								value={text}
 								onChange={(e) => setText(e.target.value)}

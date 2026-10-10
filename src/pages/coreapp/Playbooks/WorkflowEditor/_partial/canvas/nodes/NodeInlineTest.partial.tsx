@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { ArrowUpRight, Beaker, Check, Loader2, X } from 'lucide-react';
-import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 import { useNodeTestRunner } from '../../../_hooks/useNodeTestRunner.hook';
 import { countItems, formatDuration, getHttpFailure } from '../../../_helper/runData.helper';
 

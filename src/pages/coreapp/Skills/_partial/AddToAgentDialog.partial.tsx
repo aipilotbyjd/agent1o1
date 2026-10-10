@@ -65,6 +65,7 @@ const AddToAgentDialog = ({ ws, skill, onClose }: IAddToAgentDialogProps) => {
 					<div className='relative'>
 						<Search className='absolute top-2.5 left-3 h-4 w-4 text-zinc-400 dark:text-zinc-500' />
 						<input
+							aria-label='Search agents...'
 							type='search'
 							placeholder='Search agents...'
 							value={search}

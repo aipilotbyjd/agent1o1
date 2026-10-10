@@ -1,5 +1,5 @@
 import { Info, Zap } from 'lucide-react';
-import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 
 /**
  * Top strip — promotes this node to the flow's entry trigger, so the flow starts

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Check, ListChecks, X } from 'lucide-react';
 import type { TAgentPlan } from '@/types/agent-action.type';
-import { prettifyActionTool } from './AgentApprovalCards.partial';
+import { prettifyActionTool } from '../_helper/actionTool.helper';
 
 /**
  * Plan mode's review step: the plan the agent proposed, step by step. A
@@ -84,6 +84,7 @@ const AgentPlanCard = ({
 						})}
 					</ol>
 					<input
+						aria-label='Note for the agent (optional)'
 						value={note}
 						onChange={(event) => setNote(event.target.value)}
 						maxLength={2000}

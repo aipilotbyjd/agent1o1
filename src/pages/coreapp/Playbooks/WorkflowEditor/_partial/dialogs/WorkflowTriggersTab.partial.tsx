@@ -33,7 +33,7 @@ import { useConfirm } from '@/context/confirm';
 import paths from '@/Routes/paths';
 import type { TTriggerPreset } from '@/types/catalog.type';
 import type { TTrigger } from '@/types/trigger.type';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import {
 	CRON_SHORTCUTS,
 	WORKFLOW_TRIGGER_TYPES,
@@ -355,6 +355,7 @@ const TriggerForm = ({
 						<span className='font-normal text-zinc-400'>(server time, UTC)</span>
 					</label>
 					<input
+						aria-label='0 9 * * 1-5'
 						id='trigger-cron'
 						value={draft.cron}
 						onChange={(e) => update({ cron: e.target.value })}
@@ -403,6 +404,7 @@ const TriggerForm = ({
 								URL to poll
 							</label>
 							<input
+								aria-label='https://api.example.com/orders'
 								id='trigger-url'
 								value={draft.url}
 								onChange={(e) => update({ url: e.target.value })}
@@ -417,6 +419,7 @@ const TriggerForm = ({
 								Items path
 							</label>
 							<input
+								aria-label='data.items'
 								id='trigger-items'
 								value={draft.itemsPath}
 								onChange={(e) => update({ itemsPath: e.target.value })}
@@ -429,6 +432,7 @@ const TriggerForm = ({
 								Item id path
 							</label>
 							<input
+								aria-label='id'
 								id='trigger-id-path'
 								value={draft.idPath}
 								onChange={(e) => update({ idPath: e.target.value })}
@@ -441,6 +445,7 @@ const TriggerForm = ({
 								Every (minutes)
 							</label>
 							<input
+								aria-label='15'
 								id='trigger-interval'
 								inputMode='numeric'
 								value={draft.intervalMinutes}
@@ -457,6 +462,7 @@ const TriggerForm = ({
 								<span className='font-normal text-zinc-400'>(optional)</span>
 							</label>
 							<input
+								aria-label='since_id'
 								id='trigger-cursor-param'
 								value={draft.cursorParam}
 								onChange={(e) => update({ cursorParam: e.target.value })}
@@ -470,6 +476,7 @@ const TriggerForm = ({
 								<span className='font-normal text-zinc-400'>(optional)</span>
 							</label>
 							<input
+								aria-label='Defaults to the item id path'
 								id='trigger-cursor-path'
 								value={draft.cursorPath}
 								onChange={(e) => update({ cursorPath: e.target.value })}

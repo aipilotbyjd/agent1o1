@@ -2,7 +2,7 @@ import { useReactFlow } from '@xyflow/react';
 import { Bug, Grid2X2, LayoutGrid, Maximize2, Minus, Plus, Search, Sliders } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 
 const ToolButton = ({
 	title,

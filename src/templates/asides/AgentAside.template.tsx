@@ -376,6 +376,7 @@ const AgentAsideTemplate = () => {
 						<div className='mt-2 px-3'>
 							<div className='relative flex items-center rounded-xl border border-zinc-200 bg-white px-2.5 py-1.5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900/60'>
 								<input
+									aria-label='Search'
 									type='text'
 									placeholder='Search'
 									value={recentSearch}
@@ -423,6 +424,7 @@ const AgentAsideTemplate = () => {
 											{isRenaming ? (
 												<input
 													autoFocus
+													aria-label='Chat name'
 													value={renameDraft}
 													onChange={(e) => setRenameDraft(e.target.value)}
 													onBlur={() => commitRename(session)}

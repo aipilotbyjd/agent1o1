@@ -169,6 +169,7 @@ const LibraryPage = () => {
 					<label className='flex h-9 min-w-0 flex-1 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 sm:max-w-xs dark:border-white/10 dark:bg-zinc-900'>
 						<Search size={14} className='shrink-0 text-zinc-400' />
 						<input
+							aria-label='Search by file name'
 							type='search'
 							value={searchInput}
 							onChange={(event) => setSearchInput(event.target.value)}

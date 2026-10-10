@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { useAiChatStore } from '@/store/aiChat.store';
 import {
 	Paperclip,
@@ -309,6 +309,7 @@ const CanvasEmptyState = () => {
 											{/* Backdrop Click Close for Dropdowns */}
 											{activeDropdown !== null && (
 												<div
+													aria-hidden='true'
 													className='fixed inset-0 z-40 bg-transparent'
 													onClick={() => setActiveDropdown(null)}
 												/>
@@ -616,9 +617,9 @@ const CanvasEmptyState = () => {
 																			/>
 																		</div>
 																		<div>
-																			<label className='mb-1 block text-[10px] font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
+																			<span className='mb-1 block text-[10px] font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
 																				Persona
-																			</label>
+																			</span>
 																			<div className='flex flex-wrap gap-1.5'>
 																				{[
 																					'Standard',
@@ -754,7 +755,8 @@ const CanvasEmptyState = () => {
 																	)
 																}
 																className='flex items-center justify-center rounded-md p-1 text-red-500 transition hover:bg-zinc-50 dark:hover:bg-zinc-900'
-																title='Gmail'>
+																title='Gmail'
+																aria-label='Gmail'>
 																<svg
 																	className='h-4.5 w-4.5 fill-current'
 																	viewBox='0 0 24 24'>
@@ -840,7 +842,8 @@ const CanvasEmptyState = () => {
 																	)
 																}
 																className='text-primary-600 flex items-center justify-center rounded-md p-1 transition hover:bg-zinc-50 dark:hover:bg-zinc-900'
-																title='Slack'>
+																title='Slack'
+																aria-label='Slack'>
 																<svg
 																	className='h-4.5 w-4.5'
 																	viewBox='0 0 24 24'
@@ -1268,9 +1271,9 @@ const CanvasEmptyState = () => {
 											{/* Mock Fields */}
 											<div className='mt-2.5 space-y-2'>
 												<div>
-													<label className='mb-1 block text-[8px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
+													<span className='mb-1 block text-[8px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
 														Webhook URL
-													</label>
+													</span>
 													<div className='flex w-full items-center justify-between rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[10px] font-semibold text-zinc-700 shadow-xs select-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'>
 														<span className='truncate text-zinc-500 dark:text-zinc-400'>
 															https://api.agent101.co/v1/web...
@@ -1278,9 +1281,9 @@ const CanvasEmptyState = () => {
 													</div>
 												</div>
 												<div>
-													<label className='mb-1 block text-[8px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
+													<span className='mb-1 block text-[8px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
 														Method
-													</label>
+													</span>
 													<div className='flex w-full items-center justify-between rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[10px] font-semibold text-zinc-700 shadow-xs select-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'>
 														<span>POST</span>
 														<ChevronDown
@@ -1445,9 +1448,9 @@ const CanvasEmptyState = () => {
 											{/* Mock Fields */}
 											<div className='mt-2.5 space-y-2'>
 												<div>
-													<label className='mb-1 block text-[8px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
+													<span className='mb-1 block text-[8px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
 														Provider
-													</label>
+													</span>
 													<div className='flex w-full items-center justify-between rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[10px] font-semibold text-zinc-700 shadow-xs select-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'>
 														<span>Gemini</span>
 														<ChevronDown
@@ -1457,9 +1460,9 @@ const CanvasEmptyState = () => {
 													</div>
 												</div>
 												<div>
-													<label className='mb-1 block text-[8px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
+													<span className='mb-1 block text-[8px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
 														Model
-													</label>
+													</span>
 													<div className='flex h-[29px] w-full items-center justify-between rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[10px] font-semibold text-zinc-700 shadow-xs select-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'>
 														<span className='dark:text-zinc-550 text-zinc-400'>
 															Select a model...
@@ -1543,9 +1546,9 @@ const CanvasEmptyState = () => {
 											{/* Mock Fields */}
 											<div className='mt-2.5 space-y-2'>
 												<div>
-													<label className='mb-1 block text-[8px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
+													<span className='mb-1 block text-[8px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
 														Channel
-													</label>
+													</span>
 													<div className='flex w-full items-center justify-between rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[10px] font-semibold text-zinc-700 shadow-xs select-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'>
 														<span>#general</span>
 														<ChevronDown
@@ -1555,9 +1558,9 @@ const CanvasEmptyState = () => {
 													</div>
 												</div>
 												<div>
-													<label className='mb-1 block text-[8px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
+													<span className='mb-1 block text-[8px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
 														Message
-													</label>
+													</span>
 													<div className='flex min-h-[29px] w-full items-center justify-between rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[9px] leading-snug font-semibold text-zinc-700 shadow-xs select-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'>
 														<span className='truncate'>
 															Workflow completed!

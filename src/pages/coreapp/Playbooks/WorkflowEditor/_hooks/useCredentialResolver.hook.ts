@@ -3,7 +3,7 @@ import { useConnectorCredentials } from '@/api/modules/connectors';
 import { useCurrentUser } from '@/api/modules/user';
 import type { TConnectorCredential } from '@/types/connector.type';
 import type { TNodeDefinition } from '../_types/node.type';
-import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from './useWorkflowEditor.hook';
 
 const preferredOf = (candidates: TConnectorCredential[]) =>
 	candidates.find((credential) => credential.is_default) ??

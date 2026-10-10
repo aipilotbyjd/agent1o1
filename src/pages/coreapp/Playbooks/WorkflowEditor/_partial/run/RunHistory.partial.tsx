@@ -11,7 +11,7 @@ import {
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { RunService, runKeys } from '@/api/modules/runs';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import type { TRunRecord } from '../../_types/run.type';
 import DataInspector from './DataInspector.partial';
 import StepError from './StepError.partial';

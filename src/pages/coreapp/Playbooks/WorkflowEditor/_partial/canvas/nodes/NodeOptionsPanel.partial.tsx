@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { KeyRound, SlidersHorizontal } from 'lucide-react';
-import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 import AccountSelect from './AccountSelect.partial';
 import ConfigureInputsDialog from '../../dialogs/ConfigureInputsDialog.partial';
 import type { TNodeField } from '../../../_types/node.type';

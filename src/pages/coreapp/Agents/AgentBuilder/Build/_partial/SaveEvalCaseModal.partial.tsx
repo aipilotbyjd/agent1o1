@@ -147,6 +147,7 @@ const SaveEvalCaseModal = ({
 							A good reply…
 						</span>
 						<textarea
+							aria-label='e.g. Looks the order up with the tool before answering, and gives the delivery date.'
 							value={expectation}
 							onChange={(e) => setExpectation(e.target.value)}
 							rows={3}

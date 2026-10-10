@@ -178,7 +178,11 @@ const ChatModeBar = ({
 
 			{isMenuOpen && (
 				<>
-					<div className='fixed inset-0 z-30' onClick={() => setIsMenuOpen(false)} />
+					<div
+						aria-hidden='true'
+						className='fixed inset-0 z-30'
+						onClick={() => setIsMenuOpen(false)}
+					/>
 					<div
 						role='menu'
 						aria-label='Mode for this chat'

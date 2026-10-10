@@ -82,6 +82,7 @@ const InboxSettingsModalPartial = ({
 							Drafting instructions (optional)
 						</span>
 						<textarea
+							aria-label='e.g. Sign off with my first name. Never commit to dates.'
 							rows={3}
 							maxLength={2000}
 							value={form.drafting_instructions ?? ''}

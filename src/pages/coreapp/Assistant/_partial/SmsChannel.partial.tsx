@@ -61,6 +61,7 @@ const SmsChannelPartial = ({ workspaceId, sms }: ISmsChannelProps) => {
 			<div className='flex items-center gap-2'>
 				<Smartphone className='h-4 w-4 shrink-0 text-zinc-400' />
 				<input
+					aria-label='+14155550123'
 					type='tel'
 					value={phone}
 					onChange={(e) => setPhone(e.target.value)}
@@ -85,6 +86,7 @@ const SmsChannelPartial = ({ workspaceId, sms }: ISmsChannelProps) => {
 			{codeSent && (
 				<div className='flex items-center gap-2 pl-6'>
 					<input
+						aria-label='6-digit code'
 						inputMode='numeric'
 						value={code}
 						onChange={(e) => setCode(e.target.value)}

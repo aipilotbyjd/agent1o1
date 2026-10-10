@@ -138,12 +138,14 @@ const InboxLabelsModalPartial = ({
 
 					<div className='flex flex-col gap-2 rounded-xl border border-dashed border-zinc-300 p-3 dark:border-white/15'>
 						<input
+							aria-label='New label name'
 							value={draft.name}
 							onChange={(event) => setDraft({ ...draft, name: event.target.value })}
 							placeholder='New label name'
 							className='rounded-lg border border-zinc-200 bg-transparent px-2 py-1 dark:border-white/10'
 						/>
 						<textarea
+							aria-label='When should this label be applied?'
 							rows={2}
 							value={draft.definition}
 							onChange={(event) =>

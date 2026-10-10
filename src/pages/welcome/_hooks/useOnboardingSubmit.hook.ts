@@ -11,7 +11,7 @@ import {
 	useCompleteOnboarding,
 	useOnboardingState,
 } from '@/api/modules/onboarding';
-import { useOnboardingStore } from '../_context/OnboardingStore.context';
+import { useOnboardingStore } from './useOnboardingStore.hook';
 import { parseEmails, isValidEmail } from '../_helper/onboarding.helper';
 import { useOnboardingNavigation } from './useOnboardingNavigation.hook';
 

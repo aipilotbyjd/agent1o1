@@ -1,7 +1,7 @@
 import { Loader2, Search } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { useConnectors, useConnectorCredentials } from '@/api/modules/connectors';
-import { useOnboardingStore } from '../../_context/OnboardingStore.context';
+import { useOnboardingStore } from '../../_hooks/useOnboardingStore.hook';
 import { useOnboardingWorkspaceId } from '../../_hooks/useOnboardingWorkspace.hook';
 import BrandLogo from '../shared/BrandLogo.partial';
 import type { TConnector } from '@/types/connector.type';
@@ -69,6 +69,7 @@ const ConnectAppsStep = () => {
 				<div className='relative flex-1'>
 					<Search className='absolute top-3 left-3 h-4 w-4 text-slate-400' />
 					<input
+						aria-label='Search apps to connect...'
 						type='text'
 						placeholder='Search apps to connect...'
 						value={appSearch}

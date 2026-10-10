@@ -29,7 +29,7 @@ import { useAutosave } from '../_hooks/useAutosave.hook';
 import { useEditorHotkeys } from '../_hooks/useEditorHotkeys.hook';
 import { useWorkflowApiLoader } from '../_hooks/useWorkflowApiLoader.hook';
 import { useWorkflowRouteParams } from '../_hooks/useWorkflowRouteParams.hook';
-import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../_hooks/useWorkflowEditor.hook';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import { Boxes, Maximize2, PlaySquare, Sparkles } from 'lucide-react';
 

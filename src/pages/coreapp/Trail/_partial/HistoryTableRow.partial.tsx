@@ -1,3 +1,4 @@
+import { activateOnKey } from '@/utils/activateOnKey.util';
 import { Calendar, Link2, MoreVertical } from 'lucide-react';
 import type { DisplayItem } from '../_types/history.type';
 import type { IHistoryItem } from '../_types/history.type';
@@ -15,7 +16,11 @@ const HistoryTableRow = ({ displayItem, isSelected, onSelect }: HistoryTableRowP
 
 	return (
 		<div
+			role='button'
+			tabIndex={0}
+			aria-pressed={isSelected}
 			onClick={onSelect}
+			onKeyDown={activateOnKey(onSelect)}
 			className={`grid cursor-pointer grid-cols-12 items-center gap-4 px-6 py-4.5 transition-all duration-300 hover:bg-slate-50/50 dark:hover:bg-zinc-800/20 ${
 				isSelected
 					? 'border-primary-500 bg-primary-400/[0.02] dark:bg-primary-400/[0.02] border-l-4'

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link2 } from 'lucide-react';
 import Modal from './Modal.partial';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { canExposeInput } from '../../_helper/dynamicInputs.helper';
 import type { TNodeField } from '../../_types/node.type';
 

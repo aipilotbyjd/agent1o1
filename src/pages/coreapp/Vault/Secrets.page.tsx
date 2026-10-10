@@ -89,7 +89,9 @@ const SecretModal = ({ open, target, isPending, onClose, onSubmit }: SecretModal
 						{/* Key */}
 						<div>
 							<div className='mb-1.5 flex items-center justify-between'>
-								<label className='text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+								<label
+									htmlFor='secrets-name'
+									className='text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 									Name
 								</label>
 								<span className='text-[10px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
@@ -97,6 +99,8 @@ const SecretModal = ({ open, target, isPending, onClose, onSubmit }: SecretModal
 								</span>
 							</div>
 							<input
+								id='secrets-name'
+								aria-label='e.g. OPENAI_API_KEY'
 								type='text'
 								required
 								value={key}
@@ -110,7 +114,9 @@ const SecretModal = ({ open, target, isPending, onClose, onSubmit }: SecretModal
 						{/* Value */}
 						<div>
 							<div className='mb-1.5 flex items-center justify-between'>
-								<label className='text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+								<label
+									htmlFor='secrets-value'
+									className='text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 									Value
 								</label>
 								<span className='text-[10px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
@@ -119,6 +125,8 @@ const SecretModal = ({ open, target, isPending, onClose, onSubmit }: SecretModal
 							</div>
 							<div className='relative'>
 								<textarea
+									id='secrets-value'
+									aria-label='Secret value'
 									required
 									rows={3}
 									value={value}
@@ -151,6 +159,7 @@ const SecretModal = ({ open, target, isPending, onClose, onSubmit }: SecretModal
 								<span className='font-normal text-zinc-400'>(optional)</span>
 							</label>
 							<input
+								aria-label='What this secret is used for'
 								type='text'
 								value={description}
 								onChange={(e) => setDescription(e.target.value)}
@@ -160,8 +169,9 @@ const SecretModal = ({ open, target, isPending, onClose, onSubmit }: SecretModal
 						</div>
 
 						{/* Secret toggle */}
-						<label className='flex cursor-pointer items-center gap-3 rounded-xl border border-zinc-200 p-3 dark:border-zinc-700'>
+						<div className='flex items-center gap-3 rounded-xl border border-zinc-200 p-3 dark:border-zinc-700'>
 							<button
+								id='secrets-mark-as-secret'
 								role='switch'
 								aria-checked={isSecret}
 								aria-label='Store as a secret'
@@ -178,15 +188,15 @@ const SecretModal = ({ open, target, isPending, onClose, onSubmit }: SecretModal
 									].join(' ')}
 								/>
 							</button>
-							<div>
+							<label htmlFor='secrets-mark-as-secret' className='cursor-pointer'>
 								<span className='block text-sm font-bold text-zinc-800 dark:text-zinc-200'>
 									Mark as secret
 								</span>
 								<span className='text-xs text-zinc-400 dark:text-zinc-500'>
 									Value will be masked in the UI
 								</span>
-							</div>
-						</label>
+							</label>
+						</div>
 					</div>
 				</ModalBody>
 
@@ -343,6 +353,7 @@ const SecretsPage = () => {
 				<div className='relative w-full sm:max-w-sm'>
 					<Search className='pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-400' />
 					<input
+						aria-label='Search secrets'
 						type='text'
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}

@@ -30,7 +30,7 @@ import {
 	useResumeWorkflowTrigger,
 } from '@/api/modules/workflows/workflows.hooks';
 import { useWorkflowRouteParams } from '../../../_hooks/useWorkflowRouteParams.hook';
-import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 import { useMemo } from 'react';
 import NodeFields from './NodeFields.partial';
 import { PortHandles } from './BaseNode.partial';

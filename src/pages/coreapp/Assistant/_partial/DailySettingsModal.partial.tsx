@@ -221,6 +221,7 @@ const DailySettingsModalPartial = ({
 							What should it focus on? (optional)
 						</span>
 						<textarea
+							aria-label='e.g. Customer emails first. Skip GitHub bot notifications.'
 							rows={3}
 							maxLength={4000}
 							value={form.instructions ?? ''}

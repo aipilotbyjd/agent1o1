@@ -1,4 +1,4 @@
-import { ReactNode, useContext, useEffect, useMemo, useReducer } from 'react';
+import { ReactNode, useEffect, useMemo, useReducer } from 'react';
 import {
 	initialWorkflowEditorState,
 	WorkflowEditorContext,
@@ -68,10 +68,4 @@ export const WorkflowEditorProvider = ({ children }: { children: ReactNode }) =>
 	return (
 		<WorkflowEditorContext.Provider value={value}>{children}</WorkflowEditorContext.Provider>
 	);
-};
-
-export const useWorkflowEditor = () => {
-	const context = useContext(WorkflowEditorContext);
-	if (!context) throw new Error('useWorkflowEditor must be used inside WorkflowEditorProvider');
-	return context;
 };

@@ -964,6 +964,7 @@ const WorkflowLaunchSurface = () => {
 								<label className='flex h-12 items-center gap-3 rounded-2xl border border-zinc-300 bg-white px-4 shadow-xs focus-within:border-emerald-300 focus-within:ring-4 focus-within:ring-emerald-100'>
 									<Search size={20} className='text-zinc-400' />
 									<input
+										aria-label='Search all nodes'
 										value={triggerSearch}
 										onChange={(event) => setTriggerSearch(event.target.value)}
 										placeholder='Search all nodes'

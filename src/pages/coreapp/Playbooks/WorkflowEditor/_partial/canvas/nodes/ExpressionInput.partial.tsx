@@ -1,7 +1,7 @@
 import { getNodeOutput } from '../../../_helper/outputPorts.helper';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CornerDownLeft } from 'lucide-react';
-import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 import { collectUpstreamVariables } from '../../../_helper/variables.helper';
 import {
 	getTokenFromDrop,

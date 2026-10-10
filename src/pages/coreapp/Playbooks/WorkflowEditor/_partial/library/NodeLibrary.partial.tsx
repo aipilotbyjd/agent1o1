@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Search, Sparkles, X } from 'lucide-react';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { useWorkflowRouteParams } from '../../_hooks/useWorkflowRouteParams.hook';
 import { mapApiCategoriesToGroups } from '../../_helper/apiNodeCatalog.helper';
 import type { TNodeCategoryGroup } from '../../_helper/apiNodeCatalog.helper';

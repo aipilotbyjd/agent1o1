@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { exportWorkflow, parseWorkflowImport } from '../../_helper/importExport.helper';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import Modal from './Modal.partial';
 
 type TExportFormat = 'json' | 'yaml';
@@ -120,6 +120,7 @@ const ImportExportDialog = () => {
 
 						<textarea
 							readOnly
+							aria-label='Exported workflow'
 							value={displayValue}
 							className='h-64 w-full rounded-xl border border-zinc-300 bg-white p-3 font-mono text-xs text-zinc-800 transition outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200'
 						/>
@@ -151,6 +152,7 @@ const ImportExportDialog = () => {
 				) : (
 					<>
 						<textarea
+							aria-label='Paste workflow JSON here…'
 							value={raw}
 							onChange={(event) => setRaw(event.target.value)}
 							placeholder='Paste workflow JSON here…'

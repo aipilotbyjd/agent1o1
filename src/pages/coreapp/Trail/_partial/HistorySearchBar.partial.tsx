@@ -5,7 +5,7 @@ import type { TRunStatus } from '@/types/run.type';
 export type TTrailStatusFilter = 'all' | TRunStatus;
 
 /** Applied by the server (`GET runs?status=`), so it spans every page. */
-export const TRAIL_STATUS_OPTIONS: { value: TTrailStatusFilter; label: string }[] = [
+const TRAIL_STATUS_OPTIONS: { value: TTrailStatusFilter; label: string }[] = [
 	{ value: 'all', label: 'All statuses' },
 	{ value: 'running', label: 'Running' },
 	{ value: 'awaiting_approval', label: 'Awaiting approval' },

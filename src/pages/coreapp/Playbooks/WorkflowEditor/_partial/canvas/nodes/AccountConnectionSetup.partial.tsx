@@ -190,6 +190,7 @@ const AccountConnectionSetup = ({
 							Account name
 						</label>
 						<input
+							aria-label={`e.g. Work ${connector.name}`}
 							id={nameId}
 							value={name}
 							onChange={(event) => setName(event.target.value)}
@@ -282,6 +283,7 @@ const AccountConnectionSetup = ({
 												/>
 											) : field.type === 'multiline' && !field.secret ? (
 												<textarea
+													aria-label={field.placeholder}
 													id={id}
 													value={String(data[field.name] ?? '')}
 													onChange={(event) => set(event.target.value)}
@@ -292,6 +294,7 @@ const AccountConnectionSetup = ({
 												/>
 											) : (
 												<input
+													aria-label={field.placeholder}
 													id={id}
 													type={
 														field.secret

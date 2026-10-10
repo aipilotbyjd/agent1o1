@@ -1,5 +1,5 @@
 import { Building2, Check, HelpCircle, Link as LinkIcon } from 'lucide-react';
-import { useOnboardingStore } from '../../_context/OnboardingStore.context';
+import { useOnboardingStore } from '../../_hooks/useOnboardingStore.hook';
 import { slugify } from '../../_helper/onboarding.helper';
 
 interface IWorkspaceStepProps {
@@ -62,6 +62,7 @@ const WorkspaceStep = ({ workspaceError }: IWorkspaceStepProps) => {
 						<div className='focus-within:border-primary-500 focus-within:ring-primary-400/10 relative flex items-center rounded-2xl border border-slate-200/80 bg-slate-50/50 shadow-2xs transition-all duration-300 focus-within:bg-white focus-within:ring-4 dark:border-zinc-800/80 dark:bg-zinc-950/30 dark:focus-within:bg-zinc-950'>
 							<Building2 className='absolute left-4.5 h-4 w-4 text-slate-400' />
 							<input
+								aria-label='Acme Automation'
 								id='ws-name'
 								type='text'
 								placeholder='Acme Automation'

@@ -79,6 +79,7 @@ const NodeSandbox = ({ code }: NodeSandboxProps) => {
 					)}
 				</div>
 				<textarea
+					aria-label='{"key": "value"}'
 					className={`${areaCls} ${jsonError ? 'border-red-400 focus:border-red-400 focus:ring-red-100' : ''}`}
 					rows={4}
 					value={inputJson}

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router';
-import { useOnboardingStore } from '../_context/OnboardingStore.context';
+import { useOnboardingStore } from './useOnboardingStore.hook';
 import { TOTAL_STEPS } from '../_helper/onboarding.constants';
 import { parseEmails, isValidEmail } from '../_helper/onboarding.helper';
 import { useDismissOnboarding } from '@/api/modules/onboarding';

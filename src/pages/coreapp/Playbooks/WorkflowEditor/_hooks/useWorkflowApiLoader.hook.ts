@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useWorkflow, useWorkflowVersions } from '@/api/modules/workflows';
 import { versionToExportedWorkflow } from '../_helper/workflowApiTransform.helper';
-import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from './useWorkflowEditor.hook';
 import { useNodeCategories } from '@/api/modules/catalog';
 import { mapApiCategoriesToGroups } from '../_helper/apiNodeCatalog.helper';
 import { NODE_CATALOG_MAP } from '../_helper/nodeCatalog.constants';

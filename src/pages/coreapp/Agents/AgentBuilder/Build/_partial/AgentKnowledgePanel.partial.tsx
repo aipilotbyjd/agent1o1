@@ -138,6 +138,7 @@ const AgentKnowledgePanel = ({ ws, agentId }: TProps) => {
 
 			{/* Search */}
 			<input
+				aria-label='Search knowledge…'
 				type='text'
 				value={search}
 				onChange={(e) => setSearch(e.target.value)}
@@ -184,6 +185,7 @@ const AgentKnowledgePanel = ({ ws, agentId }: TProps) => {
 						/>
 					)}
 					<input
+						aria-label='Title'
 						type='text'
 						value={form.title}
 						onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
@@ -192,6 +194,7 @@ const AgentKnowledgePanel = ({ ws, agentId }: TProps) => {
 					/>
 					{form.source_type === 'url' && (
 						<input
+							aria-label='https://source-url.com'
 							type='url'
 							value={form.source_url}
 							onChange={(e) => setForm((f) => ({ ...f, source_url: e.target.value }))}
@@ -200,6 +203,7 @@ const AgentKnowledgePanel = ({ ws, agentId }: TProps) => {
 						/>
 					)}
 					<textarea
+						aria-label='Content the agent should know…'
 						value={form.content}
 						onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
 						placeholder='Content the agent should know…'

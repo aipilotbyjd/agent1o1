@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Check, ChevronDown, FileText, Loader2, Pin, PinOff, RotateCw, X } from 'lucide-react';
 import { useNodePin } from '../../_hooks/useNodePin.hook';
 import { useNodeTestRunner } from '../../_hooks/useNodeTestRunner.hook';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import type { TCanvasNode } from '../../_types/canvas.type';
 import { countItems, formatDuration, getHttpFailure } from '../../_helper/runData.helper';
 import DataInspector from './DataInspector.partial';

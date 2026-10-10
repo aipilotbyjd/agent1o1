@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { WorkflowService, workflowKeys } from '@/api/modules/workflows';
 import { useTestWorkflowNode } from '@/api/modules/workflow-builder';
 import type { TWorkflow } from '@/types/workflow.type';
-import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from './useWorkflowEditor.hook';
 
 /**
  * Runs a single node against the real backend test endpoint (resolves config +

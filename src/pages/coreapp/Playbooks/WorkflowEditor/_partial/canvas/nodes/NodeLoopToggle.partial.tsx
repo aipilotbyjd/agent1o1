@@ -1,4 +1,4 @@
-import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 
 /** Runs the node once per item of its incoming list input. */
 const NodeLoopToggle = ({ nodeId, active }: { nodeId: string; active: boolean }) => {

@@ -8,7 +8,7 @@ import {
 } from '@/utils/fileDisplay.util';
 
 /** A local `File` as an image URL for its thumbnail, revoked when it changes or unmounts. */
-export const useObjectUrl = (file: File | null | undefined) => {
+const useObjectUrl = (file: File | null | undefined) => {
 	const url = useMemo(
 		() => (file && isImageFile(file.type, file.name) ? URL.createObjectURL(file) : null),
 		[file],

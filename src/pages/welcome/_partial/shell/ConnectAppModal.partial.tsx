@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useConnectOAuthConnector, useCreateConnectorCredential } from '@/api/modules/connectors';
-import { useOnboardingStore } from '../../_context/OnboardingStore.context';
+import { useOnboardingStore } from '../../_hooks/useOnboardingStore.hook';
 import { useOnboardingWorkspaceId } from '../../_hooks/useOnboardingWorkspace.hook';
 import BrandLogo from '../shared/BrandLogo.partial';
 import type { TConnectorData, TConnectorField } from '@/types/connector.type';
@@ -90,6 +90,7 @@ const ConnectAppModal = () => {
 				<div className='flex h-11 items-center overflow-hidden rounded-xl border border-slate-200/90 bg-white/50 pr-3 dark:border-zinc-800'>
 					{field.type === 'multiline' ? (
 						<textarea
+							aria-label={field.placeholder}
 							placeholder={field.placeholder}
 							value={String(value)}
 							onChange={(e) => setValue(e.target.value)}
@@ -104,6 +105,7 @@ const ConnectAppModal = () => {
 						/>
 					) : (
 						<input
+							aria-label={field.placeholder}
 							type={
 								field.secret
 									? 'password'

@@ -412,10 +412,14 @@ const SkillEditorDrawer = ({
 					)}
 
 					<div>
-						<label className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+						<label
+							htmlFor='skilleditordrawer-name'
+							className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 							Name
 						</label>
 						<input
+							id='skilleditordrawer-name'
+							aria-label='e.g. Competitor Research'
 							type='text'
 							value={form.name}
 							readOnly={isSynced}
@@ -426,10 +430,14 @@ const SkillEditorDrawer = ({
 					</div>
 
 					<div>
-						<label className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+						<label
+							htmlFor='skilleditordrawer-description'
+							className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 							Description
 						</label>
 						<textarea
+							id='skilleditordrawer-description'
+							aria-label='Short summary shown on the skill card'
 							value={form.description}
 							readOnly={isSynced}
 							onChange={(e) =>
@@ -443,10 +451,13 @@ const SkillEditorDrawer = ({
 
 					<div className='grid grid-cols-2 gap-4'>
 						<div>
-							<label className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+							<label
+								htmlFor='skilleditordrawer-category'
+								className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 								Category
 							</label>
 							<select
+								id='skilleditordrawer-category'
 								value={form.category}
 								onChange={(e) =>
 									setForm((f) => ({ ...f, category: e.target.value }))
@@ -461,9 +472,9 @@ const SkillEditorDrawer = ({
 						</div>
 
 						<div>
-							<label className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+							<span className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 								Visibility
-							</label>
+							</span>
 							<button
 								type='button'
 								onClick={() => setForm((f) => ({ ...f, is_shared: !f.is_shared }))}
@@ -478,9 +489,9 @@ const SkillEditorDrawer = ({
 					</div>
 
 					<div>
-						<label className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+						<span className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 							Icon
-						</label>
+						</span>
 						<div className='flex flex-wrap gap-2'>
 							{SKILL_ICON_OPTIONS.map(({ name, Icon }) => (
 								<button
@@ -501,14 +512,16 @@ const SkillEditorDrawer = ({
 					</div>
 
 					<div>
-						<label className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+						<span className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 							Color
-						</label>
+						</span>
 						<div className='flex flex-wrap gap-2'>
 							{SKILL_COLOR_OPTIONS.map((color) => (
 								<button
 									key={color}
 									type='button'
+									aria-label={`Color ${color}`}
+									aria-pressed={form.color === color}
 									onClick={() => setForm((f) => ({ ...f, color }))}
 									style={{ backgroundColor: color }}
 									className={`h-8 w-8 cursor-pointer rounded-xl transition-all ${
@@ -522,10 +535,14 @@ const SkillEditorDrawer = ({
 					</div>
 
 					<div>
-						<label className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+						<label
+							htmlFor='skilleditordrawer-instructions'
+							className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 							Instructions
 						</label>
 						<textarea
+							id='skilleditordrawer-instructions'
+							aria-label='What should an agent do when this skill is attached?'
 							value={form.instructions}
 							readOnly={isSynced}
 							onChange={(e) =>
@@ -681,6 +698,7 @@ const SkillEditorDrawer = ({
 								<div
 									className={`space-y-2 rounded-xl border border-dashed border-zinc-200 p-3 dark:border-zinc-800 ${isSynced ? 'hidden' : ''}`}>
 									<input
+										aria-label='Reference title'
 										type='text'
 										placeholder='Reference title'
 										value={newReference.title}
@@ -693,6 +711,7 @@ const SkillEditorDrawer = ({
 										className='focus:border-primary-500/80 block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
 									/>
 									<textarea
+										aria-label='Reference content'
 										placeholder='Reference content'
 										rows={2}
 										value={newReference.content}
@@ -887,6 +906,7 @@ const SkillEditorDrawer = ({
 									className={`space-y-2 rounded-xl border border-dashed border-zinc-200 p-3 dark:border-zinc-800 ${isSynced ? 'hidden' : ''}`}>
 									<div className='flex gap-2'>
 										<input
+											aria-label='Script name'
 											type='text'
 											placeholder='Script name'
 											value={newScript.name}
@@ -916,6 +936,7 @@ const SkillEditorDrawer = ({
 										</select>
 									</div>
 									<input
+										aria-label='Short description'
 										type='text'
 										placeholder='Short description'
 										value={newScript.description}
@@ -928,6 +949,7 @@ const SkillEditorDrawer = ({
 										className='focus:border-primary-500/80 block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
 									/>
 									<textarea
+										aria-label='Code'
 										placeholder='Code'
 										rows={3}
 										value={newScript.code}

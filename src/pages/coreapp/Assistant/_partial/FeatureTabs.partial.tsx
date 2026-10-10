@@ -1,12 +1,10 @@
+import { FEATURE_TABS, type TFeatureTab } from '../_helper/featureTabs.constants';
 import classNames from 'classnames';
 import SituationsTabPartial from './SituationsTab.partial';
 import DailyTabPartial from './DailyTab.partial';
 import MeetingsTabPartial from './MeetingsTab.partial';
 import InboxTabPartial from './InboxTab.partial';
 import { useBrand } from '@/context/brand';
-
-export const FEATURE_TABS = ['situations', 'daily', 'inbox', 'prep'] as const;
-export type TFeatureTab = (typeof FEATURE_TABS)[number];
 
 const AVAILABLE: TFeatureTab[] = ['situations', 'daily', 'inbox', 'prep'];
 

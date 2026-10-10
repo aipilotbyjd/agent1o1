@@ -1,3 +1,4 @@
+import { activateOnKey } from '@/utils/activateOnKey.util';
 import { ChevronRight, Link2 } from 'lucide-react';
 import type { DisplayItem } from '../_types/history.type';
 
@@ -12,7 +13,11 @@ const HistoryMobileCard = ({ displayItem, isSelected, onSelect }: HistoryMobileC
 
 	return (
 		<div
+			role='button'
+			tabIndex={0}
+			aria-pressed={isSelected}
 			onClick={onSelect}
+			onKeyDown={activateOnKey(onSelect)}
 			className={`flex items-start justify-between gap-3 p-5 transition-all duration-300 hover:bg-slate-50/50 dark:hover:bg-zinc-800/10 ${
 				isSelected
 					? 'border-primary-500 bg-primary-400/[0.02] dark:bg-primary-400/[0.02] border-l-4'

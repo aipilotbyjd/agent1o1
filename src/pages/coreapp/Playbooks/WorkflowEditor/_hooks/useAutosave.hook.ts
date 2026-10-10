@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { AUTOSAVE_DEBOUNCE_MS } from '../_helper/builder.constants';
 import { exportWorkflow } from '../_helper/importExport.helper';
-import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from './useWorkflowEditor.hook';
 import { usePersistWorkflowDraft } from './usePersistWorkflowDraft.hook';
 import { messageFromError, notify } from '@/api/core/notify';
 

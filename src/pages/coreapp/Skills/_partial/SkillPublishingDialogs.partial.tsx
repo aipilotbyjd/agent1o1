@@ -125,6 +125,7 @@ export const PublishSkillDialog = ({
 					<label className='flex flex-col gap-1.5 text-sm'>
 						Repository
 						<input
+							aria-label='your-account/skills or a GitHub link'
 							className={syncInputClass}
 							list='publish-skill-repositories'
 							placeholder='your-account/skills or a GitHub link'
@@ -144,6 +145,7 @@ export const PublishSkillDialog = ({
 					<label className='flex flex-col gap-1.5 text-sm'>
 						Branch
 						<input
+							aria-label='Repository default branch'
 							className={syncInputClass}
 							placeholder='Repository default branch'
 							value={branch}
@@ -182,6 +184,7 @@ export const PublishSkillDialog = ({
 					<label className='flex flex-col gap-1.5 text-sm'>
 						Skill folder
 						<input
+							aria-label='skills/my-skill'
 							className={syncInputClass}
 							value={path}
 							onChange={(e) => setPath(e.target.value)}
@@ -374,6 +377,7 @@ export const ForkSkillSourceDialog = ({
 							<label className='flex flex-col gap-1.5 text-sm'>
 								Existing fork (optional)
 								<input
+									aria-label='your-account/skills'
 									className={syncInputClass}
 									value={existingFork}
 									onChange={(e) => setExistingFork(e.target.value)}

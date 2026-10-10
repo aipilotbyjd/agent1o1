@@ -11,7 +11,8 @@ import {
 	Play,
 } from 'lucide-react';
 import { useAgentRuns } from '@/api/modules/agents';
-import AgentRunLog, { AGENT_RUN_KINDS } from '@/components/common/AgentRunLog';
+import AgentRunLog from '@/components/common/AgentRunLog';
+import { AGENT_RUN_KINDS } from '@/components/common/agentRunKinds.constants';
 import type { TAgentRunStatus } from '@/types/agent.type';
 import type { TRun, TRunStatus } from '@/types/run.type';
 

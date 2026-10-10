@@ -1,5 +1,5 @@
 import { useAuth } from '@/context/auth';
-import { useOnboardingStore } from '../_context/OnboardingStore.context';
+import { useOnboardingStore } from './useOnboardingStore.hook';
 
 /**
  * The workspace everything after step 2 is scoped to — connector credentials

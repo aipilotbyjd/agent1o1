@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { Search, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 
 const CanvasSearch = () => {
 	const { state, dispatch } = useWorkflowEditor();
@@ -44,6 +44,7 @@ const CanvasSearch = () => {
 				<div className='flex items-center gap-2 border-b border-zinc-100 px-3 py-2 dark:border-white/[0.06]'>
 					<Search size={15} className='shrink-0 text-zinc-400' />
 					<input
+						aria-label='Search nodes by label, type, or description…'
 						ref={inputRef}
 						type='text'
 						value={query}

@@ -71,10 +71,13 @@ const EditKnowledgeSourceDialog = ({
 			<ModalBody>
 				<div className='space-y-4'>
 					<div>
-						<label className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+						<label
+							htmlFor='editknowledgesourcedialog-name'
+							className='mb-1.5 block text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 							Name
 						</label>
 						<input
+							id='editknowledgesourcedialog-name'
 							type='text'
 							value={name}
 							onChange={(e) => setName(e.target.value)}

@@ -1581,6 +1581,7 @@ const WorkflowsListPage = () => {
 														<div
 															key={wf.id}
 															role='link'
+															aria-label={wf.title}
 															tabIndex={0}
 															draggable={renamingId !== wf.id}
 															onDragStart={(e) =>
@@ -1673,6 +1674,7 @@ const WorkflowsListPage = () => {
 
 																	<div
 																		className='relative z-25 flex shrink-0 items-center gap-1'
+																		role='presentation'
 																		onClick={(e) =>
 																			e.stopPropagation()
 																		}>
@@ -1734,6 +1736,7 @@ const WorkflowsListPage = () => {
 																</div>
 																<div
 																	className='flex shrink-0 items-center gap-2'
+																	role='presentation'
 																	onClick={(e) =>
 																		e.stopPropagation()
 																	}>
@@ -1760,7 +1763,11 @@ const WorkflowsListPage = () => {
 													<table className='w-full min-w-[640px] border-collapse text-left text-xs'>
 														<thead>
 															<tr className='border-b border-slate-200/60 bg-slate-50/50 text-[10px] font-black tracking-widest text-slate-400 uppercase dark:border-zinc-800/40 dark:bg-zinc-900/20 dark:text-zinc-500'>
-																<th className='w-10 px-3 py-4' />
+																<th className='w-10 px-3 py-4'>
+																	<span className='sr-only'>
+																		Select
+																	</span>
+																</th>
 																<th className='px-4 py-4'>
 																	Workflow Name
 																</th>

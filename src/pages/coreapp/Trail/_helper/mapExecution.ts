@@ -1,7 +1,7 @@
 import { Bot, Workflow } from 'lucide-react';
 import dayjs from 'dayjs';
 import type { DisplayItem, IHistoryItem } from '../_types/history.type';
-import { AGENT_RUN_KINDS } from '@/components/common/AgentRunLog';
+import { AGENT_RUN_KINDS } from '@/components/common/agentRunKinds.constants';
 import type { TRun } from '@/types/run.type';
 
 const agentRunTitle = (run: TRun) => {

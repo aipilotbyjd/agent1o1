@@ -39,7 +39,7 @@ import NodeFlowTriggerToggle from './NodeFlowTriggerToggle.partial';
 import NodeAuthWarning from './NodeAuthWarning.partial';
 import { tintStyle, getNodeAccentColor } from '../../library/library.util';
 import { getNodeCreditCost } from '../../../_helper/builder.constants';
-import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 import type { TCanvasNode } from '../../../_types/canvas.type';
 import type { TNodeComment, TNodePort } from '../../../_types/node.type';
 import type { TValidationIssue } from '../../../_helper/validation.helper';

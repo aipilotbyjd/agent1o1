@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { NODE_CATALOG } from '../../_helper/nodeCatalog.constants';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { useRunWorkflow } from '../../_hooks/useRunWorkflow.hook';
 import Modal from './Modal.partial';
 

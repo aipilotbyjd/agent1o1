@@ -124,6 +124,7 @@ export const SkillSyncSettingsDialog = ({
 					<label className='flex flex-col gap-1.5 text-sm'>
 						Branch
 						<input
+							aria-label='Repository default branch'
 							className={inputClass}
 							value={branch}
 							onChange={(e) => setBranch(e.target.value)}

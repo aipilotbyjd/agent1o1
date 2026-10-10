@@ -127,6 +127,11 @@ const TriggerModalPartial = ({ workspaceId, isOpen, onClose }: ITriggerModalProp
 					<label className='flex flex-col gap-1'>
 						<span className='text-xs text-zinc-500'>What should {brand.name} do?</span>
 						<textarea
+							aria-label={
+								type === 'webhook'
+									? 'e.g. A new lead came in: {{payload}} — add them to my list.'
+									: 'e.g. Summarise my unread email and flag anything urgent.'
+							}
 							rows={3}
 							value={prompt}
 							onChange={(event) => setPrompt(event.target.value)}
@@ -144,6 +149,7 @@ const TriggerModalPartial = ({ workspaceId, isOpen, onClose }: ITriggerModalProp
 							<label className='flex flex-col gap-1'>
 								<span className='text-xs text-zinc-500'>Cron expression</span>
 								<input
+									aria-label='0 9 * * 1-5'
 									value={cron}
 									onChange={(event) => setCron(event.target.value)}
 									placeholder='0 9 * * 1-5'

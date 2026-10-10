@@ -6,7 +6,7 @@ import { useNodeOptions } from '@/api/modules/nodes';
 import { useWorkspaceContext } from '@/context/workspace';
 import useOnClickOutside from '@/hooks/useOnClickOutside';
 import type { TNodeOption } from '@/types/node.type';
-import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 import type { TNodeField } from '../../../_types/node.type';
 import ExpressionInput from './ExpressionInput.partial';
 
@@ -358,7 +358,10 @@ const DynamicSelect = ({ field, value, onChange, compact, nodeId, className }: P
 									role='option'
 									aria-selected={selected}
 									onMouseEnter={() => setActiveIndex(index)}
-									onClick={() => pick(option)}
+									onMouseDown={(event) => {
+										event.preventDefault();
+										pick(option);
+									}}
 									className={[
 										'flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 transition',
 										selected

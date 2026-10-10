@@ -66,6 +66,7 @@ const MessageFeedbackPartial = ({ feedback, onRate, isSaving = false }: IMessage
 						What should change? (optional)
 					</label>
 					<input
+						aria-label='What should change? (optional)'
 						id='assistant-feedback-comment'
 						value={comment}
 						onChange={(event) => setComment(event.target.value)}

@@ -512,6 +512,7 @@ const BlueprintsListPage = () => {
 						<div className='relative w-full sm:w-64'>
 							<Search className='pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-zinc-600' />
 							<input
+								aria-label={`Search ${activeTab}...`}
 								type='text'
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}

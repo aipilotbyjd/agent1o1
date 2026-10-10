@@ -110,6 +110,7 @@ const AgentTagsPanel = ({ ws, agentId }: TProps) => {
 				footer={
 					<div className='flex items-center gap-2'>
 						<input
+							aria-label='New tag name'
 							type='text'
 							value={newTagName}
 							onChange={(e) => setNewTagName(e.target.value)}

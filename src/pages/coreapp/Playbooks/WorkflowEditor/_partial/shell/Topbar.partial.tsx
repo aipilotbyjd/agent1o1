@@ -39,7 +39,7 @@ import { Link } from 'react-router';
 import DARK_MODE from '@/constants/darkMode.constant';
 import useDarkMode from '@/hooks/useDarkMode';
 import { useCreateWorkflowVersion } from '@/api/modules/workflows';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { ApiError, notify } from '@/api/core';
 import { usePersistWorkflowDraft } from '../../_hooks/usePersistWorkflowDraft.hook';
 import { useRunWorkflow } from '../../_hooks/useRunWorkflow.hook';
@@ -187,6 +187,7 @@ export const EditableWorkflowName = ({
 		return (
 			<input
 				ref={inputRef}
+				aria-label='Workflow name'
 				value={draft}
 				onChange={(e) => setDraft(e.target.value)}
 				onBlur={commit}
@@ -337,7 +338,11 @@ const SaveStatusBadge = ({
 			<AnimatePresence>
 				{isOpen && (
 					<>
-						<div className='fixed inset-0 z-40' onClick={() => setIsOpen(false)} />
+						<div
+							aria-hidden='true'
+							className='fixed inset-0 z-40'
+							onClick={() => setIsOpen(false)}
+						/>
 						<motion.div
 							initial={{ opacity: 0, y: 4, scale: 0.96 }}
 							animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -736,7 +741,11 @@ const Topbar = () => {
 					<AnimatePresence>
 						{isShareDropdownOpen && (
 							<>
-								<div className='fixed inset-0 z-40' onClick={() => closeMenu()} />
+								<div
+									aria-hidden='true'
+									className='fixed inset-0 z-40'
+									onClick={() => closeMenu()}
+								/>
 								<motion.div
 									initial={{ opacity: 0, y: 4, scale: 0.96 }}
 									animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -861,7 +870,11 @@ const Topbar = () => {
 					<AnimatePresence>
 						{isSaveDropdownOpen && (
 							<>
-								<div className='fixed inset-0 z-40' onClick={() => closeMenu()} />
+								<div
+									aria-hidden='true'
+									className='fixed inset-0 z-40'
+									onClick={() => closeMenu()}
+								/>
 								<motion.div
 									initial={{ opacity: 0, y: 4, scale: 0.96 }}
 									animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1067,7 +1080,11 @@ const Topbar = () => {
 					<AnimatePresence>
 						{isMobileMenuOpen && (
 							<>
-								<div className='fixed inset-0 z-40' onClick={() => closeMenu()} />
+								<div
+									aria-hidden='true'
+									className='fixed inset-0 z-40'
+									onClick={() => closeMenu()}
+								/>
 								<motion.div
 									initial={{ opacity: 0, y: 4, scale: 0.96 }}
 									animate={{ opacity: 1, y: 0, scale: 1 }}

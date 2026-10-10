@@ -1,6 +1,7 @@
+import { activateOnKey } from '@/utils/activateOnKey.util';
 import { useState } from 'react';
 import { Search, Zap } from 'lucide-react';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import Modal from './Modal.partial';
 
 type TTemplate = {
@@ -136,6 +137,7 @@ const TemplateLibraryDialog = () => {
 						className='absolute top-1/2 left-3 -translate-y-1/2 text-zinc-400'
 					/>
 					<input
+						aria-label='Search templates…'
 						type='text'
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
@@ -167,7 +169,10 @@ const TemplateLibraryDialog = () => {
 					{filtered.map((template) => (
 						<div
 							key={template.id}
+							role='button'
+							tabIndex={0}
 							onClick={() => applyTemplate(template)}
+							onKeyDown={activateOnKey(() => applyTemplate(template))}
 							className='group hover:border-primary-300 hover:shadow-primary-500/20 dark:hover:border-primary-800/50 flex cursor-pointer flex-col justify-between rounded-xl border border-zinc-200 bg-white p-4 transition-all hover:shadow-md active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-900'>
 							<div>
 								<div className='mb-1 flex items-start justify-between gap-2'>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { dynamicInputId } from '../../../_helper/dynamicInputs.helper';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 import type { TNodeField } from '../../../_types/node.type';
 import FieldInput from './FieldInput.partial';
 import NodeHelpTip from './NodeHelpTip.partial';

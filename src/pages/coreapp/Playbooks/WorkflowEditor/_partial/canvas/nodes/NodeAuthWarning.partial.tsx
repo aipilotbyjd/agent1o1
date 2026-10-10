@@ -1,5 +1,5 @@
 import { AlertCircle } from 'lucide-react';
-import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 
 /** Shown when a node declares `requiresCredential` but none is selected. */
 const NodeAuthWarning = ({ nodeId }: { nodeId: string }) => {

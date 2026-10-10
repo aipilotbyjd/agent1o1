@@ -5,7 +5,7 @@ import { useConfirm } from '@/context/confirm';
 import type { TNodeRunDetail, TRun, TRunStatus } from '@/types/run.type';
 import type { TWorkflow } from '@/types/workflow.type';
 import { createId } from '../_context/WorkflowEditorStore.context';
-import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from './useWorkflowEditor.hook';
 import { getRunOrder } from '../_helper/runGraph.helper';
 import { usePersistWorkflowDraft } from './usePersistWorkflowDraft.hook';
 import {

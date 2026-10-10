@@ -115,8 +115,11 @@ const KnowledgeSourceSettingsPartial = ({
 		<div className='space-y-4'>
 			{app && app.accounts.length > 1 && onCredentialChange && (
 				<div>
-					<label className={labelClass}>Account</label>
+					<label htmlFor='knowledgesourcesettings-account' className={labelClass}>
+						Account
+					</label>
 					<select
+						id='knowledgesourcesettings-account'
 						value={credentialId}
 						onChange={(e) => onCredentialChange(e.target.value)}
 						className={inputClass}>

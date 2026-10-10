@@ -100,6 +100,7 @@ const PersonalizationModalPartial = ({
 						{KIND_LABELS[kind]}
 					</label>
 					<textarea
+						aria-label={KIND_PLACEHOLDERS[kind]}
 						id='assistant-style-notes'
 						rows={7}
 						value={draft}

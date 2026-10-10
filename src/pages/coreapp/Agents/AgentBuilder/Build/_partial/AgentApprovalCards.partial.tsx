@@ -1,3 +1,4 @@
+import { prettifyActionTool } from '../_helper/actionTool.helper';
 import { useState } from 'react';
 import { AlertTriangle, Check, Clock, PencilLine, ShieldAlert, ShieldCheck, X } from 'lucide-react';
 import type {
@@ -31,9 +32,6 @@ const RISK_LABEL: Record<TActionRisk, string> = {
 	medium: 'Medium risk',
 	high: 'High risk',
 };
-
-export const prettifyActionTool = (raw: string) =>
-	raw.replace(/[_-]+/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
 
 const formatValue = (value: unknown) =>
 	typeof value === 'string' ? value : JSON.stringify(value, null, 2);
@@ -183,6 +181,11 @@ export const ApprovalCard = ({
 
 			{mode !== 'view' && (
 				<input
+					aria-label={
+						mode === 'reject'
+							? 'Tell the agent why, or what to do instead (optional)'
+							: 'Note for the agent (optional)'
+					}
 					value={note}
 					onChange={(event) => setNote(event.target.value)}
 					maxLength={2000}

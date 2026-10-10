@@ -14,7 +14,7 @@ import {
 	Square,
 	X,
 } from 'lucide-react';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { useRunWorkflow } from '../../_hooks/useRunWorkflow.hook';
 import { getRunOrder } from '../../_helper/runGraph.helper';
 import NodeRunOutput from './NodeRunOutput.partial';

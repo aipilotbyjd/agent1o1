@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import OnboardingProvider from '../../_context/OnboardingProvider.context';
-import { useOnboardingStore } from '../../_context/OnboardingStore.context';
+import { useOnboardingStore } from '../../_hooks/useOnboardingStore.hook';
 import { TOTAL_STEPS, ROLES } from '../../_helper/onboarding.constants';
 import { parseEmails, isValidEmail } from '../../_helper/onboarding.helper';
 import { useOnboardingNavigation } from '../../_hooks/useOnboardingNavigation.hook';

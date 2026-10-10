@@ -63,6 +63,7 @@ const ComposerPartial = ({
 				Ask {brand.name} anything…
 			</label>
 			<textarea
+				aria-label={`Ask ${brand.name} anything…`}
 				id='assistant-composer'
 				rows={3}
 				value={content}

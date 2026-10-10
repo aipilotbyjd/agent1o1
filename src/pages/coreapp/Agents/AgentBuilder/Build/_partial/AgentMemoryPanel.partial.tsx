@@ -120,6 +120,7 @@ const AgentMemoryPanel = ({ ws, agentId }: TProps) => {
 						</button>
 					</div>
 					<input
+						aria-label='Key (e.g. preferred_tone)'
 						type='text'
 						value={form.key}
 						onChange={(e) => setForm((f) => ({ ...f, key: e.target.value }))}
@@ -127,6 +128,7 @@ const AgentMemoryPanel = ({ ws, agentId }: TProps) => {
 						className='focus:border-primary-500/50 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 					/>
 					<textarea
+						aria-label='Value'
 						value={form.value}
 						onChange={(e) => setForm((f) => ({ ...f, value: e.target.value }))}
 						placeholder='Value'

@@ -202,6 +202,7 @@ const EvaluationSettingsForm = ({
 						}
 					/>
 					<textarea
+						aria-label='How to read sentiment for this agent (optional)'
 						value={form.sentiment_guidance}
 						onChange={(e) =>
 							setForm((f) => ({ ...f, sentiment_guidance: e.target.value }))
@@ -246,6 +247,7 @@ const EvaluationSettingsForm = ({
 						className='space-y-1.5 rounded-lg border border-zinc-100 p-2 dark:border-zinc-800'>
 						<div className='flex items-center gap-1.5'>
 							<input
+								aria-label='Criterion name'
 								type='text'
 								value={criterion.name}
 								onChange={(e) =>
@@ -272,6 +274,7 @@ const EvaluationSettingsForm = ({
 							</button>
 						</div>
 						<textarea
+							aria-label='What should the grader check?'
 							value={criterion.prompt}
 							onChange={(e) =>
 								setForm((f) => ({
@@ -352,6 +355,7 @@ const EvaluationSettingsForm = ({
 				{form.tags.map((tag, index) => (
 					<div key={index} className='flex items-center gap-1.5'>
 						<input
+							aria-label='Tag'
 							type='text'
 							value={tag.name}
 							onChange={(e) =>
@@ -366,6 +370,7 @@ const EvaluationSettingsForm = ({
 							className={`w-24 shrink-0 ${fieldClass}`}
 						/>
 						<input
+							aria-label='When to apply it'
 							type='text'
 							value={tag.description}
 							onChange={(e) =>
@@ -415,6 +420,7 @@ const EvaluationSettingsForm = ({
 				{form.data_points.map((point, index) => (
 					<div key={index} className='flex items-center gap-1.5'>
 						<input
+							aria-label='Field'
 							type='text'
 							value={point.name}
 							onChange={(e) =>
@@ -452,6 +458,7 @@ const EvaluationSettingsForm = ({
 							))}
 						</select>
 						<input
+							aria-label='What to extract'
 							type='text'
 							value={point.description}
 							onChange={(e) =>

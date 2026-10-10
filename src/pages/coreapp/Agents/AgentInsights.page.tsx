@@ -19,7 +19,7 @@ import AgentEvalsPanel from './AgentBuilder/Build/_partial/AgentEvalsPanel.parti
 import AgentEvaluationsPanel from './AgentBuilder/Build/_partial/AgentEvaluationsPanel.partial';
 import AgentReflectionsPanel from './AgentBuilder/Build/_partial/AgentReflectionsPanel.partial';
 
-export const INSIGHT_TABS = [
+const INSIGHT_TABS = [
 	{ id: 'runs', label: 'Runs', icon: History },
 	{ id: 'analytics', label: 'Analytics', icon: BarChart2 },
 	{ id: 'evals', label: 'Evals', icon: FlaskConical },

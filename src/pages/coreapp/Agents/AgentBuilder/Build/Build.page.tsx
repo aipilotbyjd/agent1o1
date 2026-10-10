@@ -1,3 +1,4 @@
+import { activateOnKey } from '@/utils/activateOnKey.util';
 import {
 	createElement,
 	useState,
@@ -174,9 +175,8 @@ import {
 	SkillCommandHighlight,
 	SkillCommandTag,
 	SkillSlashMenu,
-	useSkillPicker,
-	type TSlashCommand,
 } from './_partial/SkillSlashMenu.partial';
+import { useSkillPicker, type TSlashCommand } from './_hooks/useSkillPicker.hook';
 import {
 	AgentActionService,
 	agentActionKeys,
@@ -2623,6 +2623,7 @@ const BuildPage = () => {
 								<div className='mt-8 max-w-2xl'>
 									<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 dark:border-border-main relative flex items-center rounded-full border border-zinc-200/80 bg-white p-1.5 shadow-sm transition-all focus-within:ring-4 dark:bg-zinc-950/40'>
 										<input
+											aria-label='Describe what your agent should do...'
 											ref={heroPromptRef}
 											type='text'
 											placeholder='Describe what your agent should do...'
@@ -2755,6 +2756,7 @@ const BuildPage = () => {
 										<Sparkles size={18} />
 									</div>
 									<input
+										aria-label='Or describe your agent here...'
 										ref={textareaRef}
 										type='text'
 										value={promptText}
@@ -2957,6 +2959,7 @@ const BuildPage = () => {
 										<>
 											{/* Click outside backdrop */}
 											<div
+												aria-hidden='true'
 												className='fixed inset-0 z-40'
 												onClick={() => setIsMoreDropdownOpen(false)}
 											/>
@@ -3799,6 +3802,7 @@ const BuildPage = () => {
 												className='px-1 text-base font-semibold'
 											/>
 											<textarea
+												aria-label='Send a message to your agent'
 												ref={mobileComposerRef}
 												onBlur={skillPicker.close}
 												rows={1}
@@ -4000,6 +4004,7 @@ const BuildPage = () => {
 												className='px-3 py-1.5 text-sm font-semibold'
 											/>
 											<textarea
+												aria-label='Send a message to your agent...'
 												ref={composerRef}
 												onBlur={skillPicker.close}
 												rows={1}
@@ -4244,9 +4249,16 @@ const BuildPage = () => {
 
 												{/* Large Chosen Icon Avatar Box */}
 												<div
+													role='button'
+													tabIndex={0}
+													aria-label='Choose an icon'
+													aria-expanded={isIconPickerOpen}
 													onClick={() =>
 														setIsIconPickerOpen(!isIconPickerOpen)
 													}
+													onKeyDown={activateOnKey(() =>
+														setIsIconPickerOpen(!isIconPickerOpen),
+													)}
 													className='relative flex h-24 w-24 cursor-pointer items-center justify-center rounded-2xl border border-zinc-200 bg-white p-2.5 shadow-2xs select-none dark:border-zinc-700 dark:bg-zinc-950/45'>
 													{createElement(AgentIconComponent, {
 														size: 44,
@@ -4346,11 +4358,15 @@ const BuildPage = () => {
 											<div className='w-full space-y-4 pt-12 md:col-span-7 md:pt-0'>
 												{/* Agent Name input field */}
 												<div className='w-full space-y-1.5'>
-													<label className='text-[11px] font-black text-zinc-500 dark:text-zinc-400'>
+													<label
+														htmlFor='build-agent-name'
+														className='text-[11px] font-black text-zinc-500 dark:text-zinc-400'>
 														Agent Name
 													</label>
 													<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 relative flex items-center rounded-xl border border-zinc-200 bg-white px-3.5 py-3 shadow-2xs focus-within:ring-4 dark:border-zinc-800 dark:bg-zinc-950/20'>
 														<input
+															id='build-agent-name'
+															aria-label='Name your agent...'
 															type='text'
 															value={agentName}
 															onChange={(e) =>
@@ -4370,7 +4386,9 @@ const BuildPage = () => {
 												{/* Description textarea box */}
 												<div className='w-full space-y-1.5'>
 													<div className='flex flex-col'>
-														<label className='text-[11px] font-black text-zinc-600 dark:text-zinc-300'>
+														<label
+															htmlFor='build-description'
+															className='text-[11px] font-black text-zinc-600 dark:text-zinc-300'>
 															Description
 														</label>
 														<span className='mt-0.5 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
@@ -4381,6 +4399,8 @@ const BuildPage = () => {
 													{/* Border wrapping both textarea and character count at bottom right */}
 													<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 relative flex flex-col rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs focus-within:ring-4 dark:border-zinc-800 dark:bg-zinc-950/20'>
 														<textarea
+															id='build-description'
+															aria-label='Describe agent capability...'
 															rows={4}
 															value={agentDescription}
 															onChange={(e) =>
@@ -4453,6 +4473,7 @@ const BuildPage = () => {
 											{isModelPickerOpen && (
 												<>
 													<div
+														aria-hidden='true'
 														className='fixed inset-0 z-10'
 														onClick={() => setIsModelPickerOpen(false)}
 													/>
@@ -4504,6 +4525,7 @@ const BuildPage = () => {
 											</span>
 											<div className='flex items-center gap-2'>
 												<input
+													aria-label='What should change? (optional)'
 													type='text'
 													value={instructionsChange}
 													onChange={(e) =>
@@ -4531,6 +4553,7 @@ const BuildPage = () => {
 												</button>
 											</div>
 											<textarea
+												aria-label='You are an agent that...'
 												id='agent-instructions'
 												rows={14}
 												value={agentInstructions}
@@ -5527,6 +5550,7 @@ const BuildPage = () => {
 							Schedule (cron)
 						</span>
 						<input
+							aria-label='0 9 * * *'
 							type='text'
 							value={newTriggerCron}
 							onChange={(e) => setNewTriggerCron(e.target.value)}
@@ -5541,6 +5565,7 @@ const BuildPage = () => {
 							Event name
 						</span>
 						<input
+							aria-label='Event name'
 							type='text'
 							value={newTriggerEventName}
 							onChange={(e) => setNewTriggerEventName(e.target.value)}
@@ -5554,6 +5579,7 @@ const BuildPage = () => {
 						Initial message (optional)
 					</span>
 					<textarea
+						aria-label='What the agent is told when this trigger fires'
 						rows={3}
 						value={newTriggerInitialMessage}
 						onChange={(e) => setNewTriggerInitialMessage(e.target.value)}

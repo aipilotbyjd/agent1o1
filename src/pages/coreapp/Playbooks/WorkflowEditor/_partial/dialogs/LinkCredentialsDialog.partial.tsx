@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Check, Link2 } from 'lucide-react';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { getNodeDefinition } from '../../_helper/nodeCatalog.constants';
 import AccountSelect from '../canvas/nodes/AccountSelect.partial';
 import Modal from './Modal.partial';

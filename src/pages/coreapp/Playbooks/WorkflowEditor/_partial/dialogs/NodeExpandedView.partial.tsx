@@ -1,6 +1,6 @@
 import { X, Maximize2, Info, SlidersHorizontal, FlaskConical, Coins } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { getNodeDefinition } from '../../_helper/nodeCatalog.constants';
 import { getNodeCreditCost } from '../../_helper/builder.constants';
 import NodeFields from '../canvas/nodes/NodeFields.partial';

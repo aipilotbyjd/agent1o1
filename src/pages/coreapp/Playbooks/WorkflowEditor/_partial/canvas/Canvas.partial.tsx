@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import { useCanvasDrop } from '../../_hooks/useCanvasDrop.hook';
 import { isTypingTarget } from '../../_hooks/useEditorHotkeys.hook';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import BaseNode from './nodes/BaseNode.partial';
 import InputNode from './nodes/InputNode.partial';
 import OutputNode from './nodes/OutputNode.partial';

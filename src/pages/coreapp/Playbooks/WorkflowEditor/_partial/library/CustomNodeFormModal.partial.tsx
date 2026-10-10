@@ -293,6 +293,7 @@ const CustomNodeFormModal = ({ workspaceId, node, onClose }: Props) => {
 								Name
 							</label>
 							<input
+								aria-label='e.g. Enrich Lead'
 								id='custom-node-name'
 								type='text'
 								value={name}
@@ -307,6 +308,7 @@ const CustomNodeFormModal = ({ workspaceId, node, onClose }: Props) => {
 								Description
 							</label>
 							<textarea
+								aria-label='What this step does'
 								id='custom-node-description'
 								value={description}
 								rows={2}
@@ -436,6 +438,7 @@ const CustomNodeFormModal = ({ workspaceId, node, onClose }: Props) => {
 										Label
 									</label>
 									<input
+										aria-label='e.g. Email address'
 										id={`${row.uid}-label`}
 										type='text'
 										value={row.label}
@@ -456,6 +459,7 @@ const CustomNodeFormModal = ({ workspaceId, node, onClose }: Props) => {
 										Key
 									</label>
 									<input
+										aria-label='email_address'
 										id={`${row.uid}-key`}
 										type='text'
 										value={row.key}

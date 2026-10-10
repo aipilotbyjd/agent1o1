@@ -107,6 +107,7 @@ const FilterBox = ({
 	<div className='relative flex items-center'>
 		<Search size={12} className='absolute left-2.5 text-zinc-400 dark:text-zinc-500' />
 		<input
+			aria-label={placeholder}
 			value={value}
 			onChange={(event) => onChange(event.target.value)}
 			onPointerDown={(event) => event.stopPropagation()}

@@ -11,7 +11,7 @@ import {
 	type IEchoLike,
 } from '@/api/modules/workflow-builder/workflow-builder.realtime';
 import type { TBuilderMessage, TBuilderSession } from '@/types/workflow-builder.type';
-import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from './useWorkflowEditor.hook';
 import { useWorkflowRouteParams } from './useWorkflowRouteParams.hook';
 import { builderGraphToCanvas, canvasToBuilderGraph } from '../_helper/builderDraft.helper';
 

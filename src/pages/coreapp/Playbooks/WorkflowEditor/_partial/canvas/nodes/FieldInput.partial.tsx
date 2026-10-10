@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 import { ChevronDown, X } from 'lucide-react';
 import type { TNodeField } from '../../../_types/node.type';
 import AccountSelect from './AccountSelect.partial';

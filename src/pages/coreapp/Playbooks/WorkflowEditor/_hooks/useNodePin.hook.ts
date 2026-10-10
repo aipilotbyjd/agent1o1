@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { notify } from '@/api/core';
 import { WorkflowService, workflowKeys } from '@/api/modules/workflows';
 import type { TWorkflow } from '@/types/workflow.type';
-import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from './useWorkflowEditor.hook';
 import { toPinPayload } from '../_helper/workflowApiTransform.helper';
 import { usePersistWorkflowDraft } from './usePersistWorkflowDraft.hook';
 

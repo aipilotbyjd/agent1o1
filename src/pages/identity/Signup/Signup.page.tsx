@@ -149,6 +149,7 @@ const RegisterPage = () => {
 					<div className='focus-within:border-primary-500 focus-within:ring-primary-500/15 flex items-center gap-2.5 rounded-xl border border-[#d8e2ee] bg-[#eef2f8] px-3.5 py-2.5 transition-all focus-within:bg-white focus-within:ring-2'>
 						<Icon icon='User' className='size-4 shrink-0 text-zinc-400' />
 						<input
+							aria-label='Jane Doe'
 							className='input-clean w-full border-0 border-none bg-transparent p-0 text-sm font-medium text-zinc-950 shadow-none placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
 							id='name'
 							name='name'
@@ -174,6 +175,7 @@ const RegisterPage = () => {
 					<div className='focus-within:border-primary-500 focus-within:ring-primary-500/15 flex items-center gap-2.5 rounded-xl border border-[#d8e2ee] bg-[#eef2f8] px-3.5 py-2.5 transition-all focus-within:bg-white focus-within:ring-2'>
 						<Icon icon='Mail01' className='size-4 shrink-0 text-zinc-400' />
 						<input
+							aria-label='name@example.com'
 							className='input-clean w-full border-0 border-none bg-transparent p-0 text-sm font-medium text-zinc-950 shadow-none placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
 							id='email'
 							name='email'
@@ -200,6 +202,7 @@ const RegisterPage = () => {
 					<div className='focus-within:border-primary-500 focus-within:ring-primary-500/15 flex items-center gap-2.5 rounded-xl border border-[#d8e2ee] bg-[#eef2f8] px-3.5 py-2.5 transition-all focus-within:bg-white focus-within:ring-2'>
 						<Icon icon='SquareLockPassword' className='size-4 shrink-0 text-zinc-400' />
 						<input
+							aria-label='Create a password'
 							type={showPassword ? 'text' : 'password'}
 							className='input-clean w-full border-0 border-none bg-transparent p-0 font-mono text-sm text-zinc-950 shadow-none placeholder:font-sans placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
 							id='password'
@@ -236,6 +239,7 @@ const RegisterPage = () => {
 					<div className='focus-within:border-primary-500 focus-within:ring-primary-500/15 flex items-center gap-2.5 rounded-xl border border-[#d8e2ee] bg-[#eef2f8] px-3.5 py-2.5 transition-all focus-within:bg-white focus-within:ring-2'>
 						<Icon icon='SquareLockPassword' className='size-4 shrink-0 text-zinc-400' />
 						<input
+							aria-label='Confirm your password'
 							type={showConfirm ? 'text' : 'password'}
 							className='input-clean w-full border-0 border-none bg-transparent p-0 font-mono text-sm text-zinc-950 shadow-none placeholder:font-sans placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
 							id='password_confirmation'

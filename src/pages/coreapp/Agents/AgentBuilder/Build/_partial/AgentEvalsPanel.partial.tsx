@@ -388,6 +388,7 @@ const SuiteDetail = ({
 						</button>
 					</div>
 					<input
+						aria-label='Suite name (e.g. tone regression)'
 						type='text'
 						value={suiteForm.name}
 						onChange={(e) => setSuiteForm((f) => ({ ...f, name: e.target.value }))}
@@ -395,6 +396,7 @@ const SuiteDetail = ({
 						className='focus:border-primary-500/50 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 					/>
 					<textarea
+						aria-label='Description (optional)'
 						value={suiteForm.description}
 						onChange={(e) =>
 							setSuiteForm((f) => ({ ...f, description: e.target.value }))
@@ -457,6 +459,7 @@ const SuiteDetail = ({
 						</button>
 					</div>
 					<input
+						aria-label='Case name (e.g. greets by name)'
 						type='text'
 						value={form.name}
 						onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -464,6 +467,7 @@ const SuiteDetail = ({
 						className='focus:border-primary-500/50 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 					/>
 					<textarea
+						aria-label='Input message sent to the agent'
 						value={form.input}
 						onChange={(e) => setForm((f) => ({ ...f, input: e.target.value }))}
 						placeholder='Input message sent to the agent'
@@ -502,6 +506,11 @@ const SuiteDetail = ({
 									))}
 								</select>
 								<input
+									aria-label={
+										ASSERTION_TYPES.find(
+											(option) => option.id === assertion.type,
+										)?.placeholder ?? 'Expected value'
+									}
 									type='text'
 									value={assertion.value}
 									onChange={(e) =>
@@ -739,6 +748,7 @@ const AgentEvalsPanel = ({ ws, agentId }: TProps) => {
 						</button>
 					</div>
 					<input
+						aria-label='Suite name (e.g. tone regression)'
 						type='text'
 						value={form.name}
 						onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -746,6 +756,7 @@ const AgentEvalsPanel = ({ ws, agentId }: TProps) => {
 						className='focus:border-primary-500/50 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
 					/>
 					<textarea
+						aria-label='Description (optional)'
 						value={form.description}
 						onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
 						placeholder='Description (optional)'

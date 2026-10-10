@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from './useWorkflowEditor.hook';
 import type { TCanvasPosition } from '../_types/canvas.type';
 import type { TNodeDefinition } from '../_types/node.type';
 

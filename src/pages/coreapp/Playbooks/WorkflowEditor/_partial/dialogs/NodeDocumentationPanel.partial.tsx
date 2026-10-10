@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { notify } from '@/api/core';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { getNodeDefinition } from '../../_helper/nodeCatalog.constants';
 import { CATEGORY_META, PORT_TYPE_COLOR, getNodeCreditCost } from '../../_helper/builder.constants';
 import { getOutputPorts } from '../../_helper/outputPorts.helper';

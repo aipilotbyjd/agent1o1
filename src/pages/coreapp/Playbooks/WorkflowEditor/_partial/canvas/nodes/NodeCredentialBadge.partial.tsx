@@ -1,7 +1,7 @@
 import { KeyRound } from 'lucide-react';
 import { useConnectorCredential } from '@/api/modules/connectors';
 import { useWorkflowRouteParams } from '../../../_hooks/useWorkflowRouteParams.hook';
-import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 
 type Props = { credentialId: string; nodeId: string };
 

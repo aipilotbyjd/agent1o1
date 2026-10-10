@@ -219,6 +219,9 @@ const AddKnowledgeDialog = ({
 					<div>
 						<label className={labelClass}>{definition.synced ? 'Name' : 'Title'}</label>
 						<input
+							aria-label={
+								kind === 'file' ? 'Defaults to the filename' : 'e.g. Pricing docs'
+							}
 							type='text'
 							value={name}
 							onChange={(e) => {
@@ -234,8 +237,12 @@ const AddKnowledgeDialog = ({
 
 					{kind === 'text' && (
 						<div>
-							<label className={labelClass}>Text</label>
+							<label htmlFor='addknowledgedialog-text' className={labelClass}>
+								Text
+							</label>
 							<textarea
+								id='addknowledgedialog-text'
+								aria-label='Paste the document text…'
 								value={text}
 								onChange={(e) => setText(e.target.value)}
 								rows={8}
@@ -247,8 +254,11 @@ const AddKnowledgeDialog = ({
 
 					{kind === 'file' && (
 						<div>
-							<label className={labelClass}>File</label>
+							<label htmlFor='addknowledgedialog-file' className={labelClass}>
+								File
+							</label>
 							<input
+								id='addknowledgedialog-file'
 								type='file'
 								accept={ALLOWED_EXTENSIONS.map((ext) => `.${ext}`).join(',')}
 								onChange={(e) => setFile(e.target.files?.[0] ?? null)}
@@ -282,8 +292,12 @@ const AddKnowledgeDialog = ({
 					)}
 
 					<div>
-						<label className={labelClass}>Collection</label>
+						<label htmlFor='addknowledgedialog-collection' className={labelClass}>
+							Collection
+						</label>
 						<input
+							id='addknowledgedialog-collection'
+							aria-label={isPrivate ? 'personal' : 'default'}
 							type='text'
 							value={collection}
 							onChange={(e) => setCollection(e.target.value)}
