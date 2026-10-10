@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { createElement, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Images, Loader2, Search } from 'lucide-react';
 import { useAgents } from '@/api/modules/agents';
@@ -35,7 +35,7 @@ const LibraryTile = ({ item, onOpen }: { item: TLibraryItem; onOpen: () => void 
 				<div className='flex h-full w-full flex-col justify-between p-4'>
 					<span
 						className={`flex h-11 w-11 items-center justify-center rounded-xl ${fileSolidToneFor(item.mime_type, item.filename)}`}>
-						<Icon size={20} />
+						{createElement(Icon, { size: 20 })}
 					</span>
 					<div className='min-w-0'>
 						<p className='line-clamp-2 text-[13px] font-bold break-words text-zinc-800 dark:text-zinc-100'>

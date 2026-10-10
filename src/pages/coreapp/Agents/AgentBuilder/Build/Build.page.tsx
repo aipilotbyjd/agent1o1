@@ -1,4 +1,5 @@
 import {
+	createElement,
 	useState,
 	useRef,
 	useEffect,
@@ -778,10 +779,10 @@ const ToolStep = ({
 						{task && AgentIcon ? (
 							<span
 								className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border ${agentColorTileClass(task.agent.color)}`}>
-								<AgentIcon size={12} />
+								{createElement(AgentIcon, { size: 12 })}
 							</span>
 						) : (
-							<Icon size={13} className='shrink-0 text-zinc-400' />
+							createElement(Icon, { size: 13, className: 'shrink-0 text-zinc-400' })
 						)}
 						<span className='min-w-0 flex-1'>
 							<span className='block truncate text-[12.5px] font-bold text-zinc-700 dark:text-zinc-200'>
@@ -965,7 +966,7 @@ const ArtifactCard = ({
 		<div className='flex max-w-full min-w-0 items-center gap-3 rounded-2xl border border-zinc-200/80 bg-white px-4 py-3 shadow-2xs dark:border-zinc-800/85 dark:bg-zinc-900/60'>
 			<div
 				className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${fileSolidToneFor(item.mimeType, item.filename)}`}>
-				<ArtifactIcon size={16} />
+				{createElement(ArtifactIcon, { size: 16 })}
 			</div>
 			<div className='min-w-0 flex-1'>
 				<p className='truncate text-xs font-bold text-zinc-800 dark:text-zinc-200'>
@@ -2840,10 +2841,10 @@ const BuildPage = () => {
 						</button>
 						<div className='flex min-w-0 flex-1 items-center gap-2'>
 							<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white dark:border dark:border-white/10 dark:bg-zinc-900'>
-								<AgentIconComponent
-									size={17}
-									className={agentColorTextClass(agentIconColor)}
-								/>
+								{createElement(AgentIconComponent, {
+									size: 17,
+									className: agentColorTextClass(agentIconColor),
+								})}
 							</div>
 							<div className='min-w-0'>
 								<p className='truncate text-sm font-black text-zinc-900 dark:text-white'>
@@ -2902,10 +2903,10 @@ const BuildPage = () => {
 
 							{/* Agent Avatar */}
 							<div className='relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white shadow-md dark:border dark:border-white/10 dark:bg-zinc-900'>
-								<AgentIconComponent
-									size={20}
-									className={agentColorTextClass(agentIconColor)}
-								/>
+								{createElement(AgentIconComponent, {
+									size: 20,
+									className: agentColorTextClass(agentIconColor),
+								})}
 							</div>
 
 							{/* Agent name & status */}
@@ -3308,10 +3309,10 @@ const BuildPage = () => {
 								) : chatHistory.length === 0 ? (
 									<div className='flex flex-col items-center justify-center px-4 pt-16 pb-8 text-center select-none'>
 										<div className='mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-zinc-200 bg-white shadow-2xs dark:border-zinc-800 dark:bg-zinc-900'>
-											<AgentIconComponent
-												size={30}
-												className={agentColorTextClass(agentIconColor)}
-											/>
+											{createElement(AgentIconComponent, {
+												size: 30,
+												className: agentColorTextClass(agentIconColor),
+											})}
 										</div>
 										<h2 className='text-xl font-black tracking-tight text-zinc-900 dark:text-white'>
 											{agentName || 'Untitled Agent'}
@@ -3337,12 +3338,13 @@ const BuildPage = () => {
 													{/* Agent Avatar in body */}
 													{!isUser && (
 														<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-zinc-950 text-white dark:border-white/10 dark:bg-zinc-900'>
-															<AgentIconComponent
-																size={16}
-																className={agentColorTextClass(
-																	agentIconColor,
-																)}
-															/>
+															{createElement(AgentIconComponent, {
+																size: 16,
+																className:
+																	agentColorTextClass(
+																		agentIconColor,
+																	),
+															})}
 														</div>
 													)}
 
@@ -3647,10 +3649,10 @@ const BuildPage = () => {
 									<div className='flex w-full justify-start'>
 										<div className='flex w-full max-w-3xl flex-row gap-3'>
 											<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-zinc-950 text-white dark:border-white/10 dark:bg-zinc-900'>
-												<AgentIconComponent
-													size={16}
-													className={agentColorTextClass(agentIconColor)}
-												/>
+												{createElement(AgentIconComponent, {
+													size: 16,
+													className: agentColorTextClass(agentIconColor),
+												})}
 											</div>
 											<div className='min-w-0 flex-1'>
 												<ToolTimeline
@@ -4248,12 +4250,11 @@ const BuildPage = () => {
 														setIsIconPickerOpen(!isIconPickerOpen)
 													}
 													className='relative flex h-24 w-24 cursor-pointer items-center justify-center rounded-2xl border border-zinc-200 bg-white p-2.5 shadow-2xs select-none dark:border-zinc-700 dark:bg-zinc-950/45'>
-													<AgentIconComponent
-														size={44}
-														className={agentColorTextClass(
-															agentIconColor,
-														)}
-													/>
+													{createElement(AgentIconComponent, {
+														size: 44,
+														className:
+															agentColorTextClass(agentIconColor),
+													})}
 													{/* Pencil edit badge overlay */}
 													<div className='bg-primary-400 text-primary-950 shadow-primary-500/10 absolute -right-1 -bottom-1 flex h-6.5 w-6.5 cursor-pointer items-center justify-center rounded-full border border-white shadow-md dark:border-zinc-900'>
 														<SquarePen size={11} />
@@ -4296,7 +4297,9 @@ const BuildPage = () => {
 																					? 'border-primary-600 bg-primary-50 text-primary-600 dark:border-primary-400 dark:bg-primary-400/10 dark:text-primary-400'
 																					: 'border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'
 																			}`}>
-																			<Icon size={16} />
+																			{createElement(Icon, {
+																				size: 16,
+																			})}
 																		</button>
 																	);
 																})}
@@ -5012,7 +5015,9 @@ const BuildPage = () => {
 												<div className='flex min-w-0 items-center gap-3'>
 													<div
 														className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${agentColorTileClass(agentIconColor)}`}>
-														<AgentIconComponent size={15} />
+														{createElement(AgentIconComponent, {
+															size: 15,
+														})}
 													</div>
 													<div className='flex min-w-0 flex-col'>
 														<span className='truncate text-xs font-black text-zinc-800 dark:text-zinc-200'>

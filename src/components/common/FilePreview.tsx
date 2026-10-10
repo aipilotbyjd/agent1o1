@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { createElement, useEffect, useState, type ReactNode } from 'react';
 import { Loader2, X } from 'lucide-react';
 import {
 	fileIconFor,
@@ -77,7 +77,7 @@ const FilePreview = ({
 		<span className='flex h-full min-w-0 items-center gap-3 px-2'>
 			<span
 				className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${fileSolidToneFor(mimeType, filename)}`}>
-				<Icon size={18} />
+				{createElement(Icon, { size: 18 })}
 			</span>
 			<span className='min-w-0 text-left'>
 				<span className='block truncate text-[13px] font-semibold text-zinc-900 dark:text-zinc-100'>

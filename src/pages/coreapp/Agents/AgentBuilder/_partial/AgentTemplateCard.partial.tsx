@@ -1,3 +1,4 @@
+import { createElement } from 'react';
 import { ChevronRight, Loader2 } from 'lucide-react';
 import type { TAgentTemplate } from '@/types/template.type';
 import { agentColorTileClass, agentIconFor } from '../../_helper/agentAppearance';
@@ -24,7 +25,7 @@ const AgentTemplateCard = ({
 					<div className='flex min-w-0 items-center gap-3'>
 						<div
 							className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${agentColorTileClass(template.color)}`}>
-							<Icon size={18} />
+							{createElement(Icon, { size: 18 })}
 						</div>
 						<h3 className='group-hover:text-primary-600 dark:group-hover:text-primary-400 truncate text-[15px] font-black tracking-tight text-zinc-900 transition-colors dark:text-zinc-50'>
 							{template.name}

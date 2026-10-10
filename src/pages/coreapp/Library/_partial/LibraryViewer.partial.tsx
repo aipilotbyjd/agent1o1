@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { createElement, useEffect } from 'react';
 import {
 	ChevronLeft,
 	ChevronRight,
@@ -113,7 +113,7 @@ const LibraryViewer = ({
 				) : (
 					<div className='flex flex-col items-center gap-4 text-center text-white'>
 						<div className='flex h-24 w-24 items-center justify-center rounded-3xl bg-white/10'>
-							<Icon size={40} />
+							{createElement(Icon, { size: 40 })}
 						</div>
 						<p className='text-sm font-bold'>
 							{fileExtension(item.filename) || 'File'}

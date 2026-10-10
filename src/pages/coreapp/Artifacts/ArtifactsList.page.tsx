@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { createElement, useEffect, useState } from 'react';
 import { Link, useOutletContext, useParams } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -278,7 +278,7 @@ const ArtifactCard = ({
 					<div
 						style={{ backgroundColor: `${color}1f` }}
 						className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-100/50 transition-transform duration-300 group-hover:scale-105 dark:border-zinc-800/50'>
-						<IconComponent className='h-5 w-5' style={{ color }} />
+						{createElement(IconComponent, { className: 'h-5 w-5', style: { color } })}
 					</div>
 					<div className='min-w-0 space-y-0.5'>
 						<h4 className='group-hover:text-primary-600 dark:group-hover:text-primary-400 truncate text-[13px] leading-snug font-black text-slate-900 transition-colors dark:text-zinc-50'>
