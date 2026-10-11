@@ -25,6 +25,8 @@ export const WorkflowVersionEndpoints = {
 	publish: (ws: string, workflowId: string) => `${workflow(ws, workflowId)}/versions`,
 	detail: (ws: string, workflowId: string, version: string) =>
 		`${workflow(ws, workflowId)}/versions/${version}`,
+	restore: (ws: string, workflowId: string, version: string) =>
+		`${workflow(ws, workflowId)}/versions/${version}/restore`,
 } as const;
 
 export const WorkflowInterfaceEndpoints = {

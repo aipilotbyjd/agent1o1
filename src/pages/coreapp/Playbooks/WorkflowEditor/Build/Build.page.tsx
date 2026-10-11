@@ -14,6 +14,8 @@ import NodeLibrary from '../_partial/library/NodeLibrary.partial';
 import LinkCredentialsDialog from '../_partial/dialogs/LinkCredentialsDialog.partial';
 import WorkflowGovernanceModal from '../_partial/dialogs/WorkflowGovernanceModal.partial';
 import RunPanel from '../_partial/run/RunPanel.partial';
+import VersionHistoryPanel from '../_partial/versions/VersionHistoryPanel.partial';
+import VersionPreview from '../_partial/versions/VersionPreview.partial';
 import ActionBar from '../_partial/shell/ActionBar.partial';
 import AgentBuilderPage from '@/pages/coreapp/Agents/AgentBuilder/AgentBuilder.page';
 import WorkspaceSettingsPage from '@/pages/UnderConstruction.page';
@@ -44,6 +46,8 @@ const BuildPage = () => {
 		: activeWorkspaceView;
 	const setActiveWorkspaceView = useWorkflowShellStore((store) => store.setActiveWorkspaceView);
 	const mobileSidebarOpen = useWorkflowShellStore((store) => store.mobileSidebarOpen);
+	const isVersionPanelOpen = useWorkflowShellStore((store) => store.isVersionPanelOpen);
+	const closeVersionPanel = useWorkflowShellStore((store) => store.closeVersionPanel);
 	const closeAside = useWorkflowShellStore((store) => store.closeMobileSidebar);
 	const { workspaceId, workflowId } = useWorkflowRouteParams();
 	const apiState = useWorkflowApiLoader(workspaceId, workflowId);
@@ -68,6 +72,15 @@ const BuildPage = () => {
 		if (state.ui.aiPanelOpen) dispatch({ type: 'TOGGLE_AI_PANEL' });
 		dispatch({ type: 'TOGGLE_RUN_PANEL' });
 	};
+
+	// Runs and version history share the right side; opening runs closes history.
+	const isRunPanelOpen = state.ui.runPanelOpen;
+	useEffect(() => {
+		if (isRunPanelOpen) closeVersionPanel();
+	}, [isRunPanelOpen, closeVersionPanel]);
+
+	// History and its canvas preview belong to the workflow they were opened on.
+	useEffect(() => closeVersionPanel, [workflowId, closeVersionPanel]);
 
 	useAutosave();
 	useEditorHotkeys();
@@ -260,7 +273,18 @@ const BuildPage = () => {
 									)}
 									<Canvas />
 									<ActionBar />
+									<VersionPreview />
 								</div>
+								{isVersionPanelOpen && !state.ui.runPanelOpen && (
+									<div
+										className={
+											isMobile
+												? 'absolute inset-x-0 top-[18%] bottom-0 z-50 overflow-hidden rounded-t-3xl border-t border-zinc-200 shadow-2xl dark:border-white/10'
+												: 'min-h-0 w-[340px] shrink-0 border-l border-zinc-200 dark:border-white/10'
+										}>
+										<VersionHistoryPanel />
+									</div>
+								)}
 								{state.ui.runPanelOpen &&
 									(isMobile ? (
 										<motion.div

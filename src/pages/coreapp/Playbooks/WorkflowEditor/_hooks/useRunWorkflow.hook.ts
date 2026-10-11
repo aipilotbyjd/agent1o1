@@ -1,5 +1,11 @@
 import { createContext, createElement, useContext, useRef, type ReactNode } from 'react';
-import { useWorkflow, WorkflowService, WorkflowVersionService } from '@/api/modules/workflows';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+	useWorkflow,
+	WorkflowService,
+	WorkflowVersionService,
+	workflowVersionKeys,
+} from '@/api/modules/workflows';
 import { RunService } from '@/api/modules/runs';
 import { useConfirm } from '@/context/confirm';
 import type { TNodeRunDetail, TRun, TRunStatus } from '@/types/run.type';
@@ -17,6 +23,7 @@ import {
 	type TNodeOutputs,
 } from '../_helper/runtime.helper';
 import { getNodeDefinition } from '../_helper/nodeCatalog.constants';
+import { serverValidationIssues } from '../_helper/validation.helper';
 import type { TNodeRunRecord, TRunRecord } from '../_types/run.type';
 import type { TNodeRunStatus } from '../_types/node.type';
 import { messageFromError, notify } from '@/api/core/notify';
@@ -70,6 +77,7 @@ const useRunWorkflowController = () => {
 	const { confirm } = useConfirm();
 	const { isMissing: isCredentialMissing } = useCredentialResolver();
 	const persistWorkflowDraft = usePersistWorkflowDraft();
+	const queryClient = useQueryClient();
 	const stepResolveRef = useRef<(() => void) | null>(null);
 
 	const ws = state.workflow.workspaceId;
@@ -162,6 +170,7 @@ const useRunWorkflowController = () => {
 				finishedAt: finalRun.finished_at ? Date.parse(finalRun.finished_at) : Date.now(),
 				status: finalStatus,
 				trigger: 'manual',
+				versionId: finalRun.workflow_version_id ?? undefined,
 				nodeRuns: nodeRuns.map((nodeRun) => ({
 					nodeId: nodeRun.key,
 					label:
@@ -522,7 +531,14 @@ const useRunWorkflowController = () => {
 								edges: state.edges,
 							});
 			} catch (error) {
-				notify.error(messageFromError(error, 'Could not save the workflow before running'));
+				const issues = serverValidationIssues(error);
+				if (issues.length) {
+					dispatch({ type: 'SET_ISSUES_PANEL', open: true, serverIssues: issues });
+				} else {
+					notify.error(
+						messageFromError(error, 'Could not save the workflow before running'),
+					);
+				}
 				dispatch({ type: 'SET_SAVE_STATE', savingState: 'error' });
 				return;
 			}
@@ -541,7 +557,12 @@ const useRunWorkflowController = () => {
 					if (!confirmed) return;
 					publishConfirmed.current = true;
 				}
-				const published = await WorkflowVersionService.publish(ws, wfId);
+				const published = await WorkflowVersionService.publish(ws, wfId, {
+					notes: 'Published to run',
+				});
+				void queryClient.invalidateQueries({
+					queryKey: workflowVersionKeys.list(ws, wfId),
+				});
 				dispatch({
 					type: 'SET_WORKFLOW_META',
 					patch: {
@@ -553,7 +574,14 @@ const useRunWorkflowController = () => {
 			}
 			await runRemoteWorkflow(ws, wfId);
 		} catch (error) {
-			notify.error(messageFromError(error, 'Could not publish the workflow before running'));
+			const issues = serverValidationIssues(error);
+			if (issues.length) {
+				dispatch({ type: 'SET_ISSUES_PANEL', open: true, serverIssues: issues });
+			} else {
+				notify.error(
+					messageFromError(error, 'Could not publish the workflow before running'),
+				);
+			}
 		} finally {
 			starting.current = false;
 		}

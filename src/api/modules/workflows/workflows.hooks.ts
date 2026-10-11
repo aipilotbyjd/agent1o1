@@ -328,25 +328,3 @@ export const useGenerateContract = (_ws: string, _workflowId: string) =>
 	useMissingMutation('Generating a workflow contract');
 export const useRunContractTest = (_ws: string, _workflowId: string) =>
 	useMissingMutation('Running a contract test');
-
-// ── Ported-frontend adapters: versions ────────────────────────────────────────
-
-/** Old snapshotted a version explicitly; here publishing is what creates one. */
-export const useCreateWorkflowVersion = (ws: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: ({ workflowId }: { workflowId: string }) =>
-			WorkflowVersionService.publish(ws, workflowId),
-		onSuccess: () => qc.invalidateQueries({ queryKey: workflowKeys.lists(ws) }),
-		// A refused publish (422) lists what to fix; the editor shows that itself.
-		meta: { errorMessage: 'Failed to create a workflow version', silentStatuses: [422] },
-	});
-};
-
-/** Versions are immutable snapshots here with no rollback endpoint. */
-export const useRollbackWorkflowVersion = (_ws: string) =>
-	useMissingMutation('Rolling a workflow back to an earlier version');
-
-/** Publishing snapshots the current draft; an older version can't be re-published. */
-export const useRepublishWorkflowVersion = (_ws: string) =>
-	useMissingMutation('Publishing an earlier workflow version');

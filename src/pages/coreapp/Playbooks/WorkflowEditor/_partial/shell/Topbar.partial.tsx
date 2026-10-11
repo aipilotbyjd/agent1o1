@@ -9,7 +9,6 @@ import {
 	Share2,
 	ChevronDown,
 	ChevronLeft,
-	Save,
 	Keyboard,
 	GitCompare,
 	Library,
@@ -33,15 +32,13 @@ import {
 	Zap,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import DARK_MODE from '@/constants/darkMode.constant';
 import useDarkMode from '@/hooks/useDarkMode';
-import { useCreateWorkflowVersion } from '@/api/modules/workflows';
 import IssuesChecklist from './IssuesChecklist.partial';
 import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
-import { ApiError, notify } from '@/api/core';
 import { usePersistWorkflowDraft } from '../../_hooks/usePersistWorkflowDraft.hook';
 import { useRunWorkflow } from '../../_hooks/useRunWorkflow.hook';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
@@ -50,9 +47,12 @@ import paths from '@/Routes/paths';
 import NotificationsDropdown from '@/components/notifications/NotificationsDropdown';
 import AppLogo from '@/components/AppLogo';
 import SaveAsTemplateModal from '@/parts/SaveAsTemplateModal.part';
+import DraftStatusPill from '../versions/DraftStatusPill.partial';
+import { useDraftStatus } from '../../_hooks/useDraftStatus.hook';
+import PublishPopover from '../versions/PublishPopover.partial';
 
 /** Which topbar menu is open. Only one may be open at a time. */
-type TopbarMenu = 'save' | 'share' | 'mobile' | null;
+type TopbarMenu = 'publish' | 'save' | 'share' | 'mobile' | null;
 
 /**
  * Shared focus ring. Every control in the bar is keyboard reachable, so every
@@ -358,13 +358,13 @@ const SaveStatusBadge = ({
 								</span>
 							</div>
 							<div className='mt-2 space-y-1.5 text-[11px] text-zinc-600 dark:text-zinc-400'>
-								<p>Autosave keeps your canvas drafts locally preserved.</p>
+								<p>Your draft saves automatically as you work.</p>
 								<p className='text-[10px] text-zinc-400 dark:text-zinc-500'>
 									Press{' '}
 									<kbd className='bg-primary-100/80 text-primary-900 dark:bg-primary-400/15 dark:text-primary-300 rounded px-1 py-0.5 font-mono'>
 										⌘S
 									</kbd>{' '}
-									to publish a permanent version.
+									to publish it as the live version.
 								</p>
 							</div>
 						</motion.div>
@@ -384,13 +384,14 @@ const Topbar = () => {
 	const playbooksPath = workspaceId ? paths.playbooks(workspaceId) : pages.choose.to;
 	const dashboardPath = workspaceId ? paths.dashboard(workspaceId) : pages.choose.to;
 
-	const saveVersion = useCreateWorkflowVersion(workspaceId);
 	const setGovModalOpen = useWorkflowShellStore((store) => store.setGovModalOpen);
 	const setGovModalTab = useWorkflowShellStore((store) => store.setGovModalTab);
+	const openVersionPanel = useWorkflowShellStore((store) => store.openVersionPanel);
 	// One menu at a time. Previously each menu had its own backdrop, so clicking a
 	// second trigger while one was open was swallowed by that backdrop and the user
 	// had to click twice.
 	const [openMenu, setOpenMenu] = useState<TopbarMenu>(null);
+	const isPublishOpen = openMenu === 'publish';
 	const isSaveDropdownOpen = openMenu === 'save';
 	const isShareDropdownOpen = openMenu === 'share';
 	const isMobileMenuOpen = openMenu === 'mobile';
@@ -400,11 +401,6 @@ const Topbar = () => {
 	const [copiedLink, setCopiedLink] = useState(false);
 	const [isSaveAsTemplateOpen, setIsSaveAsTemplateOpen] = useState(false);
 	const [runSeconds, setRunSeconds] = useState(0);
-	const stateRef = useRef(state);
-	useLayoutEffect(() => {
-		stateRef.current = state;
-	});
-	const publishingRef = useRef(false);
 
 	const isRunning = state.run.status === 'running';
 	const isRunDisabled = state.nodes.length === 0 && state.ui.emptyCanvasView !== 'chat-started';
@@ -444,88 +440,26 @@ const Topbar = () => {
 		dispatch({ type: 'SET_WORKFLOW_META', patch: { name, savingState: 'dirty' } });
 	};
 
-	// The Save tooltip advertises Cmd/Ctrl+S, but nothing listened for it, so the
-	// browser's own "Save page" dialog took over instead. Wire it to the real save.
-	const saveRef = useRef<() => void>(() => {});
+	// Cmd/Ctrl+S opens Publish; the draft itself already saves on its own.
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
 				event.preventDefault();
-				saveRef.current();
+				setOpenMenu('publish');
 			}
 		};
 		window.addEventListener('keydown', onKeyDown);
 		return () => window.removeEventListener('keydown', onKeyDown);
 	}, []);
 
-	const handleSave = async () => {
-		if (publishingRef.current) return;
-		if (!state.workflow.workspaceId || !state.workflow.apiId) {
-			dispatch({ type: 'SET_SAVE_STATE', savingState: 'dirty' });
-			return;
-		}
-
-		publishingRef.current = true;
-		const draft = state;
-		dispatch({ type: 'SET_SAVE_STATE', savingState: 'saving' });
-		// Publishing snapshots the server-side draft, so push the canvas first —
-		// otherwise anything still inside the autosave debounce is left out.
-		try {
-			await persistWorkflowDraft({
-				workspaceId: state.workflow.workspaceId,
-				workflowId: state.workflow.apiId,
-				name: state.workflow.name,
-				description: state.workflow.description,
-				nodes: state.nodes,
-				edges: state.edges,
-			});
-		} catch (error) {
-			if (ApiError.is(error) && error.issues.length > 0) {
-				dispatch({ type: 'SET_ISSUES_PANEL', open: true, serverIssues: error.issues });
-			} else {
-				notify.error(ApiError.is(error) ? error.message : 'Could not save the workflow');
-			}
-			dispatch({ type: 'SET_SAVE_STATE', savingState: 'error' });
-			publishingRef.current = false;
-			return;
-		}
-		try {
-			const data = await saveVersion.mutateAsync({ workflowId: state.workflow.apiId });
-			const current = stateRef.current;
-			const changed =
-				current.nodes !== draft.nodes ||
-				current.edges !== draft.edges ||
-				current.workflow.name !== draft.workflow.name ||
-				current.workflow.description !== draft.workflow.description;
-			dispatch({
-				type: 'SET_WORKFLOW_META',
-				patch: {
-					currentVersionId: data.version.id,
-					currentVersionNumber: data.version.version,
-					savingState: changed ? 'dirty' : 'saved',
-				},
-			});
-		} catch (error) {
-			// A refused publish opens the checklist; anything else was already
-			// toasted by the query client.
-			if (ApiError.is(error) && error.status === 422) {
-				dispatch({ type: 'SET_ISSUES_PANEL', open: true, serverIssues: error.issues });
-			}
-			const current = stateRef.current;
-			const changed = current.nodes !== draft.nodes || current.edges !== draft.edges;
-			dispatch({ type: 'SET_SAVE_STATE', savingState: changed ? 'dirty' : 'saved' });
-		} finally {
-			publishingRef.current = false;
-		}
+	const openVersionHistory = () => {
+		closeMenu();
+		if (state.ui.runPanelOpen) dispatch({ type: 'TOGGLE_RUN_PANEL' });
+		openVersionPanel();
 	};
 
-	useEffect(() => {
-		saveRef.current = () => {
-			if (!saveVersion.isPending) handleSave();
-		};
-	});
-
-	const isDirty = state.workflow.savingState === 'dirty';
+	const { status: draftStatus } = useDraftStatus();
+	const hasUnpublishedWork = draftStatus === 'changed' || draftStatus === 'unpublished';
 
 	return (
 		<header className='relative z-20 flex h-14 shrink-0 items-center justify-between border-b border-zinc-200/80 bg-white/90 px-3 backdrop-blur-md select-none sm:px-4 dark:border-white/[0.08] dark:bg-[#07080b]/90'>
@@ -570,18 +504,12 @@ const Topbar = () => {
 				{/* Editable Workflow Title */}
 				<EditableWorkflowName name={state.workflow.name} onSave={handleRenameWorkflow} />
 
-				{/* Version Pill */}
-				<EditorTooltip label='Open Version History'>
-					<button
-						type='button'
-						aria-label={`Version ${state.workflow.currentVersionNumber || 1}, open version history`}
-						onClick={() => {
-							setGovModalTab('versions');
-							setGovModalOpen(true);
-						}}
-						className={`border-primary-400/40 bg-primary-100/60 text-primary-800 hover:border-primary-400/70 hover:bg-primary-100 dark:border-primary-400/25 dark:bg-primary-400/10 dark:text-primary-300 dark:hover:bg-primary-400/20 hidden rounded-md border px-2 py-0.5 text-[10px] font-bold transition sm:inline-flex ${FOCUS_RING}`}>
-						v{state.workflow.currentVersionNumber || 1}
-					</button>
+				{/* Draft vs. live */}
+				<EditorTooltip label='Version history'>
+					<DraftStatusPill
+						onClick={openVersionHistory}
+						className={`hidden sm:inline-flex ${FOCUS_RING}`}
+					/>
 				</EditorTooltip>
 
 				{/* Node Count Chip */}
@@ -593,7 +521,10 @@ const Topbar = () => {
 				</EditorTooltip>
 
 				{/* Live Save Status */}
-				<SaveStatusBadge savingState={state.workflow.savingState} onRetry={handleSave} />
+				<SaveStatusBadge
+					savingState={state.workflow.savingState}
+					onRetry={() => dispatch({ type: 'SET_SAVE_STATE', savingState: 'dirty' })}
+				/>
 			</div>
 
 			{/* Center Section: Smooth Segmented Studio Control (Apps, Triggers, AI Chat) */}
@@ -826,44 +757,39 @@ const Topbar = () => {
 
 				<IssuesChecklist />
 
-				{/* Save Split Button */}
+				{/* Publish Split Button */}
 				<div
 					className={[
 						'relative flex items-center rounded-lg border shadow-xs transition duration-150',
-						// Unsaved work earns the accent, so there is something to notice.
-						isDirty
+						// Something waiting to go live earns the accent.
+						hasUnpublishedWork
 							? 'border-primary-400/70 bg-primary-100/60 dark:border-primary-400/40 dark:bg-primary-400/10'
 							: 'border-zinc-200/80 bg-white dark:border-white/10 dark:bg-zinc-900/80',
 					].join(' ')}>
 					<EditorTooltip
-						label={isDirty ? 'Save New Version (unsaved changes)' : 'Save New Version'}
+						label={hasUnpublishedWork ? 'Publish your changes' : 'Publish'}
 						shortcut='⌘S'
-						disabled={isSaveDropdownOpen}>
+						disabled={isSaveDropdownOpen || isPublishOpen}>
 						<button
 							type='button'
-							onClick={handleSave}
-							disabled={saveVersion.isPending}
+							aria-haspopup='dialog'
+							aria-expanded={isPublishOpen}
+							onClick={() => toggleMenu('publish')}
 							className={[
-								'hover:bg-primary-100/70 dark:hover:bg-primary-400/10 flex h-8 items-center gap-1.5 rounded-l-lg px-2.5 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-40 sm:px-3',
+								'hover:bg-primary-100/70 dark:hover:bg-primary-400/10 flex h-8 items-center gap-1.5 rounded-l-lg px-2.5 text-xs font-bold transition sm:px-3',
 								FOCUS_RING,
-								isDirty
+								hasUnpublishedWork
 									? 'text-primary-900 dark:text-primary-300'
 									: 'hover:text-primary-900 dark:hover:text-primary-300 text-zinc-700 dark:text-zinc-200',
 							].join(' ')}>
-							{saveVersion.isPending ? (
-								<Loader2
-									size={13}
-									className='text-primary-600 dark:text-primary-400 animate-spin'
-								/>
-							) : (
-								<Save
-									size={13}
-									className='text-primary-700 dark:text-primary-400'
-								/>
-							)}
-							<span>{saveVersion.isPending ? 'Saving...' : 'Save'}</span>
+							<Rocket size={13} className='text-primary-700 dark:text-primary-400' />
+							<span>Publish</span>
 						</button>
 					</EditorTooltip>
+
+					<AnimatePresence>
+						{isPublishOpen && <PublishPopover onClose={closeMenu} />}
+					</AnimatePresence>
 
 					<button
 						type='button'
@@ -898,11 +824,7 @@ const Topbar = () => {
 									</div>
 									<button
 										type='button'
-										onClick={() => {
-											closeMenu();
-											setGovModalTab('versions');
-											setGovModalOpen(true);
-										}}
+										onClick={openVersionHistory}
 										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
 										<GitCompare
 											size={14}
@@ -1178,11 +1100,7 @@ const Topbar = () => {
 									</button>
 									<button
 										type='button'
-										onClick={() => {
-											closeMenu();
-											setGovModalTab('versions');
-											setGovModalOpen(true);
-										}}
+										onClick={openVersionHistory}
 										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
 										<GitCompare
 											size={14}

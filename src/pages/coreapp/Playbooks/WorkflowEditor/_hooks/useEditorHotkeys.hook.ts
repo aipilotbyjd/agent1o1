@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { useWorkflowEditor } from './useWorkflowEditor.hook';
 import { useRunWorkflow } from '../_hooks/useRunWorkflow.hook';
+import { useWorkflowShellStore } from '@/store/workflowShell.store';
 
 export const isTypingTarget = (target: EventTarget | null) => {
 	if (!(target instanceof HTMLElement)) return false;
@@ -17,6 +18,9 @@ export const useEditorHotkeys = () => {
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			const mod = event.metaKey || event.ctrlKey;
+
+			// A version preview covers the canvas; edits would land on the hidden draft.
+			if (useWorkflowShellStore.getState().previewVersionId) return;
 
 			// While the user is typing, the field owns the keyboard. Only Escape (close
 			// floating UI) and Cmd/Ctrl+Enter (run — an explicit gesture no input here

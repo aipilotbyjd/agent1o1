@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-	History,
 	Share2,
 	FileSignature,
 	Disc,
@@ -31,11 +30,8 @@ import Modal from './Modal.partial';
 import WorkflowChecksTab from './WorkflowChecksTab.partial';
 import WorkflowInterfaceTab from './WorkflowInterfaceTab.partial';
 import WorkflowTriggersTab from './WorkflowTriggersTab.partial';
-import WorkflowVersionDetail from './WorkflowVersionDetail.partial';
 import {
 	useWorkflowVersions,
-	useRepublishWorkflowVersion,
-	useRollbackWorkflowVersion,
 	useWorkflowShares,
 	useCreateWorkflowShare,
 	useDeleteWorkflowShare,
@@ -61,16 +57,9 @@ const WorkflowGovernanceModal = () => {
 	const { confirm } = useConfirm();
 
 	// Tab selection
-	const activeTab = govModalTab || 'versions';
+	const activeTab = govModalTab || 'sharing';
 
-	// ── 1. Versions Tab Data & Mutations ───────────────────
-	const { data: versions, isLoading: isVersionsLoading } = useWorkflowVersions(
-		workspaceId,
-		workflowId,
-	);
-	const publishVersion = useRepublishWorkflowVersion(workspaceId);
-	const rollbackVersion = useRollbackWorkflowVersion(workspaceId);
-	const [openVersionId, setOpenVersionId] = useState<string | null>(null);
+	const { data: versions } = useWorkflowVersions(workspaceId, workflowId);
 
 	// ── 2. Sharing Tab Data & Mutations ───────────────────
 	const { data: shares, isLoading: isSharesLoading } = useWorkflowShares(workspaceId, workflowId);
@@ -194,7 +183,6 @@ const WorkflowGovernanceModal = () => {
 	};
 
 	const tabs = [
-		{ id: 'versions', label: 'Version History', icon: History },
 		{ id: 'sharing', label: 'Sharing', icon: Share2 },
 		{ id: 'approvals', label: 'Approvals', icon: FileSignature },
 		{ id: 'releases', label: 'Releases & Deploy', icon: Disc },
@@ -240,153 +228,6 @@ const WorkflowGovernanceModal = () => {
 
 				{/* Right Content Panel */}
 				<main className='flex-1 overflow-y-auto bg-white p-6 dark:bg-zinc-950'>
-					{/* ─── VERSION HISTORY TAB ─── */}
-					{activeTab === 'versions' && (
-						<div className='space-y-5'>
-							<div>
-								<h3 className='text-sm font-bold text-zinc-800 dark:text-zinc-200'>
-									Version Snapshots
-								</h3>
-								<p className='mt-1 text-xs text-zinc-500 dark:text-zinc-400'>
-									Manage save points, publish production versions, or rollback to
-									a previous state.
-								</p>
-							</div>
-
-							{isVersionsLoading ? (
-								<div className='flex justify-center py-12 text-xs font-semibold text-zinc-500'>
-									<Loader2
-										size={16}
-										className='text-primary-600 mr-2 animate-spin'
-									/>
-									Loading version history...
-								</div>
-							) : !versions || versions.length === 0 ? (
-								<div className='rounded-xl border border-dashed border-zinc-200 p-8 text-center text-xs text-zinc-400 dark:border-zinc-800'>
-									No saved versions found. Save your current canvas to create a
-									version snapshot.
-								</div>
-							) : (
-								<div className='space-y-3'>
-									{versions.map((version) => {
-										const isCurrent =
-											version.version === state.workflow.currentVersionNumber;
-										// The live version is the workflow's `current_version_id`; there is no per-version flag.
-										const isPublished =
-											String(version.id) ===
-											String(state.workflow.currentVersionId);
-
-										return (
-											<div
-												key={version.id}
-												className={`flex flex-wrap items-start justify-between rounded-xl border p-4 transition ${
-													isCurrent
-														? 'border-primary-200 bg-primary-50/15 dark:border-primary-800/40 dark:bg-primary-950/10'
-														: 'border-zinc-200 bg-white dark:border-zinc-800/50 dark:bg-zinc-900/10'
-												}`}>
-												<div className='space-y-1'>
-													<div className='flex items-center gap-2'>
-														<span className='text-[13px] font-bold text-zinc-800 dark:text-zinc-200'>
-															v{version.version}
-														</span>
-														{isPublished && (
-															<span className='rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-400'>
-																Published
-															</span>
-														)}
-														{isCurrent && (
-															<span className='bg-primary-100 border-primary-200 text-primary-700 dark:bg-primary-950/30 dark:border-primary-900/50 dark:text-primary-400 rounded-full border px-2 py-0.5 text-[9px] font-bold'>
-																Active Workspace State
-															</span>
-														)}
-													</div>
-													<p className='text-xs font-medium text-zinc-500 dark:text-zinc-400'>
-														{version.notes || 'No description provided'}
-													</p>
-													<div className='flex items-center gap-1.5 text-[10px] text-zinc-400'>
-														<Clock size={10} />
-														<span>
-															{version.created_at
-																? new Date(
-																		version.created_at,
-																	).toLocaleString()
-																: 'Unknown date'}
-														</span>
-														{version.published_by && (
-															<>
-																<span className='text-zinc-300 dark:text-zinc-700'>
-																	•
-																</span>
-																<span>
-																	by {version.published_by}
-																</span>
-															</>
-														)}
-													</div>
-												</div>
-
-												<div className='flex items-center gap-2'>
-													<button
-														type='button'
-														onClick={() =>
-															setOpenVersionId((id) =>
-																id === String(version.id)
-																	? null
-																	: String(version.id),
-															)
-														}
-														aria-expanded={
-															openVersionId === String(version.id)
-														}
-														className='rounded-lg border border-zinc-200 px-2.5 py-1.5 text-[10px] font-bold text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-950 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-white/[0.04] dark:hover:text-white'>
-														{openVersionId === String(version.id)
-															? 'Hide'
-															: 'View'}
-													</button>
-													{!isPublished && (
-														<button
-															type='button'
-															onClick={() =>
-																publishVersion.mutate(version.id)
-															}
-															disabled={publishVersion.isPending}
-															className='rounded-lg border border-zinc-200 px-2.5 py-1.5 text-[10px] font-bold text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-950 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-white/[0.04] dark:hover:text-white'>
-															Publish
-														</button>
-													)}
-													{!isCurrent && (
-														<button
-															type='button'
-															onClick={() =>
-																rollbackVersion.mutate({
-																	id: workflowId,
-																	version: version.id,
-																})
-															}
-															disabled={rollbackVersion.isPending}
-															className='text-zinc-650 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-[10px] font-bold transition hover:bg-zinc-50 hover:text-zinc-950 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-white/[0.04] dark:hover:text-white'>
-															Rollback
-														</button>
-													)}
-												</div>
-
-												{openVersionId === String(version.id) && (
-													<div className='w-full basis-full'>
-														<WorkflowVersionDetail
-															workspaceId={workspaceId}
-															workflowId={workflowId}
-															versionId={String(version.id)}
-														/>
-													</div>
-												)}
-											</div>
-										);
-									})}
-								</div>
-							)}
-						</div>
-					)}
-
 					{/* ─── SHARING TAB ─── */}
 					{activeTab === 'sharing' && (
 						<div className='space-y-6'>

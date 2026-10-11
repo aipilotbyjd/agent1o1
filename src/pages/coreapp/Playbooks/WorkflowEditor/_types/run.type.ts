@@ -31,6 +31,8 @@ export type TRunRecord = {
 	finishedAt: number;
 	status: 'success' | 'error' | 'stopped';
 	trigger: 'manual';
+	/** The published version a real run ran on; practice runs have none. */
+	versionId?: string;
 	nodeRuns: TNodeRunRecord[];
 	logs: TRunLog[];
 };

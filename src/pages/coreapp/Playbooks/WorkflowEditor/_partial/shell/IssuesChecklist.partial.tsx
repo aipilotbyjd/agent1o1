@@ -3,6 +3,7 @@ import { useReactFlow } from '@xyflow/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronRight, CircleCheck, Lightbulb, TriangleAlert, X } from 'lucide-react';
 import useOnClickOutside from '@/hooks/useOnClickOutside';
+import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import { getNodeDefinition } from '../../_helper/nodeCatalog.constants';
 import { issuesToFix, type TValidationIssue } from '../../_helper/validation.helper';
 import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
@@ -17,6 +18,7 @@ import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 const IssuesChecklist = () => {
 	const { state, dispatch } = useWorkflowEditor();
 	const reactFlow = useReactFlow();
+	const setPreviewVersionId = useWorkflowShellStore((store) => store.setPreviewVersionId);
 	const ref = useRef<HTMLDivElement>(null);
 
 	const issues = useMemo(
@@ -42,6 +44,7 @@ const IssuesChecklist = () => {
 
 	const jump = (issue: TValidationIssue) => {
 		if (!issue.nodeId) return;
+		setPreviewVersionId(null);
 		reactFlow.fitView({
 			nodes: [{ id: issue.nodeId }],
 			padding: 0.6,

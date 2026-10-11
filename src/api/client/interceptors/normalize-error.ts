@@ -20,8 +20,8 @@ type TErrorBody = {
 const MAX_LISTED_ERRORS = 3;
 
 // Graph validation answers with a list of reasons instead of a field map. When
-// it also sends `issues`, their user-facing messages are listed instead of the
-// technical `errors` wording.
+// it also sends `issues`, the message already summarises them in plain words
+// and screens list the issues themselves by step, so nothing is appended.
 const withListedErrors = (message: string, errors: string[]) => {
 	if (errors.length === 0) return message;
 	const listed = errors.slice(0, MAX_LISTED_ERRORS).join(' ');
@@ -43,10 +43,7 @@ export const normalizeError = (client: AxiosInstance) => {
 				Array.isArray(errors)
 					? new ApiError(
 							status,
-							withListedErrors(
-								message,
-								issues.length > 0 ? issues.map((issue) => issue.message) : errors,
-							),
+							issues.length > 0 ? message : withListedErrors(message, errors),
 							undefined,
 							issues,
 						)

@@ -78,6 +78,20 @@ const draftEdgesToCanvas = (nodes: TWorkflowNode[], edges: TWorkflowEdge[]): TCa
 	});
 };
 
+/** A workflow's saved draft as canvas nodes and edges. */
+export const workflowDraftToCanvas = (
+	workflow: TWorkflow,
+): { nodes: TCanvasNode[]; edges: TCanvasEdge[] } => {
+	const draftNodes = workflow.nodes ?? [];
+	return {
+		nodes: draftNodes.map(draftNodeToCanvas),
+		edges: restoreInputConnections(
+			draftEdgesToCanvas(draftNodes, workflow.edges ?? []),
+			draftNodes,
+		),
+	};
+};
+
 /** The editor always opens the live draft (`show` loads its nodes/edges);
  *  `version` only supplies the published-version badge. */
 export const versionToExportedWorkflow = (
@@ -85,8 +99,6 @@ export const versionToExportedWorkflow = (
 	version: TWorkflowVersion | undefined,
 	workspaceId: string,
 ): TExportedWorkflow => {
-	const draftNodes = workflow.nodes ?? [];
-
 	return {
 		workflow: {
 			id: workflow.id,
@@ -100,10 +112,6 @@ export const versionToExportedWorkflow = (
 			updatedAt: Date.now(),
 			savingState: 'saved',
 		},
-		nodes: draftNodes.map(draftNodeToCanvas),
-		edges: restoreInputConnections(
-			draftEdgesToCanvas(draftNodes, workflow.edges ?? []),
-			draftNodes,
-		),
+		...workflowDraftToCanvas(workflow),
 	};
 };

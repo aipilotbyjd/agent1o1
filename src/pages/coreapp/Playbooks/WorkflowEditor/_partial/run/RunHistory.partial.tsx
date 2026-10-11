@@ -11,6 +11,8 @@ import {
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { RunService, runKeys } from '@/api/modules/runs';
+import { useWorkflowVersions } from '@/api/modules/workflows';
+import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import type { TRunRecord } from '../../_types/run.type';
 import DataInspector from './DataInspector.partial';
@@ -36,8 +38,9 @@ const statusMeta = {
 		icon: Square,
 	},
 };
-const RunRow = ({ record }: { record: TRunRecord }) => {
-	const { state } = useWorkflowEditor();
+const RunRow = ({ record, versionNumber }: { record: TRunRecord; versionNumber?: number }) => {
+	const { state, dispatch } = useWorkflowEditor();
+	const openVersionPanel = useWorkflowShellStore((store) => store.openVersionPanel);
 	const [open, setOpen] = useState(false);
 	const workspaceId = state.workflow.workspaceId ?? '';
 	// Practice runs only exist locally. Fetch server results on demand for real runs.
@@ -95,6 +98,20 @@ const RunRow = ({ record }: { record: TRunRecord }) => {
 							{' '}
 							· {completed}/{record.nodeRuns.length} steps
 						</span>
+						{versionNumber !== undefined && record.versionId && (
+							<button
+								type='button'
+								title={`See v${versionNumber}, the version this run used`}
+								onClick={(event) => {
+									event.preventDefault();
+									event.stopPropagation();
+									dispatch({ type: 'TOGGLE_RUN_PANEL' });
+									openVersionPanel(record.versionId);
+								}}
+								className='ml-1.5 rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-600 transition hover:bg-zinc-200 hover:text-zinc-900 dark:bg-white/[0.06] dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white'>
+								v{versionNumber}
+							</button>
+						)}
 					</p>
 				</div>
 				<span className='text-[11px] text-zinc-500 tabular-nums dark:text-zinc-400'>
@@ -190,6 +207,11 @@ const RunRow = ({ record }: { record: TRunRecord }) => {
 const RunHistory = () => {
 	const { state, dispatch } = useWorkflowEditor();
 	const history = state.runHistory;
+	const { data: versions } = useWorkflowVersions(
+		state.workflow.workspaceId ?? '',
+		state.workflow.apiId ?? '',
+	);
+	const versionNumbers = new Map(versions?.map((version) => [version.id, version.version]));
 	if (!history.length)
 		return (
 			<div className='py-12 text-center'>
@@ -220,7 +242,13 @@ const RunHistory = () => {
 				</button>
 			</div>
 			{history.map((record) => (
-				<RunRow key={record.id} record={record} />
+				<RunRow
+					key={record.id}
+					record={record}
+					versionNumber={
+						record.versionId ? versionNumbers.get(record.versionId) : undefined
+					}
+				/>
 			))}
 		</div>
 	);

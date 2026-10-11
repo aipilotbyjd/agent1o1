@@ -1,6 +1,10 @@
-import type { TCanvasEdge, TCanvasNode } from '../_types/canvas.type';
+import type { TCanvasPosition } from '../_types/canvas.type';
 
-export const autoLayout = (nodes: TCanvasNode[], edges: TCanvasEdge[]): TCanvasNode[] => {
+export const autoLayout = <TNode extends { id: string; position: TCanvasPosition }>(
+	nodes: TNode[],
+	edges: { source: string; target: string }[],
+	direction: 'horizontal' | 'vertical' = 'horizontal',
+): TNode[] => {
 	const indegree = new Map(nodes.map((node) => [node.id, 0]));
 	edges.forEach((edge) => indegree.set(edge.target, (indegree.get(edge.target) ?? 0) + 1));
 
@@ -28,10 +32,31 @@ export const autoLayout = (nodes: TCanvasNode[], edges: TCanvasEdge[]): TCanvasN
 		rowsByColumn.set(column, row + 1);
 		return {
 			...node,
-			position: {
-				x: 80 + column * 280,
-				y: 90 + row * 150,
-			},
+			position:
+				direction === 'vertical'
+					? { x: 80 + row * 280, y: 90 + column * 170 }
+					: { x: 80 + column * 280, y: 90 + row * 150 },
 		};
 	});
+};
+
+/**
+ * Gives nodes without a stored position one — versions published before the
+ * canvas was recorded have none. A node still on the canvas (`known`) goes
+ * where it is now; if any isn't, the whole graph is laid out instead so
+ * nothing overlaps.
+ */
+export const placeUnpositioned = <TNode extends { id: string; position: TCanvasPosition }>(
+	nodes: TNode[],
+	edges: { source: string; target: string }[],
+	isPositioned: (node: TNode) => boolean,
+	known: Map<string, TCanvasPosition>,
+): TNode[] => {
+	if (nodes.every(isPositioned)) return nodes;
+	if (nodes.some((node) => !isPositioned(node) && !known.has(node.id))) {
+		return autoLayout(nodes, edges, 'vertical');
+	}
+	return nodes.map((node) =>
+		isPositioned(node) ? node : { ...node, position: known.get(node.id)! },
+	);
 };

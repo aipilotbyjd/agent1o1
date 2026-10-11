@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { AUTOSAVE_DEBOUNCE_MS } from '../_helper/builder.constants';
 import { exportWorkflow } from '../_helper/importExport.helper';
+import { serverValidationIssues } from '../_helper/validation.helper';
 import { useWorkflowEditor } from './useWorkflowEditor.hook';
 import { usePersistWorkflowDraft } from './usePersistWorkflowDraft.hook';
 import { messageFromError, notify } from '@/api/core/notify';
@@ -67,7 +68,12 @@ export const useAutosave = () => {
 						stateRef.current.workflow.description !== savedDescription;
 					setState(stale ? 'dirty' : 'saved');
 				} catch (err) {
-					if (!silent) notify.error(messageFromError(err, 'Could not save the workflow'));
+					const issues = serverValidationIssues(err);
+					if (!silent && issues.length) {
+						dispatch({ type: 'SET_ISSUES_PANEL', open: true, serverIssues: issues });
+					} else if (!silent) {
+						notify.error(messageFromError(err, 'Could not save the workflow'));
+					}
 					setState('error');
 				}
 			} else {

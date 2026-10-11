@@ -10,15 +10,28 @@
 // workflow.
 // ============================================================
 
+import type { TBuilderGraph } from './workflow-builder.type';
+
 // ─── Versions ────────────────────────────────────────────────
 
+export type TWorkflowVersionPublisher = {
+	id: string;
+	name: string;
+};
+
+/** `graph` is what runs (loop-mode nodes compiled, no positions);
+ *  `editor_graph` is the canvas as it was published. Both are only on a
+ *  single-version read — the list leaves them out. */
 export type TWorkflowVersion = {
 	id: string;
 	workflow_id: string;
 	version: number;
-	graph: { nodes: unknown[]; edges: unknown[] };
+	graph?: TBuilderGraph;
+	editor_graph?: TBuilderGraph;
 	notes: string | null;
-	published_by: string;
+	published_by: string | null;
+	publisher?: TWorkflowVersionPublisher | null;
+	runs_count?: number;
 	created_at: string;
 };
 

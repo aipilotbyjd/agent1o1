@@ -1,7 +1,7 @@
 import { getNodeDefinition } from './nodeCatalog.constants';
 import type { TCanvasEdge, TCanvasNode } from '../_types/canvas.type';
 import type { TNodeField } from '../_types/node.type';
-import type { TApiIssue } from '@/api/core';
+import { ApiError, type TApiIssue } from '@/api/core';
 
 export type TValidationIssue = {
 	id: string;
@@ -123,3 +123,10 @@ export const issuesToFix = (
 
 	return [...live, ...fromServer];
 };
+
+/**
+ * What the server said needs fixing, when it refused a workflow as invalid —
+ * shown in the checklist by step and field rather than as a toast.
+ */
+export const serverValidationIssues = (error: unknown): TApiIssue[] =>
+	ApiError.is(error) && error.status === 422 ? error.issues : [];
