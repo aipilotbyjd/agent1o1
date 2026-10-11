@@ -2,12 +2,15 @@ import { KeyboardEvent, useCallback, useState } from 'react';
 import { ArrowUp, Loader2, Mic, Square } from 'lucide-react';
 import { useVoiceRecorder } from '../_hooks/useVoiceRecorder.hook';
 import { useBrand } from '@/context/brand';
+import useComposerDraft from '@/hooks/useComposerDraft';
 
 interface IComposerProps {
 	onSend: (content: string) => void;
 	onStop?: () => void;
 	isWorking?: boolean;
 	isSending?: boolean;
+	/** Where the unsent text is parked so it survives a reload; one per conversation. */
+	draftKey: string;
 	/** Turns a recording into text; the mic is hidden when not provided. */
 	onTranscribe?: (audio: Blob) => Promise<string>;
 }
@@ -21,10 +24,11 @@ const ComposerPartial = ({
 	onStop,
 	isWorking = false,
 	isSending = false,
+	draftKey,
 	onTranscribe,
 }: IComposerProps) => {
 	const brand = useBrand();
-	const [content, setContent] = useState('');
+	const [content, setContent] = useComposerDraft(draftKey);
 	const [isTranscribing, setIsTranscribing] = useState(false);
 
 	const handleRecorded = useCallback(
@@ -38,7 +42,7 @@ const ComposerPartial = ({
 				.catch(() => undefined)
 				.finally(() => setIsTranscribing(false));
 		},
-		[onTranscribe],
+		[onTranscribe, setContent],
 	);
 
 	const voice = useVoiceRecorder(handleRecorded);

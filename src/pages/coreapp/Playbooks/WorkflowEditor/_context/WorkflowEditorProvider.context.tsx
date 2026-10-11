@@ -6,8 +6,11 @@ import {
 } from './WorkflowEditorStore.context';
 import type { TRunRecord } from '../_types/run.type';
 import { useWorkflowRouteParams } from '../_hooks/useWorkflowRouteParams.hook';
+import safeStorage from '@/utils/safeStorage.util';
 
 const RUN_HISTORY_KEY = 'wf-editor-run-history';
+/** The AI chat panel reopens after a reload if it was open, like the other editor chats. */
+const AI_PANEL_OPEN_KEY = 'wf-editor-ai-panel-open';
 
 const loadRunHistory = (key: string): TRunRecord[] => {
 	try {
@@ -46,15 +49,20 @@ export const WorkflowEditorProvider = ({ children }: { children: ReactNode }) =>
 		(initial) => {
 			const isAddWorkflow = window.location.pathname.endsWith('/new');
 			const runHistory = loadRunHistory(runHistoryKey);
+			const ui = {
+				...initial.ui,
+				aiPanelOpen: safeStorage.get(AI_PANEL_OPEN_KEY) === 'true',
+			};
 			if (isAddWorkflow) {
 				return {
 					...initial,
 					nodes: [],
 					edges: [],
+					ui,
 					runHistory,
 				};
 			}
-			return { ...initial, runHistory };
+			return { ...initial, ui, runHistory };
 		},
 	);
 
@@ -62,6 +70,12 @@ export const WorkflowEditorProvider = ({ children }: { children: ReactNode }) =>
 	useEffect(() => {
 		saveRunHistory(runHistoryKey, state.runHistory);
 	}, [runHistoryKey, state.runHistory]);
+
+	const isAiPanelOpen = state.ui.aiPanelOpen;
+	useEffect(() => {
+		if (isAiPanelOpen) safeStorage.set(AI_PANEL_OPEN_KEY, 'true');
+		else safeStorage.remove(AI_PANEL_OPEN_KEY);
+	}, [isAiPanelOpen]);
 
 	const value = useMemo(() => ({ state, dispatch }), [state]);
 

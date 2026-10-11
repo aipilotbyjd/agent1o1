@@ -302,6 +302,7 @@ const AssistantHomePage = () => {
 						onStop={handleStop}
 						isWorking={conversation.isWorking}
 						isSending={sendMessage.isPending || createSession.isPending}
+						draftKey={`agent1o1:assistant-draft:${currentWorkspaceId}:${activeSessionId ?? 'new'}`}
 						onTranscribe={
 							home?.features.voice
 								? (audio) => transcribe.mutateAsync(audio)

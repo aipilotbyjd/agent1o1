@@ -762,7 +762,6 @@ export const workflowEditorReducer = (
 					importExportOpen: false,
 					emptyCanvasView: 'ai',
 					leftPanelOpen: false,
-					aiPanelOpen: false,
 					runPanelOpen: false,
 					commandPaletteOpen: false,
 					quickAddOpen: false,

@@ -65,6 +65,8 @@ import {
 	FileDropOverlay,
 	MessageAttachments,
 } from '@/components/common/ChatAttachments';
+import useComposerDraft from '@/hooks/useComposerDraft';
+import useDraftFiles from '@/hooks/useDraftFiles';
 import useFileDrop from '@/hooks/useFileDrop';
 import paths from '@/Routes/paths';
 import {
@@ -303,11 +305,14 @@ const AiBuilderPanel = () => {
 	const ensureBuilderSession = useAiChatStore((store) => store.ensureBuilderSession);
 	const pushAssistantNote = useAiChatStore((store) => store.pushAssistantNote);
 	const rehydrate = useAiChatStore((store) => store.rehydrate);
+	const chatWorkflowId = useAiChatStore((store) => store.workflowId);
 	const { confirm } = useConfirm();
 	const navigate = useNavigate();
 
-	const [promptInput, setPromptInput] = useState('');
-	const [attachments, setAttachments] = useState<File[]>([]);
+	// An unsent message and its files are parked per workflow and per chat, so they survive a reload.
+	const composerDraftKey = `agent1o1:builder-draft:${chatWorkflowId ?? 'new'}:${builderSessionId ?? 'new'}`;
+	const [promptInput, setPromptInput] = useComposerDraft(composerDraftKey);
+	const [attachments, setAttachments] = useDraftFiles(composerDraftKey);
 	const [isAttachOpen, setIsAttachOpen] = useState(false);
 	const attachmentInputRef = useRef<HTMLInputElement>(null);
 	const addAttachments = (files: File[]) =>

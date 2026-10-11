@@ -73,7 +73,10 @@ import MainAppBar, {
 	MainAppBarIconButton,
 } from '@/pages/coreapp/_partial/MainAppBar.partial';
 import { notify } from '@/api/core';
+import useComposerDraft, { readComposerDraft, writeComposerDraft } from '@/hooks/useComposerDraft';
 import useDarkMode from '@/hooks/useDarkMode';
+import useDraftFiles from '@/hooks/useDraftFiles';
+import { removeDraftFiles } from '@/utils/draftFiles.util';
 import AppLogo from '@/components/AppLogo';
 import DARK_MODE from '@/constants/darkMode.constant';
 import pages from '@/Routes/pages';
@@ -331,25 +334,6 @@ interface TMessage {
 /** Where an unsent composer draft is parked, per agent and per chat. */
 const draftKey = (agentId: string | null, sessionId: string | null) =>
 	`agent1o1:chat-draft:${agentId ?? 'draft'}:${sessionId ?? 'new'}`;
-
-/** Browser storage is unavailable in private windows and with site data blocked,
- *  so a lost draft must never take the composer down with it. */
-const readDraft = (key: string) => {
-	try {
-		return localStorage.getItem(key) ?? '';
-	} catch {
-		return '';
-	}
-};
-
-const writeDraft = (key: string, value: string) => {
-	try {
-		if (value.trim()) localStorage.setItem(key, value);
-		else localStorage.removeItem(key);
-	} catch {
-		// A draft that cannot be parked is not worth an error — it stays in state.
-	}
-};
 
 /** Grows the composer to fit its content. The height has to be reset first or
  *  scrollHeight only ever reports the taller of the two. */
@@ -971,7 +955,10 @@ const BuildPage = () => {
 	const [pendingDeleteTriggerId, setPendingDeleteTriggerId] = useState<string | null>(null);
 
 	const [activeTab, setActiveTab] = useState('All');
-	const [promptText, setPromptText] = useState('');
+	// The "describe your agent" prompt is kept per workspace until an agent is made from it.
+	const [promptText, setPromptText] = useComposerDraft(
+		workspaceId ? `agent1o1:agent-describe-draft:${workspaceId}` : null,
+	);
 	const { isDarkTheme, setDarkModeStatus } = useDarkMode();
 	const textareaRef = useRef<HTMLInputElement>(null);
 	const heroPromptRef = useRef<HTMLInputElement>(null);
@@ -998,7 +985,6 @@ const BuildPage = () => {
 	const [agentIconColor, setAgentIconColor] = useState<TAgentColor>('purple');
 	const [chatHistory, setChatHistory] = useState<TMessage[]>([]);
 	const [chatInput, setChatInput] = useState('');
-	const [chatAttachments, setChatAttachments] = useState<File[]>([]);
 	const attachmentInputRef = useRef<HTMLInputElement | null>(null);
 	const mobileComposerRef = useRef<HTMLTextAreaElement | null>(null);
 	const [mobileViewportHeight, setMobileViewportHeight] = useState<number | null>(null);
@@ -1124,18 +1110,19 @@ const BuildPage = () => {
 	// An unsent message survives a chat switch, a tab change and a reload — it is
 	// parked per agent and per chat, so two chats never share one draft.
 	const draftKeyRef = useRef<string>('');
+	const chatDraftKey = draftKey(currentAgentId ?? null, conversationId ?? null);
+	const [chatAttachments, setChatAttachments] = useDraftFiles(chatDraftKey);
 	useEffect(() => {
-		const nextKey = draftKey(currentAgentId ?? null, conversationId ?? null);
-		if (nextKey === draftKeyRef.current) return;
-		draftKeyRef.current = nextKey;
-		setChatInput(readDraft(nextKey));
-	}, [currentAgentId, conversationId]);
+		if (chatDraftKey === draftKeyRef.current) return;
+		draftKeyRef.current = chatDraftKey;
+		setChatInput(readComposerDraft(chatDraftKey));
+	}, [chatDraftKey]);
 
 	/** Every write to the composer goes through here so the draft stays parked.
 	 *  Parking in an effect instead would race the restore above and blank it. */
 	const updateChatInput = (value: string) => {
 		setChatInput(value);
-		writeDraft(draftKeyRef.current, value);
+		writeComposerDraft(draftKeyRef.current, value);
 	};
 
 	/** Built-in actions in the composer's `/` menu, listed above the skills. Always
@@ -1866,6 +1853,8 @@ const BuildPage = () => {
 	) => {
 		const trimmed = messageText.trim();
 		const files = resendFiles ?? [...chatAttachments];
+		// Starting a chat gives it an id, which moves the draft key mid-send.
+		const sentFromKey = chatDraftKey;
 		if ((!trimmed && files.length === 0 && !skill) || !workspaceId || streamAbortRef.current)
 			return;
 		// The backend requires message text, even when only files or a skill are sent.
@@ -1970,7 +1959,10 @@ const BuildPage = () => {
 			};
 			setChatHistory((prev) => [...prev, agentMsg]);
 			// A regenerate never used the composer's files, so leave them staged.
-			if (!resendFiles) setChatAttachments([]);
+			if (!resendFiles) {
+				setChatAttachments([]);
+				void removeDraftFiles(sentFromKey);
+			}
 		} catch (err) {
 			if (!turnStarted) {
 				setChatInput((current) => {
@@ -1978,7 +1970,7 @@ const BuildPage = () => {
 						current.trim() && current.trim() !== trimmed
 							? `${trimmed}\n\n${current}`
 							: trimmed;
-					writeDraft(draftKeyRef.current, restored);
+					writeComposerDraft(draftKeyRef.current, restored);
 					return restored;
 				});
 				if (!controller.signal.aborted)
