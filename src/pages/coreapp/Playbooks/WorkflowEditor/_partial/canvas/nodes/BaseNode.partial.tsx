@@ -18,7 +18,6 @@ import {
 	Loader2,
 	Maximize2,
 	MessageSquare,
-	OctagonX,
 	Pin,
 	TriangleAlert,
 	Webhook,
@@ -231,19 +230,9 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 					: 'border-zinc-200 dark:border-zinc-800',
 				hasError ? 'border-rose-400/80 ring-2 ring-rose-500/10' : '',
 				isActiveRunNode ? 'ring-2 ring-emerald-400/20' : '',
-				data.breakpoint ? 'ring-2 ring-rose-500/40' : '',
 			].join(' ')}
 			style={{ borderColor: data.color }}>
 			<PortHandles ports={inputs} type='target' color={effectiveColorHex} />
-
-			{/* Breakpoint indicator */}
-			{data.breakpoint && (
-				<div
-					title='Breakpoint set - execution will pause here'
-					className='absolute -top-1.5 -left-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full border-2 border-rose-300 bg-rose-500 text-white shadow-sm'>
-					<OctagonX size={10} />
-				</div>
-			)}
 
 			{hasWarning && (
 				<button

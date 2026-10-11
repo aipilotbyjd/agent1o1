@@ -12,7 +12,7 @@ export const isTypingTarget = (target: EventTarget | null) => {
 
 export const useEditorHotkeys = () => {
 	const { dispatch, state } = useWorkflowEditor();
-	const { runWorkflow, stopRun, stepNext } = useRunWorkflow();
+	const { runWorkflow, stopRun } = useRunWorkflow();
 	// Safe here: WorkflowEditorLayout mounts ReactFlowProvider above this page.
 	const reactFlow = useReactFlow();
 	const autoLayout = useAutoLayout();
@@ -136,36 +136,6 @@ export const useEditorHotkeys = () => {
 				return;
 			}
 
-			// Toggle step-through debug mode (Cmd+Shift+D)
-			if (mod && event.shiftKey && event.key.toLowerCase() === 'd') {
-				event.preventDefault();
-				dispatch({ type: 'SET_STEP_MODE', enabled: !state.ui.stepMode });
-				return;
-			}
-
-			// Step next (Space — when in step mode and waiting)
-			if (
-				!isTypingTarget(event.target) &&
-				event.key === ' ' &&
-				state.ui.stepMode &&
-				state.ui.waitingForStep
-			) {
-				event.preventDefault();
-				stepNext();
-				return;
-			}
-
-			// Breakpoint toggle (B key)
-			if (
-				!isTypingTarget(event.target) &&
-				event.key.toLowerCase() === 'b' &&
-				state.ui.selectedNodeId
-			) {
-				event.preventDefault();
-				dispatch({ type: 'TOGGLE_NODE_BREAKPOINT', id: state.ui.selectedNodeId });
-				return;
-			}
-
 			// Fit view (Cmd+Shift+F) — was advertised in the cheat sheet but never bound.
 			if (mod && event.shiftKey && event.key.toLowerCase() === 'f') {
 				event.preventDefault();
@@ -234,12 +204,9 @@ export const useEditorHotkeys = () => {
 		state.ui.selectedNodeIds,
 		state.ui.canvasSearchOpen,
 		state.ui.nodeDocOpen,
-		state.ui.stepMode,
-		state.ui.waitingForStep,
 		reactFlow,
 		autoLayout,
 		runWorkflow,
 		stopRun,
-		stepNext,
 	]);
 };

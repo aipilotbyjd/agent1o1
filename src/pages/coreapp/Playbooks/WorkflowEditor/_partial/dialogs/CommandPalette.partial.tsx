@@ -101,25 +101,6 @@ const CommandPalette = () => {
 			disabled: !state.history.past.length,
 		},
 		{
-			label: state.ui.stepMode ? 'Exit step-through mode' : 'Enter step-through mode',
-			description: 'Pause at each node during execution for debugging',
-			shortcut: '⌘⇧D',
-			action: () => dispatch({ type: 'SET_STEP_MODE', enabled: !state.ui.stepMode }),
-			category: 'Debug',
-		},
-		{
-			label: 'Toggle breakpoint on selected node',
-			description: 'Pause execution at this node in step-through mode',
-			shortcut: 'B',
-			action: () => {
-				if (state.ui.selectedNodeId) {
-					dispatch({ type: 'TOGGLE_NODE_BREAKPOINT', id: state.ui.selectedNodeId });
-				}
-			},
-			category: 'Debug',
-			disabled: !state.ui.selectedNodeId,
-		},
-		{
 			label: 'Keyboard shortcuts',
 			description: 'View all keyboard shortcuts',
 			shortcut: '?',

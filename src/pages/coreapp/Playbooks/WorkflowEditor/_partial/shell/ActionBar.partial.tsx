@@ -1,5 +1,5 @@
 import { useReactFlow } from '@xyflow/react';
-import { Bug, Grid2X2, LayoutGrid, Maximize2, Minus, Plus, Search, Sliders } from 'lucide-react';
+import { Grid2X2, LayoutGrid, Maximize2, Minus, Plus, Search, Sliders } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
@@ -86,14 +86,6 @@ const ActionBar = () => {
 				}
 				className='hidden sm:flex'>
 				<Search size={13} />
-			</ToolButton>
-			<ToolButton
-				title='Step-through debug mode, simulated in the browser (⌘⇧D)'
-				active={state.ui.stepMode}
-				danger={state.ui.stepMode}
-				onClick={() => dispatch({ type: 'SET_STEP_MODE', enabled: !state.ui.stepMode })}
-				className='hidden sm:flex'>
-				<Bug size={13} />
 			</ToolButton>
 			<ToolButton
 				title='Command palette (⌘P)'

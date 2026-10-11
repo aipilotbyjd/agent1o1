@@ -58,7 +58,7 @@ const secondaryButton =
 
 const RunPanel = () => {
 	const { state, dispatch } = useWorkflowEditor();
-	const { stepNext, runWorkflow, stopRun } = useRunWorkflow();
+	const { runWorkflow, stopRun } = useRunWorkflow();
 	const reactFlow = useReactFlow();
 	if (!state.ui.runPanelOpen) return null;
 	const run = state.run;
@@ -189,12 +189,6 @@ const RunPanel = () => {
 									</dd>
 								</div>
 							</dl>
-							{state.ui.stepMode && (
-								<p className='mt-4 border-l-2 border-amber-400 pl-3 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400'>
-									Practice mode. Actions are simulated; connected apps are not
-									affected.
-								</p>
-							)}
 						</div>
 						{state.ui.runPanelTab === 'results' ? (
 							<div className='px-5 py-5'>
@@ -374,15 +368,9 @@ const RunPanel = () => {
 			<footer className='flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-zinc-200 bg-zinc-50/70 px-5 py-3.5 dark:border-white/10 dark:bg-white/[0.015]'>
 				<span className='flex items-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400'>
 					<Clock3 size={12} />
-					{state.ui.stepMode ? 'Practice mode' : 'Manual run'}
+					Manual run
 				</span>
 				<div className='flex flex-wrap gap-2'>
-					{state.ui.stepMode && state.ui.waitingForStep && (
-						<button type='button' onClick={stepNext} className={secondaryButton}>
-							<Play size={12} />
-							Next step
-						</button>
-					)}
 					{run.status === 'running' ? (
 						<button
 							type='button'

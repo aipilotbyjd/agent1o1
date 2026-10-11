@@ -11,21 +11,10 @@ import { RunService } from '@/api/modules/runs';
 import { useConfirm } from '@/context/confirm';
 import type { TNodeRunDetail, TRun, TRunStatus } from '@/types/run.type';
 import type { TWorkflow } from '@/types/workflow.type';
-import { createId } from '../_context/WorkflowEditorStore.context';
 import { useWorkflowEditor } from './useWorkflowEditor.hook';
-import { getRunOrder } from '../_helper/runGraph.helper';
 import { usePersistWorkflowDraft } from './usePersistWorkflowDraft.hook';
-import {
-	buildRuntimeContext,
-	executeNode,
-	firstList,
-	isEdgeActive,
-	resolveNodeValues,
-	type TNodeOutputs,
-} from '../_helper/runtime.helper';
 import { getNodeDefinition } from '../_helper/nodeCatalog.constants';
 import { serverValidationIssues } from '../_helper/validation.helper';
-import type { TNodeRunRecord, TRunRecord } from '../_types/run.type';
 import type { TNodeRunStatus } from '../_types/node.type';
 import { messageFromError, notify } from '@/api/core/notify';
 import { useCredentialResolver } from './useCredentialResolver.hook';
@@ -36,9 +25,6 @@ const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, 
 const POLL_INTERVAL_MS = 2000;
 const WAITING_POLL_INTERVAL_MS = 10000;
 const MAX_CONSECUTIVE_POLL_FAILURES = 5;
-
-/** How long a breakpoint waits for a manual step before auto-continuing. */
-const BREAKPOINT_TIMEOUT_MS = 60_000;
 
 /** Map a backend node-run status onto the editor's local run status. */
 const API_NODE_STATUS_MAP: Record<string, TNodeRunStatus> = {
@@ -80,34 +66,11 @@ const useRunWorkflowController = () => {
 	const persistWorkflowDraft = usePersistWorkflowDraft();
 	const queryClient = useQueryClient();
 	const { data: publishPolicy } = usePublishApprovalPolicy(state.workflow.workspaceId ?? '');
-	const stepResolveRef = useRef<(() => void) | null>(null);
 
 	const ws = state.workflow.workspaceId;
 	const wfId = state.workflow.apiId;
 	const workflowQuery = useWorkflow(ws || '', wfId || '');
 	const isApiError = workflowQuery.isError;
-
-	/** Finalise a local run: flip status and push the record into history. */
-	const finishLocalRun = (
-		status: TRunRecord['status'],
-		runId: string,
-		runStartedAt: number,
-		nodeRuns: TNodeRunRecord[],
-	) => {
-		dispatch({ type: 'RUN_FINISH', status });
-		dispatch({
-			type: 'PUSH_RUN_HISTORY',
-			record: {
-				id: runId,
-				startedAt: runStartedAt,
-				finishedAt: Date.now(),
-				status,
-				trigger: 'manual',
-				nodeRuns,
-				logs: [],
-			},
-		});
-	};
 
 	/** Mirror a single node result onto the editor state. */
 	const applyNodeResult = (
@@ -269,194 +232,6 @@ const useRunWorkflowController = () => {
 	 * Run the deterministic frontend simulation. Outputs flow node → node,
 	 * branches gate edges, and nodes whose inbound edges are all inactive skip.
 	 */
-	const runLocalWorkflow = async (runId: string, runStartedAt: number) => {
-		const order = getRunOrder(state.nodes, state.edges);
-
-		const outputs: TNodeOutputs = {};
-		const branches: Record<string, string> = {};
-		const skipped = new Set<string>();
-		const nodeRuns: TNodeRunRecord[] = [];
-
-		for (const node of order) {
-			if (stopped.current) break;
-
-			const incoming = state.edges.filter((edge) => edge.target === node.id);
-			const activeIncoming = incoming.filter((edge) =>
-				isEdgeActive(edge, outputs, branches, skipped),
-			);
-
-			// Skip when every inbound path is gated off by an upstream branch/skip.
-			if (incoming.length > 0 && activeIncoming.length === 0) {
-				skipped.add(node.id);
-				dispatch({ type: 'SET_NODE_STATUS', id: node.id, status: 'skipped' });
-				nodeRuns.push({ nodeId: node.id, label: node.data.label, status: 'skipped' });
-				dispatch({
-					type: 'APPEND_LOG',
-					log: {
-						nodeId: node.id,
-						level: 'info',
-						message: `${node.data.label} skipped (inactive branch)`,
-					},
-				});
-				continue;
-			}
-
-			// Breakpoint: pause until the user steps (or a safety timeout fires).
-			if (node.data.breakpoint && state.ui.stepMode) {
-				dispatch({
-					type: 'APPEND_LOG',
-					log: {
-						nodeId: node.id,
-						level: 'info',
-						message: `⏸ Breakpoint hit at ${node.data.label}`,
-					},
-				});
-				dispatch({ type: 'RUN_CURRENT_NODE', nodeId: node.id });
-				dispatch({ type: 'STEP_WAIT' });
-				let resolved = false;
-				let safetyTimer: ReturnType<typeof setTimeout>;
-				await new Promise<void>((resolve) => {
-					stepResolveRef.current = () => {
-						resolved = true;
-						clearTimeout(safetyTimer);
-						resolve();
-					};
-					safetyTimer = setTimeout(() => {
-						if (!resolved) resolve();
-					}, BREAKPOINT_TIMEOUT_MS);
-				});
-				stepResolveRef.current = null;
-				dispatch({ type: 'STEP_NEXT' });
-				if (stopped.current) break;
-			}
-
-			const started = performance.now();
-			dispatch({ type: 'RUN_CURRENT_NODE', nodeId: node.id });
-			dispatch({ type: 'SET_NODE_STATUS', id: node.id, status: 'running' });
-
-			// Pinned nodes reuse their saved output instead of re-executing.
-			const usePinned = node.data.pinned && node.data.pinnedOutput !== undefined;
-
-			dispatch({
-				type: 'APPEND_LOG',
-				log: {
-					nodeId: node.id,
-					level: 'info',
-					message: usePinned
-						? `${node.data.label} using pinned data`
-						: `${node.data.label} started`,
-				},
-			});
-
-			if (!usePinned) {
-				await wait(state.ui.stepMode ? 150 : 300);
-			}
-
-			if (stopped.current) break;
-
-			// Resolve {{expressions}} against upstream outputs, gather active inputs.
-			const ctx = buildRuntimeContext(state.nodes, outputs);
-			const resolvedValues = resolveNodeValues(node.data.values, ctx);
-			const inputs = activeIncoming.map((edge) => outputs[edge.source]);
-
-			let output: unknown;
-			let runError: string | undefined;
-			try {
-				if (usePinned) {
-					output = node.data.pinnedOutput;
-				} else if (node.data.loopMode) {
-					// Per-node Loop Mode: fan out over the incoming list, running the
-					// node once per item and collecting outputs — mirrors the backend
-					// NodeRunner. Falls back to a single run when no list is available.
-					const primaryInput = inputs.length <= 1 ? inputs[0] : inputs;
-					const list = firstList(primaryInput);
-					if (list) {
-						const itemOutputs = list.map(
-							(item) => executeNode(node, [item], resolvedValues).output,
-						);
-						output = { items: itemOutputs, count: itemOutputs.length };
-					} else {
-						const result = executeNode(node, inputs, resolvedValues);
-						output = result.output;
-						if (result.branch) branches[node.id] = result.branch;
-					}
-				} else {
-					const result = executeNode(node, inputs, resolvedValues);
-					output = result.output;
-					if (result.branch) branches[node.id] = result.branch;
-				}
-			} catch (error) {
-				runError = error instanceof Error ? error.message : 'Node execution failed';
-			}
-
-			const durationMs = Math.round(performance.now() - started);
-
-			if (runError) {
-				dispatch({
-					type: 'SET_NODE_STATUS',
-					id: node.id,
-					status: 'error',
-					durationMs,
-					error: runError,
-				});
-				dispatch({
-					type: 'APPEND_LOG',
-					log: {
-						nodeId: node.id,
-						level: 'error',
-						message: `${node.data.label} failed: ${runError}`,
-					},
-				});
-				nodeRuns.push({
-					nodeId: node.id,
-					label: node.data.label,
-					status: 'error',
-					durationMs,
-					error: runError,
-				});
-				finishLocalRun('error', runId, runStartedAt, nodeRuns);
-				return;
-			}
-
-			outputs[node.id] = output;
-			dispatch({
-				type: 'SET_NODE_STATUS',
-				id: node.id,
-				status: 'success',
-				durationMs,
-				// Mirrors the backend's persisted shape (`{ config: <resolved config> }`)
-				// so the card renders identically for simulated and real runs.
-				inputPreview: { config: resolvedValues },
-				outputPreview: output,
-			});
-			nodeRuns.push({
-				nodeId: node.id,
-				label: node.data.label,
-				status: 'success',
-				durationMs,
-				output,
-			});
-			dispatch({
-				type: 'APPEND_LOG',
-				log: {
-					nodeId: node.id,
-					level: 'info',
-					message:
-						branches[node.id] !== undefined
-							? `${node.data.label} → branch "${branches[node.id]}" (${durationMs}ms)`
-							: `${node.data.label} finished in ${durationMs}ms`,
-				},
-			});
-
-			// In step mode (non-breakpoint), pause between every node.
-			if (state.ui.stepMode && !node.data.breakpoint) {
-				await wait(80);
-			}
-		}
-
-		finishLocalRun(stopped.current ? 'stopped' : 'success', runId, runStartedAt, nodeRuns);
-	};
-
 	const runWorkflow = async () => {
 		const isRunDisabled =
 			state.nodes.length === 0 && state.ui.emptyCanvasView !== 'chat-started';
@@ -483,27 +258,9 @@ const useRunWorkflowController = () => {
 		}
 
 		stopped.current = false;
-		const runId = createId('run');
-		const runStartedAt = Date.now();
 
-		// Step-through is a local debugger: the backend cannot pause between
-		// nodes, so step mode runs the in-browser simulation — and says so.
-		if (state.ui.stepMode) {
-			dispatch({ type: 'RUN_START', id: runId });
-			dispatch({
-				type: 'APPEND_LOG',
-				log: {
-					level: 'warn',
-					message:
-						'Step mode runs a local simulation. Nothing is executed on the server.',
-				},
-			});
-			await runLocalWorkflow(runId, runStartedAt);
-			return;
-		}
-
-		// Every other run goes to the server. When that is not possible, fail
-		// loudly: a simulated "success" here would look like the workflow ran.
+		// Runs go to the server. When that is not possible, fail loudly: a
+		// simulated "success" here would look like the workflow ran.
 		if (!ws || !wfId) {
 			notify.error('This workflow is not saved to the server yet, so it cannot run.');
 			return;
@@ -609,16 +366,10 @@ const useRunWorkflowController = () => {
 
 	const stopRun = () => {
 		stopped.current = true;
-		stepResolveRef.current?.();
 		dispatch({ type: 'RUN_FINISH', status: 'stopped' });
 	};
 
-	const stepNext = () => {
-		stepResolveRef.current?.();
-		dispatch({ type: 'STEP_NEXT' });
-	};
-
-	return { runWorkflow, stopRun, stepNext };
+	return { runWorkflow, stopRun };
 };
 
 type TRunWorkflowController = ReturnType<typeof useRunWorkflowController>;

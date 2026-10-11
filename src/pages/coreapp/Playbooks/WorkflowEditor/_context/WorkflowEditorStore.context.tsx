@@ -103,7 +103,6 @@ export type TWorkflowEditorAction =
 	| { type: 'BUILDER_REMOVE_EDGE'; source: string; target: string }
 	// Node customization
 	| { type: 'SET_NODE_COLOR'; id: string; color: string | null }
-	| { type: 'TOGGLE_NODE_BREAKPOINT'; id: string }
 	| { type: 'TOGGLE_NODE_LOOP_MODE'; id: string }
 	| { type: 'TOGGLE_NODE_FLOW_TRIGGER'; id: string }
 	| { type: 'TOGGLE_NODE_COLLAPSED'; id: string }
@@ -127,9 +126,6 @@ export type TWorkflowEditorAction =
 	| { type: 'SET_ISSUES_PANEL'; open: boolean; serverIssues?: TApiIssue[] }
 	| { type: 'FOCUS_FIELD'; nodeId: string; fieldKey: string | null }
 	| { type: 'SET_DIFF_VIEWER'; open: boolean }
-	| { type: 'SET_STEP_MODE'; enabled: boolean }
-	| { type: 'STEP_WAIT' }
-	| { type: 'STEP_NEXT' }
 	| { type: 'SET_LINK_CREDENTIALS_OPEN'; open: boolean; nodeId?: string }
 	// Pinned data + run history
 	| { type: 'PIN_NODE_OUTPUT'; id: string; output?: unknown }
@@ -196,8 +192,6 @@ export const initialWorkflowEditorState: TWorkflowEditorState = {
 		fieldFocus: null,
 		nodeExpandedOpen: false,
 		nodeExpandedId: null,
-		stepMode: false,
-		waitingForStep: false,
 		linkCredentialsOpen: false,
 		runPanelTab: 'console',
 		runPanelResultKey: null,
@@ -779,7 +773,6 @@ export const workflowEditorReducer = (
 					diffViewerOpen: false,
 					nodeDocOpen: false,
 					nodeDocNodeId: null,
-					waitingForStep: false,
 					linkCredentialsOpen: false,
 				},
 			};
@@ -866,15 +859,6 @@ export const workflowEditorReducer = (
 				),
 			};
 		}
-		case 'TOGGLE_NODE_BREAKPOINT':
-			return {
-				...state,
-				nodes: state.nodes.map((node) =>
-					node.id === action.id
-						? { ...node, data: { ...node.data, breakpoint: !node.data.breakpoint } }
-						: node,
-				),
-			};
 		case 'TOGGLE_NODE_LOOP_MODE':
 			return {
 				...state,
@@ -1028,15 +1012,6 @@ export const workflowEditorReducer = (
 			};
 		case 'SET_DIFF_VIEWER':
 			return { ...state, ui: { ...state.ui, diffViewerOpen: action.open } };
-		case 'SET_STEP_MODE':
-			return {
-				...state,
-				ui: { ...state.ui, stepMode: action.enabled, waitingForStep: false },
-			};
-		case 'STEP_WAIT':
-			return { ...state, ui: { ...state.ui, waitingForStep: true } };
-		case 'STEP_NEXT':
-			return { ...state, ui: { ...state.ui, waitingForStep: false } };
 		case 'SET_LINK_CREDENTIALS_OPEN':
 			return {
 				...state,

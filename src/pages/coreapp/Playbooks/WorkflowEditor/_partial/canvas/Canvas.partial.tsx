@@ -133,7 +133,6 @@ const Canvas = () => {
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (event.code !== 'Space' || isTypingTarget(event.target) || event.repeat) return;
-			if (state.ui.stepMode && state.ui.waitingForStep) return;
 			event.preventDefault();
 			setSpacePressed(true);
 		};
@@ -146,7 +145,7 @@ const Canvas = () => {
 			window.removeEventListener('keydown', onKeyDown);
 			window.removeEventListener('keyup', onKeyUp);
 		};
-	}, [state.ui.stepMode, state.ui.waitingForStep]);
+	}, []);
 
 	const { onDragOver, onDragLeave, onDrop } = useCanvasDrop((event) =>
 		reactFlow.screenToFlowPosition({ x: event.clientX, y: event.clientY }),

@@ -103,11 +103,6 @@ const CanvasSearch = () => {
 													{node.data.defKey}
 												</div>
 											</div>
-											{node.data.breakpoint && (
-												<span className='shrink-0 rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-bold text-white'>
-													BP
-												</span>
-											)}
 										</button>
 									))}
 								</div>

@@ -126,7 +126,6 @@ export type TCanvasNodeData = {
 	locked?: boolean;
 	// New node data fields
 	color?: string;
-	breakpoint?: boolean;
 	comments?: TNodeComment[];
 	testOutput?: unknown;
 	testStatus?: 'idle' | 'running' | 'success' | 'error';

@@ -25,7 +25,6 @@ const SHORTCUTS = [
 			{ keys: ['⌘', 'A'], label: 'Select all nodes' },
 			{ keys: ['⌘', 'D'], label: 'Duplicate selected node' },
 			{ keys: ['Del'], label: 'Delete selected node' },
-			{ keys: ['B'], label: 'Toggle breakpoint on selected node' },
 			{ keys: ['⌘', 'I'], label: 'Inspect node docs' },
 			{ keys: ['T'], label: 'Test selected node inline' },
 		],
@@ -47,13 +46,6 @@ const SHORTCUTS = [
 			{ keys: ['⌘', 'Shift', 'T'], label: 'Template library' },
 			{ keys: ['⌘', 'Shift', 'R'], label: 'Toggle run console' },
 			{ keys: ['?'], label: 'Keyboard shortcuts' },
-		],
-	},
-	{
-		group: 'Debug',
-		items: [
-			{ keys: ['⌘', 'Shift', 'D'], label: 'Toggle step-through mode' },
-			{ keys: ['Space'], label: 'Step to next node (step mode)' },
 		],
 	},
 ];
