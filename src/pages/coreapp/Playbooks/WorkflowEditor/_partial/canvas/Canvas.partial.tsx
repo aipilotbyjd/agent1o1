@@ -98,6 +98,21 @@ const getEdgeLabel = (
 	return type === 'any' ? 'flow' : type;
 };
 
+/**
+ * A node the store rebuilt (its data changed — e.g. a keystroke in one of its
+ * fields) arrives without React Flow's measurement, so React Flow would hide
+ * it with `visibility: hidden` until it re-measures — which also takes focus
+ * out of whatever field the user is typing in. Its size hasn't changed, so the
+ * last measurement is carried over; React Flow still re-measures if it has.
+ */
+const keepMeasurements = (next: TCanvasNode[], previous: TCanvasNode[]): TCanvasNode[] => {
+	const measuredById = new Map(previous.map((node) => [node.id, node.measured]));
+	return next.map((node) => {
+		const measured = measuredById.get(node.id);
+		return measured && !node.measured ? { ...node, measured } : node;
+	});
+};
+
 const Canvas = () => {
 	const { state, dispatch } = useWorkflowEditor();
 	const { isDarkTheme } = useDarkMode();
@@ -235,7 +250,7 @@ const Canvas = () => {
 			return;
 		}
 		pendingReseedRef.current = false;
-		setFlowNodes(storeNodes);
+		setFlowNodes((previous) => keepMeasurements(storeNodes, previous));
 	}, [storeNodes]);
 
 	// Mirrors the current selection so onNodesChange can apply select-diffs without
@@ -395,7 +410,7 @@ const Canvas = () => {
 		// A move re-seeds via the storeNodes effect. If nothing moved, that effect will
 		// not fire, so apply any store change that arrived during the drag by hand.
 		if (!movedAny && pendingReseedRef.current) {
-			setFlowNodes(storeNodesRef.current);
+			setFlowNodes((previous) => keepMeasurements(storeNodesRef.current, previous));
 		}
 		pendingReseedRef.current = false;
 	}, [dispatch, state.nodes]);
