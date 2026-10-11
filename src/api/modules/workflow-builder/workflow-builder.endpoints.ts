@@ -23,8 +23,6 @@ export const WorkflowBuilderEndpoints = {
 } as const;
 
 export const WorkflowDiagnosticsEndpoints = {
-	validate: (ws: string, workflowId: string) =>
-		`/workspaces/${ws}/workflows/${workflowId}/validate`,
 	dryRun: (ws: string, workflowId: string) => `/workspaces/${ws}/workflows/${workflowId}/dry-run`,
 	testNode: (ws: string, workflowId: string, nodeId: string) =>
 		`/workspaces/${ws}/workflows/${workflowId}/nodes/${nodeId}/test`,

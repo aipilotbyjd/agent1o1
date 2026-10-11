@@ -96,12 +96,14 @@ export const validateWorkflow = (
  * Everything to fix before publishing: what the editor can see for itself,
  * plus what the server refused the last publish for (some rules — a
  * subflow's target, a missing account — only it can check). One entry per
- * step and field, live checks first.
+ * step and field, live checks first. References that won't resolve come last,
+ * as suggestions: publishing allows them, but a run reaching one fails.
  */
 export const issuesToFix = (
 	nodes: TCanvasNode[],
 	edges: TCanvasEdge[],
 	serverIssues: TApiIssue[],
+	referenceIssues: TApiIssue[] = [],
 ): TValidationIssue[] => {
 	const live = validateWorkflow(nodes, edges);
 	const nodeIds = new Set(nodes.map((node) => node.id));
@@ -121,7 +123,20 @@ export const issuesToFix = (
 			}),
 		);
 
-	return [...live, ...fromServer];
+	const fromReferences = referenceIssues
+		.filter((issue) => issue.node_key === null || nodeIds.has(issue.node_key))
+		.map(
+			(issue, index): TValidationIssue => ({
+				id: `reference:${index}:${issue.node_key ?? ''}:${issue.message}`,
+				nodeId: issue.node_key ?? undefined,
+				fieldKey: issue.field ?? undefined,
+				message: issue.message,
+				severity: 'warning',
+				blocksPublish: false,
+			}),
+		);
+
+	return [...live, ...fromServer, ...fromReferences];
 };
 
 /**

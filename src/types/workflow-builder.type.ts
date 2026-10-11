@@ -5,6 +5,8 @@
 // keyed by `key`, edges as `{ from, to, condition }` — so the canvas converts
 // it with the same helpers it uses for a saved workflow.
 
+import type { TApiIssue } from '@/api/core';
+
 // ─── Draft graph ─────────────────────────────────────────────
 
 export type TBuilderGraphNode = {
@@ -206,25 +208,14 @@ export type TWorkflowGraphEdgeInput = {
 	condition?: string | null;
 };
 
-export type TValidateWorkflowDto = {
-	graph?: { nodes: TWorkflowGraphNodeInput[]; edges: TWorkflowGraphEdgeInput[] };
-};
-
-export type TDryRunWorkflowDto = TValidateWorkflowDto & {
-	input?: Record<string, unknown>;
-};
-
-export type TWorkflowValidationResult = {
-	valid: boolean;
-	issues: unknown[];
-};
-
 /** `DryRunner::run()`. */
 export type TWorkflowDryRun = {
 	ok: boolean;
 	issues: string[];
-	/** Template references that can't resolve. */
+	/** Template references that can't resolve, worded for the builder agent. */
 	warnings: string[];
+	/** The same problems placed on their step and field, worded for people. */
+	findings: TApiIssue[];
 	/** References into a node whose output shape isn't known yet (never run or
 	 *  pinned) — not errors, just unchecked. */
 	unverified: string[];

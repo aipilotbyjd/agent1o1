@@ -7,6 +7,7 @@ import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import { getNodeDefinition } from '../../_helper/nodeCatalog.constants';
 import { issuesToFix, type TValidationIssue } from '../../_helper/validation.helper';
 import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
+import { useReferenceIssues } from '../../_hooks/useReferenceIssues.hook';
 
 /**
  * The "Fix before publishing" checklist: a quiet pill in the top bar that
@@ -20,10 +21,11 @@ const IssuesChecklist = () => {
 	const reactFlow = useReactFlow();
 	const setPreviewVersionId = useWorkflowShellStore((store) => store.setPreviewVersionId);
 	const ref = useRef<HTMLDivElement>(null);
+	const referenceIssues = useReferenceIssues();
 
 	const issues = useMemo(
-		() => issuesToFix(state.nodes, state.edges, state.ui.serverIssues),
-		[state.nodes, state.edges, state.ui.serverIssues],
+		() => issuesToFix(state.nodes, state.edges, state.ui.serverIssues, referenceIssues),
+		[state.nodes, state.edges, state.ui.serverIssues, referenceIssues],
 	);
 	const blocking = issues.filter((issue) => issue.blocksPublish);
 	const tips = issues.filter((issue) => !issue.blocksPublish);

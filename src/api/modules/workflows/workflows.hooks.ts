@@ -242,8 +242,9 @@ export const useDeleteWorkflowTrigger = (ws: string) => useDeleteTrigger(ws);
 //
 // The old frontend shipped a governance modal covering shares, approval
 // requests, releases and contract tests. Approval requests are real now (see
-// publish-requests.hooks.ts); this backend models none of the rest: there is
-// no share, release or contract endpoint on a workflow.
+// publish-requests.hooks.ts); releases and contracts were dropped, since
+// publishing, versions and the dry run cover them. Only sharing is left, and
+// this backend has no share endpoint on a workflow.
 //
 // They are kept only so the ported modal loads. Reads resolve empty — that is
 // what this backend actually has — and writes fail loudly rather than looking
@@ -262,18 +263,6 @@ export type TLegacyWorkflowShare = {
 	view_count: number;
 	clone_count: number;
 	expires_at: TIsoDate | null;
-};
-export type TLegacyRelease = {
-	id: string;
-	version_id: string;
-	environment_id: string;
-	notes: string | null;
-	created_at: TIsoDate;
-};
-export type TLegacyContract = {
-	id: string;
-	status: string;
-	created_at: TIsoDate;
 };
 
 const useMissingCollection = <T>() =>
@@ -298,15 +287,3 @@ export const useCreateWorkflowShare = (_ws: string, _workflowId: string) =>
 	useMissingMutation('Sharing a workflow');
 export const useDeleteWorkflowShare = (_ws: string, _workflowId: string) =>
 	useMissingMutation('Removing a workflow share');
-
-export const useWorkflowReleases = (_ws: string, _workflowId?: string, _enabled?: boolean) =>
-	useMissingCollection<TLegacyRelease>();
-export const useDeployRelease = (_ws: string, _workflowId: string) =>
-	useMissingMutation('Deploying a workflow release');
-
-export const useWorkflowContracts = (_ws: string, _workflowId?: string, _enabled?: boolean) =>
-	useMissingCollection<TLegacyContract>();
-export const useGenerateContract = (_ws: string, _workflowId: string) =>
-	useMissingMutation('Generating a workflow contract');
-export const useRunContractTest = (_ws: string, _workflowId: string) =>
-	useMissingMutation('Running a contract test');

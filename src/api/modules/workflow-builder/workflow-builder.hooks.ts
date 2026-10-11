@@ -1,13 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type {
 	TConfigureBuilderNodeDto,
 	TCreateBuilderSessionDto,
-	TDryRunWorkflowDto,
 	TPromoteBuilderSessionDto,
 	TSendBuilderMessageDto,
 	TTestWorkflowNodeDto,
 	TUpdateBuilderSessionDto,
-	TValidateWorkflowDto,
 	TBuilderSessionStatus,
 } from '@/types/workflow-builder.type';
 import type { TReplaceGraphDto } from '@/types/workflow.type';
@@ -155,18 +153,19 @@ export const useSuggestBuilderImprovements = (ws: string, sessionId: string) =>
 
 // ─── Diagnostics ───────────────────────────────────────────────
 
-export const useValidateWorkflow = (ws: string, workflowId: string) =>
-	useMutation({
-		mutationFn: (payload?: TValidateWorkflowDto) =>
-			WorkflowDiagnosticsService.validate(ws, workflowId, payload),
-		meta: { errorMessage: 'Failed to validate workflow' },
-	});
-
-export const useDryRunWorkflow = (ws: string, workflowId: string) =>
-	useMutation({
-		mutationFn: (payload?: TDryRunWorkflowDto) =>
-			WorkflowDiagnosticsService.dryRun(ws, workflowId, payload),
-		meta: { errorMessage: 'Dry run failed' },
+/**
+ * A dry run of the saved draft, keyed by `revision` so it re-checks only when
+ * the draft changes. Holds the last result while the next one loads, and stays
+ * quiet on failure: it's a background check, not something the person asked for.
+ */
+export const useDraftDryRun = (ws: string, workflowId: string, revision: string, enabled = true) =>
+	useQuery({
+		queryKey: [...workflowKeys.detail(ws, workflowId), 'dry-run', revision],
+		queryFn: ({ signal }) => WorkflowDiagnosticsService.dryRun(ws, workflowId, signal),
+		enabled: enabled && !!ws && !!workflowId,
+		placeholderData: keepPreviousData,
+		staleTime: Infinity,
+		meta: { silent: true },
 	});
 
 export const useTestWorkflowNode = (ws: string, workflowId: string) =>

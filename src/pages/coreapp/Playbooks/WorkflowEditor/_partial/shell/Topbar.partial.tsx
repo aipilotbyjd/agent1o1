@@ -21,7 +21,6 @@ import {
 	LayoutGrid,
 	ShieldCheck,
 	Download,
-	FileCheck,
 	FormInput,
 	LayoutTemplate,
 	ListChecks,
@@ -890,48 +889,6 @@ const Topbar = () => {
 											className='text-primary-700 dark:text-primary-400'
 										/>
 										<span>Approvals</span>
-									</button>
-									<button
-										type='button'
-										onClick={() => {
-											closeMenu();
-											setGovModalTab('releases');
-											setGovModalOpen(true);
-										}}
-										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
-										<Rocket
-											size={14}
-											className='text-primary-700 dark:text-primary-400'
-										/>
-										<span>Deploy Release</span>
-									</button>
-									<button
-										type='button'
-										onClick={() => {
-											closeMenu();
-											setGovModalTab('contracts');
-											setGovModalOpen(true);
-										}}
-										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
-										<FileCheck
-											size={14}
-											className='text-primary-700 dark:text-primary-400'
-										/>
-										<span>Contracts Verification</span>
-									</button>
-									<button
-										type='button'
-										onClick={() => {
-											closeMenu();
-											setGovModalTab('checks');
-											setGovModalOpen(true);
-										}}
-										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
-										<ListChecks
-											size={14}
-											className='text-primary-700 dark:text-primary-400'
-										/>
-										<span>Validate & Dry Run</span>
 									</button>
 									<button
 										type='button'

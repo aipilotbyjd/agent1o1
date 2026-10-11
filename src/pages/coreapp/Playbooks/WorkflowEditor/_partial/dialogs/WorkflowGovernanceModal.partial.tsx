@@ -2,48 +2,30 @@ import { useState } from 'react';
 import {
 	Share2,
 	FileSignature,
-	Disc,
-	ShieldCheck,
 	Trash2,
 	Copy,
 	Check,
-	Play,
 	Plus,
-	AlertCircle,
 	Lock,
 	Unlock,
-	Clock,
-	CheckCircle2,
-	XCircle,
-	Loader2,
-	ListChecks,
 	FormInput,
 	Zap,
 } from 'lucide-react';
-import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import { useWorkflowRouteParams } from '../../_hooks/useWorkflowRouteParams.hook';
 import { useConfirm } from '@/context/confirm';
 import { notify } from '@/api/core';
 import Modal from './Modal.partial';
 import WorkflowApprovalsTab from './WorkflowApprovalsTab.partial';
-import WorkflowChecksTab from './WorkflowChecksTab.partial';
 import WorkflowInterfaceTab from './WorkflowInterfaceTab.partial';
 import WorkflowTriggersTab from './WorkflowTriggersTab.partial';
 import {
-	useWorkflowVersions,
 	useWorkflowShares,
 	useCreateWorkflowShare,
 	useDeleteWorkflowShare,
-	useWorkflowReleases,
-	useDeployRelease,
-	useWorkflowContracts,
-	useGenerateContract,
-	useRunContractTest,
 } from '@/api/modules/workflows';
 
 const WorkflowGovernanceModal = () => {
-	const { state } = useWorkflowEditor();
 	const isGovModalOpen = useWorkflowShellStore((store) => store.isGovModalOpen);
 	const govModalTab = useWorkflowShellStore((store) => store.govModalTab);
 	const setGovModalOpen = useWorkflowShellStore((store) => store.setGovModalOpen);
@@ -55,8 +37,6 @@ const WorkflowGovernanceModal = () => {
 	// Tab selection
 	const activeTab = govModalTab || 'sharing';
 
-	const { data: versions } = useWorkflowVersions(workspaceId, workflowId);
-
 	// ── 2. Sharing Tab Data & Mutations ───────────────────
 	const { data: shares, isLoading: isSharesLoading } = useWorkflowShares(workspaceId, workflowId);
 	const createShare = useCreateWorkflowShare(workspaceId, workflowId);
@@ -67,35 +47,6 @@ const WorkflowGovernanceModal = () => {
 	const [sharePassword, setSharePassword] = useState('');
 	const [shareExpiresAt, setShareExpiresAt] = useState('');
 	const [copiedShareId, setCopiedShareId] = useState<string | null>(null);
-
-	// ── 4. Releases Tab Data & Mutations ──────────────────
-	const { data: releasesRes, isLoading: isReleasesLoading } = useWorkflowReleases(
-		workspaceId,
-		workflowId,
-	);
-	const releases = releasesRes ?? [];
-	const deployRelease = useDeployRelease(workspaceId, workflowId);
-
-	const [releaseVersion, setReleaseVersion] = useState('');
-	const [releaseEnv, setReleaseEnv] = useState('production');
-	const [releaseNotes, setReleaseNotes] = useState('');
-
-	// ── 5. Contracts Tab Data & Mutations ─────────────────
-	const { data: contractsRes, isLoading: isContractsLoading } = useWorkflowContracts(
-		workspaceId,
-		workflowId,
-	);
-	const contracts = contractsRes ?? [];
-	const generateContract = useGenerateContract(workspaceId, workflowId);
-	const runContractTest = useRunContractTest(workspaceId, workflowId);
-
-	const [testResults, setTestResults] = useState<
-		Record<
-			string,
-			{ status?: string; results?: { missing_nodes: string[]; unexpected_nodes: string[] } }
-		>
-	>({});
-	const [runningTestId, setRunningTestId] = useState<string | null>(null);
 
 	if (!isGovModalOpen) return null;
 
@@ -127,43 +78,9 @@ const WorkflowGovernanceModal = () => {
 		);
 	};
 
-	const handleDeployReleaseSubmit = (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!releaseVersion) return;
-		deployRelease.mutate(
-			{
-				version_id: releaseVersion,
-				environment_id: releaseEnv,
-				notes: releaseNotes || undefined,
-			},
-			{
-				onSuccess: () => {
-					setReleaseVersion('');
-					setReleaseNotes('');
-				},
-			},
-		);
-	};
-
-	const handleRunVerification = (contractId: string) => {
-		setRunningTestId(contractId);
-		runContractTest.mutate(contractId, {
-			onSuccess: (res) => {
-				setTestResults((prev) => ({ ...prev, [contractId]: res }));
-				setRunningTestId(null);
-			},
-			onError: () => {
-				setRunningTestId(null);
-			},
-		});
-	};
-
 	const tabs = [
 		{ id: 'sharing', label: 'Sharing', icon: Share2 },
 		{ id: 'approvals', label: 'Approvals', icon: FileSignature },
-		{ id: 'releases', label: 'Releases & Deploy', icon: Disc },
-		{ id: 'contracts', label: 'Contracts & Tests', icon: ShieldCheck },
-		{ id: 'checks', label: 'Validate & Dry Run', icon: ListChecks },
 		{ id: 'interface', label: 'Run Form', icon: FormInput },
 		{ id: 'triggers', label: 'Triggers', icon: Zap },
 	];
@@ -429,354 +346,6 @@ const WorkflowGovernanceModal = () => {
 					{/* ─── APPROVALS TAB ─── */}
 					{activeTab === 'approvals' && (
 						<WorkflowApprovalsTab workspaceId={workspaceId} workflowId={workflowId} />
-					)}
-
-					{/* ─── RELEASES TAB ─── */}
-					{activeTab === 'releases' && (
-						<div className='space-y-6'>
-							<div>
-								<h3 className='text-sm font-bold text-zinc-800 dark:text-zinc-200'>
-									Releases & Deployments
-								</h3>
-								<p className='mt-1 text-xs text-zinc-500 dark:text-zinc-400'>
-									Deploy specific version snapshots of your workflow to selected
-									environments.
-								</p>
-							</div>
-
-							{/* Deployment Form */}
-							<form
-								onSubmit={handleDeployReleaseSubmit}
-								className='dark:border-zinc-850 space-y-4 rounded-xl border border-zinc-200 p-4 dark:bg-zinc-900/10'>
-								<h4 className='text-xs font-bold tracking-wider text-zinc-700 uppercase dark:text-zinc-300'>
-									Deploy Target Release
-								</h4>
-								<div className='grid gap-4 sm:grid-cols-2'>
-									<div className='space-y-1'>
-										<label
-											htmlFor='workflowgovernancemodal-select-version'
-											className='block text-[10px] font-bold text-zinc-500 uppercase dark:text-zinc-400'>
-											Select Version
-										</label>
-										<select
-											id='workflowgovernancemodal-select-version'
-											value={releaseVersion}
-											onChange={(e) => setReleaseVersion(e.target.value)}
-											className='focus:border-primary-400 w-full rounded-lg border border-zinc-200 bg-zinc-50/50 px-3 py-1.5 text-xs text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
-											required>
-											<option value=''>Choose version snapshot...</option>
-											{versions?.map((v) => (
-												<option key={v.id} value={v.id}>
-													Version {v.version}{' '}
-													{String(v.id) ===
-													String(state.workflow.currentVersionId)
-														? '(Published)'
-														: ''}
-												</option>
-											))}
-										</select>
-									</div>
-
-									<div className='space-y-1'>
-										<label
-											htmlFor='workflowgovernancemodal-target-environment'
-											className='block text-[10px] font-bold text-zinc-500 uppercase dark:text-zinc-400'>
-											Target Environment
-										</label>
-										<select
-											id='workflowgovernancemodal-target-environment'
-											value={releaseEnv}
-											onChange={(e) => setReleaseEnv(e.target.value)}
-											className='focus:border-primary-400 w-full rounded-lg border border-zinc-200 bg-zinc-50/50 px-3 py-1.5 text-xs text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'>
-											<option value='production'>Production</option>
-											<option value='staging'>Staging</option>
-											<option value='development'>Development</option>
-										</select>
-									</div>
-								</div>
-
-								<div className='space-y-1.5'>
-									<label
-										htmlFor='workflowgovernancemodal-release-notes-changelog'
-										className='block text-[10px] font-bold text-zinc-500 uppercase dark:text-zinc-400'>
-										Release Notes / Changelog
-									</label>
-									<textarea
-										id='workflowgovernancemodal-release-notes-changelog'
-										aria-label='Optional notes describing this release deployment'
-										rows={2}
-										placeholder='Optional notes describing this release deployment'
-										value={releaseNotes}
-										onChange={(e) => setReleaseNotes(e.target.value)}
-										className='focus:border-primary-400 w-full rounded-lg border border-zinc-200 bg-zinc-50/50 p-2.5 text-xs outline-none dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-100'
-									/>
-								</div>
-
-								<div className='flex justify-end pt-1'>
-									<button
-										type='submit'
-										disabled={deployRelease.isPending}
-										className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold transition disabled:opacity-50'>
-										<Disc size={13} className='animate-spin-slow' />
-										Deploy Release
-									</button>
-								</div>
-							</form>
-
-							{/* Deployments List */}
-							<div className='space-y-3'>
-								<h4 className='text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
-									Deployment Logs
-								</h4>
-
-								{isReleasesLoading ? (
-									<div className='py-6 text-center text-xs text-zinc-400'>
-										Loading release logs...
-									</div>
-								) : releases.length === 0 ? (
-									<div className='rounded-xl border border-dashed border-zinc-200 py-8 text-center text-xs text-zinc-400 dark:border-zinc-800'>
-										No environments have been deployed. Deploy a release version
-										above.
-									</div>
-								) : (
-									<div className='space-y-2'>
-										{releases.map((rel) => {
-											const isProd = rel.environment_id === 'production';
-											const isStaging = rel.environment_id === 'staging';
-
-											return (
-												<div
-													key={rel.id}
-													className='border-zinc-150 dark:border-zinc-850 flex items-start justify-between rounded-xl border p-4 dark:bg-zinc-900/10'>
-													<div className='space-y-1'>
-														<div className='flex items-center gap-2'>
-															<span
-																className={`inline-block h-2 w-2 rounded-full ${
-																	isProd
-																		? 'bg-emerald-500'
-																		: isStaging
-																			? 'bg-amber-400'
-																			: 'bg-blue-400'
-																}`}
-															/>
-															<span className='text-zinc-850 text-xs font-bold capitalize dark:text-zinc-200'>
-																{rel.environment_id} Environment
-															</span>
-															<span className='text-[10px] text-zinc-400'>
-																Deployed version ID:{' '}
-																{rel.version_id.slice(0, 8)}...
-															</span>
-														</div>
-														<p className='dark:text-zinc-450 text-xs font-medium text-zinc-600'>
-															{rel.notes ||
-																'No deployment notes provided'}
-														</p>
-														<div className='flex items-center gap-1 text-[9px] text-zinc-400'>
-															<Clock size={10} />
-															<span>
-																{new Date(
-																	rel.created_at,
-																).toLocaleString()}
-															</span>
-														</div>
-													</div>
-												</div>
-											);
-										})}
-									</div>
-								)}
-							</div>
-						</div>
-					)}
-
-					{/* ─── CONTRACTS TAB ─── */}
-					{activeTab === 'contracts' && (
-						<div className='space-y-6'>
-							<div>
-								<h3 className='text-sm font-bold text-zinc-800 dark:text-zinc-200'>
-									Contract Verification
-								</h3>
-								<p className='mt-1 text-xs text-zinc-500 dark:text-zinc-400'>
-									Pin structural specifications (contracts) for input/output
-									schema validation and integrity testing.
-								</p>
-							</div>
-
-							{/* Top generate action */}
-							<div className='dark:border-zinc-850 flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50/20 p-4 dark:bg-zinc-900/20'>
-								<div>
-									<h4 className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
-										Freeze Current Canvas State
-									</h4>
-									<p className='text-[11px] text-zinc-500'>
-										Creates a structure snapshot to run validations and detect
-										schema drifts.
-									</p>
-								</div>
-								<button
-									type='button'
-									onClick={() => generateContract.mutate()}
-									disabled={generateContract.isPending}
-									className='flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200'>
-									<Plus size={13} />
-									Generate Snapshot
-								</button>
-							</div>
-
-							{/* Contracts list */}
-							<div className='space-y-3.5'>
-								<h4 className='text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
-									Contracts Database
-								</h4>
-
-								{isContractsLoading ? (
-									<div className='py-6 text-center text-xs text-zinc-400'>
-										Loading contracts...
-									</div>
-								) : contracts.length === 0 ? (
-									<div className='rounded-xl border border-dashed border-zinc-200 py-8 text-center text-xs text-zinc-400 dark:border-zinc-800'>
-										No contracts snapshots created. Create one above to lock
-										down specifications.
-									</div>
-								) : (
-									<div className='space-y-3'>
-										{contracts.map((contract) => {
-											const runResult = testResults[contract.id];
-											const isRunning = runningTestId === contract.id;
-											const testStatus = runResult?.status || contract.status;
-
-											return (
-												<div
-													key={contract.id}
-													className='space-y-3 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800/80 dark:bg-zinc-900/10'>
-													<div className='flex items-center justify-between'>
-														<div className='space-y-0.5'>
-															<span className='block text-xs font-bold text-zinc-800 dark:text-zinc-200'>
-																Contract Snapshot ID:{' '}
-																{contract.id.slice(0, 8)}...
-															</span>
-															<span className='block text-[10px] text-zinc-400'>
-																Created:{' '}
-																{new Date(
-																	contract.created_at,
-																).toLocaleString()}
-															</span>
-														</div>
-
-														<div className='flex items-center gap-2.5'>
-															{testStatus && (
-																<span
-																	className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold ${
-																		testStatus === 'passed'
-																			? 'dark:text-emerald-455 bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40'
-																			: 'dark:text-rose-455 bg-rose-100 text-rose-700 dark:bg-rose-950/40'
-																	}`}>
-																	{testStatus === 'passed' ? (
-																		<CheckCircle2 size={10} />
-																	) : (
-																		<XCircle size={10} />
-																	)}
-																	{testStatus.toUpperCase()}
-																</span>
-															)}
-
-															<button
-																type='button'
-																onClick={() =>
-																	handleRunVerification(
-																		contract.id,
-																	)
-																}
-																disabled={isRunning}
-																className='flex items-center gap-1 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-white/[0.04] dark:hover:text-zinc-200'>
-																{isRunning ? (
-																	<Loader2
-																		size={11}
-																		className='animate-spin text-zinc-500'
-																	/>
-																) : (
-																	<Play
-																		size={11}
-																		fill='currentColor'
-																	/>
-																)}
-																<span>Verify</span>
-															</button>
-														</div>
-													</div>
-
-													{/* Test verification output details */}
-													{runResult && (
-														<div className='space-y-1.5 rounded-lg border border-zinc-100 bg-zinc-50/80 p-3 text-xs dark:border-zinc-800/40 dark:bg-zinc-900/60'>
-															<div className='flex items-center gap-1.5'>
-																{runResult.status === 'passed' ? (
-																	<span className='flex items-center gap-1 font-bold text-emerald-600'>
-																		<CheckCircle2 size={12} />
-																		Verification Passed
-																	</span>
-																) : (
-																	<span className='flex items-center gap-1 font-bold text-rose-600'>
-																		<AlertCircle size={12} />
-																		Verification Failed
-																	</span>
-																)}
-																<span className='text-[10px] font-medium text-zinc-400'>
-																	- Canvas structure matches
-																	contract rules.
-																</span>
-															</div>
-
-															{runResult.results && (
-																<div className='space-y-1 pl-4 text-[11px] font-medium text-zinc-500 dark:text-zinc-400'>
-																	{runResult.results.missing_nodes
-																		?.length > 0 && (
-																		<div>
-																			<span className='font-bold text-rose-500'>
-																				Missing nodes:
-																			</span>{' '}
-																			{runResult.results.missing_nodes.join(
-																				', ',
-																			)}
-																		</div>
-																	)}
-																	{runResult.results
-																		.unexpected_nodes?.length >
-																		0 && (
-																		<div>
-																			<span className='font-bold text-amber-500'>
-																				Unexpected nodes:
-																			</span>{' '}
-																			{runResult.results.unexpected_nodes.join(
-																				', ',
-																			)}
-																		</div>
-																	)}
-																	{runResult.results.missing_nodes
-																		?.length === 0 &&
-																		runResult.results
-																			.unexpected_nodes
-																			?.length === 0 && (
-																			<div className='text-zinc-400 italic'>
-																				No node deviations
-																				found.
-																			</div>
-																		)}
-																</div>
-															)}
-														</div>
-													)}
-												</div>
-											);
-										})}
-									</div>
-								)}
-							</div>
-						</div>
-					)}
-
-					{/* ─── CHECKS TAB ─── */}
-					{activeTab === 'checks' && (
-						<WorkflowChecksTab workspaceId={workspaceId} workflowId={workflowId} />
 					)}
 
 					{/* ─── RUN FORM TAB ─── */}

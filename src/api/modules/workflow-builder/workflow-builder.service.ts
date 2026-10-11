@@ -13,7 +13,6 @@ import type {
 	TBuilderWorkflowExplanation,
 	TConfigureBuilderNodeDto,
 	TCreateBuilderSessionDto,
-	TDryRunWorkflowDto,
 	TListBuilderSessionsParams,
 	TPromoteBuilderSessionDto,
 	TRestoreBuilderVersionDto,
@@ -21,9 +20,7 @@ import type {
 	TSyncBuilderDraftDto,
 	TTestWorkflowNodeDto,
 	TUpdateBuilderSessionDto,
-	TValidateWorkflowDto,
 	TWorkflowDryRunResult,
-	TWorkflowValidationResult,
 } from '@/types/workflow-builder.type';
 import type { TWorkflow, TReplaceGraphDto } from '@/types/workflow.type';
 import type { TNodeRunDetail } from '@/types/run.type';
@@ -173,15 +170,12 @@ export const WorkflowBuilderAssistService = {
 /** Pre-flight checks on an already-created `Workflow`, run against the same
  *  services the builder agent's own tools call. */
 export const WorkflowDiagnosticsService = {
-	validate: (ws: string, workflowId: string, payload?: TValidateWorkflowDto) =>
+	/** Walks the saved draft without calling anything external, resolving each
+	 *  step's references against sample outputs of the steps before it. */
+	dryRun: (ws: string, workflowId: string, signal?: AbortSignal) =>
 		axiosClient
-			.post<TApiResponse<TWorkflowValidationResult>>(D.validate(ws, workflowId), payload)
-			.then((r) => r.data.data),
-
-	dryRun: (ws: string, workflowId: string, payload?: TDryRunWorkflowDto) =>
-		axiosClient
-			.post<TApiResponse<TWorkflowDryRunResult>>(D.dryRun(ws, workflowId), payload)
-			.then((r) => r.data.data),
+			.post<TApiResponse<TWorkflowDryRunResult>>(D.dryRun(ws, workflowId), {}, { signal })
+			.then((r) => r.data.data.dry_run),
 
 	testNode: (ws: string, workflowId: string, nodeId: string, payload?: TTestWorkflowNodeDto) =>
 		axiosClient
