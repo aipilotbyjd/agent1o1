@@ -27,7 +27,12 @@ export const coreAppNavigation: TNavSection[] = [
 	},
 	{
 		title: 'Automate',
-		items: [workspacePages.playbooks, workspacePages.agents, workspacePages.blueprints],
+		items: [
+			workspacePages.playbooks,
+			workspacePages.pages,
+			workspacePages.agents,
+			workspacePages.blueprints,
+		],
 	},
 	{
 		title: 'Resources',

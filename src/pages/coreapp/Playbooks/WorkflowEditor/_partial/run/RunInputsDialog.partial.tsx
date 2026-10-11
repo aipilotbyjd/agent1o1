@@ -3,7 +3,7 @@ import { Loader2, Play } from 'lucide-react';
 import type { TWorkflowInterfaceField } from '@/types/workflow-extras.type';
 import Modal from '../dialogs/Modal.partial';
 import RunFormFields from './RunFormFields.partial';
-import type { TRunFormValues } from '../../_helper/runForm.helper';
+import type { TRunFormValues } from '@/utils/runForm.util';
 
 type Props = {
 	fields: TWorkflowInterfaceField[];

@@ -16,6 +16,7 @@ const BillingCancelPage = lazy(() => import('@/pages/settings/Billing/BillingCan
 const BillingReturnPage = lazy(() => import('@/pages/settings/Billing/BillingReturn.page'));
 const PricingPage = lazy(() => import('@/pages/welcome/Pricing.page'));
 const AccountReturnPage = lazy(() => import('@/pages/settings/Profile/AccountReturn.page'));
+const PublicPagePage = lazy(() => import('@/pages/public/PublicPage.page'));
 
 const router = createBrowserRouter([
 	{
@@ -38,6 +39,12 @@ const router = createBrowserRouter([
 					{
 						path: pages.welcome.subPages!.pricing.to,
 						element: <PricingPage />,
+					},
+					// A workflow page at its public link — no sign-in, and registered
+					// before `/:workspaceId` so `p` is never read as a workspace id.
+					{
+						path: pages.publicPage.to,
+						element: <PublicPagePage />,
 					},
 					{
 						path: pages.choose.to,

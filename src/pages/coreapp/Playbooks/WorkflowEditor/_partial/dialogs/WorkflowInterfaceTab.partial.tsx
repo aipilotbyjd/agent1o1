@@ -19,7 +19,7 @@ import {
 	RunFormJsonError,
 	runFormInput,
 	type TRunFormValues,
-} from '../../_helper/runForm.helper';
+} from '@/utils/runForm.util';
 
 const FIELD_TYPES: { value: TWorkflowInterfaceFieldType; label: string }[] = [
 	{ value: 'string', label: 'Short text' },

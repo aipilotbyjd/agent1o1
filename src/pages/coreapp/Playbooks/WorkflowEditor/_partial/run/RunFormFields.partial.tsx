@@ -1,5 +1,5 @@
 import type { TWorkflowInterfaceField } from '@/types/workflow-extras.type';
-import type { TRunFormValues } from '../../_helper/runForm.helper';
+import type { TRunFormValues } from '@/utils/runForm.util';
 
 const inputClass =
 	'w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs text-zinc-700 outline-none focus:border-primary-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300';

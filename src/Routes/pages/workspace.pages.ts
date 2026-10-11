@@ -24,6 +24,12 @@ export const workspace: TPage = {
 			text: 'Playbooks',
 			icon: 'GitMerge',
 		},
+		pages: {
+			id: 'pages',
+			to: ws('pages'),
+			text: 'Pages',
+			icon: 'Browser',
+		},
 		agents: {
 			id: 'agents',
 			to: ws('agents'),
@@ -163,4 +169,37 @@ export const agentEditor: TPage = {
 			icon: 'Image01',
 		},
 	},
+};
+
+/**
+ * A workflow page: `use` is the page as a member runs it inside the app,
+ * `edit` the full-screen builder, outside the core-app shell like the editors
+ * above. `publicPage` is the link anyone can open, outside the workspace.
+ */
+export const pageEditor: TPage = {
+	id: 'pageEditor',
+	to: ws('pages'),
+	text: 'Page Builder',
+	icon: 'Browser',
+	subPages: {
+		use: {
+			id: 'usePage',
+			to: ws('pages/:pageId'),
+			text: 'Page',
+			icon: 'Browser',
+		},
+		edit: {
+			id: 'editPage',
+			to: ws('pages/:pageId/edit'),
+			text: 'Edit Page',
+			icon: 'Browser',
+		},
+	},
+};
+
+export const publicPage: TPage = {
+	id: 'publicPage',
+	to: '/p/:token',
+	text: 'Page',
+	icon: 'Browser',
 };

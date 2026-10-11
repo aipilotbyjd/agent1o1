@@ -55,6 +55,7 @@ import DraftStatusPill from '../versions/DraftStatusPill.partial';
 import { useDraftStatus } from '../../_hooks/useDraftStatus.hook';
 import PublishPopover from '../versions/PublishPopover.partial';
 import { usePublishReview } from '../../_hooks/usePublishReview.hook';
+import WorkflowPagesMenu from '@/pages/coreapp/WorkflowPages/_partial/WorkflowPagesMenu.partial';
 
 /** Which topbar menu is open. Only one may be open at a time. */
 type TopbarMenu = 'publish' | 'save' | 'share' | 'mobile' | null;
@@ -713,7 +714,7 @@ const Topbar = () => {
 									animate={{ opacity: 1, y: 0, scale: 1 }}
 									exit={{ opacity: 0, y: 4, scale: 0.96 }}
 									role='menu'
-									className='border-primary-500/20 dark:border-primary-400/20 absolute top-10 right-0 z-50 w-56 origin-top-right rounded-xl border bg-white p-1.5 shadow-xl ring-1 ring-black/5 dark:bg-zinc-950 dark:ring-white/5'>
+									className='border-primary-500/20 dark:border-primary-400/20 absolute top-10 right-0 z-50 w-64 origin-top-right rounded-xl border bg-white p-1.5 shadow-xl ring-1 ring-black/5 dark:bg-zinc-950 dark:ring-white/5'>
 									<button
 										type='button'
 										onClick={handleCopyShareLink}
@@ -751,6 +752,17 @@ const Topbar = () => {
 									</button>
 
 									<div className='bg-primary-500/15 dark:bg-primary-400/15 my-1 h-px' />
+
+									{workspaceId && state.workflow.apiId && (
+										<>
+											<WorkflowPagesMenu
+												ws={workspaceId}
+												workflowId={state.workflow.apiId}
+												onNavigate={closeMenu}
+											/>
+											<div className='bg-primary-500/15 dark:bg-primary-400/15 my-1 h-px' />
+										</>
+									)}
 
 									<button
 										type='button'

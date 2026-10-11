@@ -10,6 +10,7 @@ import SettingsPages from '@/Routes/appPages/settingsPages';
 const workspacePages = pages.workspace.subPages!;
 const playbookEditorPages = pages.playbookEditor.subPages!;
 const agentEditorPages = pages.agentEditor.subPages!;
+const pageEditorPages = pages.pageEditor.subPages!;
 
 /** Children of `/:workspaceId` are registered relative to it. */
 const rel = relativeToWorkspace;
@@ -20,6 +21,14 @@ const PlaybooksLayout = lazy(() => import('@/pages/coreapp/Playbooks/_layouts/Pl
 const WorkflowsListPage = lazy(() => import('@/pages/coreapp/Playbooks/WorkflowsList.page'));
 const WorkflowEditorPage = lazy(
 	() => import('@/pages/coreapp/Playbooks/WorkflowEditor/WorkflowEditor.page'),
+);
+const WorkflowPagesLayout = lazy(
+	() => import('@/pages/coreapp/WorkflowPages/_layouts/WorkflowPages.layout'),
+);
+const PagesListPage = lazy(() => import('@/pages/coreapp/WorkflowPages/PagesList.page'));
+const UsePagePage = lazy(() => import('@/pages/coreapp/WorkflowPages/UsePage.page'));
+const PageBuilderPage = lazy(
+	() => import('@/pages/coreapp/WorkflowPages/PageBuilder/PageBuilder.page'),
 );
 const AgentsLayout = lazy(() => import('@/pages/coreapp/Agents/_layouts/Agents.layout'));
 const AgentsListPage = lazy(() => import('@/pages/coreapp/Agents/AgentsList.page'));
@@ -62,6 +71,16 @@ const dashboardRoute: RouteObject = {
 	children: [
 		{ index: true, element: <DashboardPage /> },
 		{ path: '*', element: <WorkspaceRedirect to={workspacePages.dashboard.to} /> },
+	],
+};
+
+/** Pages: the list, and a published page as a member uses it, under one layout. */
+const workflowPagesRoute: RouteObject = {
+	path: rel(workspacePages.pages.to),
+	element: <WorkflowPagesLayout />,
+	children: [
+		{ index: true, element: <PagesListPage /> },
+		{ path: ':pageId', element: <UsePagePage /> },
 	],
 };
 
@@ -119,6 +138,7 @@ const editorRoutes: RouteObject[] = [
 	{ path: rel(playbookEditorPages.add.to), element: <WorkflowEditorPage /> },
 	{ path: rel(playbookEditorPages.edit.to), element: <WorkflowEditorPage /> },
 	{ path: rel(playbookEditorPages.view.to), element: <WorkflowEditorPage /> },
+	{ path: rel(pageEditorPages.edit.to), element: <PageBuilderPage /> },
 	{
 		element: <AgentLayout />,
 		children: [
@@ -148,6 +168,7 @@ const CoreAppPages: RouteObject[] = [
 						element: <Navigate to={rel(workspacePages.dashboard.to)} replace />,
 					},
 					dashboardRoute,
+					workflowPagesRoute,
 					...listRoutes,
 				],
 			},

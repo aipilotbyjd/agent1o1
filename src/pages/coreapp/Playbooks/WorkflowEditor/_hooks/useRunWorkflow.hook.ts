@@ -26,7 +26,7 @@ import {
 	RunFormJsonError,
 	runFormInput,
 	type TRunFormValues,
-} from '../_helper/runForm.helper';
+} from '@/utils/runForm.util';
 import RunInputsDialog from '../_partial/run/RunInputsDialog.partial';
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));

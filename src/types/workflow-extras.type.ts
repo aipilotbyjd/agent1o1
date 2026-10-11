@@ -122,6 +122,9 @@ export type TWorkflowInterface = {
 	 *  `{{ input.* }}` references instead. */
 	source: 'nodes' | 'declared' | 'derived';
 	fields: TWorkflowInterfaceField[];
+	/** The values a finished run returns, one per named Output step, in
+	 *  canvas order. Empty when the workflow has no Output steps. */
+	outputs: { name: string }[];
 };
 
 export type TUpdateWorkflowInterfaceDto = {

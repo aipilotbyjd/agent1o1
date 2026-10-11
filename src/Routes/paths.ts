@@ -24,6 +24,7 @@ export const withWorkspace = (to: string, workspaceId: string) => buildPath(to, 
 const workspacePages = pages.workspace.subPages!;
 const playbookEditorPages = pages.playbookEditor.subPages!;
 const agentEditorPages = pages.agentEditor.subPages!;
+const pageEditorPages = pages.pageEditor.subPages!;
 const settingsPages = pages.settings.subPages!;
 const billingPages = settingsPages.billing.subPages!;
 
@@ -38,6 +39,13 @@ const paths = {
 		buildPath(playbookEditorPages.edit.to, { workspaceId, workflowId }),
 	viewPlaybook: (workspaceId: string, workflowId: string | number) =>
 		buildPath(playbookEditorPages.view.to, { workspaceId, workflowId }),
+
+	pages: (workspaceId: string) => buildPath(workspacePages.pages.to, { workspaceId }),
+	usePage: (workspaceId: string, pageId: string) =>
+		buildPath(pageEditorPages.use.to, { workspaceId, pageId }),
+	editPage: (workspaceId: string, pageId: string) =>
+		buildPath(pageEditorPages.edit.to, { workspaceId, pageId }),
+	publicPage: (token: string) => buildPath(pages.publicPage.to, { token }),
 
 	agents: (workspaceId: string) => buildPath(workspacePages.agents.to, { workspaceId }),
 	newAgent: (workspaceId: string) => buildPath(agentEditorPages.add.to, { workspaceId }),
