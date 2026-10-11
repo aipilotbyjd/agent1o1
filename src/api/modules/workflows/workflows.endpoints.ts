@@ -34,3 +34,18 @@ export const WorkflowInterfaceEndpoints = {
 	update: (ws: string, workflowId: string) => `${workflow(ws, workflowId)}/interface`,
 	submit: (ws: string, workflowId: string) => `${workflow(ws, workflowId)}/interface/runs`,
 } as const;
+
+export const PublishRequestEndpoints = {
+	list: (ws: string, workflowId: string) => `${workflow(ws, workflowId)}/publish-requests`,
+	create: (ws: string, workflowId: string) => `${workflow(ws, workflowId)}/publish-requests`,
+	detail: (ws: string, workflowId: string, id: string) =>
+		`${workflow(ws, workflowId)}/publish-requests/${id}`,
+	approve: (ws: string, workflowId: string, id: string) =>
+		`${workflow(ws, workflowId)}/publish-requests/${id}/approve`,
+	reject: (ws: string, workflowId: string, id: string) =>
+		`${workflow(ws, workflowId)}/publish-requests/${id}/reject`,
+	withdraw: (ws: string, workflowId: string, id: string) =>
+		`${workflow(ws, workflowId)}/publish-requests/${id}/withdraw`,
+	policy: (ws: string) => `/workspaces/${ws}/publish-approval-policy`,
+	workspacePending: (ws: string) => `/workspaces/${ws}/publish-requests`,
+} as const;

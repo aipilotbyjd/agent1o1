@@ -16,6 +16,7 @@ import WorkflowGovernanceModal from '../_partial/dialogs/WorkflowGovernanceModal
 import RunPanel from '../_partial/run/RunPanel.partial';
 import VersionHistoryPanel from '../_partial/versions/VersionHistoryPanel.partial';
 import VersionPreview from '../_partial/versions/VersionPreview.partial';
+import PublishReviewPreview from '../_partial/versions/PublishReviewPreview.partial';
 import ActionBar from '../_partial/shell/ActionBar.partial';
 import AgentBuilderPage from '@/pages/coreapp/Agents/AgentBuilder/AgentBuilder.page';
 import WorkspaceSettingsPage from '@/pages/UnderConstruction.page';
@@ -274,6 +275,7 @@ const BuildPage = () => {
 									<Canvas />
 									<ActionBar />
 									<VersionPreview />
+									<PublishReviewPreview />
 								</div>
 								{isVersionPanelOpen && !state.ui.runPanelOpen && (
 									<div

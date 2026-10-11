@@ -7,6 +7,7 @@ import { useUpdateWorkspace, useDeleteWorkspace, useWorkspace } from '@/api/modu
 import { primaryBtn, secondaryBtn, dangerBtn } from '@/pages/settings/_shared/buttons';
 import { notify } from '@/api/core';
 import formatDate from '@/utils/formatDate.util';
+import PublishApprovalSetting from '@/parts/PublishApprovalSetting.part';
 
 const inputClass =
 	'h-12 w-full rounded-xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-800 shadow-xs outline-none placeholder:text-zinc-400 focus:border-primary-300 focus:ring-4 focus:ring-primary-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-primary-500 dark:focus:ring-primary-500/20';
@@ -249,6 +250,13 @@ const WorkspacePage = () => {
 					</button>
 				</div>
 			</form>
+
+			<section className='mt-8 rounded-2xl border border-zinc-100 bg-white px-6 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950'>
+				<h2 className='pt-2 text-base font-bold text-zinc-950 dark:text-zinc-50'>
+					Workflow publishing
+				</h2>
+				{activeWorkspaceId && <PublishApprovalSetting workspaceId={activeWorkspaceId} />}
+			</section>
 
 			{/* Collapsible Danger Zone */}
 			{isOwner && (

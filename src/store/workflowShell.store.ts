@@ -31,6 +31,8 @@ type TWorkflowShellState = {
 	isVersionPanelOpen: boolean;
 	/** The published version shown read-only on the canvas, if any. */
 	previewVersionId: string | null;
+	/** The publish request shown for review over the canvas, if any. */
+	reviewRequestId: string | null;
 	setActiveWorkspaceView: (view: TWorkflowShellState['activeWorkspaceView']) => void;
 	setCreateFlowModalOpen: (open: boolean) => void;
 	setGovModalOpen: (open: boolean) => void;
@@ -38,6 +40,7 @@ type TWorkflowShellState = {
 	openVersionPanel: (previewVersionId?: string | null) => void;
 	closeVersionPanel: () => void;
 	setPreviewVersionId: (id: string | null) => void;
+	setReviewRequestId: (id: string | null) => void;
 	closeMobileSidebar: () => void;
 	toggleMobileSidebar: () => void;
 	toggleSidebar: () => void;
@@ -59,14 +62,16 @@ export const useWorkflowShellStore = create<TWorkflowShellState>((set) => ({
 	govModalTab: 'sharing',
 	isVersionPanelOpen: false,
 	previewVersionId: null,
+	reviewRequestId: null,
 	setActiveWorkspaceView: (view) => set({ activeWorkspaceView: view }),
 	setCreateFlowModalOpen: (open) => set({ isCreateFlowModalOpen: open }),
 	setGovModalOpen: (open) => set({ isGovModalOpen: open }),
 	setGovModalTab: (tab) => set({ govModalTab: tab }),
 	openVersionPanel: (previewVersionId = null) =>
-		set({ isVersionPanelOpen: true, previewVersionId }),
+		set({ isVersionPanelOpen: true, previewVersionId, reviewRequestId: null }),
 	closeVersionPanel: () => set({ isVersionPanelOpen: false, previewVersionId: null }),
-	setPreviewVersionId: (id) => set({ previewVersionId: id }),
+	setPreviewVersionId: (id) => set({ previewVersionId: id, reviewRequestId: null }),
+	setReviewRequestId: (id) => set({ reviewRequestId: id, previewVersionId: null }),
 	closeMobileSidebar: () => set({ mobileSidebarOpen: false }),
 	toggleMobileSidebar: () => set((state) => ({ mobileSidebarOpen: !state.mobileSidebarOpen })),
 	toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),

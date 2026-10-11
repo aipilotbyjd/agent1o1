@@ -241,9 +241,9 @@ export const useDeleteWorkflowTrigger = (ws: string) => useDeleteTrigger(ws);
 // ── Ported-frontend adapters: governance ──────────────────────────────────────
 //
 // The old frontend shipped a governance modal covering shares, approval
-// requests, releases and contract tests. This backend models none of them: there
-// is no share, approval-request, release or contract endpoint on a workflow
-// (its `approvals` are per-run pauses, a different concept entirely).
+// requests, releases and contract tests. Approval requests are real now (see
+// publish-requests.hooks.ts); this backend models none of the rest: there is
+// no share, release or contract endpoint on a workflow.
 //
 // They are kept only so the ported modal loads. Reads resolve empty — that is
 // what this backend actually has — and writes fail loudly rather than looking
@@ -262,15 +262,6 @@ export type TLegacyWorkflowShare = {
 	view_count: number;
 	clone_count: number;
 	expires_at: TIsoDate | null;
-};
-export type TLegacyApprovalRequest = {
-	id: string;
-	status: 'pending' | 'approved' | 'rejected';
-	notes: string | null;
-	requested_by: { name: string };
-	reviewed_by: { name: string } | null;
-	reviewed_at: TIsoDate | null;
-	created_at: TIsoDate;
 };
 export type TLegacyRelease = {
 	id: string;
@@ -307,15 +298,6 @@ export const useCreateWorkflowShare = (_ws: string, _workflowId: string) =>
 	useMissingMutation('Sharing a workflow');
 export const useDeleteWorkflowShare = (_ws: string, _workflowId: string) =>
 	useMissingMutation('Removing a workflow share');
-
-export const useWorkflowApprovals = (_ws: string, _workflowId?: string, _enabled?: boolean) =>
-	useMissingCollection<TLegacyApprovalRequest>();
-export const useRequestApproval = (_ws: string, _workflowId: string) =>
-	useMissingMutation('Requesting workflow approval');
-export const useApproveRequest = (_ws: string, _workflowId: string) =>
-	useMissingMutation('Approving a workflow request');
-export const useRejectRequest = (_ws: string, _workflowId: string) =>
-	useMissingMutation('Rejecting a workflow request');
 
 export const useWorkflowReleases = (_ws: string, _workflowId?: string, _enabled?: boolean) =>
 	useMissingCollection<TLegacyRelease>();

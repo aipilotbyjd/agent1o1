@@ -1,19 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, Rocket } from 'lucide-react';
+import { Loader2, Rocket, Send } from 'lucide-react';
 import { describeDiff, EMPTY_GRAPH } from '../../_helper/versionDiff.helper';
 import { useDraftStatus } from '../../_hooks/useDraftStatus.hook';
 import { usePublishDraft } from '../../_hooks/usePublishDraft.hook';
+import { usePublishReview } from '../../_hooks/usePublishReview.hook';
 
 const NOTES_LIMIT = 500;
 
 /**
  * Publishing with an optional "what changed" note, prefilled from the draft's
  * differences to the live version so a useful note is one keystroke away.
+ * Where the workspace reviews changes first, the same note goes with a
+ * request for review instead.
  */
 const PublishPopover = ({ onClose }: { onClose: () => void }) => {
 	const { status, diff, liveGraph, draftGraph, liveVersionNumber } = useDraftStatus();
-	const { publish, isPublishing } = usePublishDraft();
+	const { publish, requestReview, isPublishing, isRequesting } = usePublishDraft();
+	const { requiresApproval, pending } = usePublishReview();
+	const isSubmitting = isPublishing || isRequesting;
 
 	const suggestion =
 		status === 'unpublished'
@@ -34,9 +39,30 @@ const PublishPopover = ({ onClose }: { onClose: () => void }) => {
 	}, []);
 
 	const submit = async () => {
-		if (nothingToPublish || isPublishing) return;
-		if (await publish(notes)) onClose();
+		if (nothingToPublish || isSubmitting) return;
+		const sent = requiresApproval ? await requestReview(notes) : await publish(notes);
+		if (sent) onClose();
 	};
+
+	const title = requiresApproval
+		? 'Send for review'
+		: status === 'unpublished'
+			? 'Publish your workflow'
+			: 'Publish changes';
+	const description = nothingToPublish
+		? `Nothing new to publish. Your draft matches v${liveVersionNumber ?? ''}, the live version.`
+		: requiresApproval
+			? pending
+				? 'An admin reviews this before it goes live. It replaces the review already waiting.'
+				: 'An admin reviews this before it goes live. You can keep editing meanwhile; later edits need another review.'
+			: 'This becomes the live version. Triggers and runs use it right away, and you can restore an older version anytime.';
+	const submitLabel = requiresApproval
+		? isRequesting
+			? 'Sending…'
+			: 'Request review'
+		: isPublishing
+			? 'Publishing…'
+			: 'Publish';
 
 	return (
 		<>
@@ -47,15 +73,11 @@ const PublishPopover = ({ onClose }: { onClose: () => void }) => {
 				exit={{ opacity: 0, y: 4, scale: 0.97 }}
 				transition={{ duration: 0.12 }}
 				role='dialog'
-				aria-label='Publish workflow'
+				aria-label={title}
 				className='absolute top-10 right-0 z-50 w-[320px] origin-top-right rounded-xl border border-zinc-200 bg-white p-4 shadow-xl dark:border-white/10 dark:bg-zinc-950'>
-				<h3 className='text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
-					{status === 'unpublished' ? 'Publish your workflow' : 'Publish changes'}
-				</h3>
+				<h3 className='text-sm font-semibold text-zinc-900 dark:text-zinc-100'>{title}</h3>
 				<p className='mt-1 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400'>
-					{nothingToPublish
-						? `Nothing new to publish. Your draft matches v${liveVersionNumber ?? ''}, the live version.`
-						: 'This becomes the live version. Triggers and runs use it right away, and you can restore an older version anytime.'}
+					{description}
 				</p>
 
 				{!nothingToPublish && (
@@ -86,6 +108,8 @@ const PublishPopover = ({ onClose }: { onClose: () => void }) => {
 							onKeyDown={(event) => {
 								if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
 									event.preventDefault();
+									// ⌘↵ is also Run; this one is only for publishing.
+									event.nativeEvent.stopImmediatePropagation();
 									void submit();
 								}
 							}}
@@ -100,14 +124,16 @@ const PublishPopover = ({ onClose }: { onClose: () => void }) => {
 							</button>
 							<button
 								type='submit'
-								disabled={isPublishing}
+								disabled={isSubmitting}
 								className='bg-primary-400 text-primary-950 hover:bg-primary-500 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50'>
-								{isPublishing ? (
+								{isSubmitting ? (
 									<Loader2 size={13} className='animate-spin' />
+								) : requiresApproval ? (
+									<Send size={13} />
 								) : (
 									<Rocket size={13} />
 								)}
-								{isPublishing ? 'Publishing…' : 'Publish'}
+								{submitLabel}
 								<kbd className='text-primary-900/70 ml-1 hidden font-sans text-[10px] sm:inline'>
 									⌘↵
 								</kbd>

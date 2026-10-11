@@ -1,6 +1,7 @@
 import { createContext, createElement, useContext, useRef, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
+	usePublishApprovalPolicy,
 	useWorkflow,
 	WorkflowService,
 	WorkflowVersionService,
@@ -78,6 +79,7 @@ const useRunWorkflowController = () => {
 	const { isMissing: isCredentialMissing } = useCredentialResolver();
 	const persistWorkflowDraft = usePersistWorkflowDraft();
 	const queryClient = useQueryClient();
+	const { data: publishPolicy } = usePublishApprovalPolicy(state.workflow.workspaceId ?? '');
 	const stepResolveRef = useRef<(() => void) | null>(null);
 
 	const ws = state.workflow.workspaceId;
@@ -542,7 +544,25 @@ const useRunWorkflowController = () => {
 				dispatch({ type: 'SET_SAVE_STATE', savingState: 'error' });
 				return;
 			}
-			if (workflow.has_unpublished_changes || !workflow.current_version_id) {
+			const needsPublish = workflow.has_unpublished_changes || !workflow.current_version_id;
+			if (needsPublish && publishPolicy?.requires_approval) {
+				// Changes go live only through a review here, so Run can't publish
+				// them; it can still run what's live, without them.
+				if (!workflow.current_version_id) {
+					notify.error(
+						'Nothing has been approved yet, so there is no live version to run. Send your changes for review first.',
+					);
+					return;
+				}
+				const confirmed = await confirm({
+					title: 'Run the live version?',
+					message:
+						'Your changes need a review before they go live, so this runs the live version without them.',
+					confirmText: 'Run live version',
+					tone: 'primary',
+				});
+				if (!confirmed) return;
+			} else if (needsPublish) {
 				// Publishing replaces the live version — the one triggers and every
 				// other caller run — so ask once per editor session before doing it
 				// on the user's behalf. A first publish replaces nothing.

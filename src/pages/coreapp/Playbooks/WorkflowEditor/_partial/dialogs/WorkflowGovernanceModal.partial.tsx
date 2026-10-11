@@ -12,7 +12,6 @@ import {
 	AlertCircle,
 	Lock,
 	Unlock,
-	Send,
 	Clock,
 	CheckCircle2,
 	XCircle,
@@ -27,6 +26,7 @@ import { useWorkflowRouteParams } from '../../_hooks/useWorkflowRouteParams.hook
 import { useConfirm } from '@/context/confirm';
 import { notify } from '@/api/core';
 import Modal from './Modal.partial';
+import WorkflowApprovalsTab from './WorkflowApprovalsTab.partial';
 import WorkflowChecksTab from './WorkflowChecksTab.partial';
 import WorkflowInterfaceTab from './WorkflowInterfaceTab.partial';
 import WorkflowTriggersTab from './WorkflowTriggersTab.partial';
@@ -35,10 +35,6 @@ import {
 	useWorkflowShares,
 	useCreateWorkflowShare,
 	useDeleteWorkflowShare,
-	useWorkflowApprovals,
-	useRequestApproval,
-	useApproveRequest,
-	useRejectRequest,
 	useWorkflowReleases,
 	useDeployRelease,
 	useWorkflowContracts,
@@ -71,19 +67,6 @@ const WorkflowGovernanceModal = () => {
 	const [sharePassword, setSharePassword] = useState('');
 	const [shareExpiresAt, setShareExpiresAt] = useState('');
 	const [copiedShareId, setCopiedShareId] = useState<string | null>(null);
-
-	// ── 3. Approvals Tab Data & Mutations ─────────────────
-	const { data: approvalsRes, isLoading: isApprovalsLoading } = useWorkflowApprovals(
-		workspaceId,
-		workflowId,
-	);
-	const approvals = approvalsRes ?? [];
-	const requestApproval = useRequestApproval(workspaceId, workflowId);
-	const approveRequest = useApproveRequest(workspaceId, workflowId);
-	const rejectRequest = useRejectRequest(workspaceId, workflowId);
-
-	const [approvalNotes, setApprovalNotes] = useState('');
-	const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
 
 	// ── 4. Releases Tab Data & Mutations ──────────────────
 	const { data: releasesRes, isLoading: isReleasesLoading } = useWorkflowReleases(
@@ -142,13 +125,6 @@ const WorkflowGovernanceModal = () => {
 				},
 			},
 		);
-	};
-
-	const handleRequestApprovalSubmit = (e: React.FormEvent) => {
-		e.preventDefault();
-		requestApproval.mutate(approvalNotes, {
-			onSuccess: () => setApprovalNotes(''),
-		});
 	};
 
 	const handleDeployReleaseSubmit = (e: React.FormEvent) => {
@@ -452,196 +428,7 @@ const WorkflowGovernanceModal = () => {
 
 					{/* ─── APPROVALS TAB ─── */}
 					{activeTab === 'approvals' && (
-						<div className='space-y-6'>
-							<div>
-								<h3 className='text-sm font-bold text-zinc-800 dark:text-zinc-200'>
-									Governance Approvals
-								</h3>
-								<p className='mt-1 text-xs text-zinc-500 dark:text-zinc-400'>
-									Submit reviews for changes, require peer approval prior to live
-									deployments, and track audits.
-								</p>
-							</div>
-
-							{/* Request Approval Form */}
-							<form
-								onSubmit={handleRequestApprovalSubmit}
-								className='dark:border-zinc-850 space-y-3 rounded-xl border border-zinc-200 p-4 dark:bg-zinc-900/10'>
-								<h4 className='text-xs font-bold tracking-wider text-zinc-700 uppercase dark:text-zinc-300'>
-									Request Production Approval
-								</h4>
-								<div className='space-y-1.5'>
-									<label
-										htmlFor='workflowgovernancemodal-request-notes-audit-context'
-										className='block text-[10px] font-bold text-zinc-500 uppercase dark:text-zinc-400'>
-										Request Notes / Audit Context
-									</label>
-									<textarea
-										id='workflowgovernancemodal-request-notes-audit-context'
-										aria-label="Describe changes e.g. 'Optimized prompt token usage and resolved Google Calendar trigger mapping error'"
-										rows={2}
-										placeholder="Describe changes e.g. 'Optimized prompt token usage and resolved Google Calendar trigger mapping error'"
-										value={approvalNotes}
-										onChange={(e) => setApprovalNotes(e.target.value)}
-										className='focus:border-primary-400 w-full rounded-lg border border-zinc-200 bg-zinc-50/50 p-2.5 text-xs outline-none dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-100'
-										required
-									/>
-								</div>
-								<div className='flex justify-end'>
-									<button
-										type='submit'
-										disabled={requestApproval.isPending}
-										className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold transition disabled:opacity-50'>
-										<Send size={12} />
-										Submit Request
-									</button>
-								</div>
-							</form>
-
-							{/* Approvals Audit Log */}
-							<div className='space-y-3'>
-								<h4 className='text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
-									Review Audit Log
-								</h4>
-
-								{isApprovalsLoading ? (
-									<div className='py-6 text-center text-xs text-zinc-400'>
-										Loading audit log...
-									</div>
-								) : approvals.length === 0 ? (
-									<div className='rounded-xl border border-dashed border-zinc-200 py-8 text-center text-xs text-zinc-400 dark:border-zinc-800'>
-										No approval requests created. Submit one above to begin peer
-										reviews.
-									</div>
-								) : (
-									<div className='space-y-3'>
-										{approvals.map((appr) => {
-											const isPending = appr.status === 'pending';
-											const isApproved = appr.status === 'approved';
-
-											return (
-												<div
-													key={appr.id}
-													className={`space-y-3.5 rounded-xl border p-4 ${
-														isApproved
-															? 'border-emerald-250 bg-emerald-50/10 dark:border-emerald-800/40 dark:bg-emerald-950/10'
-															: appr.status === 'rejected'
-																? 'border-rose-250 bg-rose-50/10 dark:border-rose-800/40 dark:bg-rose-950/10'
-																: 'border-zinc-200 bg-zinc-50/30 dark:border-zinc-800 dark:bg-zinc-900/10'
-													}`}>
-													<div className='flex items-start justify-between'>
-														<div className='space-y-0.5'>
-															<div className='flex items-center gap-2'>
-																<span className='text-zinc-850 text-xs font-bold dark:text-zinc-200'>
-																	Requested by{' '}
-																	{appr.requested_by.name}
-																</span>
-																<span
-																	className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${
-																		isApproved
-																			? 'border border-emerald-200 bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
-																			: appr.status ===
-																				  'rejected'
-																				? 'border border-rose-200 bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400'
-																				: 'border border-amber-200 bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
-																	}`}>
-																	{appr.status.toUpperCase()}
-																</span>
-															</div>
-															<span className='block text-[10px] text-zinc-400'>
-																{new Date(
-																	appr.created_at,
-																).toLocaleString()}
-															</span>
-														</div>
-													</div>
-
-													<div className='text-zinc-650 rounded-lg border border-zinc-100 bg-white p-2.5 text-xs font-medium dark:border-zinc-800/50 dark:bg-zinc-950'>
-														<p className='mb-1 text-[10px] font-bold tracking-wider text-zinc-400 uppercase'>
-															Audit Context
-														</p>
-														{appr.notes || 'No description provided'}
-													</div>
-
-													{/* Pending Approval Controls */}
-													{isPending && (
-														<div className='space-y-2 border-t border-zinc-200 pt-3 dark:border-zinc-800'>
-															<input
-																aria-label='Optional reviewer notes...'
-																type='text'
-																placeholder='Optional reviewer notes...'
-																value={reviewNotes[appr.id] || ''}
-																onChange={(e) =>
-																	setReviewNotes((prev) => ({
-																		...prev,
-																		[appr.id]: e.target.value,
-																	}))
-																}
-																className='focus:border-primary-400 w-full rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs outline-none dark:border-zinc-800 dark:bg-zinc-950'
-															/>
-															<div className='flex justify-end gap-2'>
-																<button
-																	type='button'
-																	onClick={() =>
-																		rejectRequest.mutate({
-																			approvalId: appr.id,
-																			notes: reviewNotes[
-																				appr.id
-																			],
-																		})
-																	}
-																	disabled={
-																		rejectRequest.isPending
-																	}
-																	className='rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 transition hover:bg-rose-100'>
-																	Reject
-																</button>
-																<button
-																	type='button'
-																	onClick={() =>
-																		approveRequest.mutate({
-																			approvalId: appr.id,
-																			notes: reviewNotes[
-																				appr.id
-																			],
-																		})
-																	}
-																	disabled={
-																		approveRequest.isPending
-																	}
-																	className='rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-emerald-700'>
-																	Approve
-																</button>
-															</div>
-														</div>
-													)}
-
-													{/* Review Results */}
-													{!isPending && appr.reviewed_by && (
-														<div className='border-t border-zinc-100 pt-2.5 text-[11px] text-zinc-500 dark:border-zinc-800/60'>
-															<span className='font-bold'>
-																Reviewed by:
-															</span>{' '}
-															{appr.reviewed_by.name} on{' '}
-															{appr.reviewed_at
-																? new Date(
-																		appr.reviewed_at,
-																	).toLocaleString()
-																: 'N/A'}
-															{appr.notes && (
-																<p className='mt-1 italic'>
-																	&ldquo;{appr.notes}&rdquo;
-																</p>
-															)}
-														</div>
-													)}
-												</div>
-											);
-										})}
-									</div>
-								)}
-							</div>
-						</div>
+						<WorkflowApprovalsTab workspaceId={workspaceId} workflowId={workflowId} />
 					)}
 
 					{/* ─── RELEASES TAB ─── */}

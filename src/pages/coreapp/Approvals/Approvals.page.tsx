@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useOutletContext } from 'react-router';
 import { Check, ChevronLeft, ChevronRight, ExternalLink, ShieldCheck, X } from 'lucide-react';
 import { OutletContextType } from './_layouts/Approvals.layout';
+import WorkflowChangesWaiting from './_partial/WorkflowChangesWaiting.partial';
 import Breadcrumb from '@/components/layout/Breadcrumb';
 import Container from '@/components/layout/Container';
 import Spinner from '@/components/ui/Spinner';
@@ -127,8 +128,8 @@ const ApprovalsPage = () => {
 							<ShieldCheck size={22} className='text-primary-500' /> Approvals
 						</h1>
 						<p className='mt-1 text-sm font-medium text-zinc-500 dark:text-zinc-400'>
-							Actions your agents paused on, waiting for a person — and everything
-							they did or tried to do.
+							Workflow changes and agent actions waiting for a person — and everything
+							your agents did or tried to do.
 						</p>
 					</div>
 					<select
@@ -147,6 +148,8 @@ const ApprovalsPage = () => {
 						))}
 					</select>
 				</div>
+
+				<WorkflowChangesWaiting ws={ws} />
 
 				<div
 					role='tablist'

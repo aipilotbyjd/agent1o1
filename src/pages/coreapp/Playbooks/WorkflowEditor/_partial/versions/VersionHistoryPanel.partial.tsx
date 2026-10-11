@@ -1,11 +1,12 @@
 import { differenceInCalendarDays, format, isToday, isYesterday } from 'date-fns';
-import { History, Loader2, PencilLine, RotateCcw, X } from 'lucide-react';
+import { FileCheck2, History, Loader2, PencilLine, RotateCcw, X } from 'lucide-react';
 import { useWorkflowVersions } from '@/api/modules/workflows';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import type { TWorkflowVersion } from '@/types/workflow-extras.type';
 import relativeTime from '@/utils/relativeTime.util';
 import { describeDiff } from '../../_helper/versionDiff.helper';
 import { useDraftStatus } from '../../_hooks/useDraftStatus.hook';
+import { usePublishReview } from '../../_hooks/usePublishReview.hook';
 import { useVersionRestore } from '../../_hooks/useVersionRestore.hook';
 import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 
@@ -173,11 +174,51 @@ const VersionRow = ({
  * Picking one shows it read-only on the canvas (`VersionPreview`), where it
  * can be restored into the draft.
  */
+/** The draft sent for review, if one is waiting — opens it over the canvas. */
+const PendingReviewCard = () => {
+	const { pending } = usePublishReview();
+	const reviewRequestId = useWorkflowShellStore((store) => store.reviewRequestId);
+	const setReviewRequestId = useWorkflowShellStore((store) => store.setReviewRequestId);
+	if (!pending) return null;
+	const isOpen = reviewRequestId === pending.id;
+
+	return (
+		<button
+			type='button'
+			onClick={() => setReviewRequestId(isOpen ? null : pending.id)}
+			className={[
+				'mb-3 block w-full rounded-xl border p-3.5 text-left transition',
+				isOpen
+					? 'border-amber-400 bg-amber-50/60 dark:border-amber-400/50 dark:bg-amber-400/[0.06]'
+					: 'border-amber-200 hover:bg-amber-50/40 dark:border-amber-400/20 dark:hover:bg-amber-400/[0.04]',
+			].join(' ')}>
+			<span className='flex items-center gap-2'>
+				<FileCheck2 size={14} className='text-amber-600 dark:text-amber-400' />
+				<span className='text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
+					Waiting for review
+				</span>
+				{isOpen && (
+					<span className='ml-auto text-[11px] text-zinc-500 dark:text-zinc-400'>
+						On canvas
+					</span>
+				)}
+			</span>
+			<span className='mt-1.5 block text-xs text-zinc-600 dark:text-zinc-300'>
+				{pending.notes || 'No description'}
+			</span>
+			<span className='mt-1 block text-[11px] text-zinc-500 dark:text-zinc-400'>
+				Sent by {pending.requester?.name ?? 'someone'} {relativeTime(pending.created_at)}
+			</span>
+		</button>
+	);
+};
+
 const VersionHistoryPanel = () => {
 	const { state } = useWorkflowEditor();
 	const closeVersionPanel = useWorkflowShellStore((store) => store.closeVersionPanel);
 	const previewVersionId = useWorkflowShellStore((store) => store.previewVersionId);
 	const setPreviewVersionId = useWorkflowShellStore((store) => store.setPreviewVersionId);
+	const reviewRequestId = useWorkflowShellStore((store) => store.reviewRequestId);
 	const workspaceId = state.workflow.workspaceId ?? '';
 	const workflowId = state.workflow.apiId ?? '';
 	const {
@@ -214,8 +255,9 @@ const VersionHistoryPanel = () => {
 			</header>
 
 			<div className='min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-6'>
+				<PendingReviewCard />
 				<DraftCard
-					isSelected={previewVersionId === null}
+					isSelected={previewVersionId === null && reviewRequestId === null}
 					onSelect={() => setPreviewVersionId(null)}
 				/>
 

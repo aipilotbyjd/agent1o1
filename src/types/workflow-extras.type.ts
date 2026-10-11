@@ -35,6 +35,60 @@ export type TWorkflowVersion = {
 	created_at: string;
 };
 
+// ─── Publish review ──────────────────────────────────────────
+
+export type TPublishRequestStatus =
+	| 'pending'
+	| 'approved'
+	| 'rejected'
+	| 'withdrawn'
+	| 'superseded';
+
+export type TPublishRequestVersionRef = {
+	id: string;
+	version: number;
+};
+
+/** A draft sent for review in a workspace that reviews changes before they
+ *  go live. `editor_graph` is the reviewed copy, only on a single read and
+ *  the open request. The `*_changed_since` flags are only on an open one. */
+export type TPublishRequest = {
+	id: string;
+	workflow_id: string;
+	status: TPublishRequestStatus;
+	notes: string | null;
+	editor_graph?: TBuilderGraph;
+	/** Only on the workspace-wide list of open requests. */
+	workflow?: { id: string; name: string };
+	requester?: TWorkflowVersionPublisher | null;
+	reviewer?: TWorkflowVersionPublisher | null;
+	reviewed_at: string | null;
+	review_notes: string | null;
+	base_version?: TPublishRequestVersionRef | null;
+	published_version?: TPublishRequestVersionRef | null;
+	draft_changed_since?: boolean;
+	live_version_changed_since?: boolean;
+	can_review: boolean;
+	can_withdraw: boolean;
+	created_at: string;
+};
+
+export type TPublishRequestList = {
+	pending: TPublishRequest | null;
+	requests: TPublishRequest[];
+};
+
+/** `requires_approval` is the switch as it applies now — on, and the plan
+ *  includes approvals. */
+export type TPublishApprovalPolicy = {
+	require_publish_approval: boolean;
+	plan_includes_approvals: boolean;
+	requires_approval: boolean;
+	can_manage: boolean;
+	can_approve: boolean;
+	approver_count: number;
+};
+
 // ─── Interface ───────────────────────────────────────────────
 
 export type TWorkflowInterfaceFieldType =

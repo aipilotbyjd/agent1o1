@@ -6,6 +6,8 @@ import {
 	Sun,
 	Boxes,
 	Rocket,
+	Send,
+	FileCheck2,
 	Share2,
 	ChevronDown,
 	ChevronLeft,
@@ -53,6 +55,7 @@ import SaveAsTemplateModal from '@/parts/SaveAsTemplateModal.part';
 import DraftStatusPill from '../versions/DraftStatusPill.partial';
 import { useDraftStatus } from '../../_hooks/useDraftStatus.hook';
 import PublishPopover from '../versions/PublishPopover.partial';
+import { usePublishReview } from '../../_hooks/usePublishReview.hook';
 
 /** Which topbar menu is open. Only one may be open at a time. */
 type TopbarMenu = 'publish' | 'save' | 'share' | 'mobile' | null;
@@ -457,6 +460,22 @@ const Topbar = () => {
 
 	const { status: draftStatus, label: draftStatusLabel } = useDraftStatus();
 	const hasUnpublishedWork = draftStatus === 'changed' || draftStatus === 'unpublished';
+	const { requiresApproval, pending: pendingReview } = usePublishReview();
+	const setReviewRequestId = useWorkflowShellStore((store) => store.setReviewRequestId);
+	// An open review takes the Publish slot: following it shows the request,
+	// and a newer draft is sent from there or from the Publish menu again.
+	const publishLabel = pendingReview
+		? 'In review'
+		: requiresApproval
+			? 'Request review'
+			: 'Publish';
+	const publishTooltip = pendingReview
+		? 'See the changes waiting for review'
+		: requiresApproval
+			? 'Send your changes for review'
+			: hasUnpublishedWork
+				? 'Publish your changes'
+				: 'Publish';
 
 	return (
 		<header className='relative z-40 flex h-14 shrink-0 items-center justify-between border-b border-zinc-200/80 bg-white/90 px-3 backdrop-blur-md select-none sm:px-4 dark:border-white/[0.08] dark:bg-[#07080b]/90'>
@@ -771,14 +790,21 @@ const Topbar = () => {
 							: 'border-zinc-200/80 bg-white dark:border-white/10 dark:bg-zinc-900/80',
 					].join(' ')}>
 					<EditorTooltip
-						label={hasUnpublishedWork ? 'Publish your changes' : 'Publish'}
-						shortcut='⌘S'
+						label={publishTooltip}
+						shortcut={pendingReview ? undefined : '⌘S'}
 						disabled={isSaveDropdownOpen || isPublishOpen}>
 						<button
 							type='button'
 							aria-haspopup='dialog'
 							aria-expanded={isPublishOpen}
-							onClick={() => toggleMenu('publish')}
+							onClick={() => {
+								if (pendingReview) {
+									closeMenu();
+									setReviewRequestId(pendingReview.id);
+								} else {
+									toggleMenu('publish');
+								}
+							}}
 							className={[
 								'hover:bg-primary-100/70 dark:hover:bg-primary-400/10 flex h-8 items-center gap-1.5 rounded-l-lg px-2.5 text-xs font-bold transition sm:px-3',
 								FOCUS_RING,
@@ -786,8 +812,23 @@ const Topbar = () => {
 									? 'text-primary-900 dark:text-primary-300'
 									: 'hover:text-primary-900 dark:hover:text-primary-300 text-zinc-700 dark:text-zinc-200',
 							].join(' ')}>
-							<Rocket size={13} className='text-primary-700 dark:text-primary-400' />
-							<span>Publish</span>
+							{pendingReview ? (
+								<FileCheck2
+									size={13}
+									className='text-amber-600 dark:text-amber-400'
+								/>
+							) : requiresApproval ? (
+								<Send
+									size={13}
+									className='text-primary-700 dark:text-primary-400'
+								/>
+							) : (
+								<Rocket
+									size={13}
+									className='text-primary-700 dark:text-primary-400'
+								/>
+							)}
+							<span>{publishLabel}</span>
 						</button>
 					</EditorTooltip>
 
@@ -848,7 +889,7 @@ const Topbar = () => {
 											size={14}
 											className='text-primary-700 dark:text-primary-400'
 										/>
-										<span>Request Approval</span>
+										<span>Approvals</span>
 									</button>
 									<button
 										type='button'
