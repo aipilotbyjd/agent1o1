@@ -1,13 +1,16 @@
-import { createContext, createElement, useContext, useRef, type ReactNode } from 'react';
+import { createContext, createElement, useContext, useRef, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
 	usePublishApprovalPolicy,
 	useWorkflow,
+	WorkflowInterfaceService,
 	WorkflowService,
 	WorkflowVersionService,
 	workflowVersionKeys,
 } from '@/api/modules/workflows';
 import { RunService } from '@/api/modules/runs';
+import { ApiError } from '@/api/core';
+import type { TWorkflowInterfaceField } from '@/types/workflow-extras.type';
 import { useConfirm } from '@/context/confirm';
 import type { TNodeRunDetail, TRun, TRunStatus } from '@/types/run.type';
 import type { TWorkflow } from '@/types/workflow.type';
@@ -18,6 +21,13 @@ import { serverValidationIssues } from '../_helper/validation.helper';
 import type { TNodeRunStatus } from '../_types/node.type';
 import { messageFromError, notify } from '@/api/core/notify';
 import { useCredentialResolver } from './useCredentialResolver.hook';
+import {
+	initialRunFormValues,
+	RunFormJsonError,
+	runFormInput,
+	type TRunFormValues,
+} from '../_helper/runForm.helper';
+import RunInputsDialog from '../_partial/run/RunInputsDialog.partial';
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -48,6 +58,17 @@ const errorText = (error: unknown): string | undefined => {
 	return undefined;
 };
 
+type TInputRequest = {
+	ws: string;
+	wfId: string;
+	fields: TWorkflowInterfaceField[];
+	initialValues: TRunFormValues;
+	errors: Record<string, string>;
+	submitting: boolean;
+};
+
+const INPUT_ERROR_PREFIX = 'input.';
+
 const ACTIVE_RUN_STATUSES = new Set<TRunStatus>([
 	'pending',
 	'running',
@@ -61,6 +82,9 @@ const useRunWorkflowController = () => {
 	const starting = useRef(false);
 	// Set once the user has agreed that Run may publish the draft.
 	const publishConfirmed = useRef(false);
+	// What was last entered on the run form, so "Run again" starts from it.
+	const lastInputValues = useRef<TRunFormValues>({});
+	const [inputRequest, setInputRequest] = useState<TInputRequest | null>(null);
 	const { confirm } = useConfirm();
 	const { isMissing: isCredentialMissing } = useCredentialResolver();
 	const persistWorkflowDraft = usePersistWorkflowDraft();
@@ -119,7 +143,7 @@ const useRunWorkflowController = () => {
 				: finalRun.status === 'cancelled'
 					? 'stopped'
 					: 'error';
-		dispatch({ type: 'RUN_FINISH', status: finalStatus });
+		dispatch({ type: 'RUN_FINISH', status: finalStatus, output: finalRun.output });
 		dispatch({
 			type: 'APPEND_LOG',
 			log: {
@@ -198,12 +222,11 @@ const useRunWorkflowController = () => {
 	};
 
 	/**
-	 * Drive a real backend run and use the backend record as the source of truth.
+	 * Follow a started backend run and use the backend record as the source of truth.
 	 */
-	const runRemoteWorkflow = async (ws: string, wfId: string) => {
+	const followRemoteRun = async (ws: string, run: TRun, input?: Record<string, unknown>) => {
 		try {
-			const run = await RunService.start(ws, wfId, { input: {} });
-			dispatch({ type: 'RUN_START', id: run.id });
+			dispatch({ type: 'RUN_START', id: run.id, input });
 			dispatch({
 				type: 'APPEND_LOG',
 				log: {
@@ -222,10 +245,64 @@ const useRunWorkflowController = () => {
 			}
 			await finishRemoteRun(ws, result.run, result.nodeRuns);
 		} catch (error) {
-			const msg = error instanceof Error ? error.message : 'Failed to start run';
-			notify.error(msg);
+			notify.error(messageFromError(error, 'Lost track of the run'));
 			dispatch({ type: 'RUN_FINISH', status: 'error' });
 		}
+	};
+
+	/**
+	 * Start the published version: straight away when it takes no input,
+	 * otherwise once the run form is filled in (see `submitRunInputs`).
+	 */
+	const startRemoteRun = async (ws: string, wfId: string) => {
+		const runForm = await WorkflowInterfaceService.show(ws, wfId);
+		if (runForm.fields.length > 0) {
+			setInputRequest({
+				ws,
+				wfId,
+				fields: runForm.fields,
+				initialValues: initialRunFormValues(runForm.fields, lastInputValues.current),
+				errors: {},
+				submitting: false,
+			});
+			return;
+		}
+		let run: TRun;
+		try {
+			run = await RunService.start(ws, wfId, { input: {} });
+		} catch (error) {
+			notify.error(messageFromError(error, 'Failed to start run'));
+			return;
+		}
+		await followRemoteRun(ws, run);
+	};
+
+	const submitRunInputs = async (values: TRunFormValues) => {
+		if (!inputRequest || inputRequest.submitting) return;
+		const { ws, wfId, fields } = inputRequest;
+		let input: Record<string, unknown>;
+		try {
+			input = runFormInput(fields, values);
+		} catch (error) {
+			if (!(error instanceof RunFormJsonError)) throw error;
+			setInputRequest({ ...inputRequest, errors: { [error.field.key]: error.message } });
+			return;
+		}
+		setInputRequest({ ...inputRequest, errors: {}, submitting: true });
+		let run: TRun;
+		try {
+			run = await WorkflowInterfaceService.submit(ws, wfId, { input });
+		} catch (error) {
+			const errors = ApiError.is(error) && error.isValidation ? inputFieldErrors(error) : {};
+			if (!Object.keys(errors).length) {
+				notify.error(messageFromError(error, 'Failed to start run'));
+			}
+			setInputRequest({ ...inputRequest, errors, submitting: false });
+			return;
+		}
+		lastInputValues.current = values;
+		setInputRequest(null);
+		await followRemoteRun(ws, run, input);
 	};
 
 	/**
@@ -236,7 +313,7 @@ const useRunWorkflowController = () => {
 		const isRunDisabled =
 			state.nodes.length === 0 && state.ui.emptyCanvasView !== 'chat-started';
 		if (isRunDisabled) return;
-		if (state.run.status === 'running' || starting.current) return;
+		if (state.run.status === 'running' || starting.current || inputRequest) return;
 
 		// Check for missing credentials.
 		const missingCredentialNode = state.nodes.find((node) =>
@@ -347,9 +424,9 @@ const useRunWorkflowController = () => {
 						currentVersionNumber: published.version.version,
 					},
 				});
-				notify.info(`Published v${published.version.version} — running it now.`);
+				notify.info(`Published v${published.version.version}.`);
 			}
-			await runRemoteWorkflow(ws, wfId);
+			await startRemoteRun(ws, wfId);
 		} catch (error) {
 			const issues = serverValidationIssues(error);
 			if (issues.length) {
@@ -369,15 +446,44 @@ const useRunWorkflowController = () => {
 		dispatch({ type: 'RUN_FINISH', status: 'stopped' });
 	};
 
-	return { runWorkflow, stopRun };
+	const cancelRunInputs = () => setInputRequest(null);
+
+	return { runWorkflow, stopRun, inputRequest, submitRunInputs, cancelRunInputs };
 };
+
+/** 422 messages keyed by run-form field, from the server's `input.<key>` errors. */
+const inputFieldErrors = (error: ApiError): Record<string, string> =>
+	Object.fromEntries(
+		Object.entries(error.fieldErrors())
+			.filter(([field]) => field.startsWith(INPUT_ERROR_PREFIX))
+			.map(([field, message]) => [field.slice(INPUT_ERROR_PREFIX.length), message]),
+	);
 
 type TRunWorkflowController = ReturnType<typeof useRunWorkflowController>;
 const WorkflowRunContext = createContext<TRunWorkflowController | null>(null);
 
+const RunInputsHost = () => {
+	const { inputRequest, submitRunInputs, cancelRunInputs } = useRunWorkflow();
+	if (!inputRequest) return null;
+	return createElement(RunInputsDialog, {
+		key: `${inputRequest.ws}:${inputRequest.wfId}`,
+		fields: inputRequest.fields,
+		initialValues: inputRequest.initialValues,
+		errors: inputRequest.errors,
+		submitting: inputRequest.submitting,
+		onSubmit: (values: TRunFormValues) => void submitRunInputs(values),
+		onCancel: cancelRunInputs,
+	});
+};
+
 export const WorkflowRunProvider = ({ children }: { children: ReactNode }) => {
 	const controller = useRunWorkflowController();
-	return createElement(WorkflowRunContext.Provider, { value: controller }, children);
+	return createElement(
+		WorkflowRunContext.Provider,
+		{ value: controller },
+		children,
+		createElement(RunInputsHost),
+	);
 };
 
 export const useRunWorkflow = () => {

@@ -4,6 +4,9 @@ import { getNodeDefinition } from './nodeCatalog.constants';
 import { getNodeAccentColor } from '../_partial/library/library.util';
 import type { TCanvasEdge, TCanvasNode } from '../_types/canvas.type';
 
+export const WORKFLOW_INPUT_TYPE = 'workflow_input';
+export const WORKFLOW_OUTPUT_TYPE = 'workflow_output';
+
 export type TWorkflowVariable = {
 	nodeId: string;
 	nodeLabel: string;
@@ -36,7 +39,13 @@ export const collectUpstreamVariables = (
 
 	visit(nodeId);
 
-	return upstream.flatMap((node) => {
+	// The engine hands every step the Input steps' values, connected or not.
+	const inputs = nodes.filter(
+		(node) =>
+			node.data.defKey === WORKFLOW_INPUT_TYPE && node.id !== nodeId && !visited.has(node.id),
+	);
+
+	return [...inputs, ...upstream].flatMap((node) => {
 		const def = getNodeDefinition(node.data.defKey, node.data.definition);
 		const nodeColor = getNodeAccentColor(
 			node.id,

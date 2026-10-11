@@ -117,9 +117,10 @@ export type TWorkflowInterfaceField = {
 export type TWorkflowInterface = {
 	workflow_id: string;
 	published: boolean;
-	/** `declared` when authored via `PUT .../interface`, `derived` when read
-	 *  off the graph's `{{ input.* }}` references instead. */
-	source: 'declared' | 'derived';
+	/** `nodes` when the graph has Input steps, `declared` when authored via
+	 *  `PUT .../interface`, `derived` when read off the graph's
+	 *  `{{ input.* }}` references instead. */
+	source: 'nodes' | 'declared' | 'derived';
 	fields: TWorkflowInterfaceField[];
 };
 

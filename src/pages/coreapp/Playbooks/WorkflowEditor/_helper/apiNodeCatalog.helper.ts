@@ -44,6 +44,7 @@ const HEX_TO_HUE: Record<string, string> = {
 const SLUG_TO_CATEGORY: Record<string, TNodeCategory> = {
 	'ai-automation': 'ai',
 	'triggers-events': 'trigger',
+	'inputs-outputs': 'input',
 	'flow-logic': 'flow-control',
 	'data-transform': 'data',
 };

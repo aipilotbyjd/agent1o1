@@ -13,6 +13,10 @@ export type TRunState = {
 	finishedAt: number | null;
 	currentNodeId: string | null;
 	logs: TRunLog[];
+	/** What the run form sent; absent for a run that took no input. */
+	input?: Record<string, unknown>;
+	/** The finished run's output from the server. */
+	output?: unknown;
 };
 
 export type TNodeRunRecord = {

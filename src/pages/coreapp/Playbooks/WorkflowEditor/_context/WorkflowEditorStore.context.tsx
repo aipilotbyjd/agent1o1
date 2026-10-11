@@ -68,8 +68,8 @@ export type TWorkflowEditorAction =
 	| { type: 'SET_COMMAND_PALETTE'; open: boolean }
 	| { type: 'SET_QUICK_ADD'; open: boolean }
 	| { type: 'SET_IMPORT_EXPORT'; open: boolean }
-	| { type: 'RUN_START'; id: string }
-	| { type: 'RUN_FINISH'; status: 'success' | 'error' | 'stopped' }
+	| { type: 'RUN_START'; id: string; input?: Record<string, unknown> }
+	| { type: 'RUN_FINISH'; status: 'success' | 'error' | 'stopped'; output?: unknown }
 	| { type: 'RUN_CURRENT_NODE'; nodeId: string | null }
 	| { type: 'APPEND_LOG'; log: Omit<TRunLog, 'id' | 'at'> }
 	| { type: 'SET_LOGS'; logs: TRunLog[] }
@@ -690,6 +690,7 @@ export const workflowEditorReducer = (
 					finishedAt: null,
 					currentNodeId: null,
 					logs: [],
+					input: action.input,
 				},
 				ui: {
 					...state.ui,
@@ -706,6 +707,7 @@ export const workflowEditorReducer = (
 					status: action.status,
 					currentNodeId: null,
 					finishedAt: Date.now(),
+					output: action.output,
 				},
 			};
 		case 'RUN_CURRENT_NODE':

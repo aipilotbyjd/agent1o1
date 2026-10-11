@@ -20,6 +20,8 @@ import { getRunOrder } from '../../_helper/runGraph.helper';
 import NodeRunOutput from './NodeRunOutput.partial';
 import RunConsole from './RunConsole.partial';
 import RunHistory from './RunHistory.partial';
+import RunValues from './RunValues.partial';
+import { WORKFLOW_OUTPUT_TYPE } from '../../_helper/variables.helper';
 
 const statusMeta = {
 	idle: {
@@ -83,6 +85,15 @@ const RunPanel = () => {
 		dispatch({ type: 'SELECT_NODE', id });
 		reactFlow.fitView({ nodes: [{ id }], padding: 0.4, duration: 350 });
 	};
+	const runInput = run.input && Object.keys(run.input).length > 0 ? run.input : null;
+	const runResult =
+		run.status === 'success' &&
+		steps.some((node) => node.data.defKey === WORKFLOW_OUTPUT_TYPE) &&
+		run.output &&
+		typeof run.output === 'object' &&
+		!Array.isArray(run.output)
+			? (run.output as Record<string, unknown>)
+			: null;
 	const duration =
 		run.startedAt && run.finishedAt
 			? `${(Math.max(0, run.finishedAt - run.startedAt) / 1000).toFixed(1)}s`
@@ -231,6 +242,10 @@ const RunPanel = () => {
 										</div>
 									</div>
 								)}
+								{runResult && (
+									<RunValues title='Result' values={runResult} tone='success' />
+								)}
+								{runInput && <RunValues title='Inputs' values={runInput} />}
 								<div className='mb-4 flex items-center justify-between'>
 									<h3 className='text-xs font-semibold'>Step progress</h3>
 									<span className='text-[11px] text-zinc-400'>
