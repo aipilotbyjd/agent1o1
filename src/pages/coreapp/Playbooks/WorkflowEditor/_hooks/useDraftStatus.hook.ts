@@ -41,12 +41,22 @@ export const useDraftStatus = () => {
 				? 'changed'
 				: 'live';
 
+	const liveVersionNumber = liveQuery.data?.version ?? currentVersionNumber;
+	const version = liveVersionNumber ? `v${liveVersionNumber}` : '';
+	const label = {
+		live: `Live · ${version}`,
+		changed: 'Unpublished changes',
+		unpublished: 'Not published',
+		checking: version ? `Live · ${version}` : 'Draft',
+	}[status];
+
 	return {
 		status,
+		label,
 		diff,
 		draftGraph,
 		liveGraph,
 		liveVersionId: currentVersionId ?? null,
-		liveVersionNumber: liveQuery.data?.version ?? currentVersionNumber,
+		liveVersionNumber,
 	};
 };

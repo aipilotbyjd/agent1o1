@@ -14,7 +14,6 @@ import {
 	Library,
 	MoreVertical,
 	Sparkles,
-	AlertCircle,
 	Loader2,
 	Pencil,
 	LayoutGrid,
@@ -26,6 +25,9 @@ import {
 	ListChecks,
 	Copy,
 	Check,
+	CloudCheck,
+	CloudOff,
+	CloudUpload,
 	Folder,
 	Layers,
 	Square,
@@ -282,59 +284,52 @@ const SaveStatusBadge = ({
 }) => {
 	const [isOpen, setIsOpen] = useState(false);
 
-	let content = (
-		<div className='border-primary-400/50 bg-primary-100/70 text-primary-800 hover:bg-primary-100 dark:border-primary-400/30 dark:bg-primary-400/10 dark:text-primary-300 dark:hover:bg-primary-400/20 flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold transition'>
-			<span className='bg-primary-500 h-1.5 w-1.5 rounded-full'></span>
-			<span>Saved</span>
-		</div>
-	);
-
-	if (savingState === 'saving') {
-		content = (
-			<div className='border-primary-200/70 bg-primary-50/80 text-primary-700 dark:border-primary-800/60 dark:bg-primary-950/40 dark:text-primary-300 flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold'>
-				<Loader2
-					size={10}
-					className='text-primary-600 dark:text-primary-400 animate-spin'
-				/>
-				<span>Saving...</span>
-			</div>
-		);
-	} else if (savingState === 'dirty') {
-		content = (
-			<div className='flex items-center gap-1.5 rounded-full border border-amber-200/70 bg-amber-50/80 px-2 py-0.5 text-[10px] font-semibold text-amber-700 transition hover:bg-amber-100/80 dark:border-amber-800/50 dark:bg-amber-950/40 dark:text-amber-400'>
-				<span className='relative flex h-1.5 w-1.5'>
-					<span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75'></span>
-					<span className='relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-500'></span>
-				</span>
-				<span>Unsaved changes</span>
-			</div>
-		);
-	} else if (savingState === 'error') {
-		content = (
-			<div className='flex items-center gap-1.5 rounded-full border border-rose-200/80 bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700 transition hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-950/50 dark:text-rose-400'>
-				<AlertCircle size={10} className='text-rose-500' />
-				<span>Save failed (Retry)</span>
-			</div>
-		);
-	}
+	const { Icon, label, className } = {
+		saved: {
+			Icon: CloudCheck,
+			label: 'All changes saved',
+			className: 'text-primary-700 dark:text-primary-400',
+		},
+		saving: {
+			Icon: Loader2,
+			label: 'Saving…',
+			className: 'text-primary-600 dark:text-primary-400 animate-spin',
+		},
+		dirty: {
+			Icon: CloudUpload,
+			label: 'Unsaved changes',
+			className: 'text-amber-600 dark:text-amber-400',
+		},
+		error: {
+			Icon: CloudOff,
+			label: 'Save failed. Click to retry',
+			className: 'text-rose-600 dark:text-rose-400',
+		},
+	}[savingState];
 
 	return (
 		<div className='relative hidden sm:block'>
-			<button
-				type='button'
-				aria-haspopup='dialog'
-				aria-expanded={isOpen}
-				aria-label={`Save status: ${savingState}`}
-				className={`rounded-full ${FOCUS_RING}`}
-				onClick={() => {
-					if (savingState === 'error' && onRetry) {
-						onRetry();
-					} else {
-						setIsOpen(!isOpen);
-					}
-				}}>
-				{content}
-			</button>
+			<EditorTooltip label={label} disabled={isOpen}>
+				<button
+					type='button'
+					aria-haspopup='dialog'
+					aria-expanded={isOpen}
+					aria-label={label}
+					className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${
+						savingState === 'error'
+							? 'bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 dark:hover:bg-rose-950/70'
+							: 'hover:bg-primary-100/70 dark:hover:bg-primary-400/10'
+					} ${FOCUS_RING}`}
+					onClick={() => {
+						if (savingState === 'error' && onRetry) {
+							onRetry();
+						} else {
+							setIsOpen(!isOpen);
+						}
+					}}>
+					<Icon size={15} className={className} />
+				</button>
+			</EditorTooltip>
 
 			<AnimatePresence>
 				{isOpen && (
@@ -458,7 +453,7 @@ const Topbar = () => {
 		openVersionPanel();
 	};
 
-	const { status: draftStatus } = useDraftStatus();
+	const { status: draftStatus, label: draftStatusLabel } = useDraftStatus();
 	const hasUnpublishedWork = draftStatus === 'changed' || draftStatus === 'unpublished';
 
 	return (
@@ -482,11 +477,8 @@ const Topbar = () => {
 				<EditorTooltip label='Agent1o1 Dashboard'>
 					<Link
 						to={dashboardPath}
-						className={`group text-primary-700 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 hidden items-center gap-1.5 rounded-lg px-0.5 transition sm:flex ${FOCUS_RING}`}>
+						className={`group text-primary-700 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 hidden items-center rounded-lg transition sm:flex ${FOCUS_RING}`}>
 						<AppLogo className='ring-primary-500/20 dark:ring-primary-400/20 size-7 ring-1' />
-						<span className='hidden text-sm font-extrabold tracking-tight sm:inline'>
-							agent101
-						</span>
 					</Link>
 				</EditorTooltip>
 
@@ -494,9 +486,18 @@ const Topbar = () => {
 
 				{/* Folder (if categorized) */}
 				{state.workflow.folder && (
-					<div className='hidden items-center gap-1 text-xs text-zinc-400 lg:flex dark:text-zinc-500'>
-						<Folder size={12} className='text-primary-700 dark:text-primary-400' />
-						<span className='max-w-[80px] truncate'>{state.workflow.folder}</span>
+					<div className='hidden items-center gap-1.5 lg:flex'>
+						<EditorTooltip label={`Folder: ${state.workflow.folder}`}>
+							<span
+								role='img'
+								aria-label={`Folder: ${state.workflow.folder}`}
+								className='flex h-7 w-7 items-center justify-center rounded-lg'>
+								<Folder
+									size={14}
+									className='text-primary-700 dark:text-primary-400'
+								/>
+							</span>
+						</EditorTooltip>
 						<span className='text-zinc-300 dark:text-zinc-700'>/</span>
 					</div>
 				)}
@@ -505,7 +506,7 @@ const Topbar = () => {
 				<EditableWorkflowName name={state.workflow.name} onSave={handleRenameWorkflow} />
 
 				{/* Draft vs. live */}
-				<EditorTooltip label='Version history'>
+				<EditorTooltip label={`${draftStatusLabel} · Version history`}>
 					<DraftStatusPill
 						onClick={openVersionHistory}
 						className={`hidden sm:inline-flex ${FOCUS_RING}`}
@@ -513,10 +514,14 @@ const Topbar = () => {
 				</EditorTooltip>
 
 				{/* Node Count Chip */}
-				<EditorTooltip label='Canvas nodes and connections'>
-					<div className='bg-primary-100/50 text-primary-800 dark:bg-primary-400/10 dark:text-primary-300/90 hidden items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-medium xl:flex'>
-						<Layers size={11} className='text-primary-700 dark:text-primary-400' />
-						<span>{state.nodes.length} nodes</span>
+				<EditorTooltip
+					label={`${state.nodes.length} nodes · ${state.edges.length} connections`}>
+					<div
+						role='img'
+						aria-label={`${state.nodes.length} nodes, ${state.edges.length} connections`}
+						className='text-primary-800 dark:text-primary-300/90 hidden h-7 items-center gap-1 rounded-lg px-1.5 text-[11px] font-semibold tabular-nums xl:flex'>
+						<Layers size={14} className='text-primary-700 dark:text-primary-400' />
+						<span>{state.nodes.length}</span>
 					</div>
 				</EditorTooltip>
 
