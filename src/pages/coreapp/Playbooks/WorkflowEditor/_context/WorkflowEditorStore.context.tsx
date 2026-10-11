@@ -2,6 +2,7 @@ import { getOutputPorts } from '../_helper/outputPorts.helper';
 import { canExposeInput, dynamicInputId } from '../_helper/dynamicInputs.helper';
 import { buildOutputToken } from '../_helper/tokenDrag.helper';
 import { createContext } from 'react';
+import type { TApiIssue } from '@/api/core';
 import { HISTORY_LIMIT } from '../_helper/builder.constants';
 import { getNodeDefinition } from '../_helper/nodeCatalog.constants';
 
@@ -20,6 +21,7 @@ import type {
 } from '../_types/node.type';
 import type { TRunLog, TRunRecord } from '../_types/run.type';
 import type {
+	TEditorUiState,
 	TExportedWorkflow,
 	TWorkflowEditorState,
 	TWorkflowMeta,
@@ -118,6 +120,8 @@ export type TWorkflowEditorAction =
 	| { type: 'SET_TEMPLATE_LIBRARY'; open: boolean }
 	| { type: 'SET_NODE_DOC'; open: boolean; nodeId?: string | null }
 	| { type: 'SET_NODE_EXPANDED'; open: boolean; nodeId?: string | null }
+	| { type: 'SET_ISSUES_PANEL'; open: boolean; serverIssues?: TApiIssue[] }
+	| { type: 'FOCUS_FIELD'; nodeId: string; fieldKey: string | null }
 	| { type: 'SET_DIFF_VIEWER'; open: boolean }
 	| { type: 'SET_STEP_MODE'; enabled: boolean }
 	| { type: 'STEP_WAIT' }
@@ -183,6 +187,9 @@ export const initialWorkflowEditorState: TWorkflowEditorState = {
 		nodeDocNodeId: null,
 		nodeTestRequestId: 0,
 		nodeTestRequestNodeId: null,
+		issuesPanelOpen: false,
+		serverIssues: [],
+		fieldFocus: null,
 		nodeExpandedOpen: false,
 		nodeExpandedId: null,
 		stepMode: false,
@@ -214,6 +221,19 @@ const withHistory = (state: TWorkflowEditorState): TWorkflowEditorState => ({
 		future: [],
 	},
 });
+
+/** The editor's UI state minus the server's complaints about one step field (or the whole step). */
+const withoutServerIssue = (
+	ui: TEditorUiState,
+	nodeId: string,
+	fieldKey: string,
+): TEditorUiState => {
+	const remaining = ui.serverIssues.filter(
+		(issue) =>
+			!(issue.node_key === nodeId && (issue.field === fieldKey || issue.field === null)),
+	);
+	return remaining.length === ui.serverIssues.length ? ui : { ...ui, serverIssues: remaining };
+};
 
 const makeNode = (
 	defKey: string,
@@ -378,6 +398,8 @@ export const workflowEditorReducer = (
 							}
 						: node,
 				),
+				// The server's complaint about this field is answered by editing it.
+				ui: withoutServerIssue(state.ui, action.id, action.fieldKey),
 			};
 		case 'RENAME_NODE':
 			return {
@@ -933,6 +955,34 @@ export const workflowEditorReducer = (
 					...state.ui,
 					nodeDocOpen: action.open,
 					nodeDocNodeId: action.nodeId ?? state.ui.nodeDocNodeId,
+				},
+			};
+		case 'SET_ISSUES_PANEL':
+			return {
+				...state,
+				ui: {
+					...state.ui,
+					issuesPanelOpen: action.open,
+					serverIssues: action.serverIssues ?? state.ui.serverIssues,
+				},
+			};
+		case 'FOCUS_FIELD':
+			return {
+				...state,
+				nodes: state.nodes.map((node) =>
+					node.id === action.nodeId && node.data.collapsed
+						? { ...node, data: { ...node.data, collapsed: false } }
+						: node,
+				),
+				ui: {
+					...state.ui,
+					selectedNodeId: action.nodeId,
+					selectedNodeIds: [action.nodeId],
+					fieldFocus: {
+						nodeId: action.nodeId,
+						fieldKey: action.fieldKey,
+						requestId: (state.ui.fieldFocus?.requestId ?? 0) + 1,
+					},
 				},
 			};
 		case 'SET_NODE_EXPANDED':

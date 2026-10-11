@@ -1,3 +1,4 @@
+import type { TApiIssue } from '@/api/core';
 import type { TCanvasEdge, TCanvasNode, TCanvasSnapshot } from './canvas.type';
 import type { TRunRecord, TRunState } from './run.type';
 
@@ -48,6 +49,12 @@ export type TEditorUiState = {
 	runPanelTab: 'console' | 'results' | 'history';
 	runPanelResultKey: string | null;
 	runPanelResultRequestId: number;
+	/** The "Fix before publishing" checklist. */
+	issuesPanelOpen: boolean;
+	/** What the server refused the last publish for, until the step is edited. */
+	serverIssues: TApiIssue[];
+	/** Asks a step's field to scroll into view and glow — bumped per request. */
+	fieldFocus: { nodeId: string; fieldKey: string | null; requestId: number } | null;
 };
 
 export type THistoryState = {

@@ -1,5 +1,6 @@
 import type { AxiosError, AxiosInstance } from 'axios';
 import { ApiError } from '@/api/core/errors';
+import type { TApiIssue } from '@/api/core/errors';
 
 // ============================================================
 // Normalize Error
@@ -12,11 +13,15 @@ import { ApiError } from '@/api/core/errors';
 type TErrorBody = {
 	message?: string;
 	errors?: Record<string, string[]> | string[];
+	/** Workflow validation: each problem with its step, field and a user-facing message. */
+	issues?: TApiIssue[];
 };
 
 const MAX_LISTED_ERRORS = 3;
 
-// Graph validation answers with a plain list of reasons instead of a field map.
+// Graph validation answers with a list of reasons instead of a field map. When
+// it also sends `issues`, their user-facing messages are listed instead of the
+// technical `errors` wording.
 const withListedErrors = (message: string, errors: string[]) => {
 	if (errors.length === 0) return message;
 	const listed = errors.slice(0, MAX_LISTED_ERRORS).join(' ');
@@ -32,11 +37,20 @@ export const normalizeError = (client: AxiosInstance) => {
 			const message =
 				error.response?.data?.message || error.message || 'Something went wrong';
 			const errors = error.response?.data?.errors;
+			const issues = error.response?.data?.issues ?? [];
 
 			return Promise.reject(
 				Array.isArray(errors)
-					? new ApiError(status, withListedErrors(message, errors))
-					: new ApiError(status, message, errors),
+					? new ApiError(
+							status,
+							withListedErrors(
+								message,
+								issues.length > 0 ? issues.map((issue) => issue.message) : errors,
+							),
+							undefined,
+							issues,
+						)
+					: new ApiError(status, message, errors, issues),
 			);
 		},
 	);

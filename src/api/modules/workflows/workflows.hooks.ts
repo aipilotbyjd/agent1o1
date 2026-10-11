@@ -338,7 +338,8 @@ export const useCreateWorkflowVersion = (ws: string) => {
 		mutationFn: ({ workflowId }: { workflowId: string }) =>
 			WorkflowVersionService.publish(ws, workflowId),
 		onSuccess: () => qc.invalidateQueries({ queryKey: workflowKeys.lists(ws) }),
-		meta: { errorMessage: 'Failed to create a workflow version' },
+		// A refused publish (422) lists what to fix; the editor shows that itself.
+		meta: { errorMessage: 'Failed to create a workflow version', silentStatuses: [422] },
 	});
 };
 

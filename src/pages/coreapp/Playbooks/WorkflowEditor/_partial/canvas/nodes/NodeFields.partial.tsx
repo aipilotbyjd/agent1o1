@@ -8,6 +8,8 @@ import FieldInput from './FieldInput.partial';
 import NodeHelpTip from './NodeHelpTip.partial';
 
 const COLLAPSED_COUNT = 3;
+/** How long a field glows after the checklist jumps to it. */
+const FOCUS_GLOW_MS = 1800;
 const NO_DYNAMIC_INPUTS: string[] = [];
 
 type Props = {
@@ -47,6 +49,24 @@ const NodeFields = ({ nodeId, fields, values, forceExpanded }: Props) => {
 		};
 	}, [fields, dynamicKeys]);
 
+	// The "Fix before publishing" checklist asks a field to show itself: open
+	// the extra options if it's hidden there, then glow it briefly.
+	const focus = state.ui.fieldFocus?.nodeId === nodeId ? state.ui.fieldFocus : null;
+	const [handledFocus, setHandledFocus] = useState(0);
+	const [glowKey, setGlowKey] = useState<string | null>(null);
+	if (focus && focus.requestId !== handledFocus) {
+		setHandledFocus(focus.requestId);
+		setGlowKey(focus.fieldKey);
+		if (focus.fieldKey && extra.some((field) => field.key === focus.fieldKey))
+			setExpanded(true);
+	}
+
+	useEffect(() => {
+		if (!glowKey) return;
+		const timer = setTimeout(() => setGlowKey(null), FOCUS_GLOW_MS);
+		return () => clearTimeout(timer);
+	}, [glowKey, handledFocus]);
+
 	useEffect(() => {
 		if (!forceExpanded) updateNodeInternals(nodeId);
 	}, [nodeId, updateNodeInternals, dynamicKeys, expanded, forceExpanded]);
@@ -60,7 +80,13 @@ const NodeFields = ({ nodeId, fields, values, forceExpanded }: Props) => {
 			className='nodrag nowheel flex flex-col gap-3'
 			onPointerDown={(event) => event.stopPropagation()}>
 			{visible.map((field) => (
-				<div key={field.key} className='relative'>
+				<div
+					key={field.key}
+					className={`relative rounded-lg transition-shadow duration-500 ${
+						glowKey === field.key
+							? 'ring-primary-400/70 ring-2 ring-offset-4 ring-offset-white dark:ring-offset-zinc-950'
+							: ''
+					}`}>
 					{!forceExpanded && dynamicKeys.includes(field.key) && (
 						<Handle
 							id={dynamicInputId(field.key)}
@@ -81,7 +107,11 @@ const NodeFields = ({ nodeId, fields, values, forceExpanded }: Props) => {
 								Dynamic input
 							</span>
 						)}
-						{field.required && <span className='text-rose-500'>*</span>}
+						{field.required && (
+							<span className='text-[9px] font-medium text-zinc-400 dark:text-zinc-500'>
+								Required
+							</span>
+						)}
 						{field.help && <NodeHelpTip text={field.help} />}
 					</div>
 					<FieldInput

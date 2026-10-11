@@ -5,11 +5,23 @@
 // interceptor rejects with an instance of this class, so anything
 // that catches an API error can rely on this shape.
 // ============================================================
+
+/**
+ * A problem the server pinned to a place — e.g. a workflow step (`node_key`)
+ * and its config field — with a message written for the user.
+ */
+export type TApiIssue = {
+	node_key: string | null;
+	field: string | null;
+	message: string;
+};
+
 export class ApiError extends Error {
 	constructor(
 		public readonly status: number | undefined,
 		message: string,
 		public readonly fields?: Record<string, string[]>,
+		public readonly issues: TApiIssue[] = [],
 	) {
 		super(message);
 		this.name = 'ApiError';

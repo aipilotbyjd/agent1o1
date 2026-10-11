@@ -39,6 +39,7 @@ import { Link } from 'react-router';
 import DARK_MODE from '@/constants/darkMode.constant';
 import useDarkMode from '@/hooks/useDarkMode';
 import { useCreateWorkflowVersion } from '@/api/modules/workflows';
+import IssuesChecklist from './IssuesChecklist.partial';
 import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { ApiError, notify } from '@/api/core';
 import { usePersistWorkflowDraft } from '../../_hooks/usePersistWorkflowDraft.hook';
@@ -479,7 +480,11 @@ const Topbar = () => {
 				edges: state.edges,
 			});
 		} catch (error) {
-			notify.error(ApiError.is(error) ? error.message : 'Could not save the workflow');
+			if (ApiError.is(error) && error.issues.length > 0) {
+				dispatch({ type: 'SET_ISSUES_PANEL', open: true, serverIssues: error.issues });
+			} else {
+				notify.error(ApiError.is(error) ? error.message : 'Could not save the workflow');
+			}
 			dispatch({ type: 'SET_SAVE_STATE', savingState: 'error' });
 			publishingRef.current = false;
 			return;
@@ -501,7 +506,11 @@ const Topbar = () => {
 				},
 			});
 		} catch (error) {
-			notify.error(ApiError.is(error) ? error.message : 'Could not publish the workflow');
+			// A refused publish opens the checklist; anything else was already
+			// toasted by the query client.
+			if (ApiError.is(error) && error.status === 422) {
+				dispatch({ type: 'SET_ISSUES_PANEL', open: true, serverIssues: error.issues });
+			}
 			const current = stateRef.current;
 			const changed = current.nodes !== draft.nodes || current.edges !== draft.edges;
 			dispatch({ type: 'SET_SAVE_STATE', savingState: changed ? 'dirty' : 'saved' });
@@ -814,6 +823,8 @@ const Topbar = () => {
 				<div className='flex items-center'>
 					<NotificationsDropdown />
 				</div>
+
+				<IssuesChecklist />
 
 				{/* Save Split Button */}
 				<div

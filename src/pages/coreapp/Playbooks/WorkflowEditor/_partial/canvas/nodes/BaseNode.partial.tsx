@@ -246,16 +246,23 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 			)}
 
 			{hasWarning && (
-				<div
-					title={validationIssues.map((issue) => issue.message).join('\n')}
+				<button
+					type='button'
+					title={`Needs setup:\n${validationIssues.map((issue) => issue.message).join('\n')}`}
+					aria-label='Needs setup — show what to fix'
+					onPointerDown={(event) => event.stopPropagation()}
+					onClick={(event) => {
+						event.stopPropagation();
+						dispatch({ type: 'SET_ISSUES_PANEL', open: true });
+					}}
 					className={[
-						'absolute -top-1.5 -right-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full border shadow-sm transition-transform duration-200 group-hover:scale-110',
+						'nodrag absolute -top-1.5 -right-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full border shadow-sm transition-transform duration-200 group-hover:scale-110',
 						hasError
 							? 'border-rose-200 bg-rose-500 text-white'
 							: 'border-amber-200 bg-amber-400 text-zinc-950',
 					].join(' ')}>
 					<TriangleAlert size={12} />
-				</div>
+				</button>
 			)}
 
 			{canBeTrigger && <NodeFlowTriggerToggle nodeId={id} active={isFlowTrigger} />}
