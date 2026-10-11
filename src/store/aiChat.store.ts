@@ -7,10 +7,12 @@ import {
 import type {
 	TBuilderMessage,
 	TBuilderMessageAction,
+	TBuilderMessageMode,
 	TBuilderSession,
 } from '@/types/workflow-builder.type';
+import type { TChatAttachment } from '@/utils/chatAttachments.util';
 
-export type TAiChatMode = 'build' | 'ask';
+export type TAiChatMode = TBuilderMessageMode;
 
 /**
  * One entry in the live "scratchpad" — an ordered timeline of reasoning text
@@ -38,6 +40,14 @@ export type TAiChatMessage = {
 	/** Present on a failed send — lets the transcript offer a one-click Retry. */
 	retryPrompt?: string;
 	retryMode?: TAiChatMode;
+	/** The files that failed send carried, so Retry uploads them again. */
+	retryFiles?: File[];
+	/** What a user message asked for. */
+	mode?: TAiChatMode;
+	/** Files sent with a user message. */
+	attachments?: TChatAttachment[];
+	/** The files as sent from this tab — thumbnails before the stored copies exist. */
+	files?: File[];
 	/**
 	 * The live scratchpad (reasoning + tool calls) captured at the moment this
 	 * reply finished, so "what the AI did" stays visible/collapsible under the
@@ -117,9 +127,9 @@ type TAiChatState = {
 	/** Reload chat and canvas from the backend session (e.g. after an undo). */
 	rehydrate: () => void;
 
-	startChat: (initialPrompt: string, mode?: TAiChatMode) => void;
-	sendMessage: (prompt: string, mode?: TAiChatMode) => void;
-	submitPrompt: (prompt: string, mode?: TAiChatMode) => void;
+	startChat: (initialPrompt: string, mode?: TAiChatMode, files?: File[]) => void;
+	sendMessage: (prompt: string, mode?: TAiChatMode, files?: File[]) => void;
+	submitPrompt: (prompt: string, mode?: TAiChatMode, files?: File[]) => void;
 
 	// Called by the realtime bridge as a reply streams in.
 	appendTextDelta: (delta: string) => void;
@@ -128,7 +138,12 @@ type TAiChatState = {
 
 	// Called by the realtime bridge when the backend finishes processing.
 	applyReadyMessage: (message: TBuilderMessage) => void;
-	failPending: (message?: string, retryPrompt?: string, retryMode?: TAiChatMode) => void;
+	failPending: (
+		message?: string,
+		retryPrompt?: string,
+		retryMode?: TAiChatMode,
+		retryFiles?: File[],
+	) => void;
 	// Rebuilds chat state from the authoritative backend session (on reload/resume).
 	hydrateFromBackend: (session: TBuilderSession) => void;
 
@@ -196,7 +211,36 @@ const mapBackendMessage = (m: TBuilderMessage): TAiChatMessage => ({
 		m.processing_status === 'failed' ? (m.error_message ?? 'Something went wrong.') : m.content,
 	timestamp: formatTs(m.created_at),
 	isError: m.processing_status === 'failed',
+	mode: m.role === 'user' ? m.mode : undefined,
 	actionsSummary: m.actions && m.actions.length > 0 ? m.actions : undefined,
+	attachments: m.attachments?.length
+		? m.attachments.map((artifact) => ({
+				id: artifact.id,
+				filename: artifact.filename,
+				size: artifact.size,
+				mimeType: artifact.mime_type,
+				previewUrl: artifact.preview_url,
+			}))
+		: undefined,
+});
+
+/** A user message as shown the moment it is sent, before the backend has it. */
+const localUserMessage = (text: string, files: File[], mode: TAiChatMode): TAiChatMessage => ({
+	id: makeId(),
+	role: 'user',
+	text,
+	mode,
+	timestamp: getCurrentTimeStr(),
+	...(files.length
+		? {
+				files,
+				attachments: files.map((file) => ({
+					filename: file.name,
+					size: file.size,
+					mimeType: file.type || undefined,
+				})),
+			}
+		: {}),
 });
 
 const INITIAL_SESSION_ID = makeSessionId();
@@ -275,16 +319,11 @@ export const useAiChatStore = create<TAiChatState>()(
 					};
 				}),
 
-			startChat: (initialPrompt, mode) => {
+			startChat: (initialPrompt, mode = 'build', files = []) => {
 				const clean = initialPrompt.trim();
 				if (!clean) return;
 
-				const userMsg: TAiChatMessage = {
-					id: makeId(),
-					role: 'user',
-					text: clean,
-					timestamp: getCurrentTimeStr(),
-				};
+				const userMsg = localUserMessage(clean, files, mode);
 
 				const messages = [WELCOME_MESSAGE, userMsg];
 				set((state) => ({
@@ -302,19 +341,14 @@ export const useAiChatStore = create<TAiChatState>()(
 					),
 				}));
 
-				get().submitPrompt(clean, mode);
+				get().submitPrompt(clean, mode, files);
 			},
 
-			sendMessage: (prompt, mode) => {
+			sendMessage: (prompt, mode = 'build', files = []) => {
 				const clean = prompt.trim();
 				if (!clean) return;
 
-				const userMsg: TAiChatMessage = {
-					id: makeId(),
-					role: 'user',
-					text: clean,
-					timestamp: getCurrentTimeStr(),
-				};
+				const userMsg = localUserMessage(clean, files, mode);
 
 				const messages = [...get().messages, userMsg];
 				set((state) => ({
@@ -330,7 +364,7 @@ export const useAiChatStore = create<TAiChatState>()(
 					),
 				}));
 
-				get().submitPrompt(clean, mode);
+				get().submitPrompt(clean, mode, files);
 			},
 
 			/**
@@ -341,7 +375,7 @@ export const useAiChatStore = create<TAiChatState>()(
 			 * realtime channel (or the bridge's poll) — here we only start it and
 			 * surface transport-level failures.
 			 */
-			submitPrompt: (prompt, mode) => {
+			submitPrompt: (prompt, mode = 'build', files = []) => {
 				const { workspaceId } = get();
 
 				if (!workspaceId) {
@@ -353,13 +387,6 @@ export const useAiChatStore = create<TAiChatState>()(
 					return;
 				}
 
-				// "Ask" mode sends the same message but tells the builder not to touch
-				// the canvas — the displayed chat bubble stays the clean prompt text.
-				const apiPrompt =
-					mode === 'ask'
-						? `[Ask mode: answer the question below about this workflow. Do not add, remove, or modify any nodes or connections — just explain.]\n\n${prompt}`
-						: prompt;
-
 				get()
 					.ensureBuilderSession()
 					.then(async (sessionId) => {
@@ -367,7 +394,9 @@ export const useAiChatStore = create<TAiChatState>()(
 							workspaceId,
 							sessionId,
 							{
-								message: apiPrompt,
+								message: prompt,
+								mode,
+								attachments: files,
 							},
 						);
 						set({ pendingMessageId: reply.id });
@@ -377,7 +406,7 @@ export const useAiChatStore = create<TAiChatState>()(
 							(error as { response?: { data?: { message?: string } } })?.response
 								?.data?.message ??
 							'Could not reach the workflow builder. Please try again.';
-						get().failPending(message, prompt, mode);
+						get().failPending(message, prompt, mode, files);
 					});
 			},
 
@@ -501,7 +530,7 @@ export const useAiChatStore = create<TAiChatState>()(
 				});
 			},
 
-			failPending: (message, retryPrompt, retryMode) => {
+			failPending: (message, retryPrompt, retryMode, retryFiles) => {
 				const text = message ?? 'Something went wrong generating the workflow.';
 				set((state) => {
 					const errMsg: TAiChatMessage = {
@@ -512,6 +541,7 @@ export const useAiChatStore = create<TAiChatState>()(
 						isError: true,
 						retryPrompt,
 						retryMode,
+						retryFiles: retryFiles?.length ? retryFiles : undefined,
 					};
 					const messages = [...state.messages, errMsg];
 					return {
@@ -691,8 +721,14 @@ export const useAiChatStore = create<TAiChatState>()(
 			// backend conversation) and the local session list. Live chat state
 			// (messages/isChatActive) is NOT persisted — it is rehydrated from the
 			// authoritative backend session to avoid showing stale/disconnected chat.
+			// `File`s can't be serialized — a reload shows the stored copies instead.
 			partialize: (state) => ({
-				sessions: state.sessions,
+				sessions: state.sessions.map((session) => ({
+					...session,
+					messages: session.messages.map(
+						({ files: _files, retryFiles: _retryFiles, ...message }) => message,
+					),
+				})),
 				activeSessionId: state.activeSessionId,
 				sessionByWorkflow: state.sessionByWorkflow,
 			}),

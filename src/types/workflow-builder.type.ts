@@ -6,6 +6,7 @@
 // it with the same helpers it uses for a saved workflow.
 
 import type { TApiIssue } from '@/api/core';
+import type { TArtifact } from './artifact.type';
 
 // ─── Draft graph ─────────────────────────────────────────────
 
@@ -47,10 +48,14 @@ export type TBuilderMessage = {
 	/** Who sent it — `null` on assistant replies and older messages. */
 	user_id: string | null;
 	role: 'user' | 'assistant';
+	/** What a user message asked for — `ask` answers without editing the draft. */
+	mode: TBuilderMessageMode;
 	content: string;
 	actions: TBuilderMessageAction[] | null;
 	processing_status: TBuilderMessageStatus;
 	error_message: string | null;
+	/** Files sent with a user message. */
+	attachments?: TArtifact[];
 	created_at: string;
 };
 
@@ -92,6 +97,8 @@ export type TCreateBuilderSessionDto = {
 	workflow_id?: string | null;
 	/** Sent as the session's first message straight away. */
 	prompt?: string;
+	/** How `prompt` is sent. Defaults to `build`. */
+	mode?: TBuilderMessageMode;
 };
 
 export type TUpdateBuilderSessionDto = {
@@ -104,7 +111,17 @@ export type TUpdateBuilderSessionDto = {
  *  the server answers 409 if the assistant changed the draft since. */
 export type TSyncBuilderDraftDto = TBuilderGraph & { draft_lock_version: number };
 
-export type TSendBuilderMessageDto = { message: string };
+/** `build` edits the draft; `ask` only reads it — the backend gives that
+ *  turn no editing tools. */
+export type TBuilderMessageMode = 'build' | 'ask';
+
+export type TSendBuilderMessageDto = {
+	message: string;
+	/** Defaults to `build`. */
+	mode?: TBuilderMessageMode;
+	/** Sent as multipart `attachments[]` — the service builds the `FormData`. */
+	attachments?: File[];
+};
 
 export type TPromoteBuilderSessionDto = {
 	name?: string;

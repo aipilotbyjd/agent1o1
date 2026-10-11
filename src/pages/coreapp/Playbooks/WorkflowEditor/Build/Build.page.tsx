@@ -53,7 +53,7 @@ const BuildPage = () => {
 	const { workspaceId, workflowId } = useWorkflowRouteParams();
 	const apiState = useWorkflowApiLoader(workspaceId, workflowId);
 	const [leftPanelWidth, setLeftPanelWidth] = useState(320);
-	const [aiPanelWidth, setAiPanelWidth] = useState(400);
+	const [aiPanelWidth, setAiPanelWidth] = useState(460);
 	const [runPanelWidth, setRunPanelWidth] = useState(440);
 
 	const openMobileNodes = () => {
@@ -198,7 +198,7 @@ const BuildPage = () => {
 									) : (
 										<Resizable
 											size={{ width: aiPanelWidth, height: '100%' }}
-											minWidth={360}
+											minWidth={400}
 											maxWidth='45vw'
 											enable={{ right: true }}
 											onResize={(_e, _direction, ref) => {

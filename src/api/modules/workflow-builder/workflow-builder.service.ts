@@ -83,6 +83,17 @@ export const WorkflowBuilderSessionService = {
 			.then(unwrapKey<TWorkflow>('workflow')),
 };
 
+/** JSON, unless files ride along — then multipart, with each file under
+ *  `attachments[]`. */
+const messageBody = (payload: TSendBuilderMessageDto): TSendBuilderMessageDto | FormData => {
+	if (!payload.attachments?.length) return { message: payload.message, mode: payload.mode };
+	const form = new FormData();
+	form.append('message', payload.message);
+	if (payload.mode) form.append('mode', payload.mode);
+	payload.attachments.forEach((file) => form.append('attachments[]', file));
+	return form;
+};
+
 export const WorkflowBuilderMessageService = {
 	list: (ws: string, sessionId: string, signal?: AbortSignal) =>
 		axiosClient
@@ -96,10 +107,16 @@ export const WorkflowBuilderMessageService = {
 	 * background — follow it on the session channel or poll `detail()`.
 	 * 409 while a previous reply is still being written.
 	 */
-	send: (ws: string, sessionId: string, payload: TSendBuilderMessageDto) =>
-		axiosClient
-			.post<TApiResponse<{ message: TBuilderMessage }>>(E.messages(ws, sessionId), payload)
-			.then(unwrapKey<TBuilderMessage>('message')),
+	send: (ws: string, sessionId: string, payload: TSendBuilderMessageDto) => {
+		const body = messageBody(payload);
+		const config =
+			body instanceof FormData ? { headers: { 'Content-Type': undefined } } : undefined;
+		return axiosClient
+			.post<
+				TApiResponse<{ message: TBuilderMessage }>
+			>(E.messages(ws, sessionId), body, config)
+			.then(unwrapKey<TBuilderMessage>('message'));
+	},
 
 	detail: (ws: string, sessionId: string, messageId: string, signal?: AbortSignal) =>
 		axiosClient

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
@@ -58,6 +59,20 @@ import {
 	GitBranch,
 } from 'lucide-react';
 import type { TCanvasNode } from '../../_types/canvas.type';
+import AttachDrawer from '@/components/common/AttachDrawer';
+import {
+	ChatAttachmentTray,
+	FileDropOverlay,
+	MessageAttachments,
+} from '@/components/common/ChatAttachments';
+import useFileDrop from '@/hooks/useFileDrop';
+import paths from '@/Routes/paths';
+import {
+	IMAGE_AND_TEXT_ATTACHMENT_EXTENSIONS,
+	addChatAttachments,
+	canAttachFile,
+	filesFromPaste,
+} from '@/utils/chatAttachments.util';
 
 /** Starter prompts shown in the empty state, before the first message. */
 const STARTER_SUGGESTIONS: {
@@ -121,6 +136,12 @@ const mdComponents: Components = {
 		</a>
 	),
 };
+
+/** What a message that is only files asks for. */
+const filesOnlyPrompt = (mode: 'build' | 'ask') =>
+	mode === 'build'
+		? 'Build the workflow described in the attached files.'
+		: 'Please review the attached files.';
 
 /** Matches an in-progress `@mention` fragment at the end of typed text. */
 const MENTION_RE = /@([\w .-]*)$/;
@@ -283,8 +304,17 @@ const AiBuilderPanel = () => {
 	const pushAssistantNote = useAiChatStore((store) => store.pushAssistantNote);
 	const rehydrate = useAiChatStore((store) => store.rehydrate);
 	const { confirm } = useConfirm();
+	const navigate = useNavigate();
 
 	const [promptInput, setPromptInput] = useState('');
+	const [attachments, setAttachments] = useState<File[]>([]);
+	const [isAttachOpen, setIsAttachOpen] = useState(false);
+	const attachmentInputRef = useRef<HTMLInputElement>(null);
+	const addAttachments = (files: File[]) =>
+		setAttachments((current) =>
+			addChatAttachments(current, files, IMAGE_AND_TEXT_ATTACHMENT_EXTENSIONS),
+		);
+	const fileDrop = useFileDrop(addAttachments, !isThinking);
 	const [mode, setMode] = useState<'build' | 'ask'>('build');
 	const [showHistory, setShowHistory] = useState(false);
 	const [historyTab, setHistoryTab] = useState<'recent' | 'archived'>('recent');
@@ -411,15 +441,23 @@ const AiBuilderPanel = () => {
 
 	const handleSend = () => {
 		const clean = promptInput.trim();
-		if (!clean || isThinking) return;
+		if ((!clean && attachments.length === 0) || isThinking) return;
 		setPromptInput('');
+		setAttachments([]);
+		setIsAttachOpen(false);
 		setMentionQuery(null);
 		setStepsExpanded(true);
-		sendMessage(clean, mode);
+		// Files on their own are a complete request, as in an agent chat.
+		sendMessage(clean || filesOnlyPrompt(mode), mode, attachments);
 	};
 
-	const handleRetry = (retryPrompt: string, retryMode?: 'build' | 'ask') => {
-		sendMessage(retryPrompt, retryMode ?? 'build');
+	const handleRetry = (retryPrompt: string, retryMode?: 'build' | 'ask', retryFiles?: File[]) => {
+		sendMessage(retryPrompt, retryMode ?? 'build', retryFiles);
+	};
+
+	const selectAttachments = (files: FileList | null) => {
+		if (files?.length) addAttachments(Array.from(files));
+		if (attachmentInputRef.current) attachmentInputRef.current.value = '';
 	};
 
 	const handleExit = () => {
@@ -605,7 +643,12 @@ const AiBuilderPanel = () => {
 		'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80';
 
 	return (
-		<aside className='relative flex h-full w-full flex-col overflow-hidden border-r border-zinc-200 bg-white text-zinc-900 select-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100'>
+		<aside
+			{...fileDrop.dropProps}
+			className='relative flex h-full w-full flex-col overflow-hidden border-r border-zinc-200 bg-white text-zinc-900 select-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100'>
+			{fileDrop.isDragging && (
+				<FileDropOverlay hint='Images and text files, up to 25 MB' className='inset-2' />
+			)}
 			{/* Header */}
 			<div className='shrink-0 border-b border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950'>
 				<div className='flex items-center justify-between gap-2'>
@@ -732,6 +775,7 @@ const AiBuilderPanel = () => {
 									}
 									userAvatar={userAvatar}
 									onRetry={handleRetry}
+									ws={workspaceId}
 									nodes={state.nodes}
 								/>
 							</motion.div>
@@ -840,8 +884,36 @@ const AiBuilderPanel = () => {
 						))}
 					</div>
 				)}
+				{/* Files picked for the next message, above the input — as in an agent chat */}
+				<div className='mb-2 empty:hidden'>
+					<ChatAttachmentTray
+						files={attachments}
+						busy={isThinking}
+						onRemove={(file) =>
+							setAttachments((current) => current.filter((item) => item !== file))
+						}
+					/>
+				</div>
+				{isAttachOpen && (
+					<AttachDrawer
+						ws={workspaceId}
+						onClose={() => setIsAttachOpen(false)}
+						onUpload={() => {
+							setIsAttachOpen(false);
+							attachmentInputRef.current?.click();
+						}}
+						onAttach={(file) => addAttachments([file])}
+						canAttach={(filename) =>
+							canAttachFile(filename, IMAGE_AND_TEXT_ATTACHMENT_EXTENSIONS)
+						}
+						onOpenLibrary={() => navigate(paths.library(workspaceId))}
+						uploadHint='Images and text files, up to 25 MB'
+					/>
+				)}
 				<div
-					className={`relative rounded-2xl border p-3 shadow-xs transition-colors ${
+					className={`relative border p-3 shadow-xs transition-colors ${
+						isAttachOpen ? 'rounded-b-2xl' : 'rounded-2xl'
+					} ${
 						isThinking
 							? 'border-primary-300 bg-primary-50/30 ring-primary-200/60 dark:border-primary-700 dark:bg-primary-950/10 dark:ring-primary-900/40 ring-2'
 							: 'focus-within:border-primary-300 focus-within:ring-primary-200/60 dark:focus-within:border-primary-700 dark:focus-within:ring-primary-900/40 border-zinc-200 bg-zinc-50/50 focus-within:ring-2 dark:border-zinc-800 dark:bg-zinc-900'
@@ -869,7 +941,9 @@ const AiBuilderPanel = () => {
 						aria-label={
 							isThinking
 								? 'Responding…'
-								: 'Describe what you want to automate today... (@ to reference a node)'
+								: mode === 'ask'
+									? 'Ask about this workflow — nothing on the canvas will change (@ to reference a node)'
+									: 'Describe what you want to automate today... (@ to reference a node)'
 						}
 						ref={textareaRef}
 						value={promptInput}
@@ -877,6 +951,12 @@ const AiBuilderPanel = () => {
 						onChange={(e) => {
 							setPromptInput(e.target.value);
 							updateMentionQuery(e.target.value);
+						}}
+						onPaste={(e) => {
+							const files = filesFromPaste(e);
+							if (!files.length) return;
+							e.preventDefault();
+							addAttachments(files);
 						}}
 						onKeyDown={(e) => {
 							if (e.key === 'Enter' && !e.shiftKey && mentionQuery === null) {
@@ -888,7 +968,9 @@ const AiBuilderPanel = () => {
 						placeholder={
 							isThinking
 								? 'Responding…'
-								: 'Describe what you want to automate today... (@ to reference a node)'
+								: mode === 'ask'
+									? 'Ask about this workflow — nothing on the canvas will change (@ to reference a node)'
+									: 'Describe what you want to automate today... (@ to reference a node)'
 						}
 						className='max-h-[120px] min-h-[50px] w-full resize-none border-none bg-transparent p-0 text-sm text-zinc-800 placeholder-zinc-400 outline-none focus:ring-0 focus:outline-none disabled:cursor-not-allowed dark:text-zinc-200'
 					/>
@@ -896,11 +978,28 @@ const AiBuilderPanel = () => {
 					{/* Action Buttons inside Input Box */}
 					<div className='mt-2 flex items-center justify-between border-t border-zinc-100 pt-2 dark:border-zinc-800/80'>
 						<div className='flex items-center gap-1'>
+							<input
+								ref={attachmentInputRef}
+								type='file'
+								multiple
+								disabled={isThinking}
+								accept={IMAGE_AND_TEXT_ATTACHMENT_EXTENSIONS.join(',')}
+								onChange={(event) => selectAttachments(event.target.files)}
+								className='hidden'
+								aria-label='Choose files to attach'
+							/>
 							<button
 								type='button'
-								disabled
-								title='Attachments are coming soon'
-								className='flex h-7 w-7 cursor-not-allowed items-center justify-center rounded-lg text-zinc-300 dark:text-zinc-600'>
+								onClick={() => setIsAttachOpen((open) => !open)}
+								disabled={isThinking}
+								aria-label='Add files'
+								aria-expanded={isAttachOpen}
+								title='Add files'
+								className={`flex h-7 w-7 items-center justify-center rounded-lg transition disabled:cursor-not-allowed disabled:opacity-40 ${
+									isAttachOpen
+										? 'bg-zinc-100 text-zinc-800 dark:bg-white/10 dark:text-zinc-100'
+										: 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'
+								}`}>
 								<Paperclip size={14} />
 							</button>
 						</div>
@@ -950,7 +1049,7 @@ const AiBuilderPanel = () => {
 									aria-label='Submit'
 									type='button'
 									onClick={handleSend}
-									disabled={!promptInput.trim()}
+									disabled={!promptInput.trim() && attachments.length === 0}
 									className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex h-7 w-7 items-center justify-center rounded-full transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40'>
 									<ArrowUp size={14} strokeWidth={2.5} />
 								</button>
@@ -1251,12 +1350,14 @@ const ChatMessage = ({
 	userAvatar,
 	onRetry,
 	nodes,
+	ws,
 }: {
 	message: TAiChatMessage;
 	showHeader: boolean;
 	userAvatar: string;
-	onRetry: (prompt: string, mode?: 'build' | 'ask') => void;
+	onRetry: (prompt: string, mode?: 'build' | 'ask', files?: File[]) => void;
 	nodes: TCanvasNode[];
+	ws: string;
 }) => {
 	const isUser = message.role === 'user';
 	const [copied, setCopied] = useState(false);
@@ -1286,7 +1387,7 @@ const ChatMessage = ({
 			</div>
 
 			<div
-				className={`flex max-w-[82%] min-w-0 flex-col gap-1 ${isUser ? 'items-end' : 'items-start'}`}>
+				className={`flex max-w-[88%] min-w-0 flex-col gap-1 ${isUser ? 'items-end' : 'items-start'}`}>
 				{showHeader && (
 					<div
 						className={`flex items-center gap-1.5 px-1 text-[10.5px] font-bold text-zinc-500 dark:text-zinc-400 ${isUser ? 'flex-row-reverse' : ''}`}>
@@ -1299,6 +1400,23 @@ const ChatMessage = ({
 					</div>
 				)}
 
+				{isUser && message.mode === 'ask' && (
+					<span
+						title='Asked in Ask mode — the builder answered without changing the workflow'
+						className='flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-bold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'>
+						<HelpCircle size={10} />
+						Ask
+					</span>
+				)}
+
+				{isUser && message.attachments?.length ? (
+					<MessageAttachments
+						attachments={message.attachments}
+						files={message.files}
+						ws={ws}
+					/>
+				) : null}
+
 				{!isUser && (message.timeline?.length || message.actionsSummary?.length) ? (
 					<MessageSteps message={message} nodes={nodes} />
 				) : null}
@@ -1306,7 +1424,7 @@ const ChatMessage = ({
 				<div
 					className={`relative rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed shadow-xs ${
 						isUser
-							? 'border-primary-200/70 bg-primary-100 text-primary-950 dark:border-primary-500/20 dark:bg-primary-500/15 dark:text-primary-100 rounded-tr-sm border'
+							? 'border-primary-200/70 bg-primary-100 text-primary-950 dark:border-primary-500/20 dark:bg-primary-500/15 dark:text-primary-200 rounded-tr-sm border'
 							: message.isError
 								? 'rounded-tl-sm border border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-300'
 								: 'rounded-tl-sm border border-zinc-200 bg-white text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
@@ -1329,7 +1447,9 @@ const ChatMessage = ({
 					{message.isError && message.retryPrompt && (
 						<button
 							type='button'
-							onClick={() => onRetry(message.retryPrompt!, message.retryMode)}
+							onClick={() =>
+								onRetry(message.retryPrompt!, message.retryMode, message.retryFiles)
+							}
 							className='mt-2 flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-2.5 py-1 text-[11px] font-bold text-rose-600 shadow-xs hover:bg-rose-50 dark:border-rose-900/40 dark:bg-zinc-900 dark:text-rose-400 dark:hover:bg-rose-950/30'>
 							<RotateCcw size={11} />
 							<span>Retry</span>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router';
 import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { useAiChatStore } from '@/store/aiChat.store';
 import {
@@ -23,6 +24,16 @@ import {
 	Bot,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import AttachDrawer from '@/components/common/AttachDrawer';
+import { ChatAttachmentTray, FileDropOverlay } from '@/components/common/ChatAttachments';
+import useFileDrop from '@/hooks/useFileDrop';
+import paths from '@/Routes/paths';
+import {
+	IMAGE_AND_TEXT_ATTACHMENT_EXTENSIONS,
+	addChatAttachments,
+	canAttachFile,
+	filesFromPaste,
+} from '@/utils/chatAttachments.util';
 
 const suggestions = [
 	{
@@ -53,9 +64,16 @@ const CanvasEmptyState = () => {
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
-	const [attachedFiles, setAttachedFiles] = useState<{ name: string; size: string }[]>([]);
+	const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+	const [isAttachOpen, setIsAttachOpen] = useState(false);
+	const addAttachments = (files: File[]) =>
+		setAttachedFiles((prev) =>
+			addChatAttachments(prev, files, IMAGE_AND_TEXT_ATTACHMENT_EXTENSIONS),
+		);
+	const fileDrop = useFileDrop(addAttachments);
+	const navigate = useNavigate();
 	const [activeDropdown, setActiveDropdown] = useState<
-		'files' | 'config' | 'cloud' | 'gmail' | 'slack' | null
+		'config' | 'cloud' | 'gmail' | 'slack' | null
 	>(null);
 	const [autocompleteState, setAutocompleteState] = useState<{
 		type: 'slash' | 'at';
@@ -232,11 +250,8 @@ const CanvasEmptyState = () => {
 
 	const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const files = e.target.files;
-		if (!files || files.length === 0) return;
-		const file = files[0];
-		const sizeKb = Math.round(file.size / 1024);
-		setAttachedFiles((prev) => [...prev, { name: file.name, size: `${sizeKb} KB` }]);
-		setActiveDropdown(null);
+		if (files?.length) addAttachments(Array.from(files));
+		e.target.value = '';
 	};
 
 	const steps = [
@@ -277,15 +292,26 @@ const CanvasEmptyState = () => {
 
 	const handleGenerate = () => {
 		const cleanPrompt = prompt.trim();
-		if (!cleanPrompt) return;
+		if (!cleanPrompt && attachedFiles.length === 0) return;
 
-		startChat(cleanPrompt);
+		// Files on their own are a complete request, as in an agent chat.
+		startChat(
+			cleanPrompt ||
+				(mode === 'build'
+					? 'Build the workflow described in the attached files.'
+					: 'Please review the attached files.'),
+			mode,
+			attachedFiles,
+		);
+		setAttachedFiles([]);
+		setIsAttachOpen(false);
 
 		if (!state.ui.aiPanelOpen) {
 			dispatch({ type: 'TOGGLE_AI_PANEL' });
 		}
 
-		dispatch({ type: 'SET_EMPTY_CANVAS_VIEW', view: 'chat-started' });
+		// Ask mode answers in the chat — there is no build to show on the canvas.
+		if (mode === 'build') dispatch({ type: 'SET_EMPTY_CANVAS_VIEW', view: 'chat-started' });
 	};
 
 	return (
@@ -294,7 +320,15 @@ const CanvasEmptyState = () => {
 				<>
 					{/* Main Centered Content */}
 					<div className='mt-12 flex flex-1 flex-col items-center justify-center'>
-						<div className='pointer-events-auto w-full max-w-2xl'>
+						<div
+							{...fileDrop.dropProps}
+							className='pointer-events-auto relative w-full max-w-2xl'>
+							{fileDrop.isDragging && (
+								<FileDropOverlay
+									hint='Images and text files, up to 25 MB'
+									className='inset-0'
+								/>
+							)}
 							<AnimatePresence mode='wait'>
 								{!isGenerating ? (
 									<motion.div
@@ -304,6 +338,41 @@ const CanvasEmptyState = () => {
 										exit={{ opacity: 0, y: -15 }}
 										transition={{ duration: 0.25 }}
 										className='space-y-4'>
+										{isAttachOpen && (
+											<AttachDrawer
+												ws={state.workflow.workspaceId ?? ''}
+												docked={false}
+												onClose={() => setIsAttachOpen(false)}
+												onUpload={() => {
+													setIsAttachOpen(false);
+													fileInputRef.current?.click();
+												}}
+												onAttach={(file) => addAttachments([file])}
+												canAttach={(filename) =>
+													canAttachFile(
+														filename,
+														IMAGE_AND_TEXT_ATTACHMENT_EXTENSIONS,
+													)
+												}
+												onOpenLibrary={() =>
+													navigate(
+														paths.library(
+															state.workflow.workspaceId ?? '',
+														),
+													)
+												}
+												uploadHint='Images and text files, up to 25 MB'
+											/>
+										)}
+										<ChatAttachmentTray
+											files={attachedFiles}
+											busy={false}
+											onRemove={(file) =>
+												setAttachedFiles((prev) =>
+													prev.filter((item) => item !== file),
+												)
+											}
+										/>
 										{/* Prompter Container with Gradient Border */}
 										<div className='from-primary-300 via-primary-300 dark:from-primary-900/60 dark:via-primary-900/60 relative rounded-[18px] bg-gradient-to-tr to-orange-300 p-[1px] shadow-xl shadow-zinc-200/40 dark:to-orange-900/60 dark:shadow-black/20'>
 											{/* Backdrop Click Close for Dropdowns */}
@@ -350,8 +419,13 @@ const CanvasEmptyState = () => {
 												<input
 													type='file'
 													ref={fileInputRef}
+													multiple
+													accept={IMAGE_AND_TEXT_ATTACHMENT_EXTENSIONS.join(
+														',',
+													)}
 													onChange={handleFileUpload}
 													className='hidden'
+													aria-label='Choose files to attach'
 												/>
 
 												{/* Input Container */}
@@ -360,6 +434,12 @@ const CanvasEmptyState = () => {
 														ref={textareaRef}
 														value={prompt}
 														onChange={handleTextareaChange}
+														onPaste={(e) => {
+															const files = filesFromPaste(e);
+															if (!files.length) return;
+															e.preventDefault();
+															addAttachments(files);
+														}}
 														onKeyDown={(e) => {
 															if (e.key === 'Enter' && !e.shiftKey) {
 																e.preventDefault();
@@ -387,137 +467,26 @@ const CanvasEmptyState = () => {
 													)}
 												</div>
 
-												{/* Attached Files List */}
-												{attachedFiles.length > 0 && (
-													<div className='flex flex-wrap gap-1.5 pb-2.5'>
-														{attachedFiles.map((file, idx) => (
-															<div
-																key={idx}
-																className='text-zinc-750 flex items-center gap-1.5 rounded-lg border border-zinc-200/60 bg-zinc-50 px-2 py-1 text-[11px] font-semibold dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:text-zinc-300'>
-																<Paperclip
-																	size={10}
-																	className='text-zinc-400'
-																/>
-																<span className='max-w-40 truncate'>
-																	{file.name}
-																</span>
-																<span className='text-[9px] font-medium text-zinc-400'>
-																	({file.size})
-																</span>
-																<button
-																	aria-label='Remove attached file'
-																	type='button'
-																	onClick={() =>
-																		setAttachedFiles((prev) =>
-																			prev.filter(
-																				(_, i) => i !== idx,
-																			),
-																		)
-																	}
-																	className='text-zinc-450 rounded p-0.5 transition hover:text-red-500'>
-																	<svg
-																		className='h-2.5 w-2.5 stroke-current'
-																		fill='none'
-																		viewBox='0 0 24 24'
-																		strokeWidth='3'>
-																		<path d='M6 18L18 6M6 6l12 12' />
-																	</svg>
-																</button>
-															</div>
-														))}
-													</div>
-												)}
-
 												{/* Action Toolbar */}
 												<div className='mt-3 flex items-center justify-between border-t border-zinc-100 pt-3 dark:border-zinc-800/80'>
 													{/* Left side integration icons */}
 													<div className='relative z-50 flex items-center gap-2.5'>
 														{/* Attach Files */}
-														<div className='relative'>
-															<button
-																type='button'
-																onClick={() =>
-																	setActiveDropdown((prev) =>
-																		prev === 'files'
-																			? null
-																			: 'files',
-																	)
-																}
-																aria-label='Attach files'
-																className='flex items-center justify-center rounded-md p-1 text-zinc-400 transition hover:bg-zinc-50 hover:text-zinc-700 dark:hover:bg-zinc-900 dark:hover:text-zinc-200'>
-																<Paperclip size={18} />
-															</button>
-															{activeDropdown === 'files' && (
-																<div className='absolute bottom-full left-0 z-50 mb-2.5 w-64 rounded-xl border border-zinc-200 bg-white/95 p-3 text-left shadow-xl backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-950/95'>
-																	<div className='mb-2 flex items-center gap-2 border-b border-zinc-100 pb-2 dark:border-zinc-800/50'>
-																		<Paperclip
-																			size={14}
-																			className='text-zinc-500'
-																		/>
-																		<span className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
-																			Attach Files
-																		</span>
-																	</div>
-																	<div className='space-y-1'>
-																		<button
-																			type='button'
-																			onClick={() =>
-																				fileInputRef.current?.click()
-																			}
-																			className='dark:text-zinc-350 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 dark:hover:bg-white/[0.04]'>
-																			<span>
-																				Upload from
-																				device...
-																			</span>
-																		</button>
-																		<button
-																			type='button'
-																			onClick={() => {
-																				setAttachedFiles(
-																					(prev) => [
-																						...prev,
-																						{
-																							name: 'sales_leads_june.csv',
-																							size: '42 KB',
-																						},
-																					],
-																				);
-																				setActiveDropdown(
-																					null,
-																				);
-																			}}
-																			className='dark:text-zinc-350 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 dark:hover:bg-white/[0.04]'>
-																			<span className='truncate'>
-																				Add
-																				sales_leads_june.csv
-																			</span>
-																		</button>
-																		<button
-																			type='button'
-																			onClick={() => {
-																				setAttachedFiles(
-																					(prev) => [
-																						...prev,
-																						{
-																							name: 'meeting_notes.pdf',
-																							size: '128 KB',
-																						},
-																					],
-																				);
-																				setActiveDropdown(
-																					null,
-																				);
-																			}}
-																			className='dark:text-zinc-355 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 dark:hover:bg-white/[0.04]'>
-																			<span className='truncate'>
-																				Add
-																				meeting_notes.pdf
-																			</span>
-																		</button>
-																	</div>
-																</div>
-															)}
-														</div>
+														<button
+															type='button'
+															onClick={() =>
+																setIsAttachOpen((open) => !open)
+															}
+															aria-label='Add files'
+															aria-expanded={isAttachOpen}
+															title='Add files'
+															className={`flex items-center justify-center rounded-md p-1 transition ${
+																isAttachOpen
+																	? 'bg-zinc-100 text-zinc-800 dark:bg-white/10 dark:text-zinc-100'
+																	: 'text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 dark:hover:bg-zinc-900 dark:hover:text-zinc-200'
+															}`}>
+															<Paperclip size={18} />
+														</button>
 
 														{/* Configurations */}
 														<div className='relative'>

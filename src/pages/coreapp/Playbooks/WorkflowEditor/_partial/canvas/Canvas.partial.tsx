@@ -540,7 +540,7 @@ const Canvas = () => {
 								dispatch({ type: 'SET_COMMAND_PALETTE', open: true });
 								setContextMenu(null);
 							}}
-							className='border-primary-100 bg-primary-50 text-primary-700 hover:bg-primary-100 dark:border-primary-500/20 dark:bg-primary-400/10 dark:text-primary-100 dark:hover:bg-primary-500/15 mt-1 flex w-full items-center gap-3 rounded-lg border px-2.5 py-2 text-left text-sm font-semibold transition'>
+							className='border-primary-100 bg-primary-50 text-primary-700 hover:bg-primary-100 dark:border-primary-500/20 dark:bg-primary-400/10 dark:text-primary-200 dark:hover:bg-primary-500/15 mt-1 flex w-full items-center gap-3 rounded-lg border px-2.5 py-2 text-left text-sm font-semibold transition'>
 							<span className='bg-primary-200/50 dark:bg-primary-400/15 flex h-8 w-8 items-center justify-center rounded-lg'>
 								<Zap size={15} className='text-primary-600 dark:text-primary-400' />
 							</span>

@@ -4,6 +4,7 @@ import {
 	fileIconFor,
 	fileSolidToneFor,
 	fileTypeLabel,
+	formatFileSize,
 	isImageFile,
 } from '@/utils/fileDisplay.util';
 
@@ -28,7 +29,7 @@ type TFilePreviewProps = {
 	size?: number | null;
 	/** Shown as a thumbnail for an image; without one an image gets its icon. */
 	previewUrl?: string | null;
-	/** Smaller line under the name, in place of the file's type. */
+	/** Smaller line under the name, in place of the file's type and size. */
 	caption?: ReactNode;
 	onClick?: () => void;
 	onRemove?: () => void;
@@ -42,12 +43,13 @@ type TFilePreviewProps = {
 /**
  * One file the way every chat surface shows it, as ChatGPT does: an image as
  * a square thumbnail, anything else as a small card with a solid coloured type
- * icon, its name and its type ("PDF", "Spreadsheet"). Used by the composer, sent messages, files
+ * icon, its name, its type ("PDF", "Spreadsheet") and size. Used by the composer, sent messages, files
  * an agent made, and the attach panel, so a file looks the same wherever it is.
  */
 const FilePreview = ({
 	filename,
 	mimeType,
+	size,
 	previewUrl,
 	caption,
 	onClick,
@@ -59,7 +61,11 @@ const FilePreview = ({
 }: TFilePreviewProps) => {
 	const isImage = isImageFile(mimeType, filename) && !!previewUrl;
 	const Icon = fileIconFor(mimeType, filename);
-	const details = caption ?? fileTypeLabel(mimeType, filename);
+	const details =
+		caption ??
+		[fileTypeLabel(mimeType, filename), size != null ? formatFileSize(size) : null]
+			.filter(Boolean)
+			.join(' · ');
 
 	const body = isImage ? (
 		<img

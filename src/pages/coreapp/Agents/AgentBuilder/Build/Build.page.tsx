@@ -169,9 +169,15 @@ import AgentPlanCard from './_partial/AgentPlanCard.partial';
 import AgentAutonomyPanel from './_partial/AgentAutonomyPanel.partial';
 import ChatModeBar from './_partial/ChatModeBar.partial';
 import SaveEvalCaseModal, { type TEvalCaseDraft } from './_partial/SaveEvalCaseModal.partial';
-import AttachDrawer from './_partial/AttachDrawer.partial';
-import FilePreview, { LocalFilePreview } from '@/components/common/FilePreview';
-import { fileIconFor, fileSolidToneFor, isImageFile } from '@/utils/fileDisplay.util';
+import AttachDrawer from '@/components/common/AttachDrawer';
+import { ChatAttachmentTray, MessageAttachments } from '@/components/common/ChatAttachments';
+import {
+	ATTACHMENT_EXTENSIONS,
+	addChatAttachments,
+	canAttachFile,
+	type TChatAttachment,
+} from '@/utils/chatAttachments.util';
+import { fileIconFor, fileSolidToneFor } from '@/utils/fileDisplay.util';
 import {
 	SkillCommandHighlight,
 	SkillCommandTag,
@@ -272,25 +278,6 @@ const SKILL_TOOL_VERBS: Record<string, { running: string; done: string; nameArg:
 	[CREATE_SKILL_TOOL]: { running: 'Creating', done: 'Created', nameArg: 'name' },
 	[UPDATE_SKILL_TOOL]: { running: 'Updating', done: 'Updated', nameArg: 'skill' },
 };
-const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
-const MAX_ATTACHMENTS = 10;
-const ATTACHMENT_EXTENSIONS = [
-	'.png',
-	'.jpg',
-	'.jpeg',
-	'.gif',
-	'.webp',
-	'.pdf',
-	'.txt',
-	'.md',
-	'.html',
-	'.csv',
-	'.json',
-	'.xml',
-	'.yaml',
-	'.yml',
-];
-
 const webhookUrlFor = (trigger: TTrigger) =>
 	`${import.meta.env.VITE_API_URL ?? ''}/triggers/${trigger.id}/${trigger.token ?? ''}`;
 
@@ -324,14 +311,7 @@ interface TMessage {
 	retryText?: string;
 	/** Files sent with a user message. `id` is the stored artifact's — absent on
 	 *  the copy shown while the turn is still in flight. */
-	attachments?: {
-		id?: string;
-		filename: string;
-		size: number;
-		mimeType?: string;
-		/** A short-lived link to show the stored file; absent until the turn is saved. */
-		previewUrl?: string | null;
-	}[];
+	attachments?: TChatAttachment[];
 	/** The files as sent from this tab, kept so Regenerate can upload them again. */
 	files?: File[];
 	/** The skill picked for this (user) message with `/`. */
@@ -376,87 +356,6 @@ const writeDraft = (key: string, value: string) => {
 const autoSizeComposer = (el: HTMLTextAreaElement) => {
 	el.style.height = 'auto';
 	el.style.height = `${el.scrollHeight}px`;
-};
-
-const ChatAttachmentTray = ({
-	files,
-	busy,
-	onRemove,
-}: {
-	files: File[];
-	busy: boolean;
-	onRemove: (file: File) => void;
-}) => {
-	if (files.length === 0) return null;
-	return (
-		<div className='flex flex-wrap gap-2 pt-1.5 pr-1.5' aria-live='polite'>
-			{files.map((file) => (
-				<LocalFilePreview
-					key={`${file.name}-${file.size}-${file.lastModified}`}
-					file={file}
-					onRemove={() => onRemove(file)}
-					removeDisabled={busy}
-				/>
-			))}
-		</div>
-	);
-};
-
-/** Files a member sent with a message, above its bubble. Downloadable once the
- *  turn is stored and the artifact has an id. */
-const MessageAttachments = ({
-	attachments,
-	files,
-	ws,
-}: {
-	attachments: NonNullable<TMessage['attachments']>;
-	/** The files as sent from this tab — thumbnails before the stored copies exist. */
-	files?: File[];
-	ws: string;
-}) => {
-	const downloadMutation = useDownloadArtifact(ws);
-
-	return (
-		<div className='mb-1.5 flex flex-wrap justify-end gap-2'>
-			{attachments.map((file, index) => {
-				const local = files?.[index];
-				const { id, previewUrl } = file;
-				// An image opens full size; any other stored file downloads.
-				const open =
-					previewUrl && isImageFile(file.mimeType, file.filename)
-						? () => window.open(previewUrl, '_blank', 'noopener,noreferrer')
-						: id
-							? () =>
-									downloadMutation.mutate({
-										artifactId: id,
-										filename: file.filename,
-									})
-							: undefined;
-				return local && !previewUrl ? (
-					<LocalFilePreview
-						key={`${file.filename}-${index}`}
-						file={local}
-						onClick={open}
-						imageSize='large'
-					/>
-				) : (
-					<FilePreview
-						key={id ?? `${file.filename}-${index}`}
-						imageSize='large'
-						filename={file.filename}
-						mimeType={file.mimeType}
-						size={file.size}
-						previewUrl={previewUrl}
-						onClick={open}
-						busy={
-							downloadMutation.isPending &&
-							downloadMutation.variables?.artifactId === id
-						}
-					/>
-				);
-			})}
-		</div>
-	);
 };
 
 const useDrawerFocus = (open: boolean, drawerRef: RefObject<HTMLDivElement | null>) => {
@@ -1311,45 +1210,10 @@ const BuildPage = () => {
 	}, [chatInput]);
 
 	const [isAttachOpen, setIsAttachOpen] = useState(false);
-	const canAttachFile = (filename: string) =>
-		ATTACHMENT_EXTENSIONS.some((extension) => filename.toLowerCase().endsWith(extension));
 
 	const selectChatAttachments = (files: FileList | File[] | null) => {
 		if (!files) return;
-		const accepted: File[] = [];
-		for (const file of Array.from(files)) {
-			if (
-				!ATTACHMENT_EXTENSIONS.some((extension) =>
-					file.name.toLowerCase().endsWith(extension),
-				)
-			) {
-				notify.error(
-					`${file.name}: use an image (JPEG, PNG, GIF, WebP), a PDF, or a text, Markdown, HTML, CSV, JSON, XML, or YAML file.`,
-				);
-				continue;
-			}
-			if (file.size > MAX_ATTACHMENT_BYTES) {
-				notify.error(`${file.name}: maximum file size is 25 MB.`);
-				continue;
-			}
-			accepted.push(file);
-		}
-		const added = accepted.filter(
-			(file) =>
-				!chatAttachments.some(
-					(existing) =>
-						existing.name === file.name &&
-						existing.size === file.size &&
-						existing.lastModified === file.lastModified,
-				),
-		);
-		if (chatAttachments.length + added.length > MAX_ATTACHMENTS) {
-			notify.error(`You can attach up to ${MAX_ATTACHMENTS} files per message.`);
-		}
-		setChatAttachments([
-			...chatAttachments,
-			...added.slice(0, Math.max(MAX_ATTACHMENTS - chatAttachments.length, 0)),
-		]);
+		setChatAttachments(addChatAttachments(chatAttachments, files));
 		if (attachmentInputRef.current) attachmentInputRef.current.value = '';
 	};
 	const removeChatAttachment = (file: File) => {

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Check, ChevronRight, Loader2, Upload, X } from 'lucide-react';
 import { notify } from '@/api/core';
 import { LibraryService, useLibrary } from '@/api/modules/library';
-import { fileIconFor, fileSolidToneFor } from '@/utils/fileDisplay.util';
+import { fileIconFor, fileSolidToneFor, fileTypeLabel } from '@/utils/fileDisplay.util';
 import type { TLibraryItem } from '@/types/library.type';
 
 const RECENT_COUNT = 12;
@@ -12,7 +12,8 @@ const RECENT_COUNT = 12;
  * box, sharing its border, with an upload from this computer and the recent
  * files from the Library to attach again in one click. A Library file is
  * fetched and attached like a fresh upload, so the message carries it the
- * same way either way.
+ * same way either way. `docked: false` draws it as a card of its own, for a
+ * composer it can't share a border with.
  */
 const AttachDrawer = ({
 	ws,
@@ -21,6 +22,8 @@ const AttachDrawer = ({
 	onAttach,
 	canAttach,
 	onOpenLibrary,
+	uploadHint = 'Images, PDFs and text files, up to 25 MB',
+	docked = true,
 }: {
 	ws: string;
 	onClose: () => void;
@@ -29,6 +32,9 @@ const AttachDrawer = ({
 	/** Whether a file of this name may be attached to a message. */
 	canAttach: (filename: string) => boolean;
 	onOpenLibrary: () => void;
+	/** What "Upload from computer" accepts, for a chat that takes fewer types. */
+	uploadHint?: string;
+	docked?: boolean;
 }) => {
 	const { data, isLoading } = useLibrary(ws, { per_page: RECENT_COUNT });
 	const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -58,7 +64,10 @@ const AttachDrawer = ({
 	};
 
 	return (
-		<div className='rounded-t-2xl border border-b-0 border-zinc-200 bg-zinc-50/80 px-3 pt-3 pb-2 dark:border-zinc-800 dark:bg-zinc-900/80'>
+		<div
+			className={`border border-zinc-200 bg-zinc-50/80 px-3 pt-3 pb-2 dark:border-zinc-800 dark:bg-zinc-900/80 ${
+				docked ? 'rounded-t-2xl border-b-0' : 'rounded-2xl shadow-lg'
+			}`}>
 			<div className='mb-2 flex items-center justify-between'>
 				<span className='text-[11px] font-black tracking-wide text-zinc-400 uppercase'>
 					Add to your message
@@ -84,7 +93,7 @@ const AttachDrawer = ({
 						Upload from computer
 					</span>
 					<span className='block text-[11px] font-medium text-zinc-500 dark:text-zinc-400'>
-						Images, PDFs and text files, up to 25 MB
+						{uploadHint}
 					</span>
 				</span>
 			</button>
@@ -101,13 +110,13 @@ const AttachDrawer = ({
 				</button>
 			</div>
 
-			<div className='no-scrollbar mt-1.5 flex gap-2 overflow-x-auto px-2 pb-1'>
+			<div className='no-scrollbar mt-1.5 flex gap-2.5 overflow-x-auto px-2 pb-1'>
 				{isLoading ? (
 					Array.from({ length: 6 }, (_, index) => (
-						<div
-							key={index}
-							className='h-16 w-16 shrink-0 animate-pulse rounded-xl bg-zinc-200/70 dark:bg-zinc-800'
-						/>
+						<div key={index} className='w-[72px] shrink-0'>
+							<div className='h-[72px] w-[72px] animate-pulse rounded-xl bg-zinc-200/70 dark:bg-zinc-800' />
+							<div className='mt-1.5 h-2 w-12 animate-pulse rounded bg-zinc-200/70 dark:bg-zinc-800' />
+						</div>
 					))
 				) : recent.length === 0 ? (
 					<p className='py-3 text-[11px] font-medium text-zinc-400'>
@@ -122,42 +131,49 @@ const AttachDrawer = ({
 								key={item.id}
 								type='button'
 								onClick={() => void attach(item)}
+								aria-pressed={isAttached}
 								title={
 									isAttached
 										? `${item.filename} (attached)`
 										: `Attach ${item.filename}`
 								}
-								className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border bg-white transition dark:bg-zinc-800 ${
-									isAttached
-										? 'border-primary-400 ring-primary-400/40 ring-2'
-										: 'border-zinc-200 hover:border-zinc-300 dark:border-zinc-700 dark:hover:border-zinc-600'
-								}`}>
-								{item.kind === 'image' && item.view_url ? (
-									<img
-										src={item.view_url}
-										alt={item.filename}
-										className='h-full w-full object-cover'
-									/>
-								) : (
-									<span className='flex h-full w-full flex-col items-center justify-center gap-1 px-1'>
-										<span
-											className={`flex h-7 w-7 items-center justify-center rounded-lg ${fileSolidToneFor(item.mime_type, item.filename)}`}>
-											<Icon size={14} />
+								className='group w-[72px] shrink-0 text-left'>
+								<span
+									className={`relative flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-xl border bg-white transition dark:bg-zinc-800 ${
+										isAttached
+											? 'border-primary-400 ring-primary-400/40 ring-2'
+											: 'border-zinc-200 group-hover:border-zinc-300 group-hover:shadow-sm dark:border-zinc-700 dark:group-hover:border-zinc-600'
+									}`}>
+									{item.kind === 'image' && item.view_url ? (
+										<img
+											src={item.view_url}
+											alt={item.filename}
+											className='h-full w-full object-cover'
+										/>
+									) : (
+										<span className='flex flex-col items-center gap-1'>
+											<span
+												className={`flex h-8 w-8 items-center justify-center rounded-lg ${fileSolidToneFor(item.mime_type, item.filename)}`}>
+												<Icon size={15} />
+											</span>
+											<span className='text-[9px] font-bold tracking-wide text-zinc-400 uppercase'>
+												{fileTypeLabel(item.mime_type, item.filename)}
+											</span>
 										</span>
-										<span className='w-full truncate text-center text-[9px] font-semibold text-zinc-500 dark:text-zinc-400'>
-											{item.filename}
+									)}
+									{(loadingId === item.id || isAttached) && (
+										<span className='absolute inset-0 flex items-center justify-center bg-black/40 text-white'>
+											{loadingId === item.id ? (
+												<Loader2 size={16} className='animate-spin' />
+											) : (
+												<Check size={18} strokeWidth={3} />
+											)}
 										</span>
-									</span>
-								)}
-								{(loadingId === item.id || isAttached) && (
-									<span className='absolute inset-0 flex items-center justify-center bg-black/40 text-white'>
-										{loadingId === item.id ? (
-											<Loader2 size={16} className='animate-spin' />
-										) : (
-											<Check size={18} strokeWidth={3} />
-										)}
-									</span>
-								)}
+									)}
+								</span>
+								<span className='mt-1 line-clamp-2 text-[10px] leading-tight font-semibold break-all text-zinc-600 dark:text-zinc-400'>
+									{item.filename}
+								</span>
 							</button>
 						);
 					})
