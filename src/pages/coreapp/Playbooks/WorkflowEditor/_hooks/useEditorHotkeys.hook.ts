@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { useWorkflowEditor } from './useWorkflowEditor.hook';
 import { useRunWorkflow } from '../_hooks/useRunWorkflow.hook';
+import { useAutoLayout } from './useAutoLayout.hook';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 
 export const isTypingTarget = (target: EventTarget | null) => {
@@ -14,6 +15,7 @@ export const useEditorHotkeys = () => {
 	const { runWorkflow, stopRun, stepNext } = useRunWorkflow();
 	// Safe here: WorkflowEditorLayout mounts ReactFlowProvider above this page.
 	const reactFlow = useReactFlow();
+	const autoLayout = useAutoLayout();
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
@@ -188,7 +190,7 @@ export const useEditorHotkeys = () => {
 			// Auto-layout
 			if (!isTypingTarget(event.target) && event.key.toLowerCase() === 'l') {
 				event.preventDefault();
-				dispatch({ type: 'AUTO_LAYOUT' });
+				autoLayout();
 				return;
 			}
 
@@ -235,6 +237,7 @@ export const useEditorHotkeys = () => {
 		state.ui.stepMode,
 		state.ui.waitingForStep,
 		reactFlow,
+		autoLayout,
 		runWorkflow,
 		stopRun,
 		stepNext,

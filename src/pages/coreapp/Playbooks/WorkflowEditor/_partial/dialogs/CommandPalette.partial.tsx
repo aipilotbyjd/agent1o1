@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
 import { NODE_CATALOG } from '../../_helper/nodeCatalog.constants';
 import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
+import { useAutoLayout } from '../../_hooks/useAutoLayout.hook';
 import { useRunWorkflow } from '../../_hooks/useRunWorkflow.hook';
 import Modal from './Modal.partial';
 
 const CommandPalette = () => {
 	const { state, dispatch } = useWorkflowEditor();
+	const autoLayout = useAutoLayout();
 	const { runWorkflow, stopRun } = useRunWorkflow();
 	const [query, setQuery] = useState('');
 	const needle = query.trim().toLowerCase();
@@ -31,7 +33,7 @@ const CommandPalette = () => {
 			label: 'Auto-layout canvas',
 			description: 'Reposition nodes into a readable flow',
 			shortcut: 'L',
-			action: () => dispatch({ type: 'AUTO_LAYOUT' }),
+			action: autoLayout,
 			category: 'Workflow',
 		},
 		{

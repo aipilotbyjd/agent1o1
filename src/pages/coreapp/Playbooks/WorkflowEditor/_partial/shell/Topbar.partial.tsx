@@ -41,6 +41,7 @@ import DARK_MODE from '@/constants/darkMode.constant';
 import useDarkMode from '@/hooks/useDarkMode';
 import IssuesChecklist from './IssuesChecklist.partial';
 import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
+import { useAutoLayout } from '../../_hooks/useAutoLayout.hook';
 import { usePersistWorkflowDraft } from '../../_hooks/usePersistWorkflowDraft.hook';
 import { useRunWorkflow } from '../../_hooks/useRunWorkflow.hook';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
@@ -373,6 +374,7 @@ const SaveStatusBadge = ({
 const Topbar = () => {
 	const persistWorkflowDraft = usePersistWorkflowDraft();
 	const { state, dispatch } = useWorkflowEditor();
+	const autoLayout = useAutoLayout();
 	const { isDarkTheme, setDarkModeStatus } = useDarkMode();
 	const { runWorkflow, stopRun } = useRunWorkflow();
 	const workspaceId = state.workflow.workspaceId ?? '';
@@ -625,10 +627,7 @@ const Topbar = () => {
 					</div>
 
 					{/* Auto-layout */}
-					<TopbarIconButton
-						label='Auto-layout canvas'
-						shortcut='L'
-						onClick={() => dispatch({ type: 'AUTO_LAYOUT' })}>
+					<TopbarIconButton label='Auto-layout canvas' shortcut='L' onClick={autoLayout}>
 						<LayoutGrid size={13} />
 					</TopbarIconButton>
 

@@ -7,6 +7,7 @@ import { HISTORY_LIMIT } from '../_helper/builder.constants';
 import { getNodeDefinition } from '../_helper/nodeCatalog.constants';
 
 import { autoLayout } from '../_helper/layout.helper';
+import { edgeCondition } from '../_helper/builderDraft.helper';
 import type {
 	TCanvasEdge,
 	TCanvasNode,
@@ -54,7 +55,7 @@ export type TWorkflowEditorAction =
 			targetHandle?: string;
 	  }
 	| { type: 'REMOVE_EDGE'; id: string }
-	| { type: 'AUTO_LAYOUT' }
+	| { type: 'AUTO_LAYOUT'; sizes: Map<string, { width: number; height: number }> }
 	| { type: 'UNDO' }
 	| { type: 'REDO' }
 	| { type: 'SET_WORKFLOW_META'; patch: Partial<TWorkflowMeta> }
@@ -581,7 +582,25 @@ export const workflowEditorReducer = (
 		}
 		case 'AUTO_LAYOUT': {
 			const next = withHistory(state);
-			return { ...next, nodes: autoLayout(next.nodes, next.edges) };
+			const laidOut = autoLayout(
+				next.nodes.map((node) => ({ ...node, measured: action.sizes.get(node.id) })),
+				next.edges.map((edge) => ({ ...edge, condition: edgeCondition(edge) })),
+				{
+					portOrder: (node) =>
+						getOutputPorts(
+							getNodeDefinition(node.data.defKey, node.data.definition),
+							node.data,
+						).map((port) => port.id),
+				},
+			);
+			const positions = new Map(laidOut.map((node) => [node.id, node.position]));
+			return {
+				...next,
+				nodes: next.nodes.map((node) => ({
+					...node,
+					position: positions.get(node.id) ?? node.position,
+				})),
+			};
 		}
 		case 'UNDO': {
 			const previous = state.history.past[state.history.past.length - 1];
