@@ -459,7 +459,7 @@ const Topbar = () => {
 	const hasUnpublishedWork = draftStatus === 'changed' || draftStatus === 'unpublished';
 
 	return (
-		<header className='relative z-20 flex h-14 shrink-0 items-center justify-between border-b border-zinc-200/80 bg-white/90 px-3 backdrop-blur-md select-none sm:px-4 dark:border-white/[0.08] dark:bg-[#07080b]/90'>
+		<header className='relative z-40 flex h-14 shrink-0 items-center justify-between border-b border-zinc-200/80 bg-white/90 px-3 backdrop-blur-md select-none sm:px-4 dark:border-white/[0.08] dark:bg-[#07080b]/90'>
 			{/* Primary accent hairline tying the bar to the brand colour. */}
 			<span
 				aria-hidden
