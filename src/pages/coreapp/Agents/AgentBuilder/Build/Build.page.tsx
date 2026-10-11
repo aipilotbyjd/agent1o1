@@ -79,6 +79,7 @@ import DARK_MODE from '@/constants/darkMode.constant';
 import pages from '@/Routes/pages';
 import paths, { withWorkspace } from '@/Routes/paths';
 import { useWorkspaceContext } from '@/context/workspace';
+import ModelPicker from '@/components/ai/model-picker/ModelPicker';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import {
 	useAgent,
@@ -1062,19 +1063,7 @@ const BuildPage = () => {
 	const fireTriggerMutation = useFireAgentTrigger(workspaceId, currentAgentId ?? '');
 	const [isTriggerPanelOpen, setIsTriggerPanelOpen] = useState(false);
 
-	const { data: metaModelGroups } = useAgentMetaModels(workspaceId);
-	const modelOptions = useMemo(
-		() =>
-			(metaModelGroups ?? []).map((entry) => ({
-				id: entry.id,
-				slug: entry.slug,
-				label: entry.display_name,
-				tier: entry.brand,
-				description: entry.slug,
-				isAvailable: entry.is_available,
-			})),
-		[metaModelGroups],
-	);
+	const { data: catalogModels } = useAgentMetaModels(workspaceId);
 
 	const [newTriggerType, setNewTriggerType] = useState<TAgentTriggerType>('schedule');
 	const [newTriggerCron, setNewTriggerCron] = useState('0 9 * * *');
@@ -1383,10 +1372,16 @@ const BuildPage = () => {
 	const [instructionsChange, setInstructionsChange] = useState('');
 	const [agentModel, setAgentModel] = useState('');
 
-	if (!agentModel && modelOptions.length > 0) {
-		setAgentModel((modelOptions.find((m) => m.isAvailable) ?? modelOptions[0]).id);
+	// A new agent starts on the workspace's default model, else the first usable one.
+	if (!agentModel && catalogModels && catalogModels.length > 0) {
+		setAgentModel(
+			(
+				catalogModels.find((m) => m.is_default && m.is_available) ??
+				catalogModels.find((m) => m.is_available) ??
+				catalogModels[0]
+			).id,
+		);
 	}
-	const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
 	const [allowSelfUpdates, setAllowSelfUpdates] = useState(false);
 	const [allowSkillEditing, setAllowSkillEditing] = useState(true);
 	const [allowSelfClone, setAllowSelfClone] = useState(true);
@@ -4443,74 +4438,12 @@ const BuildPage = () => {
 											</button>
 										</div>
 
-										{/* Model Selector Card */}
-										<div className='relative'>
-											<button
-												type='button'
-												onClick={() => setIsModelPickerOpen((v) => !v)}
-												className='flex w-full cursor-pointer items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950/20 dark:hover:border-zinc-700'>
-												<div className='flex items-center gap-3'>
-													<div className='flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:bg-blue-500/5 dark:text-blue-400'>
-														<Sparkles size={16} fill='currentColor' />
-													</div>
-													<div className='flex flex-col text-left'>
-														<span className='text-[10px] font-black tracking-wide text-zinc-400 uppercase'>
-															Model
-														</span>
-														<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
-															{modelOptions.find(
-																(m) => m.id === agentModel,
-															)?.label ?? 'Select a model'}
-														</span>
-													</div>
-												</div>
-												<ChevronDown
-													size={14}
-													className={`text-zinc-400 transition-transform ${isModelPickerOpen ? 'rotate-180' : ''}`}
-												/>
-											</button>
-
-											{isModelPickerOpen && (
-												<>
-													<div
-														aria-hidden='true'
-														className='fixed inset-0 z-10'
-														onClick={() => setIsModelPickerOpen(false)}
-													/>
-													<div className='absolute right-0 left-0 z-20 mt-1.5 rounded-xl border border-zinc-200 bg-white p-1.5 shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
-														{modelOptions.map((option) => (
-															<button
-																key={option.id}
-																type='button'
-																disabled={!option.isAvailable}
-																onClick={() => {
-																	setAgentModel(option.id);
-																	setIsModelPickerOpen(false);
-																}}
-																className={`flex w-full flex-col items-start gap-0.5 rounded-lg px-3 py-2 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
-																	option.id === agentModel
-																		? 'bg-primary-50 dark:bg-primary-950/30'
-																		: 'hover:bg-zinc-50 dark:hover:bg-zinc-800'
-																}`}>
-																<div className='flex w-full items-center justify-between'>
-																	<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
-																		{option.label}
-																	</span>
-																	<span className='rounded-full bg-zinc-100 px-2 py-0.5 text-[9px] font-bold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'>
-																		{option.isAvailable
-																			? option.tier
-																			: 'No API key'}
-																	</span>
-																</div>
-																<span className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-																	{option.description}
-																</span>
-															</button>
-														))}
-													</div>
-												</>
-											)}
-										</div>
+										<ModelPicker
+											ws={workspaceId}
+											value={agentModel || null}
+											onChange={(id) => setAgentModel(id ?? '')}
+											requirements={{ tools: (toolBindings ?? []).length }}
+										/>
 
 										{/* Instructions */}
 										<div className='flex flex-col gap-1.5'>

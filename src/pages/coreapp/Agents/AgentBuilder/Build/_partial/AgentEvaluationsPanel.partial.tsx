@@ -1,3 +1,4 @@
+import ModelPicker from '@/components/ai/model-picker/ModelPicker';
 import { useState } from 'react';
 import {
 	Plus,
@@ -25,7 +26,6 @@ import {
 	useRunAgentSessionEvaluation,
 } from '@/api/modules/agent-session-evaluations';
 import { useAgentSessions } from '@/api/modules/agent-sessions';
-import { useModelCatalog } from '@/api/modules/catalog';
 import { notify } from '@/api/core';
 import type {
 	TAgentEvaluationSettings,
@@ -134,7 +134,6 @@ const EvaluationSettingsForm = ({
 	settings: TAgentEvaluationSettings;
 }) => {
 	const updateMutation = useUpdateAgentEvaluationSettings(ws, agentId);
-	const { data: modelCatalog } = useModelCatalog(ws);
 	const [form, setForm] = useState({
 		is_enabled: settings.is_enabled,
 		model: settings.model ?? '',
@@ -165,21 +164,18 @@ const EvaluationSettingsForm = ({
 				<span className='text-[9px] font-black tracking-wide text-zinc-400 uppercase'>
 					Grader model
 				</span>
-				<select
-					value={form.model}
-					onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))}
-					className={`mt-1 w-full ${fieldClass}`}>
-					<option value=''>Same model as the agent</option>
-					{(modelCatalog ?? []).map((entry) => (
-						<option key={entry.slug} value={entry.slug} disabled={!entry.is_available}>
-							{entry.display_name}
-							{entry.is_available ? '' : ' (unavailable)'}
-						</option>
-					))}
-					{form.model && !modelCatalog?.some((entry) => entry.slug === form.model) && (
-						<option value={form.model}>{form.model}</option>
-					)}
-				</select>
+				<ModelPicker
+					ws={ws}
+					value={form.model || null}
+					valueKey='slug'
+					onChange={(slug) => setForm((f) => ({ ...f, model: slug ?? '' }))}
+					emptyOption={{
+						label: 'Same model as the agent',
+						description: 'Grade with whatever model the agent runs on.',
+					}}
+					compact
+					className='mt-1'
+				/>
 				<p className='mt-1 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
 					Also grades AI-judge eval checks and reviews chats for reflections. A stronger
 					model than the agent's own catches more of its mistakes.

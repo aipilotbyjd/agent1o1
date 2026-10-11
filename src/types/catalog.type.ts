@@ -40,11 +40,46 @@ export type TTriggerPreset = {
 	sort_order: number;
 };
 
+export type TModelSpeed = 'fast' | 'balanced' | 'thorough';
+
+/**
+ * Why a model can't run for this member: an admin hasn't allowed it, it
+ * needs a key the workspace hasn't added (`connect_providers` lists which),
+ * the key policy only allows the workspace's own keys and none covers it,
+ * or nothing can serve it right now.
+ */
+export type TModelUnavailableReason =
+	| 'not_allowed'
+	| 'needs_key'
+	| 'policy_needs_key'
+	| 'unavailable';
+
+export type TModelCapabilities = {
+	context_window?: number;
+	vision?: boolean;
+	tool_use?: boolean;
+};
+
 export type TModelCatalogEntry = {
 	id: string;
 	slug: string;
 	display_name: string;
 	brand: string;
-	capabilities: unknown;
+	description: string | null;
+	strengths: string[];
+	speed: TModelSpeed | null;
+	/** 1 (cheapest) – 3, relative to the rest of the catalog. */
+	cost_tier: number | null;
+	capabilities: TModelCapabilities | null;
+	retires_at: string | null;
+	replacement_slug: string | null;
 	is_available: boolean;
+	unavailable_reason: TModelUnavailableReason | null;
+	connect_providers: { key: string; label: string }[];
+	/** Set when this member's calls on the model run on a workspace key. */
+	own_key: { provider: string; label: string } | null;
+	is_allowed: boolean;
+	is_default: boolean;
+	/** Rough credits for one typical chat message; null when it can't run. */
+	credits_per_message: number | null;
 };

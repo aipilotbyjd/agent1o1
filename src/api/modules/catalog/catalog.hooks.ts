@@ -33,9 +33,14 @@ export const useTriggerPresets = () =>
 		staleTime: STALE_TIME,
 	});
 
+/**
+ * Per workspace it reflects that workspace's keys, policy and model settings,
+ * which can change in another tab — so it goes stale after a minute and is
+ * refetched when the window regains focus.
+ */
 export const useModelCatalog = (ws?: string) =>
 	useQuery({
 		queryKey: catalogKeys.modelCatalog(ws),
 		queryFn: ({ signal }) => CatalogService.modelCatalog(ws, signal),
-		staleTime: STALE_TIME,
+		staleTime: ws ? 60_000 : STALE_TIME,
 	});

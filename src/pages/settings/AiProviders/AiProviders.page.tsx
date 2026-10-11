@@ -21,14 +21,18 @@ import ConnectProviderGrid from './_partial/ConnectProviderGrid.partial';
 import EditKeyModal from './_partial/EditKeyModal.partial';
 import EmptyState from './_partial/EmptyState.partial';
 import KeyPolicyCard from './_partial/KeyPolicyCard.partial';
+import ModelSettingsPanel from './_partial/ModelSettingsPanel.partial';
 import ProviderCard from './_partial/ProviderCard.partial';
 
-type TTab = 'keys' | 'policy';
+type TTab = 'keys' | 'models' | 'policy';
 
 const tabs: { id: TTab; label: string }[] = [
 	{ id: 'keys', label: 'Keys' },
+	{ id: 'models', label: 'Models' },
 	{ id: 'policy', label: 'Policy' },
 ];
+
+const isTab = (value: string | null): value is TTab => tabs.some((t) => t.id === value);
 
 const steps = [
 	{ icon: User, title: 'Your personal key', body: 'Used first for AI you run yourself.' },
@@ -47,7 +51,8 @@ const steps = [
 const AiProvidersPage = () => {
 	const { activeWorkspaceId: ws } = useWorkspaceContext();
 	const [searchParams, setSearchParams] = useSearchParams();
-	const tab: TTab = searchParams.get('tab') === 'policy' ? 'policy' : 'keys';
+	const tabParam = searchParams.get('tab');
+	const tab: TTab = isTab(tabParam) ? tabParam : 'keys';
 
 	const providersQuery = useAiProviders(ws);
 	const credentialsQuery = useAiProviderCredentials(ws);
@@ -56,7 +61,11 @@ const AiProvidersPage = () => {
 	const setDefault = useSetDefaultAiProviderCredential(ws);
 	const validateKey = useValidateAiProviderCredential(ws);
 
-	const [connectingFor, setConnectingFor] = useState<string | null | undefined>(undefined);
+	// `?connect=<provider>` — the model picker's "Connect" link — opens the
+	// connect dialog on that provider.
+	const [connectingFor, setConnectingFor] = useState<string | null | undefined>(
+		() => searchParams.get('connect') ?? undefined,
+	);
 	const [editing, setEditing] = useState<TAiProviderCredential | null>(null);
 	const [removing, setRemoving] = useState<TAiProviderCredential | null>(null);
 
@@ -159,7 +168,9 @@ const AiProvidersPage = () => {
 				))}
 			</div>
 
-			{tab === 'policy' ? (
+			{tab === 'models' ? (
+				<ModelSettingsPanel ws={ws} />
+			) : tab === 'policy' ? (
 				<div className='space-y-6'>
 					<div className='rounded-2xl border border-zinc-100 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-950/40'>
 						<p className='text-[10px] font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
@@ -256,8 +267,19 @@ const AiProvidersPage = () => {
 				<ConnectKeyModal
 					ws={ws}
 					providers={providers}
-					initialProvider={connectingFor}
-					onClose={() => setConnectingFor(undefined)}
+					initialProvider={
+						connectingFor && providers.providers.some((p) => p.key === connectingFor)
+							? connectingFor
+							: null
+					}
+					onClose={() => {
+						setConnectingFor(undefined);
+						if (searchParams.has('connect')) {
+							const next = new URLSearchParams(searchParams);
+							next.delete('connect');
+							setSearchParams(next, { replace: true });
+						}
+					}}
 				/>
 			)}
 

@@ -9,8 +9,19 @@ import openai from '@/assets/images/ai-providers/openai.svg';
 import openrouter from '@/assets/images/ai-providers/openrouter.svg';
 import together from '@/assets/images/ai-providers/together.svg';
 import xai from '@/assets/images/ai-providers/xai.svg';
+import alibaba from '@/assets/images/ai-providers/alibaba.svg';
+import google from '@/assets/images/ai-providers/google.svg';
+import meta from '@/assets/images/ai-providers/meta.svg';
+import minimax from '@/assets/images/ai-providers/minimax.svg';
+import moonshot from '@/assets/images/ai-providers/moonshot.svg';
+import nvidia from '@/assets/images/ai-providers/nvidia.svg';
+import zhipu from '@/assets/images/ai-providers/zhipu.svg';
 
-/** `mono` logos are drawn in one dark colour and are inverted in dark mode. */
+/**
+ * Keyed by AI provider (`config/byok.php`) and by model brand (the catalog's
+ * `brand`), which overlap. `mono` logos are drawn in one dark colour and are
+ * inverted in dark mode.
+ */
 const logos: Record<string, { src: string; mono: boolean }> = {
 	openai: { src: openai, mono: true },
 	anthropic: { src: anthropic, mono: true },
@@ -22,15 +33,24 @@ const logos: Record<string, { src: string; mono: boolean }> = {
 	openrouter: { src: openrouter, mono: true },
 	fireworks: { src: fireworks, mono: false },
 	together: { src: together, mono: false },
+	google: { src: google, mono: false },
+	meta: { src: meta, mono: false },
+	moonshot: { src: moonshot, mono: false },
+	zhipu: { src: zhipu, mono: false },
+	minimax: { src: minimax, mono: false },
+	alibaba: { src: alibaba, mono: false },
+	nvidia: { src: nvidia, mono: false },
 };
 
 const sizes = {
+	xs: { box: 'h-6 w-6 rounded-md', img: 'h-3.5 w-3.5', text: 'text-[10px]' },
 	sm: { box: 'h-8 w-8 rounded-lg', img: 'h-4 w-4', text: 'text-xs' },
 	md: { box: 'h-10 w-10 rounded-xl', img: 'h-5 w-5', text: 'text-sm' },
 	lg: { box: 'h-12 w-12 rounded-2xl', img: 'h-6 w-6', text: 'text-base' },
 };
 
 interface IProviderLogoProps {
+	/** A provider key or a model brand. */
 	provider: string;
 	label: string;
 	size?: keyof typeof sizes;

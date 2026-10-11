@@ -4,6 +4,7 @@ import { ChevronDown, X } from 'lucide-react';
 import type { TNodeField } from '../../../_types/node.type';
 import AccountSelect from './AccountSelect.partial';
 import DynamicSelect from './DynamicSelect.partial';
+import WorkflowModelPicker from './WorkflowModelPicker.partial';
 import ExpressionInput from './ExpressionInput.partial';
 
 export const inputClass =
@@ -361,6 +362,15 @@ const FieldInput = ({ field, value, onChange, compact, nodeId }: FieldInputProps
 				compact={compact}
 				nodeId={nodeId}
 				className={cls}
+			/>
+		);
+	}
+
+	if (field.kind === 'dynamic' && field.dynamic?.source === 'ai.models') {
+		return (
+			<WorkflowModelPicker
+				value={typeof value === 'string' && value ? value : null}
+				onChange={(slug) => onChange(slug ?? '')}
 			/>
 		);
 	}

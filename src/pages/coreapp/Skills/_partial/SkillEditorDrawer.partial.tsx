@@ -21,6 +21,7 @@ import type {
 } from '@/types/agent-skill.type';
 import { notify } from '@/api/core';
 import { useModelCatalog } from '@/api/modules/catalog';
+import ModelPicker from '@/components/ai/model-picker/ModelPicker';
 import {
 	useAgentSkill,
 	useCreateAgentSkill,
@@ -100,8 +101,11 @@ const SkillEditorDrawer = ({
 	const [draftScripts, setDraftScripts] = useState<TSkillDraftScript[]>([]);
 
 	const modelOptions = useMemo(() => modelCatalog ?? [], [modelCatalog]);
-	const selectedModelId =
-		generateModelId || (modelOptions.find((m) => m.is_available) ?? modelOptions[0])?.id || '';
+	const startingModel =
+		modelOptions.find((m) => m.is_default && m.is_available) ??
+		modelOptions.find((m) => m.is_available) ??
+		modelOptions[0];
+	const selectedModelId = generateModelId || startingModel?.id || '';
 	const [newReference, setNewReference] = useState({ title: '', content: '' });
 	const [newScript, setNewScript] = useState(emptyScript);
 	// The one reference / script being edited in place, if any.
@@ -381,20 +385,13 @@ const SkillEditorDrawer = ({
 								className='focus:border-primary-500/80 block w-full resize-none rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
 							/>
 							<div className='flex gap-2'>
-								<select
-									aria-label='Model'
-									value={selectedModelId}
-									onChange={(e) => setGenerateModelId(e.target.value)}
-									className='focus:border-primary-500/80 block h-9 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-2 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'>
-									{modelOptions.map((model) => (
-										<option
-											key={model.id}
-											value={model.id}
-											disabled={!model.is_available}>
-											{model.display_name}
-										</option>
-									))}
-								</select>
+								<ModelPicker
+									ws={ws}
+									value={selectedModelId || null}
+									onChange={(id) => setGenerateModelId(id ?? '')}
+									compact
+									className='min-w-0 flex-1'
+								/>
 								<button
 									type='button'
 									onClick={() => void handleGenerate()}

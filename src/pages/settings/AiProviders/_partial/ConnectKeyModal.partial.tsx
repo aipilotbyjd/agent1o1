@@ -31,7 +31,7 @@ import Modal, {
 import Input from '@/components/form/Input';
 import Validation from '@/components/form/Validation';
 import { keyFormatHint } from '../_helper/keyFormat.helper';
-import ProviderLogo from './ProviderLogo.partial';
+import ProviderLogo from '@/components/ai/ProviderLogo';
 
 type TStep = 'provider' | 'details' | 'checking' | 'done';
 

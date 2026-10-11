@@ -1,5 +1,5 @@
 import type { TAiProvider } from '@/types/ai-provider.type';
-import ProviderLogo from './ProviderLogo.partial';
+import ProviderLogo from '@/components/ai/ProviderLogo';
 
 interface IConnectProviderGridProps {
 	providers: TAiProvider[];

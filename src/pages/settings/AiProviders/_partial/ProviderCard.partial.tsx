@@ -18,7 +18,7 @@ import type {
 	TAiProviderCredentialStatus,
 } from '@/types/ai-provider.type';
 import Spinner from '@/components/ui/Spinner';
-import ProviderLogo from './ProviderLogo.partial';
+import ProviderLogo from '@/components/ai/ProviderLogo';
 
 const MAX_MODEL_CHIPS = 5;
 
