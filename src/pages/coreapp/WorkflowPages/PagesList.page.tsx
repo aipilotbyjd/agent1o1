@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router';
 import {
+	ChartColumn,
 	AlertTriangle,
 	AppWindow,
 	Copy,
@@ -137,6 +138,9 @@ const PageCard = ({ ws, page }: { ws: string; page: TWorkflowPage }) => {
 							<div role='menu' className='absolute top-8 right-0 z-30 w-48 rounded-xl border border-zinc-200 bg-white p-1 shadow-xl dark:border-white/10 dark:bg-zinc-950'>
 								<button role='menuitem' type='button' onClick={() => navigate(paths.editPage(ws, page.id))} className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
 									<PencilRuler size={13} /> Open builder
+								</button>
+								<button role='menuitem' type='button' onClick={() => navigate(paths.pageInsights(ws, page.id))} className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
+									<ChartColumn size={13} /> Insights
 								</button>
 								{page.is_published && (
 									<>

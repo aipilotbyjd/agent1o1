@@ -27,6 +27,7 @@ const WorkflowPagesLayout = lazy(
 );
 const PagesListPage = lazy(() => import('@/pages/coreapp/WorkflowPages/PagesList.page'));
 const UsePagePage = lazy(() => import('@/pages/coreapp/WorkflowPages/UsePage.page'));
+const PageInsightsPage = lazy(() => import('@/pages/coreapp/WorkflowPages/PageInsights/PageInsights.page'));
 const PageBuilderPage = lazy(
 	() => import('@/pages/coreapp/WorkflowPages/PageBuilder/PageBuilder.page'),
 );
@@ -81,6 +82,7 @@ const workflowPagesRoute: RouteObject = {
 	children: [
 		{ index: true, element: <PagesListPage /> },
 		{ path: ':pageId', element: <UsePagePage /> },
+		{ path: ':pageId/insights', element: <PageInsightsPage /> },
 	],
 };
 

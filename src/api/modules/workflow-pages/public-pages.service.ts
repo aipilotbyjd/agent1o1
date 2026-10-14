@@ -1,6 +1,7 @@
 import { axiosClient } from '@/api/client';
 import type { TApiResponse } from '@/api/core';
 import type { TPageSubmissionResult, TPageView } from '@/types/workflow-page.type';
+import { pageVisitorId, PAGE_VISITOR_HEADER } from '@/utils/pageVisitor.util';
 import { PublicPageEndpoints as E } from './workflow-pages.endpoints';
 
 /** Sent back on every request once a password page is unlocked. */
@@ -8,8 +9,10 @@ const ACCESS_HEADER = 'X-Page-Access';
 /** Reads a submission's result; returned only to whoever submitted it. */
 const SECRET_HEADER = 'X-Submission-Secret';
 
-const accessHeaders = (accessToken?: string | null) =>
-	accessToken ? { [ACCESS_HEADER]: accessToken } : undefined;
+const accessHeaders = (accessToken?: string | null) => ({
+	[PAGE_VISITOR_HEADER]: pageVisitorId(),
+	...(accessToken ? { [ACCESS_HEADER]: accessToken } : {}),
+});
 
 export const PublicPageService = {
 	show: (token: string, accessToken?: string | null, signal?: AbortSignal) =>
@@ -35,6 +38,10 @@ export const PublicPageService = {
 				{ headers: accessHeaders(accessToken) },
 			)
 			.then((res) => res.data.data),
+
+	/** The visitor started filling in the page. */
+	started: (token: string) =>
+		axiosClient.post(E.events(token), { type: 'start' }, { headers: accessHeaders() }).then(() => undefined),
 
 	result: (token: string, submissionId: string, secret: string, signal?: AbortSignal) =>
 		axiosClient

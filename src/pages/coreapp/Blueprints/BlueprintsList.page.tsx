@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useOutletContext, useNavigate, useParams } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -20,6 +21,7 @@ import {
 	List,
 	Pencil,
 	Plus,
+	AppWindow,
 } from 'lucide-react';
 import { OutletContextType } from './_layouts/Blueprints.layout';
 import { useConfirm } from '@/context/confirm';
@@ -39,18 +41,29 @@ import {
 	useAgentTemplate,
 	useDeleteAgentTemplate,
 	useUseAgentTemplate,
+	usePageTemplates,
+	usePageTemplate,
+	useDeletePageTemplate,
 	useTemplateCollections,
 	useTemplateCollection,
 	useDeleteTemplateCollection,
 	useUseTemplateCollection,
 } from '@/api/modules/templates';
-import type { TWorkflowTemplate, TAgentTemplate, TTemplateCollection } from '@/types/template.type';
+import type {
+	TWorkflowTemplate,
+	TAgentTemplate,
+	TPageTemplate,
+	TTemplateCollection,
+} from '@/types/template.type';
 import ListSkeletonPart from '@/parts/ListSkeleton.part';
+import PageThumbnail from '@/components/workflowPage/PageThumbnail';
+import PageTemplatePreview from '@/components/workflowPage/PageTemplatePreview';
+import CreatePageModal from '../WorkflowPages/_partial/CreatePageModal.partial';
 import { formatUsageCount } from './_helper/blueprints.constants';
 import TemplateFormModal, { type TTemplateFormTarget } from './_partial/TemplateFormModal.partial';
 import CollectionItemsEditor from './_partial/CollectionItemsEditor.partial';
 
-type TTab = 'workflows' | 'agents' | 'collections';
+type TTab = 'workflows' | 'agents' | 'pages' | 'collections';
 
 /** Stored template graphs use the backend's shape (`key`, edges `from`/`to`,
  *  see WorkflowTemplateController::snapshotGraph); React Flow's `id`/`source`/
@@ -194,11 +207,14 @@ const BlueprintsListPage = () => {
 	const [previewId, setPreviewId] = useState<string | null>(null);
 	// Create / edit-details dialog
 	const [formTarget, setFormTarget] = useState<TTemplateFormTarget | null>(null);
+	// A page template is used by creating a page, which needs a workflow picked.
+	const [usePageTemplateId, setUsePageTemplateId] = useState<string | null>(null);
 
 	// None of these endpoints take query params — the whole workspace list
 	// comes back at once, so search/category filter client-side.
 	const { data: workflows, isLoading: isWfsLoading } = useWorkflowTemplates(ws);
 	const { data: agents, isLoading: isAgentsLoading } = useAgentTemplates(ws);
+	const { data: pageTemplates, isLoading: isPagesLoading } = usePageTemplates(ws);
 	const { data: collections, isLoading: isCollsLoading } = useTemplateCollections(ws);
 
 	// Fetch details when previewId is active. The hooks self-guard on an empty id.
@@ -210,6 +226,10 @@ const BlueprintsListPage = () => {
 		ws,
 		previewId && activeTab === 'agents' ? previewId : '',
 	);
+	const { data: pageDetail } = usePageTemplate(
+		ws,
+		previewId && activeTab === 'pages' ? previewId : '',
+	);
 	const { data: collectionDetail } = useTemplateCollection(
 		ws,
 		previewId && activeTab === 'collections' ? previewId : '',
@@ -219,6 +239,7 @@ const BlueprintsListPage = () => {
 	const useWorkflowTemplateMutation = useUseWorkflowTemplate(ws);
 	const deleteAgentTemplate = useDeleteAgentTemplate(ws);
 	const useAgentTemplateMutation = useUseAgentTemplate(ws);
+	const deletePageTemplate = useDeletePageTemplate(ws);
 	const deleteCollection = useDeleteTemplateCollection(ws);
 	const useCollectionMutation = useUseTemplateCollection(ws);
 
@@ -244,6 +265,15 @@ const BlueprintsListPage = () => {
 		});
 		return Array.from(counts, ([category, count]) => ({ category, count }));
 	}, [agents]);
+
+	const pageCategories = useMemo(() => {
+		const counts = new Map<string, number>();
+		(pageTemplates ?? []).forEach((t) => {
+			const cat = t.category ?? 'uncategorized';
+			counts.set(cat, (counts.get(cat) ?? 0) + 1);
+		});
+		return Array.from(counts, ([category, count]) => ({ category, count }));
+	}, [pageTemplates]);
 
 	const query = searchQuery.trim().toLowerCase();
 
@@ -293,6 +323,20 @@ const BlueprintsListPage = () => {
 				.sort(bySortMode),
 		[agents, query, selectedCategory, bySortMode],
 	);
+	const filteredPages = useMemo(
+		() =>
+			(pageTemplates ?? [])
+				.filter(
+					(t) =>
+						(!query ||
+							t.name.toLowerCase().includes(query) ||
+							(t.description ?? '').toLowerCase().includes(query)) &&
+						(!selectedCategory || (t.category ?? 'uncategorized') === selectedCategory),
+				)
+				.slice()
+				.sort(bySortMode),
+		[pageTemplates, query, selectedCategory, bySortMode],
+	);
 	const filteredCollections = useMemo(
 		() =>
 			(collections ?? [])
@@ -307,15 +351,18 @@ const BlueprintsListPage = () => {
 		[collections, query, bySortMode],
 	);
 
-	const totalTemplates = (workflows?.length ?? 0) + (agents?.length ?? 0);
+	const totalTemplates =
+		(workflows?.length ?? 0) + (agents?.length ?? 0) + (pageTemplates?.length ?? 0);
 	const totalCategories = new Set([
 		...(workflows ?? []).map((t) => t.category).filter(Boolean),
 		...(agents ?? []).map((t) => t.category).filter(Boolean),
+		...(pageTemplates ?? []).map((t) => t.category).filter(Boolean),
 	]).size;
-	const totalDeployments = [...(workflows ?? []), ...(agents ?? [])].reduce(
-		(sum, t) => sum + t.usage_count,
-		0,
-	);
+	const totalDeployments = [
+		...(workflows ?? []),
+		...(agents ?? []),
+		...(pageTemplates ?? []),
+	].reduce((sum, t) => sum + t.usage_count, 0);
 
 	const handleUseWorkflow = (template: TWorkflowTemplate) => {
 		// UseWorkflowTemplateRequest requires `name`; without it every Use was a 422.
@@ -369,6 +416,14 @@ const BlueprintsListPage = () => {
 			message: `Delete "${template.name}"? This cannot be undone.`,
 		});
 		if (confirmed) deleteAgentTemplate.mutate(template.id);
+	};
+
+	const handleDeletePage = async (template: TPageTemplate) => {
+		const confirmed = await confirm({
+			title: 'Delete Template',
+			message: `Delete "${template.name}"? Pages already made from it aren't affected.`,
+		});
+		if (confirmed) deletePageTemplate.mutate(template.id);
 	};
 
 	const handleDeleteCollection = async (collection: TTemplateCollection) => {
@@ -497,6 +552,16 @@ const BlueprintsListPage = () => {
 							AI Agents
 						</button>
 						<button
+							onClick={() => setTab('pages')}
+							className={`flex shrink-0 cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200 ${
+								activeTab === 'pages'
+									? 'border-primary-500/20 bg-primary-50 text-primary-600 dark:border-primary-800/40 dark:bg-primary-950/30 dark:text-primary-400 border shadow-2xs'
+									: 'border border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
+							}`}>
+							<AppWindow className='h-3.5 w-3.5' />
+							Pages
+						</button>
+						<button
 							onClick={() => setTab('collections')}
 							className={`flex shrink-0 cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all duration-200 ${
 								activeTab === 'collections'
@@ -531,7 +596,9 @@ const BlueprintsListPage = () => {
 									<option value=''>All Categories</option>
 									{(activeTab === 'workflows'
 										? wfCategories
-										: agentCategories
+										: activeTab === 'agents'
+											? agentCategories
+											: pageCategories
 									).map((cat) => (
 										<option key={cat.category} value={cat.category}>
 											{cat.category} ({cat.count})
@@ -553,14 +620,18 @@ const BlueprintsListPage = () => {
 									? 'All Workflows'
 									: activeTab === 'agents'
 										? 'All Agents'
-										: 'All Collections'}
+										: activeTab === 'pages'
+											? 'All Pages'
+											: 'All Collections'}
 							</h2>
 							<span className='rounded-full bg-zinc-200/50 px-2.5 py-0.5 text-[10px] font-extrabold text-zinc-500 dark:bg-zinc-800/80 dark:text-zinc-400'>
 								{activeTab === 'workflows'
 									? filteredWorkflows.length
 									: activeTab === 'agents'
 										? filteredAgents.length
-										: filteredCollections.length}
+										: activeTab === 'pages'
+											? filteredPages.length
+											: filteredCollections.length}
 							</span>
 						</div>
 
@@ -574,7 +645,9 @@ const BlueprintsListPage = () => {
 												? 'workflow'
 												: activeTab === 'agents'
 													? 'agent'
-													: 'collection',
+													: activeTab === 'pages'
+														? 'page'
+														: 'collection',
 									})
 								}
 								className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex h-[30px] shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-3.5 text-xs font-black shadow-xs transition-all active:scale-95'>
@@ -625,6 +698,7 @@ const BlueprintsListPage = () => {
 
 					{(activeTab === 'workflows' && isWfsLoading) ||
 					(activeTab === 'agents' && isAgentsLoading) ||
+					(activeTab === 'pages' && isPagesLoading) ||
 					(activeTab === 'collections' && isCollsLoading) ? (
 						<div className='grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
 							<ListSkeletonPart count={8} />
@@ -633,6 +707,8 @@ const BlueprintsListPage = () => {
 						<EmptyState icon={Workflow} title='No workflow templates found' />
 					) : activeTab === 'agents' && filteredAgents.length === 0 ? (
 						<EmptyState icon={Cpu} title='No AI agent templates found' />
+					) : activeTab === 'pages' && filteredPages.length === 0 ? (
+						<EmptyState icon={AppWindow} title='No page templates found' />
 					) : activeTab === 'collections' && filteredCollections.length === 0 ? (
 						<EmptyState icon={Layers} title='No collections found' />
 					) : (
@@ -686,6 +762,46 @@ const BlueprintsListPage = () => {
 											onDelete={() => handleDeleteAgent(agent)}
 										/>
 									))}
+
+								{activeTab === 'pages' &&
+									filteredPages.map((tpl) => {
+										// Built-in layouts belong to no workspace and can't be changed here.
+										const own = tpl.workspace_id !== null;
+										return (
+											<CatalogCard
+												key={tpl.id}
+												media={
+													<PageThumbnail
+														content={tpl.content}
+														className='h-32'
+													/>
+												}
+												color={tpl.color || tpl.content.theme.accent}
+												icon={AppWindow}
+												hoverColor='primary'
+												name={tpl.name}
+												category={tpl.category ?? 'uncategorized'}
+												description={tpl.description}
+												footerLeft={own ? 'Your template' : 'Built-in'}
+												usageCount={tpl.usage_count}
+												isUsePending={false}
+												onPreview={() => setPreviewId(tpl.id)}
+												onUse={() => setUsePageTemplateId(tpl.id)}
+												onEdit={
+													own
+														? () =>
+																setFormTarget({
+																	kind: 'page',
+																	item: tpl,
+																})
+														: undefined
+												}
+												onDelete={
+													own ? () => handleDeletePage(tpl) : undefined
+												}
+											/>
+										);
+									})}
 
 								{activeTab === 'collections' &&
 									filteredCollections.map((coll) => (
@@ -743,7 +859,11 @@ const BlueprintsListPage = () => {
 								? wfDetail
 								: activeTab === 'agents'
 									? agentDetail
-									: collectionDetail) && (
+									: activeTab === 'pages'
+										? pageDetail?.workspace_id
+											? pageDetail
+											: null
+										: collectionDetail) && (
 								<button
 									aria-label='Edit details'
 									title='Edit details'
@@ -752,6 +872,8 @@ const BlueprintsListPage = () => {
 											setFormTarget({ kind: 'workflow', item: wfDetail });
 										else if (activeTab === 'agents' && agentDetail)
 											setFormTarget({ kind: 'agent', item: agentDetail });
+										else if (activeTab === 'pages' && pageDetail)
+											setFormTarget({ kind: 'page', item: pageDetail });
 										else if (collectionDetail)
 											setFormTarget({
 												kind: 'collection',
@@ -1050,6 +1172,99 @@ const BlueprintsListPage = () => {
 									</>
 								)}
 
+								{/* Page Template Preview Details */}
+								{activeTab === 'pages' && (
+									<>
+										{!pageDetail ? (
+											<div className='flex h-full flex-col items-center justify-center gap-2'>
+												<Loader2 className='text-primary-500 h-6 w-6 animate-spin' />
+												<span className='text-xs text-zinc-500'>
+													Fetching page layout...
+												</span>
+											</div>
+										) : (
+											<div className='flex flex-col gap-6'>
+												<div className='flex items-center gap-4'>
+													<div
+														style={{
+															backgroundColor: `${pageDetail.color ?? pageDetail.content.theme.accent}15`,
+														}}
+														className='flex h-12 w-12 items-center justify-center rounded-xl border border-zinc-100 dark:border-zinc-800'>
+														<AppWindow
+															className='h-6 w-6'
+															style={{
+																color:
+																	pageDetail.color ??
+																	pageDetail.content.theme.accent,
+															}}
+														/>
+													</div>
+													<div>
+														<h2 className='text-lg font-bold text-zinc-800 dark:text-zinc-100'>
+															{pageDetail.name}
+														</h2>
+														<div className='mt-1 flex items-center gap-2'>
+															<span className='text-xs text-zinc-400 capitalize'>
+																{pageDetail.workspace_id
+																	? (pageDetail.category ??
+																		'uncategorized')
+																	: 'Built-in'}
+															</span>
+															<span className='text-zinc-300 dark:text-zinc-700'>
+																•
+															</span>
+															<span className='text-[10px] text-zinc-400'>
+																{pageDetail.usage_count || 0} pages
+																made from it
+															</span>
+														</div>
+													</div>
+												</div>
+
+												<div>
+													<h3 className='mb-2 text-xs font-bold tracking-wider text-zinc-800 uppercase dark:text-zinc-200'>
+														About this Template
+													</h3>
+													<p className='text-xs leading-relaxed text-zinc-600 dark:text-zinc-400'>
+														{pageDetail.description ||
+															'No description provided.'}
+													</p>
+												</div>
+
+												<div>
+													<h3 className='mb-3 text-xs font-bold tracking-wider text-zinc-800 uppercase dark:text-zinc-200'>
+														Layout Preview
+													</h3>
+													<div className='max-h-[520px] overflow-y-auto rounded-xl border border-zinc-100 dark:border-zinc-800'>
+														<PageTemplatePreview
+															content={pageDetail.content}
+														/>
+													</div>
+													<p className='mt-2 text-[11px] text-zinc-500 dark:text-zinc-400'>
+														Its fields and results are matched to the
+														inputs and outputs of the workflow you pick.
+													</p>
+												</div>
+
+												<div className='mt-4 border-t border-zinc-200 pt-6 dark:border-zinc-800'>
+													<Button
+														color='violet'
+														variant='solid'
+														dimension='lg'
+														className='flex w-full cursor-pointer items-center justify-center gap-2 py-3 text-sm font-bold shadow-lg transition-all hover:shadow-xl'
+														onClick={() => {
+															setPreviewId(null);
+															setUsePageTemplateId(pageDetail.id);
+														}}>
+														<Play className='h-4 w-4 fill-current' />
+														Use Template
+													</Button>
+												</div>
+											</div>
+										)}
+									</>
+								)}
+
 								{/* Template Collection Preview Details */}
 								{activeTab === 'collections' && (
 									<>
@@ -1144,6 +1359,15 @@ const BlueprintsListPage = () => {
 			</AnimatePresence>
 
 			<TemplateFormModal ws={ws} target={formTarget} onClose={() => setFormTarget(null)} />
+			{usePageTemplateId && (
+				<CreatePageModal
+					key={usePageTemplateId}
+					ws={ws}
+					isOpen
+					templateId={usePageTemplateId}
+					onClose={() => setUsePageTemplateId(null)}
+				/>
+			)}
 		</Container>
 	);
 };
@@ -1196,6 +1420,7 @@ const CatalogCard = ({
 	onUse,
 	onEdit,
 	onDelete,
+	media,
 }: {
 	color: string;
 	icon: typeof Workflow;
@@ -1208,8 +1433,10 @@ const CatalogCard = ({
 	isUsePending: boolean;
 	onPreview: () => void;
 	onUse: () => void;
-	onEdit: () => void;
-	onDelete: () => void;
+	onEdit?: () => void;
+	onDelete?: () => void;
+	/** Shown across the top of the card, e.g. a layout preview. */
+	media?: ReactNode;
 }) => {
 	const [menuOpen, setMenuOpen] = useState(false);
 	const hoverBorder =
@@ -1230,6 +1457,11 @@ const CatalogCard = ({
 			transition={{ type: 'spring', stiffness: 350, damping: 25 }}
 			onClick={onPreview}
 			className={`group relative flex cursor-pointer flex-col rounded-2xl border border-slate-200/60 bg-white p-5 transition-all duration-300 hover:-translate-y-1 ${hoverBorder} hover:shadow-[0_12px_24px_-10px_rgba(16,24,40,0.06)] dark:border-zinc-800/80 dark:bg-zinc-950 dark:hover:shadow-[0_12px_24px_-10px_rgba(0,0,0,0.5)]`}>
+			{media && (
+				<div className='-mx-5 -mt-5 mb-4 overflow-hidden rounded-t-2xl border-b border-slate-200/60 dark:border-zinc-800/80'>
+					{media}
+				</div>
+			)}
 			<div className='mb-3.5 flex items-start justify-between'>
 				<div className='flex min-w-0 items-center gap-3'>
 					<div
@@ -1247,41 +1479,47 @@ const CatalogCard = ({
 						</span>
 					</div>
 				</div>
-				<div className='relative shrink-0'>
-					<button
-						onClick={(e) => {
-							e.stopPropagation();
-							setMenuOpen((o) => !o);
-						}}
-						title='More options'
-						className='rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:hover:bg-zinc-900 dark:hover:text-zinc-200'>
-						<MoreHorizontal className='h-4 w-4' />
-					</button>
-					{menuOpen && (
-						<div className='absolute top-8 right-0 z-10 w-32 overflow-hidden rounded-xl border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
-							<button
-								onClick={(e) => {
-									e.stopPropagation();
-									setMenuOpen(false);
-									onEdit();
-								}}
-								className='flex w-full cursor-pointer items-center gap-1.5 px-3 py-2 text-left text-[11px] font-bold text-zinc-600 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800'>
-								<Pencil size={12} />
-								Edit details
-							</button>
-							<button
-								onClick={(e) => {
-									e.stopPropagation();
-									setMenuOpen(false);
-									onDelete();
-								}}
-								className='flex w-full cursor-pointer items-center gap-1.5 px-3 py-2 text-left text-[11px] font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20'>
-								<Trash2 size={12} />
-								Delete
-							</button>
-						</div>
-					)}
-				</div>
+				{(onEdit || onDelete) && (
+					<div className='relative shrink-0'>
+						<button
+							onClick={(e) => {
+								e.stopPropagation();
+								setMenuOpen((o) => !o);
+							}}
+							title='More options'
+							className='rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:hover:bg-zinc-900 dark:hover:text-zinc-200'>
+							<MoreHorizontal className='h-4 w-4' />
+						</button>
+						{menuOpen && (
+							<div className='absolute top-8 right-0 z-10 w-32 overflow-hidden rounded-xl border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
+								{onEdit && (
+									<button
+										onClick={(e) => {
+											e.stopPropagation();
+											setMenuOpen(false);
+											onEdit();
+										}}
+										className='flex w-full cursor-pointer items-center gap-1.5 px-3 py-2 text-left text-[11px] font-bold text-zinc-600 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800'>
+										<Pencil size={12} />
+										Edit details
+									</button>
+								)}
+								{onDelete && (
+									<button
+										onClick={(e) => {
+											e.stopPropagation();
+											setMenuOpen(false);
+											onDelete();
+										}}
+										className='flex w-full cursor-pointer items-center gap-1.5 px-3 py-2 text-left text-[11px] font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20'>
+										<Trash2 size={12} />
+										Delete
+									</button>
+								)}
+							</div>
+						)}
+					</div>
+				)}
 			</div>
 
 			<p className='mb-4 line-clamp-2 text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-zinc-400'>

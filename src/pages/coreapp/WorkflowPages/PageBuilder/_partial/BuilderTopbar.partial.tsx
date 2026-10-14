@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
+	ChartColumn,
 	ChevronDown,
 	ChevronLeft,
 	CloudCheck,
@@ -11,6 +12,8 @@ import {
 	Eye,
 	ExternalLink,
 	GitMerge,
+	Keyboard,
+	LayoutTemplate,
 	Loader2,
 	Monitor,
 	Moon,
@@ -18,6 +21,7 @@ import {
 	Redo2,
 	Rocket,
 	Share2,
+	Sparkles,
 	Smartphone,
 	Sun,
 	Tablet,
@@ -28,10 +32,13 @@ import DARK_MODE from '@/constants/darkMode.constant';
 import useDarkMode from '@/hooks/useDarkMode';
 import paths from '@/Routes/paths';
 import { useUpdateWorkflowPage } from '@/api/modules/workflow-pages';
+import SaveAsTemplateModal from '@/parts/SaveAsTemplateModal.part';
 import { usePageBuilderStore, type TBuilderDevice } from '../_store/pageBuilder.store';
 import { usePageBuilder } from '../_context/PageBuilder.context';
 import PublishMenu from './PublishMenu.partial';
 import ShareMenu from './ShareMenu.partial';
+import VariantMenu from './VariantMenu.partial';
+import GenerateDialog from './GenerateDialog.partial';
 
 const FOCUS_RING =
 	'outline-none focus-visible:ring-2 focus-visible:ring-primary-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#07080b]';
@@ -133,7 +140,39 @@ const EditableName = () => {
 };
 
 const SaveStatus = () => {
-	const { saveState, retrySave } = usePageBuilder();
+	const { saveState, retrySave, resolveConflict } = usePageBuilder();
+	const [resolving, setResolving] = useState(false);
+	if (saveState === 'conflict') {
+		const resolve = (keep: 'mine' | 'theirs') => {
+			setResolving(true);
+			void resolveConflict(keep).finally(() => setResolving(false));
+		};
+		return (
+			<div
+				role='alert'
+				className='flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 pr-1 pl-2 text-[11px] font-semibold whitespace-nowrap text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200'>
+				<CloudOff size={13} className='shrink-0' />
+				<span className='hidden 2xl:inline'>Changed in another window — not saved</span>
+				<span className='2xl:hidden'>Not saved</span>
+				<button
+					type='button'
+					disabled={resolving}
+					onClick={() => resolve('theirs')}
+					title='Load the page as it is now. Your edits since then are dropped.'
+					className='h-6 rounded-md bg-amber-500 px-2 text-[11px] font-bold text-white hover:bg-amber-600 disabled:opacity-50'>
+					Load latest
+				</button>
+				<button
+					type='button'
+					disabled={resolving}
+					onClick={() => resolve('mine')}
+					title='Save what you see here over the other changes.'
+					className='h-6 rounded-md px-2 text-[11px] font-bold hover:bg-amber-100 disabled:opacity-50 dark:hover:bg-amber-500/20'>
+					Keep mine
+				</button>
+			</div>
+		);
+	}
 	const { Icon, label, className } = {
 		saved: { Icon: CloudCheck, label: 'All changes saved', className: 'text-emerald-600 dark:text-emerald-400' },
 		saving: { Icon: Loader2, label: 'Saving…', className: 'animate-spin text-zinc-400' },
@@ -179,8 +218,10 @@ const DEVICES: { id: TBuilderDevice; label: string; icon: typeof Monitor }[] = [
 type TMenu = 'share' | 'publish' | null;
 
 const BuilderTopbar = ({ publishOpen, setPublishOpen }: { publishOpen: boolean; setPublishOpen: (open: boolean) => void }) => {
-	const { ws, page } = usePageBuilder();
+	const { ws, page, flush } = usePageBuilder();
 	const { isDarkTheme, setDarkModeStatus } = useDarkMode();
+	const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false);
+	const [generateOpen, setGenerateOpen] = useState(false);
 	const canUndo = usePageBuilderStore((store) => store.past.length > 0);
 	const canRedo = usePageBuilderStore((store) => store.future.length > 0);
 	const undo = usePageBuilderStore((store) => store.undo);
@@ -283,6 +324,12 @@ const BuilderTopbar = ({ publishOpen, setPublishOpen }: { publishOpen: boolean; 
 						onClick={() => setDarkModeStatus(isDarkTheme ? DARK_MODE.LIGHT : DARK_MODE.DARK)}>
 						{isDarkTheme ? <Sun size={14} /> : <Moon size={14} />}
 					</IconButton>
+					<IconButton label='Keyboard shortcuts (?)' onClick={() => usePageBuilderStore.getState().setOverlay('shortcuts')}>
+						<Keyboard size={14} />
+					</IconButton>
+					<IconButton label='Save as template' onClick={() => setSaveAsTemplateOpen(true)}>
+						<LayoutTemplate size={14} />
+					</IconButton>
 					<BuilderTooltip label={`Workflow: ${page.workflow?.name ?? 'missing'}`}>
 						<Link
 							to={paths.editPlaybook(ws, page.workflow_id)}
@@ -307,6 +354,26 @@ const BuilderTopbar = ({ publishOpen, setPublishOpen }: { publishOpen: boolean; 
 						</a>
 					</BuilderTooltip>
 				)}
+
+				<BuilderTooltip label='Insights' align='right'>
+					<Link
+						to={paths.pageInsights(ws, page.id)}
+						aria-label='Insights'
+						className={`hidden h-8 w-8 items-center justify-center rounded-lg border border-zinc-200/80 bg-white text-zinc-600 shadow-xs transition hover:bg-zinc-50 sm:flex dark:border-white/10 dark:bg-zinc-900/60 dark:text-zinc-300 ${FOCUS_RING}`}>
+						<ChartColumn size={14} />
+					</Link>
+				</BuilderTooltip>
+
+				<button
+					type='button'
+					onClick={() => setGenerateOpen(true)}
+					className={`hidden h-8 items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-2.5 text-xs font-bold text-violet-700 shadow-xs transition hover:bg-violet-100 sm:flex dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-300 ${FOCUS_RING}`}>
+					<Sparkles size={13} />
+					<span className='hidden xl:inline'>Design with AI</span>
+				</button>
+				<GenerateDialog open={generateOpen} onClose={() => setGenerateOpen(false)} />
+
+				<VariantMenu />
 
 				<div className='relative'>
 					<button
@@ -373,6 +440,19 @@ const BuilderTopbar = ({ publishOpen, setPublishOpen }: { publishOpen: boolean; 
 					</AnimatePresence>
 				</div>
 			</div>
+			<SaveAsTemplateModal
+				ws={ws}
+				kind='page'
+				sourceId={page.id}
+				isOpen={saveAsTemplateOpen}
+				onClose={() => setSaveAsTemplateOpen(false)}
+				defaultName={page.name}
+				defaultDescription={page.description}
+				beforeSave={async () => {
+					// The template copies the server-side draft — save the edits still in the debounce.
+					if (!(await flush())) throw new Error('The page could not be saved.');
+				}}
+			/>
 		</header>
 	);
 };

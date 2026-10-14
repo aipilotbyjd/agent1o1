@@ -1,10 +1,20 @@
 import { useState } from 'react';
 import type { DragEvent, ReactNode } from 'react';
-import { Check, GripVertical, Layers, LogOut, Palette, Plus, TextCursorInput, Trash2 } from 'lucide-react';
+import { Bookmark, Check, Columns3, GripVertical, Layers, LogOut, Palette, Plus, TextCursorInput, Trash2 } from 'lucide-react';
 import type { TPageBlock, TPageBlockType, TPageTheme } from '@/types/workflow-page.type';
 import { humanize } from '@/components/workflowPage/PageBlocks';
-import { BLOCK_CATALOG, blockSummary, createBlock } from '../_helper/blockCatalog.helper';
-import { selectBlocks, usePageBuilderStore, type TBuilderLeftTab, type TDragPayload } from '../_store/pageBuilder.store';
+import { flattenBlocks } from '@/components/workflowPage/pageTree';
+import { useDeletePageSection, usePageSections } from '@/api/modules/workflow-pages';
+import { useConfirm } from '@/context/confirm';
+import { BLOCK_CATALOG, blockSummary, createBlock, newBlockId } from '../_helper/blockCatalog.helper';
+import { cloneBlock, isContainer } from '../_helper/blockTree.helper';
+import {
+	placeForDrop,
+	selectBlocks,
+	usePageBuilderStore,
+	type TBuilderLeftTab,
+	type TDragPayload,
+} from '../_store/pageBuilder.store';
 import { usePageBuilder } from '../_context/PageBuilder.context';
 import { PanelSection, PanelText, Segmented, Toggle } from './controls.partial';
 
@@ -63,19 +73,27 @@ const LibraryItem = ({
 );
 
 const AddTab = () => {
-	const { fields, outputs, interfaceLoading } = usePageBuilder();
+	const { ws, fields, outputs, interfaceLoading } = usePageBuilder();
+	const { data: sections } = usePageSections(ws);
+	const deleteSection = useDeletePageSection(ws);
+	const { confirm } = useConfirm();
+	const removeSection = async (id: string, name: string) => {
+		const ok = await confirm({
+			title: 'Delete this saved section?',
+			message: `“${name}” is removed from the library. Pages that already use it keep their copy.`,
+			confirmText: 'Delete',
+		});
+		if (ok) deleteSection.mutate(id);
+	};
 	const blocks = usePageBuilderStore(selectBlocks);
 	const insertBlock = usePageBuilderStore((store) => store.insertBlock);
 	const addBlock = usePageBuilderStore((store) => store.addBlock);
 
-	const placedFields = new Set(blocks.flatMap((block) => (block.type === 'field' ? [block.props.field_key] : [])));
-	const placedOutputs = new Set(blocks.flatMap((block) => (block.type === 'output' ? [block.props.output_name] : [])));
+	const all = flattenBlocks(blocks);
+	const placedFields = new Set(all.flatMap((block) => (block.type === 'field' ? [block.props.field_key] : [])));
+	const placedOutputs = new Set(all.flatMap((block) => (block.type === 'output' ? [block.props.output_name] : [])));
 
-	const addAfterSelection = (block: TPageBlock) => {
-		const { selectedId, content } = usePageBuilderStore.getState();
-		const index = content?.blocks.findIndex((item) => item.id === selectedId) ?? -1;
-		insertBlock(block, index >= 0 ? index + 1 : undefined);
-	};
+	const addAfterSelection = (block: TPageBlock) => insertBlock(block);
 
 	const generic = (type: TPageBlockType) => {
 		const meta = BLOCK_CATALOG[type];
@@ -94,6 +112,48 @@ const AddTab = () => {
 
 	return (
 		<>
+			{sections && sections.length > 0 && (
+				<PanelSection title='Saved'>
+					<div className='space-y-1.5'>
+						{sections.map((section) => {
+							const Icon = BLOCK_CATALOG[section.block.type].icon;
+							return (
+								<LibraryItem
+									key={section.id}
+									icon={<Bookmark size={15} />}
+									label={section.name}
+									description={BLOCK_CATALOG[section.block.type].label}
+									onAdd={() => insertBlock(cloneBlock(section.block, newBlockId))}
+									makeBlock={() => cloneBlock(section.block, newBlockId)}
+									trailing={
+										<span className='flex shrink-0 items-center gap-0.5'>
+											<Icon size={12} className='text-zinc-300 dark:text-zinc-600' />
+											<span
+												role='button'
+												tabIndex={0}
+												aria-label={`Delete ${section.name}`}
+												onClick={(event) => {
+													event.stopPropagation();
+													void removeSection(section.id, section.name);
+												}}
+												onKeyDown={(event) => {
+													if (event.key === 'Enter') {
+														event.stopPropagation();
+														void removeSection(section.id, section.name);
+													}
+												}}
+												className='rounded p-1 text-zinc-400 opacity-0 transition group-hover:opacity-100 hover:bg-rose-50 hover:text-rose-600 focus-visible:opacity-100 dark:hover:bg-rose-500/10'>
+												<Trash2 size={12} />
+											</span>
+										</span>
+									}
+								/>
+							);
+						})}
+					</div>
+				</PanelSection>
+			)}
+
 			<PanelSection title='Workflow inputs'>
 				{interfaceLoading ? (
 					<p className='text-[11px] text-zinc-400'>Reading the workflow…</p>
@@ -161,24 +221,157 @@ const AddTab = () => {
 				<div className='space-y-1.5'>{(['submit', 'status'] as const).map(generic)}</div>
 			</PanelSection>
 
+			<PanelSection title='Layout'>
+				<div className='space-y-1.5'>
+					{generic('section')}
+					{generic('columns')}
+					<LibraryItem
+						icon={<Columns3 size={15} />}
+						label='3 columns'
+						description='Three blocks side by side'
+						onAdd={() => addBlock('columns', { layout: '1-1-1' })}
+						makeBlock={() => createBlock('columns', { layout: '1-1-1' })}
+					/>
+				</div>
+			</PanelSection>
+
 			<PanelSection title='Content'>
 				<div className='space-y-1.5'>
-					{(['heading', 'text', 'image', 'callout', 'divider', 'spacer'] as const).map(generic)}
+					{(['heading', 'text', 'image', 'button', 'video', 'callout', 'divider', 'spacer'] as const).map(generic)}
+				</div>
+			</PanelSection>
+
+			<PanelSection title='Sections'>
+				<div className='space-y-1.5'>
+					{(['faq', 'testimonial', 'stats', 'logos', 'tabs', 'countdown'] as const).map(generic)}
 				</div>
 			</PanelSection>
 		</>
 	);
 };
 
-const LayersTab = () => {
+type TLayerOver = { id: string; side: 'before' | 'after' } | null;
+
+const LayerRows = ({
+	blocks,
+	depth,
+	over,
+	setOver,
+}: {
+	blocks: TPageBlock[];
+	depth: number;
+	over: TLayerOver;
+	setOver: (over: TLayerOver) => void;
+}) => {
 	const { fields, page } = usePageBuilder();
-	const blocks = usePageBuilderStore(selectBlocks);
-	const selectedId = usePageBuilderStore((store) => store.selectedId);
+	const selectedIds = usePageBuilderStore((store) => store.selectedIds);
 	const select = usePageBuilderStore((store) => store.select);
 	const moveBlock = usePageBuilderStore((store) => store.moveBlock);
 	const removeBlock = usePageBuilderStore((store) => store.removeBlock);
-	const [over, setOver] = useState<{ index: number } | null>(null);
 	const flagged = new Map(page.issues.filter((issue) => issue.block_id).map((issue) => [issue.block_id, issue.severity]));
+
+	return (
+		<>
+			{blocks.map((block) => {
+				const meta = BLOCK_CATALOG[block.type];
+				const Icon = meta.icon;
+				const selected = selectedIds.includes(block.id);
+				const flag = flagged.get(block.id);
+				const isColumn = block.type === 'column';
+				return (
+					<li key={block.id}>
+						<div
+							draggable={!isColumn}
+							onDragStart={(event) => {
+								event.stopPropagation();
+								startDrag(event, { kind: 'move', id: block.id });
+							}}
+							onDragEnd={() => {
+								endDrag();
+								setOver(null);
+							}}
+							onDragOver={(event) => {
+								if (usePageBuilderStore.getState().dragging?.kind !== 'move') return;
+								event.preventDefault();
+								event.stopPropagation();
+								const rect = event.currentTarget.getBoundingClientRect();
+								const side = event.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+								if (over?.id !== block.id || over.side !== side) setOver({ id: block.id, side });
+							}}
+							onDrop={(event) => {
+								event.preventDefault();
+								event.stopPropagation();
+								const { dragging, content } = usePageBuilderStore.getState();
+								const place =
+									content && over ? placeForDrop(content.blocks, { kind: 'beside', id: over.id, side: over.side, axis: 'y' }) : null;
+								if (dragging?.kind === 'move' && place) moveBlock(dragging.id, place);
+								endDrag();
+								setOver(null);
+							}}
+							style={{ paddingLeft: 6 + depth * 14 }}
+							className={`group relative flex items-center gap-2 rounded-lg py-1.5 pr-1.5 transition ${
+								selected
+									? 'bg-primary-100/80 text-primary-900 dark:bg-primary-400/15 dark:text-primary-100'
+									: 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/[0.05]'
+							}`}>
+							{over?.id === block.id && (
+								<span
+									className={`bg-primary-500 absolute inset-x-1 h-0.5 rounded-full ${over.side === 'before' ? '-top-px' : '-bottom-px'}`}
+								/>
+							)}
+							{depth > 0 && (
+								<span aria-hidden className='absolute top-0 bottom-0 w-px bg-zinc-200 dark:bg-white/10' style={{ left: depth * 14 - 3 }} />
+							)}
+							<GripVertical
+								size={13}
+								className={`shrink-0 text-zinc-300 dark:text-zinc-600 ${isColumn ? 'opacity-0' : 'cursor-grab'}`}
+							/>
+							<button
+								type='button'
+								onClick={(event) => select(block.id, { additive: event.shiftKey || event.metaKey || event.ctrlKey })}
+								className='flex min-w-0 flex-1 items-center gap-2 text-left'>
+								<Icon size={14} className='shrink-0 opacity-70' />
+								<span className='min-w-0 flex-1'>
+									<span className='block truncate text-xs font-semibold'>
+										{isContainer(block) ? meta.label : blockSummary(block, fields)}
+									</span>
+									<span className='block truncate text-[10px] opacity-60'>
+										{isContainer(block) ? blockSummary(block, fields) : meta.label}
+										{!isContainer(block) && block.width !== 'full' && ` · ${block.width.replace('_', ' ')}`}
+									</span>
+								</span>
+								{flag && (
+									<span
+										className={`size-2 shrink-0 rounded-full ${flag === 'error' ? 'bg-rose-500' : 'bg-amber-500'}`}
+										aria-label='Needs attention'
+									/>
+								)}
+							</button>
+							{!isColumn && (
+								<button
+									type='button'
+									onClick={() => removeBlock(block.id)}
+									aria-label={`Remove ${meta.label}`}
+									className='rounded p-1 text-zinc-400 opacity-0 transition group-hover:opacity-100 hover:bg-rose-50 hover:text-rose-600 focus-visible:opacity-100 dark:hover:bg-rose-500/10'>
+									<Trash2 size={12} />
+								</button>
+							)}
+						</div>
+						{isContainer(block) && block.children.length > 0 && (
+							<ol className='space-y-0.5 pt-0.5'>
+								<LayerRows blocks={block.children} depth={depth + 1} over={over} setOver={setOver} />
+							</ol>
+						)}
+					</li>
+				);
+			})}
+		</>
+	);
+};
+
+const LayersTab = () => {
+	const blocks = usePageBuilderStore(selectBlocks);
+	const [over, setOver] = useState<TLayerOver>(null);
 
 	if (blocks.length === 0) {
 		return (
@@ -189,76 +382,10 @@ const LayersTab = () => {
 	}
 
 	return (
-		<ol className='space-y-0.5 p-2' aria-label='Blocks on the page'>
-			{blocks.map((block, index) => {
-				const meta = BLOCK_CATALOG[block.type];
-				const Icon = meta.icon;
-				const selected = block.id === selectedId;
-				const flag = flagged.get(block.id);
-				return (
-					<li
-						key={block.id}
-						draggable
-						onDragStart={(event) => startDrag(event, { kind: 'move', id: block.id })}
-						onDragEnd={() => {
-							endDrag();
-							setOver(null);
-						}}
-						onDragOver={(event) => {
-							if (usePageBuilderStore.getState().dragging?.kind !== 'move') return;
-							event.preventDefault();
-							const rect = event.currentTarget.getBoundingClientRect();
-							setOver({ index: event.clientY < rect.top + rect.height / 2 ? index : index + 1 });
-						}}
-						onDrop={(event) => {
-							event.preventDefault();
-							const dragging = usePageBuilderStore.getState().dragging;
-							if (dragging?.kind === 'move' && over) moveBlock(dragging.id, over.index);
-							endDrag();
-							setOver(null);
-						}}
-						className='relative'>
-						{over?.index === index && <span className='bg-primary-500 absolute inset-x-1 -top-px h-0.5 rounded-full' />}
-						{over?.index === index + 1 && index === blocks.length - 1 && (
-							<span className='bg-primary-500 absolute inset-x-1 -bottom-px h-0.5 rounded-full' />
-						)}
-						<div
-							className={`group flex items-center gap-2 rounded-lg px-1.5 py-1.5 transition ${
-								selected
-									? 'bg-primary-100/80 text-primary-900 dark:bg-primary-400/15 dark:text-primary-100'
-									: 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/[0.05]'
-							}`}>
-							<GripVertical size={13} className='shrink-0 cursor-grab text-zinc-300 dark:text-zinc-600' />
-							<button
-								type='button'
-								onClick={() => select(block.id)}
-								className='flex min-w-0 flex-1 items-center gap-2 text-left'>
-								<Icon size={14} className='shrink-0 opacity-70' />
-								<span className='min-w-0 flex-1'>
-									<span className='block truncate text-xs font-semibold'>{blockSummary(block, fields)}</span>
-									<span className='block text-[10px] opacity-60'>
-										{meta.label}
-										{block.width !== 'full' && ` · ${block.width.replace('_', ' ')}`}
-									</span>
-								</span>
-								{flag && (
-									<span
-										className={`size-2 shrink-0 rounded-full ${flag === 'error' ? 'bg-rose-500' : 'bg-amber-500'}`}
-										aria-label='Needs attention'
-									/>
-								)}
-							</button>
-							<button
-								type='button'
-								onClick={() => removeBlock(block.id)}
-								aria-label={`Remove ${meta.label}`}
-								className='rounded p-1 text-zinc-400 opacity-0 transition group-hover:opacity-100 hover:bg-rose-50 hover:text-rose-600 focus-visible:opacity-100 dark:hover:bg-rose-500/10'>
-								<Trash2 size={12} />
-							</button>
-						</div>
-					</li>
-				);
-			})}
+		<ol className='space-y-0.5 p-2' aria-label='Blocks on the page' onDragLeave={(event) => {
+			if (!event.currentTarget.contains(event.relatedTarget as Node)) setOver(null);
+		}}>
+			<LayerRows blocks={blocks} depth={0} over={over} setOver={setOver} />
 		</ol>
 	);
 };

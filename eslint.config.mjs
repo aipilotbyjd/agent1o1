@@ -217,4 +217,11 @@ export default tseslint.config(
 			],
 		},
 	},
+	{
+		// Netlify runs edge functions on Deno, which needs the `.ts` on local imports.
+		files: ['netlify/edge-functions/**/*.ts'],
+		rules: {
+			'import/extensions': 'off',
+		},
+	},
 );

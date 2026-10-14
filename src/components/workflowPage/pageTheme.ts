@@ -15,7 +15,8 @@ const LIGHT = {
 	'--pg-border': '#e4e4e7',
 };
 
-const DARK = {
+/** Exported for sections with a dark or image background inside a light page. */
+export const DARK = {
 	'--pg-bg': '#09090b',
 	'--pg-surface': '#141417',
 	'--pg-subtle': '#1f1f23',

@@ -5,6 +5,7 @@ import Breadcrumb from '@/components/layout/Breadcrumb';
 import Container from '@/components/layout/Container';
 import PageRenderer from '@/components/workflowPage/PageRenderer';
 import { usePageRun, type TPageTransport } from '@/components/workflowPage/usePageRun';
+import { viewFields } from '@/components/workflowPage/pageTree';
 import { WorkflowPageService, useWorkflowPageView } from '@/api/modules/workflow-pages';
 import { ApiError } from '@/api/core';
 import pages from '@/Routes/pages';
@@ -12,15 +13,15 @@ import paths from '@/Routes/paths';
 import type { TPageView } from '@/types/workflow-page.type';
 import type { OutletContextType } from './_layouts/WorkflowPages.layout';
 
-const fieldsOf = (view: TPageView) => view.blocks.flatMap((block) => (block.type === 'field' ? [block.field] : []));
 
 const LivePage = ({ ws, pageId, view }: { ws: string; pageId: string; view: TPageView }) => {
-	const fields = useMemo(() => fieldsOf(view), [view]);
+	const fields = useMemo(() => viewFields(view.blocks), [view]);
 	const transport = useMemo<TPageTransport>(
 		() => ({
 			submit: (input) => WorkflowPageService.submit(ws, pageId, input).then((result) => ({ result })),
 			poll: (id, _secret, signal) => WorkflowPageService.submission(ws, pageId, id, signal),
 			storageKey: `page-run:member:${pageId}`,
+			onStart: () => void WorkflowPageService.started(ws, pageId).catch(() => undefined),
 		}),
 		[ws, pageId],
 	);

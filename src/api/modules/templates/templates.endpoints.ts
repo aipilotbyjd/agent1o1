@@ -22,6 +22,14 @@ export const AgentTemplateEndpoints = {
 		`${ws(w)}/agents/${agentId}/save-as-template`,
 } as const;
 
+export const PageTemplateEndpoints = {
+	list: (w: string) => `${ws(w)}/page-templates`,
+	detail: (w: string, id: string) => `${ws(w)}/page-templates/${id}`,
+	update: (w: string, id: string) => `${ws(w)}/page-templates/${id}`,
+	delete: (w: string, id: string) => `${ws(w)}/page-templates/${id}`,
+	savePageAsTemplate: (w: string, pageId: string) => `${ws(w)}/pages/${pageId}/save-as-template`,
+} as const;
+
 export const TemplateCollectionEndpoints = {
 	list: (w: string) => `${ws(w)}/template-collections`,
 	create: (w: string) => `${ws(w)}/template-collections`,

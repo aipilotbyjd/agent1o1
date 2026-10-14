@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError } from '@/api/core';
 import type { TWorkflowInterfaceField } from '@/types/workflow-extras.type';
 import type { TPageSubmissionResult } from '@/types/workflow-page.type';
@@ -21,6 +21,8 @@ export type TPageTransport = {
 	/** Where the run in progress is remembered, so a reload picks it back up.
 	 *  `submit` and `poll` must keep their identity between renders. */
 	storageKey?: string;
+	/** Called once, when the visitor first changes a field. */
+	onStart?: () => void;
 };
 
 export type TPageRunPhase = 'idle' | 'submitting' | 'running' | 'done';
@@ -182,7 +184,14 @@ export const usePageRun = (fields: TWorkflowInterfaceField[], transport: TPageTr
 			});
 	}, [fields, values, send, storageKey]);
 
+	const started = useRef(false);
+	const onStart = transport.onStart;
+
 	const setValue = useCallback((key: string, value: unknown) => {
+		if (!started.current) {
+			started.current = true;
+			onStart?.();
+		}
 		setValues((current) => ({ ...current, [key]: value }));
 		setErrors((current) => {
 			if (!(key in current)) return current;
@@ -190,7 +199,7 @@ export const usePageRun = (fields: TWorkflowInterfaceField[], transport: TPageTr
 			delete next[key];
 			return next;
 		});
-	}, []);
+	}, [onStart]);
 
 	const reset = useCallback(() => {
 		setTracking(null);

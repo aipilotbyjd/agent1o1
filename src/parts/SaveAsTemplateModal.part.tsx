@@ -4,7 +4,9 @@ import { LayoutTemplate } from 'lucide-react';
 import { ApiError, notify } from '@/api/core';
 import {
 	useAgentTemplates,
+	usePageTemplates,
 	useSaveAgentAsTemplate,
+	useSavePageAsTemplate,
 	useSaveWorkflowAsTemplate,
 	useWorkflowTemplates,
 } from '@/api/modules/templates';
@@ -23,8 +25,8 @@ const errorClass = 'mt-1.5 text-xs font-semibold text-red-500';
 
 interface ISaveAsTemplateModalProps {
 	ws: string;
-	kind: 'workflow' | 'agent';
-	/** The workflow or agent being snapshotted. */
+	kind: 'workflow' | 'agent' | 'page';
+	/** The workflow, agent or page being snapshotted. */
 	sourceId: string;
 	isOpen: boolean;
 	onClose: () => void;
@@ -85,19 +87,27 @@ const SaveAsTemplateForm = ({
 
 	const saveWorkflow = useSaveWorkflowAsTemplate(ws);
 	const saveAgent = useSaveAgentAsTemplate(ws);
-	const isPending = flushing || saveWorkflow.isPending || saveAgent.isPending;
+	const savePage = useSavePageAsTemplate(ws);
+	const isPending =
+		flushing || saveWorkflow.isPending || saveAgent.isPending || savePage.isPending;
 
 	// Suggest the categories this workspace already uses, so they stay consistent.
 	const { data: workflowTemplates } = useWorkflowTemplates(kind === 'workflow' ? ws : '');
 	const { data: agentTemplates } = useAgentTemplates(kind === 'agent' ? ws : '');
+	const { data: pageTemplates } = usePageTemplates(kind === 'page' ? ws : '');
 	const categories = useMemo(() => {
-		const list = (kind === 'workflow' ? workflowTemplates : agentTemplates) ?? [];
+		const list =
+			(kind === 'workflow'
+				? workflowTemplates
+				: kind === 'agent'
+					? agentTemplates
+					: pageTemplates) ?? [];
 		return Array.from(
 			new Set(list.map((t) => t.category).filter((c): c is string => !!c)),
 		).sort();
-	}, [kind, workflowTemplates, agentTemplates]);
+	}, [kind, workflowTemplates, agentTemplates, pageTemplates]);
 
-	const noun = kind === 'workflow' ? 'workflow' : 'agent';
+	const noun = kind;
 
 	const handleSubmit = async (e: FormEvent) => {
 		e.preventDefault();
@@ -122,8 +132,10 @@ const SaveAsTemplateForm = ({
 			}
 			if (kind === 'workflow') {
 				await saveWorkflow.mutateAsync({ workflowId: sourceId, body });
-			} else {
+			} else if (kind === 'agent') {
 				await saveAgent.mutateAsync({ agentId: sourceId, body });
+			} else {
+				await savePage.mutateAsync({ pageId: sourceId, body });
 			}
 			notify.success(`Saved "${trimmed}" as a template. Find it in Blueprints.`);
 			onClose();
@@ -151,7 +163,9 @@ const SaveAsTemplateForm = ({
 						<p className='text-sm font-semibold text-zinc-500 dark:text-zinc-400'>
 							{kind === 'workflow'
 								? 'Snapshots the current canvas so anyone in this workspace can start a new workflow from it. Connected credentials are left out.'
-								: 'Snapshots this agent’s instructions, model and tools so anyone in this workspace can start a new agent from it.'}
+								: kind === 'agent'
+									? 'Snapshots this agent’s instructions, model and tools so anyone in this workspace can start a new agent from it.'
+									: 'Snapshots this page’s layout and theme so anyone in this workspace can start a new page from it, for any workflow. Sharing settings are left out.'}
 						</p>
 						<div>
 							<label htmlFor='template-name' className={labelClass}>

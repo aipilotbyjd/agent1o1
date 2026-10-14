@@ -29,7 +29,7 @@ export const HeadingBlock = ({ block, mode }: { block: TPageBlockOf<'heading'>; 
 	const { text, level, align } = block.props;
 	const content = text || (mode === 'edit' ? <Placeholder>Heading</Placeholder> : null);
 	if (!content) return null;
-	const className = `${ALIGN[align]} tracking-tight break-words`;
+	const className = `${ALIGN[align]} tracking-tight break-words text-[var(--pg-text)]`;
 	if (level === 1) return <h1 className={`${className} text-3xl leading-tight font-extrabold`}>{content}</h1>;
 	if (level === 3) return <h3 className={`${className} text-base font-bold`}>{content}</h3>;
 	return <h2 className={`${className} text-xl font-bold`}>{content}</h2>;

@@ -194,6 +194,12 @@ export const pageEditor: TPage = {
 			text: 'Edit Page',
 			icon: 'Browser',
 		},
+		insights: {
+			id: 'pageInsights',
+			to: ws('pages/:pageId/insights'),
+			text: 'Insights',
+			icon: 'Browser',
+		},
 	},
 };
 

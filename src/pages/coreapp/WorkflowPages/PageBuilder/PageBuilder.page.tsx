@@ -4,7 +4,11 @@ import { Resizable } from 're-resizable';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Layers, Loader2, SlidersHorizontal } from 'lucide-react';
 import { useWorkflowInterface } from '@/api/modules/workflows';
-import { useWorkflowPage } from '@/api/modules/workflow-pages';
+import { useQueryClient } from '@tanstack/react-query';
+import { subscribeToPage, useWorkflowPage, workflowPageKeys } from '@/api/modules/workflow-pages';
+import type { IEchoLike } from '@/api/modules/workflow-builder/workflow-builder.realtime';
+import { useRealtime } from '@/context/realtime';
+import type { TPageVariant, TWorkflowPage } from '@/types/workflow-page.type';
 import useDeviceScreen from '@/hooks/useDeviceScreen';
 import paths from '@/Routes/paths';
 import { PageBuilderContext, type TPageBuilderContext } from './_context/PageBuilder.context';
@@ -12,6 +16,7 @@ import { usePageAutosave } from './_hooks/usePageAutosave.hook';
 import { useBuilderHotkeys } from './_hooks/useBuilderHotkeys.hook';
 import { usePageBuilderStore } from './_store/pageBuilder.store';
 import BuilderTopbar from './_partial/BuilderTopbar.partial';
+import BuilderOverlays from './_partial/BuilderOverlays.partial';
 import BuilderCanvas from './_partial/BuilderCanvas.partial';
 import LeftPanel from './_partial/LeftPanel.partial';
 import RightPanel from './_partial/RightPanel.partial';
@@ -30,7 +35,9 @@ const PageBuilderPage = () => {
 	const interfaceQuery = useWorkflowInterface(ws, page?.workflow_id ?? '');
 	const load = usePageBuilderStore((store) => store.load);
 	const loadedId = usePageBuilderStore((store) => store.pageId);
-	const { saveState, retry, flush } = usePageAutosave(ws, pageId);
+	const variant = usePageBuilderStore((store) => store.variant);
+	const qc = useQueryClient();
+	const { saveState, retry, flush, resolveConflict } = usePageAutosave(ws, pageId);
 	const [publishOpen, setPublishOpen] = useState(false);
 	const [mobilePanel, setMobilePanel] = useState<'left' | 'right' | null>(null);
 	const [leftWidth, setLeftWidth] = useState(300);
@@ -41,7 +48,7 @@ const PageBuilderPage = () => {
 	// The draft is read from the server once per page; from then on the
 	// builder owns it and the autosave only writes.
 	useEffect(() => {
-		if (page?.content && loadedId !== page.id) load(page.id, page.content);
+		if (page?.content && loadedId !== page.id) load(page.id, page.content, 'a', page.draft_revision);
 	}, [page, loadedId, load]);
 
 	// The workflow may be edited in another tab: re-read its inputs and the
@@ -57,6 +64,32 @@ const PageBuilderPage = () => {
 		return () => window.removeEventListener('focus', onFocus);
 	}, [refetchInterface, refetchPage]);
 
+	// Version B can be removed or promoted while it's open; go back to the page.
+	useEffect(() => {
+		if (page?.content && variant === 'b' && !page.variant.exists && loadedId === page.id) load(page.id, page.content, 'a', page.draft_revision);
+	}, [page, variant, loadedId, load]);
+
+	const switchVariant = useCallback(
+		async (next: TPageVariant) => {
+			if (next === usePageBuilderStore.getState().variant) return;
+			if (!(await flush())) return;
+			const fresh = qc.getQueryData<TWorkflowPage>(workflowPageKeys.detail(ws, pageId));
+			const content = next === 'b' ? fresh?.variant.content : fresh?.content;
+			if (fresh && content) load(fresh.id, content, next, fresh.draft_revision);
+		},
+		[flush, qc, ws, pageId, load],
+	);
+
+	// Comments and AI designs from anyone building this page, as they happen.
+	const { echo } = useRealtime();
+	useEffect(() => {
+		if (!echo || !ws || !pageId) return;
+		return subscribeToPage(echo as unknown as IEchoLike, ws, pageId, {
+			onComments: () => void qc.invalidateQueries({ queryKey: workflowPageKeys.comments(ws, pageId) }),
+			onGeneration: (event) => void qc.invalidateQueries({ queryKey: workflowPageKeys.generation(ws, pageId, event.id) }),
+		});
+	}, [echo, ws, pageId, qc]);
+
 	const openPublish = useCallback(() => setPublishOpen(true), []);
 	useBuilderHotkeys(openPublish);
 
@@ -65,16 +98,19 @@ const PageBuilderPage = () => {
 			page
 				? {
 						ws,
-						page,
+						// The checks shown are the ones for the version being edited.
+						page: variant === 'b' ? { ...page, issues: page.variant.issues } : page,
 						fields: interfaceQuery.data?.fields ?? NO_FIELDS,
 						outputs: interfaceQuery.data?.outputs ?? NO_FIELDS,
 						interfaceLoading: interfaceQuery.isLoading,
 						saveState,
 						retrySave: () => void retry(),
+						resolveConflict,
 						flush,
+						switchVariant,
 					}
 				: null,
-		[ws, page, interfaceQuery.data, interfaceQuery.isLoading, saveState, retry, flush],
+		[ws, page, variant, interfaceQuery.data, interfaceQuery.isLoading, saveState, retry, flush, switchVariant, resolveConflict],
 	);
 
 	if (pageQuery.isError) {
@@ -108,6 +144,7 @@ const PageBuilderPage = () => {
 		<PageBuilderContext.Provider value={context}>
 			<div className='flex h-dvh w-screen flex-col overflow-hidden bg-zinc-50 text-zinc-950 dark:bg-[#07080b] dark:text-zinc-100'>
 				<BuilderTopbar publishOpen={publishOpen} setPublishOpen={setPublishOpen} />
+				<BuilderOverlays />
 				<div className='relative flex min-h-0 flex-1'>
 					{isMobile ? (
 						<AnimatePresence>

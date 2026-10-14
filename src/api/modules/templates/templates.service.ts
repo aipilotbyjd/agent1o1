@@ -12,6 +12,9 @@ import type {
 	TUpdateAgentTemplateDto,
 	TUseAgentTemplateDto,
 	TSaveAgentAsTemplateDto,
+	TPageTemplate,
+	TUpdatePageTemplateDto,
+	TSavePageAsTemplateDto,
 	TTemplateCollection,
 	TCreateTemplateCollectionDto,
 	TUpdateTemplateCollectionDto,
@@ -25,6 +28,7 @@ import type { TAgent } from '@/types/agent.type';
 import {
 	WorkflowTemplateEndpoints as WT,
 	AgentTemplateEndpoints as AT,
+	PageTemplateEndpoints as PT,
 	TemplateCollectionEndpoints as TC,
 } from './templates.endpoints';
 
@@ -106,6 +110,32 @@ export const AgentTemplateService = {
 				TApiResponse<{ agent_template: TAgentTemplate }>
 			>(AT.saveAgentAsTemplate(ws, agentId), payload)
 			.then(unwrapKey<TAgentTemplate>('agent_template')),
+};
+
+export const PageTemplateService = {
+	list: (ws: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<{ page_templates: TPageTemplate[] }>>(PT.list(ws), { signal })
+			.then(unwrapKey<TPageTemplate[]>('page_templates')),
+
+	detail: (ws: string, id: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<{ page_template: TPageTemplate }>>(PT.detail(ws, id), { signal })
+			.then(unwrapKey<TPageTemplate>('page_template')),
+
+	update: (ws: string, id: string, payload: TUpdatePageTemplateDto) =>
+		axiosClient
+			.patch<TApiResponse<{ page_template: TPageTemplate }>>(PT.update(ws, id), payload)
+			.then(unwrapKey<TPageTemplate>('page_template')),
+
+	remove: (ws: string, id: string) => axiosClient.delete(PT.delete(ws, id)).then(() => undefined),
+
+	savePageAsTemplate: (ws: string, pageId: string, payload: TSavePageAsTemplateDto) =>
+		axiosClient
+			.post<
+				TApiResponse<{ page_template: TPageTemplate }>
+			>(PT.savePageAsTemplate(ws, pageId), payload)
+			.then(unwrapKey<TPageTemplate>('page_template')),
 };
 
 export const TemplateCollectionService = {

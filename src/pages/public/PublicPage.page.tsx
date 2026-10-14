@@ -6,6 +6,7 @@ import PageRenderer from '@/components/workflowPage/PageRenderer';
 import { pageInputClass } from '@/components/workflowPage/PageField';
 import { pageThemeStyle, usePageDark } from '@/components/workflowPage/pageTheme';
 import { usePageRun, type TPageTransport } from '@/components/workflowPage/usePageRun';
+import { viewFields } from '@/components/workflowPage/pageTree';
 import { PublicPageService } from '@/api/modules/workflow-pages';
 import { ApiError } from '@/api/core';
 import type { TPageTheme, TPageView } from '@/types/workflow-page.type';
@@ -14,10 +15,7 @@ import safeStorage from '@/utils/safeStorage.util';
 const accessKey = (token: string) => `page-access:${token}`;
 
 const LivePage = ({ token, view, accessToken }: { token: string; view: TPageView; accessToken: string | null }) => {
-	const fields = useMemo(
-		() => view.blocks.flatMap((block) => (block.type === 'field' ? [block.field] : [])),
-		[view],
-	);
+	const fields = useMemo(() => viewFields(view.blocks), [view]);
 	const transport = useMemo<TPageTransport>(
 		() => ({
 			submit: (input) =>
@@ -27,6 +25,7 @@ const LivePage = ({ token, view, accessToken }: { token: string; view: TPageView
 				})),
 			poll: (id, secret, signal) => PublicPageService.result(token, id, secret ?? '', signal),
 			storageKey: `page-run:${token}`,
+			onStart: () => void PublicPageService.started(token).catch(() => undefined),
 		}),
 		[token, accessToken],
 	);

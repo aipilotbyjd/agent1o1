@@ -45,6 +45,8 @@ const paths = {
 		buildPath(pageEditorPages.use.to, { workspaceId, pageId }),
 	editPage: (workspaceId: string, pageId: string) =>
 		buildPath(pageEditorPages.edit.to, { workspaceId, pageId }),
+	pageInsights: (workspaceId: string, pageId: string) =>
+		buildPath(pageEditorPages.insights.to, { workspaceId, pageId }),
 	publicPage: (token: string) => buildPath(pages.publicPage.to, { token }),
 
 	agents: (workspaceId: string) => buildPath(workspacePages.agents.to, { workspaceId }),

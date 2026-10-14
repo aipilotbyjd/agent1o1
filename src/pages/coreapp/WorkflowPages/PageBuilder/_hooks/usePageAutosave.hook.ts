@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { ApiError } from '@/api/core';
 import { messageFromError, notify } from '@/api/core/notify';
 import { WorkflowPageService, workflowPageKeys } from '@/api/modules/workflow-pages';
 import { usePageBuilderStore } from '../_store/pageBuilder.store';
@@ -21,23 +22,30 @@ export const usePageAutosave = (ws: string, pageId: string) => {
 	const saveState = usePageBuilderStore((store) => store.saveState);
 
 	const save = useCallback(
-		async (options?: { silent?: boolean }): Promise<boolean> => {
+		async (options?: { silent?: boolean; force?: boolean }): Promise<boolean> => {
 			if (inFlight.current) await inFlight.current;
 
-			const { content, revision: saving, savedRevision, pageId: loaded } = usePageBuilderStore.getState();
+			const { content, variant, revision: saving, savedRevision, pageId: loaded, baseRevision } = usePageBuilderStore.getState();
 			if (!content || loaded !== pageId) return false;
 			if (saving === savedRevision) return true;
 
 			const store = usePageBuilderStore.getState();
 			store.markSaving();
 
-			const request = WorkflowPageService.update(ws, pageId, { content })
+			const request = WorkflowPageService.update(ws, pageId, {
+				...(variant === 'b' ? { variant_content: content } : { content }),
+				...(options?.force || baseRevision === null ? {} : { base_revision: baseRevision }),
+			})
 				.then((page) => {
 					qc.setQueryData(workflowPageKeys.detail(ws, pageId), page);
-					usePageBuilderStore.getState().markSaved(saving);
+					usePageBuilderStore.getState().markSaved(saving, page.draft_revision);
 					return usePageBuilderStore.getState().revision === saving;
 				})
 				.catch((error: unknown) => {
+					if (ApiError.is(error) && error.status === 409) {
+						usePageBuilderStore.getState().markConflict();
+						return false;
+					}
 					usePageBuilderStore.getState().markSaveFailed();
 					if (!options?.silent) notify.error(messageFromError(error, 'Could not save the page'));
 					return false;
@@ -89,5 +97,24 @@ export const usePageAutosave = (ws: string, pageId: string) => {
 		return saved;
 	}, [save]);
 
-	return { saveState, retry: save, flush };
+	/**
+	 * After a conflict: `theirs` loads the draft as it is now and drops the
+	 * edits on screen; `mine` saves them over it anyway.
+	 */
+	const resolveConflict = useCallback(
+		async (keep: 'mine' | 'theirs') => {
+			if (keep === 'mine') {
+				await save({ force: true });
+				return;
+			}
+			const page = await WorkflowPageService.detail(ws, pageId);
+			qc.setQueryData(workflowPageKeys.detail(ws, pageId), page);
+			const { variant, load } = usePageBuilderStore.getState();
+			const content = variant === 'b' ? page.variant.content : page.content;
+			if (content) load(page.id, content, page.variant.exists ? variant : 'a', page.draft_revision);
+		},
+		[save, qc, ws, pageId],
+	);
+
+	return { saveState, retry: save, flush, resolveConflict };
 };
