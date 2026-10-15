@@ -1,6 +1,6 @@
-import { useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import type { CSSProperties } from 'react';
-import type { TPageBlockWidth, TPageTheme } from '@/types/workflow-page.type';
+import type { TPageBlockWidth, TPageFont, TPageTheme } from '@/types/workflow-page.type';
 
 // A page brings its own look, so it is styled from CSS variables set on its
 // root rather than from the app's `dark:` variants: a light page has to stay
@@ -33,10 +33,46 @@ const RADIUS: Record<TPageTheme['radius'], string> = {
 	xl: '20px',
 };
 
-const FONT: Record<TPageTheme['font'], string> = {
-	sans: 'inherit',
-	serif: 'ui-serif, Georgia, Cambria, "Times New Roman", serif',
-	mono: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+type TFontMeta = { label: string; stack: string; google?: string };
+
+const SANS = 'ui-sans-serif, system-ui, sans-serif';
+const SERIF = 'ui-serif, Georgia, Cambria, "Times New Roman", serif';
+const MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+
+/** `google` is the family spec for Google Fonts; those load only once a page uses them. */
+export const PAGE_FONTS: Record<TPageFont, TFontMeta> = {
+	sans: { label: 'Default', stack: 'inherit' },
+	inter: { label: 'Inter', stack: `"Inter", ${SANS}`, google: 'Inter:wght@400..700' },
+	dm_sans: { label: 'DM Sans', stack: `"DM Sans", ${SANS}`, google: 'DM+Sans:wght@400..700' },
+	manrope: { label: 'Manrope', stack: `"Manrope", ${SANS}`, google: 'Manrope:wght@400..700' },
+	poppins: { label: 'Poppins', stack: `"Poppins", ${SANS}`, google: 'Poppins:wght@400;500;600;700' },
+	space_grotesk: { label: 'Space Grotesk', stack: `"Space Grotesk", ${SANS}`, google: 'Space+Grotesk:wght@400..700' },
+	outfit: { label: 'Outfit', stack: `"Outfit", ${SANS}`, google: 'Outfit:wght@400..700' },
+	serif: { label: 'Serif', stack: SERIF },
+	playfair: { label: 'Playfair', stack: `"Playfair Display", ${SERIF}`, google: 'Playfair+Display:wght@400..700' },
+	lora: { label: 'Lora', stack: `"Lora", ${SERIF}`, google: 'Lora:wght@400..700' },
+	fraunces: { label: 'Fraunces', stack: `"Fraunces", ${SERIF}`, google: 'Fraunces:wght@400..700' },
+	mono: { label: 'Mono', stack: MONO },
+	jetbrains_mono: { label: 'JetBrains Mono', stack: `"JetBrains Mono", ${MONO}`, google: 'JetBrains+Mono:wght@400..700' },
+};
+
+const requested = new Set<string>();
+
+const loadPageFont = (font: TPageFont) => {
+	const google = PAGE_FONTS[font]?.google;
+	if (!google || requested.has(google)) return;
+	requested.add(google);
+	const link = document.createElement('link');
+	link.rel = 'stylesheet';
+	link.href = `https://fonts.googleapis.com/css2?family=${google}&display=swap`;
+	document.head.appendChild(link);
+};
+
+export const usePageFonts = (...fonts: TPageFont[]) => {
+	const key = fonts.join(',');
+	useEffect(() => {
+		key.split(',').forEach((font) => loadPageFont(font as TPageFont));
+	}, [key]);
 };
 
 /** In px: the root font size is about 13px, so rem widths come out narrow. */
@@ -80,7 +116,7 @@ export const pageThemeStyle = (theme: TPageTheme, dark: boolean): CSSProperties 
 		'--pg-accent-fg': contrastText(theme.accent),
 		'--pg-accent-soft': 'color-mix(in srgb, var(--pg-accent) 12%, transparent)',
 		'--pg-radius': RADIUS[theme.radius],
-		fontFamily: FONT[theme.font],
+		fontFamily: (PAGE_FONTS[theme.font] ?? PAGE_FONTS.sans).stack,
 		color: 'var(--pg-text)',
 		backgroundColor:
 			theme.background === 'soft'

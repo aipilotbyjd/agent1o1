@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import type { DragEvent, ReactNode } from 'react';
 import { Bookmark, Check, Columns3, GripVertical, Layers, LogOut, Palette, Plus, TextCursorInput, Trash2 } from 'lucide-react';
-import type { TPageBlock, TPageBlockType, TPageTheme } from '@/types/workflow-page.type';
+import type { TPageBlock, TPageBlockType, TPageFont, TPageTheme } from '@/types/workflow-page.type';
+import { PAGE_FONTS, usePageFonts } from '@/components/workflowPage/pageTheme';
 import { humanize } from '@/components/workflowPage/PageBlocks';
 import { flattenBlocks } from '@/components/workflowPage/pageTree';
 import { useDeletePageSection, usePageSections } from '@/api/modules/workflow-pages';
@@ -16,7 +17,7 @@ import {
 	type TDragPayload,
 } from '../_store/pageBuilder.store';
 import { usePageBuilder } from '../_context/PageBuilder.context';
-import { PanelSection, PanelText, Segmented, Toggle } from './controls.partial';
+import { PanelField, PanelSection, PanelText, Segmented, Toggle } from './controls.partial';
 
 export const DRAG_MIME = 'application/x-agent1o1-page-block';
 
@@ -392,9 +393,12 @@ const LayersTab = () => {
 
 const ACCENTS = ['#4f46e5', '#2563eb', '#0891b2', '#059669', '#65a30d', '#d97706', '#dc2626', '#db2777', '#7c3aed', '#18181b'];
 
+const FONT_KEYS = Object.keys(PAGE_FONTS) as TPageFont[];
+
 const ThemeTab = () => {
 	const theme = usePageBuilderStore((store) => store.content?.theme);
 	const updateTheme = usePageBuilderStore((store) => store.updateTheme);
+	usePageFonts(...FONT_KEYS);
 	if (!theme) return null;
 	const set = <K extends keyof TPageTheme>(key: K, value: TPageTheme[K], coalesce?: boolean) =>
 		updateTheme({ [key]: value } as Partial<TPageTheme>, coalesce ? key : undefined);
@@ -463,16 +467,29 @@ const ThemeTab = () => {
 						{ value: 'xl', label: 'XL' },
 					]}
 				/>
-				<Segmented
-					label='Font'
-					value={theme.font}
-					onChange={(value) => set('font', value)}
-					options={[
-						{ value: 'sans', label: 'Sans' },
-						{ value: 'serif', label: <span className='font-serif'>Serif</span> },
-						{ value: 'mono', label: <span className='font-mono'>Mono</span> },
-					]}
-				/>
+				<PanelField label='Font'>
+					<div role='radiogroup' aria-label='Font' className='grid grid-cols-2 gap-1.5'>
+						{FONT_KEYS.map((font) => {
+							const active = theme.font === font;
+							return (
+								<button
+									key={font}
+									type='button'
+									role='radio'
+									aria-checked={active}
+									onClick={() => set('font', font)}
+									style={{ fontFamily: PAGE_FONTS[font].stack }}
+									className={`h-8 truncate rounded-lg border px-2 text-left text-[13px] transition ${
+										active
+											? 'border-primary-400 bg-primary-50 text-zinc-900 dark:border-primary-400/50 dark:bg-primary-400/10 dark:text-white'
+											: 'border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 dark:border-white/10 dark:text-zinc-300 dark:hover:border-white/20 dark:hover:text-white'
+									}`}>
+									{PAGE_FONTS[font].label}
+								</button>
+							);
+						})}
+					</div>
+				</PanelField>
 				<Segmented
 					label='Page width'
 					value={theme.width}

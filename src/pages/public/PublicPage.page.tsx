@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppWindow, Loader2, Lock } from 'lucide-react';
 import PageRenderer from '@/components/workflowPage/PageRenderer';
 import { pageInputClass } from '@/components/workflowPage/PageField';
-import { pageThemeStyle, usePageDark } from '@/components/workflowPage/pageTheme';
+import { pageThemeStyle, usePageDark, usePageFonts } from '@/components/workflowPage/pageTheme';
 import { usePageRun, type TPageTransport } from '@/components/workflowPage/usePageRun';
 import { viewFields } from '@/components/workflowPage/pageTree';
 import { PublicPageService } from '@/api/modules/workflow-pages';
@@ -35,6 +35,7 @@ const LivePage = ({ token, view, accessToken }: { token: string; view: TPageView
 
 const PasswordGate = ({ token, view, onUnlocked }: { token: string; view: TPageView; onUnlocked: (accessToken: string, view: TPageView) => void }) => {
 	const dark = usePageDark(view.theme.appearance);
+	usePageFonts(view.theme.font);
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState<string | null>(null);
 	const [busy, setBusy] = useState(false);

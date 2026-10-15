@@ -30,7 +30,7 @@ import {
 	TestimonialBlock,
 	VideoBlock,
 } from './PageContentBlocks';
-import { DARK, PAGE_BLOCK_SPAN, PAGE_WIDTH, pageThemeStyle, usePageDark } from './pageTheme';
+import { DARK, PAGE_BLOCK_SPAN, PAGE_WIDTH, pageThemeStyle, usePageDark, usePageFonts } from './pageTheme';
 import type { TPageRun } from './usePageRun';
 
 /** A block as the renderer takes it: a field may carry the interface field
@@ -258,6 +258,7 @@ const PageRenderer = ({
 }: Props) => {
 	const systemDark = usePageDark(theme.appearance);
 	const dark = forceDark ?? systemDark;
+	usePageFonts(theme.font);
 
 	const grid = (
 		<TreeContext.Provider value={{ mode, run, wrapBlock, containerEnd }}>

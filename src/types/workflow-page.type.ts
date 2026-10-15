@@ -104,12 +104,27 @@ export type TPageBlockOf<T extends TPageBlockType> = {
 
 export type TPageBlock = { [T in TPageBlockType]: TPageBlockOf<T> }[TPageBlockType];
 
+export type TPageFont =
+	| 'sans'
+	| 'serif'
+	| 'mono'
+	| 'inter'
+	| 'dm_sans'
+	| 'manrope'
+	| 'poppins'
+	| 'space_grotesk'
+	| 'outfit'
+	| 'playfair'
+	| 'lora'
+	| 'fraunces'
+	| 'jetbrains_mono';
+
 export type TPageTheme = {
 	accent: string;
 	appearance: 'light' | 'dark' | 'auto';
 	background: 'soft' | 'plain' | 'dots' | 'gradient';
 	radius: 'lg' | 'none' | 'sm' | 'md' | 'xl';
-	font: 'sans' | 'serif' | 'mono';
+	font: TPageFont;
 	width: 'medium' | 'narrow' | 'wide';
 	logo_url: string | null;
 	cover_url: string | null;
