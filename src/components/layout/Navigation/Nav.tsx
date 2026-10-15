@@ -318,14 +318,16 @@ interface INavCollapseProps extends HTMLAttributes<HTMLLIElement> {
 	to: string;
 	className?: string;
 	subPages?: unknown;
+	defaultOpen?: boolean;
 }
 export const NavCollapse: FC<INavCollapseProps> = (props) => {
-	const { children, icon, text, className, to, subPages, iconColor, ...rest } = props;
+	const { children, icon, text, className, to, subPages, iconColor, defaultOpen, ...rest } =
+		props;
 
 	const { t } = useTranslation('menu');
 
 	const id = useId();
-	const [isActive, setIsActive] = useState<boolean>(false);
+	const [isActive, setIsActive] = useState<boolean>(!!defaultOpen);
 
 	const { asideStatus } = useAsideStatus();
 
@@ -333,9 +335,10 @@ export const NavCollapse: FC<INavCollapseProps> = (props) => {
 	const here = to !== '/' && location.pathname.includes(to);
 
 	useEffect(() => {
+		if (defaultOpen && !here) return;
 		// eslint-disable-next-line react-hooks/set-state-in-effect
 		setIsActive(here);
-	}, [here, location.pathname]);
+	}, [here, location.pathname, defaultOpen]);
 
 	return (
 		<li

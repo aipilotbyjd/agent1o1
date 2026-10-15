@@ -3,6 +3,8 @@ import pages, { TPage } from '@/Routes/pages';
 export type TNavSection = {
 	/** Section heading; omit for an ungrouped run of items. */
 	title?: string;
+	/** Draw a line above the section, setting it apart from the rest. */
+	divider?: boolean;
 	items: TNavEntry[];
 };
 
@@ -11,6 +13,8 @@ export type TNavEntry = TPage & {
 	collapsible?: boolean;
 	/** Match the route exactly. Off for items that own a subtree. */
 	end?: boolean;
+	/** Start a collapsible group open; it still opens on its own pages either way. */
+	defaultOpen?: boolean;
 };
 
 const workspacePages = pages.workspace.subPages!;
@@ -22,35 +26,33 @@ const settingsPages = pages.settings.subPages!;
  */
 export const coreAppNavigation: TNavSection[] = [
 	{
-		title: 'Overview',
-		items: [workspacePages.assistant, workspacePages.dashboard],
+		items: [workspacePages.dashboard, workspacePages.assistant],
 	},
 	{
-		title: 'Automate',
+		title: 'Build',
 		items: [
 			workspacePages.playbooks,
-			workspacePages.pages,
 			workspacePages.agents,
+			workspacePages.pages,
 			workspacePages.blueprints,
 		],
 	},
 	{
-		title: 'Resources',
+		title: 'Connect',
 		items: [
-			workspacePages.skills,
 			workspacePages.apps,
 			workspacePages.knowledge,
+			workspacePages.skills,
 			workspacePages.vault,
 		],
 	},
 	{
-		title: 'Activity',
-		items: [
-			workspacePages.approvals,
-			workspacePages.trail,
-			workspacePages.artifacts,
-			workspacePages.trash,
-		],
+		title: 'Monitor',
+		items: [workspacePages.approvals, workspacePages.trail, workspacePages.artifacts],
+	},
+	{
+		divider: true,
+		items: [workspacePages.trash],
 	},
 ];
 
@@ -58,27 +60,30 @@ export const coreAppNavigation: TNavSection[] = [
 export const settingsNavigation: TNavSection[] = [
 	{
 		title: 'Account',
-		items: [
-			settingsPages.profile,
-			settingsPages.security,
-			settingsPages.notifications,
-			settingsPages.referrals,
-		],
+		items: [settingsPages.profile, settingsPages.security, settingsPages.notifications],
 	},
 	{
 		title: 'Workspace',
 		items: [
 			settingsPages.workspace,
 			settingsPages.members,
-			settingsPages.apiKeys,
-			settingsPages.aiProviders,
-			settingsPages.notificationChannels,
 			settingsPages.tags,
 			settingsPages.agentPolicy,
 		],
 	},
 	{
+		title: 'Integrations',
+		items: [
+			settingsPages.apiKeys,
+			settingsPages.aiProviders,
+			settingsPages.notificationChannels,
+		],
+	},
+	{
 		title: 'Billing',
-		items: [{ ...settingsPages.billing, collapsible: true }],
+		items: [
+			{ ...settingsPages.billing, collapsible: true, defaultOpen: true },
+			settingsPages.referrals,
+		],
 	},
 ];

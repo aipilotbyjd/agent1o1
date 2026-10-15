@@ -19,7 +19,7 @@ const SettingsAsideTemplate = () => {
 				<Nav>
 					<NavItem
 						icon='ArrowLeft01'
-						text='Go back'
+						text='Back to workspace'
 						onClick={() => navigate(resolvePath(pages.workspace.to))}
 					/>
 					<NavSectionsPart sections={settingsNavigation} />

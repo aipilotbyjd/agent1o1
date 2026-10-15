@@ -1,21 +1,22 @@
 import { FC, Fragment } from 'react';
-import { NavCollapse, NavItem, NavTitle } from '@/components/layout/Navigation/Nav';
+import { NavCollapse, NavItem, NavSeparator, NavTitle } from '@/components/layout/Navigation/Nav';
 import { TNavEntry, TNavSection } from '@/Routes/navigation';
 import useResolvePath from '@/hooks/useResolvePath';
 import { useBrand } from '@/context/brand';
 import pages from '@/Routes/pages';
+import ApprovalsBadgePart from '@/templates/asides/_parts/ApprovalsBadge.part';
 
 const NavEntry: FC<{ entry: TNavEntry; resolvePath: (to: string) => string }> = ({
 	entry,
 	resolvePath,
 }) => {
 	const brand = useBrand();
-	const { collapsible, subPages, end, ...page } = entry;
+	const { collapsible, subPages, end, defaultOpen, ...page } = entry;
 	const text = page.id === pages.workspace.subPages!.assistant.id ? brand.name : page.text;
 
 	if (collapsible && subPages) {
 		return (
-			<NavCollapse {...page} to={resolvePath(page.to)}>
+			<NavCollapse {...page} to={resolvePath(page.to)} defaultOpen={defaultOpen}>
 				{Object.values(subPages).map((child) => (
 					<NavItem key={child.id} {...child} to={resolvePath(child.to)} />
 				))}
@@ -23,7 +24,11 @@ const NavEntry: FC<{ entry: TNavEntry; resolvePath: (to: string) => string }> = 
 		);
 	}
 
-	return <NavItem {...page} text={text} to={resolvePath(page.to)} end={end} />;
+	return (
+		<NavItem {...page} text={text} to={resolvePath(page.to)} end={end}>
+			{page.id === pages.workspace.subPages!.approvals.id && <ApprovalsBadgePart />}
+		</NavItem>
+	);
 };
 
 /**
@@ -37,7 +42,12 @@ const NavSectionsPart: FC<{ sections: TNavSection[] }> = ({ sections }) => {
 		<>
 			{sections.map((section, index) => (
 				<Fragment key={section.title ?? `section-${index}`}>
-					{section.title && <NavTitle>{section.title}</NavTitle>}
+					{section.divider && <NavSeparator />}
+					{section.title && (
+						<NavTitle className={index > 0 ? 'mt-3' : undefined}>
+							{section.title}
+						</NavTitle>
+					)}
 					{section.items.map((entry) => (
 						<NavEntry key={entry.id} entry={entry} resolvePath={resolvePath} />
 					))}
