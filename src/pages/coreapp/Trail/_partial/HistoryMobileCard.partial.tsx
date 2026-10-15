@@ -25,12 +25,7 @@ const HistoryMobileCard = ({ displayItem, isSelected, onSelect }: HistoryMobileC
 			}`}>
 			<div className='flex min-w-0 flex-1 items-start gap-3.5 text-left'>
 				{/* Icon */}
-				<div
-					className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-xs ${
-						displayItem.type === 'Chat'
-							? 'bg-primary-50 text-primary-600 dark:bg-primary-950/40 dark:text-primary-400'
-							: 'bg-primary-50 text-primary-600 dark:bg-primary-950/40 dark:text-primary-400'
-					}`}>
+				<div className='bg-primary-50 text-primary-600 dark:bg-primary-950/40 dark:text-primary-400 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-xs'>
 					<IconComponent className='h-5.5 w-5.5' />
 				</div>
 
@@ -42,13 +37,8 @@ const HistoryMobileCard = ({ displayItem, isSelected, onSelect }: HistoryMobileC
 
 					{/* Meta details row */}
 					<div className='mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5'>
-						<span
-							className={`inline-flex items-center rounded-lg px-2 py-0.5 text-[8.5px] font-black tracking-widest ${
-								displayItem.type === 'Chat'
-									? 'bg-primary-50 text-primary-600 border-primary-100 dark:border-primary-900/30 dark:bg-primary-950/30 dark:text-primary-400 border'
-									: 'bg-primary-50 text-primary-600 border-primary-100 dark:border-primary-900/30 dark:bg-primary-950/30 dark:text-primary-400 border'
-							}`}>
-							{displayItem.type === 'Chat' ? 'CHAT' : 'WORKFLOW'}
+						<span className='bg-primary-50 text-primary-600 border-primary-100 dark:border-primary-900/30 dark:bg-primary-950/30 dark:text-primary-400 inline-flex items-center rounded-lg border px-2 py-0.5 text-[8.5px] font-black tracking-widest'>
+							{displayItem.type.toUpperCase()}
 						</span>
 
 						<span className='flex items-center gap-1 text-[10px] font-bold text-slate-400 dark:text-zinc-500'>

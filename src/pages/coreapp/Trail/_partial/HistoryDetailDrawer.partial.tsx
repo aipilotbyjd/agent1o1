@@ -1,7 +1,7 @@
-import { Activity, Check, Clock, Coins, Copy, ExternalLink, MessageSquare, X } from 'lucide-react';
+import { Activity, Check, Clock, Coins, Copy, ExternalLink, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import AgentRunLog from '@/components/common/AgentRunLog';
-import ExecutionLogsViewer from './ExecutionLogsViewer.partial';
+import WorkflowRunDetail from './WorkflowRunDetail.partial';
 import RunActions from './RunActions.partial';
 import type { DisplayItem } from '../_types/history.type';
 import type { TRun } from '@/types/run.type';
@@ -80,7 +80,10 @@ const HistoryDetailDrawer = ({
 											Source
 										</span>
 										<span className='flex items-center gap-1.5 text-xs font-extrabold text-slate-800 dark:text-zinc-200'>
-											<MessageSquare size={13} className='text-primary-500' />
+											<selectedDetails.icon
+												size={13}
+												className='text-primary-500'
+											/>
 											{selectedDetails.type}
 										</span>
 									</div>
@@ -105,49 +108,21 @@ const HistoryDetailDrawer = ({
 								</div>
 							</div>
 
-							{/* Activity Logs section */}
-							<div className='space-y-4'>
-								<h3 className='text-[10px] font-black tracking-widest text-slate-400 uppercase'>
-									Activity Logs
-								</h3>
+							{run?.runnable_type === 'workflow' ? (
+								<WorkflowRunDetail ws={activeWorkspaceId} run={run} />
+							) : (
+								<div className='space-y-4'>
+									<h3 className='text-[10px] font-black tracking-widest text-slate-400 uppercase'>
+										Activity Logs
+									</h3>
 
-								{selectedDetails.chatTranscript ? (
-									<div className='border-slate-150 space-y-4 rounded-2xl border bg-slate-50/50 p-4.5 dark:border-zinc-800 dark:bg-zinc-950/20'>
-										{selectedDetails.chatTranscript.map((log, idx) => (
-											<div
-												key={idx}
-												className={`flex flex-col gap-1.5 ${
-													log.sender === 'user'
-														? 'items-end'
-														: 'items-start'
-												}`}>
-												<span className='text-[9px] font-black tracking-wider text-slate-400 uppercase'>
-													{log.sender === 'user'
-														? 'User Input'
-														: 'Agent Response'}
-												</span>
-												<div
-													className={`max-w-[85%] rounded-2xl border p-3 text-xs leading-relaxed font-semibold shadow-xs ${
-														log.sender === 'user'
-															? 'bg-primary-400 border-primary-700 text-primary-950 rounded-tr-none'
-															: 'text-slate-850 rounded-tl-none border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
-													}`}>
-													{log.text}
-												</div>
-											</div>
-										))}
-									</div>
-								) : run && run.runnable_type !== 'workflow' ? (
-									<div className='border-slate-150 rounded-2xl border bg-slate-50/50 p-4.5 dark:border-zinc-800 dark:bg-zinc-950/20'>
-										<AgentRunLog ws={activeWorkspaceId} run={run} />
-									</div>
-								) : (
-									<ExecutionLogsViewer
-										ws={activeWorkspaceId}
-										executionId={selectedDetails.id}
-									/>
-								)}
-							</div>
+									{run && (
+										<div className='border-slate-150 rounded-2xl border bg-slate-50/50 p-4.5 dark:border-zinc-800 dark:bg-zinc-950/20'>
+											<AgentRunLog ws={activeWorkspaceId} run={run} />
+										</div>
+									)}
+								</div>
+							)}
 						</div>
 
 						{/* Drawer footer */}

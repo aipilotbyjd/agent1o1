@@ -1,8 +1,19 @@
 import { Filter, Search } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { TRunStatus } from '@/types/run.type';
+import { RUN_KINDS, type TRunKind } from '../_helper/runKind';
 
 export type TTrailStatusFilter = 'all' | TRunStatus;
+export type TTrailTypeFilter = 'all' | TRunKind;
+
+/** Applied by the server (`GET runs?runnable_type=`), so it spans every page. */
+const TRAIL_TYPE_OPTIONS: { value: TTrailTypeFilter; label: string }[] = [
+	{ value: 'all', label: 'All activities' },
+	...(Object.entries(RUN_KINDS) as [TRunKind, { label: string }][]).map(([value, kind]) => ({
+		value,
+		label: kind.label,
+	})),
+];
 
 /** Applied by the server (`GET runs?status=`), so it spans every page. */
 const TRAIL_STATUS_OPTIONS: { value: TTrailStatusFilter; label: string }[] = [
@@ -17,8 +28,8 @@ const TRAIL_STATUS_OPTIONS: { value: TTrailStatusFilter; label: string }[] = [
 interface HistorySearchBarProps {
 	searchQuery: string;
 	onSearchChange: (value: string) => void;
-	selectedType: 'All' | 'Chat' | 'Workflow run';
-	onTypeChange: (type: 'All' | 'Chat' | 'Workflow run') => void;
+	selectedType: TTrailTypeFilter;
+	onTypeChange: (type: TTrailTypeFilter) => void;
 	selectedStatus: TTrailStatusFilter;
 	onStatusChange: (status: TTrailStatusFilter) => void;
 	onClearFilters: () => void;
@@ -40,7 +51,8 @@ const HistorySearchBar = ({
 	const statusLabel = TRAIL_STATUS_OPTIONS.find(
 		(option) => option.value === selectedStatus,
 	)?.label;
-	const noFilters = selectedType === 'All' && selectedStatus === 'all';
+	const typeLabel = TRAIL_TYPE_OPTIONS.find((option) => option.value === selectedType)?.label;
+	const noFilters = selectedType === 'all' && selectedStatus === 'all';
 	return (
 		<div className='flex flex-col gap-3.5 md:flex-row md:items-center'>
 			<div className='group relative flex-1'>
@@ -63,6 +75,11 @@ const HistorySearchBar = ({
 						className='dark:text-zinc-350 flex h-12 cursor-pointer items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4.5 text-xs font-black text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900/60 dark:hover:bg-zinc-800'>
 						<Filter size={14} className='text-slate-400' />
 						<span>Filters</span>
+						{selectedType !== 'all' && (
+							<span className='bg-primary-50 text-primary-600 dark:bg-primary-400/10 dark:text-primary-400 rounded-lg px-1.5 py-0.5 text-[10px]'>
+								{typeLabel}
+							</span>
+						)}
 						{selectedStatus !== 'all' && (
 							<span className='bg-primary-50 text-primary-600 dark:bg-primary-400/10 dark:text-primary-400 rounded-lg px-1.5 py-0.5 text-[10px]'>
 								{statusLabel}
@@ -80,16 +97,16 @@ const HistorySearchBar = ({
 								<div className='dark:text-zinc-550 mb-1 border-b border-slate-100 px-2.5 py-1.5 text-[9px] font-black tracking-wider text-slate-400 uppercase dark:border-zinc-800/60'>
 									Filter Type
 								</div>
-								{(['All', 'Chat', 'Workflow run'] as const).map((type) => (
+								{TRAIL_TYPE_OPTIONS.map((option) => (
 									<button
-										key={type}
-										onClick={() => onTypeChange(type)}
+										key={option.value}
+										onClick={() => onTypeChange(option.value)}
 										className={`w-full cursor-pointer rounded-xl px-2.5 py-2 text-left text-xs font-bold transition ${
-											selectedType === type
+											selectedType === option.value
 												? 'text-primary-600 bg-primary-50 dark:bg-primary-400/10 dark:text-primary-400'
 												: 'text-slate-650 dark:text-zinc-350 hover:bg-slate-50 dark:hover:bg-zinc-800/40'
 										}`}>
-										{type === 'All' ? 'All Activities' : type}
+										{option.label}
 									</button>
 								))}
 								<div className='dark:text-zinc-550 mt-1 mb-1 border-y border-slate-100 px-2.5 py-1.5 text-[9px] font-black tracking-wider text-slate-400 uppercase dark:border-zinc-800/60'>

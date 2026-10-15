@@ -1,11 +1,10 @@
 import { activateOnKey } from '@/utils/activateOnKey.util';
 import { Calendar, Link2, MoreVertical } from 'lucide-react';
 import type { DisplayItem } from '../_types/history.type';
-import type { IHistoryItem } from '../_types/history.type';
 import type { TRun } from '@/types/run.type';
 
 interface HistoryTableRowProps {
-	item: IHistoryItem | TRun;
+	item: TRun;
 	displayItem: DisplayItem;
 	isSelected: boolean;
 	onSelect: () => void;
@@ -28,12 +27,7 @@ const HistoryTableRow = ({ displayItem, isSelected, onSelect }: HistoryTableRowP
 			}`}>
 			{/* Activity col */}
 			<div className='col-span-5 flex min-w-0 items-center gap-4'>
-				<div
-					className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-xs ${
-						displayItem.type === 'Chat'
-							? 'bg-primary-50 text-primary-600 dark:bg-primary-950/40 dark:text-primary-400'
-							: 'bg-primary-50 text-primary-600 dark:bg-primary-950/40 dark:text-primary-400'
-					}`}>
+				<div className='bg-primary-50 text-primary-600 dark:bg-primary-950/40 dark:text-primary-400 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-xs'>
 					<IconComponent className='h-5.5 w-5.5' />
 				</div>
 				<div className='flex min-w-0 flex-col items-start'>
@@ -41,20 +35,15 @@ const HistoryTableRow = ({ displayItem, isSelected, onSelect }: HistoryTableRowP
 						{displayItem.title}
 					</span>
 					<span className='dark:text-zinc-550 text-[10.5px] font-bold tracking-wider text-slate-400 uppercase'>
-						{displayItem.type === 'Chat' ? 'Chat Activity' : 'Workflow Run'}
+						{displayItem.type}
 					</span>
 				</div>
 			</div>
 
 			{/* Type tag col */}
 			<div className='col-span-2 flex justify-start'>
-				<span
-					className={`inline-flex items-center rounded-lg px-2.5 py-1 text-[9px] font-black tracking-widest ${
-						displayItem.type === 'Chat'
-							? 'border-primary-100 bg-primary-50 text-primary-600 dark:border-primary-900/30 dark:bg-primary-950/30 dark:text-primary-400 border'
-							: 'border-primary-100 bg-primary-50 text-primary-600 dark:border-primary-900/30 dark:bg-primary-950/30 dark:text-primary-400 border'
-					}`}>
-					{displayItem.type === 'Chat' ? 'CHAT' : 'WORKFLOW'}
+				<span className='border-primary-100 bg-primary-50 text-primary-600 dark:border-primary-900/30 dark:bg-primary-950/30 dark:text-primary-400 inline-flex items-center rounded-lg border px-2.5 py-1 text-[9px] font-black tracking-widest'>
+					{displayItem.type.toUpperCase()}
 				</span>
 			</div>
 

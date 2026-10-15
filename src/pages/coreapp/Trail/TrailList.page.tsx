@@ -8,13 +8,15 @@ import pages from '@/Routes/pages';
 import { useWorkspaceContext } from '@/context/workspace';
 import { notify } from '@/api/core';
 import { useRun, useRuns } from '@/api/modules/runs';
-import { useWorkflows } from '@/api/modules/workflows';
 import { mapToDisplayItem } from './_helper/mapExecution';
 
 // Sub-components
 import HistoryPageHeader from './_partial/HistoryPageHeader.partial';
 import HistoryStatsCards from './_partial/HistoryStatsCards.partial';
-import HistorySearchBar, { type TTrailStatusFilter } from './_partial/HistorySearchBar.partial';
+import HistorySearchBar, {
+	type TTrailStatusFilter,
+	type TTrailTypeFilter,
+} from './_partial/HistorySearchBar.partial';
 import HistorySkeletonLoader from './_partial/HistorySkeletonLoader.partial';
 import HistoryEmptyState from './_partial/HistoryEmptyState.partial';
 import HistoryTableRow from './_partial/HistoryTableRow.partial';
@@ -34,7 +36,7 @@ const TrailListPage = () => {
 
 	// ─── State ─────────────────────────────────────────────────────────────────
 	const [searchQuery, setSearchQuery] = useState('');
-	const [selectedType, setSelectedType] = useState<'All' | 'Chat' | 'Workflow run'>('All');
+	const [selectedType, setSelectedType] = useState<TTrailTypeFilter>('all');
 	const [selectedStatus, setSelectedStatus] = useState<TTrailStatusFilter>('all');
 	const [showFilters, setShowFilters] = useState(false);
 	const [currentPage, setCurrentPage] = useState(1);
@@ -55,8 +57,8 @@ const TrailListPage = () => {
 		per_page: rowsPerPage,
 		exclude_trigger_type: 'node_test',
 		...(selectedStatus !== 'all' ? { status: selectedStatus } : {}),
+		...(selectedType !== 'all' ? { runnable_type: selectedType } : {}),
 	});
-	const { data: workflows } = useWorkflows(activeWorkspaceId);
 
 	const runs = useMemo(() => data?.runs ?? [], [data]);
 	const selectedOnPage = runs.find((run) => String(run.id) === selectedRunId);
@@ -66,41 +68,26 @@ const TrailListPage = () => {
 	);
 	const selectedItem = selectedOnPage ?? (selectedRunId ? selectedFetched : undefined) ?? null;
 
-	const workflowNames = useMemo(
-		() => new Map((workflows ?? []).map((wf) => [String(wf.id), wf.name])),
-		[workflows],
-	);
-	const toDisplay = (run: (typeof runs)[number]) =>
-		mapToDisplayItem(
-			run,
-			run.workflow_id ? workflowNames.get(String(run.workflow_id)) : undefined,
-		);
-
 	// ─── Derived: item lists ────────────────────────────────────────────────────
-	// The runs endpoint takes no search term and cannot tell agent runs from
-	// workflow runs, so both filters narrow the page the server returned.
-	// Status is different: the server applies it, across every page.
-	const isFiltering = searchQuery.trim() !== '' || selectedType !== 'All';
-	const hasAnyFilter = isFiltering || selectedStatus !== 'all';
+	// The runs endpoint takes no search term, so search narrows the page the
+	// server returned. Type and status are applied by the server, across
+	// every page.
+	const isFiltering = searchQuery.trim() !== '';
+	const hasAnyFilter = isFiltering || selectedType !== 'all' || selectedStatus !== 'all';
 	const paginatedItems = useMemo(() => {
 		if (!isFiltering) return runs;
 		const q = searchQuery.trim().toLowerCase();
 		return runs.filter((run) => {
-			const item = mapToDisplayItem(
-				run,
-				run.workflow_id ? workflowNames.get(String(run.workflow_id)) : undefined,
-			);
-			const matchesSearch =
-				!q ||
+			const item = mapToDisplayItem(run);
+			return (
 				item.title.toLowerCase().includes(q) ||
 				item.type.toLowerCase().includes(q) ||
 				item.status.toLowerCase().includes(q) ||
 				item.timestamp.toLowerCase().includes(q) ||
-				String(run.id).toLowerCase().includes(q);
-			const matchesType = selectedType === 'All' || item.type === selectedType;
-			return matchesSearch && matchesType;
+				String(run.id).toLowerCase().includes(q)
+			);
 		});
-	}, [runs, isFiltering, searchQuery, selectedType, workflowNames]);
+	}, [runs, isFiltering, searchQuery]);
 
 	const totalItems = data?.meta?.total ?? runs.length;
 	const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
@@ -109,16 +96,8 @@ const TrailListPage = () => {
 
 	// ─── Selected details ───────────────────────────────────────────────────────
 	const selectedDetails = useMemo(
-		() =>
-			selectedItem
-				? mapToDisplayItem(
-						selectedItem,
-						selectedItem.workflow_id
-							? workflowNames.get(String(selectedItem.workflow_id))
-							: undefined,
-					)
-				: null,
-		[selectedItem, workflowNames],
+		() => (selectedItem ? mapToDisplayItem(selectedItem) : null),
+		[selectedItem],
 	);
 
 	const setSelectedRun = (id: string | null) => {
@@ -134,7 +113,7 @@ const TrailListPage = () => {
 	};
 
 	// ─── Handlers ──────────────────────────────────────────────────────────────
-	const handleTypeChange = (type: 'All' | 'Chat' | 'Workflow run') => {
+	const handleTypeChange = (type: TTrailTypeFilter) => {
 		setSelectedType(type);
 		setShowFilters(false);
 		setCurrentPage(1);
@@ -147,7 +126,7 @@ const TrailListPage = () => {
 	};
 
 	const handleClearFilters = () => {
-		setSelectedType('All');
+		setSelectedType('all');
 		setSelectedStatus('all');
 		setShowFilters(false);
 		setCurrentPage(1);
@@ -192,7 +171,7 @@ const TrailListPage = () => {
 
 				{isFiltering && totalPages > 1 && (
 					<p className='-mt-3 px-1 text-xs text-slate-400'>
-						Filtering this page only — search and type are not applied across all{' '}
+						Searching this page only — search is not applied across all{' '}
 						{totalItems.toLocaleString()} runs.
 					</p>
 				)}
@@ -244,7 +223,7 @@ const TrailListPage = () => {
 									{/* Table rows */}
 									<div className='divide-y divide-slate-100 dark:divide-zinc-800/60'>
 										{paginatedItems.map((item) => {
-											const displayItem = toDisplay(item);
+											const displayItem = mapToDisplayItem(item);
 											return (
 												<HistoryTableRow
 													key={displayItem.id}
@@ -264,7 +243,7 @@ const TrailListPage = () => {
 							{/* Mobile card list */}
 							<div className='block divide-y divide-slate-100 md:hidden dark:divide-zinc-800/60'>
 								{paginatedItems.map((item) => {
-									const displayItem = toDisplay(item);
+									const displayItem = mapToDisplayItem(item);
 									return (
 										<HistoryMobileCard
 											key={displayItem.id}

@@ -80,6 +80,7 @@ export type TRun = {
 	runnable_type: string;
 	runnable_id: string;
 	workflow_id: string | null;
+	workflow?: { id: string; name: string } | null;
 	workflow_version_id: string | null;
 	retried_from_run_id: string | null;
 	status: TRunStatus;
@@ -107,6 +108,7 @@ export type TRunListParams = {
 	status?: TRunStatus;
 	workflow_id?: string;
 	agent_id?: string;
+	runnable_type?: string;
 	trigger_type?: string;
 	exclude_trigger_type?: string;
 	per_page?: number;
