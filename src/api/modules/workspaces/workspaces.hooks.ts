@@ -21,10 +21,16 @@ export const useWorkspace = (id: string) =>
 		enabled: !!id,
 	});
 
+/** A new workspace starts in the creator's own timezone; the backend stores
+ *  it under its current IANA name, whatever older name the browser uses. */
 export const useCreateWorkspace = () => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (payload: TCreateWorkspaceDto) => WorkspaceService.create(payload),
+		mutationFn: (payload: TCreateWorkspaceDto) =>
+			WorkspaceService.create({
+				timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+				...payload,
+			}),
 		onSuccess: () => qc.invalidateQueries({ queryKey: workspaceKeys.lists() }),
 		meta: { errorMessage: 'Failed to create workspace' },
 	});

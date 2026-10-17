@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useBrand } from '@/context/brand';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import { useAssistantApps, useUpdateDailyReport } from '@/api/modules/assistant';
 import type { TBriefingConfig } from '@/types/assistant.type';
+import TimezoneSelect from '@/parts/TimezoneSelect.part';
 
 interface IDailySettingsModalProps {
 	workspaceId: string;
@@ -23,16 +24,6 @@ const WEEKDAYS: Record<(typeof DAYS)[number], string> = {
 	7: 'Sun',
 };
 
-const timezones = (): string[] => {
-	try {
-		return (
-			Intl as unknown as { supportedValuesOf: (key: string) => string[] }
-		).supportedValuesOf('timeZone');
-	} catch {
-		return ['UTC'];
-	}
-};
-
 /** When the Daily report runs, which apps it reads, what to stress, and email delivery. */
 const DailySettingsModalPartial = ({
 	workspaceId,
@@ -45,24 +36,12 @@ const DailySettingsModalPartial = ({
 	const update = useUpdateDailyReport(workspaceId);
 	const { data: apps = [] } = useAssistantApps(workspaceId);
 	const [form, setForm] = useState<TBriefingConfig>(config);
-	const zones = useMemo(() => timezones(), []);
 
 	const [syncedConfig, setSyncedConfig] = useState<TBriefingConfig | null>(null);
 	if (!isOpen && syncedConfig !== null) setSyncedConfig(null);
 	if (isOpen && syncedConfig !== config) {
 		setSyncedConfig(config);
-		const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-		setForm({
-			...config,
-			// A brand-new report defaults to the owner's own timezone.
-			schedule: {
-				...config.schedule,
-				timezone:
-					!config.enabled && config.schedule.timezone === 'UTC'
-						? browserZone
-						: config.schedule.timezone,
-			},
-		});
+		setForm(config);
 	}
 
 	const readableApps = apps.filter((app) => app.connected && readableSources.includes(app.key));
@@ -133,27 +112,17 @@ const DailySettingsModalPartial = ({
 								className='rounded-lg border border-zinc-200 bg-transparent px-2 py-1 dark:border-white/10'
 							/>
 						</label>
-						<label className='flex min-w-56 flex-col gap-1'>
+						<div className='flex min-w-56 flex-col gap-1'>
 							<span className='text-xs text-zinc-500'>Timezone</span>
-							<select
+							<TimezoneSelect
+								aria-label='Timezone'
 								value={form.schedule.timezone}
-								onChange={(event) =>
-									setForm({
-										...form,
-										schedule: {
-											...form.schedule,
-											timezone: event.target.value,
-										},
-									})
+								onChange={(timezone) =>
+									setForm({ ...form, schedule: { ...form.schedule, timezone } })
 								}
-								className='rounded-lg border border-zinc-200 bg-transparent px-2 py-1 dark:border-white/10'>
-								{zones.map((zone) => (
-									<option key={zone} value={zone}>
-										{zone}
-									</option>
-								))}
-							</select>
-						</label>
+								className='rounded-lg border border-zinc-200 bg-transparent px-2 py-1 dark:border-white/10'
+							/>
+						</div>
 					</div>
 
 					<div className='flex flex-col gap-1'>

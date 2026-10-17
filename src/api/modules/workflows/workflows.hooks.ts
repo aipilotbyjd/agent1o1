@@ -178,10 +178,17 @@ export const useExecuteWorkflow = (ws: string) => {
 
 const WORKFLOW_TARGET: TTriggerTargetType = 'workflow';
 
+/** Keeps the editor's trigger state and 24h stats current while webhooks and schedules fire. */
+const WORKFLOW_TRIGGERS_REFRESH_MS = 15_000;
+
 /** Old returned the workflow's trigger set from a workflow-scoped endpoint;
- *  here the list is workspace-wide and filtered by target. */
+ *  here the list is filtered by target server-side, and again below as a guard. */
 export const useWorkflowTrigger = (ws: string, workflowId: string) => {
-	const query = useTriggers(ws);
+	const query = useTriggers(
+		ws,
+		{ target_type: WORKFLOW_TARGET, target_id: workflowId },
+		{ refetchInterval: WORKFLOW_TRIGGERS_REFRESH_MS },
+	);
 	const data = useMemo(
 		() =>
 			(query.data ?? []).filter(

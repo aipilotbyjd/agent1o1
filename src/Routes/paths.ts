@@ -69,6 +69,8 @@ const paths = {
 		buildPath(settingsPages.notifications.to, { workspaceId }),
 	referrals: (workspaceId: string) => buildPath(settingsPages.referrals.to, { workspaceId }),
 	agentPolicy: (workspaceId: string) => buildPath(settingsPages.agentPolicy.to, { workspaceId }),
+	triggersSettings: (workspaceId: string) =>
+		buildPath(settingsPages.triggers.to, { workspaceId }),
 	billing: (workspaceId: string) => buildPath(settingsPages.billing.to, { workspaceId }),
 	billingPlans: (workspaceId: string) => buildPath(billingPages.plans.to, { workspaceId }),
 	billingCredits: (workspaceId: string) => buildPath(billingPages.credits.to, { workspaceId }),

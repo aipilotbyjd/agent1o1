@@ -3,6 +3,9 @@ import { useBrand } from '@/context/brand';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import { useCreateTrigger } from '@/api/modules/assistant';
 import type { TAssistantTrigger } from '@/types/assistant.type';
+import { useCurrentUser } from '@/api/modules/user';
+import { useWorkspace } from '@/api/modules/workspaces';
+import TimezoneSelect from '@/parts/TimezoneSelect.part';
 
 interface ITriggerModalProps {
 	workspaceId: string;
@@ -47,7 +50,9 @@ const toCron = (time: string, days: number[]) => {
 const TriggerModalPartial = ({ workspaceId, isOpen, onClose }: ITriggerModalProps) => {
 	const brand = useBrand();
 	const create = useCreateTrigger(workspaceId);
-	const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+	const { data: user } = useCurrentUser();
+	const { data: workspace } = useWorkspace(workspaceId);
+	const [timezone, setTimezone] = useState<string | null>(null);
 	const [type, setType] = useState<TAssistantTrigger['type']>('schedule');
 	const [name, setName] = useState('');
 	const [prompt, setPrompt] = useState('');
@@ -67,8 +72,12 @@ const TriggerModalPartial = ({ workspaceId, isOpen, onClose }: ITriggerModalProp
 			setAdvanced(false);
 			setCron('');
 			setRunAt('');
+			setTimezone(null);
 		}
 	}
+
+	// Same default as the backend: the member's own timezone, else the workspace's.
+	const shownTimezone = timezone ?? user?.timezone ?? workspace?.timezone ?? 'UTC';
 
 	const save = () =>
 		create.mutate(
@@ -76,7 +85,7 @@ const TriggerModalPartial = ({ workspaceId, isOpen, onClose }: ITriggerModalProp
 				type,
 				name: name.trim(),
 				prompt: prompt.trim(),
-				timezone,
+				timezone: shownTimezone,
 				cron: type === 'schedule' ? (advanced ? cron.trim() : toCron(time, days)) : null,
 				run_at: type === 'once' ? runAt : null,
 			},
@@ -213,7 +222,15 @@ const TriggerModalPartial = ({ workspaceId, isOpen, onClose }: ITriggerModalProp
 					)}
 
 					{type !== 'webhook' && (
-						<p className='text-xs text-zinc-500'>Times are in {timezone}.</p>
+						<div className='flex flex-col gap-1'>
+							<span className='text-xs text-zinc-500'>Timezone</span>
+							<TimezoneSelect
+								aria-label='Timezone'
+								value={shownTimezone}
+								onChange={setTimezone}
+								className='rounded-lg border border-zinc-200 bg-transparent px-2 py-1.5 dark:border-white/10'
+							/>
+						</div>
 					)}
 					{type === 'webhook' && (
 						<p className='text-xs text-zinc-500'>

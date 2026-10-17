@@ -49,6 +49,10 @@ const NodeLibrary = () => {
 		return () => clearTimeout(id);
 	}, [query]);
 
+	// Toggling with the panel's own intent closes it; without one the reducer reads
+	// 'home' and, from the Triggers view, switches views instead of closing.
+	const closePanel = () => dispatch({ type: 'TOGGLE_LEFT_PANEL', intent });
+
 	const addNode = (node: TNodeDefinition) => {
 		dispatch({
 			type: 'ADD_NODE',
@@ -58,7 +62,7 @@ const NodeLibrary = () => {
 		});
 		setQuery('');
 		if (window.matchMedia('(max-width: 767px)').matches) {
-			dispatch({ type: 'TOGGLE_LEFT_PANEL' });
+			closePanel();
 		}
 	};
 
@@ -112,7 +116,7 @@ const NodeLibrary = () => {
 					</div>
 					<button
 						type='button'
-						onClick={() => dispatch({ type: 'TOGGLE_LEFT_PANEL' })}
+						onClick={closePanel}
 						aria-label='Close node library'
 						className='flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 sm:h-6 sm:w-6 sm:rounded-lg dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
 						<X size={13} />
@@ -125,7 +129,7 @@ const NodeLibrary = () => {
 					</h2>
 					<button
 						type='button'
-						onClick={() => dispatch({ type: 'TOGGLE_LEFT_PANEL' })}
+						onClick={closePanel}
 						aria-label='Close node library'
 						className='flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 sm:h-6 sm:w-6 sm:rounded-lg dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
 						<X size={13} />

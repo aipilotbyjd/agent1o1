@@ -72,6 +72,12 @@ export const settings: TPage = {
 			text: 'Agent Policy',
 			icon: 'Shield01',
 		},
+		triggers: {
+			id: 'triggersSettings',
+			to: ws('settings/triggers'),
+			text: 'Triggers',
+			icon: 'Flash',
+		},
 		billing: {
 			id: 'billingSettings',
 			to: ws('settings/billing'),

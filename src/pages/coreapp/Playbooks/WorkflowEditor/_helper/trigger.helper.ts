@@ -1,4 +1,5 @@
 import { apiConfig } from '@/api/core/config';
+import { notify } from '@/api/core';
 import type { TTriggerMechanism, TTriggerPreset } from '@/types/catalog.type';
 import type { TTrigger, TTriggerEventStatus } from '@/types/trigger.type';
 
@@ -7,6 +8,57 @@ import type { TTrigger, TTriggerEventStatus } from '@/types/trigger.type';
 // The trigger resource only carries `token`; it never sends a ready-made URL.
 export const webhookUrlFor = (token: string) =>
 	`${apiConfig.baseUrl.replace(/\/v1\/?$/, '')}/hooks/${token}`;
+
+/** Copy text to the clipboard and say so, or say it failed. */
+export const copyWithNotice = async (text: string, what: string) => {
+	try {
+		await navigator.clipboard.writeText(text);
+		notify.success(`${what} copied`);
+	} catch {
+		notify.error(`Could not copy the ${what.toLowerCase()}`);
+	}
+};
+
+const SAMPLE_BODY = '{"message": "Hello from curl"}';
+
+/**
+ * A ready-to-run curl command for a webhook trigger, matching its
+ * Authentication setting. The secret is write-only (the API never returns
+ * it), so it appears as a placeholder for the person to fill in.
+ */
+export const webhookCurlFor = (trigger: TTrigger): string => {
+	const url = webhookUrlFor(trigger.token ?? '');
+	const config = trigger.config ?? {};
+	const authentication = String(config.authentication ?? '');
+	const header = String(config.header_name || 'X-Webhook-Token');
+
+	if (authentication === 'header_token') {
+		return [
+			`curl -X POST '${url}' \\`,
+			`  -H 'Content-Type: application/json' \\`,
+			`  -H '${header}: <your token>' \\`,
+			`  -d '${SAMPLE_BODY}'`,
+		].join('\n');
+	}
+
+	if (authentication === 'signature') {
+		return [
+			`SECRET='<your signing secret>'`,
+			`BODY='${SAMPLE_BODY}'`,
+			`SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | sed 's/^.* //')`,
+			`curl -X POST '${url}' \\`,
+			`  -H 'Content-Type: application/json' \\`,
+			`  -H "X-Signature-256: sha256=$SIG" \\`,
+			`  -d "$BODY"`,
+		].join('\n');
+	}
+
+	return [
+		`curl -X POST '${url}' \\`,
+		`  -H 'Content-Type: application/json' \\`,
+		`  -d '${SAMPLE_BODY}'`,
+	].join('\n');
+};
 
 export const eventStatusDot: Record<TTriggerEventStatus, string> = {
 	queued: 'bg-sky-500',

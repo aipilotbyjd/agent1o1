@@ -20,15 +20,7 @@ import { motion } from 'framer-motion';
 import type { TCanvasNode } from '../../../_types/canvas.type';
 import { getNodeDefinition } from '../../../_helper/nodeCatalog.constants';
 import { getNodeCreditCost } from '../../../_helper/builder.constants';
-import {
-	useWorkflowTrigger,
-	useCreateWorkflowWebhook,
-	useCreateWorkflowPollingTrigger,
-	usePauseWorkflowTrigger,
-	useDeleteWorkflowTrigger,
-	useWorkflowTriggerDetail,
-	useResumeWorkflowTrigger,
-} from '@/api/modules/workflows/workflows.hooks';
+import { useWorkflowTrigger } from '@/api/modules/workflows/workflows.hooks';
 import { useWorkflowRouteParams } from '../../../_hooks/useWorkflowRouteParams.hook';
 import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 import { useMemo } from 'react';
@@ -41,8 +33,10 @@ import NodeLoopToggle from './NodeLoopToggle.partial';
 import NodeAuthWarning from './NodeAuthWarning.partial';
 import NodeCredentialBadge from './NodeCredentialBadge.partial';
 import NodeHelpTip from './NodeHelpTip.partial';
+import NodeFlowTriggerToggle from './NodeFlowTriggerToggle.partial';
 import { useCredentialResolver } from '../../../_hooks/useCredentialResolver.hook';
 import TriggerDetails from './TriggerDetails.partial';
+import ApiNodeIcon from '../../library/NodeIcon.partial';
 import { tintStyle, getNodeAccentColor } from '../../library/library.util';
 
 const iconMap: Record<
@@ -92,6 +86,10 @@ const colorMap: Record<string, string> = {
 const DEFAULT_TRIGGER_COLOR = '#8b5cf6';
 
 const brandNameMap: Record<string, string> = {
+	manual_trigger: 'Manual',
+	schedule_trigger: 'Schedule',
+	webhook_trigger: 'Webhook',
+	polling_trigger: 'Polling',
 	'trigger.google_drive': 'Google Drive',
 	'trigger.google_sheets': 'Google Sheets',
 	'trigger.google_calendar': 'Google Calendar',
@@ -150,28 +148,32 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 	const { isMissing: isCredentialMissing } = useCredentialResolver();
 	const hasError = isCredentialMissing(def, data.values);
 	const brand = brandNameMap[data.defKey] || 'Trigger';
-	const color = colorMap[data.defKey] || DEFAULT_TRIGGER_COLOR;
+	// Catalog trigger nodes (manual/schedule/webhook/polling) take their colour
+	// and icon from the API like every other node, so the card matches the
+	// Triggers & Events panel; a colour picked on the node still wins. The
+	// maps above only cover the old static `trigger.*` demo definitions.
+	const color =
+		colorMap[data.defKey] ??
+		getNodeAccentColor(
+			id,
+			data.color as string | undefined,
+			def?.colorHex ?? DEFAULT_TRIGGER_COLOR,
+		);
 	const creditCost = getNodeCreditCost(def);
-	const NodeIcon = iconMap[data.defKey] || Webhook;
+	const NodeIcon = iconMap[data.defKey];
 
 	const { workspaceId, workflowId } = useWorkflowRouteParams();
-	const { data: triggerData } = useWorkflowTrigger(workspaceId, workflowId);
+	const { data: workflowTriggers } = useWorkflowTrigger(workspaceId, workflowId);
 
-	const createWebhook = useCreateWorkflowWebhook(workspaceId);
-	const createPolling = useCreateWorkflowPollingTrigger(workspaceId);
-	const pauseTrigger = usePauseWorkflowTrigger(workspaceId);
-	const deleteTrigger = useDeleteWorkflowTrigger(workspaceId);
-	const resumeTrigger = useResumeWorkflowTrigger(workspaceId);
-
-	// useWorkflowTrigger always yields an array: this workflow's triggers, possibly none.
-	const isTriggerActive = useMemo(
-		() => triggerData.length > 0 && triggerData[0]?.is_active !== false,
-		[triggerData],
+	// A trigger node owns the `triggers` row the backend creates for it on
+	// publish (`TriggerNodeSync`): the canvas node id is that row's node key.
+	// A manual trigger has no row: it only marks where a manual run starts.
+	const isManualTrigger = data.defKey === 'manual_trigger';
+	const triggerDetail = useMemo(
+		() => workflowTriggers.find((trigger) => trigger.trigger_node_key === id),
+		[workflowTriggers, id],
 	);
-
-	const triggerId = useMemo(() => String(triggerData[0]?.id ?? ''), [triggerData]);
-
-	const { data: triggerDetail } = useWorkflowTriggerDetail(workspaceId, workflowId, triggerId);
+	const isTriggerActive = triggerDetail?.is_active === true;
 
 	const baseShadow = '0 1px 2px rgba(24,24,27,0.04), 0 12px 28px -8px rgba(24,24,27,0.14)';
 	const hoverShadow = '0 2px 4px rgba(24,24,27,0.05), 0 22px 44px -10px rgba(24,24,27,0.22)';
@@ -189,62 +191,20 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 					? 'border-primary-500 ring-primary-500/15 dark:border-primary-500 ring-2'
 					: 'border-zinc-200 dark:border-zinc-800',
 			].join(' ')}>
-			{/* Top Bar */}
-			<div className='flex items-center justify-between px-3 py-2'>
-				<div className='flex items-center gap-1 text-[10px] font-semibold text-zinc-500'>
-					Activate as flow trigger{' '}
+			{/* Top Bar: Gumloop's "Activate as flow trigger". A manual trigger has no
+			    switch: it is simply where a manual run starts. */}
+			{isManualTrigger ? (
+				<div className='flex items-center gap-1 px-3 py-2 text-[10px] font-semibold text-zinc-500'>
+					Starts on Run{' '}
 					<NodeHelpTip
 						size={11}
-						text='When on, this node starts the workflow automatically on incoming events instead of waiting for a manual run.'
+						text='This workflow starts here when someone clicks Run or calls the run API.'
 					/>
 				</div>
-				<div className='flex items-center gap-2'>
-					<span className='text-[10px] font-semibold text-zinc-400'>
-						{isTriggerActive ? 'Yes' : 'No'}
-					</span>
-					<button
-						type='button'
-						aria-label='Toggle flow trigger'
-						onClick={() => {
-							if (!workspaceId || !workflowId) return;
-							if (isTriggerActive) {
-								const triggerId = triggerData[0]?.id ?? null;
-								if (triggerId) {
-									pauseTrigger.mutate(triggerId);
-								}
-							} else {
-								const triggerId = triggerData[0]?.id ?? null;
-								if (triggerId) {
-									resumeTrigger.mutate(triggerId);
-								} else {
-									if (
-										data.defKey.includes('time') ||
-										data.defKey.includes('schedule')
-									) {
-										createPolling.mutate({ workflowId });
-									} else {
-										createWebhook.mutate({ workflowId });
-									}
-								}
-							}
-						}}
-						disabled={
-							createWebhook.isPending ||
-							createPolling.isPending ||
-							pauseTrigger.isPending ||
-							resumeTrigger.isPending ||
-							deleteTrigger.isPending
-						}
-						className={[
-							'flex h-4 w-7 cursor-pointer items-center rounded-full p-0.5 transition-all duration-200',
-							isTriggerActive
-								? 'bg-primary-400 justify-end'
-								: 'justify-start bg-zinc-200 dark:bg-zinc-700',
-						].join(' ')}>
-						<div className='h-3 w-3 animate-none rounded-full bg-white shadow-xs' />
-					</button>
-				</div>
-			</div>
+			) : (
+				// Dedicated trigger nodes are on unless switched off (`activate: false`).
+				<NodeFlowTriggerToggle nodeId={id} active={data.values.activate !== false} />
+			)}
 
 			{hasError && <NodeAuthWarning nodeId={id} />}
 
@@ -258,7 +218,11 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 					<div
 						className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-sm'
 						style={tintStyle(color)}>
-						<NodeIcon size={17} strokeWidth={2.25} />
+						{NodeIcon ? (
+							<NodeIcon size={17} strokeWidth={2.25} />
+						) : (
+							<ApiNodeIcon icon={def?.icon} size={17} />
+						)}
 					</div>
 
 					<div className='min-w-0 flex-1'>
@@ -337,27 +301,20 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 									className={`h-1.5 w-1.5 rounded-full ${isTriggerActive ? 'animate-pulse bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-600'}`}
 								/>
 								<span>
-									{isTriggerActive ? 'Listening for events...' : 'Trigger paused'}
+									{isTriggerActive
+										? 'Listening for events...'
+										: triggerDetail.consecutive_failure_count > 0
+											? 'Switched off after repeated failures'
+											: 'Trigger paused'}
 								</span>
 							</div>
-							<button
-								type='button'
-								onClick={() => {
-									if (triggerId) {
-										deleteTrigger.mutate(triggerId);
-									}
-								}}
-								disabled={deleteTrigger.isPending}
-								className='cursor-pointer text-[9px] font-semibold text-rose-500 hover:text-rose-600 dark:hover:text-rose-400'>
-								Delete Configuration
-							</button>
 						</div>
 					</div>
 				)}
 			</div>
 
-			{/* Input Handle */}
-			{def && (
+			{/* Input Handle: a trigger node starts the flow, so API trigger nodes have none */}
+			{def && def.inputs.length > 0 && (
 				<Handle
 					id={def.inputs && def.inputs.length > 0 ? def.inputs[0].id : 'in'}
 					type='target'

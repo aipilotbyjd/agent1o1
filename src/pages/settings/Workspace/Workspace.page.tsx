@@ -8,14 +8,13 @@ import { primaryBtn, secondaryBtn, dangerBtn } from '@/pages/settings/_shared/bu
 import { notify } from '@/api/core';
 import formatDate from '@/utils/formatDate.util';
 import PublishApprovalSetting from '@/parts/PublishApprovalSetting.part';
+import TimezoneSelect from '@/parts/TimezoneSelect.part';
 
 const inputClass =
 	'h-12 w-full rounded-xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-800 shadow-xs outline-none placeholder:text-zinc-400 focus:border-primary-300 focus:ring-4 focus:ring-primary-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-primary-500 dark:focus:ring-primary-500/20';
 
 const readOnlyClass =
 	'h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 flex items-center text-sm font-semibold text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-500';
-
-const DEFAULT_TIMEZONE = 'Asia/Kolkata';
 
 const getInitials = (name: string) => {
 	const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -69,19 +68,21 @@ const WorkspacePage = () => {
 	const deleteWorkspace = useDeleteWorkspace();
 
 	const [workspaceName, setWorkspaceName] = useState('');
-	const [timezone, setTimezone] = useState(DEFAULT_TIMEZONE);
+	const [timezone, setTimezone] = useState('UTC');
 	const [isDangerZoneOpen, setIsDangerZoneOpen] = useState(false);
 
 	const [syncedWorkspace, setSyncedWorkspace] = useState<typeof activeWorkspace | null>(null);
 	if (activeWorkspace && syncedWorkspace !== activeWorkspace) {
 		setSyncedWorkspace(activeWorkspace);
 		setWorkspaceName(activeWorkspace.name);
-		setTimezone(DEFAULT_TIMEZONE);
+		setTimezone(activeWorkspace.timezone);
 	}
 
 	const isDirty = useMemo(() => {
 		if (!activeWorkspace) return false;
-		return workspaceName.trim() !== activeWorkspace.name || timezone !== DEFAULT_TIMEZONE;
+		return (
+			workspaceName.trim() !== activeWorkspace.name || timezone !== activeWorkspace.timezone
+		);
 	}, [activeWorkspace, workspaceName, timezone]);
 
 	const displayName = workspaceName || activeWorkspace?.name || 'Workspace';
@@ -98,6 +99,7 @@ const WorkspacePage = () => {
 				id: activeWorkspaceId,
 				body: {
 					name: workspaceName.trim(),
+					timezone,
 				},
 			});
 		} catch {
@@ -108,7 +110,7 @@ const WorkspacePage = () => {
 	const handleReset = () => {
 		if (activeWorkspace) {
 			setWorkspaceName(activeWorkspace.name);
-			setTimezone(DEFAULT_TIMEZONE);
+			setTimezone(activeWorkspace.timezone);
 		}
 	};
 
@@ -213,18 +215,14 @@ const WorkspacePage = () => {
 					<SettingsFieldRow
 						icon={Globe}
 						title='Workspace Timezone'
-						description='Timezone for scheduling cron events and executions.'>
+						description='Schedules without their own timezone run in this one.'>
 						<div className='relative w-full'>
-							<select
+							<TimezoneSelect
 								aria-label='Timezone'
 								value={timezone}
-								onChange={(e) => setTimezone(e.target.value)}
-								className={`${inputClass} appearance-none bg-none pr-11`}>
-								<option value='Asia/Kolkata'>Asia/Kolkata</option>
-								<option value='America/New_York'>America/New_York</option>
-								<option value='Europe/London'>Europe/London</option>
-								<option value='UTC'>UTC</option>
-							</select>
+								onChange={setTimezone}
+								className={`${inputClass} appearance-none bg-none pr-11`}
+							/>
 							<ChevronDown
 								size={18}
 								className='pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-zinc-400'

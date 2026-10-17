@@ -122,6 +122,12 @@ export interface INodeType {
 	icon?: string;
 	color?: string;
 	node_kind?: string;
+	/** A reader node that can be switched on as a flow trigger (Gumloop's "Activate as flow trigger"). */
+	supports_trigger?: boolean;
+	/** Listed under Triggers & Events: added with "Activate as flow trigger" already on. */
+	trigger_mode?: boolean;
+	/** False for a retired node: still described so saved workflows render, but not offered. */
+	listed?: boolean;
 	tags?: string[];
 	inputs?: INodeIO[];
 	outputs?: INodeIO[];

@@ -38,8 +38,48 @@ const sourceFiles = (dir) =>
 		return /\.(tsx?|jsx?)$/.test(entry.name) ? [path] : [];
 	});
 
+// Icons only the API names, so no string literal here mentions them: the
+// backend node catalog's `icon` values (each `app/Nodes/**` class's icon(),
+// NodeRegistry's flow-control nodes, and every `node_categories.icon`,
+// including the app categories: GitHub, Gmail, Google, Slack...). Without this they
+// wait for the full set to download and pop in late in the node library.
+// Add a name here whenever the backend gains a node with a new icon.
+const API_ICONS = [
+	'ai-chat-02',
+	'api',
+	'arrow-data-transfer-horizontal',
+	'calendar-03',
+	'filter',
+	'git-branch',
+	'git-merge',
+	'github',
+	'google-doc',
+	'google-drive',
+	'google-sheet',
+	'hourglass',
+	'login-square-01',
+	'logout-square-01',
+	'mail-01',
+	'play',
+	'puzzle',
+	'repeat',
+	'robot-01',
+	'route-01',
+	'shuffle',
+	'slack',
+	'source-code',
+	'sparkles',
+	'timer-01',
+	'user-check-01',
+	'webhook',
+	'workflow-square-02',
+	'zap',
+];
+
 const STRING_LITERAL = /(['"`])([A-Za-z][\w -]*)\1/g;
-const used = new Set();
+const used = new Set(
+	API_ICONS.map((icon) => pascalcase(icon)).filter((name) => exportLines.has(name)),
+);
 for (const file of sourceFiles(SRC)) {
 	for (const [, , value] of readFileSync(file, 'utf8').matchAll(STRING_LITERAL)) {
 		const name = pascalcase(value);

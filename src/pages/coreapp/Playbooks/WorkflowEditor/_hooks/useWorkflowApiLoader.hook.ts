@@ -21,9 +21,15 @@ export const useWorkflowApiLoader = (workspaceId: string, workflowId: string) =>
 		try {
 			const groups = mapApiCategoriesToGroups(apiCategories);
 			groups.forEach((group) => {
-				group.nodes.forEach((node) => {
-					NODE_CATALOG_MAP[node.key] = node;
-				});
+				// Retired nodes too, so a saved workflow holding one still renders.
+				// Not the Triggers & Events copies of app readers: those share
+				// their reader's type but start with the trigger switched on, and
+				// must not replace the ordinary definition every saved node uses.
+				group.allNodes
+					.filter((node) => !node.startsAsTrigger)
+					.forEach((node) => {
+						NODE_CATALOG_MAP[node.key] = node;
+					});
 			});
 		} catch (err) {
 			console.error('Failed to register dynamic node definitions:', err);

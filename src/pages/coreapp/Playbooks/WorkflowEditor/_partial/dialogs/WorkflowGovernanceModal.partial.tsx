@@ -9,7 +9,6 @@ import {
 	Lock,
 	Unlock,
 	FormInput,
-	Zap,
 } from 'lucide-react';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import { useWorkflowRouteParams } from '../../_hooks/useWorkflowRouteParams.hook';
@@ -18,7 +17,6 @@ import { notify } from '@/api/core';
 import Modal from './Modal.partial';
 import WorkflowApprovalsTab from './WorkflowApprovalsTab.partial';
 import WorkflowInterfaceTab from './WorkflowInterfaceTab.partial';
-import WorkflowTriggersTab from './WorkflowTriggersTab.partial';
 import {
 	useWorkflowShares,
 	useCreateWorkflowShare,
@@ -82,7 +80,6 @@ const WorkflowGovernanceModal = () => {
 		{ id: 'sharing', label: 'Sharing', icon: Share2 },
 		{ id: 'approvals', label: 'Approvals', icon: FileSignature },
 		{ id: 'interface', label: 'Run Form', icon: FormInput },
-		{ id: 'triggers', label: 'Triggers', icon: Zap },
 	];
 
 	return (
@@ -351,11 +348,6 @@ const WorkflowGovernanceModal = () => {
 					{/* ─── RUN FORM TAB ─── */}
 					{activeTab === 'interface' && (
 						<WorkflowInterfaceTab workspaceId={workspaceId} workflowId={workflowId} />
-					)}
-
-					{/* ─── TRIGGERS TAB ─── */}
-					{activeTab === 'triggers' && (
-						<WorkflowTriggersTab workspaceId={workspaceId} workflowId={workflowId} />
 					)}
 				</main>
 			</div>
