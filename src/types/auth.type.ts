@@ -18,6 +18,8 @@ export type TUser = {
 	pending_email: string | null;
 	two_factor_enabled: boolean;
 	avatar: string | null;
+	/** IANA name. Null follows each workspace's timezone. */
+	timezone: string | null;
 	current_workspace_id: string | null;
 	current_workspace: TWorkspace | null;
 	created_at: string;
@@ -55,6 +57,8 @@ export type TResetPasswordDto = {
 export type TUpdateProfileDto = {
 	name?: string;
 	email?: string;
+	/** Null follows the workspace timezone. */
+	timezone?: string | null;
 };
 
 export type TChangePasswordDto = {
