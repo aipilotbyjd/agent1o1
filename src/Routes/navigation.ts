@@ -69,6 +69,7 @@ export const settingsNavigation: TNavSection[] = [
 			settingsPages.members,
 			settingsPages.tags,
 			settingsPages.agentPolicy,
+			settingsPages.triggers,
 		],
 	},
 	{

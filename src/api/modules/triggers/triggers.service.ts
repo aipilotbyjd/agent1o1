@@ -10,11 +10,11 @@ import type {
 import { TriggerEndpoints as E } from './triggers.endpoints';
 
 export const TriggerService = {
-	// The backend takes no list filters: `params` is accepted only to
-	// match `createResource()`'s service contract.
-	list: (ws: string, _params?: TListParams, signal?: AbortSignal) =>
+	// `target_type` + `target_id` narrow the list to one workflow's or
+	// agent's triggers; without them it's the whole workspace.
+	list: (ws: string, params?: TListParams, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ triggers: TTrigger[] }>>(E.list(ws), { signal })
+			.get<TApiResponse<{ triggers: TTrigger[] }>>(E.list(ws), { params, signal })
 			.then(unwrapKey<TTrigger[]>('triggers')),
 
 	create: (ws: string, payload: TCreateTriggerDto) =>

@@ -197,10 +197,11 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 		: undefined;
 	const { isMissing: isCredentialMissing } = useCredentialResolver();
 	const needsAuth = isCredentialMissing(def, data.values);
-	// Integration-style nodes (and anything explicitly flagged) can be promoted to
-	// the flow's entry trigger: Gumloop's "Activate as flow trigger" strip.
-	const canBeTrigger = Boolean(def?.supportsTrigger || def?.requiresCredential);
-	const isFlowTrigger = Boolean(data.activateAsTrigger);
+	// Reader nodes the backend marks as trigger-capable (`supports_trigger`) can be
+	// switched on as a flow trigger: Gumloop's "Activate as flow trigger" strip.
+	// Saved as the node's `activate` config, off unless turned on.
+	const canBeTrigger = Boolean(def?.supportsTrigger);
+	const isFlowTrigger = data.values.activate === true;
 
 	const durationMs = typeof data.durationMs === 'number' ? data.durationMs : undefined;
 

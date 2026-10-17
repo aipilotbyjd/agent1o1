@@ -35,6 +35,8 @@ export type TTriggerPreset = {
 	description: string | null;
 	type: TTriggerMechanism;
 	signature_scheme: string | null;
+	/** A schedule preset's `{ cron }`; null for most webhook presets. */
+	config: Record<string, unknown> | null;
 	fields: unknown;
 	is_active: boolean;
 	sort_order: number;

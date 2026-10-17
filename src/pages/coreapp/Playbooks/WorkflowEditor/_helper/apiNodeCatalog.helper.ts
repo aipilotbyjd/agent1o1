@@ -26,7 +26,10 @@ export type TNodeCategoryGroup = {
 	kind: 'core' | 'app';
 	order: number;
 	nodesCount: number;
+	/** What the library offers: listed nodes only. */
 	nodes: TNodeDefinition[];
+	/** Every node, including retired ones: what saved workflows resolve against. */
+	allNodes: TNodeDefinition[];
 };
 
 const HEX_TO_HUE: Record<string, string> = {
@@ -207,7 +210,12 @@ export const mapApiNodeToDefinition = (
 ): TNodeDefinition => {
 	const node = apiNode as INodeType;
 	const parent = typeof node.category === 'object' ? node.category : undefined;
-	const slug = categorySlug ?? parent?.slug;
+	// An app reader listed under Triggers & Events is still that app's node:
+	// its own category keeps its colour, credential and ordinary node card.
+	const slug =
+		node.trigger_mode && typeof node.category === 'string'
+			? node.category
+			: (categorySlug ?? parent?.slug);
 	const color = node.color ?? categoryColor ?? parent?.color;
 	const category = SLUG_TO_CATEGORY[slug ?? ''] ?? 'integration';
 	// Built-in nodes flag `requires_connector` instead of naming a credential
@@ -264,13 +272,22 @@ export const mapApiNodeToDefinition = (
 		outputs: outputPorts,
 		fields,
 		requiresCredential: Boolean(credentialType),
+		supportsTrigger: Boolean(node.supports_trigger),
+		startsAsTrigger: Boolean(node.trigger_mode),
+		listed: node.listed !== false,
 	};
 };
+
+/** Whether the library should offer a definition: retired nodes are hidden. */
+export const isListed = (definition: TNodeDefinition) => definition.listed !== false;
 
 export const mapApiCategoryToGroup = (
 	apiCategory: INodeCategory | TNodeCategoryWithCount,
 ): TNodeCategoryGroup => {
 	const category = apiCategory as INodeCategory;
+	const allNodes = (category.nodes ?? []).map((node) =>
+		mapApiNodeToDefinition(node, category.slug, category.color),
+	);
 	return {
 		id: category.id,
 		slug: category.slug,
@@ -282,9 +299,8 @@ export const mapApiCategoryToGroup = (
 		kind: category.kind === 'app' ? 'app' : 'core',
 		order: category.sort_order,
 		nodesCount: category.nodes_count ?? category.nodes?.length ?? 0,
-		nodes: (category.nodes ?? []).map((node) =>
-			mapApiNodeToDefinition(node, category.slug, category.color),
-		),
+		nodes: allNodes.filter(isListed),
+		allNodes,
 	};
 };
 

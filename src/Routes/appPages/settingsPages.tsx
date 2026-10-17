@@ -30,6 +30,7 @@ const NotificationChannelsPage = lazy(
 const TagsPage = lazy(() => import('@/pages/settings/Tags/Tags.page'));
 const ReferralsPage = lazy(() => import('@/pages/settings/Referrals/Referrals.page'));
 const AgentPolicyPage = lazy(() => import('@/pages/settings/AgentPolicy/AgentPolicy.page'));
+const TriggersPage = lazy(() => import('@/pages/settings/Triggers/Triggers.page'));
 
 /** Registered as a child of the `/:workspaceId` guard, alongside the core-app shell. */
 const SettingsPages: RouteObject[] = [
@@ -55,6 +56,7 @@ const SettingsPages: RouteObject[] = [
 			},
 			{ path: rel(settingsPages.tags.to), element: <TagsPage /> },
 			{ path: rel(settingsPages.agentPolicy.to), element: <AgentPolicyPage /> },
+			{ path: rel(settingsPages.triggers.to), element: <TriggersPage /> },
 			{
 				path: rel(settingsPages.billing.to),
 				element: <BillingLayout />,

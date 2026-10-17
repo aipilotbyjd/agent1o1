@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Search } from 'lucide-react';
 import { useNodes } from '@/api/modules/nodes';
-import { mapApiNodeToDefinition } from '../../_helper/apiNodeCatalog.helper';
+import { isListed, mapApiNodeToDefinition } from '../../_helper/apiNodeCatalog.helper';
 import type { TNodeDefinition } from '../../_types/node.type';
 import { NodeRow, PanelLoader, SectionTitle, StateMessage } from './LibraryItems.partial';
 
@@ -14,7 +14,10 @@ type Props = {
 const SearchPanel = ({ query, workspaceId, onAdd }: Props) => {
 	const { data, isFetching } = useNodes(query.length > 0 ? workspaceId : '', { search: query });
 
-	const nodes = useMemo(() => (data ?? []).map((node) => mapApiNodeToDefinition(node)), [data]);
+	const nodes = useMemo(
+		() => (data ?? []).map((node) => mapApiNodeToDefinition(node)).filter(isListed),
+		[data],
+	);
 
 	if (isFetching && nodes.length === 0) return <PanelLoader />;
 
