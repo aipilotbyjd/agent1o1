@@ -55,6 +55,7 @@ import DraftStatusPill from '../versions/DraftStatusPill.partial';
 import { useDraftStatus } from '../../_hooks/useDraftStatus.hook';
 import PublishPopover from '../versions/PublishPopover.partial';
 import { usePublishReview } from '../../_hooks/usePublishReview.hook';
+import { useAiPanelAvailability } from '../../_hooks/useAiPanelAvailability.hook';
 import WorkflowPagesMenu from '@/pages/coreapp/WorkflowPages/_partial/WorkflowPagesMenu.partial';
 
 /** Which topbar menu is open. Only one may be open at a time. */
@@ -380,6 +381,7 @@ const Topbar = () => {
 	const autoLayout = useAutoLayout();
 	const { isDarkTheme, setDarkModeStatus } = useDarkMode();
 	const { runWorkflow, stopRun } = useRunWorkflow();
+	const { isAiPanelAvailable, isAiPanelShown } = useAiPanelAvailability();
 	const workspaceId = state.workflow.workspaceId ?? '';
 	const playbooksPath = workspaceId ? paths.playbooks(workspaceId) : pages.choose.to;
 	const dashboardPath = workspaceId ? paths.dashboard(workspaceId) : pages.choose.to;
@@ -588,22 +590,29 @@ const Topbar = () => {
 					<span>Triggers</span>
 				</button>
 
-				<div className='bg-primary-500/20 dark:bg-primary-400/20 mx-0.5 h-3.5 w-px' />
+				{isAiPanelAvailable && (
+					<>
+						<div className='bg-primary-500/20 dark:bg-primary-400/20 mx-0.5 h-3.5 w-px' />
 
-				<button
-					type='button'
-					aria-pressed={state.ui.aiPanelOpen}
-					onClick={() => dispatch({ type: 'TOGGLE_AI_PANEL' })}
-					className={[
-						'relative flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition duration-150',
-						FOCUS_RING,
-						state.ui.aiPanelOpen
-							? 'bg-primary-500/15 text-primary-800 ring-primary-500/35 dark:bg-primary-400/15 dark:text-primary-300 dark:ring-primary-400/40 shadow-xs ring-1'
-							: 'hover:bg-primary-100/60 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 text-zinc-600 dark:text-zinc-400',
-					].join(' ')}>
-					<Sparkles size={13} className='text-primary-700 dark:text-primary-400' />
-					<span>AI Chat</span>
-				</button>
+						<button
+							type='button'
+							aria-pressed={isAiPanelShown}
+							onClick={() => dispatch({ type: 'TOGGLE_AI_PANEL' })}
+							className={[
+								'relative flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition duration-150',
+								FOCUS_RING,
+								isAiPanelShown
+									? 'bg-primary-500/15 text-primary-800 ring-primary-500/35 dark:bg-primary-400/15 dark:text-primary-300 dark:ring-primary-400/40 shadow-xs ring-1'
+									: 'hover:bg-primary-100/60 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 text-zinc-600 dark:text-zinc-400',
+							].join(' ')}>
+							<Sparkles
+								size={13}
+								className='text-primary-700 dark:text-primary-400'
+							/>
+							<span>AI Chat</span>
+						</button>
+					</>
+				)}
 			</div>
 
 			{/* Right Section: Canvas Controls & Actions */}
@@ -1070,19 +1079,21 @@ const Topbar = () => {
 										/>
 										<span>Triggers</span>
 									</button>
-									<button
-										type='button'
-										onClick={() => {
-											closeMenu();
-											dispatch({ type: 'TOGGLE_AI_PANEL' });
-										}}
-										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
-										<Sparkles
-											size={14}
-											className='text-primary-700 dark:text-primary-400'
-										/>
-										<span>AI Assistant</span>
-									</button>
+									{isAiPanelAvailable && (
+										<button
+											type='button'
+											onClick={() => {
+												closeMenu();
+												dispatch({ type: 'TOGGLE_AI_PANEL' });
+											}}
+											className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
+											<Sparkles
+												size={14}
+												className='text-primary-700 dark:text-primary-400'
+											/>
+											<span>AI Assistant</span>
+										</button>
+									)}
 
 									<div className='bg-primary-500/15 dark:bg-primary-400/15 my-1 h-px' />
 

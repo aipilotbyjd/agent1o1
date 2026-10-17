@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useAiPanelAvailability } from '../../_hooks/useAiPanelAvailability.hook';
 import { useNavigate } from 'react-router';
 import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { useAiChatStore } from '@/store/aiChat.store';
@@ -56,6 +57,9 @@ const suggestions = [
 const CanvasEmptyState = () => {
 	const { state, dispatch } = useWorkflowEditor();
 	const view = state.ui.emptyCanvasView ?? 'ai';
+	const { isAiPanelShown } = useAiPanelAvailability();
+	// The node library is its own way in: the AI prompt doesn't compete with it.
+	const isPromptHidden = isAiPanelShown || state.ui.leftPanelOpen;
 
 	const [prompt, setPrompt] = useState('');
 	const [mode, setMode] = useState<'build' | 'ask'>('build');
@@ -318,8 +322,13 @@ const CanvasEmptyState = () => {
 		<div className='pointer-events-none absolute inset-0 z-10 flex flex-col justify-between p-6 select-none'>
 			{view === 'ai' && (
 				<>
-					{/* Main Centered Content */}
-					<div className='mt-12 flex flex-1 flex-col items-center justify-center'>
+					{/* Main Centered Content: steps aside for the AI Chat panel and the node library. */}
+					<div
+						aria-hidden={isPromptHidden}
+						className={[
+							'mt-12 flex flex-1 flex-col items-center justify-center',
+							isPromptHidden ? 'invisible' : '',
+						].join(' ')}>
 						<div
 							{...fileDrop.dropProps}
 							className='pointer-events-auto relative w-full max-w-2xl'>

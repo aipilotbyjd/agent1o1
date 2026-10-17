@@ -28,6 +28,7 @@ import WorkflowsPage from '@/pages/coreapp/Playbooks/WorkflowsList.page';
 import AgentAsideTemplate from '@/templates/asides/AgentAside.template';
 import useDeviceScreen from '@/hooks/useDeviceScreen';
 import { useAiBuilderBridge } from '../_hooks/useAiBuilderBridge.hook';
+import { useAiPanelAvailability } from '../_hooks/useAiPanelAvailability.hook';
 import { useAutosave } from '../_hooks/useAutosave.hook';
 import { useEditorHotkeys } from '../_hooks/useEditorHotkeys.hook';
 import { useWorkflowApiLoader } from '../_hooks/useWorkflowApiLoader.hook';
@@ -54,6 +55,7 @@ const BuildPage = () => {
 	const apiState = useWorkflowApiLoader(workspaceId, workflowId);
 	const [leftPanelWidth, setLeftPanelWidth] = useState(320);
 	const [aiPanelWidth, setAiPanelWidth] = useState(460);
+	const { isAiPanelAvailable, isAiPanelShown } = useAiPanelAvailability();
 	const [runPanelWidth, setRunPanelWidth] = useState(440);
 
 	const openMobileNodes = () => {
@@ -163,12 +165,12 @@ const BuildPage = () => {
 					{/* Hide the editor top header on mobile while the AI builder panel is
 					    open: the panel has its own header (history/new chat/exit).
 					    Keep it visible on desktop (md and up). */}
-					<div className={state.ui.aiPanelOpen ? 'hidden md:contents' : 'contents'}>
+					<div className={isAiPanelShown ? 'hidden md:contents' : 'contents'}>
 						<Topbar />
 					</div>
 					<div className='relative flex min-h-0 flex-1'>
 						<AnimatePresence initial={false}>
-							{state.ui.aiPanelOpen && (
+							{isAiPanelShown && (
 								<motion.div
 									initial={
 										isMobile
@@ -318,40 +320,40 @@ const BuildPage = () => {
 
 						{/* Mobile editor dock: the four most-used canvas actions stay reachable
 					    without competing with the workflow title and Run button above. */}
-						{!state.ui.aiPanelOpen &&
-							!state.ui.leftPanelOpen &&
-							!state.ui.runPanelOpen && (
-								<nav
-									aria-label='Editor tools'
-									className='absolute right-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-3 z-30 flex h-14 items-center justify-around rounded-2xl border border-zinc-200 bg-white/95 px-2 shadow-2xl backdrop-blur-xl md:hidden dark:border-white/10 dark:bg-zinc-950/95'>
-									<button
-										type='button'
-										onClick={openMobileNodes}
-										className='flex min-w-16 flex-col items-center gap-0.5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400'>
-										<Boxes size={18} /> Nodes
-									</button>
+						{!isAiPanelShown && !state.ui.leftPanelOpen && !state.ui.runPanelOpen && (
+							<nav
+								aria-label='Editor tools'
+								className='absolute right-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-3 z-30 flex h-14 items-center justify-around rounded-2xl border border-zinc-200 bg-white/95 px-2 shadow-2xl backdrop-blur-xl md:hidden dark:border-white/10 dark:bg-zinc-950/95'>
+								<button
+									type='button'
+									onClick={openMobileNodes}
+									className='flex min-w-16 flex-col items-center gap-0.5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400'>
+									<Boxes size={18} /> Nodes
+								</button>
+								{isAiPanelAvailable && (
 									<button
 										type='button'
 										onClick={openMobileAi}
 										className='text-primary-700 dark:text-primary-400 flex min-w-16 flex-col items-center gap-0.5 text-[10px] font-bold'>
 										<Sparkles size={18} /> Ask AI
 									</button>
-									<button
-										type='button'
-										onClick={openMobileRuns}
-										className='flex min-w-16 flex-col items-center gap-0.5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400'>
-										<PlaySquare size={18} /> Runs
-									</button>
-									<button
-										type='button'
-										onClick={() =>
-											reactFlow.fitView({ padding: 0.2, duration: 240 })
-										}
-										className='flex min-w-16 flex-col items-center gap-0.5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400'>
-										<Maximize2 size={18} /> Fit view
-									</button>
-								</nav>
-							)}
+								)}
+								<button
+									type='button'
+									onClick={openMobileRuns}
+									className='flex min-w-16 flex-col items-center gap-0.5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400'>
+									<PlaySquare size={18} /> Runs
+								</button>
+								<button
+									type='button'
+									onClick={() =>
+										reactFlow.fitView({ padding: 0.2, duration: 240 })
+									}
+									className='flex min-w-16 flex-col items-center gap-0.5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400'>
+									<Maximize2 size={18} /> Fit view
+								</button>
+							</nav>
+						)}
 					</div>
 				</>
 			)}

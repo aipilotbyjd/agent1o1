@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { NODE_CATALOG } from '../../_helper/nodeCatalog.constants';
 import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { useAutoLayout } from '../../_hooks/useAutoLayout.hook';
+import { useAiPanelAvailability } from '../../_hooks/useAiPanelAvailability.hook';
 import { useRunWorkflow } from '../../_hooks/useRunWorkflow.hook';
 import Modal from './Modal.partial';
 
@@ -9,6 +10,7 @@ const CommandPalette = () => {
 	const { state, dispatch } = useWorkflowEditor();
 	const autoLayout = useAutoLayout();
 	const { runWorkflow, stopRun } = useRunWorkflow();
+	const { isAiPanelAvailable } = useAiPanelAvailability();
 	const [query, setQuery] = useState('');
 	const needle = query.trim().toLowerCase();
 
@@ -36,13 +38,17 @@ const CommandPalette = () => {
 			action: autoLayout,
 			category: 'Workflow',
 		},
-		{
-			label: 'Open AI builder',
-			description: 'Generate or improve a workflow',
-			shortcut: '⌘J',
-			action: () => dispatch({ type: 'TOGGLE_AI_PANEL' }),
-			category: 'Panels',
-		},
+		...(isAiPanelAvailable
+			? [
+					{
+						label: 'Open AI builder',
+						description: 'Generate or improve a workflow',
+						shortcut: '⌘J',
+						action: () => dispatch({ type: 'TOGGLE_AI_PANEL' }),
+						category: 'Panels',
+					},
+				]
+			: []),
 		{
 			label: 'Quick add node',
 			description: 'Search and add a node to the canvas',

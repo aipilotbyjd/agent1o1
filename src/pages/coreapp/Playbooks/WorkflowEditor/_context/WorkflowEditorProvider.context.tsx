@@ -9,7 +9,10 @@ import { useWorkflowRouteParams } from '../_hooks/useWorkflowRouteParams.hook';
 import safeStorage from '@/utils/safeStorage.util';
 
 const RUN_HISTORY_KEY = 'wf-editor-run-history';
-/** The AI chat panel reopens after a reload if it was open, like the other editor chats. */
+/**
+ * The AI chat panel survives a reload of the same workflow, but opening the editor fresh
+ * (another workflow, a new tab, or navigating back in) always starts with it closed.
+ */
 const AI_PANEL_OPEN_KEY = 'wf-editor-ai-panel-open';
 
 const loadRunHistory = (key: string): TRunRecord[] => {
@@ -43,6 +46,7 @@ const saveRunHistory = (key: string, history: TRunRecord[]) => {
 export const WorkflowEditorProvider = ({ children }: { children: ReactNode }) => {
 	const { workspaceId, workflowId } = useWorkflowRouteParams();
 	const runHistoryKey = `${RUN_HISTORY_KEY}:${workspaceId}:${workflowId}`;
+	const aiPanelOpenKey = `${AI_PANEL_OPEN_KEY}:${workspaceId}:${workflowId}`;
 	const [state, dispatch] = useReducer(
 		workflowEditorReducer,
 		initialWorkflowEditorState,
@@ -51,7 +55,7 @@ export const WorkflowEditorProvider = ({ children }: { children: ReactNode }) =>
 			const runHistory = loadRunHistory(runHistoryKey);
 			const ui = {
 				...initial.ui,
-				aiPanelOpen: safeStorage.get(AI_PANEL_OPEN_KEY) === 'true',
+				aiPanelOpen: safeStorage.get(aiPanelOpenKey, 'session') === 'true',
 			};
 			if (isAddWorkflow) {
 				return {
@@ -73,9 +77,15 @@ export const WorkflowEditorProvider = ({ children }: { children: ReactNode }) =>
 
 	const isAiPanelOpen = state.ui.aiPanelOpen;
 	useEffect(() => {
-		if (isAiPanelOpen) safeStorage.set(AI_PANEL_OPEN_KEY, 'true');
-		else safeStorage.remove(AI_PANEL_OPEN_KEY);
-	}, [isAiPanelOpen]);
+		if (isAiPanelOpen) safeStorage.set(aiPanelOpenKey, 'true', 'session');
+		else safeStorage.remove(aiPanelOpenKey, 'session');
+	}, [aiPanelOpenKey, isAiPanelOpen]);
+
+	// Leaving the editor in-app forgets the panel; a reload skips this cleanup, so it reopens.
+	useEffect(() => () => safeStorage.remove(aiPanelOpenKey, 'session'), [aiPanelOpenKey]);
+
+	// Drop the old global flag that opened the panel on every workflow.
+	useEffect(() => safeStorage.remove(AI_PANEL_OPEN_KEY), []);
 
 	const value = useMemo(() => ({ state, dispatch }), [state]);
 

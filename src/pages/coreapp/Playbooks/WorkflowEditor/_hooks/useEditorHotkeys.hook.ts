@@ -3,6 +3,7 @@ import { useReactFlow } from '@xyflow/react';
 import { useWorkflowEditor } from './useWorkflowEditor.hook';
 import { useRunWorkflow } from '../_hooks/useRunWorkflow.hook';
 import { useAutoLayout } from './useAutoLayout.hook';
+import { useAiPanelAvailability } from './useAiPanelAvailability.hook';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 
 export const isTypingTarget = (target: EventTarget | null) => {
@@ -16,6 +17,7 @@ export const useEditorHotkeys = () => {
 	// Safe here: WorkflowEditorLayout mounts ReactFlowProvider above this page.
 	const reactFlow = useReactFlow();
 	const autoLayout = useAutoLayout();
+	const { isAiPanelAvailable } = useAiPanelAvailability();
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
@@ -80,7 +82,7 @@ export const useEditorHotkeys = () => {
 			// AI Builder
 			if (mod && event.key.toLowerCase() === 'j' && !event.shiftKey) {
 				event.preventDefault();
-				dispatch({ type: 'TOGGLE_AI_PANEL' });
+				if (isAiPanelAvailable) dispatch({ type: 'TOGGLE_AI_PANEL' });
 				return;
 			}
 
@@ -208,5 +210,6 @@ export const useEditorHotkeys = () => {
 		autoLayout,
 		runWorkflow,
 		stopRun,
+		isAiPanelAvailable,
 	]);
 };

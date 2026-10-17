@@ -68,6 +68,7 @@ import {
 import useComposerDraft from '@/hooks/useComposerDraft';
 import useDraftFiles from '@/hooks/useDraftFiles';
 import useFileDrop from '@/hooks/useFileDrop';
+import { useAiPanelAvailability } from '../../_hooks/useAiPanelAvailability.hook';
 import paths from '@/Routes/paths';
 import {
 	IMAGE_AND_TEXT_ATTACHMENT_EXTENSIONS,
@@ -306,6 +307,7 @@ const AiBuilderPanel = () => {
 	const rehydrate = useAiChatStore((store) => store.rehydrate);
 	const chatWorkflowId = useAiChatStore((store) => store.workflowId);
 	const { confirm } = useConfirm();
+	const { isAiPanelShown } = useAiPanelAvailability();
 	const navigate = useNavigate();
 
 	// An unsent message and its files are parked per workflow and per chat, so they survive a reload.
@@ -428,7 +430,7 @@ const AiBuilderPanel = () => {
 		!!pendingMessageId &&
 		slowMessageId === pendingMessageId;
 
-	if (!state.ui.aiPanelOpen) return null;
+	if (!isAiPanelShown) return null;
 
 	const updateMentionQuery = (value: string) => {
 		const match = MENTION_RE.exec(value);
