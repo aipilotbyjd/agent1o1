@@ -12,11 +12,16 @@ import { triggerKeys, triggerEventKeys } from './triggers.keys';
 // and useDetail.
 
 /** Every mutation below invalidates `triggerKeys.lists(ws)`, which prefixes each filtered list too. */
-export const useTriggers = (ws: string, filter?: TTriggerListFilter) =>
+export const useTriggers = (
+	ws: string,
+	filter?: TTriggerListFilter,
+	options?: { refetchInterval?: number },
+) =>
 	useQuery({
 		queryKey: triggerKeys.list(ws, filter),
 		queryFn: ({ signal }) => TriggerService.list(ws, filter, signal),
 		enabled: !!ws && (!filter || !!filter.target_id),
+		refetchInterval: options?.refetchInterval,
 	});
 
 export const useCreateTrigger = (ws: string) => {

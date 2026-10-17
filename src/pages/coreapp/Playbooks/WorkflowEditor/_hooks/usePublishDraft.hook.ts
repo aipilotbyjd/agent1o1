@@ -6,6 +6,7 @@ import {
 	useCreatePublishRequest,
 	usePublishWorkflowVersion,
 } from '@/api/modules/workflows';
+import { triggerKeys } from '@/api/modules/triggers/triggers.keys';
 import { usePersistWorkflowDraft } from './usePersistWorkflowDraft.hook';
 import { useWorkflowEditor } from './useWorkflowEditor.hook';
 
@@ -93,6 +94,10 @@ export const usePublishDraft = () => {
 	const publish = (notes?: string) =>
 		submitDraft(async (editedSince) => {
 			const data = await publishVersion.mutateAsync({ notes: notes?.trim() || null });
+			// Publishing creates, updates or deletes the workflow's trigger rows
+			// (TriggerNodeSync on the backend): refetch them so trigger nodes show
+			// their new webhook URL and on/off state straight away.
+			queryClient.invalidateQueries({ queryKey: triggerKeys.lists(workspaceId) });
 			dispatch({
 				type: 'SET_WORKFLOW_META',
 				patch: {

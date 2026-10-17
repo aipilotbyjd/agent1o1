@@ -1,6 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { ChevronRight, Copy, ExternalLink, KeyRound, Play, RefreshCw } from 'lucide-react';
+import {
+	ChevronRight,
+	Copy,
+	ExternalLink,
+	KeyRound,
+	Play,
+	RefreshCw,
+	Terminal,
+} from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { notify } from '@/api/core';
 import {
@@ -12,7 +20,12 @@ import {
 import { useConfirm } from '@/context/confirm';
 import paths from '@/Routes/paths';
 import type { TTrigger } from '@/types/trigger.type';
-import { eventStatusDot as statusDot, webhookUrlFor } from '../../../_helper/trigger.helper';
+import {
+	copyWithNotice,
+	eventStatusDot as statusDot,
+	webhookCurlFor,
+	webhookUrlFor,
+} from '../../../_helper/trigger.helper';
 
 const EVENTS_SHOWN = 5;
 
@@ -169,14 +182,8 @@ const TriggerDetails = ({ workspaceId, trigger }: Props) => {
 	const webhookUrl =
 		trigger.type === 'webhook' && trigger.token ? webhookUrlFor(trigger.token) : '';
 
-	const handleCopy = async () => {
-		try {
-			await navigator.clipboard.writeText(webhookUrl);
-			notify.success('Webhook URL copied');
-		} catch {
-			notify.error('Could not copy the webhook URL');
-		}
-	};
+	const handleCopy = () => copyWithNotice(webhookUrl, 'Webhook URL');
+	const handleCopyCurl = () => copyWithNotice(webhookCurlFor(trigger), 'curl example');
 
 	const handleRotate = async () => {
 		const confirmed = await confirm({
@@ -238,6 +245,17 @@ const TriggerDetails = ({ workspaceId, trigger }: Props) => {
 								}}
 								className='hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-5 w-5 cursor-pointer items-center justify-center rounded text-zinc-400 transition'>
 								<Copy size={11} />
+							</button>
+							<button
+								type='button'
+								title='Copy a curl example for this webhook'
+								onClick={(event) => {
+									stop(event);
+									handleCopyCurl();
+								}}
+								className='hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-5 cursor-pointer items-center justify-center gap-0.5 rounded px-1 text-[9px] font-semibold text-zinc-400 transition'>
+								<Terminal size={10} />
+								curl
 							</button>
 							<button
 								type='button'

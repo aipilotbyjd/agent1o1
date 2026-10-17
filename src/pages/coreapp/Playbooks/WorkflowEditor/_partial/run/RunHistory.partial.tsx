@@ -8,13 +8,14 @@ import {
 	Square,
 	Trash2,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { RunService, runKeys } from '@/api/modules/runs';
 import { useWorkflowVersions } from '@/api/modules/workflows';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
+import type { TRun, TRunListParams } from '@/types/run.type';
 import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
-import type { TRunRecord } from '../../_types/run.type';
+import type { TNodeRunRecord, TRunRecord } from '../../_types/run.type';
 import DataInspector from './DataInspector.partial';
 import StepError from './StepError.partial';
 
@@ -38,6 +39,55 @@ const statusMeta = {
 		icon: Square,
 	},
 };
+const triggerLabels: Record<string, string> = {
+	webhook: 'Webhook',
+	schedule: 'Schedule',
+	polling: 'Polling',
+	api: 'API',
+};
+
+/** How often the panel re-checks the server, so trigger-fired runs show up without a reload. */
+const SERVER_RUNS_REFRESH_MS = 15_000;
+
+const finishedStatus: Partial<Record<TRun['status'], TRunRecord['status']>> = {
+	completed: 'success',
+	failed: 'error',
+	cancelled: 'stopped',
+};
+
+/**
+ * Map a server run onto the editor's record shape. Runs still in flight are left out,
+ * matching the panel's "completed and stopped runs" promise.
+ */
+const toRunRecord = (run: TRun, labelFor: (key: string) => string): TRunRecord | null => {
+	const status = finishedStatus[run.status];
+	if (!status) return null;
+	const startedAt = Date.parse(run.started_at ?? run.created_at);
+	return {
+		id: run.id,
+		startedAt,
+		finishedAt: run.finished_at ? Date.parse(run.finished_at) : startedAt,
+		status,
+		trigger: run.trigger_type,
+		versionId: run.workflow_version_id ?? undefined,
+		nodeRuns: (run.node_runs ?? []).map(
+			(node): TNodeRunRecord => ({
+				nodeId: node.key,
+				label: labelFor(node.key),
+				status:
+					node.status === 'completed'
+						? 'success'
+						: node.status === 'skipped'
+							? 'skipped'
+							: 'error',
+				durationMs: node.duration_ms ?? undefined,
+				error: node.error ?? undefined,
+			}),
+		),
+		logs: [],
+	};
+};
+
 const RunRow = ({ record, versionNumber }: { record: TRunRecord; versionNumber?: number }) => {
 	const { state, dispatch } = useWorkflowEditor();
 	const openVersionPanel = useWorkflowShellStore((store) => store.openVersionPanel);
@@ -94,6 +144,12 @@ const RunRow = ({ record, versionNumber }: { record: TRunRecord; versionNumber?:
 					</p>
 					<p className={`mt-1 text-[11px] ${meta.cls}`}>
 						{meta.label}
+						{record.trigger !== 'manual' && (
+							<span className='text-zinc-400'>
+								{' '}
+								· {triggerLabels[record.trigger] ?? record.trigger}
+							</span>
+						)}
 						<span className='text-zinc-400'>
 							{' '}
 							· {completed}/{record.nodeRuns.length} steps
@@ -206,11 +262,28 @@ const RunRow = ({ record, versionNumber }: { record: TRunRecord; versionNumber?:
 };
 const RunHistory = () => {
 	const { state, dispatch } = useWorkflowEditor();
-	const history = state.runHistory;
-	const { data: versions } = useWorkflowVersions(
-		state.workflow.workspaceId ?? '',
-		state.workflow.apiId ?? '',
-	);
+	const workspaceId = state.workflow.workspaceId ?? '';
+	const workflowId = state.workflow.apiId ?? '';
+	const { data: versions } = useWorkflowVersions(workspaceId, workflowId);
+	// Local history only knows runs started from this editor; webhook, schedule and
+	// polling runs exist only on the server.
+	const serverParams: TRunListParams = { workflow_id: workflowId, per_page: 25 };
+	const { data: serverRuns } = useQuery({
+		queryKey: runKeys.list(workspaceId, serverParams),
+		queryFn: ({ signal }) => RunService.list(workspaceId, serverParams, signal),
+		enabled: Boolean(workspaceId && workflowId),
+		refetchInterval: SERVER_RUNS_REFRESH_MS,
+	});
+	const history = useMemo(() => {
+		const labelFor = (key: string) =>
+			state.nodes.find((step) => step.id === key)?.data.label ?? key;
+		const localIds = new Set(state.runHistory.map((record) => record.id));
+		const remote = (serverRuns?.runs ?? [])
+			.filter((run) => !localIds.has(run.id))
+			.map((run) => toRunRecord(run, labelFor))
+			.filter((record): record is TRunRecord => record !== null);
+		return [...state.runHistory, ...remote].sort((a, b) => b.startedAt - a.startedAt);
+	}, [serverRuns, state.runHistory, state.nodes]);
 	const versionNumbers = new Map(versions?.map((version) => [version.id, version.version]));
 	if (!history.length)
 		return (

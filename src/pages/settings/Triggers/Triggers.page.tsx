@@ -4,9 +4,11 @@ import { formatDistanceToNow } from 'date-fns';
 import {
 	AlertTriangle,
 	CalendarClock,
+	Copy,
 	Hand,
 	Play,
 	Repeat,
+	Terminal,
 	Trash2,
 	Webhook,
 	Zap,
@@ -23,6 +25,11 @@ import { useConfirm } from '@/context/confirm';
 import paths from '@/Routes/paths';
 import Spinner from '@/components/ui/Spinner';
 import type { TTrigger } from '@/types/trigger.type';
+import {
+	copyWithNotice,
+	webhookCurlFor,
+	webhookUrlFor,
+} from '@/pages/coreapp/Playbooks/WorkflowEditor/_helper/trigger.helper';
 
 const TYPE_ICON: Record<string, typeof Webhook> = {
 	webhook: Webhook,
@@ -183,6 +190,38 @@ const TriggersPage = () => {
 											? ` · 24h: ${stats.fired} run${stats.fired === 1 ? '' : 's'}, ${stats.failed} failed, ${stats.skipped} skipped`
 											: ''}
 									</p>
+									{trigger.type === 'webhook' && trigger.token && (
+										<div className='mt-2 flex max-w-full items-center gap-1.5'>
+											<code className='min-w-0 truncate rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 font-mono text-[11px] text-zinc-700 select-all dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300'>
+												{webhookUrlFor(trigger.token)}
+											</code>
+											<button
+												type='button'
+												title='Copy webhook URL'
+												onClick={() =>
+													copyWithNotice(
+														webhookUrlFor(trigger.token ?? ''),
+														'Webhook URL',
+													)
+												}
+												className='flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/[0.06]'>
+												<Copy size={13} />
+											</button>
+											<button
+												type='button'
+												title='Copy a curl example for this webhook'
+												onClick={() =>
+													copyWithNotice(
+														webhookCurlFor(trigger),
+														'curl example',
+													)
+												}
+												className='flex h-7 shrink-0 items-center gap-1 rounded-lg px-2 text-[11px] font-bold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/[0.06]'>
+												<Terminal size={12} />
+												curl
+											</button>
+										</div>
+									)}
 									{!trigger.is_active && failures > 0 && (
 										<p className='mt-1 flex items-center gap-1 text-xs font-semibold text-amber-700 dark:text-amber-400'>
 											<AlertTriangle size={12} />

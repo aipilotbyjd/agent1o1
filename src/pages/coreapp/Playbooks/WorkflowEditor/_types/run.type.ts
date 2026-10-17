@@ -34,7 +34,8 @@ export type TRunRecord = {
 	startedAt: number;
 	finishedAt: number;
 	status: 'success' | 'error' | 'stopped';
-	trigger: 'manual';
+	/** `manual` for editor runs; server runs carry their `trigger_type` (webhook, schedule...). */
+	trigger: string;
 	/** The published version a real run ran on; practice runs have none. */
 	versionId?: string;
 	nodeRuns: TNodeRunRecord[];
