@@ -310,9 +310,7 @@ const useRunWorkflowController = () => {
 	 * branches gate edges, and nodes whose inbound edges are all inactive skip.
 	 */
 	const runWorkflow = async () => {
-		const isRunDisabled =
-			state.nodes.length === 0 && state.ui.emptyCanvasView !== 'chat-started';
-		if (isRunDisabled) return;
+		if (state.nodes.length === 0) return;
 		if (state.run.status === 'running' || starting.current || inputRequest) return;
 
 		// Check for missing credentials.
@@ -323,10 +321,7 @@ const useRunWorkflowController = () => {
 			),
 		);
 
-		const isMockEmptyState =
-			state.nodes.length === 0 && state.ui.emptyCanvasView === 'chat-started';
-
-		if (missingCredentialNode || isMockEmptyState) {
+		if (missingCredentialNode) {
 			dispatch({
 				type: 'SET_LINK_CREDENTIALS_OPEN',
 				open: true,

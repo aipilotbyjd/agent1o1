@@ -261,7 +261,8 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 
 			<div
 				className={[
-					'p-3.5 shadow-[inset_0_1px_2px_rgba(24,24,27,0.03)] dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.25)]',
+					// `relative`: the corner toolbar sits in this body, below the trigger strip, not over its switch.
+					'relative p-3.5 shadow-[inset_0_1px_2px_rgba(24,24,27,0.03)] dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.25)]',
 					// Square the top when a strip sits above so they read as one stacked card.
 					canBeTrigger || needsAuth ? 'rounded-b-2xl' : 'rounded-2xl',
 				].join(' ')}

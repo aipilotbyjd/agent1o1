@@ -9,7 +9,6 @@ import { useCredentialResolver } from '../../_hooks/useCredentialResolver.hook';
 const CredentialFlow = () => {
 	const { state, dispatch } = useWorkflowEditor();
 	const [selectedNodeId, setSelectedNodeId] = useState(state.ui.linkCredentialsNodeId);
-	const [emptyAccountOpen, setEmptyAccountOpen] = useState(false);
 	const { isMissing: isCredentialMissing } = useCredentialResolver();
 	const close = () => dispatch({ type: 'SET_LINK_CREDENTIALS_OPEN', open: false });
 	const candidates = state.nodes.flatMap((node) => {
@@ -24,30 +23,25 @@ const CredentialFlow = () => {
 			node.data.values,
 		),
 	);
-	const mockEmpty = state.nodes.length === 0 && state.ui.emptyCanvasView === 'chat-started';
 	const returnToOverview = () => {
 		if (state.ui.linkCredentialsNodeId) close();
-		else {
-			setSelectedNodeId(null);
-			setEmptyAccountOpen(false);
-		}
+		else setSelectedNodeId(null);
 	};
-	if (target || emptyAccountOpen)
+	if (target)
 		return (
 			<AccountSelect
-				key={target?.node.id ?? 'empty-workflow'}
+				key={target.node.id}
 				popupOnly
-				connectorKey={target?.field.credentialType ?? 'google'}
-				value={target?.node.data.values[target.field.key] as string | undefined}
-				onChange={(credentialId) => {
-					if (target)
-						dispatch({
-							type: 'UPDATE_NODE_VALUE',
-							id: target.node.id,
-							fieldKey: target.field.key,
-							value: credentialId,
-						});
-				}}
+				connectorKey={target.field.credentialType}
+				value={target.node.data.values[target.field.key] as string | undefined}
+				onChange={(credentialId) =>
+					dispatch({
+						type: 'UPDATE_NODE_VALUE',
+						id: target.node.id,
+						fieldKey: target.field.key,
+						value: credentialId,
+					})
+				}
 				onClose={returnToOverview}
 			/>
 		);
@@ -77,15 +71,7 @@ const CredentialFlow = () => {
 						</button>
 					</div>
 				))}
-				{mockEmpty && (
-					<button
-						type='button'
-						onClick={() => setEmptyAccountOpen(true)}
-						className='w-full rounded-xl border border-zinc-200 p-4 text-sm dark:border-zinc-800'>
-						Link a Google account
-					</button>
-				)}
-				{missing.length === 0 && !mockEmpty && (
+				{missing.length === 0 && (
 					<div className='py-6 text-center'>
 						<Check size={28} className='mx-auto mb-3 text-emerald-500' />
 						<p className='text-sm font-semibold'>All accounts linked</p>

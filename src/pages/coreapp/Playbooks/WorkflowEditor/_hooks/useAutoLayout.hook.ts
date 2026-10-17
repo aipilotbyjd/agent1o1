@@ -4,7 +4,7 @@ import type { TCanvasNode } from '../_types/canvas.type';
 import { useWorkflowEditor } from './useWorkflowEditor.hook';
 
 /** Lays the canvas out from the nodes' rendered sizes, then brings it all into view. */
-export const useAutoLayout = () => {
+export const useAutoLayout = ({ record = true }: { record?: boolean } = {}) => {
 	const { dispatch } = useWorkflowEditor();
 	const reactFlow = useReactFlow<TCanvasNode>();
 
@@ -15,10 +15,10 @@ export const useAutoLayout = () => {
 				sizes.set(node.id, { width: node.measured.width, height: node.measured.height });
 			}
 		});
-		dispatch({ type: 'AUTO_LAYOUT', sizes });
+		dispatch({ type: 'AUTO_LAYOUT', sizes, record });
 		// The store hands new positions to React Flow on the next commit.
 		requestAnimationFrame(() =>
 			requestAnimationFrame(() => reactFlow.fitView({ padding: 0.18, duration: 320 })),
 		);
-	}, [dispatch, reactFlow]);
+	}, [dispatch, reactFlow, record]);
 };

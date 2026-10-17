@@ -55,7 +55,12 @@ export type TWorkflowEditorAction =
 			targetHandle?: string;
 	  }
 	| { type: 'REMOVE_EDGE'; id: string }
-	| { type: 'AUTO_LAYOUT'; sizes: Map<string, { width: number; height: number }> }
+	| {
+			type: 'AUTO_LAYOUT';
+			sizes: Map<string, { width: number; height: number }>;
+			/** False folds the layout into the last undo step instead of adding one. */
+			record?: boolean;
+	  }
 	| { type: 'UNDO' }
 	| { type: 'REDO' }
 	| { type: 'SET_WORKFLOW_META'; patch: Partial<TWorkflowMeta> }
@@ -576,7 +581,7 @@ export const workflowEditorReducer = (
 			};
 		}
 		case 'AUTO_LAYOUT': {
-			const next = withHistory(state);
+			const next = action.record === false ? state : withHistory(state);
 			const laidOut = autoLayout(
 				next.nodes.map((node) => ({ ...node, measured: action.sizes.get(node.id) })),
 				next.edges.map((edge) => ({ ...edge, condition: edgeCondition(edge) })),

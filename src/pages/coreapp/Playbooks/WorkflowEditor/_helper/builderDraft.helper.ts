@@ -151,7 +151,7 @@ const positionNodes = (
 export const builderGraphToCanvas = (
 	graph: TBuilderGraph,
 	currentNodes: TCanvasNode[] = [],
-): { nodes: TCanvasNode[]; edges: TCanvasEdge[] } => {
+): { nodes: TCanvasNode[]; edges: TCanvasEdge[]; placed: boolean } => {
 	const currentById = new Map(currentNodes.map((node) => [node.id, node]));
 	const positions = positionNodes(
 		graph,
@@ -174,6 +174,7 @@ export const builderGraphToCanvas = (
 	return {
 		nodes: [...nodes, ...currentNodes.filter(isNoteNode)],
 		edges: restoreInputConnections(graph.edges.map(graphEdgeToCanvas), graph.nodes),
+		placed: graph.nodes.some((node) => !currentById.has(node.key) && !node.position),
 	};
 };
 

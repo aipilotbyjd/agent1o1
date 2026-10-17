@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import { useNodesInitialized } from '@xyflow/react';
 import { useRealtime } from '@/context/realtime';
 import { ApiError, notify } from '@/api/core';
 import { useAiChatStore } from '@/store/aiChat.store';
@@ -13,6 +14,7 @@ import {
 import type { TBuilderMessage, TBuilderSession } from '@/types/workflow-builder.type';
 import { useWorkflowEditor } from './useWorkflowEditor.hook';
 import { useWorkflowRouteParams } from './useWorkflowRouteParams.hook';
+import { useAutoLayout } from './useAutoLayout.hook';
 import { builderGraphToCanvas, canvasToBuilderGraph } from '../_helper/builderDraft.helper';
 
 const POLL_INTERVAL_MS = 2500;
@@ -85,6 +87,27 @@ export const useAiBuilderBridge = () => {
 		canvasRef.current = { nodes: state.nodes, edges: state.edges };
 	});
 
+	// Steps the assistant added come without a position: once React Flow has
+	// measured them, the canvas is laid out the way Auto-layout would. Later
+	// edits in the same turn can resize a step, so a turn that added any is laid
+	// out once more when it ends.
+	const autoLayout = useAutoLayout({ record: false });
+	const nodesMeasured = useNodesInitialized();
+	const layoutPendingRef = useRef(false);
+	const placedThisTurnRef = useRef(false);
+	const wasThinkingRef = useRef(isThinking);
+	useEffect(() => {
+		const turnEnded = wasThinkingRef.current && !isThinking;
+		wasThinkingRef.current = isThinking;
+		if (turnEnded && placedThisTurnRef.current) {
+			placedThisTurnRef.current = false;
+			layoutPendingRef.current = true;
+		}
+		if (!layoutPendingRef.current || !nodesMeasured) return;
+		layoutPendingRef.current = false;
+		autoLayout();
+	}, [nodesMeasured, state.nodes, isThinking, autoLayout]);
+
 	// The draft (as JSON) last known to match the server, so an unchanged
 	// canvas isn't synced back.
 	const lastSyncedRef = useRef('');
@@ -108,6 +131,10 @@ export const useAiBuilderBridge = () => {
 			const next = builderGraphToCanvas(session.draft_graph, canvasRef.current.nodes);
 			lastSyncedRef.current = JSON.stringify(canvasToBuilderGraph(next.nodes, next.edges));
 			if (next.nodes.length === 0 && canvasRef.current.nodes.length === 0) return;
+			if (next.placed) {
+				layoutPendingRef.current = true;
+				placedThisTurnRef.current = true;
+			}
 			dispatch({ type: 'APPLY_BUILDER_DRAFT', nodes: next.nodes, edges: next.edges });
 		},
 		[dispatch],

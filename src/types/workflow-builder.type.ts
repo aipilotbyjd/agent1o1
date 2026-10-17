@@ -50,6 +50,8 @@ export type TBuilderMessage = {
 	role: 'user' | 'assistant';
 	/** What a user message asked for: `ask` answers without editing the draft. */
 	mode: TBuilderMessageMode;
+	/** What a user message referenced with `/` and `@`. */
+	context: TBuilderMessageContext | null;
 	content: string;
 	actions: TBuilderMessageAction[] | null;
 	processing_status: TBuilderMessageStatus;
@@ -115,10 +117,19 @@ export type TSyncBuilderDraftDto = TBuilderGraph & { draft_lock_version: number 
  *  turn no editing tools. */
 export type TBuilderMessageMode = 'build' | 'ask';
 
+/** Steps and connected accounts the user picked in the prompt with `/` and `@`. */
+export type TBuilderMessageContext = {
+	/** Node types, e.g. `gmail_send_email`. */
+	nodes?: string[];
+	/** Connector credential ids in this workspace. */
+	credentials?: string[];
+};
+
 export type TSendBuilderMessageDto = {
 	message: string;
 	/** Defaults to `build`. */
 	mode?: TBuilderMessageMode;
+	context?: TBuilderMessageContext;
 	/** Sent as multipart `attachments[]`: the service builds the `FormData`. */
 	attachments?: File[];
 };

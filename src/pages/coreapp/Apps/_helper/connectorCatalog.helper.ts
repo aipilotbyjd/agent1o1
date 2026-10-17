@@ -35,6 +35,9 @@ const CONNECTOR_ICONS: Record<string, SvgIconComponent> = {
 	calendar: Calendar03,
 };
 
+export const connectorIconFor = (icon: string | null): SvgIconComponent =>
+	(icon && CONNECTOR_ICONS[icon]) || Plug;
+
 /** The backend names each category's icon (`ConnectorCategory::icon()`). */
 const CATEGORY_ICONS: Record<string, SvgIconComponent> = {
 	message: MessageSquare,
@@ -56,7 +59,7 @@ export const connectorToApp = (connector: TConnector): IAvailableApp => ({
 	id: connector.key,
 	name: connector.name,
 	description: connector.description ?? '',
-	icon: (connector.icon && CONNECTOR_ICONS[connector.icon]) || Plug,
+	icon: connectorIconFor(connector.icon),
 	color: connector.color ?? FALLBACK_COLOR,
 	category: connector.category,
 	categoryLabel: connector.category_label,

@@ -404,7 +404,7 @@ const Topbar = () => {
 	const [runSeconds, setRunSeconds] = useState(0);
 
 	const isRunning = state.run.status === 'running';
-	const isRunDisabled = state.nodes.length === 0 && state.ui.emptyCanvasView !== 'chat-started';
+	const isRunDisabled = state.nodes.length === 0;
 
 	// Live Run Timer
 	const [timedRun, setTimedRun] = useState(isRunning);

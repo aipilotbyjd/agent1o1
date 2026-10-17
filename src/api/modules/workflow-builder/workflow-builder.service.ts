@@ -86,10 +86,13 @@ export const WorkflowBuilderSessionService = {
 /** JSON, unless files ride along, then multipart, with each file under
  *  `attachments[]`. */
 const messageBody = (payload: TSendBuilderMessageDto): TSendBuilderMessageDto | FormData => {
-	if (!payload.attachments?.length) return { message: payload.message, mode: payload.mode };
+	if (!payload.attachments?.length)
+		return { message: payload.message, mode: payload.mode, context: payload.context };
 	const form = new FormData();
 	form.append('message', payload.message);
 	if (payload.mode) form.append('mode', payload.mode);
+	payload.context?.nodes?.forEach((key) => form.append('context[nodes][]', key));
+	payload.context?.credentials?.forEach((id) => form.append('context[credentials][]', id));
 	payload.attachments.forEach((file) => form.append('attachments[]', file));
 	return form;
 };
