@@ -1,3 +1,4 @@
+import { serializeNodeConfig, restoreInputConnections } from './dynamicInputs.helper';
 import type {
 	TReplaceGraphDto,
 	TWorkflow,
@@ -11,13 +12,13 @@ import type { TExportedWorkflow } from '../_types/workflow-editor.type';
 
 /**
  * The backend stores the draft graph as `nodes` ({ key, type, config, position })
- * and `edges` ({ from, to, condition }) keyed by node `key` — see
+ * and `edges` ({ from, to, condition }) keyed by node `key`: see
  * `Workflow::replaceGraph()`. The canvas node id doubles as that key.
  *
  * Edges carry no port handles on the backend: `condition` is a branch value
  * (`null` = always, `'error'` = on failure), not a port name. It rides on
  * `edge.data.condition` so a branch the AI builder (or an import) created
- * survives a save — saving it as `null` would turn an error path into one
+ * survives a save: saving it as `null` would turn an error path into one
  * that always runs. Edges reload on each node's default handles.
  */
 export const buildGraphPayload = (nodes: TCanvasNode[], edges: TCanvasEdge[]): TReplaceGraphDto => {
@@ -29,7 +30,7 @@ export const buildGraphPayload = (nodes: TCanvasNode[], edges: TCanvasEdge[]): T
 		nodes: executableNodes.map((node) => ({
 			key: node.id,
 			type: node.data.defKey,
-			config: node.data.values ?? {},
+			config: serializeNodeConfig(node, edges),
 			position: { x: node.position.x, y: node.position.y },
 		})),
 		edges: edges
@@ -58,7 +59,7 @@ const draftNodeToCanvas = (node: TWorkflowNode): TCanvasNode => {
 	};
 };
 
-/** Pinned data has to be a JSON object or array on the backend — a scalar
+/** Pinned data has to be a JSON object or array on the backend: a scalar
  *  output (only the local simulation produces those) is wrapped. */
 export const toPinPayload = (output: unknown): Record<string, unknown> | unknown[] =>
 	output !== null && typeof output === 'object'
@@ -77,6 +78,20 @@ const draftEdgesToCanvas = (nodes: TWorkflowNode[], edges: TWorkflowEdge[]): TCa
 	});
 };
 
+/** A workflow's saved draft as canvas nodes and edges. */
+export const workflowDraftToCanvas = (
+	workflow: TWorkflow,
+): { nodes: TCanvasNode[]; edges: TCanvasEdge[] } => {
+	const draftNodes = workflow.nodes ?? [];
+	return {
+		nodes: draftNodes.map(draftNodeToCanvas),
+		edges: restoreInputConnections(
+			draftEdgesToCanvas(draftNodes, workflow.edges ?? []),
+			draftNodes,
+		),
+	};
+};
+
 /** The editor always opens the live draft (`show` loads its nodes/edges);
  *  `version` only supplies the published-version badge. */
 export const versionToExportedWorkflow = (
@@ -84,8 +99,6 @@ export const versionToExportedWorkflow = (
 	version: TWorkflowVersion | undefined,
 	workspaceId: string,
 ): TExportedWorkflow => {
-	const draftNodes = workflow.nodes ?? [];
-
 	return {
 		workflow: {
 			id: workflow.id,
@@ -99,7 +112,6 @@ export const versionToExportedWorkflow = (
 			updatedAt: Date.now(),
 			savingState: 'saved',
 		},
-		nodes: draftNodes.map(draftNodeToCanvas),
-		edges: draftEdgesToCanvas(draftNodes, workflow.edges ?? []),
+		...workflowDraftToCanvas(workflow),
 	};
 };

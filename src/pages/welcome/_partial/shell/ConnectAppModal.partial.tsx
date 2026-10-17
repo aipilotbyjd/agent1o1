@@ -2,10 +2,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useConnectOAuthConnector, useCreateConnectorCredential } from '@/api/modules/connectors';
-import { useOnboardingStore } from '../../_context/OnboardingStore.context';
+import { useOnboardingStore } from '../../_hooks/useOnboardingStore.hook';
 import { useOnboardingWorkspaceId } from '../../_hooks/useOnboardingWorkspace.hook';
 import BrandLogo from '../shared/BrandLogo.partial';
 import type { TConnectorData, TConnectorField } from '@/types/connector.type';
+import { isConnectorUnavailable } from '@/types/connector.type';
 
 /** How long the success tick stays up before the modal dismisses itself. */
 const SUCCESS_DISMISS_MS = 800;
@@ -27,9 +28,11 @@ const ConnectAppModal = () => {
 	const close = () => dispatch({ type: 'SET_FIELD', payload: { selectedAppForAuth: null } });
 
 	// Each app opens with a blank form.
-	useEffect(() => {
+	const [formFor, setFormFor] = useState(selectedAppForAuth?.id);
+	if (formFor !== selectedAppForAuth?.id) {
+		setFormFor(selectedAppForAuth?.id);
 		setFieldValues({});
-	}, [selectedAppForAuth?.id]);
+	}
 
 	// Let the tick land, then get out of the way.
 	useEffect(() => {
@@ -46,7 +49,7 @@ const ConnectAppModal = () => {
 	);
 
 	const handleConnect = async () => {
-		if (!selectedAppForAuth) return;
+		if (!selectedAppForAuth || isConnectorUnavailable(selectedAppForAuth)) return;
 
 		try {
 			if (isOAuth) {
@@ -87,6 +90,7 @@ const ConnectAppModal = () => {
 				<div className='flex h-11 items-center overflow-hidden rounded-xl border border-slate-200/90 bg-white/50 pr-3 dark:border-zinc-800'>
 					{field.type === 'multiline' ? (
 						<textarea
+							aria-label={field.placeholder}
 							placeholder={field.placeholder}
 							value={String(value)}
 							onChange={(e) => setValue(e.target.value)}
@@ -101,6 +105,7 @@ const ConnectAppModal = () => {
 						/>
 					) : (
 						<input
+							aria-label={field.placeholder}
 							type={
 								field.secret
 									? 'password'
@@ -178,7 +183,11 @@ const ConnectAppModal = () => {
 								</div>
 							) : (
 								<button
-									disabled={isConnecting || (!isOAuth && missingRequiredField)}
+									disabled={
+										isConnecting ||
+										isConnectorUnavailable(selectedAppForAuth) ||
+										(!isOAuth && missingRequiredField)
+									}
 									onClick={handleConnect}
 									className='flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 text-xs font-black tracking-wide text-white transition-all hover:opacity-90 active:scale-95 disabled:pointer-events-none disabled:opacity-40 dark:bg-zinc-50 dark:text-slate-950'>
 									{isConnecting ? (

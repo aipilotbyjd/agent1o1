@@ -2,10 +2,10 @@
 // Workflow Types
 // ------------------------------------------------------------
 // `nodes`/`edges`/`tags` are only present when the backend
-// eager-loads them — the list endpoint omits all three; detail,
+// eager-loads them: the list endpoint omits all three; detail,
 // duplicate, and the graph-replace endpoint include them. Node
 // `config` is type-dependent and isn't pinned down to one shape
-// here — narrow it at the call site by `type`.
+// here: narrow it at the call site by `type`.
 // ============================================================
 import type { TTag } from './tag.type';
 
@@ -50,6 +50,8 @@ export type TWorkflow = {
 	created_by: string;
 	created_at: string;
 	updated_at: string;
+	/** Set while the workflow is in the trash. */
+	deleted_at: string | null;
 };
 
 // ─── Request DTOs ────────────────────────────────────────────
@@ -93,4 +95,6 @@ export type TSyncWorkflowTagsDto = {
 	tag_ids: string[];
 };
 
-export type TPinWorkflowNodeDto = { data: unknown; node_run_id?: never } | { node_run_id: string; data?: never };
+export type TPinWorkflowNodeDto =
+	| { data: unknown; node_run_id?: never }
+	| { node_run_id: string; data?: never };

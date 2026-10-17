@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef } from 'react';
+import { ReactNode, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Plus, Search, X } from 'lucide-react';
@@ -24,7 +24,9 @@ type TProps = {
 const AgentSideDrawer = ({ isOpen, title, onClose, children, footer, search }: TProps) => {
 	const drawerRef = useRef<HTMLDivElement | null>(null);
 	const onCloseRef = useRef(onClose);
-	onCloseRef.current = onClose;
+	useLayoutEffect(() => {
+		onCloseRef.current = onClose;
+	});
 
 	useEffect(() => {
 		if (!isOpen) return;
@@ -90,7 +92,7 @@ const AgentSideDrawer = ({ isOpen, title, onClose, children, footer, search }: T
 							</div>
 						)}
 
-						<div className='flex-1 space-y-3 overflow-y-auto p-4 dark:bg-zinc-950/10'>
+						<div className='no-scrollbar flex-1 space-y-3 overflow-y-auto p-4 dark:bg-zinc-950/10'>
 							{children}
 						</div>
 

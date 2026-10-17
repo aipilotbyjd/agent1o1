@@ -9,9 +9,9 @@ export const errorClass = 'mt-1.5 text-xs font-semibold text-red-500';
 export { default as relativeTime } from '@/utils/relativeTime.util';
 
 export const formatDateTime = (iso: string | null | undefined) => {
-	if (!iso) return '—';
+	if (!iso) return '-';
 	const date = new Date(iso);
-	if (Number.isNaN(date.getTime())) return '—';
+	if (Number.isNaN(date.getTime())) return '-';
 	return new Intl.DateTimeFormat('en', {
 		month: 'short',
 		day: 'numeric',

@@ -29,24 +29,24 @@ type TAuthLayoutProps = {
 const AuthLayout: FC<TAuthLayoutProps> = ({ badge, children }) => (
 	<div className='relative flex min-h-screen w-full flex-col overflow-hidden bg-[#0a0b0f] text-white lg:flex-row'>
 		{/* Ambient Brand Glowing Gradient */}
-		<div className='pointer-events-none absolute -top-44 -left-44 h-[700px] w-[700px] rounded-full bg-primary-600/25 blur-[170px]' />
-		<div className='pointer-events-none absolute top-1/4 left-1/3 h-[500px] w-[500px] rounded-full bg-primary-600/20 blur-[150px]' />
+		<div className='bg-primary-600/25 pointer-events-none absolute -top-44 -left-44 h-[700px] w-[700px] rounded-full blur-[170px]' />
+		<div className='bg-primary-600/20 pointer-events-none absolute top-1/4 left-1/3 h-[500px] w-[500px] rounded-full blur-[150px]' />
 
 		{/* Decorative Corner Outline */}
-		<div className='pointer-events-none absolute top-12 right-0 hidden h-64 w-48 rounded-l-[40px] border-y border-l border-primary-500/20 lg:block' />
+		<div className='border-primary-500/20 pointer-events-none absolute top-12 right-0 hidden h-64 w-48 rounded-l-[40px] border-y border-l lg:block' />
 
 		{/* ─── Left Panel: Hero Showcase (Brand Theme & Agent1o1 Tagline) ─── */}
 		{/* Hidden below lg: on mobile the auth card should be reachable without scrolling past marketing copy. */}
 		<div className='relative z-10 hidden flex-1 flex-col justify-between p-8 sm:p-12 lg:flex lg:p-16'>
 			<div>
-				<div className='inline-flex items-center gap-2 rounded-full border border-primary-500/35 bg-primary-500/15 px-3.5 py-1 text-[11px] font-bold tracking-wider text-primary-300 uppercase'>
-					<span className='size-1.5 rounded-full bg-primary-400 animate-pulse' />
+				<div className='border-primary-500/35 bg-primary-500/15 text-primary-300 inline-flex items-center gap-2 rounded-full border px-3.5 py-1 text-[11px] font-bold tracking-wider uppercase'>
+					<span className='bg-primary-400 size-1.5 animate-pulse rounded-full' />
 					{badge}
 				</div>
 
-				<h1 className='mt-8 text-5xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl leading-[1.05]'>
+				<h1 className='mt-8 text-5xl leading-[1.05] font-black tracking-tight text-white sm:text-6xl lg:text-7xl'>
 					Build <br />
-					<span className='font-serif italic text-primary-400'>Autonomous.</span> <br />
+					<span className='text-primary-400 font-serif italic'>Autonomous.</span> <br />
 					AI Agents.
 				</h1>
 			</div>
@@ -56,10 +56,10 @@ const AuthLayout: FC<TAuthLayoutProps> = ({ badge, children }) => (
 				{FEATURES.map(({ path, title, description }) => (
 					<div
 						key={title}
-						className='flex items-center gap-4 rounded-2xl border border-primary-500/25 bg-[#120f1d]/85 p-4 backdrop-blur-xl shadow-lg shadow-black/30 transition-all hover:border-primary-500/50 hover:bg-[#181427]/90'>
-						<div className='flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary-500/30 bg-primary-500/15 text-primary-300 shadow-inner'>
+						className='border-primary-500/25 hover:border-primary-500/50 flex items-center gap-4 rounded-2xl border bg-[#120f1d]/85 p-4 shadow-lg shadow-black/30 backdrop-blur-xl transition-all hover:bg-[#181427]/90'>
+						<div className='border-primary-500/30 bg-primary-500/15 text-primary-300 flex size-11 shrink-0 items-center justify-center rounded-xl border shadow-inner'>
 							<svg
-								className='size-5 text-primary-300'
+								className='text-primary-300 size-5'
 								viewBox='0 0 24 24'
 								fill='none'
 								stroke='currentColor'
@@ -85,21 +85,21 @@ const AuthLayout: FC<TAuthLayoutProps> = ({ badge, children }) => (
 					<img
 						src={Avatar1}
 						alt='Builder'
-						className='size-8 rounded-full object-cover ring-2 ring-primary-900'
+						className='ring-primary-900 size-8 rounded-full object-cover ring-2'
 					/>
 					<img
 						src={Avatar2}
 						alt='Builder'
-						className='size-8 rounded-full object-cover ring-2 ring-primary-900'
+						className='ring-primary-900 size-8 rounded-full object-cover ring-2'
 					/>
 					<img
 						src={Avatar3}
 						alt='Builder'
-						className='size-8 rounded-full object-cover ring-2 ring-primary-900'
+						className='ring-primary-900 size-8 rounded-full object-cover ring-2'
 					/>
 				</div>
 				<div>
-					<div className='text-[10px] font-bold tracking-widest text-primary-300/80 uppercase'>
+					<div className='text-primary-300/80 text-[10px] font-bold tracking-widest uppercase'>
 						TRUSTED BY BUILDERS
 					</div>
 					<div className='text-xs font-bold tracking-tight text-white'>
@@ -111,7 +111,7 @@ const AuthLayout: FC<TAuthLayoutProps> = ({ badge, children }) => (
 
 		{/* ─── Right Panel: Floating Card ───────────────────────────── */}
 		<div className='relative z-10 flex flex-1 items-center justify-center p-4 sm:p-8 lg:p-12'>
-			<div className='w-full max-w-[460px] rounded-[32px] border border-white/80 bg-white p-8 sm:p-10 shadow-2xl shadow-primary-950/20'>
+			<div className='shadow-primary-950/20 w-full max-w-[460px] rounded-[32px] border border-white/80 bg-white p-8 shadow-2xl sm:p-10'>
 				{children}
 			</div>
 		</div>

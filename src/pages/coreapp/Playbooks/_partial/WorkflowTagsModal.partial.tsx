@@ -9,7 +9,7 @@ type TProps = {
 	ws: string;
 	workflowId: string;
 	workflowTitle: string;
-	/** From the workflows list — the only read that carries tags. */
+	/** From the workflows list: the only read that carries tags. */
 	attached: TTag[];
 	onClose: () => void;
 };
@@ -26,7 +26,7 @@ const WorkflowTagsModal = ({ ws, workflowId, workflowTitle, attached, onClose }:
 	const syncMutation = useSyncWorkflowTags(ws, workflowId);
 	const createMutation = useCreateTag(ws);
 
-	// Ids arrive as numbers from Laravel but are typed string — compare as strings.
+	// Ids arrive as numbers from Laravel but are typed string: compare as strings.
 	const attachedIds = attached.map((tag) => String(tag.id));
 	const isBusy = syncMutation.isPending || createMutation.isPending;
 

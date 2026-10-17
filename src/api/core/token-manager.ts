@@ -3,7 +3,7 @@
 // ------------------------------------------------------------
 // Stores the access token and its expiry in localStorage or
 // sessionStorage, based on remember-me preference. The refresh
-// token itself is never stored here — the backend issues it as an
+// token itself is never stored here: the backend issues it as an
 // httpOnly cookie and reads it back the same way, so the client
 // never sees it.
 // ============================================================
@@ -68,5 +68,3 @@ export const isTokenExpired = (): boolean => {
 	if (!expiry) return true;
 	return Date.now() / 1000 > expiry - 30; // 30-second buffer
 };
-
-export const hasValidToken = (): boolean => !!getAccessToken() && !isTokenExpired();

@@ -2,10 +2,10 @@
 // Node Types
 // ------------------------------------------------------------
 // Two distinct shapes share the "node" name. A built-in node has no
-// database row — `NodeRegistry::catalog()` renders its metadata as
+// database row: `NodeRegistry::catalog()` renders its metadata as
 // a plain array (`TBuiltinNode`), keyed by `type`, not `id`. A
-// custom node is a workspace-owned `CustomNode` row (`TCustomNode`)
-// — only these can be created, updated, or deleted.
+// custom node is a workspace-owned `CustomNode` row (`TCustomNode`),
+// only these can be created, updated, or deleted.
 // ============================================================
 export type TBuiltinNode = {
 	type: string;
@@ -55,3 +55,26 @@ export type TCreateCustomNodeDto = {
 };
 
 export type TUpdateCustomNodeDto = Partial<TCreateCustomNodeDto>;
+
+// ─── Field options (live dropdowns) ──────────────────────────
+
+/** `POST /workspaces/{ws}/nodes/options`: the choices for one node field. */
+export type TNodeOptionsParams = {
+	type: string;
+	field: string;
+	/** The node's current values: the account to use and any fields this one depends on. */
+	config?: Record<string, unknown>;
+	search?: string;
+	cursor?: string;
+};
+
+export type TNodeOption = {
+	value: string | number;
+	label: string;
+	description?: string;
+};
+
+export type TNodeOptionsPage = {
+	options: TNodeOption[];
+	next_cursor: string | null;
+};

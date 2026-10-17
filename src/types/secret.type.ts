@@ -1,7 +1,7 @@
 // ============================================================
 // Secret Types
 // ------------------------------------------------------------
-// One resource covers both secrets and plain variables — `is_secret`
+// One resource covers both secrets and plain variables: `is_secret`
 // is what makes `value` write-only. A non-secret's `value` comes
 // back readable; a secret's never does, no matter who's asking.
 // `reference` is the `{{ secrets.KEY }}` template string a node

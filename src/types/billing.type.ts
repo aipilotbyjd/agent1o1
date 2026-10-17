@@ -2,7 +2,7 @@
 // Billing Types
 // ------------------------------------------------------------
 // Plan catalog is workspace-scoped (`GET .../billing/plans`), not
-// global — every plan-buying flow needs a workspace to attribute
+// global: every plan-buying flow needs a workspace to attribute
 // the purchase to. Money on `TInvoice` is doubled: `*_raw` in the
 // currency's minor unit for arithmetic, `*` pre-formatted by
 // Cashier for display.
@@ -56,7 +56,7 @@ export type TUsagePeriod = {
 	/** `null` when the plan is unlimited. */
 	credits_remaining: number | null;
 	/** The share of `credits_used` that neither the plan allowance nor the
-	 *  top-up pool covered — a subset of it, not additional spend. */
+	 *  top-up pool covered: a subset of it, not additional spend. */
 	overage_credits_used: number;
 	overage_credits_billed: number;
 };

@@ -7,11 +7,11 @@ import { WorkspaceEndpoints as E } from './workspaces.endpoints';
 // ============================================================
 // Workspace Service
 // ------------------------------------------------------------
-// Workspaces are the top-level scope — there's no parent workspace
-// to nest under — so this doesn't fit createResource(); it's
+// Workspaces are the top-level scope (there's no parent workspace
+// to nest under) so this doesn't fit createResource(); it's
 // hand-written rather than forced through a factory built for
 // ws-scoped resources. WorkspaceController wraps every response
-// under a `workspace`/`workspaces` key — verified against
+// under a `workspace`/`workspaces` key: verified against
 // WorkspaceController::index/store/show/update on agent-1o1-ai.
 // ============================================================
 export const WorkspaceService = {

@@ -4,7 +4,7 @@
 // A run is one execution of a workflow (`runnable_type`/
 // `runnable_id`). The list endpoint (`GET .../runs`) is the one
 // place `TPaginationMeta` (api.type.ts) applies flat alongside
-// `data` — see `RunController::index`.
+// `data`: see `RunController::index`.
 // ============================================================
 
 import type { TAgentMessage } from './agent.type';
@@ -56,12 +56,22 @@ export type TNodeRunDetail = {
 	child_runs?: TRun[];
 };
 
-/** The agent a run was done on behalf of — see `Run::owningAgent()`. */
+/** The agent a run was done on behalf of: see `Run::owningAgent()`. */
 export type TRunAgent = {
 	id: string;
 	name: string;
 	icon: string | null;
 	color: string | null;
+};
+
+/** What an agent chat turn was sent; `provider` is a failover chain for a catalog model. */
+export type TRunAgentContext = {
+	provider: string | Record<string, string>;
+	model: string | null;
+	/** A skill picked for this turn with `/`; absent on turns recorded before it existed. */
+	skill?: string | null;
+	instructions: string;
+	tools: string[];
 };
 
 export type TRun = {
@@ -70,6 +80,7 @@ export type TRun = {
 	runnable_type: string;
 	runnable_id: string;
 	workflow_id: string | null;
+	workflow?: { id: string; name: string } | null;
 	workflow_version_id: string | null;
 	retried_from_run_id: string | null;
 	status: TRunStatus;
@@ -82,6 +93,8 @@ export type TRun = {
 	agent?: TRunAgent | null;
 	/** An `agent_session` run's reply, on `GET .../runs/{id}` only; null if the turn failed. */
 	agent_reply?: TAgentMessage | null;
+	/** On `GET .../runs/{id}` only; null for runs recorded before it existed. */
+	agent_context?: TRunAgentContext | null;
 	triggered_by: string | null;
 	loop_index: number | null;
 	started_at: string | null;
@@ -95,6 +108,7 @@ export type TRunListParams = {
 	status?: TRunStatus;
 	workflow_id?: string;
 	agent_id?: string;
+	runnable_type?: string;
 	trigger_type?: string;
 	exclude_trigger_type?: string;
 	per_page?: number;

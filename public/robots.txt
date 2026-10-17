@@ -1,4 +1,4 @@
 User-agent: *
 Disallow:
 
-Sitemap: https://boltify.omtanke.studio/sitemap.xml
+Sitemap: https://agent1o1.com/sitemap.xml

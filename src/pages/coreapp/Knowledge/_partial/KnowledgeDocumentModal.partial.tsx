@@ -5,7 +5,7 @@ import Modal, { ModalHeader, ModalBody } from '@/components/ui/Modal';
 
 /**
  * The whole document a chunk came from, reassembled by the backend from every
- * chunk that shares its `source` (and collection) — what an agent's
+ * chunk that shares its `source` (and collection): what an agent's
  * read-document tool would get back.
  */
 const KnowledgeDocumentModal = ({

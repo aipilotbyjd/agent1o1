@@ -40,7 +40,7 @@ export const AuthService = {
 			.post<TRegisterResponse>(AuthEndpoints.verifyTwoFactor, payload)
 			.then(unwrap<TLoginSuccessData>),
 
-	/** No body — the refresh token is read off the httpOnly cookie. */
+	/** No body: the refresh token is read off the httpOnly cookie. */
 	refresh: () =>
 		axiosClient.post<TRefreshResponse>(AuthEndpoints.refresh).then((r) => r.data.data.tokens),
 
@@ -66,14 +66,14 @@ export const AuthService = {
 	resendVerification: () =>
 		axiosClient.post<TMessageResponse>(AuthEndpoints.resendVerification).then((r) => r.data),
 
-	/** Public, signed link — `query` carries the signature/expiry params
+	/** Public, signed link: `query` carries the signature/expiry params
 	 *  from the emailed verification URL, not a bearer token. */
 	verifyEmail: (id: string, hash: string, query?: Record<string, string>) =>
 		axiosClient
 			.get<TMessageResponse>(AuthEndpoints.verifyEmail(id, hash), { params: query })
 			.then((r) => r.data),
 
-	/** Public, signed link — mirrors `verifyEmail`: `query` carries the
+	/** Public, signed link: mirrors `verifyEmail`: `query` carries the
 	 *  signature/expiry params from the emailed link, not a bearer token. */
 	confirmEmailChange: (id: string, hash: string, query?: Record<string, string>) =>
 		axiosClient

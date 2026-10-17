@@ -10,6 +10,7 @@ import SettingsPages from '@/Routes/appPages/settingsPages';
 const workspacePages = pages.workspace.subPages!;
 const playbookEditorPages = pages.playbookEditor.subPages!;
 const agentEditorPages = pages.agentEditor.subPages!;
+const pageEditorPages = pages.pageEditor.subPages!;
 
 /** Children of `/:workspaceId` are registered relative to it. */
 const rel = relativeToWorkspace;
@@ -21,12 +22,24 @@ const WorkflowsListPage = lazy(() => import('@/pages/coreapp/Playbooks/Workflows
 const WorkflowEditorPage = lazy(
 	() => import('@/pages/coreapp/Playbooks/WorkflowEditor/WorkflowEditor.page'),
 );
+const WorkflowPagesLayout = lazy(
+	() => import('@/pages/coreapp/WorkflowPages/_layouts/WorkflowPages.layout'),
+);
+const PagesListPage = lazy(() => import('@/pages/coreapp/WorkflowPages/PagesList.page'));
+const UsePagePage = lazy(() => import('@/pages/coreapp/WorkflowPages/UsePage.page'));
+const PageInsightsPage = lazy(() => import('@/pages/coreapp/WorkflowPages/PageInsights/PageInsights.page'));
+const PageBuilderPage = lazy(
+	() => import('@/pages/coreapp/WorkflowPages/PageBuilder/PageBuilder.page'),
+);
 const AgentsLayout = lazy(() => import('@/pages/coreapp/Agents/_layouts/Agents.layout'));
 const AgentsListPage = lazy(() => import('@/pages/coreapp/Agents/AgentsList.page'));
 const AgentBuilderPage = lazy(
 	() => import('@/pages/coreapp/Agents/AgentBuilder/AgentBuilder.page'),
 );
 const AgentInsightsPage = lazy(() => import('@/pages/coreapp/Agents/AgentInsights.page'));
+const LibraryPage = lazy(() => import('@/pages/coreapp/Library/Library.page'));
+const ApprovalsLayout = lazy(() => import('@/pages/coreapp/Approvals/_layouts/Approvals.layout'));
+const ApprovalsPage = lazy(() => import('@/pages/coreapp/Approvals/Approvals.page'));
 const TrailLayout = lazy(() => import('@/pages/coreapp/Trail/_layouts/Trail.layout'));
 const TrailListPage = lazy(() => import('@/pages/coreapp/Trail/TrailList.page'));
 const SkillsLayout = lazy(() => import('@/pages/coreapp/Skills/_layouts/Skills.layout'));
@@ -41,6 +54,10 @@ const BlueprintsLayout = lazy(
 	() => import('@/pages/coreapp/Blueprints/_layouts/Blueprints.layout'),
 );
 const BlueprintsListPage = lazy(() => import('@/pages/coreapp/Blueprints/BlueprintsList.page'));
+const AssistantLayout = lazy(() => import('@/pages/coreapp/Assistant/_layouts/Assistant.layout'));
+const AssistantHomePage = lazy(() => import('@/pages/coreapp/Assistant/AssistantHome.page'));
+const TrashLayout = lazy(() => import('@/pages/coreapp/Trash/_layouts/Trash.layout'));
+const TrashPage = lazy(() => import('@/pages/coreapp/Trash/Trash.page'));
 const VaultLayout = lazy(() => import('@/pages/coreapp/Vault/_layouts/Vault.layout'));
 const SecretsPage = lazy(() => import('@/pages/coreapp/Vault/Secrets.page'));
 
@@ -58,18 +75,56 @@ const dashboardRoute: RouteObject = {
 	],
 };
 
+/** Pages: the list, and a published page as a member uses it, under one layout. */
+const workflowPagesRoute: RouteObject = {
+	path: rel(workspacePages.pages.to),
+	element: <WorkflowPagesLayout />,
+	children: [
+		{ index: true, element: <PagesListPage /> },
+		{ path: ':pageId', element: <UsePagePage /> },
+		{ path: ':pageId/insights', element: <PageInsightsPage /> },
+	],
+};
+
 /** List pages: each gets its own layout wrapper, rendered inside the core-app shell. */
 const listRoutes: RouteObject[] = (
 	[
-		[workspacePages.playbooks.to, <PlaybooksLayout />, <WorkflowsListPage />],
-		[workspacePages.agents.to, <AgentsLayout />, <AgentsListPage />],
-		[workspacePages.blueprints.to, <BlueprintsLayout />, <BlueprintsListPage />],
-		[workspacePages.skills.to, <SkillsLayout />, <SkillsListPage />],
-		[workspacePages.apps.to, <AppsLayout />, <AppsListPage />],
-		[workspacePages.knowledge.to, <KnowledgeLayout />, <KnowledgeListPage />],
-		[workspacePages.vault.to, <VaultLayout />, <SecretsPage />],
-		[workspacePages.trail.to, <TrailLayout />, <TrailListPage />],
-		[workspacePages.artifacts.to, <ArtifactsLayout />, <ArtifactsListPage />],
+		[
+			workspacePages.assistant.to,
+			<AssistantLayout key='layout' />,
+			<AssistantHomePage key='page' />,
+		],
+		[
+			workspacePages.playbooks.to,
+			<PlaybooksLayout key='layout' />,
+			<WorkflowsListPage key='page' />,
+		],
+		[workspacePages.agents.to, <AgentsLayout key='layout' />, <AgentsListPage key='page' />],
+		[
+			workspacePages.blueprints.to,
+			<BlueprintsLayout key='layout' />,
+			<BlueprintsListPage key='page' />,
+		],
+		[workspacePages.skills.to, <SkillsLayout key='layout' />, <SkillsListPage key='page' />],
+		[workspacePages.apps.to, <AppsLayout key='layout' />, <AppsListPage key='page' />],
+		[
+			workspacePages.knowledge.to,
+			<KnowledgeLayout key='layout' />,
+			<KnowledgeListPage key='page' />,
+		],
+		[workspacePages.vault.to, <VaultLayout key='layout' />, <SecretsPage key='page' />],
+		[
+			workspacePages.approvals.to,
+			<ApprovalsLayout key='layout' />,
+			<ApprovalsPage key='page' />,
+		],
+		[workspacePages.trail.to, <TrailLayout key='layout' />, <TrailListPage key='page' />],
+		[
+			workspacePages.artifacts.to,
+			<ArtifactsLayout key='layout' />,
+			<ArtifactsListPage key='page' />,
+		],
+		[workspacePages.trash.to, <TrashLayout key='layout' />, <TrashPage key='page' />],
 	] as const
 ).map(([to, layout, page]) => ({
 	path: rel(to),
@@ -85,12 +140,14 @@ const editorRoutes: RouteObject[] = [
 	{ path: rel(playbookEditorPages.add.to), element: <WorkflowEditorPage /> },
 	{ path: rel(playbookEditorPages.edit.to), element: <WorkflowEditorPage /> },
 	{ path: rel(playbookEditorPages.view.to), element: <WorkflowEditorPage /> },
+	{ path: rel(pageEditorPages.edit.to), element: <PageBuilderPage /> },
 	{
 		element: <AgentLayout />,
 		children: [
 			{ path: rel(agentEditorPages.add.to), element: <AgentBuilderPage /> },
 			{ path: rel(agentEditorPages.edit.to), element: <AgentBuilderPage /> },
 			{ path: rel(agentEditorPages.insights.to), element: <AgentInsightsPage /> },
+			{ path: rel(agentEditorPages.library.to), element: <LibraryPage /> },
 		],
 	},
 	// Pre-normalisation editor URLs (`playbooks/edit/:id`), kept resolvable.
@@ -113,6 +170,7 @@ const CoreAppPages: RouteObject[] = [
 						element: <Navigate to={rel(workspacePages.dashboard.to)} replace />,
 					},
 					dashboardRoute,
+					workflowPagesRoute,
 					...listRoutes,
 				],
 			},

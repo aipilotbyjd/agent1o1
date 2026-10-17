@@ -6,7 +6,7 @@ import {
 	useAgentKnowledgeSources,
 	useAttachAgentKnowledgeSource,
 	useDetachAgentKnowledgeSource,
-} from '@/api/modules/agents';
+} from '@/api/modules/agent-knowledge';
 import { useKnowledgeCollections } from '@/api/modules/knowledge-base';
 
 type TProps = {
@@ -21,7 +21,7 @@ const isArtifactCollection = (collection: string) => collection.startsWith('arti
 /**
  * Which workspace knowledge-base collections this agent may search. With none
  * attached the backend lets it search every collection in the workspace;
- * attaching one scopes its knowledge tools to just those — see
+ * attaching one scopes its knowledge tools to just those: see
  * AgentKnowledgeSourceController and ToolRegistry::knowledgeTools().
  */
 const AgentKnowledgeSourcesPanel = ({ ws, agentId }: TProps) => {
@@ -97,7 +97,8 @@ const AgentKnowledgeSourcesPanel = ({ ws, agentId }: TProps) => {
 										{collection}
 									</span>
 									<span className='mt-0.5 truncate text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
-										{chunksLabel(collection) || 'No documents left in this collection'}
+										{chunksLabel(collection) ||
+											'No documents left in this collection'}
 									</span>
 								</div>
 							</div>

@@ -15,11 +15,11 @@ import type { TOAuthCompleteMessage } from '@/api/modules/connectors';
  *
  * Usually that is the popup opened by `connectOAuthConnector`, in which case the
  * result goes back over `postMessage` and the window closes itself. If there is
- * no opener — popup blocked, or the user finished in a fresh tab — it falls back
+ * no opener (popup blocked, or the user finished in a fresh tab) it falls back
  * to redirecting into the Apps page with the same `?oauth=…` params the old
  * frontend used.
  *
- * Not to be confused with `identity/OAuthCallback` — that one is social sign-in.
+ * Not to be confused with `identity/OAuthCallback`: that one is social sign-in.
  */
 
 /**

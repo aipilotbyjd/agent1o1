@@ -1,4 +1,5 @@
-import { createContext, useContext, useReducer, type ReactNode } from 'react';
+import { OnboardingStoreContext } from './onboardingStoreContext';
+import { useReducer, type ReactNode } from 'react';
 import type { IOnboardingData, TOnboardingStep } from '../_types/onboarding.type';
 import type { TWorkspaceRole } from '@/types/workspace.type';
 
@@ -43,13 +44,6 @@ function onboardingReducer(state: IOnboardingState, action: TOnboardingAction): 
 	}
 }
 
-interface IOnboardingStoreContext {
-	state: IOnboardingState;
-	dispatch: React.Dispatch<TOnboardingAction>;
-}
-
-const OnboardingStoreContext = createContext<IOnboardingStoreContext | null>(null);
-
 export const OnboardingStoreProvider = ({ children }: { children: ReactNode }) => {
 	const [state, dispatch] = useReducer(onboardingReducer, initialState);
 	return (
@@ -57,12 +51,6 @@ export const OnboardingStoreProvider = ({ children }: { children: ReactNode }) =
 			{children}
 		</OnboardingStoreContext.Provider>
 	);
-};
-
-export const useOnboardingStore = () => {
-	const ctx = useContext(OnboardingStoreContext);
-	if (!ctx) throw new Error('useOnboardingStore must be used within OnboardingStoreProvider');
-	return ctx;
 };
 
 export type { IOnboardingState, TOnboardingAction };

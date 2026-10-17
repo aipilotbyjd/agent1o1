@@ -1,7 +1,7 @@
 // ============================================================
-// API — Public Entry Point
+// API: Public Entry Point
 // ------------------------------------------------------------
-// Namespaced per resource — never a flat `export *` from modules.
+// Namespaced per resource, never a flat `export *` from modules.
 // Import `authApi.useLogin` / `workspacesApi.useWorkspaces`, or
 // reach directly into `@/api/modules/<resource>` for tree-shaking.
 // This is what keeps a second resource from silently colliding with
@@ -36,3 +36,4 @@ export * as dashboardApi from './modules/dashboard';
 export * as notificationsApi from './modules/notifications';
 export * as notificationChannelsApi from './modules/notification-channels';
 export * as notificationPreferencesApi from './modules/notification-preferences';
+export * as referralsApi from './modules/referrals';

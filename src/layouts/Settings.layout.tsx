@@ -7,7 +7,7 @@ import Skeleton from '@/components/ui/Skeleton';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layout/Subheader';
 import Header, { HeaderLeft, HeaderRight } from '@/components/layout/Header';
 import NotificationsDropdown from '@/components/notifications/NotificationsDropdown';
-import DropdownWorkspaceSwitcher from '@/examples/ui/dropdown/DropdownWorkspaceSwitcher.example';
+import WorkspaceSwitcher from '@/components/layout/WorkspaceSwitcher';
 
 const SettingsLayout = () => {
 	return (
@@ -18,7 +18,7 @@ const SettingsLayout = () => {
 					<HeaderLeft>Settings</HeaderLeft>
 					<HeaderRight>
 						<NotificationsDropdown />
-						<DropdownWorkspaceSwitcher />
+						<WorkspaceSwitcher />
 					</HeaderRight>
 				</Header>
 				<Suspense

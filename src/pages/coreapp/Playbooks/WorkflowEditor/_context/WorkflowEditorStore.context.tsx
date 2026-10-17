@@ -1,8 +1,13 @@
+import { getOutputPorts } from '../_helper/outputPorts.helper';
+import { canExposeInput, dynamicInputId } from '../_helper/dynamicInputs.helper';
+import { buildOutputToken } from '../_helper/tokenDrag.helper';
 import { createContext } from 'react';
+import type { TApiIssue } from '@/api/core';
 import { HISTORY_LIMIT } from '../_helper/builder.constants';
 import { getNodeDefinition } from '../_helper/nodeCatalog.constants';
 
 import { autoLayout } from '../_helper/layout.helper';
+import { edgeCondition } from '../_helper/builderDraft.helper';
 import type {
 	TCanvasEdge,
 	TCanvasNode,
@@ -13,11 +18,11 @@ import type {
 	TCanvasNodeData,
 	TNodeComment,
 	TNodeDefinition,
-	TNodeField,
 	TNodeRunStatus,
 } from '../_types/node.type';
 import type { TRunLog, TRunRecord } from '../_types/run.type';
 import type {
+	TEditorUiState,
 	TExportedWorkflow,
 	TWorkflowEditorState,
 	TWorkflowMeta,
@@ -39,7 +44,7 @@ export type TWorkflowEditorAction =
 	| { type: 'CLEAR_NODE_SELECTION' }
 	| { type: 'UPDATE_NODE_VALUE'; id: string; fieldKey: string; value: unknown }
 	| { type: 'RENAME_NODE'; id: string; label: string }
-	| { type: 'CONFIGURE_NODE_FIELDS'; id: string; fields: TNodeField[] }
+	| { type: 'CONFIGURE_NODE_INPUTS'; id: string; keys: string[] }
 	| { type: 'DELETE_SELECTED' }
 	| { type: 'DUPLICATE_SELECTED' }
 	| {
@@ -50,7 +55,12 @@ export type TWorkflowEditorAction =
 			targetHandle?: string;
 	  }
 	| { type: 'REMOVE_EDGE'; id: string }
-	| { type: 'AUTO_LAYOUT' }
+	| {
+			type: 'AUTO_LAYOUT';
+			sizes: Map<string, { width: number; height: number }>;
+			/** False folds the layout into the last undo step instead of adding one. */
+			record?: boolean;
+	  }
 	| { type: 'UNDO' }
 	| { type: 'REDO' }
 	| { type: 'SET_WORKFLOW_META'; patch: Partial<TWorkflowMeta> }
@@ -63,8 +73,8 @@ export type TWorkflowEditorAction =
 	| { type: 'SET_COMMAND_PALETTE'; open: boolean }
 	| { type: 'SET_QUICK_ADD'; open: boolean }
 	| { type: 'SET_IMPORT_EXPORT'; open: boolean }
-	| { type: 'RUN_START'; id: string }
-	| { type: 'RUN_FINISH'; status: 'success' | 'error' | 'stopped' }
+	| { type: 'RUN_START'; id: string; input?: Record<string, unknown> }
+	| { type: 'RUN_FINISH'; status: 'success' | 'error' | 'stopped'; output?: unknown }
 	| { type: 'RUN_CURRENT_NODE'; nodeId: string | null }
 	| { type: 'APPEND_LOG'; log: Omit<TRunLog, 'id' | 'at'> }
 	| { type: 'SET_LOGS'; logs: TRunLog[] }
@@ -79,7 +89,10 @@ export type TWorkflowEditorAction =
 	  }
 	| { type: 'LOAD_WORKFLOW'; workflow: TExportedWorkflow }
 	| { type: 'APPLY_BUILDER_DRAFT'; nodes: TCanvasNode[]; edges: TCanvasEdge[] }
-	// Granular live-apply — the AI builder dispatches these per tool call as it
+	// The server already holds this graph (a restored version), so it lands
+	// saved, but undoable, which puts the replaced draft back.
+	| { type: 'RESTORE_DRAFT'; nodes: TCanvasNode[]; edges: TCanvasEdge[] }
+	// Granular live-apply: the AI builder dispatches these per tool call as it
 	// works, so the canvas updates node-by-node instead of waiting for the whole
 	// reply (Gumloop-style). APPLY_BUILDER_DRAFT still runs once at the end as
 	// the authoritative reconciliation.
@@ -95,9 +108,7 @@ export type TWorkflowEditorAction =
 	| { type: 'BUILDER_REMOVE_EDGE'; source: string; target: string }
 	// Node customization
 	| { type: 'SET_NODE_COLOR'; id: string; color: string | null }
-	| { type: 'TOGGLE_NODE_BREAKPOINT'; id: string }
 	| { type: 'TOGGLE_NODE_LOOP_MODE'; id: string }
-	| { type: 'TOGGLE_NODE_FLOW_TRIGGER'; id: string }
 	| { type: 'TOGGLE_NODE_COLLAPSED'; id: string }
 	| { type: 'ADD_NODE_COMMENT'; id: string; text: string }
 	| { type: 'REMOVE_NODE_COMMENT'; id: string; commentId: string }
@@ -116,17 +127,17 @@ export type TWorkflowEditorAction =
 	| { type: 'SET_TEMPLATE_LIBRARY'; open: boolean }
 	| { type: 'SET_NODE_DOC'; open: boolean; nodeId?: string | null }
 	| { type: 'SET_NODE_EXPANDED'; open: boolean; nodeId?: string | null }
+	| { type: 'SET_ISSUES_PANEL'; open: boolean; serverIssues?: TApiIssue[] }
+	| { type: 'FOCUS_FIELD'; nodeId: string; fieldKey: string | null }
 	| { type: 'SET_DIFF_VIEWER'; open: boolean }
-	| { type: 'SET_STEP_MODE'; enabled: boolean }
-	| { type: 'STEP_WAIT' }
-	| { type: 'STEP_NEXT' }
-	| { type: 'SET_LINK_CREDENTIALS_OPEN'; open: boolean }
+	| { type: 'SET_LINK_CREDENTIALS_OPEN'; open: boolean; nodeId?: string }
 	// Pinned data + run history
 	| { type: 'PIN_NODE_OUTPUT'; id: string; output?: unknown }
 	| { type: 'UNPIN_NODE'; id: string }
 	| { type: 'PUSH_RUN_HISTORY'; record: TRunRecord }
 	| { type: 'CLEAR_RUN_HISTORY' }
-	| { type: 'SET_RUN_PANEL_TAB'; tab: 'console' | 'history' };
+	| { type: 'SET_RUN_PANEL_TAB'; tab: 'console' | 'results' | 'history' }
+	| { type: 'SHOW_RUN_RESULT'; nodeId: string; source: 'run' | 'test' };
 
 export type TWorkflowEditorContextValue = {
 	state: TWorkflowEditorState;
@@ -180,12 +191,15 @@ export const initialWorkflowEditorState: TWorkflowEditorState = {
 		nodeDocNodeId: null,
 		nodeTestRequestId: 0,
 		nodeTestRequestNodeId: null,
+		issuesPanelOpen: false,
+		serverIssues: [],
+		fieldFocus: null,
 		nodeExpandedOpen: false,
 		nodeExpandedId: null,
-		stepMode: false,
-		waitingForStep: false,
 		linkCredentialsOpen: false,
 		runPanelTab: 'console',
+		runPanelResultKey: null,
+		runPanelResultRequestId: 0,
 	},
 	history: {
 		past: [],
@@ -210,6 +224,19 @@ const withHistory = (state: TWorkflowEditorState): TWorkflowEditorState => ({
 	},
 });
 
+/** The editor's UI state minus the server's complaints about one step field (or the whole step). */
+const withoutServerIssue = (
+	ui: TEditorUiState,
+	nodeId: string,
+	fieldKey: string,
+): TEditorUiState => {
+	const remaining = ui.serverIssues.filter(
+		(issue) =>
+			!(issue.node_key === nodeId && (issue.field === fieldKey || issue.field === null)),
+	);
+	return remaining.length === ui.serverIssues.length ? ui : { ...ui, serverIssues: remaining };
+};
+
 const makeNode = (
 	defKey: string,
 	position: TCanvasPosition,
@@ -221,6 +248,8 @@ const makeNode = (
 	def.fields.forEach((field) => {
 		if (field.default !== undefined) values[field.key] = field.default;
 	});
+	// Picked from Triggers & Events: "Activate as flow trigger" starts on.
+	if (def.startsAsTrigger) values.activate = true;
 	const data: TCanvasNodeData = {
 		defKey,
 		label: def.label,
@@ -352,6 +381,12 @@ export const workflowEditorReducer = (
 		case 'UPDATE_NODE_VALUE':
 			return {
 				...state,
+				edges: state.edges.map((edge) =>
+					edge.target === action.id &&
+					edge.targetHandle === dynamicInputId(action.fieldKey)
+						? { ...edge, targetHandle: undefined, sourceHandle: undefined }
+						: edge,
+				),
 				workflow: { ...state.workflow, savingState: 'dirty', updatedAt: Date.now() },
 				nodes: state.nodes.map((node) =>
 					node.id === action.id
@@ -367,6 +402,8 @@ export const workflowEditorReducer = (
 							}
 						: node,
 				),
+				// The server's complaint about this field is answered by editing it.
+				ui: withoutServerIssue(state.ui, action.id, action.fieldKey),
 			};
 		case 'RENAME_NODE':
 			return {
@@ -388,9 +425,35 @@ export const workflowEditorReducer = (
 			);
 			if (ids.size === 0) return state;
 			const next = withHistory(state);
+			// A field wired from a deleted node goes back to its configured value.
+			const unwired = next.edges.filter(
+				(edge) =>
+					ids.has(edge.source) &&
+					!ids.has(edge.target) &&
+					edge.targetHandle?.startsWith('parameter:'),
+			);
 			return {
 				...next,
-				nodes: next.nodes.filter((node) => !ids.has(node.id)),
+				nodes: next.nodes
+					.filter((node) => !ids.has(node.id))
+					.map((node) => {
+						const keys = (node.data.dynamicInputKeys ?? []).filter((key) =>
+							unwired.some(
+								(edge) =>
+									edge.target === node.id &&
+									edge.targetHandle === dynamicInputId(key),
+							),
+						);
+						if (keys.length === 0) return node;
+						const values = { ...node.data.values };
+						const fixedInputValues = { ...node.data.fixedInputValues };
+						keys.forEach((key) => {
+							if (Object.prototype.hasOwnProperty.call(fixedInputValues, key))
+								values[key] = fixedInputValues[key];
+							delete fixedInputValues[key];
+						});
+						return { ...node, data: { ...node.data, values, fixedInputValues } };
+					}),
 				edges: next.edges.filter((edge) => !ids.has(edge.source) && !ids.has(edge.target)),
 				ui: { ...next.ui, selectedNodeId: null, selectedNodeIds: [] },
 			};
@@ -430,11 +493,60 @@ export const workflowEditorReducer = (
 					edge.targetHandle === action.targetHandle,
 			);
 			if (exists) return state;
+			const target = state.nodes.find((node) => node.id === action.target);
+			const source = state.nodes.find((node) => node.id === action.source);
+			const fieldKey = target?.data.dynamicInputKeys?.find(
+				(key) => dynamicInputId(key) === action.targetHandle,
+			);
+			const sourceDef = source
+				? getNodeDefinition(source.data.defKey, source.data.definition)
+				: undefined;
+			const sourceOutputs = source ? getOutputPorts(sourceDef, source.data) : [];
+			const output =
+				sourceOutputs.find((port) => port.id === action.sourceHandle) ??
+				(!action.sourceHandle ? sourceOutputs[0] : undefined);
+			if (fieldKey && !output) return state;
 			const next = withHistory(state);
 			return {
 				...next,
+				nodes:
+					fieldKey && output
+						? next.nodes.map((node) =>
+								node.id === action.target
+									? {
+											...node,
+											data: {
+												...node.data,
+												fixedInputValues: {
+													...node.data.fixedInputValues,
+													[fieldKey]:
+														node.data.fixedInputValues &&
+														Object.prototype.hasOwnProperty.call(
+															node.data.fixedInputValues,
+															fieldKey,
+														)
+															? node.data.fixedInputValues[fieldKey]
+															: (node.data.values[fieldKey] ?? null),
+												},
+												values: {
+													...node.data.values,
+													[fieldKey]: buildOutputToken(
+														action.source,
+														output.path ?? output.name,
+													),
+												},
+											},
+										}
+									: node,
+							)
+						: next.nodes,
 				edges: [
-					...next.edges,
+					...next.edges.filter(
+						(edge) =>
+							!fieldKey ||
+							edge.target !== action.target ||
+							edge.targetHandle !== action.targetHandle,
+					),
 					{
 						id: createId('edge'),
 						source: action.source,
@@ -446,12 +558,49 @@ export const workflowEditorReducer = (
 			};
 		}
 		case 'REMOVE_EDGE': {
+			const edge = state.edges.find((item) => item.id === action.id);
+			const target = state.nodes.find((node) => node.id === edge?.target);
+			const key = target?.data.dynamicInputKeys?.find(
+				(item) => dynamicInputId(item) === edge?.targetHandle,
+			);
 			const next = withHistory(state);
-			return { ...next, edges: next.edges.filter((edge) => edge.id !== action.id) };
+			return {
+				...next,
+				edges: next.edges.filter((item) => item.id !== action.id),
+				nodes: key
+					? next.nodes.map((node) => {
+							if (node.id !== edge?.target) return node;
+							const fixedInputValues = { ...node.data.fixedInputValues };
+							const values = { ...node.data.values };
+							if (Object.prototype.hasOwnProperty.call(fixedInputValues, key))
+								values[key] = fixedInputValues[key];
+							delete fixedInputValues[key];
+							return { ...node, data: { ...node.data, values, fixedInputValues } };
+						})
+					: next.nodes,
+			};
 		}
 		case 'AUTO_LAYOUT': {
-			const next = withHistory(state);
-			return { ...next, nodes: autoLayout(next.nodes, next.edges) };
+			const next = action.record === false ? state : withHistory(state);
+			const laidOut = autoLayout(
+				next.nodes.map((node) => ({ ...node, measured: action.sizes.get(node.id) })),
+				next.edges.map((edge) => ({ ...edge, condition: edgeCondition(edge) })),
+				{
+					portOrder: (node) =>
+						getOutputPorts(
+							getNodeDefinition(node.data.defKey, node.data.definition),
+							node.data,
+						).map((port) => port.id),
+				},
+			);
+			const positions = new Map(laidOut.map((node) => [node.id, node.position]));
+			return {
+				...next,
+				nodes: next.nodes.map((node) => ({
+					...node,
+					position: positions.get(node.id) ?? node.position,
+				})),
+			};
 		}
 		case 'UNDO': {
 			const previous = state.history.past[state.history.past.length - 1];
@@ -529,6 +678,17 @@ export const workflowEditorReducer = (
 		case 'RUN_START':
 			return {
 				...state,
+				nodes: state.nodes.map((node) => ({
+					...node,
+					data: {
+						...node.data,
+						status: 'idle',
+						durationMs: undefined,
+						error: undefined,
+						inputPreview: undefined,
+						outputPreview: undefined,
+					},
+				})),
 				run: {
 					id: action.id,
 					status: 'running',
@@ -536,8 +696,14 @@ export const workflowEditorReducer = (
 					finishedAt: null,
 					currentNodeId: null,
 					logs: [],
+					input: action.input,
 				},
-				ui: { ...state.ui, runPanelOpen: true },
+				ui: {
+					...state.ui,
+					runPanelOpen: true,
+					runPanelTab: 'console',
+					runPanelResultKey: null,
+				},
 			};
 		case 'RUN_FINISH':
 			return {
@@ -547,6 +713,7 @@ export const workflowEditorReducer = (
 					status: action.status,
 					currentNodeId: null,
 					finishedAt: Date.now(),
+					output: action.output,
 				},
 			};
 		case 'RUN_CURRENT_NODE':
@@ -603,7 +770,6 @@ export const workflowEditorReducer = (
 					importExportOpen: false,
 					emptyCanvasView: 'ai',
 					leftPanelOpen: false,
-					aiPanelOpen: false,
 					runPanelOpen: false,
 					commandPaletteOpen: false,
 					quickAddOpen: false,
@@ -614,7 +780,6 @@ export const workflowEditorReducer = (
 					diffViewerOpen: false,
 					nodeDocOpen: false,
 					nodeDocNodeId: null,
-					waitingForStep: false,
 					linkCredentialsOpen: false,
 				},
 			};
@@ -626,6 +791,16 @@ export const workflowEditorReducer = (
 				edges: action.edges,
 				workflow: { ...next.workflow, savingState: 'dirty' },
 				ui: { ...next.ui, selectedNodeId: null, selectedNodeIds: [] },
+			};
+		}
+		case 'RESTORE_DRAFT': {
+			const next = withHistory(state);
+			return {
+				...next,
+				nodes: [...action.nodes, ...state.nodes.filter((node) => node.type === 'note')],
+				edges: action.edges,
+				workflow: { ...next.workflow, savingState: 'saved' },
+				ui: { ...next.ui, selectedNodeId: null, selectedNodeIds: [], serverIssues: [] },
 			};
 		}
 		case 'BUILDER_ADD_NODE': {
@@ -691,15 +866,6 @@ export const workflowEditorReducer = (
 				),
 			};
 		}
-		case 'TOGGLE_NODE_BREAKPOINT':
-			return {
-				...state,
-				nodes: state.nodes.map((node) =>
-					node.id === action.id
-						? { ...node, data: { ...node.data, breakpoint: !node.data.breakpoint } }
-						: node,
-				),
-			};
 		case 'TOGGLE_NODE_LOOP_MODE':
 			return {
 				...state,
@@ -710,22 +876,6 @@ export const workflowEditorReducer = (
 						: node,
 				),
 			};
-		case 'TOGGLE_NODE_FLOW_TRIGGER': {
-			// A flow has a single entry trigger — enabling one clears the rest.
-			const enabling = !state.nodes.find((node) => node.id === action.id)?.data
-				.activateAsTrigger;
-			return {
-				...state,
-				workflow: { ...state.workflow, savingState: 'dirty', updatedAt: Date.now() },
-				nodes: state.nodes.map((node) =>
-					node.id === action.id
-						? { ...node, data: { ...node.data, activateAsTrigger: enabling } }
-						: enabling && node.data.activateAsTrigger
-							? { ...node, data: { ...node.data, activateAsTrigger: false } }
-							: node,
-				),
-			};
-		}
 		case 'TOGGLE_NODE_COLLAPSED':
 			return {
 				...state,
@@ -814,6 +964,34 @@ export const workflowEditorReducer = (
 					nodeDocNodeId: action.nodeId ?? state.ui.nodeDocNodeId,
 				},
 			};
+		case 'SET_ISSUES_PANEL':
+			return {
+				...state,
+				ui: {
+					...state.ui,
+					issuesPanelOpen: action.open,
+					serverIssues: action.serverIssues ?? state.ui.serverIssues,
+				},
+			};
+		case 'FOCUS_FIELD':
+			return {
+				...state,
+				nodes: state.nodes.map((node) =>
+					node.id === action.nodeId && node.data.collapsed
+						? { ...node, data: { ...node.data, collapsed: false } }
+						: node,
+				),
+				ui: {
+					...state.ui,
+					selectedNodeId: action.nodeId,
+					selectedNodeIds: [action.nodeId],
+					fieldFocus: {
+						nodeId: action.nodeId,
+						fieldKey: action.fieldKey,
+						requestId: (state.ui.fieldFocus?.requestId ?? 0) + 1,
+					},
+				},
+			};
 		case 'SET_NODE_EXPANDED':
 			return {
 				...state,
@@ -825,45 +1003,50 @@ export const workflowEditorReducer = (
 			};
 		case 'SET_DIFF_VIEWER':
 			return { ...state, ui: { ...state.ui, diffViewerOpen: action.open } };
-		case 'SET_STEP_MODE':
+		case 'SET_LINK_CREDENTIALS_OPEN':
 			return {
 				...state,
-				ui: { ...state.ui, stepMode: action.enabled, waitingForStep: false },
+				ui: {
+					...state.ui,
+					linkCredentialsOpen: action.open,
+					linkCredentialsNodeId: action.open ? (action.nodeId ?? null) : null,
+				},
 			};
-		case 'STEP_WAIT':
-			return { ...state, ui: { ...state.ui, waitingForStep: true } };
-		case 'STEP_NEXT':
-			return { ...state, ui: { ...state.ui, waitingForStep: false } };
-		case 'SET_LINK_CREDENTIALS_OPEN':
-			return { ...state, ui: { ...state.ui, linkCredentialsOpen: action.open } };
-		case 'CONFIGURE_NODE_FIELDS': {
+		case 'CONFIGURE_NODE_INPUTS': {
+			const node = state.nodes.find((item) => item.id === action.id);
+			if (!node) return state;
+			const def = getNodeDefinition(node.data.defKey, node.data.definition);
+			const keys = (def?.fields ?? [])
+				.filter((field) => canExposeInput(field) && action.keys.includes(field.key))
+				.map((field) => field.key);
+			const removed = (node.data.dynamicInputKeys ?? []).filter((key) => !keys.includes(key));
+			const values = { ...node.data.values };
+			const fixedInputValues = { ...node.data.fixedInputValues };
+			removed.forEach((key) => {
+				if (Object.prototype.hasOwnProperty.call(fixedInputValues, key))
+					values[key] = fixedInputValues[key];
+				delete fixedInputValues[key];
+			});
 			const next = withHistory(state);
 			return {
 				...next,
-				nodes: next.nodes.map((node) =>
-					node.id === action.id
+				nodes: next.nodes.map((item) =>
+					item.id === action.id
 						? {
-								...node,
+								...item,
 								data: {
-									...node.data,
-									definition: {
-										...(node.data.definition ??
-											getNodeDefinition(node.data.defKey)!),
-										fields: action.fields,
-										outputs: action.fields.map((f) => ({
-											id: f.key,
-											name: f.label,
-											type:
-												f.kind === 'toggle'
-													? 'boolean'
-													: f.kind === 'number'
-														? 'number'
-														: 'string',
-										})),
-									},
+									...item.data,
+									dynamicInputKeys: keys,
+									fixedInputValues,
+									values,
 								},
 							}
-						: node,
+						: item,
+				),
+				edges: next.edges.filter(
+					(edge) =>
+						edge.target !== action.id ||
+						!removed.some((key) => edge.targetHandle === dynamicInputId(key)),
 				),
 			};
 		}
@@ -905,6 +1088,17 @@ export const workflowEditorReducer = (
 			};
 		case 'CLEAR_RUN_HISTORY':
 			return { ...state, runHistory: [] };
+		case 'SHOW_RUN_RESULT':
+			return {
+				...state,
+				ui: {
+					...state.ui,
+					runPanelOpen: true,
+					runPanelTab: 'results',
+					runPanelResultKey: `${action.nodeId}:${action.source}`,
+					runPanelResultRequestId: (state.ui.runPanelResultRequestId ?? 0) + 1,
+				},
+			};
 		case 'SET_RUN_PANEL_TAB':
 			return { ...state, ui: { ...state.ui, runPanelTab: action.tab } };
 		default:

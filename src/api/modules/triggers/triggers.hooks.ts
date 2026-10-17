@@ -1,17 +1,27 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { TCreateTriggerDto, TUpdateTriggerDto } from '@/types/trigger.type';
+import type {
+	TCreateTriggerDto,
+	TTriggerListFilter,
+	TUpdateTriggerDto,
+} from '@/types/trigger.type';
 import { TriggerService } from './triggers.service';
 import { triggerKeys, triggerEventKeys } from './triggers.keys';
 
-// No `show` route on the backend — a trigger is only ever listed, created,
+// No `show` route on the backend: a trigger is only ever listed, created,
 // updated, deleted, run, or token-rotated, so this skips createResource()
 // and useDetail.
 
-export const useTriggers = (ws: string) =>
+/** Every mutation below invalidates `triggerKeys.lists(ws)`, which prefixes each filtered list too. */
+export const useTriggers = (
+	ws: string,
+	filter?: TTriggerListFilter,
+	options?: { refetchInterval?: number },
+) =>
 	useQuery({
-		queryKey: triggerKeys.lists(ws),
-		queryFn: ({ signal }) => TriggerService.list(ws, undefined, signal),
-		enabled: !!ws,
+		queryKey: triggerKeys.list(ws, filter),
+		queryFn: ({ signal }) => TriggerService.list(ws, filter, signal),
+		enabled: !!ws && (!filter || !!filter.target_id),
+		refetchInterval: options?.refetchInterval,
 	});
 
 export const useCreateTrigger = (ws: string) => {
@@ -64,9 +74,11 @@ export const useRotateTriggerToken = (ws: string) => {
 	});
 };
 
+/** Refreshes every 10s while shown, so new deliveries appear without a reload. */
 export const useTriggerEvents = (ws: string, id: string) =>
 	useQuery({
 		queryKey: triggerEventKeys.list(ws, id),
 		queryFn: ({ signal }) => TriggerService.events(ws, id, signal),
 		enabled: !!ws && !!id,
+		refetchInterval: 10_000,
 	});

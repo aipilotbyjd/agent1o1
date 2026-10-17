@@ -1,8 +1,9 @@
 import { useReactFlow } from '@xyflow/react';
-import { Bug, Grid2X2, LayoutGrid, Maximize2, Minus, Plus, Search, Sliders } from 'lucide-react';
+import { Grid2X2, LayoutGrid, Maximize2, Minus, Plus, Search, Sliders } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
+import { useAutoLayout } from '../../_hooks/useAutoLayout.hook';
 
 const ToolButton = ({
 	title,
@@ -42,6 +43,7 @@ const ToolButton = ({
 const ActionBar = () => {
 	const { state, dispatch } = useWorkflowEditor();
 	const reactFlow = useReactFlow();
+	const autoLayout = useAutoLayout();
 
 	return (
 		<motion.div
@@ -69,10 +71,7 @@ const ActionBar = () => {
 				onClick={() => dispatch({ type: 'TOGGLE_MINIMAP' })}>
 				<Grid2X2 size={13} />
 			</ToolButton>
-			<ToolButton
-				title='Auto-layout (L)'
-				onClick={() => dispatch({ type: 'AUTO_LAYOUT' })}
-				className='hidden sm:flex'>
+			<ToolButton title='Auto-layout (L)' onClick={autoLayout} className='hidden sm:flex'>
 				<LayoutGrid size={13} />
 			</ToolButton>
 			<div className='mx-1 hidden h-4 w-px bg-zinc-200 sm:block dark:bg-zinc-800' />
@@ -87,14 +86,6 @@ const ActionBar = () => {
 				}
 				className='hidden sm:flex'>
 				<Search size={13} />
-			</ToolButton>
-			<ToolButton
-				title='Step-through debug mode, simulated in the browser (⌘⇧D)'
-				active={state.ui.stepMode}
-				danger={state.ui.stepMode}
-				onClick={() => dispatch({ type: 'SET_STEP_MODE', enabled: !state.ui.stepMode })}
-				className='hidden sm:flex'>
-				<Bug size={13} />
 			</ToolButton>
 			<ToolButton
 				title='Command palette (⌘P)'

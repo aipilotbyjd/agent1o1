@@ -1,7 +1,9 @@
-import { useMemo } from 'react';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { getOutputPorts } from '../../../_helper/outputPorts.helper';
+import { useEffect, useMemo } from 'react';
+import { Handle, Position, useNodeId, useUpdateNodeInternals, type NodeProps } from '@xyflow/react';
 import {
 	Bot,
+	ArrowUpRight,
 	Braces,
 	CheckCircle2,
 	ChevronsDownUp,
@@ -16,7 +18,6 @@ import {
 	Loader2,
 	Maximize2,
 	MessageSquare,
-	OctagonX,
 	Pin,
 	TriangleAlert,
 	Webhook,
@@ -29,20 +30,19 @@ import NodeFields from './NodeFields.partial';
 import NodeColorPicker from './NodeColorPicker.partial';
 import NodeCommentsPanel from './NodeCommentsPanel.partial';
 import NodeInlineTest from './NodeInlineTest.partial';
-import NodeRunIO from './NodeRunIO.partial';
 import NodeToolbar from './NodeToolbar.partial';
 import NodeIOPanel from './NodeIOPanel.partial';
 import NodeOptionsPanel from './NodeOptionsPanel.partial';
 import NodeLoopToggle from './NodeLoopToggle.partial';
 import NodeFlowTriggerToggle from './NodeFlowTriggerToggle.partial';
 import NodeAuthWarning from './NodeAuthWarning.partial';
-import NodeCredentialBadge from './NodeCredentialBadge.partial';
 import { tintStyle, getNodeAccentColor } from '../../library/library.util';
 import { getNodeCreditCost } from '../../../_helper/builder.constants';
-import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 import type { TCanvasNode } from '../../../_types/canvas.type';
 import type { TNodeComment, TNodePort } from '../../../_types/node.type';
 import type { TValidationIssue } from '../../../_helper/validation.helper';
+import { useCredentialResolver } from '../../../_hooks/useCredentialResolver.hook';
 
 const iconMap = {
 	'trigger.webhook': Webhook,
@@ -83,6 +83,12 @@ export const PortHandles = ({
 	type: 'source' | 'target';
 	color?: string;
 }) => {
+	const nodeId = useNodeId();
+	const updateNodeInternals = useUpdateNodeInternals();
+	const portIdentity = ports.map((port) => port.id).join('|');
+	useEffect(() => {
+		if (nodeId) updateNodeInternals(nodeId);
+	}, [nodeId, updateNodeInternals, portIdentity]);
 	const position = type === 'source' ? Position.Bottom : Position.Top;
 	const getPortLeft = (index: number, total: number) => `${((index + 1) * 100) / (total + 1)}%`;
 	const showIndex = ports.length > 1;
@@ -113,8 +119,7 @@ export const PortHandles = ({
 						fontWeight: 700,
 						zIndex: 10,
 					}}
-					className='rounded-full cursor-crosshair shadow-sm transition-transform duration-150 hover:scale-125 dark:bg-zinc-900 dark:text-zinc-300 dark:border-zinc-700'
-				>
+					className='cursor-crosshair rounded-full shadow-sm transition-transform duration-150 hover:scale-125 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300'>
 					{showIndex && (
 						<span className='pointer-events-none'>{(index + 1).toString()}</span>
 					)}
@@ -128,40 +133,46 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 	const { state, dispatch } = useWorkflowEditor();
 	const def = getNodeDefinition(data.defKey, data.definition);
 
-	/** Every output of each upstream node wired into this one — all become available inputs. */
+	/** Every output of each upstream node wired into this one: all become available inputs. */
 	// Memoized so React Flow's per-frame drag re-renders don't re-scan every edge/node.
 	const incoming = useMemo(
 		() =>
-			Array.from(new Set(state.edges.filter((edge) => edge.target === id).map((edge) => edge.source)))
-				.flatMap((sourceId) => {
-					const sourceNode = state.nodes.find((node) => node.id === sourceId);
-					if (!sourceNode) return [];
-					const sourceDef = getNodeDefinition(sourceNode.data.defKey, sourceNode.data.definition);
-					const sourceOutputs =
-						sourceDef?.outputs && sourceDef.outputs.length > 0
-							? sourceDef.outputs
-							: [{ id: 'out', name: 'output', type: 'any' as const }];
-					const sourceLabel = sourceNode.data.label || sourceDef?.label || 'Node';
-					const sourceColor = getNodeAccentColor(
-						sourceId,
-						sourceNode.data.color as string | undefined,
-						sourceDef?.colorHex,
-					);
-					return sourceOutputs.map((port) => ({
-						id: `${sourceId}:${port.id}`,
-						sourceId,
-						port,
-						sourceLabel,
-						sourceColor,
-					}));
-				}),
+			Array.from(
+				new Set(
+					state.edges.filter((edge) => edge.target === id).map((edge) => edge.source),
+				),
+			).flatMap((sourceId) => {
+				const sourceNode = state.nodes.find((node) => node.id === sourceId);
+				if (!sourceNode) return [];
+				const sourceDef = getNodeDefinition(
+					sourceNode.data.defKey,
+					sourceNode.data.definition,
+				);
+				const sourceOutputs = getOutputPorts(sourceDef, sourceNode.data);
+				const sourceLabel = sourceNode.data.label || sourceDef?.label || 'Node';
+				const sourceColor = getNodeAccentColor(
+					sourceId,
+					sourceNode.data.color as string | undefined,
+					sourceDef?.colorHex,
+				);
+				return sourceOutputs.map((port) => ({
+					id: `${sourceId}:${port.id}`,
+					sourceId,
+					port,
+					sourceLabel,
+					sourceColor,
+				}));
+			}),
 		[state.edges, state.nodes, id],
 	);
 	const nodeIndex = state.nodes.findIndex((node) => node.id === id) + 1;
 	const collapsed = Boolean(data.collapsed);
 	const status = data.status ?? 'idle';
-	const inputs = def?.inputs && def.inputs.length > 0 ? def.inputs : [{ id: 'in', name: 'input', type: 'any' as const }];
-	const outputs = def?.outputs && def.outputs.length > 0 ? def.outputs : [{ id: 'out', name: 'output', type: 'any' as const }];
+	const inputs =
+		def?.inputs && def.inputs.length > 0
+			? def.inputs
+			: [{ id: 'in', name: 'input', type: 'any' as const }];
+	const outputs = getOutputPorts(def, data);
 	const validationIssues = (data.validationIssues ?? []) as TValidationIssue[];
 	const hasError =
 		status === 'error' || validationIssues.some((issue) => issue.severity === 'error');
@@ -170,7 +181,11 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 	const comments = (data.comments ?? []) as TNodeComment[];
 
 	const NodeIcon = iconMap[data.defKey as keyof typeof iconMap];
-	const effectiveColorHex = getNodeAccentColor(id, data.color as string | undefined, def?.colorHex);
+	const effectiveColorHex = getNodeAccentColor(
+		id,
+		data.color as string | undefined,
+		def?.colorHex,
+	);
 	const creditCost = getNodeCreditCost(def);
 
 	const brand = (def?.key.split('.')[0] ?? def?.category ?? 'node')
@@ -180,11 +195,13 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 	const credentialId = credentialField
 		? (data.values[credentialField.key] as string | undefined)
 		: undefined;
-	const needsAuth = Boolean(def?.requiresCredential) && !credentialId;
-	// Integration-style nodes (and anything explicitly flagged) can be promoted to
-	// the flow's entry trigger — Gumloop's "Activate as flow trigger" strip.
-	const canBeTrigger = Boolean(def?.supportsTrigger || def?.requiresCredential);
-	const isFlowTrigger = Boolean(data.activateAsTrigger);
+	const { isMissing: isCredentialMissing } = useCredentialResolver();
+	const needsAuth = isCredentialMissing(def, data.values);
+	// Reader nodes the backend marks as trigger-capable (`supports_trigger`) can be
+	// switched on as a flow trigger: Gumloop's "Activate as flow trigger" strip.
+	// Saved as the node's `activate` config, off unless turned on.
+	const canBeTrigger = Boolean(def?.supportsTrigger);
+	const isFlowTrigger = data.values.activate === true;
 
 	const durationMs = typeof data.durationMs === 'number' ? data.durationMs : undefined;
 
@@ -207,49 +224,45 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 			whileHover={dragging ? undefined : { y: -2, boxShadow: hoverShadow }}
 			transition={{ duration: dragging ? 0 : 0.18 }}
 			className={[
-				'group relative w-[320px] rounded-[26px] border p-1.5 text-left ring-1 ring-inset ring-white/60 dark:ring-white/[0.03]',
+				'group relative w-[320px] rounded-[26px] border p-1.5 text-left ring-1 ring-white/60 ring-inset dark:ring-white/[0.03]',
 				'bg-white text-zinc-950 dark:bg-zinc-950 dark:text-zinc-100',
 				selected
-					? 'border-primary-500 ring-2 ring-primary-500/15 dark:border-primary-500'
+					? 'border-primary-500 ring-primary-500/15 dark:border-primary-500 ring-2'
 					: 'border-zinc-200 dark:border-zinc-800',
 				hasError ? 'border-rose-400/80 ring-2 ring-rose-500/10' : '',
 				isActiveRunNode ? 'ring-2 ring-emerald-400/20' : '',
-				data.breakpoint ? 'ring-2 ring-rose-500/40' : '',
 			].join(' ')}
 			style={{ borderColor: data.color }}>
 			<PortHandles ports={inputs} type='target' color={effectiveColorHex} />
 
-			{/* Breakpoint indicator */}
-			{data.breakpoint && (
-				<div
-					title='Breakpoint set - execution will pause here'
-					className='absolute -top-1.5 -left-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full border-2 border-rose-300 bg-rose-500 text-white shadow-sm'>
-					<OctagonX size={10} />
-				</div>
-			)}
-
 			{hasWarning && (
-				<div
-					title={validationIssues.map((issue) => issue.message).join('\n')}
+				<button
+					type='button'
+					title={`Needs setup:\n${validationIssues.map((issue) => issue.message).join('\n')}`}
+					aria-label='Needs setup: show what to fix'
+					onPointerDown={(event) => event.stopPropagation()}
+					onClick={(event) => {
+						event.stopPropagation();
+						dispatch({ type: 'SET_ISSUES_PANEL', open: true });
+					}}
 					className={[
-						'absolute -top-1.5 -right-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full border shadow-sm transition-transform duration-200 group-hover:scale-110',
+						'nodrag absolute -top-1.5 -right-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full border shadow-sm transition-transform duration-200 group-hover:scale-110',
 						hasError
 							? 'border-rose-200 bg-rose-500 text-white'
 							: 'border-amber-200 bg-amber-400 text-zinc-950',
 					].join(' ')}>
 					<TriangleAlert size={12} />
-				</div>
+				</button>
 			)}
 
-			{canBeTrigger && (
-				<NodeFlowTriggerToggle nodeId={id} active={isFlowTrigger} />
-			)}
+			{canBeTrigger && <NodeFlowTriggerToggle nodeId={id} active={isFlowTrigger} />}
 
-			{needsAuth && <NodeAuthWarning />}
+			{needsAuth && <NodeAuthWarning nodeId={id} />}
 
 			<div
 				className={[
-					'p-3.5 shadow-[inset_0_1px_2px_rgba(24,24,27,0.03)] dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.25)]',
+					// `relative`: the corner toolbar sits in this body, below the trigger strip, not over its switch.
+					'relative p-3.5 shadow-[inset_0_1px_2px_rgba(24,24,27,0.03)] dark:shadow-[inset_0_1px_2px_rgba(0,0,0,0.25)]',
 					// Square the top when a strip sits above so they read as one stacked card.
 					canBeTrigger || needsAuth ? 'rounded-b-2xl' : 'rounded-2xl',
 				].join(' ')}
@@ -285,7 +298,7 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 										e.stopPropagation();
 										dispatch({ type: 'SET_NODE_DOC', open: true, nodeId: id });
 									}}
-									className='shrink-0 text-zinc-400 transition hover:text-primary-500'>
+									className='hover:text-primary-500 shrink-0 text-zinc-400 transition'>
 									<Info size={10} />
 								</button>
 							</span>
@@ -309,8 +322,12 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 										event.stopPropagation();
 										dispatch({ type: 'TOGGLE_NODE_COLLAPSED', id });
 									}}
-									className='nodrag flex size-4 shrink-0 items-center justify-center rounded text-zinc-400 transition hover:text-primary-500 dark:hover:text-primary-400'>
-									{collapsed ? <ChevronsUpDown size={12} /> : <ChevronsDownUp size={12} />}
+									className='nodrag hover:text-primary-500 dark:hover:text-primary-400 flex size-4 shrink-0 items-center justify-center rounded text-zinc-400 transition'>
+									{collapsed ? (
+										<ChevronsUpDown size={12} />
+									) : (
+										<ChevronsDownUp size={12} />
+									)}
 								</button>
 								{data.pinned && (
 									<span
@@ -339,7 +356,7 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 					</div>
 				</div>
 
-				{/* Node action toolbar — floats in the corner, revealed on hover */}
+				{/* Node action toolbar: floats in the corner, revealed on hover */}
 				<div className='absolute top-2.5 right-2.5 z-10 flex items-center gap-0.5 rounded-xl border border-zinc-200/80 bg-white/95 p-0.5 shadow-sm backdrop-blur-sm dark:border-zinc-700/80 dark:bg-zinc-900/95'>
 					<button
 						type='button'
@@ -348,7 +365,7 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 							e.stopPropagation();
 							dispatch({ type: 'TOGGLE_NODE_COLLAPSED', id });
 						}}
-						className='flex h-6 w-6 items-center justify-center rounded text-zinc-400 transition hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/40 dark:hover:text-primary-400'>
+						className='hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-6 w-6 items-center justify-center rounded text-zinc-400 transition'>
 						{collapsed ? <ChevronsUpDown size={13} /> : <ChevronsDownUp size={13} />}
 					</button>
 					<button
@@ -358,25 +375,16 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 							e.stopPropagation();
 							dispatch({ type: 'SET_NODE_EXPANDED', open: true, nodeId: id });
 						}}
-						className='flex h-6 w-6 items-center justify-center rounded text-zinc-400 transition hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/40 dark:hover:text-primary-400'>
+						className='hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-6 w-6 items-center justify-center rounded text-zinc-400 transition'>
 						<Maximize2 size={13} />
 					</button>
-					<NodeColorPicker
-						nodeId={id}
-						currentColor={data.color as string | undefined}
-					/>
+					<NodeColorPicker nodeId={id} currentColor={data.color as string | undefined} />
 					<NodeCommentsPanel nodeId={id} comments={comments} />
 				</div>
 
 				{!collapsed && (
 					<div className='mt-2 text-[10px] leading-tight text-zinc-500 dark:text-zinc-400'>
 						{def?.description}
-					</div>
-				)}
-
-				{!collapsed && credentialId && (
-					<div className='mt-2'>
-						<NodeCredentialBadge credentialId={String(credentialId)} />
 					</div>
 				)}
 
@@ -406,19 +414,22 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 					</div>
 				)}
 
-				{/* Resolved input/output from the last run */}
-				<NodeRunIO
-					inputPreview={data.inputPreview}
-					outputPreview={data.outputPreview}
-					pinned={data.pinned}
-					pinnedOutput={data.pinnedOutput}
-				/>
+				{(status === 'success' || status === 'error' || data.pinned) && (
+					<button
+						type='button'
+						onClick={(event) => {
+							event.stopPropagation();
+							dispatch({ type: 'SHOW_RUN_RESULT', nodeId: id, source: 'run' });
+						}}
+						className='nodrag focus-visible:outline-primary-500 mt-3 inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-2 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white'>
+						{status === 'error' ? 'View run details' : 'View result'}
+						<ArrowUpRight size={12} />
+					</button>
+				)}
 
 				{/* Inline node test */}
 				{selected && <NodeInlineTest nodeId={id} defKey={data.defKey} />}
 			</div>
-
-
 
 			{isActiveRunNode && (
 				<div className='absolute inset-0 -z-10 rounded-[26px] bg-emerald-400/15 blur-xl' />
@@ -449,7 +460,12 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 					fields={def?.fields ?? []}
 				/>
 
-				<NodeIOPanel nodeId={id} nodeColor={effectiveColorHex} incoming={incoming} outputs={outputs} />
+				<NodeIOPanel
+					nodeId={id}
+					nodeColor={effectiveColorHex}
+					incoming={incoming}
+					outputs={outputs}
+				/>
 				<NodeOptionsPanel
 					nodeId={id}
 					fields={def?.fields ?? []}
@@ -457,7 +473,6 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 					credentialId={credentialId ? String(credentialId) : undefined}
 				/>
 			</div>
-
 		</motion.div>
 	);
 };

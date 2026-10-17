@@ -9,30 +9,36 @@ import type {
 	TBuilderNodeConfigProposal,
 	TBuilderNodeSuggestion,
 	TBuilderSession,
+	TBuilderSessionListItem,
 	TBuilderWorkflowExplanation,
 	TConfigureBuilderNodeDto,
 	TCreateBuilderSessionDto,
-	TDryRunWorkflowDto,
 	TListBuilderSessionsParams,
 	TPromoteBuilderSessionDto,
+	TRestoreBuilderVersionDto,
 	TSendBuilderMessageDto,
 	TSyncBuilderDraftDto,
 	TTestWorkflowNodeDto,
 	TUpdateBuilderSessionDto,
-	TValidateWorkflowDto,
 	TWorkflowDryRunResult,
-	TWorkflowValidationResult,
 } from '@/types/workflow-builder.type';
 import type { TWorkflow, TReplaceGraphDto } from '@/types/workflow.type';
 import type { TNodeRunDetail } from '@/types/run.type';
-import { WorkflowBuilderEndpoints as E, WorkflowDiagnosticsEndpoints as D } from './workflow-builder.endpoints';
+import {
+	WorkflowBuilderEndpoints as E,
+	WorkflowDiagnosticsEndpoints as D,
+} from './workflow-builder.endpoints';
 
 export const WorkflowBuilderSessionService = {
-	/** Archived sessions are only listed when asked for by `status`. */
+	/** Archived sessions are only listed when asked for by `status`. Items
+	 *  leave out `draft_graph`. */
 	list: (ws: string, params?: TListBuilderSessionsParams, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ sessions: TBuilderSession[] }>>(E.list(ws), { params, signal })
-			.then(unwrapKey<TBuilderSession[]>('sessions')),
+			.get<TApiResponse<{ sessions: TBuilderSessionListItem[] }>>(E.list(ws), {
+				params: params && { ...params, mine: params.mine ? 1 : undefined },
+				signal,
+			})
+			.then(unwrapKey<TBuilderSessionListItem[]>('sessions')),
 
 	/** Includes the full message transcript. */
 	detail: (ws: string, id: string, signal?: AbortSignal) =>
@@ -43,7 +49,9 @@ export const WorkflowBuilderSessionService = {
 	/** With a `prompt`, `message` is the pending reply to that first message. */
 	create: (ws: string, payload: TCreateBuilderSessionDto) =>
 		axiosClient
-			.post<TApiResponse<{ session: TBuilderSession; message: TBuilderMessage | null }>>(E.create(ws), payload)
+			.post<
+				TApiResponse<{ session: TBuilderSession; message: TBuilderMessage | null }>
+			>(E.create(ws), payload)
 			.then((res) => res.data.data),
 
 	/** Rename, archive, or unarchive. */
@@ -56,43 +64,72 @@ export const WorkflowBuilderSessionService = {
 
 	/**
 	 * Replace the draft with the canvas's copy. Rejected with 409 when
-	 * `draft_lock_version` is behind — the assistant changed the draft since.
+	 * `draft_lock_version` is behind: the assistant changed the draft since.
 	 */
 	syncDraft: (ws: string, id: string, payload: TSyncBuilderDraftDto) =>
 		axiosClient
 			.patch<TApiResponse<{ session: TBuilderSession }>>(E.syncDraft(ws, id), payload)
 			.then(unwrapKey<TBuilderSession>('session')),
 
-	/** Publishes the draft graph to a real, workspace-visible workflow. */
+	/**
+	 * Saves the draft graph as a real, workspace-visible workflow's draft.
+	 * 409 when that workflow was edited outside the session since it loaded
+	 * it (send `overwrite: true` to replace those edits), or while a reply is
+	 * still being written.
+	 */
 	promote: (ws: string, id: string, payload?: TPromoteBuilderSessionDto) =>
 		axiosClient
 			.post<TApiResponse<{ workflow: TWorkflow }>>(E.promote(ws, id), payload)
 			.then(unwrapKey<TWorkflow>('workflow')),
 };
 
+/** JSON, unless files ride along, then multipart, with each file under
+ *  `attachments[]`. */
+const messageBody = (payload: TSendBuilderMessageDto): TSendBuilderMessageDto | FormData => {
+	if (!payload.attachments?.length)
+		return { message: payload.message, mode: payload.mode, context: payload.context };
+	const form = new FormData();
+	form.append('message', payload.message);
+	if (payload.mode) form.append('mode', payload.mode);
+	payload.context?.nodes?.forEach((key) => form.append('context[nodes][]', key));
+	payload.context?.credentials?.forEach((id) => form.append('context[credentials][]', id));
+	payload.attachments.forEach((file) => form.append('attachments[]', file));
+	return form;
+};
+
 export const WorkflowBuilderMessageService = {
 	list: (ws: string, sessionId: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ messages: TBuilderMessage[] }>>(E.messages(ws, sessionId), { signal })
+			.get<
+				TApiResponse<{ messages: TBuilderMessage[] }>
+			>(E.messages(ws, sessionId), { signal })
 			.then(unwrapKey<TBuilderMessage[]>('messages')),
 
 	/**
 	 * Returns (202) the pending assistant message. Its reply is written in the
-	 * background — follow it on the session channel or poll `detail()`.
+	 * background: follow it on the session channel or poll `detail()`.
 	 * 409 while a previous reply is still being written.
 	 */
-	send: (ws: string, sessionId: string, payload: TSendBuilderMessageDto) =>
-		axiosClient
-			.post<TApiResponse<{ message: TBuilderMessage }>>(E.messages(ws, sessionId), payload)
-			.then(unwrapKey<TBuilderMessage>('message')),
+	send: (ws: string, sessionId: string, payload: TSendBuilderMessageDto) => {
+		const body = messageBody(payload);
+		const config =
+			body instanceof FormData ? { headers: { 'Content-Type': undefined } } : undefined;
+		return axiosClient
+			.post<
+				TApiResponse<{ message: TBuilderMessage }>
+			>(E.messages(ws, sessionId), body, config)
+			.then(unwrapKey<TBuilderMessage>('message'));
+	},
 
 	detail: (ws: string, sessionId: string, messageId: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ message: TBuilderMessage }>>(E.message(ws, sessionId, messageId), { signal })
+			.get<
+				TApiResponse<{ message: TBuilderMessage }>
+			>(E.message(ws, sessionId, messageId), { signal })
 			.then(unwrapKey<TBuilderMessage>('message')),
 };
 
-/** Undo history — one labelled snapshot per edit, newest first. */
+/** Undo history: one labelled snapshot per edit, newest first. */
 export const WorkflowBuilderVersionService = {
 	list: (ws: string, sessionId: string, signal?: AbortSignal) =>
 		axiosClient
@@ -102,9 +139,17 @@ export const WorkflowBuilderVersionService = {
 			})
 			.then((res) => res.data.data),
 
-	restore: (ws: string, sessionId: string, versionId: string) =>
+	/** 409 when `draft_lock_version` is behind: the draft changed since. */
+	restore: (
+		ws: string,
+		sessionId: string,
+		versionId: string,
+		payload?: TRestoreBuilderVersionDto,
+	) =>
 		axiosClient
-			.post<TApiResponse<{ session: TBuilderSession }>>(E.restoreVersion(ws, sessionId, versionId))
+			.post<
+				TApiResponse<{ session: TBuilderSession }>
+			>(E.restoreVersion(ws, sessionId, versionId), payload)
 			.then(unwrapKey<TBuilderSession>('session')),
 };
 
@@ -112,51 +157,54 @@ export const WorkflowBuilderVersionService = {
 export const WorkflowBuilderAssistService = {
 	suggestNodes: (ws: string, sessionId: string, note?: string) =>
 		axiosClient
-			.post<TApiResponse<{ suggestions: TBuilderNodeSuggestion[] }>>(E.assist(ws, sessionId, 'suggest-nodes'), {
-				note: note || undefined,
-			})
+			.post<TApiResponse<{ suggestions: TBuilderNodeSuggestion[] }>>(
+				E.assist(ws, sessionId, 'suggest-nodes'),
+				{
+					note: note || undefined,
+				},
+			)
 			.then(unwrapKey<TBuilderNodeSuggestion[]>('suggestions')),
 
 	configureNode: (ws: string, sessionId: string, payload: TConfigureBuilderNodeDto) =>
 		axiosClient
-			.post<TApiResponse<{ proposal: TBuilderNodeConfigProposal }>>(
-				E.assist(ws, sessionId, 'configure-node'),
-				payload,
-			)
+			.post<
+				TApiResponse<{ proposal: TBuilderNodeConfigProposal }>
+			>(E.assist(ws, sessionId, 'configure-node'), payload)
 			.then(unwrapKey<TBuilderNodeConfigProposal>('proposal')),
 
 	explain: (ws: string, sessionId: string) =>
 		axiosClient
-			.post<TApiResponse<{ explanation: TBuilderWorkflowExplanation }>>(E.assist(ws, sessionId, 'explain'))
+			.post<
+				TApiResponse<{ explanation: TBuilderWorkflowExplanation }>
+			>(E.assist(ws, sessionId, 'explain'))
 			.then(unwrapKey<TBuilderWorkflowExplanation>('explanation')),
 
 	suggestImprovements: (ws: string, sessionId: string) =>
 		axiosClient
-			.post<TApiResponse<{ improvements: TBuilderImprovement[] }>>(
-				E.assist(ws, sessionId, 'suggest-improvements'),
-			)
+			.post<
+				TApiResponse<{ improvements: TBuilderImprovement[] }>
+			>(E.assist(ws, sessionId, 'suggest-improvements'))
 			.then(unwrapKey<TBuilderImprovement[]>('improvements')),
 };
 
 /** Pre-flight checks on an already-created `Workflow`, run against the same
  *  services the builder agent's own tools call. */
 export const WorkflowDiagnosticsService = {
-	validate: (ws: string, workflowId: string, payload?: TValidateWorkflowDto) =>
+	/** Walks the saved draft without calling anything external, resolving each
+	 *  step's references against sample outputs of the steps before it. */
+	dryRun: (ws: string, workflowId: string, signal?: AbortSignal) =>
 		axiosClient
-			.post<TApiResponse<TWorkflowValidationResult>>(D.validate(ws, workflowId), payload)
-			.then((r) => r.data.data),
-
-	dryRun: (ws: string, workflowId: string, payload?: TDryRunWorkflowDto) =>
-		axiosClient
-			.post<TApiResponse<TWorkflowDryRunResult>>(D.dryRun(ws, workflowId), payload)
-			.then((r) => r.data.data),
+			.post<TApiResponse<TWorkflowDryRunResult>>(D.dryRun(ws, workflowId), {}, { signal })
+			.then((r) => r.data.data.dry_run),
 
 	testNode: (ws: string, workflowId: string, nodeId: string, payload?: TTestWorkflowNodeDto) =>
 		axiosClient
-			.post<TApiResponse<{ node_run: TNodeRunDetail }>>(D.testNode(ws, workflowId, nodeId), payload)
+			.post<
+				TApiResponse<{ node_run: TNodeRunDetail }>
+			>(D.testNode(ws, workflowId, nodeId), payload)
 			.then(unwrapKey<TNodeRunDetail>('node_run')),
 
-	/** Editor autosave — replaces the draft graph wholesale, not a partial
+	/** Editor autosave: replaces the draft graph wholesale, not a partial
 	 *  patch. */
 	replaceGraph: (ws: string, workflowId: string, payload: TReplaceGraphDto) =>
 		axiosClient

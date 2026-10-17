@@ -1,4 +1,4 @@
-// No detail route — channels are only ever listed, created, updated,
+// No detail route: channels are only ever listed, created, updated,
 // deleted, or test-delivered.
 const base = (ws: string) => `/workspaces/${ws}/notification-channels`;
 

@@ -33,7 +33,7 @@ export type TExecution = {
 	credits_consumed?: number;
 };
 
-// Execution detail — as returned by GET /workspaces/{id}/executions/{id}
+// Execution detail, as returned by GET /workspaces/{id}/executions/{id}
 export type TExecutionDetail = {
 	id: string;
 	status: TExecutionStatus;
@@ -46,7 +46,7 @@ export type TExecutionNode = {
 	duration_ms: number;
 };
 
-// Execution log entry — as returned by GET /workspaces/{id}/executions/{id}/logs
+// Execution log entry, as returned by GET /workspaces/{id}/executions/{id}/logs
 export type TExecutionLog = {
 	timestamp: string;
 	level: 'info' | 'warning' | 'error' | 'debug';

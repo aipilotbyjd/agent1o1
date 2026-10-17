@@ -29,11 +29,14 @@ import { useConfirm } from '@/context/confirm';
 import { primaryBtn, secondaryBtn, dangerBtn } from '@/pages/settings/_shared/buttons';
 import { useWorkspaceContext } from '@/context/workspace';
 import formatDate from '@/utils/formatDate.util';
+import TimezoneSelect from '@/parts/TimezoneSelect.part';
 
 type TProfileForm = {
 	firstName: string;
 	lastName: string;
 	email: string;
+	/** '' follows the workspace timezone. */
+	timezone: string;
 };
 
 const inputClass =
@@ -113,8 +116,9 @@ const ProfilePage = () => {
 		return {
 			...nameParts,
 			email: userData?.email ?? '',
+			timezone: userData?.timezone ?? '',
 		};
-	}, [userData?.email, userData?.name]);
+	}, [userData?.email, userData?.name, userData?.timezone]);
 
 	const formik = useFormik<TProfileForm>({
 		initialValues,
@@ -139,6 +143,7 @@ const ProfilePage = () => {
 				const updated = await updateProfile.mutateAsync({
 					name: nextName,
 					email: nextEmail,
+					timezone: values.timezone || null,
 				});
 				// A new email is not applied until it is confirmed from that inbox.
 				notify.success(
@@ -173,8 +178,14 @@ const ProfilePage = () => {
 	const emailStatus = isEmailVerified ? 'Email verified' : 'Email not verified';
 	const pendingEmail = userData?.pending_email ?? null;
 	const isProfileDirty = Boolean(
-		userData && (fullName !== userData.name || formik.values.email.trim() !== userData.email),
+		userData &&
+		(fullName !== userData.name ||
+			formik.values.email.trim() !== userData.email ||
+			formik.values.timezone !== (userData.timezone ?? '')),
 	);
+	const workspaceTimezone = workspaces.find(
+		(workspace) => workspace.id === activeWorkspaceId,
+	)?.timezone;
 
 	const handleResendVerification = () =>
 		resendVerification.mutate(undefined, {
@@ -404,7 +415,9 @@ const ProfilePage = () => {
 										disabled={cancelEmailChange.isPending}
 										onClick={handleCancelEmailChange}
 										className='font-bold text-red-500 hover:underline disabled:opacity-60'>
-										{cancelEmailChange.isPending ? 'Cancelling...' : 'Cancel change'}
+										{cancelEmailChange.isPending
+											? 'Cancelling...'
+											: 'Cancel change'}
 									</button>
 								</div>
 							)}
@@ -421,9 +434,20 @@ const ProfilePage = () => {
 								aria-label='Current Workspace'
 								value={activeWorkspaceId}
 								disabled={isSwitching || workspaces.length === 0}
-								onChange={(e) => switchWorkspace(e.target.value)}
+								onChange={async (e) => {
+									const targetId = e.target.value;
+									const [, , ...rest] = window.location.pathname.split('/');
+									try {
+										await switchWorkspace(targetId);
+									} catch {
+										return;
+									}
+									navigate(`/${targetId}/${rest.join('/')}`);
+								}}
 								className={`${inputClass} appearance-none bg-none pr-11 disabled:cursor-not-allowed disabled:opacity-60`}>
-								{workspaces.length === 0 && <option value=''>{workspaceName}</option>}
+								{workspaces.length === 0 && (
+									<option value=''>{workspaceName}</option>
+								)}
 								{workspaces.map((ws) => (
 									<option key={ws.id} value={ws.id}>
 										{ws.name}
@@ -441,23 +465,19 @@ const ProfilePage = () => {
 					<SettingsFieldRow
 						icon={Globe}
 						title='Timezone'
-						description='Your local timezone for time-based features.'>
+						description='For your assistant, the date your agents see, and times in your emails.'>
 						<div className='relative w-full'>
-							{/* The profile endpoint accepts only name and email, so a choice here
-								    cannot be saved. Left visible but inert rather than silently
-								    discarding it; drop the `disabled` once the backend carries a
-								    timezone field. */}
-							<select
+							<TimezoneSelect
 								aria-label='Timezone'
-								defaultValue='Asia/Kolkata'
-								disabled
-								title='Timezone cannot be saved yet'
-								className={`${inputClass} appearance-none bg-none pr-11 disabled:cursor-not-allowed disabled:opacity-60`}>
-								<option value='Asia/Kolkata'>Asia/Kolkata</option>
-								<option value='America/New_York'>America/New_York</option>
-								<option value='Europe/London'>Europe/London</option>
-								<option value='UTC'>UTC</option>
-							</select>
+								value={formik.values.timezone}
+								onChange={(timezone) => formik.setFieldValue('timezone', timezone)}
+								emptyLabel={
+									workspaceTimezone
+										? `Same as workspace (${workspaceTimezone})`
+										: 'Same as workspace'
+								}
+								className={`${inputClass} appearance-none bg-none pr-11 disabled:cursor-not-allowed disabled:opacity-60`}
+							/>
 							<ChevronDown
 								size={18}
 								className='pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-zinc-400'

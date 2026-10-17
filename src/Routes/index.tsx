@@ -16,6 +16,7 @@ const BillingCancelPage = lazy(() => import('@/pages/settings/Billing/BillingCan
 const BillingReturnPage = lazy(() => import('@/pages/settings/Billing/BillingReturn.page'));
 const PricingPage = lazy(() => import('@/pages/welcome/Pricing.page'));
 const AccountReturnPage = lazy(() => import('@/pages/settings/Profile/AccountReturn.page'));
+const PublicPagePage = lazy(() => import('@/pages/public/PublicPage.page'));
 
 const router = createBrowserRouter([
 	{
@@ -32,12 +33,18 @@ const router = createBrowserRouter([
 						element: <Navigate to={pages.identity.login.to} replace />,
 					},
 					...IdentityPages,
-					// Marketing pricing — public on purpose. It renders from static copy
+					// Marketing pricing: public on purpose. It renders from static copy
 					// and pulls nothing workspace-scoped, so it must stay outside the
 					// onboarding auth boundary or prospects get bounced to /login.
 					{
 						path: pages.welcome.subPages!.pricing.to,
 						element: <PricingPage />,
+					},
+					// A workflow page at its public link: no sign-in, and registered
+					// before `/:workspaceId` so `p` is never read as a workspace id.
+					{
+						path: pages.publicPage.to,
+						element: <PublicPagePage />,
 					},
 					{
 						path: pages.choose.to,
@@ -55,7 +62,7 @@ const router = createBrowserRouter([
 						path: accountCallbacks.emailChange,
 						element: <AccountReturnPage />,
 					},
-					// Welcome / onboarding routes — must come before the workspace routes
+					// Welcome / onboarding routes: must come before the workspace routes
 					// below, or static paths like `/onboarding` fall through to
 					// `/:workspaceId` and the core app shell renders with "onboarding"
 					// as the workspace id. Auth-gated inside OnboardingLayout.

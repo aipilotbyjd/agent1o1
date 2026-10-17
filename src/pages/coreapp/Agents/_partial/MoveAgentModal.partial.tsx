@@ -93,15 +93,17 @@ const MoveAgentModal = ({
 								/>
 								<span className='min-w-0 flex-1 truncate'>{option.label}</span>
 								{isCurrent && <Check size={14} className='shrink-0' />}
-								{moveAgents.isPending && moveAgents.variables?.folder_id === option.id && (
-									<Loader2 size={14} className='shrink-0 animate-spin' />
-								)}
+								{moveAgents.isPending &&
+									moveAgents.variables?.folder_id === option.id && (
+										<Loader2 size={14} className='shrink-0 animate-spin' />
+									)}
 							</button>
 						);
 					})}
 					{folders.length === 0 && (
 						<p className='px-1 pt-2 text-xs font-semibold text-zinc-400'>
-							No agent folders yet. Use &quot;New folder&quot; above the agent list to make one.
+							No agent folders yet. Use &quot;New folder&quot; above the agent list to
+							make one.
 						</p>
 					)}
 				</div>

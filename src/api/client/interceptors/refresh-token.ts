@@ -7,10 +7,10 @@ import { authEvents } from '@/api/core/auth-events';
 // ------------------------------------------------------------
 // On a 401, refreshes the token once and replays every request
 // queued up behind it. The refresh token itself is never read from
-// storage — it's an httpOnly cookie the browser attaches
+// storage: it's an httpOnly cookie the browser attaches
 // automatically (see `withCredentials` on the axios client) and the
 // backend reads straight off the request. Requests parked in the
-// queue get `_retry` set too before replay — without that, a
+// queue get `_retry` set too before replay, without that, a
 // still-rejected refreshed token sends every queued request
 // straight back into this branch, amplifying against the refresh
 // endpoint under a burst of parallel requests instead of failing

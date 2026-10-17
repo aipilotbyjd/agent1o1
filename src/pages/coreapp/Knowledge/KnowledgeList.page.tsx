@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext, useParams } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CloudUpload, FileText, BookOpen, Trash2, Search as SearchIcon } from 'lucide-react';
+import { FileText, BookOpen, Trash2, Search as SearchIcon, Lock, Plus } from 'lucide-react';
 import { OutletContextType } from './_layouts/Knowledge.layout';
 import { useConfirm } from '@/context/confirm';
 import Breadcrumb from '@/components/layout/Breadcrumb';
@@ -17,8 +17,13 @@ import {
 	useDeleteKnowledgeCollection,
 	useSearchKnowledge,
 } from '@/api/modules/knowledge-base';
-import IngestKnowledgeDialog from './_partial/IngestKnowledgeDialog.partial';
 import KnowledgeDocumentModal from './_partial/KnowledgeDocumentModal.partial';
+import AddKnowledgeDialog from './_partial/AddKnowledgeDialog.partial';
+import type { TKnowledgeKind } from './_helper/knowledge.sources';
+import KnowledgeSourcesPartial from './_partial/KnowledgeSources.partial';
+import EditKnowledgeSourceDialog from './_partial/EditKnowledgeSourceDialog.partial';
+import KnowledgeSourceDocumentsModal from './_partial/KnowledgeSourceDocumentsModal.partial';
+import type { TKnowledgeSource } from '@/types/knowledge-base.type';
 
 const PER_PAGE = 12;
 
@@ -38,8 +43,11 @@ const KnowledgeListPage = () => {
 
 	const [selectedCollection, setSelectedCollection] = useState<string | undefined>(undefined);
 	const [page, setPage] = useState(1);
-	const [view, setView] = useState<'browse' | 'search'>('browse');
-	const [isIngestOpen, setIsIngestOpen] = useState(false);
+	const [view, setView] = useState<'browse' | 'sources' | 'search'>('browse');
+	// The kind the Add panel opens on, or null when it's closed.
+	const [addKind, setAddKind] = useState<TKnowledgeKind | null>(null);
+	const [editingSource, setEditingSource] = useState<TKnowledgeSource | null>(null);
+	const [documentsSource, setDocumentsSource] = useState<TKnowledgeSource | null>(null);
 	const [openDoc, setOpenDoc] = useState<{ source: string; collection: string } | null>(null);
 
 	const { data: collections, isLoading: isLoadingCollections } = useKnowledgeCollections(ws);
@@ -81,7 +89,7 @@ const KnowledgeListPage = () => {
 		});
 	};
 
-	const handleDeleteCollection = async (collection: string) => {
+	const handleDeleteCollection = async (collection: string, isPrivate: boolean) => {
 		const confirmed = await confirm({
 			title: 'Delete collection',
 			message: (
@@ -90,17 +98,20 @@ const KnowledgeListPage = () => {
 					<strong className='font-semibold text-zinc-800 dark:text-zinc-200'>
 						&quot;{collection}&quot;
 					</strong>
-					? This is the way to re-ingest a document - drop the collection, then ingest the
-					new revision. This cannot be undone.
+					? To replace a document, delete its collection and add the new version. This
+					cannot be undone.
 				</>
 			),
 		});
 		if (!confirmed) return;
-		deleteCollectionMutation.mutate(collection, {
-			onSuccess: () => {
-				if (selectedCollection === collection) handleSelectCollection(undefined);
+		deleteCollectionMutation.mutate(
+			{ collection, isPrivate },
+			{
+				onSuccess: () => {
+					if (selectedCollection === collection) handleSelectCollection(undefined);
+				},
 			},
-		});
+		);
 	};
 
 	const handleSearch = () => {
@@ -122,10 +133,10 @@ const KnowledgeListPage = () => {
 						Knowledge Base
 					</h1>
 					<button
-						onClick={() => setIsIngestOpen(true)}
+						onClick={() => setAddKind(view === 'sources' ? 'url' : 'text')}
 						className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 hover:shadow-primary-500/20 flex h-11 w-full shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl px-5 text-xs font-bold shadow-md transition-all hover:shadow-lg active:scale-95 sm:h-10 sm:w-auto dark:shadow-none'>
-						<CloudUpload size={14} />
-						<span>Ingest</span>
+						<Plus size={14} />
+						<span>Add knowledge</span>
 					</button>
 				</div>
 
@@ -143,7 +154,7 @@ const KnowledgeListPage = () => {
 						</button>
 						{(collections ?? []).map((c) => (
 							<div
-								key={c.collection}
+								key={`${c.collection}-${c.private}`}
 								className={`group flex h-9 shrink-0 items-center gap-1.5 rounded-xl pr-1.5 pl-4 text-xs font-bold transition-all ${
 									selectedCollection === c.collection
 										? 'from-primary-400 to-primary-400 text-primary-950 bg-gradient-to-r'
@@ -152,12 +163,13 @@ const KnowledgeListPage = () => {
 								<button
 									onClick={() => handleSelectCollection(c.collection)}
 									className='flex items-center gap-1.5'>
+									{c.private && <Lock size={10} aria-label='Private' />}
 									<span className='font-mono'>{c.collection}</span>
 									<span className='opacity-60'>{c.chunks_count}</span>
 								</button>
 								<button
 									aria-label={`Delete collection ${c.collection}`}
-									onClick={() => handleDeleteCollection(c.collection)}
+									onClick={() => handleDeleteCollection(c.collection, c.private)}
 									className='rounded-lg p-1 opacity-100 transition-opacity hover:bg-black/10 sm:opacity-0 sm:group-hover:opacity-100'>
 									<Trash2 size={11} />
 								</button>
@@ -165,12 +177,12 @@ const KnowledgeListPage = () => {
 						))}
 						{!isLoadingCollections && collections?.length === 0 && (
 							<span className='py-1.5 text-xs font-semibold text-slate-400 dark:text-zinc-500'>
-								No collections yet - ingest a document to create one.
+								No collections yet - add knowledge to create one.
 							</span>
 						)}
 					</div>
 
-					<div className='grid w-full shrink-0 grid-cols-2 gap-1.5 rounded-2xl border border-zinc-200 bg-white p-1.5 sm:flex sm:w-auto sm:self-start dark:border-zinc-800 dark:bg-zinc-900'>
+					<div className='grid w-full shrink-0 grid-cols-3 gap-1.5 rounded-2xl border border-zinc-200 bg-white p-1.5 sm:flex sm:w-auto sm:self-start dark:border-zinc-800 dark:bg-zinc-900'>
 						<button
 							onClick={() => setView('browse')}
 							className={`h-9 cursor-pointer rounded-xl px-4 text-xs font-bold transition-all ${
@@ -179,6 +191,15 @@ const KnowledgeListPage = () => {
 									: 'text-slate-500 hover:bg-slate-50 dark:text-zinc-400 dark:hover:bg-zinc-900/40'
 							}`}>
 							Browse
+						</button>
+						<button
+							onClick={() => setView('sources')}
+							className={`h-9 cursor-pointer rounded-xl px-4 text-xs font-bold transition-all ${
+								view === 'sources'
+									? 'from-primary-400 to-primary-400 text-primary-950 bg-gradient-to-r'
+									: 'text-slate-500 hover:bg-slate-50 dark:text-zinc-400 dark:hover:bg-zinc-900/40'
+							}`}>
+							Synced sources
 						</button>
 						<button
 							onClick={() => setView('search')}
@@ -192,7 +213,14 @@ const KnowledgeListPage = () => {
 					</div>
 				</div>
 
-				{view === 'search' ? (
+				{view === 'sources' ? (
+					<KnowledgeSourcesPartial
+						ws={ws}
+						onAdd={() => setAddKind('url')}
+						onEdit={setEditingSource}
+						onShowDocuments={setDocumentsSource}
+					/>
+				) : view === 'search' ? (
 					<div className='rounded-2xl border border-zinc-200 bg-white p-4 shadow-xs backdrop-blur-md sm:rounded-3xl sm:p-6 dark:border-zinc-800 dark:bg-zinc-900'>
 						<p className='text-xs font-semibold text-slate-500 dark:text-zinc-400'>
 							Runs the exact retrieval an agent&apos;s search-knowledge tool would, so
@@ -202,9 +230,9 @@ const KnowledgeListPage = () => {
 						<div className='mt-4 flex flex-col gap-2 sm:flex-row'>
 							<div className='group relative min-w-0 flex-1'>
 								<SearchIcon className='group-focus-within:text-primary-500 absolute top-3.5 left-4 h-4 w-4 text-slate-400 transition-colors duration-200 dark:text-zinc-500' />
-									<input
-										type='search'
-										aria-label='Test knowledge search'
+								<input
+									type='search'
+									aria-label='Test knowledge search'
 									value={searchQuery}
 									onChange={(e) => setSearchQuery(e.target.value)}
 									onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -240,13 +268,20 @@ const KnowledgeListPage = () => {
 													<span className='truncate'>
 														{hit.source ?? 'Untitled'}
 													</span>
+													{hit.private && (
+														<Lock
+															size={11}
+															className='shrink-0 text-slate-400'
+															aria-label='Private'
+														/>
+													)}
 												</div>
 												<span className='shrink-0 rounded-lg border border-zinc-200/50 bg-white px-2 py-0.5 font-mono text-[10px] font-semibold text-slate-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
 													{hit.score.toFixed(4)}
 												</span>
 											</div>
 											<p className='mt-1.5 line-clamp-3 text-xs leading-relaxed font-semibold text-slate-500 dark:text-zinc-400'>
-												{hit.chunk_text}
+												{hit.text}
 											</p>
 										</div>
 									))
@@ -263,7 +298,7 @@ const KnowledgeListPage = () => {
 							No documents yet
 						</p>
 						<p className='text-xs font-semibold text-slate-400 dark:text-zinc-500'>
-							Ingest text or a file to build the workspace&apos;s knowledge base.
+							Add text, a file, a web page or an app to build the knowledge base.
 						</p>
 					</div>
 				) : (
@@ -304,6 +339,9 @@ const KnowledgeListPage = () => {
 														</span>
 													)}
 													<span className='inline-flex w-fit max-w-full items-center gap-1 truncate rounded-lg border border-slate-200/50 bg-slate-50/50 px-2 py-0.5 font-mono text-[10px] font-semibold text-slate-600 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-400'>
+														{chunk.private && (
+															<Lock size={9} aria-label='Private' />
+														)}
 														{chunk.collection}
 													</span>
 													<span className='hidden text-[10px] font-semibold text-slate-400 sm:inline dark:text-zinc-500'>
@@ -356,11 +394,27 @@ const KnowledgeListPage = () => {
 
 			<KnowledgeDocumentModal ws={ws} doc={openDoc} onClose={() => setOpenDoc(null)} />
 
-			<IngestKnowledgeDialog
+			<EditKnowledgeSourceDialog
 				ws={ws}
-				isOpen={isIngestOpen}
+				source={editingSource}
+				onClose={() => setEditingSource(null)}
+			/>
+			<KnowledgeSourceDocumentsModal
+				ws={ws}
+				source={documentsSource}
+				onClose={() => setDocumentsSource(null)}
+				onOpenDocument={(doc) => {
+					setDocumentsSource(null);
+					setOpenDoc(doc);
+				}}
+			/>
+
+			<AddKnowledgeDialog
+				ws={ws}
+				isOpen={addKind !== null}
+				initialKind={addKind ?? 'text'}
 				defaultCollection={selectedCollection}
-				onClose={() => setIsIngestOpen(false)}
+				onClose={() => setAddKind(null)}
 			/>
 		</Container>
 	);

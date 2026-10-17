@@ -8,7 +8,7 @@ export type TAgentDataSection = 'knowledge' | 'memory' | 'versions';
  *
  * `AgentAside` renders as a sibling of the builder's `<Outlet />` (see
  * `layouts/Agent.layout.tsx`), so it cannot reach into the builder's settings
- * drawer directly — same constraint that `agentChat.store.ts` works around for
+ * drawer directly: same constraint that `agentChat.store.ts` works around for
  * the open session. The aside posts a request here; the builder opens its
  * drawer on the Data tab, and `AgentDataPanel` selects the section and clears
  * the request so a later re-render doesn't re-trigger it.

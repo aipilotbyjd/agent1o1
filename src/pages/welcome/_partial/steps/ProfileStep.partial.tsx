@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { Check, Loader2, UploadCloud, X, Camera } from 'lucide-react';
 import { useAuth } from '@/context/auth';
 import { useUploadAvatar } from '@/api/modules/user';
-import { useOnboardingStore } from '../../_context/OnboardingStore.context';
+import { useOnboardingStore } from '../../_hooks/useOnboardingStore.hook';
 
 const ProfileStep = () => {
 	const { userData } = useAuth();
@@ -80,7 +80,15 @@ const ProfileStep = () => {
 					onDragOver={onDragOver}
 					onDragLeave={onDragLeave}
 					onDrop={onDrop}
+					role='button'
+					tabIndex={0}
+					aria-label='Upload a profile photo'
 					onClick={() => fileInputRef.current?.click()}
+					onKeyDown={(event) => {
+						if (event.key !== 'Enter' && event.key !== ' ') return;
+						event.preventDefault();
+						fileInputRef.current?.click();
+					}}
 					className={`group relative flex h-36 w-36 cursor-pointer items-center justify-center rounded-full transition-all duration-300 ${
 						isDragging
 							? 'ring-primary-400 bg-primary-400/10 ring-4'

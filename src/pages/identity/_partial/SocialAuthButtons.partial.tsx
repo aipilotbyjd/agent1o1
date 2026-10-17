@@ -7,7 +7,7 @@ import { TSocialProvider } from '@/types/auth.type';
 // ------------------------------------------------------------
 // The backend owns the provider URL (client id, scopes, state), so
 // the button asks for it and then hands the tab over. It comes back
-// to `/oauth/callback` with a short-lived exchange code — see
+// to `/oauth/callback` with a short-lived exchange code: see
 // `OAuthCallback.page.tsx`.
 // ============================================================
 
@@ -64,7 +64,7 @@ const SocialAuthButtons = () => {
 
 	const handleClick = (provider: TSocialProvider) => {
 		redirect.mutate(provider, {
-			// A full document navigation, not `navigate()` — the destination is
+			// A full document navigation, not `navigate()`: the destination is
 			// the provider's domain, outside the router entirely.
 			onSuccess: ({ url }) => window.location.assign(url),
 		});
