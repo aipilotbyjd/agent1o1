@@ -66,7 +66,7 @@ export const removeDraftFiles = async (key: string) => {
 	try {
 		await run('readwrite', (store) => store.delete(key));
 	} catch {
-		// Storage blocked — nothing was parked.
+		// Storage blocked: nothing was parked.
 	}
 };
 
@@ -77,6 +77,6 @@ export const writeDraftFiles = async (key: string, files: File[]) => {
 		const record: TDraftFilesRecord = { files, savedAt: Date.now() };
 		await run('readwrite', (store) => store.put(record, key));
 	} catch {
-		// Quota or blocked storage — the files stay staged in memory.
+		// Quota or blocked storage: the files stay staged in memory.
 	}
 };

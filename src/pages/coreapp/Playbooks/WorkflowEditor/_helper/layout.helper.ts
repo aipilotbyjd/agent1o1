@@ -109,7 +109,7 @@ export const autoLayout = <TNode extends TLayoutNode>(
 };
 
 /**
- * Gives nodes without a stored position one — versions published before the
+ * Gives nodes without a stored position one: versions published before the
  * canvas was recorded have none. A node still on the canvas (`known`) goes
  * where it is now; if any isn't, the whole graph is laid out instead so
  * nothing overlaps.

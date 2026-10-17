@@ -12,7 +12,7 @@ type Props<T> = {
 	children: (item: T, update: (patch: Partial<T>) => void) => ReactNode;
 };
 
-/** Edits a block's list of items — questions, numbers, logos, tabs — in place. */
+/** Edits a block's list of items (questions, numbers, logos, tabs) in place. */
 const ListEditor = <T extends object>({
 	items,
 	onChange,

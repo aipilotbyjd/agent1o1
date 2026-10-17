@@ -30,7 +30,7 @@ export const useWorkflow = Workflows.useDetail;
 export const useCreateWorkflow = Workflows.useCreate;
 export const useUpdateWorkflow = Workflows.useUpdate;
 
-// ─── Custom actions — not CRUD, so hand-written alongside the factory ──
+// ─── Custom actions, not CRUD, so hand-written alongside the factory ──
 
 // Deleting only moves the workflow to the trash, so the trash has to refetch too.
 export const useDeleteWorkflow = (ws: string) => {
@@ -122,12 +122,12 @@ export const useUnpinWorkflowNode = (ws: string, id: string) => {
 //
 // The old workflows list calls four actions this backend models differently, or
 // not at all. These keep the old names and call signatures so the ported page
-// needed no changes — same approach as the agent-builder adapters in
+// needed no changes: same approach as the agent-builder adapters in
 // `agents.hooks.ts`. What each one maps onto is spelled out per hook, and the
 // two unsupported ones fail loudly rather than pretending to have worked.
 
 /** Old flipped a `status` flag between `active`/`inactive`. Here a workflow goes
- *  live by publishing a version — that is what `is_published` reflects. */
+ *  live by publishing a version: that is what `is_published` reflects. */
 export const useActivateWorkflow = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
@@ -138,7 +138,7 @@ export const useActivateWorkflow = (ws: string) => {
 };
 
 /** No counterpart here: publishing is one-way, there is no unpublish/deactivate
- *  endpoint. Kept so the ported page compiles — the backend-adaptation pass has
+ *  endpoint. Kept so the ported page compiles: the backend-adaptation pass has
  *  to decide what this button should do. */
 export const useDeactivateWorkflow = (_ws: string) =>
 	useMutation({
@@ -246,8 +246,8 @@ export const useDeleteWorkflowTrigger = (ws: string) => useDeleteTrigger(ws);
 // publishing, versions and the dry run cover them. Only sharing is left, and
 // this backend has no share endpoint on a workflow.
 //
-// They are kept only so the ported modal loads. Reads resolve empty — that is
-// what this backend actually has — and writes fail loudly rather than looking
+// They are kept only so the ported modal loads. Reads resolve empty (that is
+// what this backend actually has) and writes fail loudly rather than looking
 // like they succeeded. Whether the modal should exist here at all is the
 // backend-adaptation pass's call.
 

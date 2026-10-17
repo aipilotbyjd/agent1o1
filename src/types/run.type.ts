@@ -4,7 +4,7 @@
 // A run is one execution of a workflow (`runnable_type`/
 // `runnable_id`). The list endpoint (`GET .../runs`) is the one
 // place `TPaginationMeta` (api.type.ts) applies flat alongside
-// `data` — see `RunController::index`.
+// `data`: see `RunController::index`.
 // ============================================================
 
 import type { TAgentMessage } from './agent.type';
@@ -56,7 +56,7 @@ export type TNodeRunDetail = {
 	child_runs?: TRun[];
 };
 
-/** The agent a run was done on behalf of — see `Run::owningAgent()`. */
+/** The agent a run was done on behalf of: see `Run::owningAgent()`. */
 export type TRunAgent = {
 	id: string;
 	name: string;

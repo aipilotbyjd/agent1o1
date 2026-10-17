@@ -10,7 +10,7 @@ const isTyping = (target: EventTarget | null) =>
 	(target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 
 /**
- * The builder's shortcuts — listed for people in the `?` sheet
+ * The builder's shortcuts: listed for people in the `?` sheet
  * (`ShortcutsSheet`), so a new one belongs there too. Undo, redo, copy and
  * paste stay with the browser while a text box has focus.
  */

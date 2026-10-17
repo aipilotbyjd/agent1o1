@@ -4,7 +4,7 @@ import { useArtifact, useDownloadArtifact } from '@/api/modules/artifacts';
 import { formatBytes } from '../_helper/artifacts.constants';
 import ArtifactUploadButton from './ArtifactUploadButton.partial';
 
-/** `.pdf` from `report.pdf` — a new version must stay the same kind of file. */
+/** `.pdf` from `report.pdf`: a new version must stay the same kind of file. */
 const extensionOf = (filename: string) => {
 	const dot = filename.lastIndexOf('.');
 	return dot > 0 ? filename.slice(dot) : undefined;

@@ -7,7 +7,7 @@ import AppLogo from '@/components/AppLogo';
 const RELOAD_FLAG = 'route-error-chunk-reload';
 
 // After a deploy, a tab still running the old build asks for chunk files that
-// no longer exist. That is not a bug in the page — one reload fixes it.
+// no longer exist. That is not a bug in the page: one reload fixes it.
 const isChunkLoadError = (error: unknown) =>
 	error instanceof Error &&
 	/Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module/i.test(
@@ -42,7 +42,7 @@ const RouteErrorPage = () => {
 		try {
 			sessionStorage.removeItem(RELOAD_FLAG);
 		} catch {
-			// Storage blocked — nothing to clear.
+			// Storage blocked: nothing to clear.
 		}
 	}, [isChunkError]);
 

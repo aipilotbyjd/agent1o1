@@ -69,7 +69,7 @@ const RUN_STATUS_STYLE: Record<string, { icon: typeof CheckCircle2; className: s
 
 const fmtDate = (value: string | null) => (value ? new Date(value).toLocaleString() : '-');
 
-/** Toggle row — same switch markup the Settings tab uses in Build.page. */
+/** Toggle row: same switch markup the Settings tab uses in Build.page. */
 const ToggleRow = ({
 	label,
 	hint,
@@ -439,9 +439,9 @@ const ReflectionRunRow = ({
 };
 
 /**
- * Reflections for an agent — a periodic self-review of past chats that proposes
+ * Reflections for an agent: a periodic self-review of past chats that proposes
  * new skills, skill fixes, instruction updates and tool-access gaps for review.
- * Backed by {agent}/reflections — see AgentReflectionController.
+ * Backed by {agent}/reflections: see AgentReflectionController.
  */
 const AgentReflectionsPanel = ({ ws, agentId, displayMode = 'panel' }: TProps) => {
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);

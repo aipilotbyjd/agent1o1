@@ -13,7 +13,7 @@ interface IAddToAgentDialogProps {
 }
 
 /** Picks the target agent at click time, so this can't be a plain
- *  `useAttachAgentSkill(ws, agentId)` — that hook needs the agent fixed
+ *  `useAttachAgentSkill(ws, agentId)`: that hook needs the agent fixed
  *  up front, not chosen per-row from a searchable list. */
 const AddToAgentDialog = ({ ws, skill, onClose }: IAddToAgentDialogProps) => {
 	const [search, setSearch] = useState('');

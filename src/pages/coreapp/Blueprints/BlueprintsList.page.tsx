@@ -210,7 +210,7 @@ const BlueprintsListPage = () => {
 	// A page template is used by creating a page, which needs a workflow picked.
 	const [usePageTemplateId, setUsePageTemplateId] = useState<string | null>(null);
 
-	// None of these endpoints take query params — the whole workspace list
+	// None of these endpoints take query params: the whole workspace list
 	// comes back at once, so search/category filter client-side.
 	const { data: workflows, isLoading: isWfsLoading } = useWorkflowTemplates(ws);
 	const { data: agents, isLoading: isAgentsLoading } = useAgentTemplates(ws);
@@ -1324,7 +1324,7 @@ const BlueprintsListPage = () => {
 													</p>
 												</div>
 
-												{/* List of items included — add, remove, reorder */}
+												{/* List of items included: add, remove, reorder */}
 												<CollectionItemsEditor
 													ws={ws}
 													collection={collectionDetail}
@@ -1374,7 +1374,7 @@ const BlueprintsListPage = () => {
 
 // ─── Shared pieces ───────────────────────────────────────────────
 
-/** `config.tool_bindings` is `unknown[]` on the contract — the shape below is
+/** `config.tool_bindings` is `unknown[]` on the contract: the shape below is
  *  what the agent editor writes, so read it defensively. */
 type TToolBinding = { name?: string; description?: string } | null;
 

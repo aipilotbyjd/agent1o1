@@ -63,7 +63,7 @@ const pathKey = (base: string, key: string | number) =>
 	typeof key === 'number' ? `${base}[${key}]` : base ? `${base}.${key}` : key;
 
 const Cell = ({ value }: { value: unknown }) => {
-	if (value === undefined) return <span className='text-zinc-300 dark:text-zinc-600'>—</span>;
+	if (value === undefined) return <span className='text-zinc-300 dark:text-zinc-600'>-</span>;
 	if (value !== null && typeof value === 'object') {
 		const json = JSON.stringify(value);
 		return (

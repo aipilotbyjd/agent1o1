@@ -163,7 +163,7 @@ export type TAssistantMemory = {
 	updated_at: string;
 };
 
-/** Broadcast payloads — mirror `App\Events\Assistant\*::broadcastWith()`. */
+/** Broadcast payloads: mirror `App\Events\Assistant\*::broadcastWith()`. */
 export type TAssistantTurnChangedEvent = {
 	turn: Pick<
 		TAssistantTurn,

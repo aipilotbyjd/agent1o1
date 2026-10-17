@@ -17,7 +17,7 @@ interface IInboxLabelsModalProps {
 
 /**
  * The owner's labels, in their own words. Mail leaves the inbox only when
- * every label it gets is set to "Move out" — one "Keep" label keeps it.
+ * every label it gets is set to "Move out": one "Keep" label keeps it.
  */
 const InboxLabelsModalPartial = ({
 	workspaceId,

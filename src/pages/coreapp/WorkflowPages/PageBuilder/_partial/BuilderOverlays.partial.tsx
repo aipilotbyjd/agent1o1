@@ -33,7 +33,7 @@ const Backdrop = ({ children, onClose }: { children: ReactNode; onClose: () => v
 );
 
 /**
- * `/` — finds any block, workflow input or output, or saved section by
+ * `/`: finds any block, workflow input or output, or saved section by
  * typing, and adds it after the selection. Arrow keys move, Enter adds.
  */
 const QuickAddPalette = ({ onClose }: { onClose: () => void }) => {
@@ -205,7 +205,7 @@ const SHORTCUTS: { group: string; items: [string, string][] }[] = [
 		items: [
 			['/ or ⌘K', 'Add a block'],
 			['↵ or double-click', 'Edit text in place'],
-			['⌘C · ⌘X · ⌘V', 'Copy, cut, paste — across pages too'],
+			['⌘C · ⌘X · ⌘V', 'Copy, cut, paste: across pages too'],
 			['⌘D', 'Duplicate'],
 			['⌘G', 'Group in a section'],
 			['⌫', 'Delete'],

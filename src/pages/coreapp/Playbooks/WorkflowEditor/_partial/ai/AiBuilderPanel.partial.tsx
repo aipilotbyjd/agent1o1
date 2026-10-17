@@ -161,7 +161,7 @@ const nodeLabel = (nodes: TCanvasNode[], id: unknown): string => {
 
 /**
  * Icon + dynamic present-tense caption for a live tool call, built from that
- * call's actual arguments (not a generic per-tool label) — Gumloop-style.
+ * call's actual arguments (not a generic per-tool label): Gumloop-style.
  * `toolName` is the builder tool's `name()` (`App\Ai\Tools\WorkflowBuilder\*`).
  */
 const describeToolCall = (
@@ -254,8 +254,7 @@ const formatExplanation = (
 		'**What this workflow does**',
 		result.summary,
 		...result.steps.map(
-			(step, index) =>
-				`${index + 1}. **${nodeLabel(nodes, step.key)}** — ${step.description}`,
+			(step, index) => `${index + 1}. **${nodeLabel(nodes, step.key)}**: ${step.description}`,
 		),
 	].join('\n\n');
 
@@ -264,12 +263,12 @@ const formatImprovements = (
 	nodes: TCanvasNode[],
 ) =>
 	improvements.length === 0
-		? 'I reviewed this workflow and have nothing to suggest — it looks good.'
+		? 'I reviewed this workflow and have nothing to suggest: it looks good.'
 		: [
 				'**Suggested improvements**',
 				...improvements.map((item) => {
 					const involved = item.node_keys.map((key) => nodeLabel(nodes, key)).join(', ');
-					return `- **${item.title}** _(${item.priority})_ — ${item.description}${involved ? ` _(${involved})_` : ''}`;
+					return `- **${item.title}** _(${item.priority})_: ${item.description}${involved ? ` _(${involved})_` : ''}`;
 				}),
 				'Ask me to make any of these changes.',
 			].join('\n\n');
@@ -279,12 +278,12 @@ const formatNodeSuggestions = (
 	nodes: TCanvasNode[],
 ) =>
 	suggestions.length === 0
-		? 'I don’t have a suggestion for the next step yet — tell me what you’d like it to do.'
+		? 'I don’t have a suggestion for the next step yet: tell me what you’d like it to do.'
 		: [
 				'**What could come next**',
 				...suggestions.map(
 					(item) =>
-						`- **${item.name}** — ${item.reason}${item.connect_from ? ` _(after ${nodeLabel(nodes, item.connect_from)})_` : ''}`,
+						`- **${item.name}**: ${item.reason}${item.connect_from ? ` _(after ${nodeLabel(nodes, item.connect_from)})_` : ''}`,
 				),
 				'Ask me to add any of these.',
 			].join('\n\n');
@@ -374,12 +373,12 @@ const AiBuilderPanel = () => {
 	}, [mentionQuery, state.nodes]);
 
 	// The last timeline entry is "in progress"; everything before it is settled
-	// history, shown in a collapsible section — mirrors Gumloop's builder.
+	// history, shown in a collapsible section: mirrors Gumloop's builder.
 	const activeItem: TAiTimelineItem | undefined = streamTimeline[streamTimeline.length - 1];
 	const historyItems = streamTimeline.slice(0, -1);
 	const toolCount = streamTimeline.filter((item) => item.kind === 'tool').length;
 
-	// Typewriter for the active text segment only — earlier segments already
+	// Typewriter for the active text segment only: earlier segments already
 	// finished streaming and render in full immediately. Resets whenever the
 	// active item's identity changes (new segment, or a tool call interrupts).
 	const activeTextTarget = activeItem?.kind === 'text' ? activeItem.text : '';
@@ -483,7 +482,7 @@ const AiBuilderPanel = () => {
 
 	/**
 	 * One-shot helpers (see `WorkflowBuilderAssistService`). They read the
-	 * chat's draft — created and synced from the canvas first — and answer as
+	 * chat's draft (created and synced from the canvas first) and answer as
 	 * a note in the chat; none of them changes the workflow.
 	 */
 	const runAssist = async (kind: TAssistKind) => {
@@ -535,11 +534,11 @@ const AiBuilderPanel = () => {
 				},
 				onError: (error) => {
 					if (!ApiError.is(error) || !error.isConflict) return;
-					// The assistant changed the draft since it was loaded — show
+					// The assistant changed the draft since it was loaded: show
 					// its latest version rather than restoring over it.
 					rehydrate();
 					notify.info(
-						'The draft changed since you opened it — reloaded the latest version. Try the restore again if you still want it.',
+						'The draft changed since you opened it: reloaded the latest version. Try the restore again if you still want it.',
 					);
 				},
 			},
@@ -607,7 +606,7 @@ const AiBuilderPanel = () => {
 				onSuccess: applyPromotedWorkflow,
 				onError: async (error) => {
 					if (!ApiError.is(error) || !error.isConflict) return;
-					// A 409 also means a reply is still being written — overwriting
+					// A 409 also means a reply is still being written: overwriting
 					// can't help with that, so just say so.
 					if (isThinking) {
 						notify.error(error.message);
@@ -788,7 +787,7 @@ const AiBuilderPanel = () => {
 					</AnimatePresence>
 				)}
 
-				{/* Live scratchpad — reasoning + tool calls as they stream, not a bubble */}
+				{/* Live scratchpad: reasoning + tool calls as they stream, not a bubble */}
 				{isThinking && (
 					<div className='space-y-1.5'>
 						<div className='flex items-center gap-2 text-xs font-medium text-zinc-400 dark:text-zinc-500'>
@@ -809,7 +808,7 @@ const AiBuilderPanel = () => {
 							)}
 							{isSlowReply && (
 								<p className='mt-1.5 text-[11px] leading-relaxed text-zinc-400 dark:text-zinc-500'>
-									Still working — no live updates yet. Bigger changes can take a
+									Still working: no live updates yet. Bigger changes can take a
 									minute or two; the reply will appear here when it's done.
 									{import.meta.env.DEV &&
 										' (Local dev: check that a queue worker is listening on the "workflow-builder" queue.)'}
@@ -889,7 +888,7 @@ const AiBuilderPanel = () => {
 						))}
 					</div>
 				)}
-				{/* Files picked for the next message, above the input — as in an agent chat */}
+				{/* Files picked for the next message, above the input, as in an agent chat */}
 				<div className='mb-2 empty:hidden'>
 					<ChatAttachmentTray
 						files={attachments}
@@ -947,7 +946,7 @@ const AiBuilderPanel = () => {
 							isThinking
 								? 'Responding…'
 								: mode === 'ask'
-									? 'Ask about this workflow — nothing on the canvas will change (@ to reference a node)'
+									? 'Ask about this workflow: nothing on the canvas will change (@ to reference a node)'
 									: 'Describe what you want to automate today... (@ to reference a node)'
 						}
 						ref={textareaRef}
@@ -974,7 +973,7 @@ const AiBuilderPanel = () => {
 							isThinking
 								? 'Responding…'
 								: mode === 'ask'
-									? 'Ask about this workflow — nothing on the canvas will change (@ to reference a node)'
+									? 'Ask about this workflow: nothing on the canvas will change (@ to reference a node)'
 									: 'Describe what you want to automate today... (@ to reference a node)'
 						}
 						className='max-h-[120px] min-h-[50px] w-full resize-none border-none bg-transparent p-0 text-sm text-zinc-800 placeholder-zinc-400 outline-none focus:ring-0 focus:outline-none disabled:cursor-not-allowed dark:text-zinc-200'
@@ -1298,7 +1297,7 @@ const AiBuilderPanel = () => {
 					</button>
 				</div>
 				<p className='shrink-0 px-3.5 pt-2.5 text-[11px] text-zinc-400 dark:text-zinc-500'>
-					Every change to this chat’s draft — by the assistant or by you — newest first.
+					Every change to this chat’s draft (by the assistant or by you), newest first.
 				</p>
 				<div className='min-h-0 flex-1 space-y-1 overflow-y-auto p-2.5'>
 					{isVersionsLoading ? (
@@ -1407,7 +1406,7 @@ const ChatMessage = ({
 
 				{isUser && message.mode === 'ask' && (
 					<span
-						title='Asked in Ask mode — the builder answered without changing the workflow'
+						title='Asked in Ask mode: the builder answered without changing the workflow'
 						className='flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-bold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'>
 						<HelpCircle size={10} />
 						Ask
@@ -1478,14 +1477,14 @@ const ChatMessage = ({
 
 /**
  * What the AI actually did to produce this reply, shown exactly as it looked
- * while it was happening — no summarizing, no collapsing behind a toggle.
+ * while it was happening: no summarizing, no collapsing behind a toggle.
  * Prefers the rich live-captured `timeline`; falls back to the lighter
  * `actionsSummary` for messages loaded from history (the backend only
  * persists the before/after diff, not the full reasoning stream).
  */
 const MessageSteps = ({ message, nodes }: { message: TAiChatMessage; nodes: TCanvasNode[] }) => {
 	// The timeline's trailing text segment is the same text already shown as
-	// the message itself — drop it here so it isn't duplicated, while keeping
+	// the message itself: drop it here so it isn't duplicated, while keeping
 	// any genuine reasoning that happened *between* tool calls earlier on.
 	const timeline = message.timeline;
 	const stepItems =

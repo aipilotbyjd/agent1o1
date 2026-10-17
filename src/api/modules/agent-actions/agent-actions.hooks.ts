@@ -26,7 +26,7 @@ import {
 
 // ─── Actions ─────────────────────────────────────────────────
 
-/** The approvals inbox — pending by default, any status for the full log. */
+/** The approvals inbox: pending by default, any status for the full log. */
 export const useAgentActionInbox = (ws: string, params?: TAgentActionListParams) =>
 	useQuery({
 		queryKey: agentActionKeys.inbox(ws, params),

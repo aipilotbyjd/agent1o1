@@ -1,8 +1,8 @@
 // ============================================================
 // Workspace Model Settings
 // ------------------------------------------------------------
-// The model new agents, skills and workflow AI steps start on, and —
-// when set — the only catalog models members may pick (null = all).
+// The model new agents, skills and workflow AI steps start on, and
+// (when set) the only catalog models members may pick (null = all).
 // ============================================================
 
 export type TWorkspaceModelSettings = {

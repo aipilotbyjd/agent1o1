@@ -80,7 +80,7 @@ export const useSendAgentMessage = (ws: string, agentId: string, id: string) => 
 	});
 };
 
-/** Drives a streamed turn — `events` accumulates as they arrive, `send`
+/** Drives a streamed turn: `events` accumulates as they arrive, `send`
  *  starts the turn (its reply arrives over Reverb), `isStreaming` tracks
  *  whether one is in flight. */
 export const useStreamAgentMessage = (ws: string, agentId: string, id: string) => {

@@ -9,7 +9,7 @@ import { useWorkflowEditor } from './useWorkflowEditor.hook';
 type TRestoreOptions = {
 	/** The draft has edits the live version doesn't, so restoring loses them. */
 	draftHasChanges: boolean;
-	/** Restoring the live version — i.e. throwing the draft's edits away. */
+	/** Restoring the live version, i.e. throwing the draft's edits away. */
 	isDiscard?: boolean;
 };
 

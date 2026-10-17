@@ -10,7 +10,7 @@ import { useWorkflowEditor } from './useWorkflowEditor.hook';
  * Runs a single node against the real backend test endpoint (resolves config +
  * invokes the handler) and writes the result into node state. Shared by every
  * "Test" entry point (inline card, floating toolbar, expanded view) so there is
- * exactly one test path — never the `nodeTest.helper` mock.
+ * exactly one test path, never the `nodeTest.helper` mock.
  */
 export const useNodeTestRunner = (nodeId: string, defKey: string) => {
 	const { state, dispatch } = useWorkflowEditor();

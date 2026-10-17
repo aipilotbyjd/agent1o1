@@ -83,7 +83,7 @@ export interface INodeSchemaOptions {
 	depends_on: string[];
 	/** Fields that narrow the list when set, but aren't required (e.g. which calendar). */
 	uses?: string[];
-	/** Several values — an array for `type: array`, comma-joined otherwise. */
+	/** Several values: an array for `type: array`, comma-joined otherwise. */
 	multiple: boolean;
 	searchable: boolean;
 	/** Keep a free-text / `{{variable}}` escape hatch next to the list. */

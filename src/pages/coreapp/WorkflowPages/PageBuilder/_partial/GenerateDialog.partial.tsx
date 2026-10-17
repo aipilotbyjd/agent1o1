@@ -30,7 +30,7 @@ const Elapsed = ({ since }: { since: number }) => {
 };
 
 /**
- * Asks AI to design the page — or the version being edited — from a
+ * Asks AI to design the page (or the version being edited) from a
  * description, shows what it made, and applies it only if the member says
  * so. Applying saves the current draft as a version first and is one undo.
  */
@@ -178,7 +178,7 @@ const GenerateDialog = ({ open, onClose }: { open: boolean; onClose: () => void 
 							Designing your page…
 						</p>
 						<p className='max-w-sm text-xs text-zinc-500'>
-							This usually takes 10–60 seconds. <Elapsed since={startedAt} /> so far —
+							This usually takes 10–60 seconds. <Elapsed since={startedAt} /> so far:
 							you can close this and keep working; it’ll be here when you come back.
 						</p>
 					</div>

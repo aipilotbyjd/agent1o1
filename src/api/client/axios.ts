@@ -8,7 +8,7 @@ import { logRequest, logResponse, logError } from './logger';
 // ============================================================
 // Axios Client
 // ------------------------------------------------------------
-// The one axios instance for the app. Interceptor wiring only —
+// The one axios instance for the app. Interceptor wiring only:
 // no request/response logic lives here beyond attaching the pieces
 // below in order: logging, auth header, token refresh, then error
 // normalization last so it sees whatever the earlier steps produce.
@@ -19,7 +19,7 @@ export const axiosClient = axios.create({
 	timeout: apiConfig.timeout,
 	// The backend issues the refresh token as an httpOnly, secure,
 	// sameSite=none cookie (never in the response body) and reads it back
-	// the same way on `POST /auth/refresh` — without this, the cookie is
+	// the same way on `POST /auth/refresh`, without this, the cookie is
 	// never sent and refresh always 401s.
 	withCredentials: true,
 	headers: {

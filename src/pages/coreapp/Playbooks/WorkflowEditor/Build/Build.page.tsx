@@ -161,7 +161,7 @@ const BuildPage = () => {
 			) : (
 				<>
 					{/* Hide the editor top header on mobile while the AI builder panel is
-					    open — the panel has its own header (history/new chat/exit).
+					    open: the panel has its own header (history/new chat/exit).
 					    Keep it visible on desktop (md and up). */}
 					<div className={state.ui.aiPanelOpen ? 'hidden md:contents' : 'contents'}>
 						<Topbar />

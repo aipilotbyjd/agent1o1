@@ -113,7 +113,7 @@ const OnboardingShellInner = () => {
 			return ROLES[selectedRoleIndex].apps;
 		}
 		if (step === 4) return ['slack', 'github', 'notion', 'google drive', 'figma'];
-		// Nothing connected yet just means the user has not got there — keep the
+		// Nothing connected yet just means the user has not got there: keep the
 		// panel populated with the apps they are about to see rather than empty.
 		if (step === 5)
 			return connectedApps.length > 0

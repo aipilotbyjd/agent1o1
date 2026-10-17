@@ -457,7 +457,7 @@ const NodeDocumentationPanel = () => {
 								<p className='text-primary-900/70 dark:text-primary-200/70 text-[11.5px] leading-relaxed'>
 									Wire an upstream output into an input handle, or drag an output
 									pill into any text field. Copy a reference above to use a
-									specific output elsewhere —{' '}
+									specific output elsewhere:{' '}
 									<code className='bg-primary-100/80 text-primary-800 dark:bg-primary-500/15 dark:text-primary-200 rounded px-1 font-mono text-[10.5px]'>
 										{buildOutputToken(node.id, '')}
 									</code>{' '}

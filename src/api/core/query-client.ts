@@ -9,11 +9,11 @@ import { notify } from './notify';
 // display. Call sites opt into a custom message via
 // `meta.errorMessage`, or opt out entirely via `meta.silent` (or
 // for some statuses only, via `meta.silentStatuses`, when the call
-// site handles those itself) — never via a hook-level `onError`,
+// site handles those itself), never via a hook-level `onError`,
 // which would show it twice.
 // ============================================================
 
-/** Never retry a refusal (4xx) — only retry transient failures (5xx / network / 429). */
+/** Never retry a refusal (4xx), only retry transient failures (5xx / network / 429). */
 const shouldRetry = (failureCount: number, error: unknown) => {
 	if (ApiError.is(error) && error.status && error.status < 500 && error.status !== 429) {
 		return false;

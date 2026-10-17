@@ -6,7 +6,7 @@ import { ApiError } from './errors';
 // Notify
 // ------------------------------------------------------------
 // The only place in the API layer that imports `react-toastify`
-// directly. Interceptors and services never call this — display is
+// directly. Interceptors and services never call this: display is
 // owned by `query-client.ts` via `meta.errorMessage` / `meta.silent`.
 // ============================================================
 
@@ -17,7 +17,7 @@ type TNotifyAdapter = {
 	error: (msg: string) => void;
 	info: (msg: string) => void;
 	warn: (msg: string) => void;
-	/** A message with one button — e.g. "Key removed · Undo". */
+	/** A message with one button, e.g. "Key removed · Undo". */
 	withAction: (msg: string, action: TNotifyAction) => void;
 };
 

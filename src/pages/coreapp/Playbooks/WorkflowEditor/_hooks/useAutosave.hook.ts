@@ -13,8 +13,8 @@ export const useAutosave = () => {
 
 	// The save reads the latest state through a ref, so the debounce effect below
 	// only has to depend on the things that actually get persisted. It used to
-	// depend on the whole state object, which meant any UI-only change — selecting
-	// a node, toggling a panel, a run status tick — restarted the 700ms timer and
+	// depend on the whole state object, which meant any UI-only change (selecting
+	// a node, toggling a panel, a run status tick) restarted the 700ms timer and
 	// could starve autosave for as long as the user kept interacting.
 	const stateRef = useRef(state);
 	useLayoutEffect(() => {
@@ -41,7 +41,7 @@ export const useAutosave = () => {
 			const { workspaceId, apiId } = current.workflow;
 			// What this save covers. If either changes while the request is in flight
 			// the user edited during the save, so it stays dirty instead of being
-			// marked saved — otherwise that edit would never be persisted.
+			// marked saved, otherwise that edit would never be persisted.
 			const savedNodes = current.nodes;
 			const savedEdges = current.edges;
 			const savedName = current.workflow.name;
@@ -113,7 +113,7 @@ export const useAutosave = () => {
 
 	// Leaving the editor in-app unmounts it and the cleanup above clears the pending
 	// timer with it, which silently dropped anything edited in the last 700ms. Flush
-	// the save instead — the request outlives the unmount, so there is nothing to
+	// the save instead: the request outlives the unmount, so there is nothing to
 	// prompt about.
 	useEffect(
 		() => () => {
@@ -125,8 +125,8 @@ export const useAutosave = () => {
 		[],
 	);
 
-	// A tab close or reload cannot be flushed the same way — the request is not
-	// guaranteed to finish — so warn while there is anything unsaved or in flight.
+	// A tab close or reload cannot be flushed the same way (the request is not
+	// guaranteed to finish) so warn while there is anything unsaved or in flight.
 	useEffect(() => {
 		if (savingState !== 'dirty' && savingState !== 'saving') return;
 		const onBeforeUnload = (event: BeforeUnloadEvent) => {

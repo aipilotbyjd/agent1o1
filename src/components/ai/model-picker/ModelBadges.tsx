@@ -16,7 +16,7 @@ const ModelBadges = ({ model, className }: { model: TModelCatalogEntry; classNam
 			{model.own_key && (
 				<span
 					className={`${chip} bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400`}
-					title={`Runs on your ${model.own_key.label} key — 0 token credits`}>
+					title={`Runs on your ${model.own_key.label} key: 0 token credits`}>
 					<KeyRound size={10} />
 					Your key
 				</span>

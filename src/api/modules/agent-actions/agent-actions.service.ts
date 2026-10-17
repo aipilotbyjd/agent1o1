@@ -30,7 +30,7 @@ export type TChatDecisionResult =
 	| { resumed: false; actions: TAgentAction[] };
 
 export const AgentActionService = {
-	// Paginated — `data` sits flat in the envelope, `meta` alongside it.
+	// Paginated: `data` sits flat in the envelope, `meta` alongside it.
 	inbox: (ws: string, params?: TAgentActionListParams, signal?: AbortSignal) =>
 		axiosClient
 			.get<TApiResponse<TAgentAction[]> & { meta: TPaginationMeta }>(E.inbox(ws), {

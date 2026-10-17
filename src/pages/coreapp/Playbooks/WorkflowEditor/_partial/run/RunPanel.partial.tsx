@@ -99,7 +99,7 @@ const RunPanel = () => {
 			? `${(Math.max(0, run.finishedAt - run.startedAt) / 1000).toFixed(1)}s`
 			: run.status === 'running'
 				? 'In progress'
-				: '—';
+				: '-';
 
 	return (
 		<section
@@ -176,7 +176,7 @@ const RunPanel = () => {
 													hour: '2-digit',
 													minute: '2-digit',
 												})
-											: '—'}
+											: '-'}
 									</dd>
 								</div>
 								<div className='px-3'>

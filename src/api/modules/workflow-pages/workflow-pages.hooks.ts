@@ -63,7 +63,7 @@ export const useWorkflowPageComments = (ws: string, id: string) =>
 		refetchInterval: 30_000,
 	});
 
-/** Add, edit, resolve or delete a comment — each refreshes the threads. */
+/** Add, edit, resolve or delete a comment: each refreshes the threads. */
 export const useWorkflowPageCommentActions = (ws: string, id: string) => {
 	const qc = useQueryClient();
 	const refresh = () => qc.invalidateQueries({ queryKey: workflowPageKeys.comments(ws, id) });
@@ -114,7 +114,7 @@ export const useWorkflowPageSubmissionsPage = (ws: string, id: string, filters: 
 		placeholderData: keepPreviousData,
 	});
 
-/** Create, remove or promote version B — each answers with the page. */
+/** Create, remove or promote version B: each answers with the page. */
 export const useWorkflowPageVariant = (ws: string, id: string) => {
 	const store = useStorePage(ws);
 	const options = { onSuccess: store, meta: { errorMessage: 'Could not change version B' } };
@@ -204,7 +204,7 @@ export const useCreateWorkflowPage = (ws: string) => {
 	});
 };
 
-/** A 422 is always the caller's to show — it names the field at fault. */
+/** A 422 is always the caller's to show: it names the field at fault. */
 export const useUpdateWorkflowPage = (ws: string, id: string, silentStatuses: number[] = []) => {
 	const store = useStorePage(ws);
 	return useMutation({

@@ -12,7 +12,7 @@ import { useCurrentUser } from '@/api/modules/user';
 import type { TArtifact, TArtifactGeneralAccess, TArtifactShare } from '@/types/artifact.type';
 import type { TWorkspaceRole } from '@/types/workspace.type';
 
-/** Roles the backend grants `artifact.manage` — see `Permission::editorGrants()`. */
+/** Roles the backend grants `artifact.manage`: see `Permission::editorGrants()`. */
 const MANAGER_ROLES: TWorkspaceRole[] = ['owner', 'admin', 'editor'];
 
 /**
@@ -82,8 +82,8 @@ const ShareBody = ({ ws, artifact }: { ws: string; artifact: TArtifact }) => {
 	const [access, setAccess] = useState<TArtifactGeneralAccess>(
 		artifact.general_access === 'anyone' ? 'organization' : artifact.general_access,
 	);
-	// Neither the list nor the detail endpoint returns existing shares — only
-	// the add-share response does — so this starts empty and fills as you add.
+	// Neither the list nor the detail endpoint returns existing shares (only
+	// the add-share response does) so this starts empty and fills as you add.
 	const [shares, setShares] = useState<TArtifactShare[]>(artifact.shared_with ?? []);
 	const [selectedUserId, setSelectedUserId] = useState('');
 

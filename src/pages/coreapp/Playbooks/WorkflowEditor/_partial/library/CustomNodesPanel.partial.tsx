@@ -80,7 +80,7 @@ const CustomNodesPanel = ({ workspaceId, onAdd }: Props) => {
 			<div className='mb-2 flex items-start gap-2 rounded-xl border border-zinc-200 bg-zinc-50/60 px-3 py-2.5 text-[11px] leading-snug text-zinc-500 dark:border-white/[0.06] dark:bg-white/[0.02] dark:text-zinc-400'>
 				<Info size={13} className='mt-px shrink-0 text-zinc-400' />
 				<span>
-					Custom nodes can be placed and saved, but runs can’t execute them yet — a run
+					Custom nodes can be placed and saved, but runs can’t execute them yet: a run
 					stops at the first one it reaches.
 				</span>
 			</div>

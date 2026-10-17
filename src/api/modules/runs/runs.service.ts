@@ -17,7 +17,7 @@ export const RunService = {
 			.post<TApiResponse<{ run: TRun }>>(E.start(ws, workflowId), payload)
 			.then(unwrapKey<TRun>('run')),
 
-	// The one list endpoint that paginates — `data` sits flat in the
+	// The one list endpoint that paginates: `data` sits flat in the
 	// envelope, `meta` alongside it.
 	list: (ws: string, params?: TRunListParams, signal?: AbortSignal) =>
 		axiosClient

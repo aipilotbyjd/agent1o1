@@ -25,7 +25,7 @@ export const useEditorHotkeys = () => {
 			if (useWorkflowShellStore.getState().previewVersionId) return;
 
 			// While the user is typing, the field owns the keyboard. Only Escape (close
-			// floating UI) and Cmd/Ctrl+Enter (run — an explicit gesture no input here
+			// floating UI) and Cmd/Ctrl+Enter (run: an explicit gesture no input here
 			// binds) still reach the canvas. Everything else belongs to the input:
 			// ⌘Z has to undo the text rather than the graph, and ⌘⇧V is "paste without
 			// formatting" inside a field, not the version diff viewer.
@@ -136,7 +136,7 @@ export const useEditorHotkeys = () => {
 				return;
 			}
 
-			// Fit view (Cmd+Shift+F) — was advertised in the cheat sheet but never bound.
+			// Fit view (Cmd+Shift+F): was advertised in the cheat sheet but never bound.
 			if (mod && event.shiftKey && event.key.toLowerCase() === 'f') {
 				event.preventDefault();
 				reactFlow.fitView({ padding: 0.18, duration: 240 });
@@ -187,7 +187,7 @@ export const useEditorHotkeys = () => {
 				return;
 			}
 
-			// Escape — close any open floating UI
+			// Escape: close any open floating UI
 			if (event.key === 'Escape') {
 				if (state.ui.canvasSearchOpen) {
 					dispatch({ type: 'SET_CANVAS_SEARCH', open: false, query: '' });

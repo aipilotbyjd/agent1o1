@@ -118,7 +118,7 @@ const RulePicker = ({
 /**
  * How freely the agent may act: its autonomy mode, Test run, web fetching,
  * and a per-tool rule for each attached tool (follow the mode, always allow,
- * always ask, or block). Saves as you change it — these are safety settings,
+ * always ask, or block). Saves as you change it: these are safety settings,
  * so they apply to conversations already in flight.
  */
 const AgentAutonomyPanel = ({ ws, agentId, nodeName }: TProps) => {
@@ -182,7 +182,7 @@ const AgentAutonomyPanel = ({ ws, agentId, nodeName }: TProps) => {
 								</span>
 								<span className='mt-0.5 block text-[10px] leading-normal font-semibold text-zinc-400'>
 									{overCap
-										? `Capped at ${AUTONOMY_MODE_META[cap].label} by your workspace — runs as that.`
+										? `Capped at ${AUTONOMY_MODE_META[cap].label} by your workspace: runs as that.`
 										: AUTONOMY_MODE_META[mode].description}
 								</span>
 							</span>
@@ -194,7 +194,7 @@ const AgentAutonomyPanel = ({ ws, agentId, nodeName }: TProps) => {
 			{agent.test_mode && (
 				<p className='flex items-start gap-2 rounded-xl bg-violet-50 px-3 py-2 text-[11px] leading-normal font-semibold text-violet-700 dark:bg-violet-950/40 dark:text-violet-300'>
 					<FlaskConical size={13} className='mt-px shrink-0' />
-					Test run is on, so no action waits for approval — each one is simulated instead.
+					Test run is on, so no action waits for approval: each one is simulated instead.
 					Turn it off to approve actions for real.
 				</p>
 			)}
@@ -207,7 +207,7 @@ const AgentAutonomyPanel = ({ ws, agentId, nodeName }: TProps) => {
 							Test run
 						</span>
 						<span className='mt-0.5 text-[10px] leading-normal font-semibold text-zinc-400'>
-							Simulate every action instead of running or asking — nothing is really
+							Simulate every action instead of running or asking: nothing is really
 							sent, posted or changed.
 						</span>
 					</div>

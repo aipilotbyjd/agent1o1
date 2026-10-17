@@ -43,11 +43,11 @@ export const BUILDER_EVENTS = {
 export interface ISubscribeBuilderSessionHandlers {
 	/** The reply moved to processing / completed / failed. */
 	onStatus: (event: TBuilderStatusEvent) => void;
-	/** A chunk of the reply's text — concatenate in order. */
+	/** A chunk of the reply's text: concatenate in order. */
 	onDelta?: (event: TBuilderDeltaEvent) => void;
 	onToolCall?: (event: TBuilderToolCallEvent) => void;
 	onToolResult?: (event: TBuilderToolResultEvent) => void;
-	/** The draft changed. Carries only the new lock version — refetch the session for the graph. */
+	/** The draft changed. Carries only the new lock version: refetch the session for the graph. */
 	onDraft?: (event: TBuilderDraftEvent) => void;
 }
 

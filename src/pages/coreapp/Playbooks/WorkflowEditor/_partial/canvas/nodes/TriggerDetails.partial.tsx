@@ -11,7 +11,7 @@ import { eventStatusDot as statusDot, webhookUrlFor } from '../../../_helper/tri
 
 const EVENTS_SHOWN = 5;
 
-/** Canvas nodes are draggable — every control here has to keep the pointer to itself. */
+/** Canvas nodes are draggable: every control here has to keep the pointer to itself. */
 const stop = (event: React.SyntheticEvent) => event.stopPropagation();
 
 type Props = {

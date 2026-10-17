@@ -47,7 +47,7 @@ export const useDraftAgentSkill = (ws: string) =>
 	});
 
 // References and scripts are nested under a skill (ws + skillId), which
-// doesn't fit the ws-only factory shape — hand-written.
+// doesn't fit the ws-only factory shape: hand-written.
 
 export const useSkillReferences = (ws: string, skillId: string) =>
 	useQuery({

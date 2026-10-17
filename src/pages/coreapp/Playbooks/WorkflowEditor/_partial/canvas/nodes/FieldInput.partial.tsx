@@ -23,7 +23,7 @@ type FieldInputProps = {
 
 /**
  * Resource picker. Without a provider-side picker (Drive, Sheets…) wired up, the
- * user pastes a resource id or link instead — same value, no fake browser.
+ * user pastes a resource id or link instead: same value, no fake browser.
  */
 const PickerFieldInput = ({ field, value, onChange, compact }: FieldInputProps) => {
 	const [entering, setEntering] = useState(false);
@@ -113,7 +113,7 @@ const JsonFieldInput = ({ field, value, onChange, compact, nodeId }: FieldInputP
 			const candidate: unknown = JSON.parse(raw);
 			if (candidate !== null && typeof candidate === 'object') parsed = candidate;
 		} catch {
-			/* not JSON (yet) — keep the text */
+			/* not JSON (yet): keep the text */
 		}
 		setLastEmitted(toJsonText(parsed));
 		onChange(parsed);

@@ -107,8 +107,8 @@ const LayoutCard = ({
 
 /**
  * Picks the workflow a new page runs and the layout it starts from. The
- * server lays the page out from the workflow's inputs and outputs — into the
- * template when one is picked — then the builder opens on it.
+ * server lays the page out from the workflow's inputs and outputs (into the
+ * template when one is picked) then the builder opens on it.
  */
 const CreatePageModal = ({
 	ws,

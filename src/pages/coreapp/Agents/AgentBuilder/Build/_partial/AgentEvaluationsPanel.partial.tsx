@@ -59,7 +59,7 @@ const fieldClass =
 const selectClass =
 	'shrink-0 rounded-lg border border-zinc-200 bg-white px-2 py-1.5 text-[10px] font-bold text-zinc-600 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300';
 
-/** Toggle row — same switch markup the Settings tab uses in Build.page. */
+/** Toggle row: same switch markup the Settings tab uses in Build.page. */
 const ToggleRow = ({
 	label,
 	hint,
@@ -521,7 +521,7 @@ const RESULT_STYLE: Record<string, string> = {
 	failure: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
 };
 
-/** Per-criterion verdicts and extracted data for one graded chat — only on the detail endpoint's card view. */
+/** Per-criterion verdicts and extracted data for one graded chat, only on the detail endpoint's card view. */
 const EvaluationDetail = ({ ws, agentId, id }: { ws: string; agentId: string; id: string }) => {
 	const { data, isLoading } = useAgentSessionEvaluation(ws, agentId, id);
 
@@ -710,9 +710,9 @@ const EvaluationCard = ({
 };
 
 /**
- * Automatic QA grading of finished chats — what the grader checks, and how
+ * Automatic QA grading of finished chats: what the grader checks, and how
  * every chat scored.
- * Backed by {agent}/evaluation-settings and {agent}/session-evaluations —
+ * Backed by {agent}/evaluation-settings and {agent}/session-evaluations:
  * see AgentEvaluationController.
  */
 const AgentEvaluationsPanel = ({ ws, agentId }: TProps) => {
@@ -788,7 +788,7 @@ const AgentEvaluationsPanel = ({ ws, agentId }: TProps) => {
 					</p>
 				))}
 
-			{/* Grade a chat on demand — the settings above only schedule the
+			{/* Grade a chat on demand: the settings above only schedule the
 			    automatic pass, so without this the panel can just read results. */}
 			<div className='flex items-center gap-1.5'>
 				<select

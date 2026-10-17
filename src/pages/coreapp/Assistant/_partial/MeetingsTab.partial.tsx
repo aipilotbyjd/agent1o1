@@ -29,10 +29,10 @@ const MeetingsTabPartial = ({ workspaceId }: { workspaceId: string }) => {
 
 	const settings = prep?.config.settings;
 	const status = !prep?.config.enabled
-		? `${brand.features.meeting_prep} is off — you can still prepare any meeting below.`
+		? `${brand.features.meeting_prep} is off: you can still prepare any meeting below.`
 		: settings?.auto
 			? `Prepping ${PREP_SCOPES[settings.scope]} ${settings.minutes_before} minutes before they start.`
-			: 'Automatic prep is off — use Prepare now.';
+			: 'Automatic prep is off; use Prepare now.';
 
 	return (
 		<div className='flex flex-col gap-4'>

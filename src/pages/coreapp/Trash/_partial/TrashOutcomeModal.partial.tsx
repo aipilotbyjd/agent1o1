@@ -6,7 +6,7 @@ import Icon from '@/components/icon/Icon';
 
 export type TTrashOutcome = {
 	kind: 'restored' | 'deleted';
-	/** `workflow` or `agent` — used in the copy. */
+	/** `workflow` or `agent`: used in the copy. */
 	singular: string;
 	name: string;
 	/** Items of this kind still in the trash after the action. */

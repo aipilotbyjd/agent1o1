@@ -254,7 +254,7 @@ const EXPORT_FORMATS = ['pdf', 'xlsx', 'docx'];
 
 /**
  * The filename an `export_artifact` call is stored under. With a `format`, the
- * backend builds the document itself and swaps the extension — `report.md` +
+ * backend builds the document itself and swaps the extension: `report.md` +
  * pdf is saved as `report.pdf` (ExportArtifactTool::handle).
  */
 const exportedFilename = (filename: string, format: unknown) => {
@@ -312,7 +312,7 @@ interface TMessage {
 	text: string;
 	/** Original composer text, without attachment labels, for a failed-turn retry. */
 	retryText?: string;
-	/** Files sent with a user message. `id` is the stored artifact's — absent on
+	/** Files sent with a user message. `id` is the stored artifact's: absent on
 	 *  the copy shown while the turn is still in flight. */
 	attachments?: TChatAttachment[];
 	/** The files as sent from this tab, kept so Regenerate can upload them again. */
@@ -326,7 +326,7 @@ interface TMessage {
 	followUp?: string;
 	actions?: { label: string; type: string }[];
 	timeline?: TChatTimelineItem[];
-	/** Set on a reply the user cut short with Stop — the text is a partial. */
+	/** Set on a reply the user cut short with Stop: the text is a partial. */
 	stopped?: boolean;
 	failed?: boolean;
 }
@@ -792,7 +792,7 @@ const ToolTimeline = ({
 	);
 };
 
-/** Skills the agent loaded, created or updated for a reply — always visible, like exported files. */
+/** Skills the agent loaded, created or updated for a reply, always visible, like exported files. */
 const UsedSkills = ({ items, skills }: { items: TChatTimelineItem[]; skills: TAgentSkill[] }) => {
 	const seen = new Set<string>();
 	const entries = items.flatMap((item) => {
@@ -890,14 +890,14 @@ const BuildPage = () => {
 	const [currentAgentId, setCurrentAgentId] = useState<string | undefined>(routeAgentId);
 
 	// The open chat is shared with AgentAside, which lists this agent's past
-	// sessions and can switch between them — see store/agentChat.store.ts.
+	// sessions and can switch between them: see store/agentChat.store.ts.
 	const conversationId = useAgentChatStore((state) => state.sessionId);
 	const openSession = useAgentChatStore((state) => state.openSession);
 	const newSession = useAgentChatStore((state) => state.newSession);
 	const setChatAgentId = useAgentChatStore((state) => state.setAgentId);
 	const setIsSending = useAgentChatStore((state) => state.setIsSending);
 
-	// Live scratchpad for the reply currently streaming in — reset on every send.
+	// Live scratchpad for the reply currently streaming in: reset on every send.
 	const [streamTimeline, setStreamTimeline] = useState<TChatTimelineItem[]>([]);
 	const streamTimelineRef = useRef<TChatTimelineItem[]>([]);
 	const setTimeline = (updater: (prev: TChatTimelineItem[]) => TChatTimelineItem[]) => {
@@ -913,14 +913,14 @@ const BuildPage = () => {
 	const updateAgentMutation = useUpdateAgent(workspaceId);
 	const deleteAgentMutation = useDeleteAgent(workspaceId);
 
-	// Skills — workspace catalog + this agent's attachments
+	// Skills: workspace catalog + this agent's attachments
 	const { data: workspaceSkills } = useAgentSkills(workspaceId);
 	// Attached skills are a sub-resource here, not an `agent.skills` field.
 	const { data: attachedSkills } = useAgentSkillAttachments(workspaceId, currentAgentId ?? '');
 	const attachSkillMutation = useAttachAgentSkill(workspaceId, currentAgentId ?? '');
 	const detachSkillMutation = useDetachAgentSkill(workspaceId, currentAgentId ?? '');
 
-	// Subagents — other agents this one may hand work to, plus the tasks the open
+	// Subagents: other agents this one may hand work to, plus the tasks the open
 	// chat has started (polled while any are running).
 	const { data: workspaceAgents } = useAgents(workspaceId);
 	const { data: subagents } = useAgentSubagents(workspaceId, currentAgentId ?? '');
@@ -990,7 +990,7 @@ const BuildPage = () => {
 	const [mobileViewportHeight, setMobileViewportHeight] = useState<number | null>(null);
 	const [isMobileKeyboardOpen, setIsMobileKeyboardOpen] = useState(false);
 	const [isTyping, setIsTyping] = useState(false);
-	// Aborts the turn in flight — the Stop button's end of `streamMessage`'s
+	// Aborts the turn in flight: the Stop button's end of `streamMessage`'s
 	// AbortSignal. It stops listening; the turn still finishes on the backend.
 	const streamAbortRef = useRef<AbortController | null>(null);
 	// Replies stream over Reverb, on the session's private channel.
@@ -1026,7 +1026,7 @@ const BuildPage = () => {
 		setChatAgentId(currentAgentId ?? null);
 	}, [currentAgentId, setChatAgentId]);
 
-	// `?session=` opens a specific conversation — how a subagent card links to
+	// `?session=` opens a specific conversation: how a subagent card links to
 	// the conversation its task ran in.
 	const [searchParams] = useSearchParams();
 	const linkedSessionId = searchParams.get('session');
@@ -1048,7 +1048,7 @@ const BuildPage = () => {
 		conversationId ?? '',
 	);
 
-	// Approvals — actions the open chat's paused turn waits on (its subagents'
+	// Approvals: actions the open chat's paused turn waits on (its subagents'
 	// included), and a plan waiting for review in Plan mode.
 	const { data: sessionActions } = useSessionAgentActions(
 		workspaceId,
@@ -1073,12 +1073,12 @@ const BuildPage = () => {
 		currentAgentId ?? '',
 		conversationId ?? '',
 	);
-	// "Always allow" needs agent.manage — editors and up.
+	// "Always allow" needs agent.manage: editors and up.
 	const { data: activeWorkspace } = useWorkspace(workspaceId);
 	const canManageAgents = ['owner', 'admin', 'editor'].includes(activeWorkspace?.role ?? '');
 
 	// A chat another conversation started as a subagent task. The parent is only
-	// linkable when it belongs to this agent (a "Me" clone) — the aside already
+	// linkable when it belongs to this agent (a "Me" clone): the aside already
 	// holds that list, so this reuses its cache.
 	const parentSessionId =
 		openedSession && String(openedSession.id) === String(conversationId)
@@ -1107,7 +1107,7 @@ const BuildPage = () => {
 		setIsPreviewMode(true);
 	}
 
-	// An unsent message survives a chat switch, a tab change and a reload — it is
+	// An unsent message survives a chat switch, a tab change and a reload: it is
 	// parked per agent and per chat, so two chats never share one draft.
 	const draftKeyRef = useRef<string>('');
 	const chatDraftKey = draftKey(currentAgentId ?? null, conversationId ?? null);
@@ -1190,7 +1190,7 @@ const BuildPage = () => {
 	});
 
 	// A restored draft is set straight into state, so nothing has resized the box
-	// for it — a two-line draft would come back showing one line.
+	// for it: a two-line draft would come back showing one line.
 	useEffect(() => {
 		if (composerRef.current) autoSizeComposer(composerRef.current);
 		if (mobileComposerRef.current) autoSizeComposer(mobileComposerRef.current);
@@ -1414,7 +1414,7 @@ const BuildPage = () => {
 		navigate(toWorkspacePath(pages.workspace.subPages!.agents.to));
 	};
 
-	// Skills/Triggers both operate on a real agent id — save a draft first if needed.
+	// Skills/Triggers both operate on a real agent id: save a draft first if needed.
 	const openSkillPanel = async () => {
 		await ensureAgentPersisted();
 		setSkillSearchQuery('');
@@ -1662,7 +1662,7 @@ const BuildPage = () => {
 	 * The `turn.tool` event carries at most a short, cut-off `output`, not the
 	 * tool's return value, so the artifact ids are not on the wire. They are read back
 	 * from `artifacts.index` instead, which returns one row per filename group
-	 * at its newest version — see ArtifactController::index's latestPerGroup().
+	 * at its newest version: see ArtifactController::index's latestPerGroup().
 	 */
 	const appendExportedArtifacts = async (agentId: string, filenames: string[]) => {
 		try {
@@ -1685,7 +1685,7 @@ const BuildPage = () => {
 
 			if (items.length > 0) setTimeline((prev) => [...prev, ...items]);
 		} catch {
-			// A failed lookup costs the download chip, not the reply — the file is
+			// A failed lookup costs the download chip, not the reply: the file is
 			// stored either way and still shows on the workspace's Artifacts page.
 		}
 	};
@@ -1775,7 +1775,7 @@ const BuildPage = () => {
 			}
 
 			if (event.event === 'approval-required') {
-				// The turn is pausing on these calls — show them as waiting,
+				// The turn is pausing on these calls: show them as waiting,
 				// and fetch the cards to decide them.
 				const waitingIds = new Set(event.actions.map((action) => action.tool_call_id));
 				setTimeline((prev) =>
@@ -1842,9 +1842,9 @@ const BuildPage = () => {
 		return { replyText, paused };
 	};
 
-	// Sends a message to the real agent — persists the agent first if this is
+	// Sends a message to the real agent: persists the agent first if this is
 	// still an unsaved draft, then starts or continues its conversation.
-	// `resendFiles` replaces the composer's attachments — Regenerate passes the
+	// `resendFiles` replaces the composer's attachments: Regenerate passes the
 	// ones the original message carried.
 	const sendChatMessage = async (
 		messageText: string,
@@ -1888,7 +1888,7 @@ const BuildPage = () => {
 		setIsTyping(true);
 		setTimeline(() => []);
 
-		// One controller per turn — Stop aborts this one, and `finally` clears it
+		// One controller per turn: Stop aborts this one, and `finally` clears it
 		// so a later Stop can never abort a turn that already ended.
 		const controller = new AbortController();
 		streamAbortRef.current = controller;
@@ -1901,7 +1901,7 @@ const BuildPage = () => {
 
 			// Conversations are "sessions" in this backend. The old API created one
 			// implicitly with the first message and handed its id back on the reply;
-			// here it is an explicit resource — created once, then reused for every
+			// here it is an explicit resource: created once, then reused for every
 			// later turn so the agent keeps the thread's history.
 			let sessionId = conversationId;
 			if (!sessionId) {
@@ -1915,7 +1915,7 @@ const BuildPage = () => {
 					queryKey: agentSessionKeys.list(workspaceId, agentIdForRun),
 					exact: true,
 				});
-				// This transcript is already on screen — keep the loader off it.
+				// This transcript is already on screen: keep the loader off it.
 				setLoadedSessionId(sessionId);
 				openSession(sessionId);
 			}
@@ -1935,7 +1935,7 @@ const BuildPage = () => {
 				sessionId,
 			);
 			// Calls the gate simulated, blocked or let through were recorded
-			// during the turn — fetch them so each step shows how it went.
+			// during the turn: fetch them so each step shows how it went.
 			void queryClient.invalidateQueries({
 				queryKey: agentActionKeys.forSession(workspaceId, agentIdForRun, sessionId),
 			});
@@ -1977,7 +1977,7 @@ const BuildPage = () => {
 					notify.error(err instanceof Error ? err.message : 'Failed to start the chat.');
 				return;
 			}
-			// Stop is not a failure. Keep whatever the agent had already streamed —
+			// Stop is not a failure. Keep whatever the agent had already streamed:
 			// throwing it away is the one thing a Stop button must not do.
 			if (controller.signal.aborted) {
 				const partial = streamTimelineRef.current;
@@ -2001,7 +2001,7 @@ const BuildPage = () => {
 					},
 				]);
 			} else {
-				// The steps that ran before the failure still happened — keep them.
+				// The steps that ran before the failure still happened: keep them.
 				const partial = streamTimelineRef.current.map((item) =>
 					item.kind === 'tool' && item.status === 'running'
 						? { ...item, status: 'error' as const }
@@ -2051,7 +2051,7 @@ const BuildPage = () => {
 
 	/**
 	 * Records decisions on the paused turn's actions. When that leaves the turn
-	 * fully decided, the backend carries it on from its queue — streamed here
+	 * fully decided, the backend carries it on from its queue: streamed here
 	 * over Reverb like any reply; otherwise only the decisions are recorded and
 	 * the rest of the cards wait.
 	 */
@@ -2099,7 +2099,7 @@ const BuildPage = () => {
 		}
 	};
 
-	/** Approves the proposed plan, then tells the agent to carry it out — as a
+	/** Approves the proposed plan, then tells the agent to carry it out, as a
 	 *  normal message, so the chat streams the work instead of it happening
 	 *  out of sight on the queue. */
 	const approvePlan = async (skipStepIds: string[], note: string | null) => {
@@ -2126,7 +2126,7 @@ const BuildPage = () => {
 		);
 	};
 
-	// Actions decided elsewhere — the inbox, an email link, Slack, another tab —
+	// Actions decided elsewhere (the inbox, an email link, Slack, another tab)
 	// resume the turn on the backend's queue. Follow along: refresh the cards,
 	// and the transcript once the resumed turn has written to it.
 	const onActionsChanged = useEffectEvent(() => {
@@ -2152,7 +2152,7 @@ const BuildPage = () => {
 	}, [echo, workspaceId, conversationId]);
 
 	/** Re-runs the last user message. The backend keeps the abandoned turn in the
-	 *  session's history — this appends a fresh one rather than replacing it. */
+	 *  session's history: this appends a fresh one rather than replacing it. */
 	const regenerateLastReply = async () => {
 		if (isTyping || regeneratingRef.current) return;
 		const lastUser = [...chatHistory].reverse().find((message) => message.sender === 'user');
@@ -2245,7 +2245,7 @@ const BuildPage = () => {
 	};
 
 	// Add selected app to active connected apps
-	/** Tools need a saved agent to hang off — same rule as skills and triggers. */
+	/** Tools need a saved agent to hang off: same rule as skills and triggers. */
 	const openToolDrawer = async () => {
 		await ensureAgentPersisted();
 		setAppSearchQuery('');
@@ -2335,7 +2335,7 @@ const BuildPage = () => {
 
 	/**
 	 * Mirrors the backend's `ResolvesConnectorCredential`: a credential pinned in the
-	 * binding wins, else the caller's personal default, else the team default — where
+	 * binding wins, else the caller's personal default, else the team default, where
 	 * a default is the one marked so, or the only one in that scope.
 	 */
 	const hasUsableCredential = (binding: TAgentToolBinding, connectorKey: string) => {
@@ -2577,7 +2577,7 @@ const BuildPage = () => {
 								</div>
 							</section>
 
-							{/* Chat Console Cockpit — pinned to the bottom while the templates
+							{/* Chat Console Cockpit: pinned to the bottom while the templates
 							    scroll behind it, which the fade at its top softens. */}
 							<div className='pointer-events-none mt-auto' />
 							<section className='sticky bottom-0 z-20 mt-6 bg-linear-to-t from-zinc-50 from-75% to-transparent pt-6 pb-5 lg:mt-8 dark:from-zinc-950'>
@@ -2826,7 +2826,7 @@ const BuildPage = () => {
 													disabled={isTyping}
 													onClick={() => {
 														setIsMoreDropdownOpen(false);
-														// Leaves the stored session intact — it stays in the
+														// Leaves the stored session intact: it stays in the
 														// aside's Recents; the next message opens a new one.
 														newSession();
 														setLoadedSessionId(null);
@@ -2960,8 +2960,8 @@ const BuildPage = () => {
 									<div className='flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-[11px] font-semibold text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
 										<Bot size={13} className='shrink-0' />
 										<span className='min-w-0 flex-1'>
-											Subagent task — another conversation handed this chat
-											its job, and the final reply went back to it.
+											Subagent task: another conversation handed this chat its
+											job, and the final reply went back to it.
 										</span>
 										{parentSessionInAgent && (
 											<button
@@ -3178,7 +3178,7 @@ const BuildPage = () => {
 								) : (
 									chatHistory.map((message, messageIdx) => {
 										const isUser = message.sender === 'user';
-										// Regenerate only makes sense on the reply that is actually last —
+										// Regenerate only makes sense on the reply that is actually last:
 										// re-running an older turn would strand everything after it.
 										const isLastMessage = messageIdx === chatHistory.length - 1;
 										return (
@@ -3223,7 +3223,7 @@ const BuildPage = () => {
 																</>
 															)}
 
-														{/* Files the agent exported — always shown, never collapsed */}
+														{/* Files the agent exported, always shown, never collapsed */}
 														{!isUser &&
 															message.timeline &&
 															message.timeline.length > 0 && (
@@ -3496,7 +3496,7 @@ const BuildPage = () => {
 									})
 								)}
 
-								{/* The reply streaming in — same layout it settles into once finished */}
+								{/* The reply streaming in: same layout it settles into once finished */}
 								{isTyping && (
 									<div className='flex w-full justify-start'>
 										<div className='flex w-full max-w-3xl flex-row gap-3'>
@@ -3707,7 +3707,7 @@ const BuildPage = () => {
 
 											{/* Right controls: Loader, Mic, Send */}
 											<div className='flex items-center gap-2.5'>
-												{/* Loading spinner — only while a turn is actually in flight */}
+												{/* Loading spinner, only while a turn is actually in flight */}
 												{isTyping && (
 													<div
 														className='flex size-4 h-4 w-4 shrink-0 animate-spin items-center justify-center rounded-full border border-zinc-200 border-t-zinc-400'
@@ -3731,7 +3731,7 @@ const BuildPage = () => {
 													<Mic size={18} />
 												</button>
 
-												{/* Send button — becomes Stop for the duration of a turn */}
+												{/* Send button: becomes Stop for the duration of a turn */}
 												<button
 													type='button'
 													aria-label={
@@ -3845,7 +3845,7 @@ const BuildPage = () => {
 											</button>
 										</div>
 
-										{/* Chat Input — a textarea, so Shift+Enter can open a new line.
+										{/* Chat Input: a textarea, so Shift+Enter can open a new line.
 										    It grows with the message and stops at ~6 rows. */}
 										<div className='relative flex min-w-0 flex-1 self-center'>
 											<SkillCommandHighlight
@@ -3884,7 +3884,7 @@ const BuildPage = () => {
 																skillPicker.skill,
 															);
 															updateChatInput('');
-															// The box grew with the draft — put it back to one row.
+															// The box grew with the draft: put it back to one row.
 															requestAnimationFrame(() => {
 																if (composerRef.current)
 																	autoSizeComposer(
@@ -3910,7 +3910,7 @@ const BuildPage = () => {
 												<Mic size={18} />
 											</button>
 
-											{/* Send Button — turns into Stop while the agent is replying */}
+											{/* Send Button: turns into Stop while the agent is replying */}
 											<button
 												aria-label={
 													isTyping ? 'Stop generating' : 'Send message'
@@ -4624,7 +4624,7 @@ const BuildPage = () => {
 											</button>
 										</div>
 
-										{/* Attached tools — node bindings first, then whole workflows */}
+										{/* Attached tools: node bindings first, then whole workflows */}
 										{(toolBindings ?? []).length === 0 &&
 											(workflowTools ?? []).length === 0 && (
 												<p className='pl-9 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
@@ -5038,7 +5038,7 @@ const BuildPage = () => {
 								</div>
 							</div>
 
-							{/* Attachable tools. Each row attaches on click — there is no
+							{/* Attachable tools. Each row attaches on click: there is no
 							    staged selection to save, so the drawer has no footer. */}
 							<div className='no-scrollbar flex-1 space-y-3 overflow-y-auto p-4 dark:bg-zinc-950/10'>
 								<h4 className='pl-1 text-[10px] font-black tracking-widest text-zinc-400 uppercase'>

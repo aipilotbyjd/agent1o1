@@ -5,7 +5,7 @@ import type { TApiIssue } from '@/api/core/errors';
 // ============================================================
 // Normalize Error
 // ------------------------------------------------------------
-// Pure AxiosError → ApiError mapper. No toasts here — display is
+// Pure AxiosError → ApiError mapper. No toasts here: display is
 // owned exclusively by the query client, so a failure never shows
 // two toasts for one cause.
 // ============================================================

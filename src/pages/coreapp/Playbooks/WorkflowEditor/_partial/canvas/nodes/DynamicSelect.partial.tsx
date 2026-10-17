@@ -50,7 +50,7 @@ const errorText = (error: unknown) => {
 
 /**
  * A node field whose choices come from the connected account or the workspace
- * — spreadsheets, sheet tabs, Slack channels, repos, labels, agents… — loaded
+ * (spreadsheets, sheet tabs, Slack channels, repos, labels, agents…) loaded
  * from `POST /nodes/options` with whatever the node already has filled in.
  * Fields that allow it keep a manual mode (an id, or a `{{variable}}` from an
  * earlier step) next to the list.
@@ -91,7 +91,7 @@ const DynamicSelect = ({ field, value, onChange, compact, nodeId, className }: P
 	const blockedReason = missingDependency
 		? `Choose ${siblingLabel(missingDependency).toLowerCase()} first`
 		: templatedDependency
-			? `${siblingLabel(templatedDependency)} comes from an earlier step — enter this manually`
+			? `${siblingLabel(templatedDependency)} comes from an earlier step: enter this manually`
 			: undefined;
 
 	// Only what the list depends on goes to the server, so typing in another

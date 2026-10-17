@@ -2,7 +2,7 @@ import { apiConfig } from '@/api/core/config';
 import type { TTriggerMechanism, TTriggerPreset } from '@/types/catalog.type';
 import type { TTrigger, TTriggerEventStatus } from '@/types/trigger.type';
 
-// The public webhook route is `POST /api/hooks/{token}` — outside `/api/v1`,
+// The public webhook route is `POST /api/hooks/{token}`: outside `/api/v1`,
 // so it is derived from the API base URL rather than an endpoint constant.
 // The trigger resource only carries `token`; it never sends a ready-made URL.
 export const webhookUrlFor = (token: string) =>
@@ -19,7 +19,7 @@ export const eventStatusDot: Record<TTriggerEventStatus, string> = {
 	failed: 'bg-rose-500',
 };
 
-/** The four mechanisms `TriggerType` accepts — `event` is a frontend-only value. */
+/** The four mechanisms `TriggerType` accepts: `event` is a frontend-only value. */
 export const WORKFLOW_TRIGGER_TYPES: {
 	value: Exclude<TTriggerMechanism, 'event'>;
 	label: string;
@@ -37,7 +37,7 @@ export const WORKFLOW_TRIGGER_TYPES: {
 
 // The preset resource does not expose its `config`, and the scheduler reads
 // `trigger.config.cron` only (never the preset's), so schedules always carry
-// their own cron — these are client-side shortcuts, not presets.
+// their own cron: these are client-side shortcuts, not presets.
 export const CRON_SHORTCUTS = [
 	{ label: 'Every 15 min', cron: '*/15 * * * *' },
 	{ label: 'Every hour', cron: '0 * * * *' },
@@ -50,7 +50,7 @@ const CRON_FIELD = /^(\*|\d+(-\d+)?)(\/\d+)?(,(\*|\d+(-\d+)?)(\/\d+)?)*$/;
 
 /**
  * The backend stores `config.cron` unchecked and the scheduler parses it every
- * minute, so a malformed value is only caught here. Five numeric fields only —
+ * minute, so a malformed value is only caught here. Five numeric fields only:
  * no `@daily` macros or month/day names.
  */
 export const isValidCron = (cron: string) => {

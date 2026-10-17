@@ -11,7 +11,7 @@ import {
 } from '@/utils/runForm.util';
 
 /**
- * How a page starts a run and reads its result — through the member API
+ * How a page starts a run and reads its result: through the member API
  * inside the app, or the public link outside it. `secret` is what the
  * public link hands back to read a result; members don't need one.
  */

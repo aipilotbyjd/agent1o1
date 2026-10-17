@@ -6,7 +6,7 @@ interface ICodeRunsProps {
 	runs: TAssistantCodeRun[];
 }
 
-/** Code the assistant ran on its cloud computer, with what it printed — collapsed by default. */
+/** Code the assistant ran on its cloud computer, with what it printed: collapsed by default. */
 const CodeRunsPartial = ({ runs }: ICodeRunsProps) => {
 	const [open, setOpen] = useState<string | null>(null);
 

@@ -4,7 +4,7 @@
 // A trigger attaches to either a workflow or an agent (the
 // `target_type`/`target_id` pair) through one shared resource.
 // `token` is present only when `type` is a token-bearing mechanism
-// (webhook) — see `TriggerType::usesToken()`.
+// (webhook): see `TriggerType::usesToken()`.
 // ============================================================
 import type { TTriggerMechanism } from './catalog.type';
 
@@ -29,7 +29,7 @@ export type TTrigger = {
 
 /** An event's `source` is the backend's `TriggerType` value. */
 export type TTriggerEventSource = 'webhook' | 'schedule' | 'manual' | 'polling';
-/** `TriggerEventStatus` — `queued`/`running` are in flight, the rest are terminal. */
+/** `TriggerEventStatus` - `queued`/`running` are in flight, the rest are terminal. */
 export type TTriggerEventStatus =
 	| 'queued'
 	| 'running'

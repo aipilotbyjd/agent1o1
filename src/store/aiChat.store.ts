@@ -15,7 +15,7 @@ import type { TChatAttachment } from '@/utils/chatAttachments.util';
 export type TAiChatMode = TBuilderMessageMode;
 
 /**
- * One entry in the live "scratchpad" — an ordered timeline of reasoning text
+ * One entry in the live "scratchpad": an ordered timeline of reasoning text
  * and tool calls exactly as they streamed in, rendered directly (no chat
  * bubble) the way Gumloop's builder shows its work.
  */
@@ -37,7 +37,7 @@ export type TAiChatMessage = {
 	avatarUrl?: string;
 	isThought?: boolean;
 	isError?: boolean;
-	/** Present on a failed send — lets the transcript offer a one-click Retry. */
+	/** Present on a failed send: lets the transcript offer a one-click Retry. */
 	retryPrompt?: string;
 	retryMode?: TAiChatMode;
 	/** The files that failed send carried, so Retry uploads them again. */
@@ -46,7 +46,7 @@ export type TAiChatMessage = {
 	mode?: TAiChatMode;
 	/** Files sent with a user message. */
 	attachments?: TChatAttachment[];
-	/** The files as sent from this tab — thumbnails before the stored copies exist. */
+	/** The files as sent from this tab: thumbnails before the stored copies exist. */
 	files?: File[];
 	/**
 	 * The live scratchpad (reasoning + tool calls) captured at the moment this
@@ -55,7 +55,7 @@ export type TAiChatMessage = {
 	 * replies received live in this session.
 	 */
 	timeline?: TAiTimelineItem[];
-	/** Lighter-weight equivalent for messages loaded from history — the backend
+	/** Lighter-weight equivalent for messages loaded from history: the backend
 	 * only persists the before/after diff, not the full reasoning stream. */
 	actionsSummary?: TBuilderMessageAction[];
 };
@@ -93,11 +93,11 @@ type TAiChatState = {
 
 	// Live reply-in-progress: an ordered timeline of reasoning text and tool
 	// calls, exactly as they streamed in. The canvas is live-applied per tool
-	// call by the bridge as this grows — see useAiBuilderBridge. Reset on every
+	// call by the bridge as this grows: see useAiBuilderBridge. Reset on every
 	// new prompt and once the reply lands (success, failure, or stop).
 	streamTimeline: TAiTimelineItem[];
 
-	// Assistant message ids to silently ignore if they arrive after a stop —
+	// Assistant message ids to silently ignore if they arrive after a stop:
 	// the backend job isn't actually cancelled (no cancel endpoint exists), so
 	// this is what makes "stop" not un-do itself later.
 	ignoredMessageIds: Set<string>;
@@ -147,7 +147,7 @@ type TAiChatState = {
 	// Rebuilds chat state from the authoritative backend session (on reload/resume).
 	hydrateFromBackend: (session: TBuilderSession) => void;
 
-	/** Soft stop — hides the in-flight reply and ignores it if it lands later. */
+	/** Soft stop: hides the in-flight reply and ignores it if it lands later. */
 	stopThinking: () => void;
 
 	setThinking: (thinking: boolean) => void;
@@ -372,7 +372,7 @@ export const useAiChatStore = create<TAiChatState>()(
 			 * message (seeded from this workflow), then reuses it. Before sending,
 			 * the bridge's `beforeSend` pushes the live canvas into the draft. The
 			 * reply is written in the background and arrives over the session's
-			 * realtime channel (or the bridge's poll) — here we only start it and
+			 * realtime channel (or the bridge's poll): here we only start it and
 			 * surface transport-level failures.
 			 */
 			submitPrompt: (prompt, mode = 'build', files = []) => {
@@ -380,7 +380,7 @@ export const useAiChatStore = create<TAiChatState>()(
 
 				if (!workspaceId) {
 					get().failPending(
-						'No active workspace — open a workspace to build workflows.',
+						'No active workspace: open a workspace to build workflows.',
 						prompt,
 						mode,
 					);
@@ -424,7 +424,7 @@ export const useAiChatStore = create<TAiChatState>()(
 				});
 				set((state) => ({
 					builderSessionId: session.id,
-					hydratedSessionId: session.id, // freshly created — nothing to re-hydrate
+					hydratedSessionId: session.id, // freshly created; nothing to re-hydrate
 					sessionByWorkflow: {
 						...state.sessionByWorkflow,
 						[workflowKey(workflowId)]: session.id,
@@ -719,9 +719,9 @@ export const useAiChatStore = create<TAiChatState>()(
 			name: 'agent101-ai-chat-history',
 			// Persist only the workflow→session binding (so reloads resume the right
 			// backend conversation) and the local session list. Live chat state
-			// (messages/isChatActive) is NOT persisted — it is rehydrated from the
+			// (messages/isChatActive) is NOT persisted: it is rehydrated from the
 			// authoritative backend session to avoid showing stale/disconnected chat.
-			// `File`s can't be serialized — a reload shows the stored copies instead.
+			// `File`s can't be serialized: a reload shows the stored copies instead.
 			partialize: (state) => ({
 				sessions: state.sessions.map((session) => ({
 					...session,

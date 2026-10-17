@@ -13,7 +13,7 @@ type Props = {
 };
 
 /**
- * Floating "More Options" rail mirroring Gumloop — mounted on the left of the
+ * Floating "More Options" rail mirroring Gumloop: mounted on the left of the
  * node (mirrors NodeIOPanel on the right). Lets a node's credential be swapped
  * without opening the full link-credentials dialog, and surfaces Configure Inputs.
  */

@@ -238,7 +238,7 @@ const useRunWorkflowController = () => {
 			const result = await runViaPolling(ws, run);
 			if (result.lostContact) {
 				notify.error(
-					'Lost contact with the server while the run was in progress. It may still be running — check Run History.',
+					'Lost contact with the server while the run was in progress. It may still be running: check Run History.',
 				);
 				dispatch({ type: 'RUN_FINISH', status: 'error' });
 				return;
@@ -397,8 +397,8 @@ const useRunWorkflowController = () => {
 				});
 				if (!confirmed) return;
 			} else if (needsPublish) {
-				// Publishing replaces the live version — the one triggers and every
-				// other caller run — so ask once per editor session before doing it
+				// Publishing replaces the live version (the one triggers and every
+				// other caller run) so ask once per editor session before doing it
 				// on the user's behalf. A first publish replaces nothing.
 				if (workflow.current_version_id && !publishConfirmed.current) {
 					const confirmed = await confirm({

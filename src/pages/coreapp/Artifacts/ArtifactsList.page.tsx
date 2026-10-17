@@ -58,7 +58,7 @@ const ArtifactsListPage = () => {
 	const [historyArtifactId, setHistoryArtifactId] = useState<string | null>(null);
 	const [sharingArtifact, setSharingArtifact] = useState<TArtifact | null>(null);
 
-	// The backend paginates and filters server-side — no client-side filtering
+	// The backend paginates and filters server-side: no client-side filtering
 	// needed here (unlike Skills, this endpoint takes real query params).
 	const { data, isLoading } = useArtifacts(ws, {
 		search: searchQuery.trim() || undefined,

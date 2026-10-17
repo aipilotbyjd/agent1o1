@@ -22,7 +22,7 @@ interface IKnowledgeSourceSettingsProps {
 	onCredentialChange?: (credentialId: string) => void;
 	config: Record<string, string>;
 	onConfigChange: (config: Record<string, string>) => void;
-	/** Called with a picked item's name — the Add panel uses it as the default name. */
+	/** Called with a picked item's name: the Add panel uses it as the default name. */
 	onPicked?: (label: string) => void;
 }
 

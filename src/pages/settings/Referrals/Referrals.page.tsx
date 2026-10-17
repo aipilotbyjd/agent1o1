@@ -48,7 +48,7 @@ type TTab = 'people' | 'rewards';
  * "Refer & earn": the signed-in user's share link, the program's current
  * terms (written by the backend from the admin-configured rules), their
  * numbers, who they invited and what they earned. Rewards are credits,
- * free plan time, invoice credit or trial days — never cash.
+ * free plan time, invoice credit or trial days, never cash.
  */
 const ReferralsPage = () => {
 	const { userData } = useAuth();
@@ -101,12 +101,12 @@ const ReferralsPage = () => {
 			setCopied(true);
 			setTimeout(() => setCopied(false), 2000);
 		} catch {
-			notify.error('Could not copy — select the link and copy it manually.');
+			notify.error('Could not copy: select the link and copy it manually.');
 		}
 	};
 
 	const shareText = encodeURIComponent(
-		'I use Agent1o1 to automate my work — sign up with my link:',
+		'I use Agent1o1 to automate my work. Sign up with my link:',
 	);
 	const shareUrl = encodeURIComponent(profile.share_url);
 
@@ -335,21 +335,21 @@ const ReferralsPage = () => {
 						<LoadingBlock />
 					) : !people?.referrals.length ? (
 						<EmptyBlock>
-							Nobody has signed up with your link yet — share it to get started.
+							Nobody has signed up with your link yet: share it to get started.
 						</EmptyBlock>
 					) : (
 						<>
 							<TableShell head={['Person', 'Status', 'Signed up', 'Paying since']}>
 								{people.referrals.map((person) => (
 									<tr key={person.id}>
-										<Td className='font-semibold'>{person.email ?? '—'}</Td>
+										<Td className='font-semibold'>{person.email ?? '-'}</Td>
 										<Td>
 											<Pill tone={REFERRAL_STATUS[person.status].tone}>
 												{REFERRAL_STATUS[person.status].label}
 											</Pill>
 										</Td>
 										<Td>{formatDate(person.signed_up_at)}</Td>
-										<Td>{formatDate(person.converted_at) ?? '—'}</Td>
+										<Td>{formatDate(person.converted_at) ?? '-'}</Td>
 									</tr>
 								))}
 							</TableShell>

@@ -29,7 +29,7 @@ const emptyForm = {
 
 /**
  * CRUD manager for an agent's knowledge base (RAG grounding).
- * Backed by {agent}/knowledge — see AgentKnowledgeController.
+ * Backed by {agent}/knowledge: see AgentKnowledgeController.
  */
 const AgentKnowledgePanel = ({ ws, agentId }: TProps) => {
 	const [search, setSearch] = useState('');

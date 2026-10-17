@@ -129,7 +129,7 @@ const TriggerModalPartial = ({ workspaceId, isOpen, onClose }: ITriggerModalProp
 						<textarea
 							aria-label={
 								type === 'webhook'
-									? 'e.g. A new lead came in: {{payload}} — add them to my list.'
+									? 'e.g. A new lead came in: {{payload}}; add them to my list.'
 									: 'e.g. Summarise my unread email and flag anything urgent.'
 							}
 							rows={3}
@@ -137,7 +137,7 @@ const TriggerModalPartial = ({ workspaceId, isOpen, onClose }: ITriggerModalProp
 							onChange={(event) => setPrompt(event.target.value)}
 							placeholder={
 								type === 'webhook'
-									? 'e.g. A new lead came in: {{payload}} — add them to my list.'
+									? 'e.g. A new lead came in: {{payload}}; add them to my list.'
 									: 'e.g. Summarise my unread email and flag anything urgent.'
 							}
 							className='rounded-lg border border-zinc-200 bg-transparent p-2 dark:border-white/10'

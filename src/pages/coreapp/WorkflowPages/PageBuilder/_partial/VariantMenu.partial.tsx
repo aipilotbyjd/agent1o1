@@ -123,8 +123,8 @@ const VariantMenu = () => {
 							{!page.variant.exists ? (
 								<div className='space-y-3 border-t border-zinc-100 px-4 py-4 dark:border-white/[0.06]'>
 									<p className='text-xs leading-relaxed text-zinc-600 dark:text-zinc-300'>
-										Try a second version of this page — a different headline,
-										layout or button — and see which one gets more people to
+										Try a second version of this page (a different headline,
+										layout or button) and see which one gets more people to
 										submit. Visitors are split between the two and always see
 										the same one.
 									</p>

@@ -12,7 +12,7 @@ export type TModelFilter =
 	| 'low_cost';
 
 export type TModelRequirements = {
-	/** How many tools the thing being configured uses — a model without tool use can't call them. */
+	/** How many tools the thing being configured uses: a model without tool use can't call them. */
 	tools?: number;
 	/** Whether it needs to read images. */
 	vision?: boolean;
@@ -129,7 +129,7 @@ export const unavailableText = (model: TModelCatalogEntry): string | null => {
 		case 'needs_key':
 			return `Needs ${providers}`;
 		case 'policy_needs_key':
-			return `Workspace uses only its own keys — needs ${providers}`;
+			return `Workspace uses only its own keys: needs ${providers}`;
 		case 'unavailable':
 			return 'Not available right now';
 		default:

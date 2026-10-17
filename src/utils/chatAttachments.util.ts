@@ -1,6 +1,6 @@
 import { notify } from '@/api/core';
 
-/** A file sent with a chat message. `id` is the stored artifact's — absent on
+/** A file sent with a chat message. `id` is the stored artifact's: absent on
  *  the copy shown while the turn is still in flight. */
 export type TChatAttachment = {
 	id?: string;
@@ -11,7 +11,7 @@ export type TChatAttachment = {
 	previewUrl?: string | null;
 };
 
-/** What a chat message accepts as `attachments[]` — mirrors the backend's
+/** What a chat message accepts as `attachments[]`: mirrors the backend's
  *  `config('artifacts.message_attachments')` and `max_upload_kilobytes`. */
 export const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 export const MAX_ATTACHMENTS = 10;
@@ -32,8 +32,8 @@ export const ATTACHMENT_EXTENSIONS = [
 	'.yml',
 ];
 
-/** For a chat whose model only takes images and inlined text — the workflow
- *  builder's — so no PDFs. */
+/** For a chat whose model only takes images and inlined text (the workflow
+ *  builder's) so no PDFs. */
 export const IMAGE_AND_TEXT_ATTACHMENT_EXTENSIONS = ATTACHMENT_EXTENSIONS.filter(
 	(extension) => extension !== '.pdf',
 );
@@ -77,7 +77,7 @@ export const addChatAttachments = (
 	return [...current, ...added.slice(0, Math.max(MAX_ATTACHMENTS - current.length, 0))];
 };
 
-/** Files pasted into a text box — a copied screenshot, or files copied in a
+/** Files pasted into a text box: a copied screenshot, or files copied in a
  *  file manager. Empty for an ordinary text paste. */
 export const filesFromPaste = (event: ClipboardEvent | { clipboardData: DataTransfer | null }) =>
 	Array.from(event.clipboardData?.files ?? []);

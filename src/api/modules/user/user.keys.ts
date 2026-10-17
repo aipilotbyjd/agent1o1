@@ -1,7 +1,7 @@
 // ============================================================
 // User Query Keys
 // ------------------------------------------------------------
-// `current()` is a singleton — one current user per session, not a
+// `current()` is a singleton: one current user per session, not a
 // workspace-scoped collection, so this skips createKeys(). API keys
 // are workspace-scoped, so they use the standard factory shape.
 // ============================================================

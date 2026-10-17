@@ -2,10 +2,10 @@
 // Workflow Types
 // ------------------------------------------------------------
 // `nodes`/`edges`/`tags` are only present when the backend
-// eager-loads them — the list endpoint omits all three; detail,
+// eager-loads them: the list endpoint omits all three; detail,
 // duplicate, and the graph-replace endpoint include them. Node
 // `config` is type-dependent and isn't pinned down to one shape
-// here — narrow it at the call site by `type`.
+// here: narrow it at the call site by `type`.
 // ============================================================
 import type { TTag } from './tag.type';
 

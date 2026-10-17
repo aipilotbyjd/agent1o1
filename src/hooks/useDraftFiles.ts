@@ -6,7 +6,7 @@ const NO_FILES: File[] = [];
 const sameFile = (a: File, b: File) =>
 	a.name === b.name && a.size === b.size && a.lastModified === b.lastModified;
 
-/** Files staged in a composer that survive a reload, one list per key — the
+/** Files staged in a composer that survive a reload, one list per key: the
  *  companion of `useComposerDraft`. They load asynchronously, so a key starts
  *  empty for a moment. A null key keeps the files only in state. */
 const useDraftFiles = (key: string | null) => {

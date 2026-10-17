@@ -87,7 +87,7 @@ export type TPageColumnLayout = '1-1' | '1-2' | '2-1' | '1-1-1' | '1-1-1-1';
 
 export type TPageBlockType = keyof TPageBlockProps;
 
-/** Blocks that hold other blocks — see `PageBlockType::fitsIn()` on the server. */
+/** Blocks that hold other blocks: see `PageBlockType::fitsIn()` on the server. */
 export type TPageContainerType = 'section' | 'columns' | 'column';
 
 /** An interface, so the block types can refer to themselves. */

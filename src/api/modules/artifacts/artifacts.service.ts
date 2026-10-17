@@ -54,7 +54,7 @@ export const ArtifactService = {
 	removeShare: (ws: string, id: string, userId: string) =>
 		axiosClient.delete(E.removeShare(ws, id, userId)).then(() => undefined),
 
-	/** Fetches the file as a blob and triggers a browser save — the
+	/** Fetches the file as a blob and triggers a browser save: the
 	 *  AgentBuilder expects this, `downloadUrl` alone isn't enough. */
 	download: async (ws: string, id: string, filename: string) => {
 		const response = await axiosClient.get(E.download(ws, id), { responseType: 'blob' });

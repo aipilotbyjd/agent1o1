@@ -2,7 +2,7 @@ import { useAuth } from '@/context/auth';
 import { useOnboardingStore } from './useOnboardingStore.hook';
 
 /**
- * The workspace everything after step 2 is scoped to — connector credentials
+ * The workspace everything after step 2 is scoped to: connector credentials
  * and plan checkout both need it. Prefers the one this run just created and
  * falls back to the user's current workspace, which covers a resumed or
  * already-onboarded session. Empty string when there is none yet, which the

@@ -2,8 +2,8 @@ import type { TBuilderGraph, TBuilderGraphNode } from '@/types/workflow-builder.
 import { getNodeDefinition } from './nodeCatalog.constants';
 
 /**
- * What changed between two graphs, by node key. Positions are ignored —
- * moving a step around is not a change a person would call an edit — and
+ * What changed between two graphs, by node key. Positions are ignored
+ * (moving a step around is not a change a person would call an edit) and
  * configs compare by value, so key order from the server doesn't matter.
  */
 export type TGraphDiff = {
@@ -86,7 +86,7 @@ const listNames = (names: string[]) => {
 };
 
 /**
- * A one-line, plain-words summary of a diff — "Added Slack, changed Ask AI" —
+ * A one-line, plain-words summary of a diff: "Added Slack, changed Ask AI";
  * offered as the note when publishing. `before` names removed steps, `after`
  * names the rest.
  */

@@ -62,11 +62,11 @@ export const AGENT_TURN_EVENTS = {
 	changed: '.turn.changed',
 } as const;
 
-/** Longest a turn may run before the chat stops waiting for it — a subagent
+/** Longest a turn may run before the chat stops waiting for it: a subagent
  *  can take its full five minutes inside a turn. The reply is still stored. */
 const TURN_MAX_WAIT_MS = 15 * 60 * 1000;
 
-/** How long to wait for the channel before sending anyway — a dropped
+/** How long to wait for the channel before sending anyway: a dropped
  *  subscription then shows up as a missing live view, never a stuck send. */
 const SUBSCRIBE_WAIT_MS = 3000;
 
@@ -98,9 +98,9 @@ export type TAgentTurnStream = {
  * request that opens a turn (send a message, or decide on its actions) can
  * go out *after* this resolves and a fast worker still can't outrun it. Then
  * `follow(runId)` plays them back as the `TAgentSessionStreamEvent`s the chat
- * renders — ending with `complete` (or `error`) and `done`.
+ * renders: ending with `complete` (or `error`) and `done`.
  *
- * The channel is left subscribed — the chat's own listeners share it, and
+ * The channel is left subscribed: the chat's own listeners share it, and
  * `echo.leave()` would drop them too. Only this stream's listeners are removed.
  * Call `close()` if the turn never gets as far as `follow()`.
  *
@@ -113,7 +113,7 @@ export async function openAgentTurnStream(
 	loadActions: (actionIds: string[]) => Promise<TAgentAction[]>,
 	signal?: AbortSignal,
 ): Promise<TAgentTurnStream> {
-	if (!echo) throw new Error('Live updates are not connected yet — try again in a moment.');
+	if (!echo) throw new Error('Live updates are not connected yet: try again in a moment.');
 
 	const channel = echo.private(agentSessionChannelName(workspaceId, sessionId));
 	const queue: TTurnSignal[] = [];

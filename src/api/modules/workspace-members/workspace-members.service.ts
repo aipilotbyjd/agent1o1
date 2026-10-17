@@ -36,7 +36,7 @@ export const WorkspaceMemberService = {
 	revokeInvitation: (ws: string, invitationId: string) =>
 		axiosClient.delete(E.revokeInvitation(ws, invitationId)).then(() => undefined),
 
-	/** Public, signed link — `query` carries the signature/expiry params
+	/** Public, signed link: `query` carries the signature/expiry params
 	 *  from the emailed invitation URL. */
 	acceptInvitation: (invitationId: string, query?: string) =>
 		axiosClient

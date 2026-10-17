@@ -10,7 +10,7 @@ import {
 	type LucideIcon,
 } from 'lucide-react';
 
-/** Icon/color are free-text fields on the record — this is a display
+/** Icon/color are free-text fields on the record: this is a display
  *  fallback, not a fixed catalog the backend enforces. */
 const ICON_MAP: Record<string, LucideIcon> = {
 	workflow: Workflow,

@@ -34,7 +34,7 @@ interface ISaveAsTemplateModalProps {
 	defaultDescription?: string | null;
 	/**
 	 * Runs before the snapshot. The backend copies the server-side state, so the
-	 * workflow editor passes a graph flush here — otherwise edits still inside
+	 * workflow editor passes a graph flush here, otherwise edits still inside
 	 * the autosave debounce would be missing from the template.
 	 */
 	beforeSave?: () => Promise<void>;

@@ -37,7 +37,7 @@ export const MessageAttachments = ({
 	ws,
 }: {
 	attachments: TChatAttachment[];
-	/** The files as sent from this tab — thumbnails before the stored copies exist. */
+	/** The files as sent from this tab: thumbnails before the stored copies exist. */
 	files?: File[];
 	ws: string;
 }) => {

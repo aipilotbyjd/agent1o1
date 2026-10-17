@@ -4,8 +4,8 @@ const carriesFiles = (event: DragEvent) => Array.from(event.dataTransfer.types).
 
 /**
  * Files dragged from the desktop onto an element. `isDragging` is true while
- * files hover over it — children firing their own enter/leave events don't
- * flicker it — and `onFiles` gets what was dropped. Spread `dropProps` on the
+ * files hover over it (children firing their own enter/leave events don't
+ * flicker it) and `onFiles` gets what was dropped. Spread `dropProps` on the
  * element that should accept the drop.
  */
 const useFileDrop = (onFiles: (files: File[]) => void, enabled = true) => {

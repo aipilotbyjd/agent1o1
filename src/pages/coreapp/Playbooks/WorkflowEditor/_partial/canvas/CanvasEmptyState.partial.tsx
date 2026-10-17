@@ -310,7 +310,7 @@ const CanvasEmptyState = () => {
 			dispatch({ type: 'TOGGLE_AI_PANEL' });
 		}
 
-		// Ask mode answers in the chat — there is no build to show on the canvas.
+		// Ask mode answers in the chat: there is no build to show on the canvas.
 		if (mode === 'build') dispatch({ type: 'SET_EMPTY_CANVAS_VIEW', view: 'chat-started' });
 	};
 

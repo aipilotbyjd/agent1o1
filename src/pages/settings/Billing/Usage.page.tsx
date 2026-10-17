@@ -25,7 +25,7 @@ import { withWorkspace } from '@/Routes/paths';
 
 const billingPages = pages.settings.subPages!.billing.subPages!;
 
-/** The backend's `CreditTransactionType` enum — every `source_type` a
+/** The backend's `CreditTransactionType` enum: every `source_type` a
  *  credit transaction can carry. */
 const SOURCE_TYPE_LABELS: Record<string, { label: string; color: string }> = {
 	node_run: {
@@ -103,7 +103,7 @@ const CHART_WIDTH = 240;
 const CHART_HEIGHT = 110;
 
 /** Burn-rate projection: how long the remaining credits last at the pace set
- *  so far this period. Pure — takes `now` rather than reading the clock. */
+ *  so far this period. Pure: takes `now` rather than reading the clock. */
 const projectDepletion = ({
 	now,
 	startsAt,
@@ -295,7 +295,7 @@ const UsagePage = () => {
 								</div>
 							</div>
 
-							{/* Progress bar — only meaningful when there is a limit */}
+							{/* Progress bar, only meaningful when there is a limit */}
 							{!isUnlimited && (
 								<div className='mt-6'>
 									<div className='h-2.5 w-full overflow-hidden rounded-full border border-zinc-200/10 bg-zinc-100 p-[1px] dark:bg-zinc-800/60'>
@@ -495,7 +495,7 @@ const UsagePage = () => {
 				</div>
 			)}
 
-			{/* Breakdown by source type — whole-period totals */}
+			{/* Breakdown by source type: whole-period totals */}
 			<section>
 				<div className='mb-4 flex flex-wrap items-center justify-between gap-3'>
 					<h3 className='text-xs font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>

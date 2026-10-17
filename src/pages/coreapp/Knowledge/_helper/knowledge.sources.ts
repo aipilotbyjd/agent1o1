@@ -43,7 +43,7 @@ export type TKnowledgeKindDefinition = {
 	icon: LucideIcon;
 	synced: boolean;
 	picker?: TKnowledgePicker;
-	/** Typed settings — mirrors the backend readers' `configRules()`. With a picker these are the alternative. */
+	/** Typed settings: mirrors the backend readers' `configRules()`. With a picker these are the alternative. */
 	fields: TKnowledgeField[];
 	/** Shown above `fields` when there is a picker, e.g. "Or use a search". */
 	fieldsTitle?: string;
@@ -157,7 +157,7 @@ export const KNOWLEDGE_KINDS: Record<TKnowledgeKind, TKnowledgeKindDefinition> =
 	},
 };
 
-/** Plain-text-like formats the backend can read — mirrors `knowledge_base.allowed_extensions`. */
+/** Plain-text-like formats the backend can read: mirrors `knowledge_base.allowed_extensions`. */
 export const ALLOWED_EXTENSIONS = [
 	'txt',
 	'md',

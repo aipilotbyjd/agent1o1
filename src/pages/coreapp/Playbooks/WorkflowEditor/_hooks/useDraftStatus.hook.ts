@@ -14,7 +14,7 @@ import { useWorkflowEditor } from './useWorkflowEditor.hook';
 export type TDraftStatus = 'unpublished' | 'changed' | 'live' | 'checking';
 
 /**
- * Where the draft on the canvas stands against the live version — compared
+ * Where the draft on the canvas stands against the live version: compared
  * by content, so autosaving or moving steps around doesn't count as a change.
  */
 export const useDraftStatus = () => {

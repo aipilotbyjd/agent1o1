@@ -285,7 +285,7 @@ const ConnectModal = ({
 					</div>
 
 					{/* Visibility is fixed when the credential is
-						    created — `PATCH` does not accept `scope`. */}
+						    created: `PATCH` does not accept `scope`. */}
 					<div>
 						<span className='mb-1.5 block text-[10px] font-black tracking-wider text-slate-500 uppercase dark:text-zinc-400'>
 							Visibility

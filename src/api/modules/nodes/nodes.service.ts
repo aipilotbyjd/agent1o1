@@ -15,7 +15,7 @@ type TNodeListParams = { category?: string; search?: string };
 type TRecentlyUsedResult = { nodes: TNode[]; is_default: boolean };
 
 export const NodeService = {
-	/** The global built-in catalog only — no workspace, no custom nodes. */
+	/** The global built-in catalog only: no workspace, no custom nodes. */
 	globalCatalog: (params?: TNodeListParams, signal?: AbortSignal) =>
 		axiosClient
 			.get<TApiResponse<{ nodes: TNode[] }>>(E.globalCatalog, { params, signal })

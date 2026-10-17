@@ -12,7 +12,7 @@ interface IChannelsPanelProps {
 	workspaceId: string;
 }
 
-/** The assistant's email address and Slack app — other ways to reach it. */
+/** The assistant's email address and Slack app: other ways to reach it. */
 const ChannelsPanelPartial = ({ workspaceId }: IChannelsPanelProps) => {
 	const brand = useBrand();
 	const [searchParams, setSearchParams] = useSearchParams();

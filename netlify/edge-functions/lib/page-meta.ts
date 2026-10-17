@@ -1,4 +1,4 @@
-// The link card for a shared page — what WhatsApp, Slack, LinkedIn, X and
+// The link card for a shared page: what WhatsApp, Slack, LinkedIn, X and
 // the rest show when the link is pasted. Their crawlers don't run the app,
 // so the page's own title, description and image have to be in the HTML.
 

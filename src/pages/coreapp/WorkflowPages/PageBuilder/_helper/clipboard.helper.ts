@@ -6,8 +6,8 @@ import { cloneBlock, findBlock, isWithin } from './blockTree.helper';
 import { usePageBuilderStore } from '../_store/pageBuilder.store';
 
 // Blocks copied in the builder, to paste into this page or any other. Kept
-// in local storage — so it works across pages and tabs without asking for
-// clipboard permission — and written to the system clipboard as well, so a
+// in local storage (so it works across pages and tabs without asking for
+// clipboard permission) and written to the system clipboard as well, so a
 // copy made in another browser window can be pasted too.
 
 const STORAGE_KEY = 'page-builder-clipboard';
@@ -59,8 +59,8 @@ export const cutBlocks = async (ids: string[]) => {
 };
 
 /**
- * Pastes copied blocks after the selection — or wherever they're allowed
- * near it — with new ids, so pasting twice gives two copies.
+ * Pastes copied blocks after the selection (or wherever they're allowed
+ * near it) with new ids, so pasting twice gives two copies.
  */
 export const pasteBlocks = async () => {
 	// This browser's own copy first: reading the system clipboard can stop

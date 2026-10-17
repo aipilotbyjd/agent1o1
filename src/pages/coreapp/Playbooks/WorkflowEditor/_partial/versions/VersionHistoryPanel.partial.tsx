@@ -174,7 +174,7 @@ const VersionRow = ({
  * Picking one shows it read-only on the canvas (`VersionPreview`), where it
  * can be restored into the draft.
  */
-/** The draft sent for review, if one is waiting — opens it over the canvas. */
+/** The draft sent for review, if one is waiting: opens it over the canvas. */
 const PendingReviewCard = () => {
 	const { pending } = usePublishReview();
 	const reviewRequestId = useWorkflowShellStore((store) => store.reviewRequestId);

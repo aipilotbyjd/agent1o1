@@ -39,8 +39,8 @@ export type TDropTarget =
 
 /**
  * Where a new block goes: inside the selected container when it fits
- * there, else right after the selection — or after the nearest container
- * around it that it may sit beside — else at the end of the page.
+ * there, else right after the selection (or after the nearest container
+ * around it that it may sit beside) else at the end of the page.
  */
 export const placeForNew = (blocks: TPageBlock[], selectedId: string | null, type: TPageBlockType): TBlockPlace => {
 	const selected = selectedId ? findBlock(blocks, selectedId) : undefined;
@@ -89,7 +89,7 @@ type TState = {
 	baseRevision: number | null;
 	/** The block the inspector shows: the last one picked. */
 	selectedId: string | null;
-	/** Every block picked — more than one with Shift or ⌘/Ctrl-click. */
+	/** Every block picked: more than one with Shift or ⌘/Ctrl-click. */
 	selectedIds: string[];
 	/** The block whose text is being edited in place on the canvas. */
 	editingId: string | null;
@@ -163,7 +163,7 @@ const initial: TState = {
 /**
  * The page builder's editing state: the draft content with undo history,
  * what is selected, and how the canvas is shown. The draft here is the
- * source of truth while the builder is open — the autosave sends it to the
+ * source of truth while the builder is open: the autosave sends it to the
  * server but never reads it back, so a save landing mid-edit can't undo
  * what was typed since.
  */

@@ -98,15 +98,15 @@ const ModelDetails = ({ ws, model, replacement, requirements, onSelect }: IModel
 			<div className='grid grid-cols-2 gap-2'>
 				<Fact
 					label='Context'
-					value={formatContext(model.capabilities?.context_window) ?? '—'}
+					value={formatContext(model.capabilities?.context_window) ?? '-'}
 				/>
-				<Fact label='Speed' value={model.speed ? speedLabels[model.speed] : '—'} />
+				<Fact label='Speed' value={model.speed ? speedLabels[model.speed] : '-'} />
 				<Fact
 					label='Per message'
 					value={
 						model.credits_per_message !== null
 							? `≈ ${model.credits_per_message} credits`
-							: '—'
+							: '-'
 					}
 				/>
 				<Fact
@@ -116,7 +116,7 @@ const ModelDetails = ({ ws, model, replacement, requirements, onSelect }: IModel
 							? `Your ${model.own_key.label} key`
 							: model.is_available
 								? 'Our key (credits)'
-								: '—'
+								: '-'
 					}
 				/>
 			</div>
@@ -202,7 +202,7 @@ const ModelDetails = ({ ws, model, replacement, requirements, onSelect }: IModel
 						</button>
 					</div>
 					<p className='mt-1.5 text-[10px] font-medium text-zinc-400'>
-						A real call — charged like one message
+						A real call: charged like one message
 						{model.credits_per_message !== null
 							? ` (≈ ${model.credits_per_message} credits)`
 							: ''}

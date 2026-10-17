@@ -99,9 +99,9 @@ const getEdgeLabel = (
 };
 
 /**
- * A node the store rebuilt (its data changed — e.g. a keystroke in one of its
+ * A node the store rebuilt (its data changed, e.g. a keystroke in one of its
  * fields) arrives without React Flow's measurement, so React Flow would hide
- * it with `visibility: hidden` until it re-measures — which also takes focus
+ * it with `visibility: hidden` until it re-measures, which also takes focus
  * out of whatever field the user is typing in. Its size hasn't changed, so the
  * last measurement is carried over; React Flow still re-measures if it has.
  */
@@ -262,8 +262,8 @@ const Canvas = () => {
 	const onNodesChange = useCallback(
 		(changes: NodeChange<TCanvasNode>[]) => {
 			// Hand React Flow's own changes straight back. applyNodeChanges mutates only
-			// the nodes a change names, so every other node keeps its object — and its
-			// measurement — instead of being rebuilt and hidden while it is re-measured.
+			// the nodes a change names, so every other node keeps its object (and its
+			// measurement) instead of being rebuilt and hidden while it is re-measured.
 			setFlowNodes((previous) => applyNodeChanges(changes, previous));
 
 			const selectChanges: { id: string; selected: boolean }[] = [];
@@ -386,7 +386,7 @@ const Canvas = () => {
 	);
 
 	// Clear drag positions when drag ends and sync every moved node back to the
-	// store — when multiple nodes are selected, React Flow moves the whole group
+	// store, when multiple nodes are selected, React Flow moves the whole group
 	// together and each one needs its own MOVE_NODE, not just the node the mouse
 	// grabbed.
 	const handleDragStop = useCallback(() => {
@@ -394,7 +394,7 @@ const Canvas = () => {
 		didDragNodeRef.current = false;
 
 		// Write the moved nodes back to the store. Reading from a ref keeps these
-		// dispatches out of a state updater — doing it inside one fired every move
+		// dispatches out of a state updater: doing it inside one fired every move
 		// twice under StrictMode, which React double-invokes.
 		const storePositions = new Map(state.nodes.map((node) => [node.id, node.position]));
 		let movedAny = false;
@@ -443,7 +443,7 @@ const Canvas = () => {
 					didDragNodeRef.current = true;
 					isDraggingRef.current = true;
 					// Dragging a node already inside a multi-selection moves the whole
-					// group — only collapse to a single selection when grabbing a node
+					// group, only collapse to a single selection when grabbing a node
 					// that isn't part of the current selection.
 					if (!state.ui.selectedNodeIds.includes(node.id)) {
 						dispatch({ type: 'SELECT_NODE', id: node.id });
@@ -470,7 +470,7 @@ const Canvas = () => {
 					if (didDragNodeRef.current) {
 						didDragNodeRef.current = false;
 					}
-					// Selection itself is handled by onNodesChange's 'select' diffs —
+					// Selection itself is handled by onNodesChange's 'select' diffs:
 					// React Flow already respects multiSelectionKeyCode there.
 				}}
 				onEdgesDelete={(deletedEdges) =>

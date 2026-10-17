@@ -63,7 +63,7 @@ const ClickEdge = ({
 				</filter>
 			</defs>
 
-			{/* Hidden reference path — flow dots travel along this exact geometry */}
+			{/* Hidden reference path: flow dots travel along this exact geometry */}
 			<path id={pathId} d={edgePath} fill='none' stroke='none' />
 
 			{/* Soft glowing halo behind the line for depth */}
@@ -77,7 +77,7 @@ const ClickEdge = ({
 				className='pointer-events-none blur-[4px] transition-opacity duration-150'
 			/>
 
-			{/* Solid colored base line — thickens and glows when selected or actively running */}
+			{/* Solid colored base line: thickens and glows when selected or actively running */}
 			<BaseEdge
 				path={edgePath}
 				markerEnd={`url(#${arrowId})`}

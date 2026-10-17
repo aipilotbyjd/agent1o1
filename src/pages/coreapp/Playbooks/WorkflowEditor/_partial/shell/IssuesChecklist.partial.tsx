@@ -11,7 +11,7 @@ import { useReferenceIssues } from '../../_hooks/useReferenceIssues.hook';
 
 /**
  * The "Fix before publishing" checklist: a quiet pill in the top bar that
- * appears only while something needs attention, opening a list of what — by
+ * appears only while something needs attention, opening a list of what, by
  * step name, in plain words, split into what blocks publishing and what's
  * only a suggestion. Choosing an item centres the canvas on that step and
  * glows the field. Opens by itself when a publish is refused.
@@ -113,7 +113,7 @@ const IssuesChecklist = () => {
 						{issues.length === 0 ? (
 							<p className='flex items-center gap-2 px-4 py-5 text-xs font-semibold text-emerald-700 dark:text-emerald-300'>
 								<CircleCheck size={15} />
-								All set — nothing left to fix.
+								All set: nothing left to fix.
 							</p>
 						) : (
 							<div className='max-h-80 overflow-y-auto p-1.5'>

@@ -1,6 +1,6 @@
 /**
  * Shared contract for dragging a node's output "pill" onto an input field to
- * insert an expression token — the Gumloop-style visual mapping. The drag source
+ * insert an expression token: the Gumloop-style visual mapping. The drag source
  * (NodeIOPanel output pills) and the drop target (ExpressionInput) both go
  * through here so the MIME type and token format never drift apart.
  */
@@ -29,7 +29,7 @@ const LEGACY_TOKEN_RE = /\{\{\s*([A-Za-z0-9_]+)\.output((?:\.[A-Za-z0-9_]+|\[\d+
 
 /**
  * Rewrite the editor's old `{{<id>.output.<path>}}` form, which the backend
- * never resolved, to `{{nodes.<id>.<path>}}` — for workflow files exported
+ * never resolved, to `{{nodes.<id>.<path>}}`, for workflow files exported
  * before the change. Only ids of nodes in the same workflow are touched.
  */
 export const upgradeLegacyTokens = (value: unknown, nodeIds: Set<string>): unknown => {

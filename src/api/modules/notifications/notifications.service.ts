@@ -9,7 +9,7 @@ import type {
 import { NotificationEndpoints as E } from './notifications.endpoints';
 
 export const NotificationService = {
-	// Backend paginates internally but returns the page as a flat array —
+	// Backend paginates internally but returns the page as a flat array:
 	// no `meta`/`links` reach the client from this endpoint.
 	list: (params?: { unread?: boolean; per_page?: number }, signal?: AbortSignal) =>
 		axiosClient

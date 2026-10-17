@@ -91,7 +91,7 @@ const PolicyImpactModal = ({ impact, isSaving, onConfirm, onCancel }: IPolicyImp
 					<ImpactGroup
 						tone='warn'
 						icon={<LifeBuoy size={15} />}
-						title={`${plural(impact.models_losing_backup.length, 'model')} will lose our key as a backup — if your key is busy or out of quota, the call fails`}
+						title={`${plural(impact.models_losing_backup.length, 'model')} will lose our key as a backup, if your key is busy or out of quota, the call fails`}
 						items={impact.models_losing_backup.map((m) => m.display_name)}
 					/>
 				)}

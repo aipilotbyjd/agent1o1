@@ -162,7 +162,7 @@ export const connectOAuthConnector = async (
 		};
 
 		function onMessage(event: MessageEvent) {
-			// Only ever trust our own origin — the popup navigates through the
+			// Only ever trust our own origin: the popup navigates through the
 			// provider's domain before landing back on us.
 			if (event.origin !== window.location.origin || event.source !== popup) return;
 			const data = event.data as TOAuthCompleteMessage | undefined;

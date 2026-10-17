@@ -60,7 +60,7 @@ type TSlashItem =
  * message lists built-in commands (new chat, settings…) and the agent's
  * skills, narrowed by what follows the slash. A command runs straight away
  * and clears the box. A skill writes `/Skill name ` into the message, where it
- * stays as ordinary, deletable text — it is read back when the message is sent.
+ * stays as ordinary, deletable text: it is read back when the message is sent.
  */
 export const useSkillPicker = ({
 	skills,

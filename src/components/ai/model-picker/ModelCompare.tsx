@@ -25,15 +25,15 @@ const yesNo = (value: boolean | undefined) =>
 	);
 
 const rows: { label: string; value: (m: TModelCatalogEntry) => ReactNode }[] = [
-	{ label: 'Best for', value: (m) => m.strengths.join(', ') || '—' },
-	{ label: 'Context', value: (m) => formatContext(m.capabilities?.context_window) ?? '—' },
+	{ label: 'Best for', value: (m) => m.strengths.join(', ') || '-' },
+	{ label: 'Context', value: (m) => formatContext(m.capabilities?.context_window) ?? '-' },
 	{ label: 'Tools', value: (m) => yesNo(m.capabilities?.tool_use) },
 	{ label: 'Vision', value: (m) => yesNo(m.capabilities?.vision) },
-	{ label: 'Speed', value: (m) => (m.speed ? speedLabels[m.speed] : '—') },
-	{ label: 'Cost tier', value: (m) => costTierLabel(m.cost_tier) ?? '—' },
+	{ label: 'Speed', value: (m) => (m.speed ? speedLabels[m.speed] : '-') },
+	{ label: 'Cost tier', value: (m) => costTierLabel(m.cost_tier) ?? '-' },
 	{
 		label: 'Per message',
-		value: (m) => (m.credits_per_message !== null ? `≈ ${m.credits_per_message} credits` : '—'),
+		value: (m) => (m.credits_per_message !== null ? `≈ ${m.credits_per_message} credits` : '-'),
 	},
 	{
 		label: 'Runs on',

@@ -6,7 +6,7 @@ import safeStorage from '@/utils/safeStorage.util';
 // Logger
 // ------------------------------------------------------------
 // Method/URL/status/duration always log when enabled; request and
-// response bodies only in dev — never unconditionally, and never
+// response bodies only in dev, never unconditionally, and never
 // in production, where that would leak customer data to the console.
 // ============================================================
 

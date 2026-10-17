@@ -117,7 +117,7 @@ export const useSyncAgentTags = (ws: string, id: string) => {
 // as workspace-level resources in their own modules, with agents addressed
 // polymorphically (`target_type`/`runnable_type` === 'agent').
 //
-// These adapters keep the builder's original call signatures — (ws, agentId) —
+// These adapters keep the builder's original call signatures (ws, agentId)
 // and map them onto the real endpoints, so the UI needed no changes.
 
 /** The morph alias the backend stores for an Agent (see AppServiceProvider). */
@@ -184,7 +184,7 @@ export const useAgentRuns = (ws: string, agentId: string, filters?: TRunListPara
 
 /**
  * The old API served `{agent}/analytics`; this backend has no such endpoint, and
- * the dashboard's run stats are workspace-wide — returning those for an agent
+ * the dashboard's run stats are workspace-wide: returning those for an agent
  * would be a silent wrong answer. Instead the same figures are derived from the
  * agent's own runs, which carry status, trigger_type, duration_ms and credits.
  *
@@ -261,7 +261,7 @@ export const useAgentAnalytics = (ws: string, agentId: string) => {
 	return { ...query, data };
 };
 
-/** Provider is filtered client-side — the catalog endpoint only takes the workspace. */
+/** Provider is filtered client-side: the catalog endpoint only takes the workspace. */
 export const useAgentMetaModels = (ws: string, provider?: string) => {
 	const query = useModelCatalog(ws);
 	const data = useMemo<TModelCatalogEntry[]>(() => {

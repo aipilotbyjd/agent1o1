@@ -10,7 +10,7 @@ export type TConfirmTone = 'danger' | 'primary';
 export interface IConfirmDialogOptions {
 	/** Heading shown in the modal header. */
 	title?: string;
-	/** Body content — plain text or rich nodes. */
+	/** Body content: plain text or rich nodes. */
 	message?: ReactNode;
 	/** Label for the confirm button. */
 	confirmText?: string;

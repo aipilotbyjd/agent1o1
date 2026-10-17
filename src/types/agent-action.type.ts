@@ -4,10 +4,10 @@
 // Autonomy modes, the action log / approval queue (`AgentAction`),
 // Plan mode's plans, per-tool approval rules and the workspace's
 // guardrails. Mirrors `App\Services\Agents\Approvals` on the
-// backend — see `ActionGate` there for the order rules apply in.
+// backend: see `ActionGate` there for the order rules apply in.
 // ============================================================
 
-/** Strictest first — same order as `App\Enums\Agents\AutonomyMode`. */
+/** Strictest first: same order as `App\Enums\Agents\AutonomyMode`. */
 export const AUTONOMY_MODES = ['read_only', 'ask', 'plan', 'smart', 'autopilot'] as const;
 export type TAutonomyMode = (typeof AUTONOMY_MODES)[number];
 
@@ -65,11 +65,11 @@ export type TAgentAction = {
 	tool_kind: TActionToolKind;
 	effect: TActionEffect;
 	arguments: Record<string, unknown> | null;
-	/** A reviewer's edit — what the call runs with instead of `arguments`. */
+	/** A reviewer's edit: what the call runs with instead of `arguments`. */
 	edited_arguments: Record<string, unknown> | null;
 	outcome: TActionVerdict;
 	status: TAgentActionStatus;
-	/** Why the gate decided as it did — `source` is `mode`, `tool_rule`, `guardrail`, … */
+	/** Why the gate decided as it did: `source` is `mode`, `tool_rule`, `guardrail`, … */
 	reason: { source: string; detail: string; step_id?: string } | null;
 	risk: TActionRisk | null;
 	/** Smart mode's reviewer, in its own words. */
@@ -96,7 +96,7 @@ export type TAgentAction = {
 
 export type TAgentActionDecisionKind = 'approve' | 'edit' | 'reject';
 
-/** One decision on a waiting action — see `ResolveAgentActionsAction`. */
+/** One decision on a waiting action: see `ResolveAgentActionsAction`. */
 export type TAgentActionDecision = {
 	action_id: string;
 	decision: TAgentActionDecisionKind;
@@ -189,13 +189,13 @@ export type TApprovalCondition = {
 	then: TRuleVerdict;
 };
 
-/** A tool's own rule — `approval_policy` on a tool binding or attached workflow. */
+/** A tool's own rule: `approval_policy` on a tool binding or attached workflow. */
 export type TApprovalPolicy = {
 	/** `inherit` (or unset) follows the agent's mode. */
 	mode?: TRuleVerdict | 'inherit' | null;
 	conditions?: TApprovalCondition[] | null;
 	rate_limit?: { max: number; per?: 'minute' | 'hour' | 'day'; then?: 'ask' | 'deny' } | null;
-	/** `user:<id>` or `role:<role>` — only they (and owners/admins) may decide. */
+	/** `user:<id>` or `role:<role>`, only they (and owners/admins) may decide. */
 	approvers?: string[] | null;
 };
 
@@ -222,7 +222,7 @@ export type TUpdateWorkspaceAgentPolicyDto = Partial<
 	Omit<TWorkspaceAgentPolicy, 'workspace_id' | 'updated_at'>
 >;
 
-/** A tool people keep approving unchanged — see `TrustRules` on the backend. */
+/** A tool people keep approving unchanged: see `TrustRules` on the backend. */
 export type TAgentTrustSuggestion = {
 	tool_name: string;
 	tool_kind: TActionToolKind;

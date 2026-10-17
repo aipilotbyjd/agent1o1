@@ -1,8 +1,8 @@
-// AI Workflow Builder — /workspaces/{workspace}/workflow-builder-sessions
+// AI Workflow Builder: /workspaces/{workspace}/workflow-builder-sessions
 //
 // Mirrors the backend's `WorkflowBuilderSession*` resources. A session owns a
-// `draft_graph` in the same shape `PUT /workflows/{id}/graph` takes — nodes
-// keyed by `key`, edges as `{ from, to, condition }` — so the canvas converts
+// `draft_graph` in the same shape `PUT /workflows/{id}/graph` takes: nodes
+// keyed by `key`, edges as `{ from, to, condition }`, so the canvas converts
 // it with the same helpers it uses for a saved workflow.
 
 import type { TApiIssue } from '@/api/core';
@@ -36,7 +36,7 @@ export type TBuilderSessionStatus = 'active' | 'promoted' | 'archived';
 
 export type TBuilderMessageStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
-/** What one assistant reply changed in the draft — `DraftDiff::between()`. */
+/** What one assistant reply changed in the draft: `DraftDiff::between()`. */
 export type TBuilderMessageAction =
 	| { type: 'node_added' | 'node_updated' | 'node_removed'; key: string; node_type: string }
 	| { type: 'edge_added' | 'edge_removed'; from: string; to: string; condition: string | null };
@@ -45,10 +45,10 @@ export type TBuilderMessage = {
 	id: string;
 	session_id: string;
 	draft_version_id: string | null;
-	/** Who sent it — `null` on assistant replies and older messages. */
+	/** Who sent it: `null` on assistant replies and older messages. */
 	user_id: string | null;
 	role: 'user' | 'assistant';
-	/** What a user message asked for — `ask` answers without editing the draft. */
+	/** What a user message asked for: `ask` answers without editing the draft. */
 	mode: TBuilderMessageMode;
 	content: string;
 	actions: TBuilderMessageAction[] | null;
@@ -75,7 +75,7 @@ export type TBuilderSession = {
 	updated_at?: string;
 };
 
-/** A session as `GET /workflow-builder-sessions` lists it — without its
+/** A session as `GET /workflow-builder-sessions` lists it, without its
  *  graph; fetch the session to get that. */
 export type TBuilderSessionListItem = Omit<TBuilderSession, 'draft_graph' | 'messages'>;
 
@@ -107,11 +107,11 @@ export type TUpdateBuilderSessionDto = {
 	status?: 'active' | 'archived';
 };
 
-/** The canvas's copy of the draft, plus the lock version it was built on —
+/** The canvas's copy of the draft, plus the lock version it was built on:
  *  the server answers 409 if the assistant changed the draft since. */
 export type TSyncBuilderDraftDto = TBuilderGraph & { draft_lock_version: number };
 
-/** `build` edits the draft; `ask` only reads it — the backend gives that
+/** `build` edits the draft; `ask` only reads it: the backend gives that
  *  turn no editing tools. */
 export type TBuilderMessageMode = 'build' | 'ask';
 
@@ -119,18 +119,18 @@ export type TSendBuilderMessageDto = {
 	message: string;
 	/** Defaults to `build`. */
 	mode?: TBuilderMessageMode;
-	/** Sent as multipart `attachments[]` — the service builds the `FormData`. */
+	/** Sent as multipart `attachments[]`: the service builds the `FormData`. */
 	attachments?: File[];
 };
 
 export type TPromoteBuilderSessionDto = {
 	name?: string;
 	/** Replace edits made to the workflow outside the session since it loaded
-	 *  it — without this the server answers 409. */
+	 *  it, without this the server answers 409. */
 	overwrite?: boolean;
 };
 
-/** The lock version the client last loaded — the server answers 409 if the
+/** The lock version the client last loaded: the server answers 409 if the
  *  draft moved on since, instead of discarding those edits. */
 export type TRestoreBuilderVersionDto = { draft_lock_version?: number | null };
 
@@ -179,7 +179,7 @@ export type TBuilderImprovement = {
 	suggested_type: string | null;
 };
 
-// ─── Realtime — `WorkflowBuilderActivity` (`builder.<type>`) ─
+// ─── Realtime: `WorkflowBuilderActivity` (`builder.<type>`) ─
 
 type TBuilderEventBase = { session_id: string; message_id: string };
 
@@ -234,7 +234,7 @@ export type TWorkflowDryRun = {
 	/** The same problems placed on their step and field, worded for people. */
 	findings: TApiIssue[];
 	/** References into a node whose output shape isn't known yet (never run or
-	 *  pinned) — not errors, just unchecked. */
+	 *  pinned), not errors, just unchecked. */
 	unverified: string[];
 	steps: {
 		key: string;

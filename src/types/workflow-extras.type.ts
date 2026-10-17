@@ -1,7 +1,7 @@
 // ============================================================
 // Workflow Sub-Resource Types
 // ------------------------------------------------------------
-// Versions and the declared input interface — everything else that
+// Versions and the declared input interface: everything else that
 // used to hang off a workflow (sticky notes, replay packs,
 // environment releases, contract snapshots, share links) has no
 // counterpart on the real backend. Node pinning lives in
@@ -21,7 +21,7 @@ export type TWorkflowVersionPublisher = {
 
 /** `graph` is what runs (loop-mode nodes compiled, no positions);
  *  `editor_graph` is the canvas as it was published. Both are only on a
- *  single-version read — the list leaves them out. */
+ *  single-version read: the list leaves them out. */
 export type TWorkflowVersion = {
 	id: string;
 	workflow_id: string;
@@ -78,7 +78,7 @@ export type TPublishRequestList = {
 	requests: TPublishRequest[];
 };
 
-/** `requires_approval` is the switch as it applies now — on, and the plan
+/** `requires_approval` is the switch as it applies now, on, and the plan
  *  includes approvals. */
 export type TPublishApprovalPolicy = {
 	require_publish_approval: boolean;

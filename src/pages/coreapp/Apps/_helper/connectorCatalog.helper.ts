@@ -136,7 +136,7 @@ export const buildCreateCredentialData = (
 /**
  * This backend never returns `data`, so there is no masked value to echo back
  * and `PATCH` replaces the payload wholesale. Only genuinely filled fields go
- * up — and the caller omits `data` entirely when nothing was filled, rather
+ * up, and the caller omits `data` entirely when nothing was filled, rather
  * than blanking the stored secret.
  */
 export const buildEditCredentialData = buildCreateCredentialData;

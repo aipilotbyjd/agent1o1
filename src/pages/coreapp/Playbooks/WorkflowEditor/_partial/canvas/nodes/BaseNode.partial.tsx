@@ -133,7 +133,7 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 	const { state, dispatch } = useWorkflowEditor();
 	const def = getNodeDefinition(data.defKey, data.definition);
 
-	/** Every output of each upstream node wired into this one — all become available inputs. */
+	/** Every output of each upstream node wired into this one: all become available inputs. */
 	// Memoized so React Flow's per-frame drag re-renders don't re-scan every edge/node.
 	const incoming = useMemo(
 		() =>
@@ -198,7 +198,7 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 	const { isMissing: isCredentialMissing } = useCredentialResolver();
 	const needsAuth = isCredentialMissing(def, data.values);
 	// Integration-style nodes (and anything explicitly flagged) can be promoted to
-	// the flow's entry trigger — Gumloop's "Activate as flow trigger" strip.
+	// the flow's entry trigger: Gumloop's "Activate as flow trigger" strip.
 	const canBeTrigger = Boolean(def?.supportsTrigger || def?.requiresCredential);
 	const isFlowTrigger = Boolean(data.activateAsTrigger);
 
@@ -238,7 +238,7 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 				<button
 					type='button'
 					title={`Needs setup:\n${validationIssues.map((issue) => issue.message).join('\n')}`}
-					aria-label='Needs setup — show what to fix'
+					aria-label='Needs setup: show what to fix'
 					onPointerDown={(event) => event.stopPropagation()}
 					onClick={(event) => {
 						event.stopPropagation();
@@ -354,7 +354,7 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 					</div>
 				</div>
 
-				{/* Node action toolbar — floats in the corner, revealed on hover */}
+				{/* Node action toolbar: floats in the corner, revealed on hover */}
 				<div className='absolute top-2.5 right-2.5 z-10 flex items-center gap-0.5 rounded-xl border border-zinc-200/80 bg-white/95 p-0.5 shadow-sm backdrop-blur-sm dark:border-zinc-700/80 dark:bg-zinc-900/95'>
 					<button
 						type='button'

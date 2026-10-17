@@ -3,7 +3,7 @@ import type { TCreateTriggerDto, TUpdateTriggerDto } from '@/types/trigger.type'
 import { TriggerService } from './triggers.service';
 import { triggerKeys, triggerEventKeys } from './triggers.keys';
 
-// No `show` route on the backend — a trigger is only ever listed, created,
+// No `show` route on the backend: a trigger is only ever listed, created,
 // updated, deleted, run, or token-rotated, so this skips createResource()
 // and useDetail.
 

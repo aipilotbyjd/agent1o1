@@ -14,7 +14,7 @@ import type { IEchoLike } from '@/api/modules/workflow-builder/workflow-builder.
 import { AgentSessionEndpoints as E } from './agent-sessions.endpoints';
 import { openAgentTurnStream } from './agent-sessions.realtime';
 
-/** JSON, unless files ride along — then multipart, with each file under
+/** JSON, unless files ride along, then multipart, with each file under
  *  `attachments[]`. */
 const messageBody = (payload: TSendAgentMessageDto): TSendAgentMessageDto | FormData => {
 	if (!payload.attachments?.length)
@@ -35,7 +35,7 @@ export const AgentSessionService = {
 			.get<TApiResponse<{ sessions: TAgentSession[] }>>(E.list(ws, agentId), { signal })
 			.then(unwrapKey<TAgentSession[]>('sessions')),
 
-	// Eager-loads the message transcript — the paginated `messages()` action
+	// Eager-loads the message transcript: the paginated `messages()` action
 	// is for paging back through a long-running session instead.
 	detail: (ws: string, agentId: string, id: string, signal?: AbortSignal) =>
 		axiosClient
@@ -86,7 +86,7 @@ export const AgentSessionService = {
 	/**
 	 * Sends a message and streams its reply: the request opens the turn and
 	 * answers right away, and the reply arrives over Reverb on the session's
-	 * channel — `openAgentTurnStream` plays it back as `TAgentSessionStreamEvent`s.
+	 * channel: `openAgentTurnStream` plays it back as `TAgentSessionStreamEvent`s.
 	 * Aborting stops listening; the turn still finishes on the backend.
 	 */
 	async *streamMessage(

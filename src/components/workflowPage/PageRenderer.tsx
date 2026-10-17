@@ -238,7 +238,7 @@ const Column = ({ block }: { block: TPageBlockOf<'column'> }) => {
 };
 
 /**
- * Draws a workflow page — the one renderer behind the builder's canvas, the
+ * Draws a workflow page: the one renderer behind the builder's canvas, the
  * page a member opens in the app and the page at its public link, so what
  * the builder shows is what people get.
  */

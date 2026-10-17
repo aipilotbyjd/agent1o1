@@ -112,7 +112,7 @@ const AssistantHomePage = () => {
 			{
 				onSuccess: (result) => {
 					if (result.queued)
-						notify.info(`Sent — ${brand.name} will answer it after the current reply.`);
+						notify.info(`Sent: ${brand.name} will answer it after the current reply.`);
 				},
 			},
 		);

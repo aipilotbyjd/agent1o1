@@ -58,8 +58,8 @@ export const collectUpstreamVariables = (
 			nodeColor,
 			outputId: output.id,
 			// Id-based, stable reference the backend resolver understands
-			// (`{{nodes.node_2.city}}`). The friendly label is display-only —
-			// see nodeLabel — so renaming/duplicating a node never breaks tokens.
+			// (`{{nodes.node_2.city}}`). The friendly label is display-only
+			// (see nodeLabel) so renaming/duplicating a node never breaks tokens.
 			token: buildOutputToken(node.id, output.path ?? output.name),
 		}));
 	});

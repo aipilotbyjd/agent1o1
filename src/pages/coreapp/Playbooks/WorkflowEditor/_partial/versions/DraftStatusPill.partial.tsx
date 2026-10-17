@@ -19,7 +19,7 @@ const pillStyles: Record<TDraftStatus, { dot: string; ring: string }> = {
 	},
 };
 
-/** Draft vs. live at a glance — a coloured dot; the label lives in the tooltip. */
+/** Draft vs. live at a glance: a coloured dot; the label lives in the tooltip. */
 const DraftStatusPill = ({
 	onClick,
 	className = '',

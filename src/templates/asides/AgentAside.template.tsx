@@ -48,7 +48,7 @@ const formatCredits = new Intl.NumberFormat('en', {
  *  message normally supplies the title. */
 const sessionTitle = (session: TAgentSession) => session.title?.trim() || 'Untitled chat';
 
-/** Coarse "when" label for the Recents list — exact times aren't useful here. */
+/** Coarse "when" label for the Recents list: exact times aren't useful here. */
 const relativeDay = (iso: string | null) => {
 	if (!iso) return '';
 	const then = new Date(iso);
@@ -138,7 +138,7 @@ const AgentAsideTemplate = () => {
 		if (String(session.id) === String(sessionId)) newSession();
 
 		// Drop the row now rather than after the round trip. The confirm dialog
-		// above already asked, so the only thing left to handle is a failure —
+		// above already asked, so the only thing left to handle is a failure,
 		// hence a rollback rather than an undo affordance.
 		const listKey = agentSessionKeys.list(workspaceId ?? '', agentId ?? '');
 		const previousRows = queryClient.getQueryData<TAgentSession[]>(listKey);
@@ -148,7 +148,7 @@ const AgentAsideTemplate = () => {
 
 		deleteSessionMutation.mutate(String(session.id), {
 			onSuccess: () => notify.success('Chat deleted.'),
-			// No toast here — query-client.ts already reports the failure globally.
+			// No toast here: query-client.ts already reports the failure globally.
 			onError: () => {
 				if (previousRows) queryClient.setQueryData(listKey, previousRows);
 			},
@@ -231,7 +231,7 @@ const AgentAsideTemplate = () => {
 					{asideStatus && <span>Go back</span>}
 				</button>
 
-				{/* New Chat Button — the session itself is created by the first message */}
+				{/* New Chat Button: the session itself is created by the first message */}
 				<div className={asideStatus ? 'px-3' : 'px-2'}>
 					<button
 						onClick={startNewChat}

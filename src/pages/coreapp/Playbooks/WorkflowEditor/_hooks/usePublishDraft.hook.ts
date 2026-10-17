@@ -40,7 +40,7 @@ export const usePublishDraft = () => {
 		const draft = state;
 		dispatch({ type: 'SET_SAVE_STATE', savingState: 'saving' });
 		// Publishing and review both copy the server-side draft, so push the
-		// canvas first — otherwise anything still inside the autosave debounce
+		// canvas first, otherwise anything still inside the autosave debounce
 		// is left out.
 		try {
 			await persistWorkflowDraft({

@@ -105,7 +105,7 @@ export const useNodePin = () => {
 
 			try {
 				const rowId = await resolveRowId(nodeId);
-				// Never saved means never pinned on the server — nothing to undo there.
+				// Never saved means never pinned on the server: nothing to undo there.
 				if (!rowId) return;
 				const saved = await WorkflowService.unpinNode(workspaceId, apiId, rowId);
 				storeRow(saved);

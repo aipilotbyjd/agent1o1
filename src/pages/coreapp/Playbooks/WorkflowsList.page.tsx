@@ -1302,7 +1302,7 @@ const WorkflowsListPage = () => {
 							</button>
 						</div>
 
-						{/* Tag filter — only once the workspace has tags */}
+						{/* Tag filter, only once the workspace has tags */}
 						{(workspaceTags ?? []).length > 0 && (
 							<div className='relative col-span-2 min-w-0 sm:col-auto'>
 								<Tag className='pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-zinc-500' />

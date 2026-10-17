@@ -120,7 +120,7 @@ export const AssistantSessionService = {
 			})
 			.then(unwrapKey<TAssistantFeedback>('feedback')),
 
-	/** Answered on the queue — the reply streams over the session channel. */
+	/** Answered on the queue: the reply streams over the session channel. */
 	send: (ws: string, id: string, content: string) =>
 		axiosClient
 			.post<TApiResponse<TSendAssistantMessageResult>>(S.send(ws, id), { content })

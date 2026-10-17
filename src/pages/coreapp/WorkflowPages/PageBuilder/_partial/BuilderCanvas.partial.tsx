@@ -81,8 +81,8 @@ const SNAPS: { span: number; width: TPageBlockWidth; label: string }[] = [
 
 /**
  * The handle on a selected block's right edge: drag to set its width.
- * While dragging, guides mark the widths it snaps to — measured from where
- * the block starts on the page's six-column grid — and an outline shows
+ * While dragging, guides mark the widths it snaps to (measured from where
+ * the block starts on the page's six-column grid) and an outline shows
  * the width it will take.
  */
 const ResizeHandle = ({ block, frame }: { block: TRenderBlock; frame: React.RefObject<HTMLDivElement | null> }) => {

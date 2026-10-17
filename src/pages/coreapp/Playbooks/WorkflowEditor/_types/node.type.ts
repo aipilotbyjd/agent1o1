@@ -43,7 +43,7 @@ export type TFieldKind =
 	| 'dynamic'
 	| 'list';
 
-/** A `dynamic` field's live dropdown — see `INodeSchemaOptions`. */
+/** A `dynamic` field's live dropdown: see `INodeSchemaOptions`. */
 export type TDynamicFieldOptions = {
 	source: string;
 	dependsOn: string[];
@@ -68,13 +68,13 @@ export type TNodeField = {
 	rows?: number;
 	/** Hidden behind "Show More Options" until the user opts in. */
 	advanced?: boolean;
-	/** picker only — call to action, e.g. "Pick Folder". */
+	/** picker only: call to action, e.g. "Pick Folder". */
 	pickerLabel?: string;
-	/** code only — the value is a JSON object/array, edited as JSON text. */
+	/** code only: the value is a JSON object/array, edited as JSON text. */
 	json?: boolean;
-	/** kv only — store the rows as a `{key: value}` object instead of a row list. */
+	/** kv only: store the rows as a `{key: value}` object instead of a row list. */
 	kvObject?: boolean;
-	/** dynamic only — where the choices come from. */
+	/** dynamic only, where the choices come from. */
 	dynamic?: TDynamicFieldOptions;
 	/** number only. */
 	min?: number;
@@ -129,7 +129,7 @@ export type TCanvasNodeData = {
 	comments?: TNodeComment[];
 	testOutput?: unknown;
 	testStatus?: 'idle' | 'running' | 'success' | 'error';
-	// Resolved input the node ran against, error message, and wall time — captured
+	// Resolved input the node ran against, error message, and wall time: captured
 	// from a real single-node test run for inspection in the Runs panel.
 	testInput?: unknown;
 	testError?: string;

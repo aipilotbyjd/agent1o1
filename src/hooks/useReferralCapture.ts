@@ -14,7 +14,7 @@ const UTM_KEYS = ['source', 'medium', 'campaign', 'term', 'content'] as const;
  * Picks up `?ref=CODE` on any route, records the visit, and remembers the
  * code for signup. An unknown or switched-off code clears what was stored,
  * so a dead link never gets sent at signup. Runs once per code per page
- * load — StrictMode's double effect and re-renders don't double-count.
+ * load: StrictMode's double effect and re-renders don't double-count.
  */
 const useReferralCapture = () => {
 	const location = useLocation();

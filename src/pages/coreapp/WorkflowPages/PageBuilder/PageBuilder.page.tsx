@@ -24,7 +24,7 @@ import RightPanel from './_partial/RightPanel.partial';
 const NO_FIELDS: never[] = [];
 
 /**
- * The page builder: a full-screen editor like the workflow editor — the
+ * The page builder: a full-screen editor like the workflow editor; the
  * block library on the left, the page itself in the middle at desktop,
  * tablet or phone size, and the selected block's settings on the right.
  */

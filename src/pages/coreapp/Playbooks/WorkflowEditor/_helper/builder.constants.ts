@@ -121,7 +121,7 @@ export const PORT_TYPE_COLOR: Record<string, string> = {
 };
 
 /**
- * Placeholder per-category credit estimates — there's no real per-node pricing
+ * Placeholder per-category credit estimates: there's no real per-node pricing
  * data from the backend yet, so this is a rough stand-in (AI/scrape/extract cost
  * more than simple logic/utility nodes) until real numbers are wired in.
  * A node definition's own `creditCost` always wins over this default.
@@ -148,6 +148,6 @@ export const CATEGORY_CREDIT_COST: Partial<Record<string, number>> = {
 
 const DEFAULT_CREDIT_COST = 1;
 
-/** Estimated credits this node charges per run — its own value, or the category default. */
+/** Estimated credits this node charges per run: its own value, or the category default. */
 export const getNodeCreditCost = (def?: { category?: string; creditCost?: number }): number =>
 	def?.creditCost ?? CATEGORY_CREDIT_COST[def?.category ?? ''] ?? DEFAULT_CREDIT_COST;

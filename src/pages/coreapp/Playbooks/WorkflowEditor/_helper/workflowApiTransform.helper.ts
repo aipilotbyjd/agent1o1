@@ -12,13 +12,13 @@ import type { TExportedWorkflow } from '../_types/workflow-editor.type';
 
 /**
  * The backend stores the draft graph as `nodes` ({ key, type, config, position })
- * and `edges` ({ from, to, condition }) keyed by node `key` — see
+ * and `edges` ({ from, to, condition }) keyed by node `key`: see
  * `Workflow::replaceGraph()`. The canvas node id doubles as that key.
  *
  * Edges carry no port handles on the backend: `condition` is a branch value
  * (`null` = always, `'error'` = on failure), not a port name. It rides on
  * `edge.data.condition` so a branch the AI builder (or an import) created
- * survives a save — saving it as `null` would turn an error path into one
+ * survives a save: saving it as `null` would turn an error path into one
  * that always runs. Edges reload on each node's default handles.
  */
 export const buildGraphPayload = (nodes: TCanvasNode[], edges: TCanvasEdge[]): TReplaceGraphDto => {
@@ -59,7 +59,7 @@ const draftNodeToCanvas = (node: TWorkflowNode): TCanvasNode => {
 	};
 };
 
-/** Pinned data has to be a JSON object or array on the backend — a scalar
+/** Pinned data has to be a JSON object or array on the backend: a scalar
  *  output (only the local simulation produces those) is wrapped. */
 export const toPinPayload = (output: unknown): Record<string, unknown> | unknown[] =>
 	output !== null && typeof output === 'object'

@@ -1,7 +1,7 @@
 // ============================================================
 // Workspace Types
 // ------------------------------------------------------------
-// `role` is the viewer's own role on this workspace — set from the
+// `role` is the viewer's own role on this workspace: set from the
 // membership pivot (or `owner` on the workspace the caller just
 // created), not a fixed workspace attribute.
 // ============================================================

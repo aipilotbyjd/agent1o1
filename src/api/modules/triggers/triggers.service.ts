@@ -10,7 +10,7 @@ import type {
 import { TriggerEndpoints as E } from './triggers.endpoints';
 
 export const TriggerService = {
-	// The backend takes no list filters — `params` is accepted only to
+	// The backend takes no list filters: `params` is accepted only to
 	// match `createResource()`'s service contract.
 	list: (ws: string, _params?: TListParams, signal?: AbortSignal) =>
 		axiosClient
@@ -39,7 +39,7 @@ export const TriggerService = {
 			.post<TApiResponse<{ trigger: TTrigger }>>(E.rotateToken(ws, id))
 			.then(unwrapKey<TTrigger>('trigger')),
 
-	// Backend paginates internally but returns the page as a flat array —
+	// Backend paginates internally but returns the page as a flat array:
 	// no `meta`/`links` reach the client from this endpoint.
 	events: (ws: string, id: string, signal?: AbortSignal) =>
 		axiosClient

@@ -1,7 +1,7 @@
 // ============================================================
 // Catalog Types
 // ------------------------------------------------------------
-// Global, read-only reference data — not workspace-scoped except
+// Global, read-only reference data, not workspace-scoped except
 // where noted. `fields`/`capabilities` are backend-defined JSON
 // blobs whose internal shape isn't pinned down by a resource class,
 // so they're typed as `unknown` rather than guessed at.

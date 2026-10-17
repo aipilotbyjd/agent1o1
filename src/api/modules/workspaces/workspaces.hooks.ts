@@ -52,7 +52,7 @@ export const useDeleteWorkspace = () => {
 	});
 };
 
-/** Leaves the given workspace's membership — the id still has to be passed
+/** Leaves the given workspace's membership: the id still has to be passed
  *  even though it's "the caller's own membership", since every workspace
  *  route is addressed by {workspace} in the URL. */
 export const useLeaveWorkspace = () => {

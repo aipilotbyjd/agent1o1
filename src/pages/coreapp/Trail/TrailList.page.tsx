@@ -44,7 +44,7 @@ const TrailListPage = () => {
 	const [copied, setCopied] = useState(false);
 
 	// The open run lives in the URL (`?run=<id>`), so "Copy URL" hands out a
-	// link that reopens this drawer — even for a run on another page.
+	// link that reopens this drawer, even for a run on another page.
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { pathname } = useLocation();
 	const selectedRunId = searchParams.get('run') ?? '';
@@ -171,7 +171,7 @@ const TrailListPage = () => {
 
 				{isFiltering && totalPages > 1 && (
 					<p className='-mt-3 px-1 text-xs text-slate-400'>
-						Searching this page only — search is not applied across all{' '}
+						Searching this page only: search is not applied across all{' '}
 						{totalItems.toLocaleString()} runs.
 					</p>
 				)}

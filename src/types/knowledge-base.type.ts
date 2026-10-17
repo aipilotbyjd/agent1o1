@@ -1,7 +1,7 @@
 // ============================================================
 // Knowledge Base Types
 // ------------------------------------------------------------
-// Workspace-wide vector search — what `agent.type.ts`'s
+// Workspace-wide vector search: what `agent.type.ts`'s
 // `TAgentKnowledgeSources` scopes an agent to. The embedding vector
 // itself is never serialized; `dimensions` is its length, useful
 // for diagnosing a chunk that never ranks. `collections` is derived
@@ -11,7 +11,7 @@
 export type TDocumentEmbedding = {
 	id: string;
 	collection: string;
-	/** Only its owner (and their assistant) can see it — never agents or other members. */
+	/** Only its owner (and their assistant) can see it, never agents or other members. */
 	private: boolean;
 	knowledge_source_id: string | null;
 	source: string | null;
@@ -28,7 +28,7 @@ export type TKnowledgeCollection = {
 	chunks_count: number;
 };
 
-/** Sent as `multipart/form-data` when `file` is used — the service builds
+/** Sent as `multipart/form-data` when `file` is used: the service builds
  *  the `FormData`. Exactly one of `text`/`file` is required. */
 export type TIngestKnowledgeDto = {
 	text?: string;
@@ -127,7 +127,7 @@ export type TKnowledgeSourceDocument = {
 export type TKnowledgeSourceApp = {
 	type: TKnowledgeSourceType;
 	accounts: { id: string; name: string; shared: boolean }[];
-	/** Connected before, but every connection has expired — reconnect it. */
+	/** Connected before, but every connection has expired: reconnect it. */
 	expired: boolean;
 };
 

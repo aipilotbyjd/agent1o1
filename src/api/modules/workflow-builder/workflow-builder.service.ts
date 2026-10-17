@@ -64,7 +64,7 @@ export const WorkflowBuilderSessionService = {
 
 	/**
 	 * Replace the draft with the canvas's copy. Rejected with 409 when
-	 * `draft_lock_version` is behind — the assistant changed the draft since.
+	 * `draft_lock_version` is behind: the assistant changed the draft since.
 	 */
 	syncDraft: (ws: string, id: string, payload: TSyncBuilderDraftDto) =>
 		axiosClient
@@ -83,7 +83,7 @@ export const WorkflowBuilderSessionService = {
 			.then(unwrapKey<TWorkflow>('workflow')),
 };
 
-/** JSON, unless files ride along — then multipart, with each file under
+/** JSON, unless files ride along, then multipart, with each file under
  *  `attachments[]`. */
 const messageBody = (payload: TSendBuilderMessageDto): TSendBuilderMessageDto | FormData => {
 	if (!payload.attachments?.length) return { message: payload.message, mode: payload.mode };
@@ -104,7 +104,7 @@ export const WorkflowBuilderMessageService = {
 
 	/**
 	 * Returns (202) the pending assistant message. Its reply is written in the
-	 * background — follow it on the session channel or poll `detail()`.
+	 * background: follow it on the session channel or poll `detail()`.
 	 * 409 while a previous reply is still being written.
 	 */
 	send: (ws: string, sessionId: string, payload: TSendBuilderMessageDto) => {
@@ -126,7 +126,7 @@ export const WorkflowBuilderMessageService = {
 			.then(unwrapKey<TBuilderMessage>('message')),
 };
 
-/** Undo history — one labelled snapshot per edit, newest first. */
+/** Undo history: one labelled snapshot per edit, newest first. */
 export const WorkflowBuilderVersionService = {
 	list: (ws: string, sessionId: string, signal?: AbortSignal) =>
 		axiosClient
@@ -136,7 +136,7 @@ export const WorkflowBuilderVersionService = {
 			})
 			.then((res) => res.data.data),
 
-	/** 409 when `draft_lock_version` is behind — the draft changed since. */
+	/** 409 when `draft_lock_version` is behind: the draft changed since. */
 	restore: (
 		ws: string,
 		sessionId: string,
@@ -201,7 +201,7 @@ export const WorkflowDiagnosticsService = {
 			>(D.testNode(ws, workflowId, nodeId), payload)
 			.then(unwrapKey<TNodeRunDetail>('node_run')),
 
-	/** Editor autosave — replaces the draft graph wholesale, not a partial
+	/** Editor autosave: replaces the draft graph wholesale, not a partial
 	 *  patch. */
 	replaceGraph: (ws: string, workflowId: string, payload: TReplaceGraphDto) =>
 		axiosClient

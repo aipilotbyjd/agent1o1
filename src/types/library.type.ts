@@ -1,8 +1,8 @@
 // ============================================================
 // Library Types
 // ------------------------------------------------------------
-// The gallery of files from agent chats — uploads and what agents
-// made — and files sent to the workflow builder. Mirrors `LibraryItemResource` on the backend; separate from
+// The gallery of files from agent chats (uploads and what agents
+// made) and files sent to the workflow builder. Mirrors `LibraryItemResource` on the backend; separate from
 // the Artifacts file manager, though both read the same stored files.
 // ============================================================
 

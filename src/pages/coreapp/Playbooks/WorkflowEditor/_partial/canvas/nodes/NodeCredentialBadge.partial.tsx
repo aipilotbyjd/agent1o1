@@ -5,7 +5,7 @@ import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 
 type Props = { credentialId: string; nodeId: string };
 
-/** Shows which account/credential this node is currently connected through — Gumloop-style. Click to switch. */
+/** Shows which account/credential this node is currently connected through: Gumloop-style. Click to switch. */
 const NodeCredentialBadge = ({ credentialId, nodeId }: Props) => {
 	const { dispatch } = useWorkflowEditor();
 	const { workspaceId } = useWorkflowRouteParams();

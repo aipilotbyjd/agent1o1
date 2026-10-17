@@ -229,7 +229,7 @@ const AgentsListPage = () => {
 		deleteAgentMutation.mutate(id, {
 			onSuccess: () =>
 				notify.success(agent ? `"${agent.name}" moved to trash.` : 'Agent moved to trash.'),
-			// No toast here — query-client.ts already reports the failure globally.
+			// No toast here: query-client.ts already reports the failure globally.
 			onError: () => {
 				if (previousAgents) queryClient.setQueryData(listKey, previousAgents);
 			},

@@ -49,7 +49,7 @@ export const getCredentialAttention = (
 	};
 };
 
-/** "Used by 2 workflows and 1 agent" — for the disconnect confirmation too. */
+/** "Used by 2 workflows and 1 agent", for the disconnect confirmation too. */
 export const describeUsage = (usage: TConnectorCredentialUsage) => {
 	const parts = [
 		[usage.workflows.length, 'workflow', 'workflows'],

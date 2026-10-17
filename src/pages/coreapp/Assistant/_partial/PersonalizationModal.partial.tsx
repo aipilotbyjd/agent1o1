@@ -72,7 +72,7 @@ const PersonalizationModalPartial = ({
 					</span>
 					<span className='mt-1 text-xs text-zinc-500'>
 						How {brand.name} writes to you and lays out answers. It also learns from
-						your feedback — every change is kept here.
+						your feedback: every change is kept here.
 					</span>
 				</div>
 			</ModalHeader>
@@ -135,7 +135,7 @@ const PersonalizationModalPartial = ({
 										<span className='min-w-0 flex-1'>
 											<span className='block text-zinc-700 dark:text-zinc-200'>
 												{SOURCE_LABELS[revision.source]}
-												{revision.reason ? ` — ${revision.reason}` : ''}
+												{revision.reason ? ` - ${revision.reason}` : ''}
 											</span>
 											<span className='text-zinc-400'>
 												{dayjs(revision.created_at).format('MMM D, HH:mm')}

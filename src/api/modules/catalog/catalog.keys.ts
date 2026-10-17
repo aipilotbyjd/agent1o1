@@ -1,7 +1,7 @@
 // ============================================================
 // Catalog Query Keys
 // ------------------------------------------------------------
-// Global data — no workspace scope, so these skip createKeys(). The model
+// Global data: no workspace scope, so these skip createKeys(). The model
 // catalog is the one exception: its availability folds in a workspace's own
 // AI provider keys, so it's keyed by the workspace it was asked for.
 // ============================================================

@@ -26,7 +26,7 @@ export type TEditorUiState = {
 	quickAddOpen: boolean;
 	importExportOpen: boolean;
 	selectedNodeId: string | null;
-	/** Full multi-select set for box-select/Cmd+click/Select All — includes selectedNodeId when non-empty. */
+	/** Full multi-select set for box-select/Cmd+click/Select All: includes selectedNodeId when non-empty. */
 	selectedNodeIds: string[];
 	emptyCanvasView?: 'ai' | 'templates' | 'chat-started';
 	// New UI state
@@ -51,7 +51,7 @@ export type TEditorUiState = {
 	issuesPanelOpen: boolean;
 	/** What the server refused the last publish for, until the step is edited. */
 	serverIssues: TApiIssue[];
-	/** Asks a step's field to scroll into view and glow — bumped per request. */
+	/** Asks a step's field to scroll into view and glow: bumped per request. */
 	fieldFocus: { nodeId: string; fieldKey: string | null; requestId: number } | null;
 };
 

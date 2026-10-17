@@ -85,9 +85,9 @@ export type TWorkflowEditorAction =
 	| { type: 'LOAD_WORKFLOW'; workflow: TExportedWorkflow }
 	| { type: 'APPLY_BUILDER_DRAFT'; nodes: TCanvasNode[]; edges: TCanvasEdge[] }
 	// The server already holds this graph (a restored version), so it lands
-	// saved — but undoable, which puts the replaced draft back.
+	// saved, but undoable, which puts the replaced draft back.
 	| { type: 'RESTORE_DRAFT'; nodes: TCanvasNode[]; edges: TCanvasEdge[] }
-	// Granular live-apply — the AI builder dispatches these per tool call as it
+	// Granular live-apply: the AI builder dispatches these per tool call as it
 	// works, so the canvas updates node-by-node instead of waiting for the whole
 	// reply (Gumloop-style). APPLY_BUILDER_DRAFT still runs once at the end as
 	// the authoritative reconciliation.
@@ -871,7 +871,7 @@ export const workflowEditorReducer = (
 				),
 			};
 		case 'TOGGLE_NODE_FLOW_TRIGGER': {
-			// A flow has a single entry trigger — enabling one clears the rest.
+			// A flow has a single entry trigger: enabling one clears the rest.
 			const enabling = !state.nodes.find((node) => node.id === action.id)?.data
 				.activateAsTrigger;
 			return {

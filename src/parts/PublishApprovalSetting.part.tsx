@@ -4,7 +4,7 @@ import paths from '@/Routes/paths';
 import { usePublishApprovalPolicy, useUpdatePublishApprovalPolicy } from '@/api/modules/workflows';
 
 /**
- * The workspace's "review workflow changes before they go live" switch —
+ * The workspace's "review workflow changes before they go live" switch:
  * admins change it, everyone else sees how it's set. Off and locked on plans
  * without approvals, with the way to a plan that has them.
  */

@@ -41,7 +41,7 @@ const SectionTitle = ({ children }: { children: string }) => (
 
 const Value = ({ value, markdown }: { value: unknown; markdown?: boolean }) => {
 	if (value === null || value === undefined || value === '')
-		return <span className='text-slate-400 dark:text-zinc-500'>—</span>;
+		return <span className='text-slate-400 dark:text-zinc-500'>-</span>;
 	if (typeof value === 'string')
 		return markdown ? (
 			<div className='[overflow-wrap:anywhere] [&_h1]:mb-1 [&_h1]:text-sm [&_h1]:font-black [&_h2]:mb-1 [&_h2]:text-sm [&_h2]:font-black [&_h3]:mb-1 [&_h3]:text-[13px] [&_h3]:font-black [&_li]:ml-4 [&_ol]:list-decimal [&_p:not(:last-child)]:mb-2 [&_ul]:list-disc'>

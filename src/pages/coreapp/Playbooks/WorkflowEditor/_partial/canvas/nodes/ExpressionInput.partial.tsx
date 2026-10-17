@@ -27,7 +27,7 @@ type TSegment = { type: 'text'; value: string } | { type: 'token'; value: string
 
 const TOKEN_RE = /\{\{.*?\}\}/g;
 
-// Structural class only — color comes from the source node's own accent color
+// Structural class only: color comes from the source node's own accent color
 // (set via inline style) so a chip visually matches where its value comes from.
 const CHIP_CLS =
 	'mx-0.5 my-0.5 inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 align-middle text-[10px] font-semibold select-none';
@@ -83,14 +83,14 @@ const domToValue = (root: Node): string => {
 /**
  * Inline expression editor. Renders `{{nodes.<id>.field}}` tokens as chips right
  * inside an editable surface (Gumloop-style), so you can drag values in, type text
- * around them, and delete a chip with Backspace or its ✕ — all in one field. The
+ * around them, and delete a chip with Backspace or its ✕: all in one field. The
  * underlying value stays the `{{…}}` string, with a live resolved preview below.
  */
 const ExpressionInput = ({ field, value, onChange, compact, nodeId, className }: Props) => {
 	const { state } = useWorkflowEditor();
 	const editorRef = useRef<HTMLDivElement | null>(null);
 	const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-	// Start offset (in the value string) of the fragment autocomplete replaces —
+	// Start offset (in the value string) of the fragment autocomplete replaces:
 	// the `{{` for a brace trigger or the `@` for the Gumloop-style inserter.
 	const triggerStart = useRef<number>(-1);
 	const [query, setQuery] = useState<string | null>(null);
@@ -163,7 +163,7 @@ const ExpressionInput = ({ field, value, onChange, compact, nodeId, className }:
 			: inner.split('.').pop();
 		const label = ref && !ref.path ? 'Output' : prettify(name ?? inner);
 		const title = missing
-			? `${inner} — this node no longer exists, so the value will be empty`
+			? `${inner}: this node no longer exists, so the value will be empty`
 			: `${node ? `${node.label} / ` : ''}${label}`;
 		const color = missing ? MISSING_CHIP_COLOR : (node?.color ?? DEFAULT_CHIP_COLOR);
 		const style = `border-color:${color}55;background-color:${color}1a;color:${color};`;
@@ -185,7 +185,7 @@ const ExpressionInput = ({ field, value, onChange, compact, nodeId, className }:
 			)
 			.join('');
 
-	// Render the value into the surface — but never while the user is typing in it,
+	// Render the value into the surface, but never while the user is typing in it,
 	// so we don't reset the caret. Runs on external changes (drop, remove, labels).
 	useEffect(() => {
 		const el = editorRef.current;

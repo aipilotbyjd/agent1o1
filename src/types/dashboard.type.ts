@@ -1,7 +1,7 @@
 // ============================================================
 // Dashboard Types
 // ------------------------------------------------------------
-// `days` window shared by overview/run-stats/credit-usage — see
+// `days` window shared by overview/run-stats/credit-usage: see
 // `DashboardWindow` on the backend. `in_flight` and
 // `pending_approvals` are current-state, never window-scoped: a
 // run stuck since last week is exactly what a dashboard exists to
@@ -61,7 +61,7 @@ export type TDashboardOverview = {
 	runs: TRunTotals;
 	in_flight: Record<string, number>;
 	pending_approvals: number;
-	/** Agent actions waiting on a person — the approvals inbox. */
+	/** Agent actions waiting on a person: the approvals inbox. */
 	pending_agent_actions?: number;
 	credits: TDashboardCredits;
 	counts: TDashboardCounts;

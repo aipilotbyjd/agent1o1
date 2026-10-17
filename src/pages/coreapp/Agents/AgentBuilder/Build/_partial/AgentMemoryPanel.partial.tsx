@@ -22,8 +22,8 @@ const emptyForm = {
 };
 
 /**
- * Manager for an agent's persistent memory — key/value facts recalled across runs.
- * Backed by {agent}/memories — see AgentMemoryController.
+ * Manager for an agent's persistent memory: key/value facts recalled across runs.
+ * Backed by {agent}/memories: see AgentMemoryController.
  */
 const AgentMemoryPanel = ({ ws, agentId }: TProps) => {
 	const [isFormOpen, setIsFormOpen] = useState(false);

@@ -63,7 +63,7 @@ const LibraryTile = ({ item, onOpen }: { item: TLibraryItem; onOpen: () => void 
 /**
  * Every file from agent chats in one gallery, as in ChatGPT's library: what
  * members uploaded and what agents made, newest first, grouped by day.
- * Separate from the Artifacts file manager — this is for finding and looking
+ * Separate from the Artifacts file manager: this is for finding and looking
  * at files, not managing them.
  */
 const LibraryPage = () => {

@@ -45,7 +45,7 @@ export type TArtifact = {
 	updated_at: string;
 };
 
-/** Sent as `multipart/form-data` — the service builds the `FormData`. */
+/** Sent as `multipart/form-data`: the service builds the `FormData`. */
 export type TUploadArtifactDto = {
 	file: File;
 	filename?: string;
@@ -66,7 +66,7 @@ export type TShareArtifactDto = {
 export type TArtifactListParams = {
 	page?: number;
 	per_page?: number;
-	/** Only artifacts this agent exported — member uploads have no agent. */
+	/** Only artifacts this agent exported: member uploads have no agent. */
 	agent_id?: string;
 	/** Filename LIKE match. */
 	search?: string;

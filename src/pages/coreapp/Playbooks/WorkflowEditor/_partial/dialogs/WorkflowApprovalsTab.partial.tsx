@@ -42,7 +42,7 @@ const outcome = (request: TPublishRequest) => {
 };
 
 /**
- * This workflow's reviews: the workspace rule, and every request sent —
+ * This workflow's reviews: the workspace rule, and every request sent;
  * opening one shows its changes over the canvas.
  */
 const WorkflowApprovalsTab = ({

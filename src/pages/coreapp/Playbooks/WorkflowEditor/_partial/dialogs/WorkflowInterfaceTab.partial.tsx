@@ -33,7 +33,7 @@ const FIELD_TYPES: { value: TWorkflowInterfaceFieldType; label: string }[] = [
 // Mirrors `UpdateWorkflowInterfaceRequest`: keys become top-level run input keys.
 const KEY_RE = /^[A-Za-z_][A-Za-z0-9_-]*$/;
 
-/** Editable row — select options are edited as one comma-separated string. */
+/** Editable row: select options are edited as one comma-separated string. */
 type TDraftField = TWorkflowInterfaceField & { optionsText: string };
 
 const toDraft = (field: TWorkflowInterfaceField): TDraftField => ({
@@ -366,7 +366,7 @@ const InterfaceEditor = ({
 					<p className='text-[11px] text-zinc-500'>
 						{iface.published
 							? 'Runs the published version with the values below.'
-							: 'Publish a version first — runs always use the published version.'}
+							: 'Publish a version first; runs always use the published version.'}
 						{isDirty && ' Save the form to use your latest field changes.'}
 					</p>
 				</div>

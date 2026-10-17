@@ -40,7 +40,7 @@ export const useDeleteAgentMemory = (ws: string, agentId: string) => {
 };
 
 /**
- * No bulk-delete endpoint exists — memories are removed one at a time, so this
+ * No bulk-delete endpoint exists: memories are removed one at a time, so this
  * reads the current list and fans out deletes.
  */
 export const useClearAgentMemories = (ws: string, agentId: string) => {

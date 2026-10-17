@@ -55,7 +55,7 @@ const normalizeHue = (color?: string) => {
 	return color;
 };
 
-/** A schema `type` may be a union like `['integer', 'null']` — the first non-null wins. */
+/** A schema `type` may be a union like `['integer', 'null']`: the first non-null wins. */
 const primaryType = (type?: string | string[]) =>
 	Array.isArray(type) ? type.find((candidate) => candidate !== 'null') : type;
 

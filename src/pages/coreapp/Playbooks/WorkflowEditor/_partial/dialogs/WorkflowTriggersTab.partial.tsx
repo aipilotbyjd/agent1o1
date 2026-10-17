@@ -67,7 +67,7 @@ type TDraft = {
 	filters: TFilterDraft[];
 };
 
-/** Config keys this form owns — anything else already on a trigger is kept as-is on save. */
+/** Config keys this form owns: anything else already on a trigger is kept as-is on save. */
 const OWNED_KEYS = [
 	'cron',
 	'url',
@@ -195,7 +195,7 @@ const validate = (
 		}
 	}
 	if (!isEdit && preset?.signature_scheme && !draft.signingSecret.trim()) {
-		return 'This preset checks signatures — enter the signing secret, or every delivery is rejected.';
+		return 'This preset checks signatures: enter the signing secret, or every delivery is rejected.';
 	}
 	if (draft.filters.some((filter) => !filter.path.trim())) return 'Every filter needs a path.';
 	return null;
@@ -780,7 +780,7 @@ const TriggerCard = ({ workspaceId, trigger, presets, isPublished }: TTriggerCar
 		);
 
 	const runBlockedReason = !isPublished
-		? 'Publish the workflow first — triggers run the published version.'
+		? 'Publish the workflow first: triggers run the published version.'
 		: !trigger.is_active
 			? 'Turn the trigger on to run it.'
 			: undefined;
@@ -957,7 +957,7 @@ const TriggerCard = ({ workspaceId, trigger, presets, isPublished }: TTriggerCar
 
 /**
  * Workflow triggers are their own workspace-scoped resource
- * (`target_type: 'workflow'`), not graph nodes — this backend ships no
+ * (`target_type: 'workflow'`), not graph nodes; this backend ships no
  * trigger node types, so this tab is the only place they are managed.
  */
 const WorkflowTriggersTab = ({

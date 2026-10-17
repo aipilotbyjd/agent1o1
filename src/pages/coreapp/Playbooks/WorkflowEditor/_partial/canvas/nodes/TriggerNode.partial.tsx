@@ -109,7 +109,7 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 	const { state, dispatch } = useWorkflowEditor();
 	const def = getNodeDefinition(data.defKey, data.definition);
 
-	/** Every output of each upstream node wired into this one — all become available inputs. */
+	/** Every output of each upstream node wired into this one: all become available inputs. */
 	// Memoized so React Flow's per-frame drag re-renders don't re-scan every edge/node.
 	const incoming = useMemo(
 		() =>
@@ -178,7 +178,7 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 
 	return (
 		<motion.div
-			// Pinned flat while dragging — see BaseNode for why the hover lift has to go.
+			// Pinned flat while dragging: see BaseNode for why the hover lift has to go.
 			animate={dragging ? { boxShadow: baseShadow, y: 0 } : { boxShadow: baseShadow }}
 			whileHover={dragging ? undefined : { y: -2, boxShadow: hoverShadow }}
 			transition={{ duration: dragging ? 0 : 0.18 }}

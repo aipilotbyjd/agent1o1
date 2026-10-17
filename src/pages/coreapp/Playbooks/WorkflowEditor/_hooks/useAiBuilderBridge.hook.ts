@@ -20,7 +20,7 @@ const POLL_INTERVAL_MS = 2500;
 const POLL_TIMEOUT_MS = 6 * 60_000;
 const DRAFT_SYNC_DEBOUNCE_MS = 1500;
 
-/** The session's draft version the canvas was last reconciled with — what a
+/** The session's draft version the canvas was last reconciled with: what a
  *  canvas sync (or a restore) must send so the server can refuse a stale one.
  *  Kept in the store so the builder panel can send it too. */
 const getLockVersion = () => useAiChatStore.getState().draftLockVersion;
@@ -56,7 +56,7 @@ const parseArguments = (value: unknown): Record<string, unknown> => {
  *   connects. Whichever delivers first wins; the other is a no-op.
  * - Manual canvas edits are pushed into the session's draft (debounced, and
  *   flushed right before each message) with the draft's lock version, so the
- *   assistant always works from what the user sees — and a canvas that is
+ *   assistant always works from what the user sees, and a canvas that is
  *   behind the assistant gets a 409 instead of silently undoing its work.
  *
  * Mount once inside the editor.
@@ -90,7 +90,7 @@ export const useAiBuilderBridge = () => {
 	const lastSyncedRef = useRef('');
 	const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	// Replies already shown — realtime and the poll can both deliver one.
+	// Replies already shown: realtime and the poll can both deliver one.
 	const finalizedMessageIds = useRef<Set<string>>(new Set());
 
 	// One draft refetch at a time; a change that lands mid-fetch queues one more.
@@ -198,7 +198,7 @@ export const useAiBuilderBridge = () => {
 						sessionId,
 					);
 					applySessionDraft(session);
-					notify.info('The assistant changed the draft — reloaded its latest version.');
+					notify.info('The assistant changed the draft: reloaded its latest version.');
 					return;
 				}
 				// 422: the canvas is mid-edit (e.g. a node missing a required
@@ -239,7 +239,7 @@ export const useAiBuilderBridge = () => {
 				hydrateFromBackend(session);
 
 				// An empty draft never replaces a canvas with work on it (e.g. the
-				// first sync never landed) — that would blank the canvas and let
+				// first sync never landed): that would blank the canvas and let
 				// autosave blank the workflow. Keep the canvas and push it up.
 				const canvasHasNodes =
 					canvasToBuilderGraph(canvasRef.current.nodes, []).nodes.length > 0;
@@ -252,7 +252,7 @@ export const useAiBuilderBridge = () => {
 				applySessionDraft(session);
 			})
 			.catch(() => {
-				/* stale/deleted session — leave the fresh chat as-is */
+				/* stale/deleted session: leave the fresh chat as-is */
 			});
 
 		return () => {
@@ -272,7 +272,7 @@ export const useAiBuilderBridge = () => {
 		if (!builderSessionId) setLockVersion(null);
 	}, [builderSessionId]);
 
-	// Realtime — instant when broadcasting is healthy.
+	// Realtime: instant when broadcasting is healthy.
 	useEffect(() => {
 		if (!echo || !workspaceId || !builderSessionId) return;
 
@@ -314,7 +314,7 @@ export const useAiBuilderBridge = () => {
 		resolveToolResult,
 	]);
 
-	// Poll fallback — works even when the socket never connects. Watches the
+	// Poll fallback: works even when the socket never connects. Watches the
 	// specific reply the backend queued, so it never applies an older one.
 	useEffect(() => {
 		if (!workspaceId || !builderSessionId || !pendingMessageId || !isThinking) return;
@@ -338,7 +338,7 @@ export const useAiBuilderBridge = () => {
 					failPending('The builder took too long to respond. Please try again.');
 				}
 			} catch {
-				/* transient — the next tick retries */
+				/* transient: the next tick retries */
 			}
 		};
 

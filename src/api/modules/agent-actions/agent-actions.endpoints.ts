@@ -11,10 +11,10 @@ export const AgentActionEndpoints = {
 
 	/** One agent's full action log. */
 	forAgent: (ws: string, agentId: string) => `${agent(ws, agentId)}/actions`,
-	/** A conversation's actions (its subagents' included) — the chat's approval cards. */
+	/** A conversation's actions (its subagents' included): the chat's approval cards. */
 	forSession: (ws: string, agentId: string, sessionId: string) =>
 		`${session(ws, agentId, sessionId)}/actions`,
-	/** Deciding from the chat — says whether the paused turn resumed; its reply streams over Reverb. */
+	/** Deciding from the chat: says whether the paused turn resumed; its reply streams over Reverb. */
 	decideInChat: (ws: string, agentId: string, sessionId: string) =>
 		`${session(ws, agentId, sessionId)}/actions/decisions`,
 } as const;

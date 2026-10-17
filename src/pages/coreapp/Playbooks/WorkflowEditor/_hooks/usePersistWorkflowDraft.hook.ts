@@ -5,7 +5,7 @@ import { persistWorkflowDraft } from '../_helper/persistDraft.helper';
 
 /**
  * Every graph save recreates the node rows with fresh ids, and node tests and
- * pins address those rows through the cached detail — so each save refreshes it.
+ * pins address those rows through the cached detail, so each save refreshes it.
  */
 export const usePersistWorkflowDraft = () => {
 	const queryClient = useQueryClient();

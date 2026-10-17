@@ -53,10 +53,10 @@ const SERIES = {
 
 const RANGES = [7, 30, 90] as const;
 
-const percent = (rate: number | null) => (rate === null ? '—' : `${Math.round(rate * 1000) / 10}%`);
+const percent = (rate: number | null) => (rate === null ? '-' : `${Math.round(rate * 1000) / 10}%`);
 
 const duration = (seconds: number | null) => {
-	if (seconds === null) return '—';
+	if (seconds === null) return '-';
 	if (seconds < 60) return `${seconds < 10 ? seconds.toFixed(1) : Math.round(seconds)}s`;
 	return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
 };
@@ -326,7 +326,7 @@ const VariantComparison = ({
 				{callable
 					? leader === null
 						? 'Both versions convert the same so far.'
-						: `Version ${leader.toUpperCase()} is ahead${lift !== null ? ` — B converts ${lift >= 0 ? `${percent(lift)} better` : `${percent(-lift)} worse`} than A` : ''}. Keep it running until the gap holds steady before you pick a winner.`
+						: `Version ${leader.toUpperCase()} is ahead${lift !== null ? `: B converts ${lift >= 0 ? `${percent(lift)} better` : `${percent(-lift)} worse`} than A` : ''}. Keep it running until the gap holds steady before you pick a winner.`
 					: `Too early to call: each version needs at least ${MIN_VIEWS_TO_CALL} views.`}
 			</p>
 		</section>
@@ -369,7 +369,7 @@ const STATUS: Record<string, { label: string; icon: ReactNode; className: string
 
 const showValue = (value: unknown) =>
 	value === null || value === undefined || value === ''
-		? '—'
+		? '-'
 		: typeof value === 'string' || typeof value === 'number'
 			? String(value)
 			: typeof value === 'boolean'
@@ -592,7 +592,7 @@ const SubmissionsTable = ({
 												</td>
 											)}
 											<td className='max-w-[260px] truncate py-2.5 pr-4 text-zinc-500 dark:text-zinc-400'>
-												{firstInputs(submission) || '—'}
+												{firstInputs(submission) || '-'}
 											</td>
 											<td className='py-2.5 pr-4 text-zinc-700 tabular-nums dark:text-zinc-300'>
 												{duration(submission.duration_seconds)}

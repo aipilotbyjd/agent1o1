@@ -65,7 +65,7 @@ export type TAgent = {
 	allow_self_updates: boolean;
 	allow_skill_editing: boolean;
 	allow_self_clone: boolean;
-	/** How freely the agent may act — see `TAutonomyMode`. */
+	/** How freely the agent may act: see `TAutonomyMode`. */
 	autonomy_mode: TAutonomyMode;
 	/** Test run: actions are simulated, nothing is really sent or changed. */
 	test_mode: boolean;
@@ -135,7 +135,7 @@ export type TAgentSessionStatus = 'active' | 'archived';
 
 export type TAgentMessageRole = 'user' | 'assistant' | 'tool' | 'system';
 
-/** A skill picked for one message — what the chat shows on that message. */
+/** A skill picked for one message: what the chat shows on that message. */
 export type TChosenSkill = {
 	id: string;
 	name: string;
@@ -153,7 +153,7 @@ export type TAgentMessage = {
 	/** The skill picked for this (user) message with `/`; on the paged transcript only. */
 	skill?: TChosenSkill | null;
 	/** Files a member sent with this (user) message. Present whenever the
-	 *  backend eager-loads them — session detail and the paged transcript. */
+	 *  backend eager-loads them: session detail and the paged transcript. */
 	attachments?: TArtifact[];
 	/** Tools the model called while writing this (assistant) reply. */
 	tool_calls: { id: string; name: string; arguments: Record<string, unknown> }[] | null;
@@ -204,7 +204,7 @@ export type TUpdateAgentSessionDto = {
 
 export type TSendAgentMessageDto = {
 	message: string;
-	/** Sent as multipart `attachments[]` — the service builds the `FormData`. */
+	/** Sent as multipart `attachments[]`: the service builds the `FormData`. */
 	attachments?: File[];
 	/** A skill picked with `/`; its instructions are added to this turn only. */
 	skill_id?: string | null;
@@ -215,7 +215,7 @@ export type TSendAgentMessageDto = {
  *  carries the persisted message id to reconcile against the REST transcript;
  *  `done` always fires last. They are built from the Reverb events on the
  *  session's channel (`streamAgentTurn`), so `arguments` and `output` are
- *  absent when too big to broadcast and `complete.text` is always null —
+ *  absent when too big to broadcast and `complete.text` is always null:
  *  the transcript is the source of truth. */
 export type TAgentSessionStreamEvent =
 	| { event: 'delta'; delta: string }
@@ -613,7 +613,7 @@ export type TAgentRunsFilters = {
 };
 
 // ─────────────────────────────────────────────────────────────
-// Usage analytics — GET {agent}/analytics.
+// Usage analytics: GET {agent}/analytics.
 // See AgentAnalyticsController::show().
 // ─────────────────────────────────────────────────────────────
 
@@ -646,7 +646,7 @@ export type TAgentAnalyticsFilters = {
 };
 
 // ─────────────────────────────────────────────────────────────
-// Knowledge base (RAG grounding) — {agent}/knowledge CRUD.
+// Knowledge base (RAG grounding): {agent}/knowledge CRUD.
 // See AgentKnowledgeResource / Store|UpdateAgentKnowledgeRequest.
 // ─────────────────────────────────────────────────────────────
 
@@ -685,10 +685,10 @@ export type TSkillFilters = {
 };
 
 // The reply streams over Reverb as `turn.delta` / `turn.tool` / `turn.changed`
-// on the session's private channel — the `TAgentTurn*Event` types below —
+// on the session's private channel (the `TAgentTurn*Event` types below)
 // which `streamAgentTurn` turns into `TAgentSessionStreamEvent`s.
 
-/** `App\Events\Agents\AgentTurnDelta` (`.turn.delta`) — a batched chunk of reply text. */
+/** `App\Events\Agents\AgentTurnDelta` (`.turn.delta`): a batched chunk of reply text. */
 export type TAgentTurnDeltaEvent = { run_id: string; text: string };
 
 /** `App\Events\Agents\AgentTurnToolActivity` (`.turn.tool`). `arguments` is
@@ -734,7 +734,7 @@ export type TAgentStreamArtifact = {
 };
 
 /**
- * Payload of `AgentMessageCreated::broadcastWith()` — a notice that a message
+ * Payload of `AgentMessageCreated::broadcastWith()`: a notice that a message
  * arrived, without its content, which can pass the 10 KB broadcast limit.
  * Fetch the session's messages to read it.
  */

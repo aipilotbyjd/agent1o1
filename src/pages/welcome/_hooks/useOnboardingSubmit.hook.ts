@@ -156,7 +156,7 @@ export const useOnboardingSubmit = () => {
 		// Step 7: Discovery survey & complete
 		if (currentStep === 6) {
 			// The survey is optional, so a rejected answer must not stop the
-			// `complete` call below — otherwise onboarding never gets marked
+			// `complete` call below, otherwise onboarding never gets marked
 			// done and the user is sent back here on their next sign-in.
 			if (selectedSurvey) {
 				try {

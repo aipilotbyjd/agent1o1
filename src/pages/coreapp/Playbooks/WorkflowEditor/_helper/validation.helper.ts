@@ -16,7 +16,7 @@ export type TValidationIssue = {
 
 /**
  * A required field the author still has to fill in: nothing, or blank text,
- * and not fed by a connection from another step (a dynamic input) — the same
+ * and not fed by a connection from another step (a dynamic input): the same
  * rule the server applies when publishing. Drafts save without it.
  */
 export const isMissingRequiredValue = (
@@ -94,8 +94,8 @@ export const validateWorkflow = (
 
 /**
  * Everything to fix before publishing: what the editor can see for itself,
- * plus what the server refused the last publish for (some rules — a
- * subflow's target, a missing account — only it can check). One entry per
+ * plus what the server refused the last publish for (some rules (a
+ * subflow's target, a missing account) only it can check). One entry per
  * step and field, live checks first. References that won't resolve come last,
  * as suggestions: publishing allows them, but a run reaching one fails.
  */
@@ -140,7 +140,7 @@ export const issuesToFix = (
 };
 
 /**
- * What the server said needs fixing, when it refused a workflow as invalid —
+ * What the server said needs fixing, when it refused a workflow as invalid:
  * shown in the checklist by step and field rather than as a toast.
  */
 export const serverValidationIssues = (error: unknown): TApiIssue[] =>

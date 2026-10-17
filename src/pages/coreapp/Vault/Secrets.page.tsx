@@ -387,7 +387,7 @@ const SecretsPage = () => {
 				</div>
 			)}
 
-			{/* Empty — no secrets yet */}
+			{/* Empty: no secrets yet */}
 			{isEmpty && (
 				<div className='border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card/20 rounded-2xl border border-dashed px-4 py-20 text-center'>
 					<div className='mx-auto flex max-w-sm flex-col items-center'>
@@ -408,7 +408,7 @@ const SecretsPage = () => {
 				</div>
 			)}
 
-			{/* Empty — no search results */}
+			{/* Empty: no search results */}
 			{noResults && (
 				<div className='border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card/20 rounded-2xl border border-dashed px-4 py-16 text-center'>
 					<div className='mx-auto flex max-w-sm flex-col items-center'>
@@ -547,7 +547,7 @@ const SecretsPage = () => {
 							</THead>
 							<TBody>
 								{secrets.map((secret) => {
-									// `value` is only returned for non-secrets — a secret's is
+									// `value` is only returned for non-secrets: a secret's is
 									// write-only, so it can never be revealed or copied here.
 									const isVisible = visibleIds.has(secret.id);
 									const isRevealable = !secret.is_secret && secret.value !== null;

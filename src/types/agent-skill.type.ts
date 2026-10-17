@@ -20,7 +20,7 @@ export type TAgentSkill = {
 	instructions: string;
 	is_shared: boolean;
 	version: number;
-	/** Set when the skill is synced from GitHub — read-only unless two-way sync is enabled. */
+	/** Set when the skill is synced from GitHub: read-only unless two-way sync is enabled. */
 	skill_source_id: string | null;
 	source_two_way: boolean;
 	source_path: string | null;
@@ -40,7 +40,7 @@ export type TCreateAgentSkillDto = {
 	tags?: string[] | null;
 	instructions: string;
 	is_shared?: boolean;
-	/** Saved together with the skill, in order — `skills.store` only. */
+	/** Saved together with the skill, in order: `skills.store` only. */
 	references?: TSkillDraftReference[];
 	scripts?: TSkillDraftScript[];
 };
@@ -64,7 +64,7 @@ export type TSkillDraftScript = {
 	code: string;
 };
 
-/** What `skills.draft` returns — unsaved; the drawer saves it via `skills.store`. */
+/** What `skills.draft` returns: unsaved; the drawer saves it via `skills.store`. */
 export type TSkillDraft = {
 	name: string;
 	description: string;
@@ -118,7 +118,7 @@ export type TCreateSkillScriptDto = {
 export type TUpdateSkillScriptDto = Partial<TCreateSkillScriptDto>;
 
 // ============================================================
-// Skill sources — GitHub repositories skills are synced from
+// Skill sources: GitHub repositories skills are synced from
 // ============================================================
 
 export type TSkillSourceStatus =
@@ -200,7 +200,7 @@ export type TSkillSource = {
 
 export type TCreateSkillSourceDto = {
 	two_way?: boolean;
-	/** `owner/name`, or any GitHub link to it — a folder link also sets branch and path. */
+	/** `owner/name`, or any GitHub link to it: a folder link also sets branch and path. */
 	repo: string;
 	branch?: string | null;
 	path?: string | null;

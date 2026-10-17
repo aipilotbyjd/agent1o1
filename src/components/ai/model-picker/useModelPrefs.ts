@@ -13,7 +13,7 @@ const read = (key: string): string[] => {
 };
 
 /**
- * A member's starred and recently picked models, kept in this browser —
+ * A member's starred and recently picked models, kept in this browser:
  * a convenience, so losing it (private window, cleared data) costs nothing.
  */
 const useModelPrefs = (userKey: string) => {

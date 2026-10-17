@@ -32,14 +32,14 @@ const STATUS_TABS: { value: TAgentActionStatus; label: string }[] = [
 ];
 
 const formatWhen = (iso: string | null) =>
-	iso ? new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+	iso ? new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '-';
 
 const conversationLink = (ws: string, action: TAgentAction) =>
 	action.agent_session_id
 		? `${paths.editAgent(ws, action.agent_id)}?session=${action.agent_session_id}`
 		: paths.editAgent(ws, action.agent_id);
 
-/** A settled action in the log — what ran, or why it didn't. */
+/** A settled action in the log: what ran, or why it didn't. */
 const ActionLogRow = ({ ws, action }: { ws: string; action: TAgentAction }) => (
 	<li className='rounded-2xl border border-zinc-200 bg-white p-3.5 dark:border-zinc-800 dark:bg-zinc-900'>
 		<div className='flex flex-wrap items-center gap-2'>
@@ -74,7 +74,7 @@ const ActionLogRow = ({ ws, action }: { ws: string; action: TAgentAction }) => (
 
 /**
  * The workspace's approvals inbox: every agent action waiting on a person,
- * oldest first — the agent blocked longest is the one to unblock. Deciding
+ * oldest first: the agent blocked longest is the one to unblock. Deciding
  * here resumes the agent's turn in the background; the other tabs are the
  * action log, filtered by outcome.
  */
@@ -114,7 +114,7 @@ const ApprovalsPage = () => {
 					notify.success(
 						decided.length === 0
 							? 'Already decided elsewhere.'
-							: `${decided.length} decision${decided.length === 1 ? '' : 's'} recorded — the agent carries on in the background.`,
+							: `${decided.length} decision${decided.length === 1 ? '' : 's'} recorded; the agent carries on in the background.`,
 					),
 			},
 		);
@@ -128,7 +128,7 @@ const ApprovalsPage = () => {
 							<ShieldCheck size={22} className='text-primary-500' /> Approvals
 						</h1>
 						<p className='mt-1 text-sm font-medium text-zinc-500 dark:text-zinc-400'>
-							Workflow changes and agent actions waiting for a person — and everything
+							Workflow changes and agent actions waiting for a person, and everything
 							your agents did or tried to do.
 						</p>
 					</div>

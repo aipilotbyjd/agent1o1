@@ -764,7 +764,7 @@ const GlobalSearch = () => {
 
 			<ModalFooter>
 				<ModalFooterChild>
-					{/* Full hint set — hidden on narrow screens where it would crowd the footer */}
+					{/* Full hint set: hidden on narrow screens where it would crowd the footer */}
 					<div className='hidden items-center gap-3 text-xs text-zinc-400 sm:flex dark:text-zinc-500'>
 						<div className='flex items-center gap-1.5'>
 							<kbd className='rounded-md border border-zinc-200 bg-white px-1.5 py-0.5 font-mono text-[10px] text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'>

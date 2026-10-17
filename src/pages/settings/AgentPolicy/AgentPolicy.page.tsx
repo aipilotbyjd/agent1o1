@@ -90,7 +90,7 @@ const Toggle = ({
 );
 
 /**
- * The workspace's guardrails over every agent — readable by anyone, changed
+ * The workspace's guardrails over every agent: readable by anyone, changed
  * by admins. Nothing an agent's own settings say can get past these: a mode
  * cap, destructive actions on Autopilot, rules that ask or block by tool or
  * kind of action, how long a request waits, and deciding from Slack.
@@ -207,8 +207,7 @@ const AgentPolicyPage = () => {
 					<option value=''>No limit</option>
 					{AUTONOMY_MODES.map((mode) => (
 						<option key={mode} value={mode}>
-							{AUTONOMY_MODE_META[mode].label} —{' '}
-							{AUTONOMY_MODE_META[mode].description}
+							{AUTONOMY_MODE_META[mode].label}: {AUTONOMY_MODE_META[mode].description}
 						</option>
 					))}
 				</select>
@@ -398,7 +397,7 @@ const AgentPolicyPage = () => {
 									<p className='mt-2 text-[11px] font-semibold text-zinc-400'>
 										Also has {rule.conditions!.length} condition
 										{rule.conditions!.length === 1 ? '' : 's'} set through the
-										API — kept as they are.
+										API: kept as they are.
 									</p>
 								)}
 							</li>

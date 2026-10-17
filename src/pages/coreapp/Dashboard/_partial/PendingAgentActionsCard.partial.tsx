@@ -6,7 +6,7 @@ import paths from '@/Routes/paths';
 const prettify = (raw: string) => raw.replace(/[_-]+/g, ' ');
 
 /**
- * Agent actions paused for a person — the agent-side counterpart of
+ * Agent actions paused for a person: the agent-side counterpart of
  * `PendingApprovalsCard`. Hidden when nothing is waiting; deciding happens in
  * the Approvals inbox, where the full request (and editing it) fits.
  */

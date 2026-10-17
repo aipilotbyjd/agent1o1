@@ -6,7 +6,7 @@ type Props = {
 
 const display = (value: unknown) =>
 	value === null || value === undefined
-		? '—'
+		? '-'
 		: typeof value === 'string'
 			? value
 			: JSON.stringify(value, null, 2);

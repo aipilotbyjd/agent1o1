@@ -28,7 +28,7 @@ const changeStyles: Record<TNodeChange, { ring: string; badge: string; label: st
 const hiddenHandle = '!h-2 !w-2 !min-w-0 !border-0 !bg-zinc-300 dark:!bg-zinc-600';
 
 /**
- * A step as it was in a published version — name and app only. The editing
+ * A step as it was in a published version: name and app only. The editing
  * node is deliberately not reused: its fields write straight into the draft.
  */
 const VersionPreviewNode = ({ id, data }: NodeProps<TVersionPreviewNode>) => {

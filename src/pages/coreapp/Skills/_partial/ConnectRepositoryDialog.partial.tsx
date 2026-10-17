@@ -40,8 +40,8 @@ const inputClass =
 	'block h-9 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-xs font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-primary-500/80 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-100 dark:placeholder:text-zinc-500';
 
 /**
- * Two steps: pick a repository — paste any GitHub link or click one of the
- * account's repositories — then see the skills it holds and import them.
+ * Two steps: pick a repository (paste any GitHub link or click one of the
+ * account's repositories) then see the skills it holds and import them.
  * Branch and folder are optional, under Advanced.
  */
 const ConnectRepositoryDialog = ({ ws, isOpen, onClose }: IConnectRepositoryDialogProps) => {

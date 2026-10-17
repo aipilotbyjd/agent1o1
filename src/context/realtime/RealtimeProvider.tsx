@@ -54,12 +54,12 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
 			: 443;
 		const reverbScheme = import.meta.env.VITE_REVERB_SCHEME || 'https';
 
-		// Without a real app key the connection can never authenticate — skip it so
+		// Without a real app key the connection can never authenticate: skip it so
 		// we don't spam failed WebSocket attempts. Notifications still refresh via
 		// polling + query invalidation until Reverb is configured.
 		if (!reverbAppKey) {
 			console.warn(
-				'[realtime] VITE_REVERB_APP_KEY is not set — skipping WebSocket connection.',
+				'[realtime] VITE_REVERB_APP_KEY is not set: skipping WebSocket connection.',
 			);
 			return;
 		}

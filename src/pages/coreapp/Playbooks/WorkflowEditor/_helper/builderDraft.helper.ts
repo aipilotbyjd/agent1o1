@@ -12,8 +12,8 @@ import { getNodeDefinition } from './nodeCatalog.constants';
 import type { TCanvasEdge, TCanvasNode, TCanvasPosition } from '../_types/canvas.type';
 
 /**
- * Converts between the backend's graph shape — nodes `{ key, type, config,
- * position }`, edges `{ from, to, condition }` — and React Flow canvas
+ * Converts between the backend's graph shape: nodes `{ key, type, config,
+ * position }`, edges `{ from, to, condition }`, and React Flow canvas
  * nodes/edges. Used for a saved workflow's draft (`workflowApiTransform`) and
  * for an AI builder session's `draft_graph`, which share that shape.
  *
@@ -77,7 +77,7 @@ export const graphEdgeToCanvas = (edge: TBuilderGraphEdge, index: number): TCanv
 		...(edge.condition === 'error' ? { style: { stroke: '#f43f5e' } } : {}),
 	}) as TCanvasEdge;
 
-/** A canvas edge's branch condition — `null` for an ordinary connection. */
+/** A canvas edge's branch condition: `null` for an ordinary connection. */
 export const edgeCondition = (edge: TCanvasEdge): string | null => {
 	const condition = edge.data?.condition;
 	return typeof condition === 'string' && condition !== '' ? condition : null;
@@ -145,8 +145,8 @@ const positionNodes = (
 /**
  * A builder session's draft as canvas nodes/edges. Nodes already on the
  * canvas keep their position, label and canvas-only state (pins, colour);
- * sticky notes — which the backend has no node type for, so never reach the
- * draft — are carried over untouched.
+ * sticky notes (which the backend has no node type for, so never reach the
+ * draft) are carried over untouched.
  */
 export const builderGraphToCanvas = (
 	graph: TBuilderGraph,
@@ -179,7 +179,7 @@ export const builderGraphToCanvas = (
 
 /**
  * The canvas as a builder session's `draft_graph`. Sticky notes are left
- * out — the backend has no node type for them and would reject the sync.
+ * out: the backend has no node type for them and would reject the sync.
  */
 export const canvasToBuilderGraph = (nodes: TCanvasNode[], edges: TCanvasEdge[]): TBuilderGraph => {
 	const realNodes = nodes.filter((node) => !isNoteNode(node));

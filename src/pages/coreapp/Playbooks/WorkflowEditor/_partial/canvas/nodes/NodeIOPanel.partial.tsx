@@ -12,7 +12,7 @@ import { PORT_TYPE_COLOR } from '../../../_helper/builder.constants';
 import { buildOutputToken, setTokenDragData } from '../../../_helper/tokenDrag.helper';
 import type { TNodePort } from '../../../_types/node.type';
 
-/** One value flowing into this node — an upstream node's output port. */
+/** One value flowing into this node: an upstream node's output port. */
 export type TIncomingInput = {
 	/** Unique key (`sourceId:portId`). */
 	id: string;
@@ -27,9 +27,9 @@ export type TIncomingInput = {
 };
 
 type Props = {
-	/** Id of the node these ports belong to — the source of dragged output tokens. */
+	/** Id of the node these ports belong to: the source of dragged output tokens. */
 	nodeId: string;
-	/** This node's own accent color — tints its Outputs section. */
+	/** This node's own accent color: tints its Outputs section. */
 	nodeColor: string;
 	/** Outputs from other nodes wired into this node's inputs. */
 	incoming: TIncomingInput[];
@@ -339,7 +339,7 @@ const NodeIOPanel = ({ nodeColor, incoming, outputs }: Props) => {
 	);
 };
 
-/** A draggable input row — drags the upstream value as a token into a field. */
+/** A draggable input row: drags the upstream value as a token into a field. */
 const PortRow = ({
 	port,
 	sourceId,

@@ -662,9 +662,9 @@ const SuiteDetail = ({
 };
 
 /**
- * Eval suites for an agent — graded test cases replayed against the agent
+ * Eval suites for an agent: graded test cases replayed against the agent
  * and scored by assertions.
- * Backed by {agent}/eval-suites — see AgentEvalSuiteController.
+ * Backed by {agent}/eval-suites: see AgentEvalSuiteController.
  */
 const AgentEvalsPanel = ({ ws, agentId }: TProps) => {
 	const [openSuiteId, setOpenSuiteId] = useState<string | null>(null);

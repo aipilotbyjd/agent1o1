@@ -58,7 +58,7 @@ const SkillsListPage = () => {
 	>('All');
 	const [visibility, setVisibility] = useState<TVisibilityFilter>('All');
 
-	// `skills.index` takes no query params — the workspace's whole skill list
+	// `skills.index` takes no query params: the workspace's whole skill list
 	// comes back at once, so filtering happens client-side.
 	const { data: apiSkills, isLoading } = useAgentSkills(currentWorkspaceId);
 	const copySkillMutation = useCopyAgentSkill(currentWorkspaceId);

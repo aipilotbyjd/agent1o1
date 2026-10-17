@@ -3,7 +3,7 @@ import Skeleton from '@/components/ui/Skeleton';
 /** Placeholder cards for a list page that is still fetching.
  *
  *  The list pages each own their own grid classes (columns differ per page), so
- *  this renders the cards only — drop it inside the page's existing grid wrapper
+ *  this renders the cards only: drop it inside the page's existing grid wrapper
  *  and the columns come out right without passing layout down.
  *
  *  It replaces the "Loading agents…" style text branches: a card-shaped pulse

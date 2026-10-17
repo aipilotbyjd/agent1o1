@@ -1,4 +1,4 @@
-/* Urbanist is loaded from index.html (<link> + preconnect), not @import here —
+/* Urbanist is loaded from index.html (<link> + preconnect), not @import here:
    an @import can only start after this stylesheet itself has downloaded. */
 @import '../node_modules/react-date-range/dist/styles.css';
 @import '../node_modules/react-date-range/dist/theme/default.css';
@@ -27,20 +27,20 @@
 
 	--color-primary-foreground: var(--primary-foreground);
 
-	/* The assistant's brand colour — set at runtime from the server brand by
+	/* The assistant's brand colour: set at runtime from the server brand by
 	 * BrandProvider; the fallback matches config/brand.default.ts. */
 	--color-assistant: var(--assistant-color, #7c3aed);
 
 	/* The zinc scale is deliberately NOT remapped onto semantic tokens.
 	 *
-	 * The template pairs every zinc step across themes — `bg-zinc-100
-	 * dark:bg-zinc-900`, `text-zinc-800 dark:text-zinc-200` — so each step must
+	 * The template pairs every zinc step across themes (`bg-zinc-100
+	 * dark:bg-zinc-900`, `text-zinc-800 dark:text-zinc-200`) so each step must
 	 * keep its literal lightness. Aliasing a step to a token that flips with the
 	 * theme inverts those pairs:
 	 *   zinc-800/900 -> --text-primary  (#fff in dark) turned ~355 dark
 	 *     surfaces white: the header bar, wrapper borders, corner strips.
 	 *   zinc-100/200 -> --bg-base/--border-base (near-black in dark) turned 130
-	 *     `dark:text-zinc-100/200` rules black — nav hover and active states.
+	 *     `dark:text-zinc-100/200` rules black: nav hover and active states.
 	 *
 	 * Semantic theming is available separately as bg-main / bg-card /
 	 * border-main / text-main below; use those, not the zinc scale.

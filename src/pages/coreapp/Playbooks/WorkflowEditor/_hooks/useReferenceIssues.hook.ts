@@ -7,8 +7,8 @@ import { useWorkflowEditor } from './useWorkflowEditor.hook';
 const NO_ISSUES: TApiIssue[] = [];
 
 /**
- * References between steps that won't resolve — a step that no longer
- * exists, runs later, or doesn't output that field — found by a dry run of
+ * References between steps that won't resolve (a step that no longer
+ * exists, runs later, or doesn't output that field) found by a dry run of
  * the saved draft. Publishing doesn't check these, so they'd otherwise only
  * surface when a run reaches them. Re-checked whenever what steps do or how
  * they connect changes and has been saved; moving steps around doesn't count.

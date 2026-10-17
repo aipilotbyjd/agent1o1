@@ -3,7 +3,7 @@
 // ------------------------------------------------------------
 // `Connector` is the global, read-only integration catalog (Slack,
 // GitHub, ...). `ConnectorCredential` is a workspace's stored
-// instance of one — `data` (the decrypted secret payload) is
+// instance of one: `data` (the decrypted secret payload) is
 // write-only and never comes back in a response.
 // ============================================================
 
@@ -11,7 +11,7 @@
 export type TConnectorAuthType = 'oauth2' | 'api_key' | 'bearer_token' | 'basic_auth';
 
 /**
- * One entry of `connectors.fields` — the form schema for a manually entered
+ * One entry of `connectors.fields`: the form schema for a manually entered
  * credential. The backend stores this as a JSON *array* (see
  * `ConnectorFactory`), not the keyed object the old frontend assumed.
  */
@@ -138,7 +138,7 @@ export type TInitiateOAuthConnectorDto = {
  * What `OAuthConnectorFlowService::initiate()` actually returns. `state` is the
  * opaque, 10-minute token the provider echoes back to the callback; `scope` on
  * the request DTO above is the credential's visibility (team/personal), NOT the
- * OAuth scopes — those come from the connector row server-side.
+ * OAuth scopes: those come from the connector row server-side.
  */
 export type TInitiateOAuthConnectorResult = {
 	authorize_url: string;

@@ -101,8 +101,8 @@ const RunRow = ({ ws, run }: { ws: string; run: TRun }) => {
 };
 
 /**
- * Read-only run history for an agent — every reply, trigger fire, and manual run.
- * Backed by {agent}/runs — see AgentRunController.
+ * Read-only run history for an agent: every reply, trigger fire, and manual run.
+ * Backed by {agent}/runs: see AgentRunController.
  */
 const AgentRunsPanel = ({ ws, agentId }: TProps) => {
 	const [statusFilter, setStatusFilter] = useState<TRunStatus | undefined>(undefined);

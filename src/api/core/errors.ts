@@ -7,8 +7,8 @@
 // ============================================================
 
 /**
- * A problem the server pinned to a place — e.g. a workflow step (`node_key`)
- * and its config field — with a message written for the user.
+ * A problem the server pinned to a place, e.g. a workflow step (`node_key`)
+ * and its config field, with a message written for the user.
  */
 export type TApiIssue = {
 	node_key: string | null;

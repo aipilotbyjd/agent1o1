@@ -50,7 +50,7 @@ const BillingSuccessPage = () => {
 	const [searchParams] = useSearchParams();
 	const queryClient = useQueryClient();
 	const { activeWorkspaceId } = useWorkspaceContext();
-	// `ws` is set by BillingReturn.page — the workspace that was actually paid for,
+	// `ws` is set by BillingReturn.page: the workspace that was actually paid for,
 	// which need not be the active one. Fall back for direct visits.
 	const workspaceId = searchParams.get('ws') || activeWorkspaceId;
 	const toWorkspacePath = (to: string) => withWorkspace(to, workspaceId);

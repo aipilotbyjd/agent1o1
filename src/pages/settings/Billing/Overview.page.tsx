@@ -161,7 +161,7 @@ const BillingOverviewPage = () => {
 		dunning,
 	} = overview;
 	// A grant with an end date is time-limited (earned through referrals, or a
-	// comp) — only an open-ended grant is a lifetime purchase.
+	// comp), only an open-ended grant is a lifetime purchase.
 	const isLifetime = !!grant && grant.expires_at === null;
 	const freeUntil = grant && grant.expires_at !== null ? grant.expires_at : null;
 	const isReferralTime = !!freeUntil && grant?.source === 'referral';

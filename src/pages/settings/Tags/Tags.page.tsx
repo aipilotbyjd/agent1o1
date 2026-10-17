@@ -32,7 +32,7 @@ const DEFAULT_TAG_COLOR = '#64748B';
 const plural = (count: number, noun: string) => `${count} ${noun}${count === 1 ? '' : 's'}`;
 
 /**
- * Workspace tags — one list shared by workflows and agents. Renaming or
+ * Workspace tags: one list shared by workflows and agents. Renaming or
  * recolouring a tag changes it everywhere it is attached; deleting it only
  * detaches it, nothing tagged is removed.
  */

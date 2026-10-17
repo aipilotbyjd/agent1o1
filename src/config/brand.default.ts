@@ -2,7 +2,7 @@ import type { TBrand } from '@/types/brand.type';
 
 /**
  * The brand shown before `GET /app-config` answers (and if it fails).
- * The only place in the frontend allowed to spell the assistant's name —
+ * The only place in the frontend allowed to spell the assistant's name:
  * the backend config is the source of truth and replaces this at runtime.
  * See docs/ASSISTANT_BRANDING_PLAN.md in the API repo.
  */

@@ -2,7 +2,7 @@
 // AI Provider Key Types (bring your own key)
 // ------------------------------------------------------------
 // A workspace's own API key for an AI provider. The key itself never
-// comes back — only `key_hint`, its masked form. A `personal` key is
+// comes back, only `key_hint`, its masked form. A `personal` key is
 // visible to (and used for) only the member who added it; a `team`
 // key is used for everyone in the workspace who has no personal key
 // for that provider. Only a `valid` key is ever used.
@@ -45,7 +45,7 @@ export type TAiProviderCredential = {
 	validation_message: string | null;
 	last_validated_at: string | null;
 	last_used_at: string | null;
-	/** A personal key kept while the workspace has personal keys turned off — never used. */
+	/** A personal key kept while the workspace has personal keys turned off, never used. */
 	ignored_by_policy: boolean;
 	can_manage: boolean;
 	created_by: string | null;
@@ -73,9 +73,9 @@ export type TAiProviderCredentialCheck = {
 
 /**
  * When AI calls may still run on the platform's keys (and cost token credits):
- * `fallback` — the workspace's key first, the platform's as backup;
- * `when_no_key` — the platform's only for models no workspace key covers;
- * `never` — only the workspace's own keys.
+ * `fallback`: the workspace's key first, the platform's as backup;
+ * `when_no_key`: the platform's only for models no workspace key covers;
+ * `never`, only the workspace's own keys.
  */
 export type TPlatformKeyUsage = 'fallback' | 'when_no_key' | 'never';
 
@@ -93,7 +93,7 @@ export type TUpdateAiKeyPolicyDto = {
 
 type TCatalogModelSummary = { id: string; display_name: string };
 
-/** What saving a proposed key policy would change — judged on the workspace's team keys. */
+/** What saving a proposed key policy would change: judged on the workspace's team keys. */
 export type TAiKeyPolicyImpact = {
 	unavailable_models: TCatalogModelSummary[];
 	affected_agents: { id: string; name: string; model: string }[];

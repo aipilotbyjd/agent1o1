@@ -162,9 +162,9 @@ const VersionRow = ({
 };
 
 /**
- * Version history for an agent — every saved change, with a snapshot and restore.
+ * Version history for an agent: every saved change, with a snapshot and restore.
  * Restoring rolls forward: it creates a new version rather than dropping the
- * ones in between. Backed by {agent}/versions — see AgentVersionController.
+ * ones in between. Backed by {agent}/versions: see AgentVersionController.
  */
 const AgentVersionsPanel = ({ ws, agentId }: TProps) => {
 	const { data, isLoading } = useAgentVersions(ws, agentId ?? '');

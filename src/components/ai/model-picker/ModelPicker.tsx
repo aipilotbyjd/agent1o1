@@ -26,7 +26,7 @@ interface IModelPickerProps {
 	onChange: (value: string | null, model: TModelCatalogEntry | null) => void;
 	/** What the agent, skill or step needs, for "Recommended" and mismatch warnings. */
 	requirements?: TModelRequirements;
-	/** Offer "no specific model" — e.g. the workspace default, or "same as the agent". */
+	/** Offer "no specific model", e.g. the workspace default, or "same as the agent". */
 	emptyOption?: TEmptyOption;
 	label?: string;
 	disabled?: boolean;
@@ -159,7 +159,7 @@ const ModelPicker = ({
 						<Warning>
 							{selected?.display_name} can't use {missing.join(' or ')}
 							{missing.includes('tools') && requirements?.tools
-								? ` — this agent has ${requirements.tools} tool${requirements.tools === 1 ? '' : 's'}`
+								? ` - this agent has ${requirements.tools} tool${requirements.tools === 1 ? '' : 's'}`
 								: ''}
 							.
 						</Warning>

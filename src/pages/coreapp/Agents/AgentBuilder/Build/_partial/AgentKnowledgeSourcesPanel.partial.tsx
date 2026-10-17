@@ -21,7 +21,7 @@ const isArtifactCollection = (collection: string) => collection.startsWith('arti
 /**
  * Which workspace knowledge-base collections this agent may search. With none
  * attached the backend lets it search every collection in the workspace;
- * attaching one scopes its knowledge tools to just those — see
+ * attaching one scopes its knowledge tools to just those: see
  * AgentKnowledgeSourceController and ToolRegistry::knowledgeTools().
  */
 const AgentKnowledgeSourcesPanel = ({ ws, agentId }: TProps) => {

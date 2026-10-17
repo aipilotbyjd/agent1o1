@@ -5,7 +5,7 @@ import { catalogKeys } from './catalog.keys';
 // ============================================================
 // Catalog Hooks
 // ------------------------------------------------------------
-// All reads, all cached long — this is reference data that changes
+// All reads, all cached long: this is reference data that changes
 // rarely, not per-workspace state.
 // ============================================================
 
@@ -35,7 +35,7 @@ export const useTriggerPresets = () =>
 
 /**
  * Per workspace it reflects that workspace's keys, policy and model settings,
- * which can change in another tab — so it goes stale after a minute and is
+ * which can change in another tab, so it goes stale after a minute and is
  * refetched when the window regains focus.
  */
 export const useModelCatalog = (ws?: string) =>

@@ -17,7 +17,7 @@ export const LibraryService = {
 		return new File([response.data as Blob], item.filename, { type: item.mime_type });
 	},
 
-	/** Fetched with the API token, then saved — a plain link would carry no auth. */
+	/** Fetched with the API token, then saved: a plain link would carry no auth. */
 	download: async (ws: string, item: Pick<TLibraryItem, 'id' | 'filename'>) => {
 		const response = await axiosClient.get(E.download(ws, item.id), { responseType: 'blob' });
 		const url = URL.createObjectURL(response.data as Blob);

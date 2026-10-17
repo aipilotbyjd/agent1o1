@@ -17,7 +17,7 @@ export type TAgentActionsBroadcast = {
 };
 
 /**
- * Follows a conversation's approvals — a turn pausing, and actions being
+ * Follows a conversation's approvals: a turn pausing, and actions being
  * decided anywhere (the inbox, an email link, Slack, another tab). Returns an
  * unsubscribe that stops only these listeners, so it can share the channel
  * with `subscribeToAgentSession`.

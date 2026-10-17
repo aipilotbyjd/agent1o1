@@ -49,7 +49,7 @@ const getInitials = (name: string) =>
 		.slice(0, 2)
 		.toUpperCase();
 
-/** Owner is derived from workspace ownership, so it is never offered here —
+/** Owner is derived from workspace ownership, so it is never offered here:
  *  the same set the members settings screen grants. */
 const INVITE_ROLES: { value: TAssignableWorkspaceRole; label: string; hint: string }[] = [
 	{ value: 'admin', label: 'Admin', hint: 'Manage members, settings, and workflows.' },

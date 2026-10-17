@@ -32,10 +32,10 @@ const HistoryStatsCards = ({ ws }: HistoryStatsCardsProps) => {
 	const totals = stats?.totals;
 	const series = stats?.series ?? [];
 	const format = (value: number | undefined) =>
-		isLoading || isError || value === undefined ? '—' : value.toLocaleString();
+		isLoading || isError || value === undefined ? '-' : value.toLocaleString();
 	const successRate =
 		isLoading || isError || totals?.success_rate == null
-			? '—'
+			? '-'
 			: `${(totals.success_rate * 100).toFixed(1).replace(/\.0$/, '')}%`;
 
 	const runsSparkline = toSparkline(series.map((p) => p.total));

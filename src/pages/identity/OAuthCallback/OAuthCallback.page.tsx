@@ -17,7 +17,7 @@ import pages from '@/Routes/pages';
 // ------------------------------------------------------------
 // Landing spot for the social sign-in round trip. The provider goes
 // to the backend, which redirects here with a single-use exchange
-// code (valid ~60s) or an `error` message — see
+// code (valid ~60s) or an `error` message: see
 // `AuthController::handleProviderCallback`.
 // ============================================================
 
@@ -34,7 +34,7 @@ const claimStoredReferral = async () => {
 	try {
 		await ReferralService.claim({ code: referral.code, visitor_id: referral.visitor_id });
 	} catch {
-		// Existing account, expired window or dead code — nothing to claim.
+		// Existing account, expired window or dead code: nothing to claim.
 	} finally {
 		clearReferralAttribution();
 	}

@@ -10,7 +10,7 @@ const fieldClass =
 	'w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs text-zinc-800 outline-none focus:border-primary-500/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200';
 
 export type TEvalCaseDraft = {
-	/** The user message the reply answered — replayed as the case input. */
+	/** The user message the reply answered: replayed as the case input. */
 	input: string;
 	/** The reply being saved, shown for reference while writing the expectation. */
 	reply: string;

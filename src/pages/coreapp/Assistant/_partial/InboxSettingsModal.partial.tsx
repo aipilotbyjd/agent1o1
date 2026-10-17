@@ -5,7 +5,7 @@ import { useToggleInbox, useUpdateInboxSettings } from '@/api/modules/assistant'
 import type { TInboxSettings } from '@/types/assistant.type';
 
 const DRAFT_MODES = {
-	confident: 'When confident — otherwise suggest one here',
+	confident: 'When confident, otherwise suggest one here',
 	off: 'Off',
 } as const;
 

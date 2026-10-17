@@ -20,7 +20,7 @@ import { AuthService } from './auth.service';
 // ============================================================
 // Auth Hooks
 // ------------------------------------------------------------
-// Auth owns no query cache of its own — every mutation here either
+// Auth owns no query cache of its own: every mutation here either
 // writes the access token or updates the `user` module's cache
 // directly. These stay hand-written rather than going through the
 // CRUD resource factory, which targets workspace-scoped

@@ -61,7 +61,7 @@ const AiProvidersPage = () => {
 	const setDefault = useSetDefaultAiProviderCredential(ws);
 	const validateKey = useValidateAiProviderCredential(ws);
 
-	// `?connect=<provider>` — the model picker's "Connect" link — opens the
+	// `?connect=<provider>`: the model picker's "Connect" link; opens the
 	// connect dialog on that provider.
 	const [connectingFor, setConnectingFor] = useState<string | null | undefined>(
 		() => searchParams.get('connect') ?? undefined,

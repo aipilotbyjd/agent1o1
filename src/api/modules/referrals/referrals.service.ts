@@ -18,7 +18,7 @@ import { ReferralEndpoints as E } from './referrals.endpoints';
 type TPageParams = { page?: number; per_page?: number };
 
 export const ReferralService = {
-	/** Public — called when someone lands on a `?ref=` link, before they have an account. */
+	/** Public: called when someone lands on a `?ref=` link, before they have an account. */
 	recordVisit: (payload: TRecordReferralVisitDto) =>
 		axiosClient
 			.post<TApiResponse<TReferralVisitResult>>(E.visit, payload)

@@ -17,7 +17,7 @@ export const fileExtension = (filename: string) => {
 export const isImageFile = (mimeType: string | null | undefined, filename = '') =>
 	mimeType ? mimeType.startsWith('image/') : /\.(png|jpe?g|gif|webp|svg)$/i.test(filename);
 
-/** The mime type when known, else a guess from the extension — enough to pick an icon. */
+/** The mime type when known, else a guess from the extension: enough to pick an icon. */
 const typeHint = (mimeType: string | null | undefined, filename: string) =>
 	`${mimeType ?? ''} ${fileExtension(filename).toLowerCase()}`;
 

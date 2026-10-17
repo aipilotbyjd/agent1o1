@@ -27,7 +27,7 @@ export const useUploadArtifact = (ws: string) => {
 	return useMutation({
 		mutationFn: (payload: TUploadArtifactDto) => ArtifactService.upload(ws, payload),
 		// An upload can land as a new version of an existing group, so any open
-		// version history is stale too — not just the list.
+		// version history is stale too, not just the list.
 		onSuccess: () => qc.invalidateQueries({ queryKey: artifactKeys.all(ws) }),
 		meta: { errorMessage: 'Failed to upload artifact' },
 	});

@@ -1175,7 +1175,7 @@ const Topbar = () => {
 					onClose={() => setIsSaveAsTemplateOpen(false)}
 					defaultName={state.workflow.name}
 					beforeSave={async () => {
-						// The template copies the server-side draft — push the canvas first.
+						// The template copies the server-side draft: push the canvas first.
 						await persistWorkflowDraft({
 							workspaceId,
 							workflowId: state.workflow.apiId!,

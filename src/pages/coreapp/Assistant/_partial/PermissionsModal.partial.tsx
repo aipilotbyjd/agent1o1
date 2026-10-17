@@ -21,7 +21,7 @@ const RULE_LABELS: Record<TAssistantToolRule, string> = {
 	deny: 'Never',
 };
 
-/** "Group" a tool by its name's prefix — `gmail_send_email` → `gmail`. */
+/** "Group" a tool by its name's prefix: `gmail_send_email` → `gmail`. */
 const groupOf = (tool: TAssistantToolDescription) =>
 	tool.name.includes('_') ? tool.name.split('_')[0] : 'general';
 
@@ -38,7 +38,7 @@ const PermissionsModalPartial = ({ workspaceId, isOpen, onClose }: IPermissionsM
 		internal: `Changes only ${brand.name}'s own notes`,
 		write: 'Creates or changes data',
 		external: 'Sends or shares with others',
-		destructive: 'Deletes data — always asks',
+		destructive: 'Deletes data, always asks',
 	};
 	const { data: tools = [] } = useAssistantToolRules(workspaceId, isOpen);
 	const update = useUpdateAssistantToolRules(workspaceId);

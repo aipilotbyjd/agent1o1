@@ -45,7 +45,7 @@ const TwoFactorSetupPage = () => {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
-	// The QR is rendered in the browser from the otpauth URL — that URL carries
+	// The QR is rendered in the browser from the otpauth URL: that URL carries
 	// the TOTP secret, so it must never be handed to a third-party image service.
 	useEffect(() => {
 		if (!otpauthUrl) return;

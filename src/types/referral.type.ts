@@ -4,7 +4,7 @@
 // The signed-in user's side of the referral program: their code,
 // the program's terms, their numbers and who they referred. Every
 // reward is credits, free plan time, an invoice credit or trial
-// days — never cash.
+// days, never cash.
 // ============================================================
 
 export type TReferralStatus = 'pending' | 'verified' | 'activated' | 'converted' | 'rejected';
@@ -28,7 +28,7 @@ export type TReferralRewardType =
 export type TReferralRewardStatus = 'awaiting_approval' | 'pending' | 'granted' | 'revoked';
 
 export type TReferralProfile = {
-	/** False when referrals are switched off or no program is live — hide the page. */
+	/** False when referrals are switched off or no program is live: hide the page. */
 	enabled: boolean;
 	code: string;
 	is_active: boolean;
@@ -72,7 +72,7 @@ export type TReferralStats = {
 	free_plan_time: { plan: string | null; expires_at: string } | null;
 };
 
-/** A referred person as their referrer sees them — email masked. */
+/** A referred person as their referrer sees them: email masked. */
 export type TReferredUser = {
 	id: string;
 	email: string | null;

@@ -10,7 +10,7 @@ const AUTOSAVE_DEBOUNCE_MS = 700;
 /**
  * Saves the builder's draft a moment after each change. The server's answer
  * updates the page record (issues, unpublished changes) but never the draft
- * in the builder — see `usePageBuilderStore`. `flush()` saves right away,
+ * in the builder: see `usePageBuilderStore`. `flush()` saves right away,
  * for publishing, and resolves to whether the draft on the server is now
  * the one on screen.
  */

@@ -14,7 +14,7 @@ const formatSize = (bytes: number) =>
 			? `${(bytes / 1024).toFixed(1)} KB`
 			: `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 
-/** Files the assistant handed over in a reply — also kept in Artifacts. */
+/** Files the assistant handed over in a reply, also kept in Artifacts. */
 const MessageFilesPartial = ({ workspaceId, files }: IMessageFilesProps) => {
 	const download = useDownloadArtifact(workspaceId);
 

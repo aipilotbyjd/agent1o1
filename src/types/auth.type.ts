@@ -1,7 +1,7 @@
 // ============================================================
 // Auth Types
 // ------------------------------------------------------------
-// The refresh token is never in a response body — it's set as an
+// The refresh token is never in a response body: it's set as an
 // httpOnly, secure, sameSite=none cookie by every endpoint that
 // issues tokens, and `POST /auth/refresh` reads it back the same
 // way. `TAuthTokens` reflects exactly what the client can see.
@@ -36,7 +36,7 @@ export type TRegisterDto = {
 	email: string;
 	password: string;
 	password_confirmation: string;
-	/** From a `?ref=` link — see `referralAttribution.util`. Never blocks signup. */
+	/** From a `?ref=` link: see `referralAttribution.util`. Never blocks signup. */
 	referral_code?: string;
 	referral_visitor_id?: string;
 };
@@ -89,7 +89,7 @@ export type TRegenerateRecoveryCodesDto = {
 };
 
 /** `POST /auth/2fa/enable`. The backend returns the raw otpauth:// URL, not a
- *  rendered image — the QR is drawn client-side so the TOTP secret never leaves
+ *  rendered image: the QR is drawn client-side so the TOTP secret never leaves
  *  the browser. */
 export type TTwoFactorEnableResult = { secret: string; otpauth_url: string };
 export type TTwoFactorConfirmResult = { recovery_codes: string[] };
@@ -161,13 +161,13 @@ export type TCreateApiKeyDto = {
 	expires_at?: string | null;
 };
 
-/** The plaintext key is returned once, on creation only — it is never
+/** The plaintext key is returned once, on creation only: it is never
  *  readable again afterward. */
 export type TCreateApiKeyResult = { api_key: TApiKey; plain_text_key: string };
 
 // ─── Response types ──────────────────────────────────────────
 
-/** Tokens as the client can actually see them — the refresh token itself
+/** Tokens as the client can actually see them: the refresh token itself
  *  never leaves the `refresh_token` cookie. */
 export type TAuthTokens = {
 	access_token: string;
@@ -177,7 +177,7 @@ export type TAuthTokens = {
 
 export type TLoginSuccessData = { user: TUser; tokens: TAuthTokens };
 
-/** Login short-circuits into this shape for accounts with 2FA enabled —
+/** Login short-circuits into this shape for accounts with 2FA enabled:
  *  exchange `two_factor_challenge` + the emailed code via
  *  `POST /auth/2fa/verify` to get `TLoginSuccessData` instead. */
 export type TTwoFactorChallengeData = { two_factor_challenge: string };
@@ -188,10 +188,10 @@ export const isTwoFactorChallenge = (
 	data: TLoginSuccessData | TTwoFactorChallengeData,
 ): data is TTwoFactorChallengeData => 'two_factor_challenge' in data;
 
-/** Registration returns the created user and tokens — no email
+/** Registration returns the created user and tokens: no email
  *  verification gate on login, only on actions that require it. */
 export type TRegisterResponse = TApiResponse<TLoginSuccessData>;
 
-/** Refresh returns a fresh access token only — the rotated refresh token
+/** Refresh returns a fresh access token only: the rotated refresh token
  *  is queued as a new `refresh_token` cookie, not returned in the body. */
 export type TRefreshResponse = TApiResponse<{ tokens: TAuthTokens }>;

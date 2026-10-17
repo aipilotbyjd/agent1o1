@@ -17,7 +17,7 @@ interface IComposerProps {
 
 /**
  * The chat box. While a reply is being written the owner can stop it, or
- * keep typing — what they send then is queued and answered next.
+ * keep typing: what they send then is queued and answered next.
  */
 const ComposerPartial = ({
 	onSend,
@@ -83,7 +83,7 @@ const ComposerPartial = ({
 						: voice.error
 							? 'Microphone access was blocked.'
 							: isWorking
-								? `${brand.name} is working — anything you send now is answered next.`
+								? `${brand.name} is working: anything you send now is answered next.`
 								: 'Enter to send · Shift+Enter for a new line'}
 				</p>
 				<div className='flex items-center gap-2'>

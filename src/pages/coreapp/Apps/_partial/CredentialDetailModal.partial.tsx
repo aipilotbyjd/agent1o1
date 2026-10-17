@@ -418,8 +418,8 @@ const CredentialDetailModal = ({
 						</div>
 					)}
 
-					{/* Stored field values are never returned by the API — the
-					    secret payload is write-only — so there is nothing to list
+					{/* Stored field values are never returned by the API (the
+					    secret payload is write-only) so there is nothing to list
 					    here, only the schema shown while editing. */}
 				</div>
 				{credential.is_expired && (

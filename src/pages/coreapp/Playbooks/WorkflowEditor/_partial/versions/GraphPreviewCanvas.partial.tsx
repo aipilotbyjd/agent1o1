@@ -71,7 +71,7 @@ const toPreviewEdges = (graph: TBuilderGraph): Edge[] =>
 		};
 	});
 
-/** "Slack, 2 × Gmail: Get Message" — repeats of one step type read once. */
+/** "Slack, 2 × Gmail: Get Message"; repeats of one step type read once. */
 const countedNames = (names: string[]) =>
 	[
 		...names.reduce(
@@ -83,7 +83,7 @@ const countedNames = (names: string[]) =>
 		.join(', ');
 
 const formatValue = (value: unknown) => {
-	if (value === null || value === undefined || value === '') return '—';
+	if (value === null || value === undefined || value === '') return '-';
 	if (typeof value === 'string') return value;
 	return JSON.stringify(value);
 };

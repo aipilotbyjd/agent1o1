@@ -152,7 +152,7 @@ const SaveStatus = () => {
 				role='alert'
 				className='flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 pr-1 pl-2 text-[11px] font-semibold whitespace-nowrap text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200'>
 				<CloudOff size={13} className='shrink-0' />
-				<span className='hidden 2xl:inline'>Changed in another window — not saved</span>
+				<span className='hidden 2xl:inline'>Changed in another window, not saved</span>
 				<span className='2xl:hidden'>Not saved</span>
 				<button
 					type='button'
@@ -449,7 +449,7 @@ const BuilderTopbar = ({ publishOpen, setPublishOpen }: { publishOpen: boolean; 
 				defaultName={page.name}
 				defaultDescription={page.description}
 				beforeSave={async () => {
-					// The template copies the server-side draft — save the edits still in the debounce.
+					// The template copies the server-side draft: save the edits still in the debounce.
 					if (!(await flush())) throw new Error('The page could not be saved.');
 				}}
 			/>

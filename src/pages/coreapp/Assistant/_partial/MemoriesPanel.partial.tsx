@@ -1,7 +1,7 @@
 import { X } from 'lucide-react';
 import { useAssistantMemories, useDeleteAssistantMemory } from '@/api/modules/assistant';
 
-/** What the assistant has remembered about its owner — and a way to make it forget. */
+/** What the assistant has remembered about its owner, and a way to make it forget. */
 const MemoriesPanelPartial = ({ workspaceId }: { workspaceId: string }) => {
 	const { data: memories = [], isLoading } = useAssistantMemories(workspaceId);
 	const forget = useDeleteAssistantMemory(workspaceId);

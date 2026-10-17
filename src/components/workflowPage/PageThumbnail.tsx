@@ -193,7 +193,7 @@ const Sketch = ({ block }: { block: TPageBlock }) => {
 };
 
 /**
- * A small sketch of a page's layout, drawn in its own theme — for picking a
+ * A small sketch of a page's layout, drawn in its own theme, for picking a
  * template, where the real renderer would be too much at this size.
  */
 const PageThumbnail = ({

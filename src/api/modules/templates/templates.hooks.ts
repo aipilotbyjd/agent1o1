@@ -166,7 +166,7 @@ export const useSaveAgentAsTemplate = (ws: string) => {
 };
 
 // ─── Page templates ────────────────────────────────────────────
-// Used by creating a page with `template_id` — see `useCreateWorkflowPage`.
+// Used by creating a page with `template_id`: see `useCreateWorkflowPage`.
 
 export const usePageTemplates = (ws: string) =>
 	useQuery({

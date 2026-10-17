@@ -36,7 +36,7 @@ const RISK_LABEL: Record<TActionRisk, string> = {
 const formatValue = (value: unknown) =>
 	typeof value === 'string' ? value : JSON.stringify(value, null, 2);
 
-/** When a waiting action lapses — the workspace's approval window. */
+/** When a waiting action lapses: the workspace's approval window. */
 const expiresLabel = (expiresAt: string | null) => {
 	if (!expiresAt) return null;
 	const minutes = Math.round((new Date(expiresAt).getTime() - Date.now()) / 60000);
@@ -57,7 +57,7 @@ export const ApprovalCard = ({
 }: {
 	action: TAgentAction;
 	busy: boolean;
-	/** Name the agent — in the workspace inbox, or for a subagent's action in a chat. */
+	/** Name the agent, in the workspace inbox, or for a subagent's action in a chat. */
 	showAgent?: boolean;
 	/** "Always allow" is offered only to people who may manage the agent, and only for node/workflow tools. */
 	canRemember: boolean;
@@ -287,7 +287,7 @@ export const ApprovalCard = ({
 
 /**
  * The actions a paused turn is waiting on, as approve / edit / reject cards
- * under the chat. The turn resumes once every one is decided — the last
+ * under the chat. The turn resumes once every one is decided: the last
  * decision streams the agent carrying on, right here.
  */
 const AgentApprovalCards = ({
