@@ -21,7 +21,6 @@ import KnowledgeDocumentModal from './_partial/KnowledgeDocumentModal.partial';
 import AddKnowledgeDialog from './_partial/AddKnowledgeDialog.partial';
 import type { TKnowledgeKind } from './_helper/knowledge.sources';
 import KnowledgeSourcesPartial from './_partial/KnowledgeSources.partial';
-import EditKnowledgeSourceDialog from './_partial/EditKnowledgeSourceDialog.partial';
 import KnowledgeSourceDocumentsModal from './_partial/KnowledgeSourceDocumentsModal.partial';
 import type { TKnowledgeSource } from '@/types/knowledge-base.type';
 
@@ -394,11 +393,6 @@ const KnowledgeListPage = () => {
 
 			<KnowledgeDocumentModal ws={ws} doc={openDoc} onClose={() => setOpenDoc(null)} />
 
-			<EditKnowledgeSourceDialog
-				ws={ws}
-				source={editingSource}
-				onClose={() => setEditingSource(null)}
-			/>
 			<KnowledgeSourceDocumentsModal
 				ws={ws}
 				source={documentsSource}
@@ -415,6 +409,12 @@ const KnowledgeListPage = () => {
 				initialKind={addKind ?? 'text'}
 				defaultCollection={selectedCollection}
 				onClose={() => setAddKind(null)}
+			/>
+			<AddKnowledgeDialog
+				ws={ws}
+				isOpen={editingSource !== null}
+				source={editingSource}
+				onClose={() => setEditingSource(null)}
 			/>
 		</Container>
 	);

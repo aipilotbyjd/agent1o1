@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { AlertTriangle, X } from 'lucide-react';
 import {
 	useCreateKnowledgeSource,
 	useIngestKnowledge,
 	useKnowledgeSourceApps,
+	useUpdateKnowledgeSource,
 } from '@/api/modules/knowledge-base';
-import type { TKnowledgeSourceType } from '@/types/knowledge-base.type';
+import type { TKnowledgeSource, TKnowledgeSourceType } from '@/types/knowledge-base.type';
 import {
 	ALLOWED_EXTENSIONS,
 	KNOWLEDGE_KINDS,
@@ -26,23 +28,44 @@ interface IAddKnowledgeDialogProps {
 	/** Which option is picked when the panel opens. */
 	initialKind?: TKnowledgeKind;
 	defaultCollection?: string;
+	/** Opens the panel on this synced source, to edit it. */
+	source?: TKnowledgeSource | null;
 	onClose: () => void;
 }
+
+const STATUS_LABEL: Record<TKnowledgeSource['status'], { text: string; className: string }> = {
+	pending: { text: 'Waiting to sync', className: 'text-zinc-500' },
+	syncing: { text: 'Syncing…', className: 'text-sky-600 dark:text-sky-400' },
+	ready: { text: 'Up to date', className: 'text-emerald-600 dark:text-emerald-400' },
+	failed: { text: 'Sync failed', className: 'text-rose-600 dark:text-rose-400' },
+};
+
+const cleanConfig = (values: Record<string, string>) =>
+	Object.fromEntries(
+		Object.entries(values)
+			.map(([key, value]) => [key, value.trim()])
+			.filter(([, value]) => value),
+	);
 
 /**
  * The one way to add to the knowledge base: text or a file once, or a web
  * page or app kept in sync. Name, collection and privacy work the same for
- * every kind.
+ * every kind. Given a `source` it edits that one instead: only its name and
+ * what it reads can change (changing what it reads drops its documents and
+ * syncs it again); its kind, collection and privacy are fixed once added.
  */
 const AddKnowledgeDialog = ({
 	ws,
 	isOpen,
 	initialKind = 'text',
 	defaultCollection,
+	source,
 	onClose,
 }: IAddKnowledgeDialogProps) => {
 	const ingest = useIngestKnowledge(ws);
 	const createSource = useCreateKnowledgeSource(ws);
+	const updateSource = useUpdateKnowledgeSource(ws);
+	const editing = source ?? null;
 
 	const [kind, setKind] = useState<TKnowledgeKind>(initialKind);
 	const [name, setName] = useState('');
@@ -58,10 +81,11 @@ const AddKnowledgeDialog = ({
 	const app = apps?.find((candidate) => candidate.type === kind);
 
 	// Each app starts on the member's first account, with nothing picked.
+	// A source being edited keeps its own account and settings.
 	const [syncedPick, setSyncedPick] = useState<{ kind: TKnowledgeKind; app: typeof app } | null>(
 		null,
 	);
-	if (syncedPick?.kind !== kind || syncedPick.app !== app) {
+	if (!editing && (syncedPick?.kind !== kind || syncedPick.app !== app)) {
 		setSyncedPick({ kind, app });
 		setCredentialId(app?.accounts[0]?.id);
 		setConfig({});
@@ -69,11 +93,23 @@ const AddKnowledgeDialog = ({
 		if (!nameTouched) setName('');
 	}
 
-	const openKey = isOpen ? `${initialKind}:${defaultCollection ?? ''}` : null;
+	const openKey = isOpen
+		? editing
+			? `edit:${editing.id}`
+			: `${initialKind}:${defaultCollection ?? ''}`
+		: null;
 	const [syncedOpenKey, setSyncedOpenKey] = useState<string | null>(null);
 	if (syncedOpenKey !== openKey) {
 		setSyncedOpenKey(openKey);
-		if (isOpen) {
+		if (isOpen && editing) {
+			setKind(editing.type);
+			setName(editing.name);
+			setConfig(editing.config ?? {});
+			setCollection(editing.collection);
+			setIsPrivate(editing.private);
+			setCredentialId(editing.credential_id ?? undefined);
+			setNameTouched(true);
+		} else if (isOpen) {
 			setKind(initialKind);
 			setCollection(defaultCollection ?? '');
 		}
@@ -82,10 +118,16 @@ const AddKnowledgeDialog = ({
 	if (!isOpen) return null;
 
 	const definition = KNOWLEDGE_KINDS[kind];
-	const isPending = ingest.isPending || createSource.isPending;
+	const isPending = ingest.isPending || createSource.isPending || updateSource.isPending;
+	const configChanged =
+		!!editing &&
+		JSON.stringify(cleanConfig(config)) !== JSON.stringify(cleanConfig(editing.config));
 
-	const canSubmit =
-		kind === 'text'
+	const canSubmit = editing
+		? !!name.trim() &&
+			hasRequiredSettings(definition, config) &&
+			(name.trim() !== editing.name || configChanged)
+		: kind === 'text'
 			? !!text.trim()
 			: kind === 'file'
 				? !!file
@@ -105,6 +147,21 @@ const AddKnowledgeDialog = ({
 
 	const handleSubmit = () => {
 		if (!canSubmit) return;
+
+		if (editing) {
+			updateSource.mutate(
+				{
+					id: editing.id,
+					payload: {
+						name: name.trim(),
+						...(configChanged ? { config: cleanConfig(config) } : {}),
+					},
+				},
+				{ onSuccess: handleClose },
+			);
+
+			return;
+		}
 
 		if (!definition.synced) {
 			ingest.mutate(
@@ -128,11 +185,7 @@ const AddKnowledgeDialog = ({
 				collection: collection.trim() || undefined,
 				private: isPrivate,
 				credential_id: kind === 'url' ? undefined : credentialId,
-				config: Object.fromEntries(
-					Object.entries(config)
-						.map(([key, value]) => [key, value.trim()])
-						.filter(([, value]) => value),
-				),
+				config: cleanConfig(config),
 			},
 			{ onSuccess: handleClose },
 		);
@@ -147,6 +200,7 @@ const AddKnowledgeDialog = ({
 				key={key}
 				type='button'
 				onClick={() => setKind(key)}
+				disabled={!!editing}
 				aria-pressed={active}
 				className={`flex cursor-pointer items-start gap-2.5 rounded-xl border p-2.5 text-left transition-colors ${
 					active
@@ -187,11 +241,12 @@ const AddKnowledgeDialog = ({
 				<div className='flex items-center justify-between border-b border-zinc-200 px-6 py-5 dark:border-zinc-800'>
 					<div>
 						<h2 className='text-lg font-black tracking-tight text-zinc-900 dark:text-white'>
-							Add knowledge
+							{editing ? 'Edit source' : 'Add knowledge'}
 						</h2>
 						<p className='mt-0.5 text-xs font-semibold text-zinc-400 dark:text-zinc-500'>
-							Everything is chunked, embedded and made searchable. Apps are read with
-							your connected account, read-only.
+							{editing
+								? 'Rename it or change what it reads. It keeps syncing on its own.'
+								: 'Everything is chunked, embedded and made searchable. Apps are read with your connected account, read-only.'}
 						</p>
 					</div>
 					<button
@@ -203,18 +258,45 @@ const AddKnowledgeDialog = ({
 				</div>
 
 				<div className='flex-1 space-y-5 px-6 py-5'>
-					<div className='space-y-2'>
-						<p className={labelClass}>Add once</p>
-						<div className='grid grid-cols-2 gap-2'>
-							{(['text', 'file'] as const).map(kindButton)}
+					{editing ? (
+						<div className='space-y-2'>
+							<p className={labelClass}>Source</p>
+							<div className='grid grid-cols-2 items-center gap-2'>
+								{kindButton(editing.type)}
+								<div className='text-[11px] font-semibold'>
+									<p className={STATUS_LABEL[editing.status].className}>
+										{STATUS_LABEL[editing.status].text}
+									</p>
+									<p className='text-zinc-400 dark:text-zinc-500'>
+										{editing.documents_count} document
+										{editing.documents_count === 1 ? '' : 's'}
+										{editing.last_synced_at
+											? ` · synced ${formatDistanceToNow(new Date(editing.last_synced_at), { addSuffix: true })}`
+											: ''}
+									</p>
+								</div>
+							</div>
+							{editing.last_error && (
+								<p className='flex items-start gap-1.5 rounded-xl bg-rose-50 px-3 py-2 text-[11px] font-semibold break-words text-rose-700 dark:bg-rose-500/10 dark:text-rose-300'>
+									<AlertTriangle size={12} className='mt-0.5 shrink-0' />
+									<span className='line-clamp-3'>{editing.last_error}</span>
+								</p>
+							)}
 						</div>
-						<p className={`${labelClass} pt-2`}>Keep in sync</p>
-						<div className='grid grid-cols-2 gap-2'>
-							{(Object.keys(KNOWLEDGE_KINDS) as TKnowledgeKind[])
-								.filter((key) => KNOWLEDGE_KINDS[key].synced)
-								.map(kindButton)}
+					) : (
+						<div className='space-y-2'>
+							<p className={labelClass}>Add once</p>
+							<div className='grid grid-cols-2 gap-2'>
+								{(['text', 'file'] as const).map(kindButton)}
+							</div>
+							<p className={`${labelClass} pt-2`}>Keep in sync</p>
+							<div className='grid grid-cols-2 gap-2'>
+								{(Object.keys(KNOWLEDGE_KINDS) as TKnowledgeKind[])
+									.filter((key) => KNOWLEDGE_KINDS[key].synced)
+									.map(kindButton)}
+							</div>
 						</div>
-					</div>
+					)}
 
 					<div>
 						<label className={labelClass}>{definition.synced ? 'Name' : 'Title'}</label>
@@ -273,7 +355,7 @@ const AddKnowledgeDialog = ({
 							ws={ws}
 							type={kind as TKnowledgeSourceType}
 							app={
-								kind === 'url' || !apps
+								kind === 'url' || !apps || editing
 									? undefined
 									: (app ?? {
 											type: kind as TKnowledgeSourceType,
@@ -291,6 +373,15 @@ const AddKnowledgeDialog = ({
 						/>
 					)}
 
+					{configChanged && editing && (
+						<p className='flex items-start gap-1.5 rounded-xl bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'>
+							<AlertTriangle size={12} className='mt-0.5 shrink-0' />
+							Saving removes its {editing.documents_count} current document
+							{editing.documents_count === 1 ? '' : 's'} and reads it again from the
+							new settings.
+						</p>
+					)}
+
 					<div>
 						<label htmlFor='addknowledgedialog-collection' className={labelClass}>
 							Collection
@@ -302,16 +393,25 @@ const AddKnowledgeDialog = ({
 							value={collection}
 							onChange={(e) => setCollection(e.target.value)}
 							placeholder={isPrivate ? 'personal' : 'default'}
-							className={inputClass}
+							disabled={!!editing}
+							className={`${inputClass} disabled:cursor-not-allowed disabled:opacity-60`}
 						/>
-						<p className={hintClass}>Groups related documents.</p>
+						<p className={hintClass}>
+							{editing
+								? 'Fixed once added. To move it, add it again in another collection.'
+								: 'Groups related documents.'}
+						</p>
 					</div>
 
-					<label className='flex cursor-pointer items-start gap-2.5 rounded-xl border border-zinc-200 p-3 dark:border-zinc-800'>
+					<label
+						className={`flex items-start gap-2.5 rounded-xl border border-zinc-200 p-3 dark:border-zinc-800 ${
+							editing ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+						}`}>
 						<input
 							type='checkbox'
 							checked={isPrivate}
 							onChange={(e) => setIsPrivate(e.target.checked)}
+							disabled={!!editing}
 							className='mt-0.5'
 						/>
 						<span>
@@ -329,7 +429,17 @@ const AddKnowledgeDialog = ({
 						onClick={handleSubmit}
 						disabled={isPending || !canSubmit}
 						className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 flex h-10 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl text-xs font-black shadow-md transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'>
-						{isPending ? 'Adding…' : definition.synced ? 'Add and sync' : 'Add'}
+						{isPending
+							? editing
+								? 'Saving…'
+								: 'Adding…'
+							: editing
+								? configChanged
+									? 'Save and sync again'
+									: 'Save'
+								: definition.synced
+									? 'Add and sync'
+									: 'Add'}
 					</button>
 				</div>
 			</motion.div>
