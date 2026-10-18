@@ -327,10 +327,13 @@ const FieldInput = ({ field, value, onChange, compact, nodeId, host }: FieldInpu
 		?.data.dynamicInputKeys?.includes(field.key);
 	const cls = compact ? compactInputClass : inputClass;
 
+	// A JSON field already edits through an expression input of its own:
+	// switching to this one mid-typing (once the text holds a `{{`) would
+	// remount the editor and drop the caret.
 	if (
 		nodeId &&
 		field.kind !== 'credential' &&
-		(dynamic || (typeof value === 'string' && value.includes('{{')))
+		(dynamic || (!field.json && typeof value === 'string' && value.includes('{{')))
 	) {
 		return (
 			<ExpressionInput
@@ -347,16 +350,20 @@ const FieldInput = ({ field, value, onChange, compact, nodeId, host }: FieldInpu
 							return onChange(Number(text));
 						if (field.kind === 'toggle' && ['true', 'false'].includes(text))
 							return onChange(text === 'true');
-						if (
-							field.json ||
-							['list', 'multiselect', 'kv'].includes(field.kind) ||
-							field.dynamic?.valueType === 'array'
-						) {
-							try {
-								return onChange(JSON.parse(text));
-							} catch {
-								/* Keep an unfinished expression editable. */
-							}
+					}
+					// JSON can carry {{ }} inside its strings ("Bearer {{ secrets.X }}"):
+					// only a bare `{{ nodes.a.list }}` fails to parse and stays an expression.
+					if (
+						field.json ||
+						['list', 'multiselect', 'kv'].includes(field.kind) ||
+						field.dynamic?.valueType === 'array'
+					) {
+						try {
+							const parsed: unknown = JSON.parse(text);
+							if (parsed !== null && typeof parsed === 'object')
+								return onChange(parsed);
+						} catch {
+							/* Keep an unfinished expression editable. */
 						}
 					}
 					onChange(text);
