@@ -48,6 +48,11 @@ const status = (page: TWorkflowPage) =>
 				? { label: 'Live · edited', className: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' }
 				: { label: 'Live', className: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' };
 
+const errorMessages = (page: TWorkflowPage) => [
+	...page.issues.filter((issue) => issue.severity === 'error').map((issue) => issue.message),
+	...page.variant.issues.filter((issue) => issue.severity === 'error').map((issue) => `Version B: ${issue.message}`),
+];
+
 const liveUrl = (ws: string, page: TWorkflowPage) =>
 	page.access === 'workspace'
 		? `${window.location.origin}${paths.usePage(ws, page.id)}`
@@ -62,7 +67,7 @@ const PageCard = ({ ws, page }: { ws: string; page: TWorkflowPage }) => {
 	const menuRef = useRef<HTMLDivElement>(null);
 	const pill = status(page);
 	const access = ACCESS[page.access];
-	const errors = page.issues.filter((issue) => issue.severity === 'error').length;
+	const errors = errorMessages(page);
 
 	useEffect(() => {
 		if (!menuOpen) return;
@@ -91,21 +96,16 @@ const PageCard = ({ ws, page }: { ws: string; page: TWorkflowPage }) => {
 	const menuItem = 'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold transition';
 
 	return (
-		<article className='group hover:border-primary-400/50 relative flex flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-xs transition hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
+		<article className='group hover:border-primary-400/50 relative flex flex-col rounded-3xl border border-zinc-200 bg-white shadow-xs transition hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
 			<Link
 				to={paths.editPage(ws, page.id)}
-				className='relative flex h-28 items-center justify-center overflow-hidden border-b border-zinc-100 bg-gradient-to-br from-zinc-50 to-zinc-100 dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950'>
+				className='relative flex h-28 items-center justify-center overflow-hidden rounded-t-3xl border-b border-zinc-100 bg-gradient-to-br from-zinc-50 to-zinc-100 dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950'>
 				<div className='w-[62%] space-y-1.5 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm transition group-hover:-translate-y-0.5 dark:border-zinc-700 dark:bg-zinc-800'>
 					<div className='h-2 w-1/2 rounded-full bg-zinc-800/80 dark:bg-zinc-200/80' />
 					<div className='h-1.5 w-3/4 rounded-full bg-zinc-200 dark:bg-zinc-600' />
 					<div className='h-4 w-full rounded-md border border-zinc-200 dark:border-zinc-600' />
 					<div className='bg-primary-400 h-3 w-1/3 rounded-md' />
 				</div>
-				{errors > 0 && (
-					<span className='absolute top-3 left-3 flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600 ring-1 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/30'>
-						<AlertTriangle size={11} /> Needs attention
-					</span>
-				)}
 			</Link>
 
 			<div className='flex flex-1 flex-col gap-3 p-4'>
@@ -188,6 +188,14 @@ const PageCard = ({ ws, page }: { ws: string; page: TWorkflowPage }) => {
 						<access.icon size={11} />
 						{access.label}
 					</span>
+					{errors.length > 0 && (
+						<span
+							title={errors.join('\n')}
+							className='inline-flex h-6 items-center gap-1 rounded-full bg-rose-50 px-2.5 text-[10px] font-bold text-rose-600 dark:bg-rose-500/10 dark:text-rose-300'>
+							<AlertTriangle size={11} />
+							{errors.length === 1 ? 'Needs attention' : `${errors.length} issues`}
+						</span>
+					)}
 				</div>
 				<p className='text-[11px] text-zinc-400 dark:text-zinc-500'>
 					{page.runs_count ? `${page.runs_count} run${page.runs_count === 1 ? '' : 's'}` : 'No runs yet'}
@@ -225,7 +233,7 @@ const PagesListPage = () => {
 				filter === 'all' ||
 				(filter === 'live' && page.is_published) ||
 				(filter === 'draft' && !page.is_published) ||
-				(filter === 'attention' && page.issues.some((issue) => issue.severity === 'error'));
+				(filter === 'attention' && errorMessages(page).length > 0);
 			return matches && inFilter;
 		});
 	}, [data, query, filter]);
