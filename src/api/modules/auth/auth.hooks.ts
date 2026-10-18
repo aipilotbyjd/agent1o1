@@ -9,6 +9,7 @@ import {
 	type TResetPasswordDto,
 	type TChangePasswordDto,
 	type TVerifyTwoFactorDto,
+	type TEnableTwoFactorDto,
 	type TConfirmTwoFactorDto,
 	type TDisableTwoFactorDto,
 	type TRegenerateRecoveryCodesDto,
@@ -182,7 +183,7 @@ export const useAuthEvents = (params?: { page?: number; per_page?: number }) =>
 
 export const useEnableTwoFactor = () =>
 	useMutation({
-		mutationFn: () => AuthService.twoFactorEnable(),
+		mutationFn: (payload: TEnableTwoFactorDto) => AuthService.twoFactorEnable(payload),
 		meta: { errorMessage: 'Failed to start two-factor setup' },
 	});
 

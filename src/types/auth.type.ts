@@ -79,6 +79,11 @@ export type TVerifyTwoFactorDto = {
 	code: string;
 };
 
+/** Turning 2FA on re-checks the password, same as turning it off. */
+export type TEnableTwoFactorDto = {
+	current_password: string;
+};
+
 export type TConfirmTwoFactorDto = {
 	code: string;
 };

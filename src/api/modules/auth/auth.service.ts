@@ -11,6 +11,7 @@ import type {
 	TResetPasswordDto,
 	TChangePasswordDto,
 	TVerifyTwoFactorDto,
+	TEnableTwoFactorDto,
 	TConfirmTwoFactorDto,
 	TDisableTwoFactorDto,
 	TRegenerateRecoveryCodesDto,
@@ -96,9 +97,9 @@ export const AuthService = {
 			})
 			.then((r) => ({ events: r.data.data, meta: r.data.meta })),
 
-	twoFactorEnable: () =>
+	twoFactorEnable: (payload: TEnableTwoFactorDto) =>
 		axiosClient
-			.post<TApiResponse<TTwoFactorEnableResult>>(AuthEndpoints.twoFactorEnable)
+			.post<TApiResponse<TTwoFactorEnableResult>>(AuthEndpoints.twoFactorEnable, payload)
 			.then(unwrap<TTwoFactorEnableResult>),
 
 	twoFactorConfirm: (payload: TConfirmTwoFactorDto) =>

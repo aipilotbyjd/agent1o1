@@ -3,6 +3,7 @@ import type { ClipboardEvent, FormEvent, KeyboardEvent } from 'react';
 import { Link, useLocation } from 'react-router';
 import { motion } from 'framer-motion';
 import QRCode from 'qrcode';
+import { ApiError } from '@/api/core';
 import { useEnableTwoFactor, useConfirmTwoFactor } from '@/api/modules/auth';
 import pages from '@/Routes/pages';
 import Icon from '@/components/icon/Icon';
@@ -29,6 +30,8 @@ const TwoFactorSetupPage = () => {
 	const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 	const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
 	const [codeError, setCodeError] = useState<string | null>(null);
+	const [password, setPassword] = useState('');
+	const [passwordError, setPasswordError] = useState<string | null>(null);
 	const [copied, setCopied] = useState(false);
 	const inputs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -38,12 +41,21 @@ const TwoFactorSetupPage = () => {
 	const secret = enable.data?.secret ?? '';
 	const otpauthUrl = enable.data?.otpauth_url ?? '';
 
-	// Start the setup once on mount: the backend mints the secret and hands back
-	// an otpauth:// URL. `enable.mutate` is stable, so this runs a single time.
-	useEffect(() => {
-		enable.mutate();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
+	// The backend mints the secret only after re-checking the password, so a
+	// stolen access token alone can't bind a new authenticator.
+	const handleStart = async (e: FormEvent) => {
+		e.preventDefault();
+		if (!password) {
+			setPasswordError('Enter your current password');
+			return;
+		}
+		try {
+			await enable.mutateAsync({ current_password: password });
+			setPassword('');
+		} catch (err) {
+			setPasswordError(ApiError.is(err) ? (err.field('current_password') ?? null) : null);
+		}
+	};
 
 	// The QR is rendered in the browser from the otpauth URL: that URL carries
 	// the TOTP secret, so it must never be handed to a third-party image service.
@@ -162,8 +174,56 @@ const TwoFactorSetupPage = () => {
 				))}
 			</div>
 
-			{/* ─── Step 1: scan ──────────────────────────────────────────── */}
-			{step === 1 && (
+			{/* ─── Step 1: confirm password, then scan ───────────────────── */}
+			{step === 1 && !enable.data && (
+				<motion.form
+					initial={{ opacity: 0, y: 10 }}
+					animate={{ opacity: 1, y: 0 }}
+					onSubmit={handleStart}
+					className='flex flex-col gap-5'>
+					<div className='text-center'>
+						<h2 className='text-2xl font-extrabold tracking-tight text-zinc-950'>
+							Confirm it's you
+						</h2>
+						<p className='mt-1 text-xs font-medium text-zinc-500'>
+							Enter your current password to set up two-factor authentication.
+						</p>
+					</div>
+
+					<div>
+						<label
+							htmlFor='two-factor-current-password'
+							className='mb-1.5 block text-xs font-bold text-zinc-700'>
+							Current password
+						</label>
+						<input
+							id='two-factor-current-password'
+							type='password'
+							autoComplete='current-password'
+							autoFocus
+							value={password}
+							onChange={(e) => {
+								setPassword(e.target.value);
+								setPasswordError(null);
+							}}
+							className='focus:border-primary-500 focus:ring-primary-200 h-12 w-full rounded-xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-900 outline-none focus:ring-4'
+						/>
+						{passwordError && (
+							<p className='mt-1.5 text-xs font-semibold text-red-500'>{passwordError}</p>
+						)}
+					</div>
+
+					<button
+						type='submit'
+						disabled={enable.isPending}
+						className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-md transition-all disabled:opacity-50'>
+						{enable.isPending && <Spinner className='size-4' />}
+						CONTINUE ›
+					</button>
+				</motion.form>
+			)}
+
+			{step === 1 && enable.data && (
 				<motion.div
 					initial={{ opacity: 0, y: 10 }}
 					animate={{ opacity: 1, y: 0 }}
@@ -178,15 +238,7 @@ const TwoFactorSetupPage = () => {
 						</p>
 					</div>
 
-					{enable.isPending ? (
-						<div className='flex size-48 items-center justify-center rounded-3xl border border-zinc-200 bg-zinc-50'>
-							<Spinner className='size-6' />
-						</div>
-					) : enable.isError ? (
-						<Alert color='red' variant='soft' icon='AlertCircle' className='text-xs'>
-							Could not start two-factor setup. Reload the page to try again.
-						</Alert>
-					) : qrDataUrl ? (
+					{qrDataUrl ? (
 						<img
 							src={qrDataUrl}
 							alt='Two-factor authentication QR code'
