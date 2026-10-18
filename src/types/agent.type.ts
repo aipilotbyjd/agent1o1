@@ -579,7 +579,7 @@ export type TAgentTrigger = {
 	updated_at: string;
 };
 
-export type TAgentTriggerType = 'schedule' | 'webhook' | 'event';
+export type TAgentTriggerType = 'schedule' | 'webhook';
 
 export type TAgentRun = {
 	id: string;

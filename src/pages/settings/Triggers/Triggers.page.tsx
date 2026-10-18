@@ -6,6 +6,7 @@ import {
 	CalendarClock,
 	Copy,
 	Hand,
+	History,
 	Play,
 	Repeat,
 	Terminal,
@@ -24,6 +25,7 @@ import { useWorkspaceContext } from '@/context/workspace';
 import { useConfirm } from '@/context/confirm';
 import paths from '@/Routes/paths';
 import Spinner from '@/components/ui/Spinner';
+import TriggerEventsPart from '@/parts/TriggerEvents.part';
 import type { TTrigger } from '@/types/trigger.type';
 import {
 	copyWithNotice,
@@ -54,6 +56,7 @@ const TriggersPage = () => {
 	const runTrigger = useRunTrigger(activeWorkspaceId);
 	const deleteTrigger = useDeleteTrigger(activeWorkspaceId);
 	const [filter, setFilter] = useState<TFilter>('all');
+	const [eventsFor, setEventsFor] = useState<string | null>(null);
 
 	const counts = useMemo(
 		() => ({
@@ -150,9 +153,8 @@ const TriggersPage = () => {
 								: null;
 
 						return (
-							<div
-								key={trigger.id}
-								className='flex flex-wrap items-center gap-4 px-5 py-4'>
+							<div key={trigger.id}>
+							<div className='flex flex-wrap items-center gap-4 px-5 py-4'>
 								<span className='bg-primary-100 text-primary-700 dark:bg-primary-950/40 dark:text-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg'>
 									<Icon size={16} />
 								</span>
@@ -187,7 +189,7 @@ const TriggersPage = () => {
 											? ` · next ${formatDistanceToNow(new Date(trigger.next_run_at), { addSuffix: true })}`
 											: ''}
 										{stats
-											? ` · 24h: ${stats.fired} run${stats.fired === 1 ? '' : 's'}, ${stats.failed} failed, ${stats.skipped} skipped`
+											? ` · 24h: ${stats.fired} run${stats.fired === 1 ? '' : 's'}, ${stats.failed} failed, ${stats.rejected} rejected, ${stats.skipped} skipped`
 											: ''}
 									</p>
 									{trigger.type === 'webhook' && trigger.token && (
@@ -244,6 +246,22 @@ const TriggersPage = () => {
 									)}
 									<button
 										type='button'
+										aria-expanded={eventsFor === trigger.id}
+										onClick={() =>
+											setEventsFor((current) =>
+												current === trigger.id ? null : trigger.id,
+											)
+										}
+										className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold transition ${
+											eventsFor === trigger.id
+												? 'border-primary-400 bg-primary-50 text-primary-800 dark:border-primary-600 dark:bg-primary-950/30 dark:text-primary-300'
+												: 'border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-white/[0.04]'
+										}`}>
+										<History size={13} />
+										Events
+									</button>
+									<button
+										type='button'
 										title='Fire it now, as if an event had arrived'
 										disabled={!trigger.is_active || runTrigger.isPending}
 										onClick={() =>
@@ -290,6 +308,12 @@ const TriggersPage = () => {
 										/>
 									</button>
 								</div>
+							</div>
+							{eventsFor === trigger.id && (
+								<div className='border-t border-zinc-100 bg-zinc-50/60 px-5 py-4 dark:border-zinc-800 dark:bg-zinc-950/30'>
+									<TriggerEventsPart ws={activeWorkspaceId} triggerId={trigger.id} />
+								</div>
+							)}
 							</div>
 						);
 					})}

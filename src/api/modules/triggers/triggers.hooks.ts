@@ -1,6 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type {
 	TCreateTriggerDto,
+	TTriggerEventStatus,
 	TTriggerListFilter,
 	TUpdateTriggerDto,
 } from '@/types/trigger.type';
@@ -78,7 +79,27 @@ export const useRotateTriggerToken = (ws: string) => {
 export const useTriggerEvents = (ws: string, id: string) =>
 	useQuery({
 		queryKey: triggerEventKeys.list(ws, id),
-		queryFn: ({ signal }) => TriggerService.events(ws, id, signal),
+		queryFn: ({ signal }) =>
+			TriggerService.events(ws, id, undefined, signal).then((page) => page.events),
+		enabled: !!ws && !!id,
+		refetchInterval: 10_000,
+	});
+
+const EVENTS_PER_PAGE = 20;
+
+/**
+ * A trigger's full event history, a page at a time, optionally narrowed to
+ * some statuses. Refreshes every 10s like `useTriggerEvents`. Sits under the
+ * same key prefix, so running the trigger refreshes it too.
+ */
+export const useTriggerEventFeed = (ws: string, id: string, status?: TTriggerEventStatus[]) =>
+	useInfiniteQuery({
+		queryKey: triggerEventKeys.feed(ws, id, status),
+		queryFn: ({ pageParam, signal }) =>
+			TriggerService.events(ws, id, { page: pageParam, per_page: EVENTS_PER_PAGE, status }, signal),
+		initialPageParam: 1,
+		getNextPageParam: (page) =>
+			page.meta.current_page < page.meta.last_page ? page.meta.current_page + 1 : undefined,
 		enabled: !!ws && !!id,
 		refetchInterval: 10_000,
 	});

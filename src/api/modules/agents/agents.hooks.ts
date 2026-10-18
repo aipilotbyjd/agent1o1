@@ -123,19 +123,8 @@ export const useSyncAgentTags = (ws: string, id: string) => {
 /** The morph alias the backend stores for an Agent (see AppServiceProvider). */
 const AGENT_MORPH = 'agent';
 
-export const useAgentTriggers = (ws: string, agentId: string) => {
-	const query = useTriggers(ws);
-	// The triggers index returns the whole workspace and takes no target filter,
-	// so the narrowing happens here.
-	const data = useMemo(
-		() =>
-			(query.data ?? []).filter(
-				(t) => t.target_type === AGENT_MORPH && String(t.target_id) === String(agentId),
-			),
-		[query.data, agentId],
-	);
-	return { ...query, data };
-};
+export const useAgentTriggers = (ws: string, agentId: string) =>
+	useTriggers(ws, { target_type: AGENT_MORPH, target_id: agentId });
 
 export const useCreateAgentTrigger = (ws: string, agentId: string) => {
 	const m = useCreateTrigger(ws);

@@ -81,6 +81,13 @@ export type TNodeField = {
 	max?: number;
 };
 
+/** A node's config edited outside the canvas (an agent's app trigger). */
+export type TFieldHost = {
+	type: string;
+	values: Record<string, unknown>;
+	fields: TNodeField[];
+};
+
 export type TNodeDefinition = {
 	key: string;
 	category: TNodeCategory;

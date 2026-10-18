@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
+import { useContext, useState } from 'react';
+import { WorkflowEditorContext } from '../../../_context/WorkflowEditorStore.context';
 import { ChevronDown, X } from 'lucide-react';
-import type { TNodeField } from '../../../_types/node.type';
+import type { TFieldHost, TNodeField } from '../../../_types/node.type';
 import AccountSelect from './AccountSelect.partial';
 import DynamicSelect from './DynamicSelect.partial';
 import WorkflowModelPicker from './WorkflowModelPicker.partial';
@@ -19,6 +19,8 @@ type FieldInputProps = {
 	onChange: (value: unknown) => void;
 	compact?: boolean;
 	nodeId?: string;
+	/** Outside the editor (no canvas node): the node type and values dynamic choices load against. */
+	host?: TFieldHost;
 };
 
 /**
@@ -318,9 +320,9 @@ const StringListInput = ({ field, value, onChange, compact, nodeId }: FieldInput
 	);
 };
 
-const FieldInput = ({ field, value, onChange, compact, nodeId }: FieldInputProps) => {
-	const { state } = useWorkflowEditor();
-	const dynamic = state.nodes
+const FieldInput = ({ field, value, onChange, compact, nodeId, host }: FieldInputProps) => {
+	const editor = useContext(WorkflowEditorContext);
+	const dynamic = editor?.state.nodes
 		.find((node) => node.id === nodeId)
 		?.data.dynamicInputKeys?.includes(field.key);
 	const cls = compact ? compactInputClass : inputClass;
@@ -383,6 +385,7 @@ const FieldInput = ({ field, value, onChange, compact, nodeId }: FieldInputProps
 				onChange={onChange}
 				compact={compact}
 				nodeId={nodeId}
+				host={host}
 				className={cls}
 			/>
 		);

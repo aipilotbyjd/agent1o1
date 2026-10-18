@@ -169,9 +169,11 @@ const stop = (event: React.SyntheticEvent) => event.stopPropagation();
 type Props = {
 	workspaceId: string;
 	trigger: TTrigger;
+	/** Off where the full event history is shown beside it (the agent's trigger drawer). */
+	showEvents?: boolean;
 };
 
-const TriggerDetails = ({ workspaceId, trigger }: Props) => {
+const TriggerDetails = ({ workspaceId, trigger, showEvents = true }: Props) => {
 	const { confirm } = useConfirm();
 	const runTrigger = useRunTrigger(workspaceId);
 	const rotateToken = useRotateTriggerToken(workspaceId);
@@ -215,6 +217,9 @@ const TriggerDetails = ({ workspaceId, trigger }: Props) => {
 							24h: {stats.fired} run{stats.fired === 1 ? '' : 's'}
 							{stats.failed > 0 && (
 								<span className='text-rose-500'> · {stats.failed} failed</span>
+							)}
+							{stats.rejected > 0 && (
+								<span className='text-rose-500'> · {stats.rejected} rejected</span>
 							)}
 							{stats.skipped > 0 && <span> · {stats.skipped} skipped</span>}
 						</span>
@@ -280,7 +285,8 @@ const TriggerDetails = ({ workspaceId, trigger }: Props) => {
 				</div>
 			)}
 
-			<div className='flex items-center justify-between'>
+			<div className={`flex items-center ${showEvents ? 'justify-between' : 'justify-end'}`}>
+				{showEvents && (
 				<button
 					type='button'
 					onClick={(event) => {
@@ -294,6 +300,7 @@ const TriggerDetails = ({ workspaceId, trigger }: Props) => {
 					/>
 					Recent events
 				</button>
+				)}
 				<button
 					type='button'
 					title='Fire this trigger now, as if an event had arrived'
@@ -308,7 +315,7 @@ const TriggerDetails = ({ workspaceId, trigger }: Props) => {
 				</button>
 			</div>
 
-			{eventsOpen && (
+			{showEvents && eventsOpen && (
 				<div className='flex flex-col gap-1'>
 					{events.isLoading && (
 						<span className='text-[9px] text-zinc-400'>Loading events…</span>

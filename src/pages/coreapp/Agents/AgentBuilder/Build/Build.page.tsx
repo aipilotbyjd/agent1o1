@@ -90,11 +90,6 @@ import {
 	useUpdateAgent,
 	useDeleteAgent,
 	useDuplicateAgent,
-	useAgentTriggers,
-	useCreateAgentTrigger,
-	useUpdateAgentTrigger,
-	useDeleteAgentTrigger,
-	useFireAgentTrigger,
 	useAgentMetaModels,
 	useDraftAgent,
 	useImproveAgentInstructions,
@@ -134,9 +129,8 @@ import { useConnectorCredentials } from '@/api/modules/connectors';
 import { useCurrentUser } from '@/api/modules/user';
 import type { TConnectorCredential } from '@/types/connector.type';
 import type { TNode } from '@/types/node.type';
-import type { TTrigger } from '@/types/trigger.type';
 import { AGENT_COLORS, AGENT_ICONS } from '@/types/agent.type';
-import type { TAgentColor, TAgentIcon, TAgentTriggerType } from '@/types/agent.type';
+import type { TAgentColor, TAgentIcon } from '@/types/agent.type';
 import type { TAgentTemplate } from '@/types/template.type';
 import { AgentSessionService, useAgentSession } from '@/api/modules/agent-sessions';
 import { useDownloadArtifact, ArtifactService } from '@/api/modules/artifacts';
@@ -164,6 +158,8 @@ import {
 } from 'lucide-react';
 import AgentDataPanel from './_partial/AgentDataPanel.partial';
 import AgentTagsPanel from './_partial/AgentTagsPanel.partial';
+import AgentTriggersPanel from './_partial/AgentTriggersPanel.partial';
+import type { TTriggerDrawerTarget } from './_partial/AgentTriggerDrawer.partial';
 import AgentKnowledgeSourcesPanel from './_partial/AgentKnowledgeSourcesPanel.partial';
 import AgentSideDrawer, { AttachToggle } from './_partial/AgentSideDrawer.partial';
 import AgentChatsPanel from './_partial/AgentChatsPanel.partial';
@@ -281,8 +277,6 @@ const SKILL_TOOL_VERBS: Record<string, { running: string; done: string; nameArg:
 	[CREATE_SKILL_TOOL]: { running: 'Creating', done: 'Created', nameArg: 'name' },
 	[UPDATE_SKILL_TOOL]: { running: 'Updating', done: 'Updated', nameArg: 'skill' },
 };
-const webhookUrlFor = (trigger: TTrigger) =>
-	`${import.meta.env.VITE_API_URL ?? ''}/triggers/${trigger.id}/${trigger.token ?? ''}`;
 
 type TChatTimelineItem =
 	| { kind: 'text'; id: string; text: string }
@@ -938,21 +932,9 @@ const BuildPage = () => {
 	const [isSkillEditorOpen, setIsSkillEditorOpen] = useState(false);
 	const [skillSearchQuery, setSkillSearchQuery] = useState('');
 
-	// Triggers
-	const { data: agentTriggers } = useAgentTriggers(workspaceId, currentAgentId ?? '');
-	const createTriggerMutation = useCreateAgentTrigger(workspaceId, currentAgentId ?? '');
-	const updateTriggerMutation = useUpdateAgentTrigger(workspaceId, currentAgentId ?? '');
-	const deleteTriggerMutation = useDeleteAgentTrigger(workspaceId, currentAgentId ?? '');
-	const fireTriggerMutation = useFireAgentTrigger(workspaceId, currentAgentId ?? '');
-	const [isTriggerPanelOpen, setIsTriggerPanelOpen] = useState(false);
+	const [triggerDrawer, setTriggerDrawer] = useState<TTriggerDrawerTarget | null>(null);
 
 	const { data: catalogModels } = useAgentMetaModels(workspaceId);
-
-	const [newTriggerType, setNewTriggerType] = useState<TAgentTriggerType>('schedule');
-	const [newTriggerCron, setNewTriggerCron] = useState('0 9 * * *');
-	const [newTriggerEventName, setNewTriggerEventName] = useState('');
-	const [newTriggerInitialMessage, setNewTriggerInitialMessage] = useState('');
-	const [pendingDeleteTriggerId, setPendingDeleteTriggerId] = useState<string | null>(null);
 
 	const [activeTab, setActiveTab] = useState('All');
 	// The "describe your agent" prompt is kept per workspace until an agent is made from it.
@@ -1296,7 +1278,7 @@ const BuildPage = () => {
 		const closeOnBack = () => {
 			if (drawerStateRef.current.tool) setIsAddAppOpen(false);
 			else if (drawerStateRef.current.settings) {
-				setPendingDeleteTriggerId(null);
+				setTriggerDrawer(null);
 				setIsSettingsOpen(false);
 			}
 		};
@@ -1318,7 +1300,7 @@ const BuildPage = () => {
 	const closeSettingsDrawer = () => {
 		if (window.history.state?.agentDrawer === 'settings') window.history.back();
 		else {
-			setPendingDeleteTriggerId(null);
+			setTriggerDrawer(null);
 			setIsSettingsOpen(false);
 		}
 	};
@@ -1421,9 +1403,9 @@ const BuildPage = () => {
 		setIsSkillPanelOpen(true);
 	};
 
-	const openTriggerPanel = async () => {
+	const openTriggerDrawer = async (target: TTriggerDrawerTarget = { mode: 'pick' }) => {
 		await ensureAgentPersisted();
-		setIsTriggerPanelOpen(true);
+		setTriggerDrawer(target);
 	};
 
 	const attachedSkillIds = new Set((attachedSkills ?? []).map((s) => s.id));
@@ -1441,67 +1423,6 @@ const BuildPage = () => {
 		detachSkillMutation.mutate(skillId);
 	};
 
-	const handleCreateTrigger = async () => {
-		if (!currentAgentId) return;
-		if (newTriggerType === 'schedule' && !newTriggerCron.trim()) {
-			notify.error('Enter a schedule before creating the trigger.');
-			return;
-		}
-		if (newTriggerType === 'event' && !newTriggerEventName.trim()) {
-			notify.error('Enter an event name before creating the trigger.');
-			return;
-		}
-		const config: Record<string, unknown> =
-			newTriggerType === 'schedule'
-				? { cron: newTriggerCron.trim() }
-				: newTriggerType === 'event'
-					? { event: newTriggerEventName.trim() }
-					: {};
-		if (newTriggerInitialMessage.trim())
-			config.initial_message = newTriggerInitialMessage.trim();
-
-		try {
-			await createTriggerMutation.mutateAsync({
-				type: newTriggerType,
-				config,
-				is_active: true,
-			});
-			setNewTriggerEventName('');
-			setNewTriggerInitialMessage('');
-			setIsTriggerPanelOpen(false);
-			notify.success('Trigger created.');
-		} catch {
-			// The mutation cache shows the API error; keep the form for correction.
-		}
-	};
-
-	const handleToggleTrigger = async (triggerId: string, isActive: boolean) => {
-		try {
-			await updateTriggerMutation.mutateAsync({ triggerId, body: { is_active: !isActive } });
-			notify.success(isActive ? 'Trigger disabled.' : 'Trigger enabled.');
-		} catch {
-			// The mutation cache reports the API error.
-		}
-	};
-
-	const handleDeleteTrigger = (triggerId: string) => {
-		deleteTriggerMutation.mutate(triggerId, {
-			onSuccess: () => {
-				setPendingDeleteTriggerId(null);
-				notify.success('Trigger deleted.');
-			},
-		});
-	};
-
-	const handleFireTrigger = async (triggerId: string) => {
-		try {
-			await fireTriggerMutation.mutateAsync({ triggerId });
-			notify.success('Trigger started.');
-		} catch {
-			// The mutation cache reports the API error.
-		}
-	};
-
 	const copyToClipboard = async (value: string, successMessage: string) => {
 		try {
 			await navigator.clipboard.writeText(value);
@@ -1509,10 +1430,6 @@ const BuildPage = () => {
 		} catch {
 			notify.error('Could not copy. Please try again.');
 		}
-	};
-
-	const handleCopyWebhookUrl = (url: string) => {
-		void copyToClipboard(url, 'Webhook URL copied!');
 	};
 
 	const handleChatScroll = () => {
@@ -2232,7 +2149,7 @@ const BuildPage = () => {
 	const openGetStartedTrigger = () => {
 		setActiveSidebarTab('agent');
 		setIsSettingsOpen(true);
-		void openTriggerPanel().catch(() => {});
+		void openTriggerDrawer().catch(() => {});
 	};
 	const openGetStartedTool = () => {
 		void openToolDrawer().catch(() => {});
@@ -4448,153 +4365,15 @@ const BuildPage = () => {
 									{/* Tags Section */}
 									<AgentTagsPanel ws={workspaceId} agentId={currentAgentId} />
 
-									{/* Triggers Section */}
-									<div className='space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
-										<div className='flex items-center justify-between'>
-											<div className='flex items-center gap-2'>
-												<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-7 w-7 items-center justify-center rounded-lg'>
-													<Zap size={14} fill='currentColor' />
-												</div>
-												<h4 className='text-xs font-black text-zinc-900 dark:text-white'>
-													Triggers
-												</h4>
-											</div>
-											<button
-												onClick={openTriggerPanel}
-												className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex min-h-11 items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 md:min-h-0 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
-												<Plus size={10} />
-												<span>Trigger</span>
-											</button>
-										</div>
-
-										{(agentTriggers ?? []).length === 0 && (
-											<p className='pl-9 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-												Define events or conditions that activate this
-												agent.
-											</p>
-										)}
-
-										{(agentTriggers ?? []).length > 0 && (
-											<div className='space-y-2 pl-9'>
-												{(agentTriggers ?? []).map((trigger) => (
-													<div
-														key={trigger.id}
-														className='flex flex-col gap-1.5 rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
-														<div className='flex items-center justify-between'>
-															<div className='flex items-center gap-2'>
-																<span className='rounded-full bg-zinc-100 px-2 py-0.5 text-[9px] font-black text-zinc-600 uppercase dark:bg-zinc-800 dark:text-zinc-400'>
-																	{trigger.type}
-																</span>
-																<button
-																	type='button'
-																	role='switch'
-																	aria-checked={trigger.is_active}
-																	aria-label={`${trigger.is_active ? 'Disable' : 'Enable'} ${trigger.type} trigger`}
-																	disabled={
-																		updateTriggerMutation.isPending
-																	}
-																	onClick={() =>
-																		handleToggleTrigger(
-																			trigger.id,
-																			trigger.is_active,
-																		)
-																	}
-																	className='flex h-11 w-11 shrink-0 items-center justify-center rounded-lg disabled:opacity-50 md:h-7 md:w-8'>
-																	<span
-																		className={`relative inline-flex h-4 w-7 rounded-full border-2 border-transparent transition-colors ${trigger.is_active ? 'bg-primary-400' : 'bg-zinc-200 dark:bg-zinc-800'}`}>
-																		<span
-																			className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow-sm transition duration-200 ${
-																				trigger.is_active
-																					? 'translate-x-3'
-																					: 'translate-x-0'
-																			}`}
-																		/>
-																	</span>
-																</button>
-															</div>
-															<div className='flex items-center gap-2'>
-																<button
-																	aria-label={`Fire ${trigger.type} trigger now`}
-																	disabled={
-																		fireTriggerMutation.isPending
-																	}
-																	onClick={() =>
-																		handleFireTrigger(
-																			trigger.id,
-																		)
-																	}
-																	title='Fire now'
-																	className='hover:text-primary-600 dark:hover:text-primary-400 flex h-11 w-11 items-center justify-center rounded-lg text-zinc-400 disabled:opacity-50 md:h-7 md:w-7'>
-																	<Play size={12} />
-																</button>
-																<button
-																	aria-label={`Delete ${trigger.type} trigger`}
-																	onClick={() =>
-																		setPendingDeleteTriggerId(
-																			trigger.id,
-																		)
-																	}
-																	title='Delete trigger'
-																	className='flex h-11 w-11 items-center justify-center rounded-lg text-zinc-400 hover:text-rose-500 md:h-7 md:w-7'>
-																	<Trash2 size={12} />
-																</button>
-															</div>
-														</div>
-														{pendingDeleteTriggerId === trigger.id && (
-															<div className='flex flex-wrap items-center justify-end gap-2 rounded-lg bg-rose-50 p-2 text-[11px] font-semibold text-rose-700 dark:bg-rose-950/30 dark:text-rose-300'>
-																<span className='mr-auto'>
-																	Delete this trigger?
-																</span>
-																<button
-																	type='button'
-																	onClick={() =>
-																		setPendingDeleteTriggerId(
-																			null,
-																		)
-																	}
-																	className='min-h-11 rounded-lg px-3 md:min-h-0'>
-																	Cancel
-																</button>
-																<button
-																	type='button'
-																	disabled={
-																		deleteTriggerMutation.isPending
-																	}
-																	onClick={() =>
-																		handleDeleteTrigger(
-																			trigger.id,
-																		)
-																	}
-																	className='min-h-11 rounded-lg bg-rose-600 px-3 font-bold text-white disabled:opacity-50 md:min-h-0'>
-																	{deleteTriggerMutation.isPending
-																		? 'Deleting…'
-																		: 'Delete'}
-																</button>
-															</div>
-														)}
-														{trigger.token && (
-															<button
-																aria-label='Copy'
-																onClick={() =>
-																	handleCopyWebhookUrl(
-																		webhookUrlFor(trigger),
-																	)
-																}
-																className='hover:text-primary-600 dark:hover:text-primary-400 flex items-center gap-1.5 truncate text-left text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-																<Copy
-																	size={10}
-																	className='shrink-0'
-																/>
-																<span className='truncate'>
-																	{webhookUrlFor(trigger)}
-																</span>
-															</button>
-														)}
-													</div>
-												))}
-											</div>
-										)}
-									</div>
+									<AgentTriggersPanel
+										ws={workspaceId}
+										agentId={currentAgentId}
+										drawerTarget={triggerDrawer}
+										onOpenDrawer={(target) =>
+											void openTriggerDrawer(target).catch(() => {})
+										}
+										onCloseDrawer={() => setTriggerDrawer(null)}
+									/>
 
 									{/* Apps Section */}
 									<div className='space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
@@ -5288,94 +5067,6 @@ const BuildPage = () => {
 						</div>
 					)}
 				</div>
-			</AgentSideDrawer>
-
-			<AgentSideDrawer
-				isOpen={isTriggerPanelOpen}
-				title='Add a trigger'
-				onClose={() => setIsTriggerPanelOpen(false)}
-				footer={
-					<div className='flex justify-end gap-2'>
-						<button
-							onClick={() => setIsTriggerPanelOpen(false)}
-							className='min-h-11 rounded-lg px-4 py-1.5 text-xs font-bold text-zinc-500 hover:bg-zinc-100 md:min-h-0 dark:hover:bg-zinc-800'>
-							Cancel
-						</button>
-						<button
-							onClick={() => void handleCreateTrigger()}
-							disabled={createTriggerMutation.isPending}
-							className='bg-primary-400 text-primary-950 hover:bg-primary-500 min-h-11 rounded-lg px-4 py-1.5 text-xs font-black disabled:opacity-60 md:min-h-0'>
-							{createTriggerMutation.isPending ? 'Creating…' : 'Create trigger'}
-						</button>
-					</div>
-				}>
-				<div className='space-y-1.5'>
-					<span className='pl-1 text-[10px] font-black tracking-widest text-zinc-400 uppercase'>
-						Type
-					</span>
-					<div
-						role='group'
-						aria-label='Trigger type'
-						className='grid grid-cols-3 rounded-lg bg-zinc-100 p-0.5 dark:bg-zinc-950/45'>
-						{(['schedule', 'webhook', 'event'] as TAgentTriggerType[]).map((t) => (
-							<button
-								key={t}
-								type='button'
-								aria-pressed={newTriggerType === t}
-								onClick={() => setNewTriggerType(t)}
-								className={`min-h-11 rounded-md px-3 py-1.5 text-[10px] font-black capitalize transition md:min-h-0 ${
-									newTriggerType === t
-										? 'bg-white text-zinc-900 shadow-2xs dark:bg-zinc-800 dark:text-white'
-										: 'text-zinc-400 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-300'
-								}`}>
-								{t}
-							</button>
-						))}
-					</div>
-				</div>
-				{newTriggerType === 'schedule' && (
-					<label className='block space-y-1.5'>
-						<span className='pl-1 text-[10px] font-black tracking-widest text-zinc-400 uppercase'>
-							Schedule (cron)
-						</span>
-						<input
-							aria-label='0 9 * * *'
-							type='text'
-							value={newTriggerCron}
-							onChange={(e) => setNewTriggerCron(e.target.value)}
-							placeholder='0 9 * * *'
-							className='focus:border-primary-500/50 min-h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 font-mono text-base text-zinc-800 outline-none md:min-h-0 md:text-xs dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
-						/>
-					</label>
-				)}
-				{newTriggerType === 'event' && (
-					<label className='block space-y-1.5'>
-						<span className='pl-1 text-[10px] font-black tracking-widest text-zinc-400 uppercase'>
-							Event name
-						</span>
-						<input
-							aria-label='Event name'
-							type='text'
-							value={newTriggerEventName}
-							onChange={(e) => setNewTriggerEventName(e.target.value)}
-							placeholder='Event name'
-							className='focus:border-primary-500/50 min-h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-base font-semibold text-zinc-800 outline-none md:min-h-0 md:text-xs dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
-						/>
-					</label>
-				)}
-				<label className='block space-y-1.5'>
-					<span className='pl-1 text-[10px] font-black tracking-widest text-zinc-400 uppercase'>
-						Initial message (optional)
-					</span>
-					<textarea
-						aria-label='What the agent is told when this trigger fires'
-						rows={3}
-						value={newTriggerInitialMessage}
-						onChange={(e) => setNewTriggerInitialMessage(e.target.value)}
-						placeholder='What the agent is told when this trigger fires'
-						className='focus:border-primary-500/50 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-base font-semibold text-zinc-800 outline-none md:text-xs dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
-					/>
-				</label>
 			</AgentSideDrawer>
 
 			<SkillEditorDrawer

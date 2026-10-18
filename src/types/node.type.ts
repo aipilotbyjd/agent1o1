@@ -16,6 +16,8 @@ export type TBuiltinNode = {
 	icon: string | null;
 	color: string | null;
 	requires_connector: boolean;
+	/** An app reader as Triggers & Events lists it ("Gmail: New email"). */
+	trigger_mode?: boolean;
 };
 
 export type TCustomNode = {

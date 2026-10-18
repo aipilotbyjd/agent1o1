@@ -1,13 +1,13 @@
 import { useEditorWorkspaceId } from '../../../_hooks/useEditorWorkspaceId.hook';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { AlertCircle, Check, ChevronDown, Loader2, Search, X } from 'lucide-react';
 import { ApiError } from '@/api/core';
 import { useNodeOptions } from '@/api/modules/nodes';
 import useOnClickOutside from '@/hooks/useOnClickOutside';
 import type { TNodeOption } from '@/types/node.type';
-import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
-import type { TNodeField } from '../../../_types/node.type';
+import { WorkflowEditorContext } from '../../../_context/WorkflowEditorStore.context';
+import type { TFieldHost, TNodeField } from '../../../_types/node.type';
 import ExpressionInput from './ExpressionInput.partial';
 
 type Props = {
@@ -16,6 +16,8 @@ type Props = {
 	onChange: (value: unknown) => void;
 	compact?: boolean;
 	nodeId?: string;
+	/** Outside the editor: the node whose config this field belongs to. */
+	host?: TFieldHost;
 	className: string;
 };
 
@@ -55,15 +57,16 @@ const errorText = (error: unknown) => {
  * Fields that allow it keep a manual mode (an id, or a `{{variable}}` from an
  * earlier step) next to the list.
  */
-const DynamicSelect = ({ field, value, onChange, compact, nodeId, className }: Props) => {
+const DynamicSelect = ({ field, value, onChange, compact, nodeId, host, className }: Props) => {
 	const dynamic = field.dynamic!;
 	const listboxId = useId();
-	const { state } = useWorkflowEditor();
+	const editor = useContext(WorkflowEditorContext);
 	const activeWorkspaceId = useEditorWorkspaceId();
-	const node = state.nodes.find((item) => item.id === nodeId);
-	const nodeValues = (node?.data.values ?? {}) as Record<string, unknown>;
+	const node = editor?.state.nodes.find((item) => item.id === nodeId);
+	const nodeType = host?.type ?? node?.data.defKey ?? '';
+	const nodeValues = (host?.values ?? node?.data.values ?? {}) as Record<string, unknown>;
 	const siblingLabel = (key: string) =>
-		node?.data.definition?.fields.find((item) => item.key === key)?.label ??
+		(host?.fields ?? node?.data.definition?.fields)?.find((item) => item.key === key)?.label ??
 		key.replace(/_/g, ' ');
 
 	const [open, setOpen] = useState(false);
@@ -106,13 +109,13 @@ const DynamicSelect = ({ field, value, onChange, compact, nodeId, className }: P
 	const query = useNodeOptions(
 		activeWorkspaceId,
 		{
-			type: node?.data.defKey ?? '',
+			type: nodeType,
 			field: field.key,
 			config,
 			search: open ? debouncedSearch || undefined : undefined,
 		},
 		// Load when opened, or up front to put a name to a saved value.
-		!!node && !blockedReason && (open || (!manual && selection.length > 0)),
+		!!nodeType && !blockedReason && (open || (!manual && selection.length > 0)),
 	);
 
 	const options = useMemo(
