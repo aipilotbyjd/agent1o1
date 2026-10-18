@@ -84,7 +84,10 @@
 	--color-secondary-950: var(--color-zinc-950);
 }
 
-:root {
+/* `.theme-light` pins the light tokens on surfaces that stay light in both
+ * themes, such as the auth card. */
+:root,
+.theme-light {
 	--primary-50: #fffdf0;
 	--primary-100: #fefad4;
 	--primary-200: #fbf4aa;
@@ -113,6 +116,51 @@
 	--soft-accent-border: #eaf4bc;
 
 	--shadow-val: 0 4px 24px rgba(16, 24, 40, 0.04);
+}
+
+.theme-light {
+	color-scheme: light;
+
+	/* `@theme` resolves these aliases on :root, where the tokens may be the dark
+	 * ones. Redeclaring them here resolves them against the light tokens above. */
+	--color-primary-50: var(--primary-50);
+	--color-primary-100: var(--primary-100);
+	--color-primary-200: var(--primary-200);
+	--color-primary-300: var(--primary-300);
+	--color-primary-400: var(--primary-400);
+	--color-primary-500: var(--primary-500);
+	--color-primary-600: var(--primary-600);
+	--color-primary-700: var(--primary-700);
+	--color-primary-800: var(--primary-800);
+	--color-primary-900: var(--primary-900);
+	--color-primary-950: var(--primary-950);
+	--color-primary-foreground: var(--primary-foreground);
+
+	--color-zinc-500: var(--text-secondary);
+	--color-zinc-600: var(--text-secondary);
+	--color-secondary-500: var(--text-secondary);
+	--color-secondary-600: var(--text-secondary);
+
+	--color-slate-100: var(--bg-base);
+	--color-slate-200: var(--border-base);
+	--color-slate-800: var(--text-primary);
+	--color-slate-900: var(--text-primary);
+	--color-slate-500: var(--text-secondary);
+	--color-slate-600: var(--text-secondary);
+
+	--color-bg-main: var(--bg-main);
+	--color-bg-sidebar: var(--bg-sidebar);
+	--color-bg-card: var(--bg-card);
+	--color-border-main: var(--border-main);
+	--color-text-main: var(--text-main);
+	--color-text-muted: var(--text-muted);
+	--color-soft-accent-bg: var(--soft-accent-bg);
+	--color-soft-accent-border: var(--soft-accent-border);
+
+	--shadow-2xs: var(--shadow-val);
+	--shadow-xs: var(--shadow-val);
+	--shadow-sm: var(--shadow-val);
+	--shadow-md: var(--shadow-val);
 }
 
 .dark {

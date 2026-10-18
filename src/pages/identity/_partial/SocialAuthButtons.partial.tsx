@@ -78,7 +78,7 @@ const SocialAuthButtons = () => {
 					type='button'
 					disabled={redirect.isPending}
 					onClick={() => handleClick(provider)}
-					className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold shadow-2xs transition-colors focus:outline-hidden disabled:pointer-events-none disabled:opacity-50 ${className}`}>
+					className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold shadow-[0_1px_2px_rgb(16_24_40/0.06)] transition-colors focus:outline-hidden disabled:pointer-events-none disabled:opacity-50 ${className}`}>
 					<Mark />
 					{label}
 				</button>

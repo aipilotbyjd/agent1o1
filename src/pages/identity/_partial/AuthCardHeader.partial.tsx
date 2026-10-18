@@ -12,12 +12,14 @@ const AuthCardHeader: FC<TAuthCardHeaderProps> = ({ right }) => (
 		<Link to='/' className='group flex items-center gap-2'>
 			<AppLogo
 				variant='light'
-				className='shadow-primary-600/25 ring-primary-500/25 size-9 shadow-md ring-1 transition-transform group-hover:scale-105'
+				className='ring-primary-500/25 size-9 shadow-[0_4px_12px_-2px_rgb(183_229_47/0.4)] ring-1 transition-transform group-hover:scale-105'
 				rounded='rounded-xl'
 			/>
 			<div className='flex items-baseline'>
 				<span className='text-xl font-black tracking-tight text-zinc-950'>agent</span>
-				<span className='text-primary-600 text-xl font-black tracking-tight'>1o1</span>
+				<span className='decoration-primary-500 text-xl font-black tracking-tight text-zinc-950 underline decoration-[3px] underline-offset-4'>
+					1o1
+				</span>
 			</div>
 		</Link>
 

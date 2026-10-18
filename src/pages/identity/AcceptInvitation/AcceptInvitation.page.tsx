@@ -12,7 +12,7 @@ import AuthLayout from '../_partial/AuthLayout.partial';
 import AuthCardHeader from '../_partial/AuthCardHeader.partial';
 
 const primaryButton =
-	'bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-md transition-all disabled:cursor-not-allowed disabled:opacity-60';
+	'bg-primary-600 hover:bg-primary-700 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-[0_8px_20px_-6px_rgb(183_229_47/0.55)] transition-all disabled:cursor-not-allowed disabled:opacity-60';
 const secondaryButton =
 	'flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white py-3.5 text-xs font-bold tracking-wider text-zinc-700 uppercase transition-all hover:bg-zinc-50';
 
@@ -187,7 +187,7 @@ const AcceptInvitationPage = () => {
 					isAuthenticated ? (
 						<Link
 							to={pages.choose.to}
-							className='text-primary-600 hover:text-primary-700 font-semibold hover:underline'>
+							className='decoration-primary-500 hover:decoration-primary-700 font-semibold text-zinc-950 underline decoration-2 underline-offset-4 transition-colors'>
 							My workspaces
 						</Link>
 					) : null
@@ -195,7 +195,7 @@ const AcceptInvitationPage = () => {
 			/>
 
 			<div className='flex flex-col items-center gap-6 text-center'>
-				<div className='bg-primary-100 text-primary-700 flex size-20 items-center justify-center rounded-full'>
+				<div className='bg-primary-400/20 flex size-20 items-center justify-center rounded-full text-zinc-950'>
 					<Icon
 						icon={accept.isSuccess ? 'CheckmarkCircle02' : 'AddTeam'}
 						className='size-10'

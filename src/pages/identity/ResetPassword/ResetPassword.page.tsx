@@ -89,7 +89,7 @@ const ResetPasswordPage = () => {
 				right={
 					<Link
 						to={pages.identity.login.to}
-						className='text-primary-600 hover:text-primary-700 font-semibold hover:underline'>
+						className='decoration-primary-500 hover:decoration-primary-700 font-semibold text-zinc-950 underline decoration-2 underline-offset-4 transition-colors'>
 						Back to sign in
 					</Link>
 				}
@@ -118,7 +118,7 @@ const ResetPasswordPage = () => {
 					<Link to={pages.identity.login.to}>
 						<button
 							type='button'
-							className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-md transition-all'>
+							className='bg-primary-600 hover:bg-primary-700 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-[0_8px_20px_-6px_rgb(183_229_47/0.55)] transition-all'>
 							SIGN IN NOW ›
 						</button>
 					</Link>
@@ -141,7 +141,7 @@ const ResetPasswordPage = () => {
 					<Link to={pages.identity.forgotPassword.to}>
 						<button
 							type='button'
-							className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-md transition-all'>
+							className='bg-primary-600 hover:bg-primary-700 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-[0_8px_20px_-6px_rgb(183_229_47/0.55)] transition-all'>
 							REQUEST A NEW LINK ›
 						</button>
 					</Link>
@@ -305,7 +305,7 @@ const ResetPasswordPage = () => {
 						<button
 							type='submit'
 							disabled={resetPassword.isPending || passedCount < 5}
-							className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 active:bg-primary-800 mt-3 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-md transition-all disabled:pointer-events-none disabled:opacity-50'>
+							className='bg-primary-600 hover:bg-primary-700 active:bg-primary-800 mt-3 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-[0_8px_20px_-6px_rgb(183_229_47/0.55)] transition-all disabled:pointer-events-none disabled:opacity-50'>
 							{resetPassword.isPending && <Spinner className='size-4' />}
 							RESET PASSWORD ›
 						</button>
@@ -315,7 +315,7 @@ const ResetPasswordPage = () => {
 						Back to{' '}
 						<Link
 							to={pages.identity.login.to}
-							className='text-primary-600 hover:text-primary-700 font-bold transition-colors'>
+							className='decoration-primary-500 hover:decoration-primary-700 font-semibold text-zinc-950 underline decoration-2 underline-offset-4 transition-colors'>
 							Sign in
 						</Link>
 					</p>

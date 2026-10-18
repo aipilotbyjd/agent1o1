@@ -39,7 +39,7 @@ const AuthLayout: FC<TAuthLayoutProps> = ({ badge, children }) => (
 		{/* Hidden below lg: on mobile the auth card should be reachable without scrolling past marketing copy. */}
 		<div className='relative z-10 hidden flex-1 flex-col justify-between p-8 sm:p-12 lg:flex lg:p-16'>
 			<div>
-				<div className='border-primary-500/35 bg-primary-500/15 text-primary-300 inline-flex items-center gap-2 rounded-full border px-3.5 py-1 text-[11px] font-bold tracking-wider uppercase'>
+				<div className='border-primary-500/35 bg-primary-500/15 text-primary-400 inline-flex items-center gap-2 rounded-full border px-3.5 py-1 text-[11px] font-bold tracking-wider uppercase'>
 					<span className='bg-primary-400 size-1.5 animate-pulse rounded-full' />
 					{badge}
 				</div>
@@ -57,9 +57,9 @@ const AuthLayout: FC<TAuthLayoutProps> = ({ badge, children }) => (
 					<div
 						key={title}
 						className='border-primary-500/25 hover:border-primary-500/50 flex items-center gap-4 rounded-2xl border bg-[#120f1d]/85 p-4 shadow-lg shadow-black/30 backdrop-blur-xl transition-all hover:bg-[#181427]/90'>
-						<div className='border-primary-500/30 bg-primary-500/15 text-primary-300 flex size-11 shrink-0 items-center justify-center rounded-xl border shadow-inner'>
+						<div className='border-primary-500/30 bg-primary-500/15 text-primary-400 flex size-11 shrink-0 items-center justify-center rounded-xl border shadow-inner'>
 							<svg
-								className='text-primary-300 size-5'
+								className='text-primary-400 size-5'
 								viewBox='0 0 24 24'
 								fill='none'
 								stroke='currentColor'
@@ -99,7 +99,7 @@ const AuthLayout: FC<TAuthLayoutProps> = ({ badge, children }) => (
 					/>
 				</div>
 				<div>
-					<div className='text-primary-300/80 text-[10px] font-bold tracking-widest uppercase'>
+					<div className='text-primary-400/80 text-[10px] font-bold tracking-widest uppercase'>
 						TRUSTED BY BUILDERS
 					</div>
 					<div className='text-xs font-bold tracking-tight text-white'>
@@ -111,7 +111,7 @@ const AuthLayout: FC<TAuthLayoutProps> = ({ badge, children }) => (
 
 		{/* ─── Right Panel: Floating Card ───────────────────────────── */}
 		<div className='relative z-10 flex flex-1 items-center justify-center p-4 sm:p-8 lg:p-12'>
-			<div className='shadow-primary-950/20 w-full max-w-[460px] rounded-[32px] border border-white/80 bg-white p-8 shadow-2xl sm:p-10'>
+			<div className='theme-light shadow-primary-950/20 w-full max-w-[460px] rounded-[32px] border border-white/80 bg-white p-8 shadow-2xl sm:p-10'>
 				{children}
 			</div>
 		</div>

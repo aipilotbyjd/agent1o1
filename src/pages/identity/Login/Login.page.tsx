@@ -106,7 +106,7 @@ const LoginPage = () => {
 						<Link
 							to={pages.identity.signup.to}
 							state={location.state}
-							className='text-primary-600 hover:text-primary-700 font-semibold hover:underline'>
+							className='decoration-primary-500 hover:decoration-primary-700 font-semibold text-zinc-950 underline decoration-2 underline-offset-4 transition-colors'>
 							Create account
 						</Link>
 					)
@@ -117,7 +117,7 @@ const LoginPage = () => {
 				<>
 					{/* 2FA Challenge Header */}
 					<div>
-						<div className='bg-primary-100 text-primary-700 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-wider uppercase'>
+						<div className='bg-primary-400/20 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-wider text-zinc-950 uppercase'>
 							<Icon icon='ShieldCheck' className='size-3.5' />
 							Two-Factor Challenge
 						</div>
@@ -165,7 +165,7 @@ const LoginPage = () => {
 						<button
 							type='submit'
 							disabled={verifyTwoFactor.isPending}
-							className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 active:bg-primary-800 mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-md transition-all disabled:pointer-events-none disabled:opacity-50'>
+							className='bg-primary-600 hover:bg-primary-700 active:bg-primary-800 mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-[0_8px_20px_-6px_rgb(183_229_47/0.55)] transition-all disabled:pointer-events-none disabled:opacity-50'>
 							{verifyTwoFactor.isPending && <Spinner className='size-4' />}
 							VERIFY & SIGN IN ›
 						</button>
@@ -248,7 +248,7 @@ const LoginPage = () => {
 									PASSWORD
 								</label>
 								<Link
-									className='hover:text-primary-600 text-xs font-medium text-zinc-500 transition-colors'
+									className='text-xs font-medium text-zinc-500 transition-colors hover:text-zinc-950'
 									to={pages.identity.forgotPassword.to}>
 									Forgot password?
 								</Link>
@@ -310,7 +310,7 @@ const LoginPage = () => {
 						<button
 							type='submit'
 							disabled={login.isPending}
-							className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 active:bg-primary-800 mt-2 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-md transition-all disabled:pointer-events-none disabled:opacity-50'>
+							className='bg-primary-600 hover:bg-primary-700 active:bg-primary-800 mt-2 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-[0_8px_20px_-6px_rgb(183_229_47/0.55)] transition-all disabled:pointer-events-none disabled:opacity-50'>
 							{login.isPending && <Spinner className='size-4' />}
 							SIGN IN TO DASHBOARD ›
 						</button>
@@ -321,7 +321,7 @@ const LoginPage = () => {
 						Need an account?{' '}
 						<Link
 							to={pages.identity.signup.to}
-							className='text-primary-600 hover:text-primary-700 font-bold transition-colors'>
+							className='decoration-primary-500 hover:decoration-primary-700 font-semibold text-zinc-950 underline decoration-2 underline-offset-4 transition-colors'>
 							Create one
 						</Link>
 					</p>
