@@ -312,7 +312,7 @@ const LayerRows = ({
 							style={{ paddingLeft: 6 + depth * 14 }}
 							className={`group relative flex items-center gap-2 rounded-lg py-1.5 pr-1.5 transition ${
 								selected
-									? 'bg-primary-100/80 text-primary-900 dark:bg-primary-400/15 dark:text-primary-100'
+									? 'bg-primary-100/80 text-primary-900 dark:bg-primary-400/15 dark:text-primary-200'
 									: 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/[0.05]'
 							}`}>
 							{over?.id === block.id && (

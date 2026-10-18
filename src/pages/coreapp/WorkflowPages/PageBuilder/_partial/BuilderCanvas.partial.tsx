@@ -471,7 +471,7 @@ const BuilderCanvas = () => {
 				if (!event.currentTarget.contains(event.relatedTarget as Node)) setDropTarget(null);
 			}}>
 			{mode === 'preview' && (
-				<div className='border-primary-500/30 bg-primary-50 text-primary-900 dark:bg-primary-400/10 dark:text-primary-100 flex shrink-0 items-center justify-center gap-3 border-b px-4 py-2 text-xs font-semibold'>
+				<div className='border-primary-500/30 bg-primary-50 text-primary-900 dark:bg-primary-400/10 dark:text-primary-200 flex shrink-0 items-center justify-center gap-3 border-b px-4 py-2 text-xs font-semibold'>
 					<Eye size={14} />
 					Preview. Runs use this draft and spend real credits.
 					<button

@@ -24,13 +24,15 @@ const PageTemplatePreview = ({
 	className?: string;
 }) => {
 	const boxRef = useRef<HTMLDivElement>(null);
-	const [boxWidth, setBoxWidth] = useState(0);
+	const [box, setBox] = useState({ width: 0, height: 0 });
 	const pageWidth = PAGE_WIDTH[content.theme.width] + GUTTER;
 
 	useLayoutEffect(() => {
 		const box = boxRef.current;
 		if (!box) return;
-		const observer = new ResizeObserver(([entry]) => setBoxWidth(entry.contentRect.width));
+		const observer = new ResizeObserver(([entry]) =>
+			setBox({ width: entry.contentRect.width, height: entry.contentRect.height }),
+		);
 		observer.observe(box);
 		return () => observer.disconnect();
 	}, []);
@@ -60,17 +62,21 @@ const PageTemplatePreview = ({
 		return sample(content.blocks);
 	}, [content.blocks, fields]);
 
+	const zoom = Math.min(1, box.width / pageWidth);
+
 	return (
-		<div ref={boxRef} aria-hidden inert className={`overflow-hidden ${className}`}>
-			{boxWidth > 0 && (
+		<div ref={boxRef} aria-hidden inert className={`min-h-full overflow-hidden ${className}`}>
+			{box.width > 0 && (
+				// At least as tall as the box (undoing the zoom), so a short page's
+				// background runs to the bottom instead of stopping partway.
 				<div
-					style={{ width: pageWidth, zoom: Math.min(1, boxWidth / pageWidth) }}
-					className='pointer-events-none mx-auto select-none'>
+					style={{ width: pageWidth, zoom, minHeight: Math.floor(box.height / zoom) }}
+					className='pointer-events-none mx-auto flex flex-col select-none'>
 					<PageRenderer
 						theme={content.theme}
 						blocks={blocks}
 						mode='edit'
-						className='!py-6'
+						className='flex-1 !py-6'
 					/>
 				</div>
 			)}

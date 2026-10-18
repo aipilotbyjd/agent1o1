@@ -237,7 +237,7 @@ const CreatePageModal = ({
 												onClick={() => setSelected(workflow.id)}
 												className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition ${
 													active
-														? 'bg-primary-100 text-primary-900 dark:bg-primary-400/15 dark:text-primary-100'
+														? 'bg-primary-100 text-primary-900 dark:bg-primary-400/15 dark:text-primary-200'
 														: 'hover:bg-zinc-50 dark:hover:bg-white/[0.04]'
 												}`}>
 												<GitMerge

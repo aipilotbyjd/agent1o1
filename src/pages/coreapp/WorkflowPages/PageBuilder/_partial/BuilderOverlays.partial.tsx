@@ -173,7 +173,7 @@ const QuickAddPalette = ({ onClose }: { onClose: () => void }) => {
 								onClick={() => add(entry)}
 								className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left ${
 									index === active
-										? 'bg-primary-100 text-primary-900 dark:bg-primary-400/15 dark:text-primary-100'
+										? 'bg-primary-100 text-primary-900 dark:bg-primary-400/15 dark:text-primary-200'
 										: 'text-zinc-700 dark:text-zinc-200'
 								}`}>
 								<span className='flex size-7 shrink-0 items-center justify-center rounded-md bg-zinc-100 dark:bg-white/[0.06]'>
