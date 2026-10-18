@@ -8,6 +8,7 @@ import { getNodeDefinition } from '../../_helper/nodeCatalog.constants';
 import { issuesToFix, type TValidationIssue } from '../../_helper/validation.helper';
 import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { useReferenceIssues } from '../../_hooks/useReferenceIssues.hook';
+import { useEditorSecrets } from '../../_hooks/useEditorSecrets.hook';
 
 /**
  * The "Fix before publishing" checklist: a quiet pill in the top bar that
@@ -22,10 +23,19 @@ const IssuesChecklist = () => {
 	const setPreviewVersionId = useWorkflowShellStore((store) => store.setPreviewVersionId);
 	const ref = useRef<HTMLDivElement>(null);
 	const referenceIssues = useReferenceIssues();
+	const secrets = useEditorSecrets();
+	const secretKeys = secrets.isReady ? secrets.keys : null;
 
 	const issues = useMemo(
-		() => issuesToFix(state.nodes, state.edges, state.ui.serverIssues, referenceIssues),
-		[state.nodes, state.edges, state.ui.serverIssues, referenceIssues],
+		() =>
+			issuesToFix(
+				state.nodes,
+				state.edges,
+				state.ui.serverIssues,
+				referenceIssues,
+				secretKeys,
+			),
+		[state.nodes, state.edges, state.ui.serverIssues, referenceIssues, secretKeys],
 	);
 	const blocking = issues.filter((issue) => issue.blocksPublish);
 	const tips = issues.filter((issue) => !issue.blocksPublish);

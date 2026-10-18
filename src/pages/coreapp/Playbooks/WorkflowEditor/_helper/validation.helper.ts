@@ -2,6 +2,7 @@ import { getNodeDefinition } from './nodeCatalog.constants';
 import type { TCanvasEdge, TCanvasNode } from '../_types/canvas.type';
 import type { TNodeField } from '../_types/node.type';
 import { ApiError, type TApiIssue } from '@/api/core';
+import { referencedSecretKeys } from './secretTokens.helper';
 
 export type TValidationIssue = {
 	id: string;
@@ -99,13 +100,46 @@ export const validateWorkflow = (
  * step and field, live checks first. References that won't resolve come last,
  * as suggestions: publishing allows them, but a run reaching one fails.
  */
+/**
+ * A `{{ secrets.X }}` the workspace has no secret for: publishing refuses it
+ * and a run would fail the step, so it's flagged as soon as it's typed.
+ * `secretKeys` is null until the workspace's secrets have loaded.
+ */
+export const unknownSecretIssues = (
+	nodes: TCanvasNode[],
+	secretKeys: Set<string> | null,
+): TValidationIssue[] => {
+	if (!secretKeys) return [];
+	return nodes.flatMap((node) =>
+		Object.entries(node.data.values ?? {}).flatMap(([fieldKey, value]) => {
+			const missing = referencedSecretKeys(value).filter((key) => !secretKeys.has(key));
+			if (missing.length === 0) return [];
+			const names = missing.join(', ');
+			return [
+				{
+					id: `secret:${node.id}:${fieldKey}`,
+					nodeId: node.id,
+					fieldKey,
+					message:
+						missing.length === 1
+							? `No secret named ${names}. Add it or pick another.`
+							: `No secrets named ${names}. Add them or pick others.`,
+					severity: 'error' as const,
+					blocksPublish: true,
+				},
+			];
+		}),
+	);
+};
+
 export const issuesToFix = (
 	nodes: TCanvasNode[],
 	edges: TCanvasEdge[],
 	serverIssues: TApiIssue[],
 	referenceIssues: TApiIssue[] = [],
+	secretKeys: Set<string> | null = null,
 ): TValidationIssue[] => {
-	const live = validateWorkflow(nodes, edges);
+	const live = [...validateWorkflow(nodes, edges), ...unknownSecretIssues(nodes, secretKeys)];
 	const nodeIds = new Set(nodes.map((node) => node.id));
 	const seen = new Set(live.map((issue) => `${issue.nodeId ?? ''}:${issue.fieldKey ?? ''}`));
 

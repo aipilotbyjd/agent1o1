@@ -2,15 +2,22 @@ import { useMemo, useState } from 'react';
 import {
 	ArrowDownToLine,
 	ArrowUpFromLine,
+	Braces,
 	ChevronRight,
 	GripVertical,
+	KeyRound,
 	Link2,
+	Lock,
+	Plus,
 	Search,
 	X,
 } from 'lucide-react';
 import { PORT_TYPE_COLOR } from '../../../_helper/builder.constants';
 import { buildOutputToken, setTokenDragData } from '../../../_helper/tokenDrag.helper';
 import type { TNodePort } from '../../../_types/node.type';
+import { buildSecretToken } from '../../../_helper/secretTokens.helper';
+import { useEditorSecrets } from '../../../_hooks/useEditorSecrets.hook';
+import NewSecretDialog from '../../secrets/NewSecretDialog.partial';
 
 /** One value flowing into this node: an upstream node's output port. */
 export type TIncomingInput = {
@@ -271,6 +278,10 @@ const NodeIOPanel = ({ nodeColor, incoming, outputs }: Props) => {
 					)}
 				</section>
 
+				<div className='h-px bg-gradient-to-r from-transparent via-zinc-200 to-transparent dark:via-zinc-800' />
+
+				<SecretsSection />
+
 				{/* Divider between the two halves */}
 				<div className='h-px bg-gradient-to-r from-transparent via-zinc-200 to-transparent dark:via-zinc-800' />
 
@@ -374,6 +385,114 @@ const PortRow = ({
 			</span>
 			<TypeBadge port={port} />
 		</div>
+	);
+};
+
+/**
+ * The workspace's secrets and variables, dragged into a field like an
+ * upstream value: each drops its `{{ secrets.KEY }}` reference. Collapsed
+ * until opened, since most steps need none.
+ */
+const SecretsSection = () => {
+	const { secrets, isReady } = useEditorSecrets();
+	const [open, setOpen] = useState(false);
+	const [query, setQuery] = useState('');
+	const [creating, setCreating] = useState(false);
+
+	const shown = useMemo(() => {
+		const q = query.trim().toLowerCase();
+		return secrets.filter((secret) => !q || secret.key.toLowerCase().includes(q));
+	}, [secrets, query]);
+
+	return (
+		<section className='flex flex-col gap-2.5 p-3.5'>
+			<div className='flex items-center gap-2'>
+				<button
+					type='button'
+					aria-expanded={open}
+					onClick={() => setOpen((value) => !value)}
+					className='flex min-w-0 flex-1 items-center gap-2 text-left'>
+					<span className='flex size-6 items-center justify-center rounded-lg bg-amber-500/12 text-amber-500'>
+						<KeyRound size={13} />
+					</span>
+					<span className='text-[12px] font-bold text-zinc-800 dark:text-zinc-100'>
+						Secrets
+					</span>
+					{isReady && <CountBadge count={secrets.length} tone='muted' />}
+					<ChevronRight
+						size={13}
+						className={`text-zinc-400 transition-transform ${open ? 'rotate-90' : ''}`}
+					/>
+				</button>
+				<button
+					type='button'
+					onClick={() => setCreating(true)}
+					className='nodrag flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-bold text-amber-600 transition hover:bg-amber-500/10 dark:text-amber-400'>
+					<Plus size={11} />
+					New
+				</button>
+			</div>
+
+			{open &&
+				(isReady && secrets.length === 0 ? (
+					<EmptyState
+						icon={<Lock size={16} />}
+						title='No secrets yet'
+						hint='Add an API key or token once, then drag it into any field.'
+					/>
+				) : (
+					<>
+						{secrets.length > FILTER_THRESHOLD && (
+							<FilterBox
+								value={query}
+								onChange={setQuery}
+								placeholder='Filter secrets…'
+							/>
+						)}
+						{shown.length === 0 && query ? (
+							<NoMatch query={query} />
+						) : (
+							<div className='nowheel grid max-h-[180px] grid-cols-2 gap-1.5 overflow-y-auto pr-1'>
+								{shown.map((secret) => (
+									<div
+										key={secret.id}
+										draggable
+										onDragStart={(event) =>
+											setTokenDragData(
+												event.dataTransfer,
+												buildSecretToken(secret.key),
+											)
+										}
+										title={`Drag ${secret.key} into a field${secret.description ? `: ${secret.description}` : ''}`}
+										className='nodrag group/in relative flex cursor-grab items-center gap-1.5 overflow-hidden rounded-xl border border-amber-500/25 bg-zinc-50/60 py-2 pr-2.5 pl-3 transition-all duration-150 hover:-translate-y-px hover:shadow-md active:translate-y-0 active:cursor-grabbing dark:bg-zinc-900/40'>
+										<span className='absolute inset-y-0 left-0 w-1 bg-amber-500' />
+										<GripVertical
+											size={12}
+											className='shrink-0 text-zinc-400 opacity-40 transition group-hover/in:opacity-100 dark:text-zinc-500'
+										/>
+										{secret.is_secret ? (
+											<Lock size={11} className='shrink-0 text-amber-500' />
+										) : (
+											<Braces size={11} className='shrink-0 text-sky-500' />
+										)}
+										<span className='flex-1 truncate font-mono text-[10px] font-semibold text-zinc-700 dark:text-zinc-200'>
+											{secret.key}
+										</span>
+									</div>
+								))}
+							</div>
+						)}
+					</>
+				))}
+
+			{creating && (
+				<NewSecretDialog
+					isOpen
+					onClose={() => setCreating(false)}
+					onCreated={() => setOpen(true)}
+				/>
+			)}
+		</section>
 	);
 };
 
