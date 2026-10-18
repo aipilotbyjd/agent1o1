@@ -176,7 +176,7 @@ const TemplateLibraryDialog = () => {
 							className='group hover:border-primary-300 hover:shadow-primary-500/20 dark:hover:border-primary-800/50 flex cursor-pointer flex-col justify-between rounded-xl border border-zinc-200 bg-white p-4 transition-all hover:shadow-md active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-900'>
 							<div>
 								<div className='mb-1 flex items-start justify-between gap-2'>
-									<div className='group-hover:text-primary-600 dark:group-hover:text-primary-400 text-sm font-bold text-zinc-800 transition-colors dark:text-zinc-100'>
+									<div className='group-hover:text-primary-900 dark:group-hover:text-primary-400 text-sm font-bold text-zinc-800 transition-colors dark:text-zinc-100'>
 										{template.name}
 									</div>
 									{template.badge && (

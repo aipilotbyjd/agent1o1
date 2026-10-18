@@ -93,7 +93,7 @@ const WebhookSecret = ({ workspaceId, trigger }: { workspaceId: string; trigger:
 					<button
 						type='button'
 						onClick={() => setSecret(generateToken())}
-						className='hover:text-primary-600 cursor-pointer text-[9px] font-semibold text-zinc-500'>
+						className='hover:text-primary-900 dark:hover:text-primary-400 cursor-pointer text-[9px] font-semibold text-zinc-500'>
 						Generate
 					</button>
 				)}
@@ -137,7 +137,7 @@ const WebhookSecret = ({ workspaceId, trigger }: { workspaceId: string; trigger:
 					<button
 						type='button'
 						onClick={() => setIsEditing(true)}
-						className='hover:text-primary-600 cursor-pointer text-[9px] font-semibold text-zinc-500'>
+						className='hover:text-primary-900 dark:hover:text-primary-400 cursor-pointer text-[9px] font-semibold text-zinc-500'>
 						{trigger.has_signing_secret ? 'Replace' : 'Add'}
 					</button>
 				</div>
@@ -248,7 +248,7 @@ const TriggerDetails = ({ workspaceId, trigger, showEvents = true }: Props) => {
 									stop(event);
 									handleCopy();
 								}}
-								className='hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-5 w-5 cursor-pointer items-center justify-center rounded text-zinc-400 transition'>
+								className='hover:bg-primary-100 hover:text-primary-900 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-5 w-5 cursor-pointer items-center justify-center rounded text-zinc-400 transition'>
 								<Copy size={11} />
 							</button>
 							<button
@@ -258,7 +258,7 @@ const TriggerDetails = ({ workspaceId, trigger, showEvents = true }: Props) => {
 									stop(event);
 									handleCopyCurl();
 								}}
-								className='hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-5 cursor-pointer items-center justify-center gap-0.5 rounded px-1 text-[9px] font-semibold text-zinc-400 transition'>
+								className='hover:bg-primary-100 hover:text-primary-900 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-5 cursor-pointer items-center justify-center gap-0.5 rounded px-1 text-[9px] font-semibold text-zinc-400 transition'>
 								<Terminal size={10} />
 								curl
 							</button>
@@ -270,7 +270,7 @@ const TriggerDetails = ({ workspaceId, trigger, showEvents = true }: Props) => {
 									stop(event);
 									handleRotate();
 								}}
-								className='hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-5 w-5 cursor-pointer items-center justify-center rounded text-zinc-400 transition disabled:cursor-not-allowed disabled:opacity-50'>
+								className='hover:bg-primary-100 hover:text-primary-900 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-5 w-5 cursor-pointer items-center justify-center rounded text-zinc-400 transition disabled:cursor-not-allowed disabled:opacity-50'>
 								<RefreshCw
 									size={11}
 									className={rotateToken.isPending ? 'animate-spin' : ''}
@@ -309,7 +309,7 @@ const TriggerDetails = ({ workspaceId, trigger, showEvents = true }: Props) => {
 						stop(event);
 						handleRun();
 					}}
-					className='hover:border-primary-300 hover:text-primary-600 dark:hover:text-primary-400 flex cursor-pointer items-center gap-1 rounded-md border border-zinc-200 bg-white px-1.5 py-0.5 text-[9px] font-semibold text-zinc-600 transition disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300'>
+					className='hover:border-primary-300 hover:text-primary-900 dark:hover:text-primary-400 flex cursor-pointer items-center gap-1 rounded-md border border-zinc-200 bg-white px-1.5 py-0.5 text-[9px] font-semibold text-zinc-600 transition disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300'>
 					<Play size={9} />
 					{runTrigger.isPending ? 'Queuing…' : 'Run now'}
 				</button>
@@ -348,7 +348,7 @@ const TriggerDetails = ({ workspaceId, trigger, showEvents = true }: Props) => {
 									to={paths.trail(workspaceId, event.run_id)}
 									title='Open this run in Trail'
 									onClick={stop}
-									className='hover:text-primary-600 dark:hover:text-primary-400 shrink-0 text-zinc-400'>
+									className='hover:text-primary-900 dark:hover:text-primary-400 shrink-0 text-zinc-400'>
 									<ExternalLink size={9} />
 								</Link>
 							)}

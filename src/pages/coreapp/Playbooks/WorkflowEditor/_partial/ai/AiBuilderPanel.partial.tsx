@@ -132,7 +132,7 @@ const mdComponents: Components = {
 			href={href}
 			target='_blank'
 			rel='noreferrer'
-			className='hover:text-primary-600 dark:hover:text-primary-400 underline underline-offset-2'>
+			className='hover:text-primary-900 dark:hover:text-primary-400 underline underline-offset-2'>
 			{children}
 		</a>
 	),
@@ -687,13 +687,13 @@ const AiBuilderPanel = () => {
 										sendMessage(suggestion.prompt, suggestion.mode);
 									}}
 									className='group hover:border-primary-300 hover:bg-primary-50/50 dark:hover:border-primary-700 dark:hover:bg-primary-950/20 flex items-center gap-2.5 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-left text-[12.5px] font-semibold text-zinc-600 shadow-xs transition hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:text-white'>
-									<span className='group-hover:bg-primary-100 group-hover:text-primary-600 dark:group-hover:bg-primary-500/15 dark:group-hover:text-primary-400 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 transition dark:bg-zinc-800 dark:text-zinc-400'>
+									<span className='group-hover:bg-primary-100 group-hover:text-primary-900 dark:group-hover:bg-primary-500/15 dark:group-hover:text-primary-400 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 transition dark:bg-zinc-800 dark:text-zinc-400'>
 										<suggestion.icon size={13} />
 									</span>
 									{suggestion.label}
 									<ChevronRight
 										size={13}
-										className='group-hover:text-primary-500 ml-auto shrink-0 text-zinc-300 transition group-hover:translate-x-0.5 dark:text-zinc-700'
+										className='group-hover:text-primary-900 dark:group-hover:text-primary-400 ml-auto shrink-0 text-zinc-300 transition group-hover:translate-x-0.5 dark:text-zinc-700'
 									/>
 								</button>
 							))}
@@ -1149,7 +1149,7 @@ const AiBuilderPanel = () => {
 										aria-label='Unarchive chat'
 										disabled={updateBuilderSession.isPending}
 										onClick={() => handleUnarchiveSession(session.id)}
-										className='hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-950/30 dark:hover:text-primary-400 flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-zinc-300 opacity-0 transition group-hover:opacity-100 disabled:opacity-40 dark:text-zinc-600'>
+										className='hover:bg-primary-50 hover:text-primary-900 dark:hover:bg-primary-950/30 dark:hover:text-primary-400 flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-zinc-300 opacity-0 transition group-hover:opacity-100 disabled:opacity-40 dark:text-zinc-600'>
 										<ArchiveRestore size={12} />
 									</button>
 								) : (
@@ -1174,7 +1174,7 @@ const AiBuilderPanel = () => {
 												e.stopPropagation();
 												void handlePromoteSession(session.id);
 											}}
-											className='hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-950/30 dark:hover:text-primary-400 flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-zinc-300 opacity-0 transition group-hover:opacity-100 disabled:opacity-40 dark:text-zinc-600'>
+											className='hover:bg-primary-50 hover:text-primary-900 dark:hover:bg-primary-950/30 dark:hover:text-primary-400 flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-zinc-300 opacity-0 transition group-hover:opacity-100 disabled:opacity-40 dark:text-zinc-600'>
 											<ArrowDownToLine size={12} />
 										</button>
 										<button

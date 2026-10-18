@@ -97,7 +97,7 @@ const NodeLibrary = () => {
 							aria-label='Back'
 							type='button'
 							onClick={() => setSelected(null)}
-							className='hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/10 dark:hover:text-primary-300 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg text-zinc-500 transition'>
+							className='hover:bg-primary-50 hover:text-primary-900 dark:hover:bg-primary-500/10 dark:hover:text-primary-300 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg text-zinc-500 transition'>
 							<ArrowLeft size={16} />
 						</button>
 						<span

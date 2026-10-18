@@ -298,7 +298,7 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 										e.stopPropagation();
 										dispatch({ type: 'SET_NODE_DOC', open: true, nodeId: id });
 									}}
-									className='hover:text-primary-500 shrink-0 text-zinc-400 transition'>
+									className='hover:text-primary-900 dark:hover:text-primary-400 shrink-0 text-zinc-400 transition'>
 									<Info size={10} />
 								</button>
 							</span>
@@ -322,7 +322,7 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 										event.stopPropagation();
 										dispatch({ type: 'TOGGLE_NODE_COLLAPSED', id });
 									}}
-									className='nodrag hover:text-primary-500 dark:hover:text-primary-400 flex size-4 shrink-0 items-center justify-center rounded text-zinc-400 transition'>
+									className='nodrag hover:text-primary-900 dark:hover:text-primary-400 flex size-4 shrink-0 items-center justify-center rounded text-zinc-400 transition'>
 									{collapsed ? (
 										<ChevronsUpDown size={12} />
 									) : (
@@ -365,7 +365,7 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 							e.stopPropagation();
 							dispatch({ type: 'TOGGLE_NODE_COLLAPSED', id });
 						}}
-						className='hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-6 w-6 items-center justify-center rounded text-zinc-400 transition'>
+						className='hover:bg-primary-100 hover:text-primary-900 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-6 w-6 items-center justify-center rounded text-zinc-400 transition'>
 						{collapsed ? <ChevronsUpDown size={13} /> : <ChevronsDownUp size={13} />}
 					</button>
 					<button
@@ -375,7 +375,7 @@ const BaseNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) => {
 							e.stopPropagation();
 							dispatch({ type: 'SET_NODE_EXPANDED', open: true, nodeId: id });
 						}}
-						className='hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-6 w-6 items-center justify-center rounded text-zinc-400 transition'>
+						className='hover:bg-primary-100 hover:text-primary-900 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-6 w-6 items-center justify-center rounded text-zinc-400 transition'>
 						<Maximize2 size={13} />
 					</button>
 					<NodeColorPicker nodeId={id} currentColor={data.color as string | undefined} />

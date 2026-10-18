@@ -23,7 +23,7 @@ const NodeHelpTip = ({ text, size = 11, className }: Props) => {
 			}
 			className='bg-zinc-50/95 dark:bg-zinc-950/95'>
 			<span
-				className={`nodrag hover:text-primary-500 flex shrink-0 text-zinc-400 transition ${className ?? ''}`}
+				className={`nodrag hover:text-primary-900 dark:hover:text-primary-400 flex shrink-0 text-zinc-400 transition ${className ?? ''}`}
 				role='presentation'
 				onPointerDown={(event) => event.stopPropagation()}
 				onClick={(event) => event.stopPropagation()}>

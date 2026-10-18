@@ -78,7 +78,7 @@ const NodeFlowTriggerToggle = ({ nodeId, active }: Props) => {
 				</span>
 				<span
 					title='When on, the flow starts from this node every time it detects something new. Publish to make it live; after that this switch pauses and resumes it instantly.'
-					className='hover:text-primary-500 shrink-0 text-zinc-400 transition dark:text-zinc-500'>
+					className='hover:text-primary-900 dark:hover:text-primary-400 shrink-0 text-zinc-400 transition dark:text-zinc-500'>
 					<Info size={11} />
 				</span>
 			</span>

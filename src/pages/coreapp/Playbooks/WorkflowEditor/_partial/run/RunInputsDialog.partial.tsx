@@ -56,7 +56,7 @@ const RunInputsDialog = ({
 					<button
 						type='submit'
 						disabled={submitting}
-						className='dark:bg-primary-400 dark:text-primary-950 inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:brightness-110'>
+						className='dark:bg-primary-400 dark:text-primary-950 dark:hover:bg-primary-400 inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:brightness-110'>
 						{submitting ? (
 							<Loader2 size={13} className='animate-spin' />
 						) : (

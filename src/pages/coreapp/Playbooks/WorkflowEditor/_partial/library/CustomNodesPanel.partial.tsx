@@ -87,7 +87,7 @@ const CustomNodesPanel = ({ workspaceId, onAdd }: Props) => {
 			<button
 				type='button'
 				onClick={() => setForm('new')}
-				className='hover:border-primary-300 hover:bg-primary-50/60 hover:text-primary-600 dark:hover:border-primary-500/30 dark:hover:bg-primary-500/[0.07] dark:hover:text-primary-300 mb-1 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-zinc-200 px-3 py-2 text-xs font-bold text-zinc-500 transition dark:border-white/10 dark:text-zinc-400'>
+				className='hover:border-primary-300 hover:bg-primary-50/60 hover:text-primary-900 dark:hover:border-primary-500/30 dark:hover:bg-primary-500/[0.07] dark:hover:text-primary-300 mb-1 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-zinc-200 px-3 py-2 text-xs font-bold text-zinc-500 transition dark:border-white/10 dark:text-zinc-400'>
 				<Plus size={13} />
 				New custom node
 			</button>

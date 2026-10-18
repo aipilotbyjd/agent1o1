@@ -259,7 +259,7 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 										event.stopPropagation();
 										dispatch({ type: 'TOGGLE_NODE_COLLAPSED', id });
 									}}
-									className='nodrag hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-5 w-5 items-center justify-center rounded text-zinc-400 transition'>
+									className='nodrag hover:bg-primary-100 hover:text-primary-900 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-5 w-5 items-center justify-center rounded text-zinc-400 transition'>
 									{collapsed ? (
 										<ChevronsUpDown size={12} />
 									) : (

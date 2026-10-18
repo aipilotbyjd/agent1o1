@@ -159,7 +159,7 @@ const NodeExpandedView = () => {
 						onClick={() =>
 							dispatch({ type: 'SET_NODE_DOC', open: true, nodeId: node.id })
 						}
-						className='hover:text-primary-600 dark:hover:text-primary-400 flex items-center gap-1.5 text-[12px] font-semibold text-zinc-500 transition dark:text-zinc-400'>
+						className='hover:text-primary-900 dark:hover:text-primary-400 flex items-center gap-1.5 text-[12px] font-semibold text-zinc-500 transition dark:text-zinc-400'>
 						<Info size={14} />
 						View documentation
 					</button>
