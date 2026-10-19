@@ -208,6 +208,8 @@ export type TSendAgentMessageDto = {
 	attachments?: File[];
 	/** A skill picked with `/`; its instructions are added to this turn only. */
 	skill_id?: string | null;
+	/** A retried or edited user message: it and everything after it are replaced. */
+	replaces_message_id?: string | null;
 };
 
 /** The events one turn plays into the chat, in order: `delta` chunks

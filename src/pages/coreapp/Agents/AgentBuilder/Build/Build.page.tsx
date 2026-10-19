@@ -211,6 +211,7 @@ const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 		.filter((message) => message.role === 'user' || message.role === 'assistant')
 		.map((message) => ({
 			id: `msg-${message.id}`,
+			serverId: message.id,
 			sender: message.role === 'user' ? ('user' as const) : ('agent' as const),
 			skill: message.skill ?? undefined,
 			text:
@@ -302,6 +303,8 @@ type TChatTimelineItem =
 
 interface TMessage {
 	id: string;
+	/** The stored message's id: known once the backend accepted the turn. */
+	serverId?: string;
 	sender: 'agent' | 'user';
 	text: string;
 	/** Original composer text, without attachment labels, for a failed-turn retry. */
@@ -979,6 +982,8 @@ const BuildPage = () => {
 	const { echo } = useRealtime();
 	// Set while Regenerate downloads the original attachments, before the turn starts.
 	const regeneratingRef = useRef(false);
+	// The message Edit rewound to: the next send in that chat replaces it.
+	const editedMessageRef = useRef<{ sessionId: string; messageId: string } | null>(null);
 	// Message whose hover toolbar is pinned open on touch, where there is no hover.
 	const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
 	const composerRef = useRef<HTMLTextAreaElement | null>(null);
@@ -1767,6 +1772,7 @@ const BuildPage = () => {
 		messageText: string,
 		resendFiles?: File[],
 		skill?: TChosenSkill | null,
+		replacing?: string,
 	) => {
 		const trimmed = messageText.trim();
 		const files = resendFiles ?? [...chatAttachments];
@@ -1774,6 +1780,10 @@ const BuildPage = () => {
 		const sentFromKey = chatDraftKey;
 		if ((!trimmed && files.length === 0 && !skill) || !workspaceId || streamAbortRef.current)
 			return;
+		const edited = editedMessageRef.current;
+		editedMessageRef.current = null;
+		const replacesMessageId =
+			replacing ?? (edited && edited.sessionId === conversationId ? edited.messageId : null);
 		// The backend requires message text, even when only files or a skill are sent.
 		setIsAttachOpen(false);
 		const prompt =
@@ -1845,8 +1855,21 @@ const BuildPage = () => {
 					workspaceId,
 					agentIdForRun,
 					sessionId,
-					{ message: prompt, attachments: files, skill_id: skill?.id },
+					{
+						message: prompt,
+						attachments: files,
+						skill_id: skill?.id,
+						replaces_message_id: replacesMessageId,
+					},
 					controller.signal,
+					({ user_message_id }) =>
+						setChatHistory((prev) =>
+							prev.map((message) =>
+								message.id === userMsg.id
+									? { ...message, serverId: user_message_id }
+									: message,
+							),
+						),
 				),
 				agentIdForRun,
 				sessionId,
@@ -1882,6 +1905,7 @@ const BuildPage = () => {
 			}
 		} catch (err) {
 			if (!turnStarted) {
+				editedMessageRef.current = edited;
 				setChatInput((current) => {
 					const restored =
 						current.trim() && current.trim() !== trimmed
@@ -2068,8 +2092,8 @@ const BuildPage = () => {
 		);
 	}, [echo, workspaceId, conversationId]);
 
-	/** Re-runs the last user message. The backend keeps the abandoned turn in the
-	 *  session's history: this appends a fresh one rather than replacing it. */
+	/** Re-runs the last user message, replacing it and the reply on the backend
+	 *  too, so the model never sees the abandoned turn. */
 	const regenerateLastReply = async () => {
 		if (isTyping || regeneratingRef.current) return;
 		const lastUser = [...chatHistory].reverse().find((message) => message.sender === 'user');
@@ -2108,12 +2132,21 @@ const BuildPage = () => {
 			const lastUserIdx = prev.map((m) => m.id).lastIndexOf(lastUser.id);
 			return lastUserIdx === -1 ? prev : prev.slice(0, lastUserIdx);
 		});
-		void sendChatMessage(lastUser.retryText ?? lastUser.text, files ?? [], lastUser.skill);
+		void sendChatMessage(
+			lastUser.retryText ?? lastUser.text,
+			files ?? [],
+			lastUser.skill,
+			lastUser.serverId,
+		);
 	};
 
 	/** Puts a sent message back in the composer and rewinds the transcript to it. */
 	const editUserMessage = (message: TMessage) => {
 		if (isTyping) return;
+		editedMessageRef.current =
+			message.serverId && conversationId
+				? { sessionId: conversationId, messageId: message.serverId }
+				: null;
 		setChatHistory((prev) => {
 			const idx = prev.map((m) => m.id).lastIndexOf(message.id);
 			return idx === -1 ? prev : prev.slice(0, idx);

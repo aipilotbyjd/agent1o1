@@ -21,10 +21,15 @@ const messageBody = (payload: TSendAgentMessageDto): TSendAgentMessageDto | Form
 		return {
 			message: payload.message,
 			...(payload.skill_id ? { skill_id: payload.skill_id } : {}),
+			...(payload.replaces_message_id
+				? { replaces_message_id: payload.replaces_message_id }
+				: {}),
 		};
 	const form = new FormData();
 	form.append('message', payload.message);
 	if (payload.skill_id) form.append('skill_id', payload.skill_id);
+	if (payload.replaces_message_id)
+		form.append('replaces_message_id', payload.replaces_message_id);
 	payload.attachments.forEach((file) => form.append('attachments[]', file));
 	return form;
 };
@@ -96,6 +101,7 @@ export const AgentSessionService = {
 		id: string,
 		payload: TSendAgentMessageDto,
 		signal?: AbortSignal,
+		onStarted?: (turn: { run_id: string; user_message_id: string }) => void,
 	): AsyncGenerator<TAgentSessionStreamEvent> {
 		const stream = await openAgentTurnStream(
 			echo,
@@ -110,15 +116,14 @@ export const AgentSessionService = {
 
 		try {
 			const body = messageBody(payload);
-			const response = await axiosClient.post<TApiResponse<{ turn: { run_id: string } }>>(
-				E.startTurn(ws, agentId, id),
-				body,
-				{
-					signal,
-					...(body instanceof FormData ? { headers: { 'Content-Type': undefined } } : {}),
-				},
-			);
-			const turn = unwrapKey<{ run_id: string }>('turn')(response);
+			const response = await axiosClient.post<
+				TApiResponse<{ turn: { run_id: string; user_message_id: string } }>
+			>(E.startTurn(ws, agentId, id), body, {
+				signal,
+				...(body instanceof FormData ? { headers: { 'Content-Type': undefined } } : {}),
+			});
+			const turn = unwrapKey<{ run_id: string; user_message_id: string }>('turn')(response);
+			onStarted?.(turn);
 
 			yield* stream.follow(turn.run_id);
 		} finally {
