@@ -2,7 +2,7 @@
 // Knowledge Base Types
 // ------------------------------------------------------------
 // Workspace-wide vector search: what `agent.type.ts`'s
-// `TAgentKnowledgeSources` scopes an agent to. The embedding vector
+// `TAgentKnowledge` scopes an agent to. The embedding vector
 // itself is never serialized; `dimensions` is its length, useful
 // for diagnosing a chunk that never ranks. `collections` is derived
 // (grouped) rather than a resource of its own.

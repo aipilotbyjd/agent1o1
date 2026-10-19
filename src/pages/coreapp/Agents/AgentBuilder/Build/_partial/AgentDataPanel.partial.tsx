@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Database, Brain, GitBranch } from 'lucide-react';
-import AgentKnowledgePanel from './AgentKnowledgePanel.partial';
+import { Brain, GitBranch } from 'lucide-react';
 import AgentMemoryPanel from './AgentMemoryPanel.partial';
 import AgentVersionsPanel from './AgentVersionsPanel.partial';
 import { useAgentBuilderStore, type TAgentDataSection } from '@/store/agentBuilder.store';
@@ -10,18 +9,18 @@ type TProps = {
 	agentId?: string;
 };
 
-const SECTIONS: { id: TAgentDataSection; label: string; icon: typeof Database }[] = [
-	{ id: 'knowledge', label: 'Knowledge', icon: Database },
+const SECTIONS: { id: TAgentDataSection; label: string; icon: typeof Brain }[] = [
 	{ id: 'memory', label: 'Memory', icon: Brain },
 	{ id: 'versions', label: 'Versions', icon: GitBranch },
 ];
 
 /**
- * What the agent knows and has been: its knowledge base, persistent memory
- * and version history. How it is performing lives on the Insights page.
+ * What the agent remembers and has been: its persistent memory and version
+ * history. Its knowledge is set up on the Build tab; how it is performing
+ * lives on the Insights page.
  */
 const AgentDataPanel = ({ ws, agentId }: TProps) => {
-	const [section, setSection] = useState<TAgentDataSection>('knowledge');
+	const [section, setSection] = useState<TAgentDataSection>('memory');
 
 	// The aside can ask for a specific section (see agentBuilder.store.ts); honour
 	// it once, then clear so re-renders don't drag the user back here.
@@ -35,7 +34,7 @@ const AgentDataPanel = ({ ws, agentId }: TProps) => {
 	return (
 		<div className='no-scrollbar flex-1 overflow-y-auto bg-zinc-50/40 dark:bg-zinc-950/20'>
 			{/* Segmented sub-nav */}
-			<div className='sticky top-0 z-10 grid grid-cols-3 gap-1 border-b border-zinc-200 bg-white/90 p-2 backdrop-blur dark:border-white/10 dark:bg-zinc-900/90'>
+			<div className='sticky top-0 z-10 grid grid-cols-2 gap-1 border-b border-zinc-200 bg-white/90 p-2 backdrop-blur dark:border-white/10 dark:bg-zinc-900/90'>
 				{SECTIONS.map(({ id, label, icon: Icon }) => (
 					<button
 						key={id}
@@ -52,7 +51,6 @@ const AgentDataPanel = ({ ws, agentId }: TProps) => {
 			</div>
 
 			<div className='p-4'>
-				{section === 'knowledge' && <AgentKnowledgePanel ws={ws} agentId={agentId} />}
 				{section === 'memory' && <AgentMemoryPanel ws={ws} agentId={agentId} />}
 				{section === 'versions' && <AgentVersionsPanel ws={ws} agentId={agentId} />}
 			</div>

@@ -3,8 +3,8 @@
 // ------------------------------------------------------------
 // Core agent record plus every sub-resource that hangs off one:
 // sessions/messages (chat, plus Reverb-streamed turns), versions, tool
-// bindings, attached workflows/skills, knowledge + knowledge
-// sources, eval suites, memories, reflections, and evaluation
+// bindings, attached workflows/skills, knowledge, eval
+// suites, memories, reflections, and evaluation
 // settings. `TAgentSessionStreamEvent` is what a streamed turn plays
 // into the chat; the Reverb payloads behind it are `TAgentTurn*Event`.
 // ============================================================
@@ -282,39 +282,29 @@ export type TUpdateAgentToolBindingDto = {
 
 // ─── Knowledge ───────────────────────────────────────────────
 
-export type TAgentKnowledgeSourceType = 'text' | 'url' | 'file';
+/** `search`: looked up when relevant. `always`: in the prompt every turn. */
+export type TAgentKnowledgeMode = 'search' | 'always';
 
+export type TAgentKnowledgeAttachment = {
+	collection: string;
+	mode: TAgentKnowledgeMode;
+	/** Fed by a synced web page or app: can only be searched. */
+	synced: boolean;
+	/** Hand-added documents only: what `always` would put in the prompt. */
+	documents: number;
+	characters: number;
+};
+
+/** The workspace knowledge-base collections this agent uses, and how. */
 export type TAgentKnowledge = {
-	id: string;
-	agent_id: string;
-	title: string;
-	content: string;
-	source_type: TAgentKnowledgeSourceType | null;
-	source_url: string | null;
-	tokens: number | null;
-	is_active: boolean;
-	sort_order: number;
-	metadata: Record<string, unknown> | null;
-	created_at: string;
-	updated_at: string;
-};
-
-export type TCreateAgentKnowledgeDto = {
-	title: string;
-	content: string;
-	source_type?: TAgentKnowledgeSourceType;
-	source_url?: string | null;
-	is_active?: boolean;
-	sort_order?: number;
-	metadata?: Record<string, unknown> | null;
-};
-
-export type TUpdateAgentKnowledgeDto = Partial<TCreateAgentKnowledgeDto>;
-
-/** Which workspace knowledge-base `collection`s this agent may search. */
-export type TAgentKnowledgeSources = {
-	attached: string[];
+	attached: TAgentKnowledgeAttachment[];
 	available: string[];
+	always: {
+		used: number;
+		budget: number;
+		/** Documents left out of the prompt: they don't fit the budget. */
+		skipped: { collection: string; source: string | null }[];
+	};
 };
 
 // ─── Memory ──────────────────────────────────────────────────
@@ -644,11 +634,6 @@ export type TAgentAnalyticsFilters = {
 	from?: string;
 	to?: string;
 };
-
-// ─────────────────────────────────────────────────────────────
-// Knowledge base (RAG grounding): {agent}/knowledge CRUD.
-// See AgentKnowledgeResource / Store|UpdateAgentKnowledgeRequest.
-// ─────────────────────────────────────────────────────────────
 
 export type TAgentMemoryScope = 'agent' | 'user';
 

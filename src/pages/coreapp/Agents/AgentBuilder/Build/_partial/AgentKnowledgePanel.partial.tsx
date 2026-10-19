@@ -1,292 +1,312 @@
 import { useState } from 'react';
-import { Plus, FileText, Globe, File as FileIcon, Trash2, Pencil, X, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router';
+import { Library, Plus, Trash2, ExternalLink, FilePlus2, AlertTriangle } from 'lucide-react';
+import AgentSideDrawer, { AttachToggle } from './AgentSideDrawer.partial';
+import AddKnowledgeDialog from '@/pages/coreapp/Knowledge/_partial/AddKnowledgeDialog.partial';
+import { slugify } from '@/pages/welcome/_helper/onboarding.helper';
 import {
 	useAgentKnowledge,
-	useCreateAgentKnowledge,
-	useUpdateAgentKnowledge,
-	useDeleteAgentKnowledge,
+	useAttachAgentKnowledge,
+	useDetachAgentKnowledge,
+	useUpdateAgentKnowledgeMode,
 } from '@/api/modules/agent-knowledge';
-import type { TAgentKnowledge, TAgentKnowledgeSourceType } from '@/types/agent.type';
-import { notify } from '@/api/core';
+import { useKnowledgeCollections } from '@/api/modules/knowledge-base';
+import type { TAgentKnowledgeAttachment, TAgentKnowledgeMode } from '@/types/agent.type';
 
 type TProps = {
 	ws: string;
 	agentId?: string;
+	/** New knowledge added from here goes into a collection named after the agent. */
+	agentName?: string;
 };
 
-const SOURCE_ICON: Record<TAgentKnowledgeSourceType, typeof FileText> = {
-	text: FileText,
-	url: Globe,
-	file: FileIcon,
-};
+const MODES: { value: TAgentKnowledgeMode; label: string }[] = [
+	{ value: 'search', label: 'Search' },
+	{ value: 'always', label: 'Always' },
+];
 
-const emptyForm = {
-	title: '',
-	content: '',
-	source_type: 'text' as TAgentKnowledgeSourceType,
-	source_url: '',
+/** Every agent's exported files are indexed as `artifacts:<agentId>`. Its own
+ *  are always searchable, so these are internal and not offered here. */
+const isArtifactCollection = (collection: string) => collection.startsWith('artifacts:');
+
+const formatCharacters = (count: number) =>
+	count >= 1000 ? `${(count / 1000).toFixed(count >= 10000 ? 0 : 1)}k` : `${count}`;
+
+const describe = (attachment: TAgentKnowledgeAttachment) => {
+	const usage = attachment.mode === 'always' ? 'In every reply' : 'Searched when relevant';
+	if (attachment.synced) return `Synced · ${usage}`;
+	if (attachment.documents === 0) return `${usage} · Nothing added yet`;
+	const documents = `${attachment.documents} ${attachment.documents === 1 ? 'document' : 'documents'}`;
+	return `${usage} · ${documents} · ${formatCharacters(attachment.characters)} characters`;
 };
 
 /**
- * CRUD manager for an agent's knowledge base (RAG grounding).
- * Backed by {agent}/knowledge: see AgentKnowledgeController.
+ * Everything this agent knows, from the workspace knowledge base. Each
+ * attached collection is searched when relevant or included in every reply;
+ * synced web pages and apps can only be searched. With nothing attached the
+ * backend lets it search every collection in the workspace. See
+ * AgentKnowledgeController, SkillInjector and ToolRegistry::knowledgeTools().
  */
-const AgentKnowledgePanel = ({ ws, agentId }: TProps) => {
-	const [search, setSearch] = useState('');
-	const [isFormOpen, setIsFormOpen] = useState(false);
-	const [editingId, setEditingId] = useState<string | null>(null);
-	const [form, setForm] = useState(emptyForm);
-	const [isReadingFile, setIsReadingFile] = useState(false);
+const AgentKnowledgePanel = ({ ws, agentId, agentName }: TProps) => {
+	const navigate = useNavigate();
+	const [isPickerOpen, setIsPickerOpen] = useState(false);
+	const [isAddOpen, setIsAddOpen] = useState(false);
+	const [searchQuery, setSearchQuery] = useState('');
 
-	const loadFile = async (file: File | undefined) => {
-		if (!file) return;
-		if (!/\.(txt|md|html|csv|json|xml|ya?ml)$/i.test(file.name)) {
-			notify.error('Choose a text, Markdown, HTML, CSV, JSON, XML, or YAML file.');
-			return;
-		}
-		setIsReadingFile(true);
-		try {
-			const content = await file.text();
-			if (content.length > 50000) {
-				notify.error('Knowledge files must contain at most 50,000 characters.');
-				return;
-			}
-			setForm((current) => ({ ...current, title: current.title || file.name, content }));
-		} finally {
-			setIsReadingFile(false);
-		}
-	};
+	const { data: knowledge } = useAgentKnowledge(ws, agentId ?? '');
+	const { data: collections } = useKnowledgeCollections(ws);
+	const attachMutation = useAttachAgentKnowledge(ws, agentId ?? '');
+	const updateModeMutation = useUpdateAgentKnowledgeMode(ws, agentId ?? '');
+	const detachMutation = useDetachAgentKnowledge(ws, agentId ?? '');
 
-	const { data, isLoading } = useAgentKnowledge(ws, agentId ?? '');
-	const createMutation = useCreateAgentKnowledge(ws, agentId ?? '');
-	const updateMutation = useUpdateAgentKnowledge(ws, agentId ?? '');
-	const deleteMutation = useDeleteAgentKnowledge(ws, agentId ?? '');
+	if (!agentId) return null;
 
-	// `knowledge.index` has no search parameter, so filtering happens here.
-	const items = (data ?? []).filter((k) =>
-		search.trim()
-			? `${k.title} ${k.content}`.toLowerCase().includes(search.trim().toLowerCase())
-			: true,
+	const attached = knowledge?.attached ?? [];
+	const attachedNames = attached.map((attachment) => attachment.collection);
+	const always = knowledge?.always;
+	const hasAlways = attached.some((attachment) => attachment.mode === 'always');
+	const chunkCounts = new Map(
+		(collections ?? [])
+			.filter((row) => !row.private)
+			.map((row) => [row.collection, row.chunks_count]),
 	);
+	const available = (knowledge?.available ?? []).filter(
+		(collection) => !isArtifactCollection(collection),
+	);
+	const query = searchQuery.trim().toLowerCase();
+	const matching = available.filter((collection) => collection.toLowerCase().includes(query));
+	const isBusy =
+		attachMutation.isPending || updateModeMutation.isPending || detachMutation.isPending;
 
-	if (!agentId) {
-		return (
-			<p className='px-1 py-8 text-center text-[11px] font-semibold text-zinc-400 dark:text-zinc-500'>
-				Save the agent first to add knowledge.
-			</p>
-		);
-	}
-
-	const resetForm = () => {
-		setForm(emptyForm);
-		setEditingId(null);
-		setIsFormOpen(false);
+	const chunksLabel = (collection: string) => {
+		const count = chunkCounts.get(collection);
+		return count === undefined ? '' : `${count} ${count === 1 ? 'chunk' : 'chunks'}`;
 	};
 
-	const openEdit = (item: TAgentKnowledge) => {
-		setForm({
-			title: item.title,
-			content: item.content,
-			source_type: item.source_type ?? 'text',
-			source_url: item.source_url ?? '',
-		});
-		setEditingId(item.id);
-		setIsFormOpen(true);
-	};
-
-	const handleSubmit = async () => {
-		if (!form.title.trim() || !form.content.trim()) return;
-		if (createMutation.isPending || updateMutation.isPending) return;
-		const body = {
-			title: form.title.trim(),
-			content: form.content.trim(),
-			source_type: form.source_type,
-			source_url: form.source_type === 'url' ? form.source_url.trim() || null : null,
-		};
-		if (editingId) {
-			await updateMutation.mutateAsync({ id: editingId, body });
-		} else {
-			await createMutation.mutateAsync(body);
-		}
-		resetForm();
-	};
-
-	const isSaving = createMutation.isPending || updateMutation.isPending;
+	const usedPercent = always?.budget ? Math.min(100, (always.used / always.budget) * 100) : 0;
 
 	return (
-		<div className='space-y-3'>
-			{/* Header */}
-			<div className='flex items-center justify-between'>
-				<div>
-					<h4 className='text-xs font-black text-zinc-900 dark:text-white'>
-						Knowledge Base
-					</h4>
-					<p className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-						Documents injected into context to ground replies.
-					</p>
+		<div className='space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
+			<div className='flex items-center justify-between gap-2'>
+				<div className='flex items-center gap-2'>
+					<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-7 w-7 items-center justify-center rounded-lg'>
+						<Library size={14} />
+					</div>
+					<h4 className='text-xs font-black text-zinc-900 dark:text-white'>Knowledge</h4>
 				</div>
-				<button
-					onClick={() => {
-						resetForm();
-						setIsFormOpen(true);
-					}}
-					className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
-					<Plus size={10} />
-					<span>Add</span>
-				</button>
+				<div className='flex items-center gap-1.5'>
+					<button
+						onClick={() => setIsAddOpen(true)}
+						className='flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800'>
+						<FilePlus2 size={10} />
+						<span>New</span>
+					</button>
+					<button
+						onClick={() => {
+							setSearchQuery('');
+							setIsPickerOpen(true);
+						}}
+						className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
+						<Plus size={10} />
+						<span>Attach</span>
+					</button>
+				</div>
 			</div>
 
-			{/* Search */}
-			<input
-				aria-label='Search knowledge…'
-				type='text'
-				value={search}
-				onChange={(e) => setSearch(e.target.value)}
-				placeholder='Search knowledge…'
-				className='focus:border-primary-500/50 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
-			/>
+			{attached.length === 0 && (
+				<p className='pl-9 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+					{available.length > 0
+						? 'Searches all shared knowledge in this workspace. Attach collections to limit it, or to include them in every reply.'
+						: 'Add what this agent should know. Search looks it up when relevant; Always puts it in every reply.'}
+				</p>
+			)}
 
-			{/* Form */}
-			{isFormOpen && (
-				<div className='space-y-2.5 rounded-xl border border-zinc-100 bg-zinc-50/40 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
-					<div className='flex items-center justify-between'>
-						<span className='text-[11px] font-black text-zinc-700 dark:text-zinc-300'>
-							{editingId ? 'Edit entry' : 'New entry'}
-						</span>
-						<button
-							aria-label='Close'
-							onClick={resetForm}
-							className='text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
-							<X size={13} />
-						</button>
-					</div>
-					<div className='flex gap-1.5'>
-						{(['text', 'url', 'file'] as TAgentKnowledgeSourceType[]).map((t) => (
-							<button
-								key={t}
-								type='button'
-								onClick={() => setForm((f) => ({ ...f, source_type: t }))}
-								className={`rounded-lg px-2.5 py-1 text-[10px] font-black capitalize transition ${
-									form.source_type === t
-										? 'bg-primary-400 text-primary-950'
-										: 'border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'
-								}`}>
-								{t}
-							</button>
-						))}
-					</div>
-					{form.source_type === 'file' && (
-						<input
-							type='file'
-							accept='.txt,.md,.html,.csv,.json,.xml,.yaml,.yml'
-							onChange={(event) => void loadFile(event.target.files?.[0])}
-							className='file:bg-primary-400 file:text-primary-950 w-full text-[11px] text-zinc-500 file:mr-2 file:rounded-lg file:border-0 file:px-2 file:py-1 file:font-bold'
-							aria-label='Choose knowledge file'
-						/>
-					)}
-					<input
-						aria-label='Title'
-						type='text'
-						value={form.title}
-						onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-						placeholder='Title'
-						className='focus:border-primary-500/50 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
-					/>
-					{form.source_type === 'url' && (
-						<input
-							aria-label='https://source-url.com'
-							type='url'
-							value={form.source_url}
-							onChange={(e) => setForm((f) => ({ ...f, source_url: e.target.value }))}
-							placeholder='https://source-url.com'
-							className='focus:border-primary-500/50 w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
-						/>
-					)}
-					<textarea
-						aria-label='Content the agent should know…'
-						value={form.content}
-						onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
-						placeholder='Content the agent should know…'
-						rows={5}
-						className='focus:border-primary-500/50 w-full resize-none rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-800 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
-					/>
-					<div className='flex justify-end gap-2'>
-						<button
-							onClick={resetForm}
-							className='rounded-lg border border-zinc-200 bg-white px-3 py-1 text-[10px] font-bold text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'>
-							Cancel
-						</button>
-						<button
-							onClick={handleSubmit}
-							disabled={
-								isSaving ||
-								isReadingFile ||
-								!form.title.trim() ||
-								!form.content.trim()
-							}
-							className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex items-center gap-1 rounded-lg px-3 py-1 text-[10px] font-black disabled:opacity-50'>
-							{isSaving && <Loader2 size={11} className='animate-spin' />}
-							{editingId ? 'Update' : 'Save'}
-						</button>
-					</div>
+			{attached.length > 0 && (
+				<div className='space-y-2 pl-9'>
+					{attached.map((attachment) => (
+						<div
+							key={attachment.collection}
+							className='flex items-center justify-between gap-2 border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-800/80'>
+							<div className='flex min-w-0 items-center gap-3'>
+								<div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
+									<Library size={15} />
+								</div>
+								<div className='flex min-w-0 flex-col'>
+									<span className='truncate text-xs font-black text-zinc-800 dark:text-zinc-200'>
+										{attachment.collection}
+									</span>
+									<span className='mt-0.5 truncate text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
+										{describe(attachment)}
+									</span>
+								</div>
+							</div>
+							<div className='flex shrink-0 items-center gap-1.5'>
+								<div
+									role='radiogroup'
+									aria-label={`How ${attachment.collection} is used`}
+									title={
+										attachment.synced
+											? 'Synced web pages and apps can only be searched.'
+											: undefined
+									}
+									className='flex rounded-lg bg-zinc-100 p-0.5 dark:bg-zinc-800'>
+									{MODES.map((mode) => (
+										<button
+											key={mode.value}
+											type='button'
+											role='radio'
+											aria-checked={attachment.mode === mode.value}
+											disabled={
+												isBusy ||
+												(attachment.synced && mode.value === 'always')
+											}
+											onClick={() =>
+												attachment.mode !== mode.value &&
+												updateModeMutation.mutate({
+													collection: attachment.collection,
+													mode: mode.value,
+												})
+											}
+											className={`min-h-7 cursor-pointer rounded-md px-2 text-[10.5px] font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+												attachment.mode === mode.value
+													? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-950 dark:text-white'
+													: 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200'
+											}`}>
+											{mode.label}
+										</button>
+									))}
+								</div>
+								<button
+									onClick={() => detachMutation.mutate(attachment.collection)}
+									disabled={isBusy}
+									title='Detach'
+									aria-label={`Detach ${attachment.collection}`}
+									className='cursor-pointer p-1 text-zinc-400 hover:text-red-500 disabled:opacity-50 dark:hover:text-red-400'>
+									<Trash2 size={14} />
+								</button>
+							</div>
+						</div>
+					))}
 				</div>
 			)}
 
-			{/* List */}
-			{isLoading ? (
-				<p className='py-6 text-center text-[11px] font-semibold text-zinc-400'>Loading…</p>
-			) : items.length === 0 ? (
-				<p className='py-6 text-center text-[11px] font-semibold text-zinc-400 dark:text-zinc-500'>
-					No knowledge yet. Add documents to ground the agent.
-				</p>
-			) : (
-				<div className='space-y-2'>
-					{items.map((item) => {
-						const Icon = SOURCE_ICON[item.source_type ?? 'text'] ?? FileText;
+			{hasAlways && always && (
+				<div className='space-y-1.5 pl-9'>
+					<div className='flex items-center justify-between text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+						<span>Included in every reply</span>
+						<span>
+							{formatCharacters(always.used)} of {formatCharacters(always.budget)}{' '}
+							characters
+						</span>
+					</div>
+					<div className='h-1.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800'>
+						<div
+							className={`h-full rounded-full ${always.skipped.length > 0 ? 'bg-amber-500' : 'bg-primary-500'}`}
+							style={{ width: `${usedPercent}%` }}
+						/>
+					</div>
+					{always.skipped.length > 0 && (
+						<p className='flex items-start gap-1.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400'>
+							<AlertTriangle size={11} className='mt-px shrink-0' />
+							<span>
+								{always.skipped.length === 1
+									? "1 document doesn't fit and is left out"
+									: `${always.skipped.length} documents don't fit and are left out`}
+								:{' '}
+								{always.skipped
+									.map((document) => document.source ?? document.collection)
+									.join(', ')}
+								. Switch a collection to Search to make room.
+							</span>
+						</p>
+					)}
+				</div>
+			)}
+
+			<AgentSideDrawer
+				isOpen={isPickerOpen}
+				title='Attach knowledge'
+				onClose={() => setIsPickerOpen(false)}
+				search={{
+					value: searchQuery,
+					onChange: setSearchQuery,
+					placeholder: `Search ${available.length} collections`,
+				}}
+				footer={
+					<button
+						onClick={() => navigate(`/${ws}/knowledge`)}
+						className='flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-1.5 text-xs font-black text-zinc-700 hover:bg-zinc-50 md:min-h-9 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800'>
+						<ExternalLink size={12} />
+						Manage knowledge base
+					</button>
+				}>
+				<h4 className='pl-1 text-[10px] font-black tracking-widest text-zinc-400 uppercase'>
+					Workspace collections
+				</h4>
+				<div className='space-y-1.5'>
+					{matching.map((collection) => {
+						const isAttached = attachedNames.includes(collection);
 						return (
 							<div
-								key={item.id}
-								className='flex items-start gap-3 rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
-								<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg'>
-									<Icon size={13} />
-								</div>
-								<div className='min-w-0 flex-1'>
-									<div className='flex items-center gap-2'>
-										<span className='truncate text-xs font-black text-zinc-800 dark:text-zinc-200'>
-											{item.title}
+								key={collection}
+								className='flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/40'>
+								<div className='flex min-w-0 items-center gap-3'>
+									<div className='bg-primary-500 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white shadow-2xs'>
+										<Library size={16} />
+									</div>
+									<div className='flex min-w-0 flex-col'>
+										<span className='truncate text-xs font-black text-zinc-900 dark:text-zinc-100'>
+											{collection}
 										</span>
-										{!item.is_active && (
-											<span className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[8px] font-black text-zinc-500 uppercase dark:bg-zinc-800'>
-												Off
+										{chunksLabel(collection) && (
+											<span className='mt-0.5 truncate text-[9px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
+												{chunksLabel(collection)}
 											</span>
 										)}
 									</div>
-									<p className='mt-0.5 line-clamp-2 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-										{item.content}
-									</p>
-									<span className='mt-1 inline-block text-[9px] font-bold tracking-wide text-zinc-400 uppercase dark:text-zinc-600'>
-										{item.tokens} tokens
-									</span>
 								</div>
-								<div className='flex shrink-0 items-center gap-2'>
-									<button
-										onClick={() => openEdit(item)}
-										title='Edit'
-										className='hover:text-primary-600 dark:hover:text-primary-400 text-zinc-400'>
-										<Pencil size={12} />
-									</button>
-									<button
-										onClick={() => deleteMutation.mutate(item.id)}
-										title='Delete'
-										className='text-zinc-400 hover:text-rose-500'>
-										<Trash2 size={12} />
-									</button>
-								</div>
+								<AttachToggle
+									label={collection}
+									isAttached={isAttached}
+									disabled={isBusy}
+									onClick={() =>
+										isAttached
+											? detachMutation.mutate(collection)
+											: attachMutation.mutate({ collection })
+									}
+								/>
 							</div>
 						);
 					})}
+					{matching.length === 0 && (
+						<div className='py-8 text-center text-xs font-bold text-zinc-400 dark:text-zinc-500'>
+							{query
+								? `Nothing matches "${searchQuery}"`
+								: 'No shared knowledge in this workspace yet.'}
+						</div>
+					)}
 				</div>
-			)}
+			</AgentSideDrawer>
+
+			<AddKnowledgeDialog
+				ws={ws}
+				isOpen={isAddOpen}
+				defaultCollection={slugify(agentName ?? '') || undefined}
+				sharedOnly
+				onAdded={({ collection, synced }) =>
+					attachMutation.mutate({
+						collection,
+						// Keeps how an already attached collection is used. New text and
+						// files are included in every reply; synced content is searched.
+						mode: attachedNames.includes(collection)
+							? undefined
+							: synced
+								? 'search'
+								: 'always',
+					})
+				}
+				onClose={() => setIsAddOpen(false)}
+			/>
 		</div>
 	);
 };

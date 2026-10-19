@@ -1,47 +1,25 @@
 import { axiosClient } from '@/api/client';
-import { unwrapKey } from '@/api/core';
 import type { TApiResponse } from '@/api/core';
-import type {
-	TAgentKnowledge,
-	TCreateAgentKnowledgeDto,
-	TUpdateAgentKnowledgeDto,
-	TAgentKnowledgeSources,
-} from '@/types/agent.type';
-import {
-	AgentKnowledgeEndpoints as K,
-	AgentKnowledgeSourceEndpoints as S,
-} from './agent-knowledge.endpoints';
+import type { TAgentKnowledgeMode, TAgentKnowledge } from '@/types/agent.type';
+import { AgentKnowledgeEndpoints as S } from './agent-knowledge.endpoints';
 
 export const AgentKnowledgeService = {
 	list: (ws: string, agentId: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ knowledge: TAgentKnowledge[] }>>(K.list(ws, agentId), { signal })
-			.then(unwrapKey<TAgentKnowledge[]>('knowledge')),
-
-	create: (ws: string, agentId: string, payload: TCreateAgentKnowledgeDto) =>
-		axiosClient
-			.post<TApiResponse<{ knowledge: TAgentKnowledge }>>(K.create(ws, agentId), payload)
-			.then(unwrapKey<TAgentKnowledge>('knowledge')),
-
-	update: (ws: string, agentId: string, id: string, payload: TUpdateAgentKnowledgeDto) =>
-		axiosClient
-			.patch<TApiResponse<{ knowledge: TAgentKnowledge }>>(K.update(ws, agentId, id), payload)
-			.then(unwrapKey<TAgentKnowledge>('knowledge')),
-
-	remove: (ws: string, agentId: string, id: string) =>
-		axiosClient.delete(K.delete(ws, agentId, id)).then(() => undefined),
-};
-
-export const AgentKnowledgeSourceService = {
-	list: (ws: string, agentId: string, signal?: AbortSignal) =>
-		axiosClient
-			.get<TApiResponse<TAgentKnowledgeSources>>(S.list(ws, agentId), { signal })
+			.get<TApiResponse<TAgentKnowledge>>(S.list(ws, agentId), { signal })
 			.then((r) => r.data.data),
 
-	attach: (ws: string, agentId: string, collection: string) =>
+	attach: (ws: string, agentId: string, collection: string, mode?: TAgentKnowledgeMode) =>
 		axiosClient
-			.post<TApiResponse<{ attached: string[] }>>(S.attach(ws, agentId, collection))
-			.then(unwrapKey<string[]>('attached')),
+			.post<
+				TApiResponse<TAgentKnowledge>
+			>(S.attach(ws, agentId, collection), mode ? { mode } : {})
+			.then((r) => r.data.data),
+
+	update: (ws: string, agentId: string, collection: string, mode: TAgentKnowledgeMode) =>
+		axiosClient
+			.patch<TApiResponse<TAgentKnowledge>>(S.update(ws, agentId, collection), { mode })
+			.then((r) => r.data.data),
 
 	detach: (ws: string, agentId: string, collection: string) =>
 		axiosClient.delete(S.detach(ws, agentId, collection)).then(() => undefined),

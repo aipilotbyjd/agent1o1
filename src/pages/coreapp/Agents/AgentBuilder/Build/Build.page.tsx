@@ -160,7 +160,7 @@ import AgentDataPanel from './_partial/AgentDataPanel.partial';
 import AgentTagsPanel from './_partial/AgentTagsPanel.partial';
 import AgentTriggersPanel from './_partial/AgentTriggersPanel.partial';
 import type { TTriggerDrawerTarget } from './_partial/AgentTriggerDrawer.partial';
-import AgentKnowledgeSourcesPanel from './_partial/AgentKnowledgeSourcesPanel.partial';
+import AgentKnowledgePanel from './_partial/AgentKnowledgePanel.partial';
 import AgentSideDrawer, { AttachToggle } from './_partial/AgentSideDrawer.partial';
 import AgentChatsPanel from './_partial/AgentChatsPanel.partial';
 import AgentApprovalCards from './_partial/AgentApprovalCards.partial';
@@ -3943,7 +3943,7 @@ const BuildPage = () => {
 										<MessageSquare size={14} />
 										<span>Chats</span>
 									</button>
-									{/* Tab: Data (knowledge / memory / runs / analytics) */}
+									{/* Tab: Data (memory / versions) */}
 									<button
 										onClick={(event) => {
 											setActiveSidebarTab('data');
@@ -4569,10 +4569,11 @@ const BuildPage = () => {
 										)}
 									</div>
 
-									{/* Knowledge Sources Section */}
-									<AgentKnowledgeSourcesPanel
+									{/* Knowledge Section */}
+									<AgentKnowledgePanel
 										ws={workspaceId}
 										agentId={currentAgentId}
+										agentName={agentName}
 									/>
 
 									{/* Subagents Section */}

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import type {
 	TIngestKnowledgeDto,
 	TSearchKnowledgeDto,
@@ -10,6 +10,13 @@ import type {
 } from '@/types/knowledge-base.type';
 import { KnowledgeBaseService } from './knowledge-base.service';
 import { knowledgeBaseKeys } from './knowledge-base.keys';
+import { agentKnowledgeKeys } from '../agent-knowledge/agent-knowledge.keys';
+
+/** Agents report the size of what they always include, so they refresh too. */
+const invalidateKnowledge = (qc: QueryClient, ws: string) => {
+	qc.invalidateQueries({ queryKey: ['knowledge-base', ws] });
+	qc.invalidateQueries({ queryKey: agentKnowledgeKeys.all(ws) });
+};
 
 export const useKnowledgeChunks = (
 	ws: string,
@@ -32,9 +39,7 @@ export const useIngestKnowledge = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (payload: TIngestKnowledgeDto) => KnowledgeBaseService.ingest(ws, payload),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: ['knowledge-base', ws] });
-		},
+		onSuccess: () => invalidateKnowledge(qc, ws),
 		meta: { errorMessage: 'Failed to ingest document' },
 	});
 };
@@ -56,7 +61,7 @@ export const useDeleteKnowledgeChunk = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (id: string) => KnowledgeBaseService.remove(ws, id),
-		onSuccess: () => qc.invalidateQueries({ queryKey: ['knowledge-base', ws] }),
+		onSuccess: () => invalidateKnowledge(qc, ws),
 		meta: { errorMessage: 'Failed to delete chunk' },
 	});
 };
@@ -66,7 +71,7 @@ export const useDeleteKnowledgeCollection = (ws: string) => {
 	return useMutation({
 		mutationFn: ({ collection, isPrivate }: { collection: string; isPrivate: boolean }) =>
 			KnowledgeBaseService.removeCollection(ws, collection, isPrivate),
-		onSuccess: () => qc.invalidateQueries({ queryKey: ['knowledge-base', ws] }),
+		onSuccess: () => invalidateKnowledge(qc, ws),
 		meta: { errorMessage: 'Failed to delete collection' },
 	});
 };
@@ -95,7 +100,7 @@ const useSourceMutation = <TArgs, TResult>(
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: fn,
-		onSuccess: () => qc.invalidateQueries({ queryKey: ['knowledge-base', ws] }),
+		onSuccess: () => invalidateKnowledge(qc, ws),
 		meta: { errorMessage },
 	});
 };

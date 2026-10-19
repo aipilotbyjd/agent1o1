@@ -30,6 +30,10 @@ interface IAddKnowledgeDialogProps {
 	defaultCollection?: string;
 	/** Opens the panel on this synced source, to edit it. */
 	source?: TKnowledgeSource | null;
+	/** Shared knowledge only, e.g. when adding for an agent: agents never see private knowledge. */
+	sharedOnly?: boolean;
+	/** Called with the collection the new knowledge went into. */
+	onAdded?: (added: { collection: string; synced: boolean }) => void;
 	onClose: () => void;
 }
 
@@ -60,6 +64,8 @@ const AddKnowledgeDialog = ({
 	initialKind = 'text',
 	defaultCollection,
 	source,
+	sharedOnly = false,
+	onAdded,
 	onClose,
 }: IAddKnowledgeDialogProps) => {
 	const ingest = useIngestKnowledge(ws);
@@ -163,6 +169,13 @@ const AddKnowledgeDialog = ({
 			return;
 		}
 
+		// Mirrors the backend's default when no collection is named.
+		const addedTo = collection.trim() || (isPrivate ? 'personal' : 'default');
+		const handleAdded = () => {
+			onAdded?.({ collection: addedTo, synced: definition.synced });
+			handleClose();
+		};
+
 		if (!definition.synced) {
 			ingest.mutate(
 				{
@@ -172,7 +185,7 @@ const AddKnowledgeDialog = ({
 					collection: collection.trim() || undefined,
 					private: isPrivate,
 				},
-				{ onSuccess: handleClose },
+				{ onSuccess: handleAdded },
 			);
 
 			return;
@@ -187,7 +200,7 @@ const AddKnowledgeDialog = ({
 				credential_id: kind === 'url' ? undefined : credentialId,
 				config: cleanConfig(config),
 			},
-			{ onSuccess: handleClose },
+			{ onSuccess: handleAdded },
 		);
 	};
 
@@ -226,6 +239,7 @@ const AddKnowledgeDialog = ({
 	return (
 		<AnimatePresence>
 			<motion.div
+				key='backdrop'
 				initial={{ opacity: 0 }}
 				animate={{ opacity: 1 }}
 				exit={{ opacity: 0 }}
@@ -233,6 +247,7 @@ const AddKnowledgeDialog = ({
 				className='fixed inset-0 z-40 bg-black/40 backdrop-blur-sm'
 			/>
 			<motion.div
+				key='panel'
 				initial={{ x: '100%' }}
 				animate={{ x: 0 }}
 				exit={{ x: '100%' }}
@@ -403,27 +418,29 @@ const AddKnowledgeDialog = ({
 						</p>
 					</div>
 
-					<label
-						className={`flex items-start gap-2.5 rounded-xl border border-zinc-200 p-3 dark:border-zinc-800 ${
-							editing ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
-						}`}>
-						<input
-							type='checkbox'
-							checked={isPrivate}
-							onChange={(e) => setIsPrivate(e.target.checked)}
-							disabled={!!editing}
-							className='mt-0.5'
-						/>
-						<span>
-							<span className='block text-xs font-bold text-zinc-800 dark:text-zinc-200'>
-								Private to me
+					{!sharedOnly && (
+						<label
+							className={`flex items-start gap-2.5 rounded-xl border border-zinc-200 p-3 dark:border-zinc-800 ${
+								editing ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+							}`}>
+							<input
+								type='checkbox'
+								checked={isPrivate}
+								onChange={(e) => setIsPrivate(e.target.checked)}
+								disabled={!!editing}
+								className='mt-0.5'
+							/>
+							<span>
+								<span className='block text-xs font-bold text-zinc-800 dark:text-zinc-200'>
+									Private to me
+								</span>
+								<span className='block text-[11px] font-semibold text-zinc-400 dark:text-zinc-500'>
+									Only you and your personal assistant can search it. Shared
+									knowledge reaches every agent and needs manage access.
+								</span>
 							</span>
-							<span className='block text-[11px] font-semibold text-zinc-400 dark:text-zinc-500'>
-								Only you and your personal assistant can search it. Shared knowledge
-								reaches every agent and needs manage access.
-							</span>
-						</span>
-					</label>
+						</label>
+					)}
 
 					<button
 						onClick={handleSubmit}

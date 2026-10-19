@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { TCreateAgentKnowledgeDto, TUpdateAgentKnowledgeDto } from '@/types/agent.type';
-import { AgentKnowledgeService, AgentKnowledgeSourceService } from './agent-knowledge.service';
-import { agentKnowledgeKeys, agentKnowledgeSourceKeys } from './agent-knowledge.keys';
+import type { TAgentKnowledgeMode, TAgentKnowledge } from '@/types/agent.type';
+import { AgentKnowledgeService } from './agent-knowledge.service';
+import { agentKnowledgeKeys } from './agent-knowledge.keys';
 
 export const useAgentKnowledge = (ws: string, agentId: string) =>
 	useQuery({
@@ -10,60 +10,45 @@ export const useAgentKnowledge = (ws: string, agentId: string) =>
 		enabled: !!ws && !!agentId,
 	});
 
-export const useCreateAgentKnowledge = (ws: string, agentId: string) => {
+/** Attaching and changing a mode answer with the full list, so it's written
+ *  straight into the cache instead of being fetched again. */
+const useSourcesMutation = <TArgs>(
+	ws: string,
+	agentId: string,
+	fn: (args: TArgs) => Promise<TAgentKnowledge>,
+	errorMessage: string,
+) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (payload: TCreateAgentKnowledgeDto) =>
-			AgentKnowledgeService.create(ws, agentId, payload),
+		mutationFn: fn,
+		onSuccess: (sources) => qc.setQueryData(agentKnowledgeKeys.list(ws, agentId), sources),
+		meta: { errorMessage },
+	});
+};
+
+export const useAttachAgentKnowledge = (ws: string, agentId: string) =>
+	useSourcesMutation(
+		ws,
+		agentId,
+		({ collection, mode }: { collection: string; mode?: TAgentKnowledgeMode }) =>
+			AgentKnowledgeService.attach(ws, agentId, collection, mode),
+		'Failed to attach knowledge',
+	);
+
+export const useUpdateAgentKnowledgeMode = (ws: string, agentId: string) =>
+	useSourcesMutation(
+		ws,
+		agentId,
+		({ collection, mode }: { collection: string; mode: TAgentKnowledgeMode }) =>
+			AgentKnowledgeService.update(ws, agentId, collection, mode),
+		'Failed to change how this knowledge is used',
+	);
+
+export const useDetachAgentKnowledge = (ws: string, agentId: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (collection: string) => AgentKnowledgeService.detach(ws, agentId, collection),
 		onSuccess: () => qc.invalidateQueries({ queryKey: agentKnowledgeKeys.list(ws, agentId) }),
-		meta: { errorMessage: 'Failed to add knowledge entry' },
-	});
-};
-
-export const useUpdateAgentKnowledge = (ws: string, agentId: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: ({ id, body }: { id: string; body: TUpdateAgentKnowledgeDto }) =>
-			AgentKnowledgeService.update(ws, agentId, id, body),
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentKnowledgeKeys.list(ws, agentId) }),
-		meta: { errorMessage: 'Failed to update knowledge entry' },
-	});
-};
-
-export const useDeleteAgentKnowledge = (ws: string, agentId: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (id: string) => AgentKnowledgeService.remove(ws, agentId, id),
-		onSuccess: () => qc.invalidateQueries({ queryKey: agentKnowledgeKeys.list(ws, agentId) }),
-		meta: { errorMessage: 'Failed to delete knowledge entry' },
-	});
-};
-
-export const useAgentKnowledgeSources = (ws: string, agentId: string) =>
-	useQuery({
-		queryKey: agentKnowledgeSourceKeys.list(ws, agentId),
-		queryFn: ({ signal }) => AgentKnowledgeSourceService.list(ws, agentId, signal),
-		enabled: !!ws && !!agentId,
-	});
-
-export const useAttachAgentKnowledgeSource = (ws: string, agentId: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (collection: string) =>
-			AgentKnowledgeSourceService.attach(ws, agentId, collection),
-		onSuccess: () =>
-			qc.invalidateQueries({ queryKey: agentKnowledgeSourceKeys.list(ws, agentId) }),
-		meta: { errorMessage: 'Failed to attach knowledge source' },
-	});
-};
-
-export const useDetachAgentKnowledgeSource = (ws: string, agentId: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (collection: string) =>
-			AgentKnowledgeSourceService.detach(ws, agentId, collection),
-		onSuccess: () =>
-			qc.invalidateQueries({ queryKey: agentKnowledgeSourceKeys.list(ws, agentId) }),
-		meta: { errorMessage: 'Failed to detach knowledge source' },
+		meta: { errorMessage: 'Failed to detach knowledge' },
 	});
 };
