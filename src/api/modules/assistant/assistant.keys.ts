@@ -6,6 +6,7 @@ export const assistantKeys = {
 	messages: (ws: string, id: string) => ['assistant', ws, 'sessions', id, 'messages'] as const,
 	context: (ws: string, id: string) => ['assistant', ws, 'sessions', id, 'context'] as const,
 	memories: (ws: string) => ['assistant', ws, 'memories'] as const,
+	followUps: (ws: string) => ['assistant', ws, 'follow-ups'] as const,
 	styles: (ws: string) => ['assistant', ws, 'styles'] as const,
 	daily: (ws: string) => ['assistant', ws, 'daily'] as const,
 	meetingPrep: (ws: string) => ['assistant', ws, 'meeting-prep'] as const,

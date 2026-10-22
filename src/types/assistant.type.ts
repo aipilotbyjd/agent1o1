@@ -163,6 +163,19 @@ export type TAssistantMemory = {
 	updated_at: string;
 };
 
+export type TAssistantFollowUpStatus = 'pending' | 'replied' | 'reminded' | 'cancelled';
+
+/** Mirrors `AssistantFollowUpResource`. */
+export type TAssistantFollowUp = {
+	id: string;
+	subject: string | null;
+	note: string | null;
+	status: TAssistantFollowUpStatus;
+	remind_at: string;
+	resolved_at: string | null;
+	created_at: string;
+};
+
 /** Broadcast payloads: mirror `App\Events\Assistant\*::broadcastWith()`. */
 export type TAssistantTurnChangedEvent = {
 	turn: Pick<
