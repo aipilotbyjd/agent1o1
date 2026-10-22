@@ -32,6 +32,7 @@ import { useAssistantRealtime } from './_hooks/useAssistantRealtime.hook';
 import MessageListPartial from './_partial/MessageList.partial';
 import ContextMeterPartial from './_partial/ContextMeter.partial';
 import ApprovalCardPartial from './_partial/ApprovalCard.partial';
+import FollowUpsPanelPartial from './_partial/FollowUpsPanel.partial';
 import MemoriesPanelPartial from './_partial/MemoriesPanel.partial';
 import AppsPanelPartial from './_partial/AppsPanel.partial';
 import TriggersPanelPartial from './_partial/TriggersPanel.partial';
@@ -238,7 +239,8 @@ const AssistantHomePage = () => {
 						onDelete={handleDelete}
 						isLoading={sessionsLoading}
 					/>
-					<div className='mt-auto border-t border-zinc-200 pt-3 dark:border-white/10'>
+					<div className='mt-auto flex flex-col gap-4 border-t border-zinc-200 pt-3 dark:border-white/10'>
+						<FollowUpsPanelPartial workspaceId={currentWorkspaceId} />
 						<MemoriesPanelPartial workspaceId={currentWorkspaceId} />
 					</div>
 				</aside>

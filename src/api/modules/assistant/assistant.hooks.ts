@@ -18,6 +18,7 @@ import type {
 import {
 	AssistantBriefingService,
 	AssistantChannelService,
+	AssistantFollowUpService,
 	AssistantInboxService,
 	AssistantTriggerService,
 	AssistantMemoryService,
@@ -153,6 +154,22 @@ export const useDeleteAssistantMemory = (ws: string) => {
 		mutationFn: (id: string) => AssistantMemoryService.remove(ws, id),
 		onSuccess: () => qc.invalidateQueries({ queryKey: assistantKeys.memories(ws) }),
 		meta: { errorMessage: 'Failed to forget that' },
+	});
+};
+
+export const useAssistantFollowUps = (ws: string) =>
+	useQuery({
+		queryKey: assistantKeys.followUps(ws),
+		queryFn: ({ signal }) => AssistantFollowUpService.list(ws, signal),
+		enabled: !!ws,
+	});
+
+export const useCancelAssistantFollowUp = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => AssistantFollowUpService.cancel(ws, id),
+		onSuccess: () => qc.invalidateQueries({ queryKey: assistantKeys.followUps(ws) }),
+		meta: { errorMessage: 'Failed to stop watching that thread' },
 	});
 };
 

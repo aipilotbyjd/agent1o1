@@ -12,6 +12,7 @@ import type {
 	TAssistantStyleKind,
 	TAssistantDecision,
 	TAssistantHome,
+	TAssistantFollowUp,
 	TAssistantMemory,
 	TAssistantMessage,
 	TAssistantSession,
@@ -39,6 +40,7 @@ import type {
 } from '@/types/assistant.type';
 import {
 	AssistantEndpoints as A,
+	AssistantFollowUpEndpoints as F,
 	AssistantMemoryEndpoints as M,
 	AssistantSessionEndpoints as S,
 	AssistantSettingsEndpoints as X,
@@ -144,6 +146,15 @@ export const AssistantMemoryService = {
 			.then(unwrapKey<TAssistantMemory[]>('memories')),
 
 	remove: (ws: string, id: string) => axiosClient.delete(M.delete(ws, id)).then(() => undefined),
+};
+
+export const AssistantFollowUpService = {
+	list: (ws: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<{ follow_ups: TAssistantFollowUp[] }>>(F.list(ws), { signal })
+			.then(unwrapKey<TAssistantFollowUp[]>('follow_ups')),
+
+	cancel: (ws: string, id: string) => axiosClient.delete(F.delete(ws, id)).then(() => undefined),
 };
 
 export const AssistantSettingsService = {

@@ -28,6 +28,11 @@ export const AssistantMemoryEndpoints = {
 	delete: (ws: string, id: string) => `${base(ws)}/memories/${id}`,
 } as const;
 
+export const AssistantFollowUpEndpoints = {
+	list: (ws: string) => `${base(ws)}/follow-ups`,
+	delete: (ws: string, id: string) => `${base(ws)}/follow-ups/${id}`,
+} as const;
+
 export const AssistantSettingsEndpoints = {
 	apps: (ws: string) => `${base(ws)}/apps`,
 	toolRules: (ws: string) => `${base(ws)}/tool-rules`,
