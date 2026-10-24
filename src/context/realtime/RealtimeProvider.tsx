@@ -5,6 +5,7 @@ import { useWorkspaceContext } from '@/context/workspace';
 import { getAccessToken, TOKEN_CHANGE_EVENT } from '@/api/core/token-manager';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationKeys } from '@/api/modules/notifications/notifications.keys';
+import { announcementKeys } from '@/api/modules/announcements/announcements.keys';
 import { notify } from '@/api/core';
 import RealtimeContext from './RealtimeContext';
 
@@ -92,6 +93,14 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
 			qc.invalidateQueries({ queryKey: ['notifications'] });
 			qc.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
 		});
+
+		// Platform banners and maintenance notices. The event carries no content
+		// (who sees what is decided per member), it only says to refetch.
+		newEcho
+			.private('announcements')
+			.listen('.announcements.changed', () =>
+				qc.invalidateQueries({ queryKey: announcementKeys.all }),
+			);
 
 		return () => {
 			newEcho.disconnect();

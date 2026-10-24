@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router';
 import { Suspense } from 'react';
 import Wrapper from '@/components/layout/Wrapper';
+import AnnouncementBannersTemplate from '@/templates/announcements/AnnouncementBanners.template';
 import SettingsAsideTemplate from '@/templates/asides/SettingsAside.template';
 import Container from '@/components/layout/Container';
 import Skeleton from '@/components/ui/Skeleton';
@@ -14,6 +15,7 @@ const SettingsLayout = () => {
 		<>
 			<SettingsAsideTemplate />
 			<Wrapper className='min-h-0 overflow-y-auto'>
+				<AnnouncementBannersTemplate />
 				<Header>
 					<HeaderLeft>Settings</HeaderLeft>
 					<HeaderRight>

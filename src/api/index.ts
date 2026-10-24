@@ -37,3 +37,5 @@ export * as notificationsApi from './modules/notifications';
 export * as notificationChannelsApi from './modules/notification-channels';
 export * as notificationPreferencesApi from './modules/notification-preferences';
 export * as referralsApi from './modules/referrals';
+export * as announcementsApi from './modules/announcements';
+export * as communicationPreferencesApi from './modules/communication-preferences';
