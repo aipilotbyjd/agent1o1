@@ -1,17 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-	authEvents,
-	clearTokens,
-	getAccessToken,
-	hasValidToken,
-	TOKEN_CHANGE_EVENT,
-} from '@/api/core';
+import { authEvents, clearTokens, getAccessToken, TOKEN_CHANGE_EVENT } from '@/api/core';
 import { useCurrentUser } from '@/api/modules/user';
 import { useLogout } from '@/api/modules/auth';
 import { WorkspaceProvider } from '@/context/workspace';
 import { RealtimeProvider } from '@/context/realtime';
+import { BrandRealtimeSync } from '@/context/brand';
 import pages from '@/Routes/pages';
 import AuthContext from './AuthContext';
 import type { IAuthContextProps } from './auth.types';
@@ -20,7 +15,7 @@ export const AuthProvider = () => {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const [accessToken, setAccessToken] = useState<string | null>(() => getAccessToken());
-	const hasActiveToken = !!accessToken && hasValidToken();
+	const hasActiveToken = !!accessToken;
 	const {
 		data: userData,
 		isLoading: isCurrentUserLoading,
@@ -106,6 +101,7 @@ export const AuthProvider = () => {
 		<AuthContext.Provider value={value}>
 			<WorkspaceProvider>
 				<RealtimeProvider>
+					<BrandRealtimeSync />
 					<Outlet />
 				</RealtimeProvider>
 			</WorkspaceProvider>

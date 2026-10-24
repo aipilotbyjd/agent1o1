@@ -10,4 +10,5 @@ export const connectorCredentialKeys = {
 	list: (ws: string) => ['connector-credentials', ws, 'list'] as const,
 	details: (ws: string) => ['connector-credentials', ws, 'detail'] as const,
 	detail: (ws: string, id: string) => ['connector-credentials', ws, 'detail', id] as const,
+	usage: (ws: string, id: string) => ['connector-credentials', ws, 'usage', id] as const,
 };

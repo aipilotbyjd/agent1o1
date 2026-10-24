@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { TUpdateWorkflowInterfaceDto, TSubmitWorkflowInterfaceDto } from '@/types/workflow-extras.type';
+import type {
+	TUpdateWorkflowInterfaceDto,
+	TSubmitWorkflowInterfaceDto,
+} from '@/types/workflow-extras.type';
 import { WorkflowInterfaceService } from './workflow-interface.service';
 
 const keys = {

@@ -5,7 +5,7 @@ import { catalogKeys } from './catalog.keys';
 // ============================================================
 // Catalog Hooks
 // ------------------------------------------------------------
-// All reads, all cached long — this is reference data that changes
+// All reads, all cached long: this is reference data that changes
 // rarely, not per-workspace state.
 // ============================================================
 
@@ -33,9 +33,14 @@ export const useTriggerPresets = () =>
 		staleTime: STALE_TIME,
 	});
 
-export const useModelCatalog = () =>
+/**
+ * Per workspace it reflects that workspace's keys, policy and model settings,
+ * which can change in another tab, so it goes stale after a minute and is
+ * refetched when the window regains focus.
+ */
+export const useModelCatalog = (ws?: string) =>
 	useQuery({
-		queryKey: catalogKeys.modelCatalog(),
-		queryFn: ({ signal }) => CatalogService.modelCatalog(signal),
-		staleTime: STALE_TIME,
+		queryKey: catalogKeys.modelCatalog(ws),
+		queryFn: ({ signal }) => CatalogService.modelCatalog(ws, signal),
+		staleTime: ws ? 60_000 : STALE_TIME,
 	});

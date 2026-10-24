@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { AlertTriangle, CreditCard, Package, Sparkles } from 'lucide-react';
 import { useWorkspaceContext } from '@/context/workspace';
@@ -50,12 +50,10 @@ const CreditsPage = () => {
 
 	const [selected, setSelected] = useState<string | null>(null);
 
-	useEffect(() => {
-		const available = catalog?.filter((p) => p.available) ?? [];
-		if (!selected && available.length > 0) {
-			setSelected(available[Math.min(1, available.length - 1)].key);
-		}
-	}, [catalog, selected]);
+	const availablePacks = catalog?.filter((p) => p.available) ?? [];
+	if (!selected && availablePacks.length > 0) {
+		setSelected(availablePacks[Math.min(1, availablePacks.length - 1)].key);
+	}
 
 	const total = (overview?.usage_period.credits_limit ?? 0) + (overview?.topup_credits ?? 0);
 	const remaining = overview?.credits_available ?? total;

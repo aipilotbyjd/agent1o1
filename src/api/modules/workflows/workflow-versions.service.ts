@@ -22,9 +22,15 @@ export const WorkflowVersionService = {
 	 *  immutable version. */
 	publish: (ws: string, workflowId: string, payload?: TPublishWorkflowDto) =>
 		axiosClient
-			.post<TApiResponse<{ version: TWorkflowVersion; workflow: TWorkflow }>>(
-				E.publish(ws, workflowId),
-				payload,
-			)
+			.post<
+				TApiResponse<{ version: TWorkflowVersion; workflow: TWorkflow }>
+			>(E.publish(ws, workflowId), payload)
 			.then((r) => r.data.data),
+
+	/** Replaces the draft with a published version's canvas. Nothing goes
+	 *  live; restoring the live version discards unpublished changes. */
+	restore: (ws: string, workflowId: string, version: string) =>
+		axiosClient
+			.post<TApiResponse<{ workflow: TWorkflow }>>(E.restore(ws, workflowId, version))
+			.then(unwrapKey<TWorkflow>('workflow')),
 };

@@ -1,7 +1,6 @@
+import { useEditorWorkspaceId } from './_hooks/useEditorWorkspaceId.hook';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { useWorkspaceContext } from '@/context/workspace';
-import { useWorkflowRouteParams } from './_hooks/useWorkflowRouteParams.hook';
 import { WorkflowService } from '@/api/modules/workflows/workflows.service';
 import paths from '@/Routes/paths';
 import WorkflowEditorLayout from './_layouts/WorkflowEditorLayout.layout';
@@ -14,9 +13,7 @@ const WorkflowEditorPage = () => {
 	// so it had to read one from context. Here the route is `/:workspaceId/playbooks/new`,
 	// so the URL is the source of truth - same as every other part of this editor,
 	// which already reads `useWorkflowRouteParams`. Context stays as the fallback.
-	const { workspaceId: routeWorkspaceId } = useWorkflowRouteParams();
-	const { activeWorkspaceId: contextWorkspaceId } = useWorkspaceContext();
-	const activeWorkspaceId = routeWorkspaceId || contextWorkspaceId;
+	const activeWorkspaceId = useEditorWorkspaceId();
 	const navigate = useNavigate();
 	const [error, setError] = useState<string | null>(null);
 	const [attempt, setAttempt] = useState(0);
@@ -42,12 +39,11 @@ const WorkflowEditorPage = () => {
 	if (isAddWorkflow) {
 		if (error) {
 			return (
-				<div className='flex h-screen flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-950 px-4 text-center'>
-					<p className='text-sm font-semibold text-rose-500 mb-4'>{error}</p>
+				<div className='flex h-screen flex-col items-center justify-center bg-zinc-50 px-4 text-center dark:bg-zinc-950'>
+					<p className='mb-4 text-sm font-semibold text-rose-500'>{error}</p>
 					<button
 						onClick={() => setAttempt((n) => n + 1)}
-						className='flex h-10 items-center justify-center rounded-xl bg-primary-400 px-5 text-xs font-black text-primary-950 shadow-md transition hover:brightness-110 active:scale-[0.98]'
-					>
+						className='bg-primary-400 text-primary-950 flex h-10 items-center justify-center rounded-xl px-5 text-xs font-black shadow-md transition hover:brightness-110 active:scale-[0.98]'>
 						Retry
 					</button>
 				</div>
@@ -57,7 +53,7 @@ const WorkflowEditorPage = () => {
 		return (
 			<div className='flex h-screen flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-950'>
 				<div className='flex flex-col items-center gap-3'>
-					<Loader2 className='h-8 w-8 animate-spin text-primary-600' />
+					<Loader2 className='text-primary-600 h-8 w-8 animate-spin' />
 					<p className='text-sm font-medium text-zinc-500 dark:text-zinc-400'>
 						Creating blank workflow...
 					</p>
@@ -74,4 +70,3 @@ const WorkflowEditorPage = () => {
 };
 
 export default WorkflowEditorPage;
-

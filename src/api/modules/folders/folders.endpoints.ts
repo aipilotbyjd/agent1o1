@@ -1,4 +1,4 @@
-// No detail route — folders are only ever listed (as a tree), created,
+// No detail route: folders are only ever listed (as a tree), created,
 // updated, deleted, or bulk-reassigned via moveWorkflows/moveAgents.
 export const FolderEndpoints = {
 	list: (ws: string) => `/workspaces/${ws}/folders`,

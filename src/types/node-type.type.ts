@@ -62,14 +62,53 @@ export interface INodeSchema {
 	outputs?: INodeSchemaField[];
 }
 
+/** `x-widget` values a built-in node's config schema can ask the editor for. */
+export type TNodeSchemaWidget =
+	| 'text'
+	| 'textarea'
+	| 'number'
+	| 'toggle'
+	| 'select'
+	| 'datetime'
+	| 'emails'
+	| 'json'
+	| 'key-value'
+	| 'list'
+	| 'credential';
+
+/** A dropdown filled live from `POST /workspaces/{ws}/nodes/options`. */
+export interface INodeSchemaOptions {
+	source: string;
+	/** Fields that must be set before this one can load (e.g. a spreadsheet before its tabs). */
+	depends_on: string[];
+	/** Fields that narrow the list when set, but aren't required (e.g. which calendar). */
+	uses?: string[];
+	/** Several values: an array for `type: array`, comma-joined otherwise. */
+	multiple: boolean;
+	searchable: boolean;
+	/** Keep a free-text / `{{variable}}` escape hatch next to the list. */
+	allow_custom: boolean;
+}
+
 export interface INodeSchemaProperty {
-	type?: string;
+	type?: string | string[];
+	title?: string;
 	label?: string;
 	description?: string;
 	default?: unknown;
 	enum?: string[];
+	format?: string;
+	minimum?: number;
+	maximum?: number;
 	items?: INodeSchemaProperty;
 	properties?: Record<string, INodeSchemaProperty>;
+	'x-widget'?: TNodeSchemaWidget;
+	'x-placeholder'?: string;
+	'x-enum-labels'?: Record<string, string>;
+	'x-options'?: INodeSchemaOptions;
+	'x-connector'?: string;
+	'x-hidden'?: boolean;
+	'x-advanced'?: boolean;
 }
 
 // Node type definition from API
@@ -83,6 +122,12 @@ export interface INodeType {
 	icon?: string;
 	color?: string;
 	node_kind?: string;
+	/** A reader node that can be switched on as a flow trigger (Gumloop's "Activate as flow trigger"). */
+	supports_trigger?: boolean;
+	/** Listed under Triggers & Events: added with "Activate as flow trigger" already on. */
+	trigger_mode?: boolean;
+	/** False for a retired node: still described so saved workflows render, but not offered. */
+	listed?: boolean;
 	tags?: string[];
 	inputs?: INodeIO[];
 	outputs?: INodeIO[];

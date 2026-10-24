@@ -24,12 +24,12 @@ const FieldWrap = forwardRef<HTMLDivElement, IFieldWrapProps>((props, ref) => {
 		className,
 		firstSuffix,
 		lastSuffix,
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 		isValidMessage,
 		isValid,
 		isTouched,
 		invalidFeedback,
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 		validFeedback,
 		...rest
 	} = props;

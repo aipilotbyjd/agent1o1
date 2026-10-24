@@ -11,7 +11,7 @@ const AgentLayout = () => {
 	return (
 		<>
 			<AgentAsideTemplate />
-			<Wrapper className='min-h-0 overflow-y-auto'>
+			<Wrapper className='no-scrollbar h-dvh min-h-0 overflow-y-auto'>
 				<Suspense
 					fallback={
 						<>

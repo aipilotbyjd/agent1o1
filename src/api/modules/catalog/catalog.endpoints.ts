@@ -1,7 +1,7 @@
 // ============================================================
 // Catalog Endpoints
 // ------------------------------------------------------------
-// Global reference data — not workspace-scoped, and not gated
+// Global reference data, not workspace-scoped, and not gated
 // behind `workspace.context`. Template catalogs are workspace-
 // scoped resources on the real backend and live in the `templates`
 // module, not here.

@@ -5,6 +5,7 @@ import { useNodes, useRecentlyUsedNodes } from '@/api/modules/nodes';
 import {
 	mapApiCategoriesToGroups,
 	mapApiNodeToDefinition,
+	isListed,
 } from '../../_helper/apiNodeCatalog.helper';
 import type { TNodeCategoryGroup } from '../../_helper/apiNodeCatalog.helper';
 import type { TNodeDefinition } from '../../_types/node.type';
@@ -42,7 +43,10 @@ const HomePanel = ({ workspaceId, onSelectCategory, onAdd }: Props) => {
 
 	const frequent = useMemo(() => {
 		const source = recent.length > 0 ? recent : (fallbackNodes ?? []);
-		return source.slice(0, FREQUENT_COUNT).map((node) => mapApiNodeToDefinition(node));
+		return source
+			.map((node) => mapApiNodeToDefinition(node))
+			.filter(isListed)
+			.slice(0, FREQUENT_COUNT);
 	}, [recent, fallbackNodes]);
 
 	const frequentTitle =

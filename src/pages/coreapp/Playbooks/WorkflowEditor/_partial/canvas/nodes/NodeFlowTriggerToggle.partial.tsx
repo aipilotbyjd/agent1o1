@@ -1,13 +1,56 @@
+import { useMemo } from 'react';
 import { Info, Zap } from 'lucide-react';
-import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import {
+	usePauseWorkflowTrigger,
+	useResumeWorkflowTrigger,
+	useWorkflowTrigger,
+} from '@/api/modules/workflows/workflows.hooks';
+import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
+import { useWorkflowRouteParams } from '../../../_hooks/useWorkflowRouteParams.hook';
+
+type Props = {
+	nodeId: string;
+	/** The node's `activate` config: what the next publish turns the trigger into. */
+	active: boolean;
+};
 
 /**
- * Top strip — promotes this node to the flow's entry trigger, so the flow starts
- * running from here whenever this integration reports new data. Gumloop-style:
- * exactly one node in a flow may carry the trigger.
+ * Gumloop's "Activate as flow trigger" strip. The switch is the node's
+ * `activate` config, so it's saved with the workflow and publishing turns the
+ * trigger on or off to match (`TriggerNodeSync`). Once published it also flips
+ * the live trigger straight away, no republish needed. A flow may have several
+ * triggers; each starts its own runs.
  */
-const NodeFlowTriggerToggle = ({ nodeId, active }: { nodeId: string; active: boolean }) => {
+const NodeFlowTriggerToggle = ({ nodeId, active }: Props) => {
 	const { dispatch } = useWorkflowEditor();
+	const { workspaceId, workflowId } = useWorkflowRouteParams();
+	const { data: workflowTriggers } = useWorkflowTrigger(workspaceId, workflowId);
+	const pauseTrigger = usePauseWorkflowTrigger(workspaceId);
+	const resumeTrigger = useResumeWorkflowTrigger(workspaceId);
+
+	// The published row this node owns: the canvas node id is its node key.
+	const liveTrigger = useMemo(
+		() => workflowTriggers.find((trigger) => trigger.trigger_node_key === nodeId),
+		[workflowTriggers, nodeId],
+	);
+
+	const status = !active
+		? null
+		: !liveTrigger
+			? 'Publish to activate'
+			: liveTrigger.is_active
+				? 'Listening'
+				: liveTrigger.consecutive_failure_count > 0
+					? 'Off after failures'
+					: 'Paused';
+
+	const handleToggle = () => {
+		const enabling = !active;
+		dispatch({ type: 'UPDATE_NODE_VALUE', id: nodeId, fieldKey: 'activate', value: enabling });
+		if (liveTrigger && liveTrigger.is_active !== enabling) {
+			(enabling ? resumeTrigger : pauseTrigger).mutate(liveTrigger.id);
+		}
+	};
 
 	return (
 		<div
@@ -20,7 +63,7 @@ const NodeFlowTriggerToggle = ({ nodeId, active }: { nodeId: string; active: boo
 			onPointerDown={(event) => event.stopPropagation()}>
 			<span className='flex min-w-0 items-center gap-1.5'>
 				{active && (
-					<span className='flex size-4 shrink-0 items-center justify-center rounded-full bg-primary-500 text-white'>
+					<span className='bg-primary-500 flex size-4 shrink-0 items-center justify-center rounded-full text-white'>
 						<Zap size={9} fill='currentColor' strokeWidth={0} />
 					</span>
 				)}
@@ -34,8 +77,8 @@ const NodeFlowTriggerToggle = ({ nodeId, active }: { nodeId: string; active: boo
 					Activate as flow trigger
 				</span>
 				<span
-					title='When on, the flow starts from this node whenever it detects new data - one trigger per flow.'
-					className='shrink-0 text-zinc-400 transition hover:text-primary-500 dark:text-zinc-500'>
+					title='When on, the flow starts from this node every time it detects something new. Publish to make it live; after that this switch pauses and resumes it instantly.'
+					className='hover:text-primary-900 dark:hover:text-primary-400 shrink-0 text-zinc-400 transition dark:text-zinc-500'>
 					<Info size={11} />
 				</span>
 			</span>
@@ -43,24 +86,25 @@ const NodeFlowTriggerToggle = ({ nodeId, active }: { nodeId: string; active: boo
 			<span className='flex shrink-0 items-center gap-2'>
 				<span
 					className={[
-						'text-[11px] font-bold tabular-nums',
+						'text-[11px] font-bold',
 						active ? 'text-primary-600 dark:text-primary-400' : 'text-zinc-400',
 					].join(' ')}>
-					{active ? 'Yes' : 'No'}
+					{status ?? 'No'}
 				</span>
 				<button
 					type='button'
 					role='switch'
 					aria-checked={active}
 					aria-label='Activate as flow trigger'
+					disabled={pauseTrigger.isPending || resumeTrigger.isPending}
 					onClick={(event) => {
 						event.stopPropagation();
-						dispatch({ type: 'TOGGLE_NODE_FLOW_TRIGGER', id: nodeId });
+						handleToggle();
 					}}
 					className={[
-						'flex h-5 w-9 cursor-pointer items-center rounded-full border p-0.5 transition-all duration-200',
+						'flex h-5 w-9 cursor-pointer items-center rounded-full border p-0.5 transition-all duration-200 disabled:opacity-50',
 						active
-							? 'justify-end border-primary-400 bg-primary-400'
+							? 'border-primary-400 bg-primary-400 justify-end'
 							: 'justify-start border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800',
 					].join(' ')}>
 					<span

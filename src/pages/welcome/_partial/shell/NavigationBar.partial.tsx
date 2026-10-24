@@ -63,7 +63,7 @@ const NavigationBar = ({
 
 			{/* Actions */}
 			<div className='flex items-center gap-3'>
-				{/* Skip — available on all steps except the first 2 steps */}
+				{/* Skip: available on all steps except the first 2 steps */}
 				{step > 1 && (
 					<button
 						onClick={onSkip}

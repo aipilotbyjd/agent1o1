@@ -142,11 +142,13 @@ export const DropdownToggle: FC<IDropdownToggleProps> = (props) => {
 		'data-component-name': `Dropdown/DropdownToggle [${children.type.displayName}]`,
 		ref: setReferenceElement,
 		...eventProps,
-		rightIcon: hasIcon
-			? // @ts-expect-error
-				(children.type.displayName === 'Button' && 'ArrowDown01') || 'ArrowRight01'
-			: undefined,
-		isActive: isOpen,
+		...(typeof children.type !== 'string' && {
+			rightIcon: hasIcon
+				? // @ts-expect-error
+					(children.type.displayName === 'Button' && 'ArrowDown01') || 'ArrowRight01'
+				: undefined,
+			isActive: isOpen,
+		}),
 		className: classNames(
 			{
 				// Only presentation

@@ -13,4 +13,4 @@ export const fmtInvoiceDate = (value: string | null) =>
 				day: 'numeric',
 				year: 'numeric',
 			})
-		: '—';
+		: '-';

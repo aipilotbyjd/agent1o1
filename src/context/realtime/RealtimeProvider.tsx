@@ -5,6 +5,7 @@ import { useWorkspaceContext } from '@/context/workspace';
 import { getAccessToken, TOKEN_CHANGE_EVENT } from '@/api/core/token-manager';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationKeys } from '@/api/modules/notifications/notifications.keys';
+import { announcementKeys } from '@/api/modules/announcements/announcements.keys';
 import { notify } from '@/api/core';
 import RealtimeContext from './RealtimeContext';
 
@@ -33,13 +34,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
 	}, []);
 
 	useEffect(() => {
-		if (!token || !activeWorkspaceId) {
-			if (echo) {
-				echo.disconnect();
-				setEcho(null);
-			}
-			return;
-		}
+		if (!token || !activeWorkspaceId) return;
 
 		const apiUrl = import.meta.env.VITE_API_URL || 'https://agent1o1.test/api/v1';
 		const apiBase = apiUrl.replace('/api/v1', '');
@@ -60,12 +55,12 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
 			: 443;
 		const reverbScheme = import.meta.env.VITE_REVERB_SCHEME || 'https';
 
-		// Without a real app key the connection can never authenticate — skip it so
+		// Without a real app key the connection can never authenticate: skip it so
 		// we don't spam failed WebSocket attempts. Notifications still refresh via
 		// polling + query invalidation until Reverb is configured.
 		if (!reverbAppKey) {
 			console.warn(
-				'[realtime] VITE_REVERB_APP_KEY is not set — skipping WebSocket connection.',
+				'[realtime] VITE_REVERB_APP_KEY is not set: skipping WebSocket connection.',
 			);
 			return;
 		}
@@ -86,6 +81,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
 			},
 		});
 
+		// eslint-disable-next-line react-hooks/set-state-in-effect
 		setEcho(newEcho);
 
 		const channel = newEcho.private(`workspace.${activeWorkspaceId}`);
@@ -98,10 +94,19 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
 			qc.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
 		});
 
+		// Platform banners and maintenance notices. The event carries no content
+		// (who sees what is decided per member), it only says to refetch.
+		newEcho
+			.private('announcements')
+			.listen('.announcements.changed', () =>
+				qc.invalidateQueries({ queryKey: announcementKeys.all }),
+			);
+
 		return () => {
 			newEcho.disconnect();
+			setEcho(null);
 		};
-	}, [activeWorkspaceId, token]);
+	}, [activeWorkspaceId, token, qc]);
 
 	return <RealtimeContext.Provider value={{ echo }}>{children}</RealtimeContext.Provider>;
 };

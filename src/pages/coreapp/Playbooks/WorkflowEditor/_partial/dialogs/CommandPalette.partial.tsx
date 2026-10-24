@@ -1,12 +1,16 @@
 import { useMemo, useState } from 'react';
 import { NODE_CATALOG } from '../../_helper/nodeCatalog.constants';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
+import { useAutoLayout } from '../../_hooks/useAutoLayout.hook';
+import { useAiPanelAvailability } from '../../_hooks/useAiPanelAvailability.hook';
 import { useRunWorkflow } from '../../_hooks/useRunWorkflow.hook';
 import Modal from './Modal.partial';
 
 const CommandPalette = () => {
 	const { state, dispatch } = useWorkflowEditor();
+	const autoLayout = useAutoLayout();
 	const { runWorkflow, stopRun } = useRunWorkflow();
+	const { isAiPanelAvailable } = useAiPanelAvailability();
 	const [query, setQuery] = useState('');
 	const needle = query.trim().toLowerCase();
 
@@ -31,16 +35,20 @@ const CommandPalette = () => {
 			label: 'Auto-layout canvas',
 			description: 'Reposition nodes into a readable flow',
 			shortcut: 'L',
-			action: () => dispatch({ type: 'AUTO_LAYOUT' }),
+			action: autoLayout,
 			category: 'Workflow',
 		},
-		{
-			label: 'Open AI builder',
-			description: 'Generate or improve a workflow',
-			shortcut: '⌘J',
-			action: () => dispatch({ type: 'TOGGLE_AI_PANEL' }),
-			category: 'Panels',
-		},
+		...(isAiPanelAvailable
+			? [
+					{
+						label: 'Open AI builder',
+						description: 'Generate or improve a workflow',
+						shortcut: '⌘J',
+						action: () => dispatch({ type: 'TOGGLE_AI_PANEL' }),
+						category: 'Panels',
+					},
+				]
+			: []),
 		{
 			label: 'Quick add node',
 			description: 'Search and add a node to the canvas',
@@ -97,25 +105,6 @@ const CommandPalette = () => {
 			action: () => dispatch({ type: 'SET_DIFF_VIEWER', open: true }),
 			category: 'File',
 			disabled: !state.history.past.length,
-		},
-		{
-			label: state.ui.stepMode ? 'Exit step-through mode' : 'Enter step-through mode',
-			description: 'Pause at each node during execution for debugging',
-			shortcut: '⌘⇧D',
-			action: () => dispatch({ type: 'SET_STEP_MODE', enabled: !state.ui.stepMode }),
-			category: 'Debug',
-		},
-		{
-			label: 'Toggle breakpoint on selected node',
-			description: 'Pause execution at this node in step-through mode',
-			shortcut: 'B',
-			action: () => {
-				if (state.ui.selectedNodeId) {
-					dispatch({ type: 'TOGGLE_NODE_BREAKPOINT', id: state.ui.selectedNodeId });
-				}
-			},
-			category: 'Debug',
-			disabled: !state.ui.selectedNodeId,
 		},
 		{
 			label: 'Keyboard shortcuts',
@@ -186,92 +175,48 @@ const CommandPalette = () => {
 					value={query}
 					onChange={(event) => setQuery(event.target.value)}
 					placeholder='Search commands and nodes'
-					className='mb-2 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-emerald-300/40'
+					className='mb-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-emerald-500/50 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-100 dark:placeholder:text-zinc-600 dark:focus:border-emerald-300/40'
 				/>
-				{query ? (
-					// Search results
-					<div className='space-y-3'>
-						{Object.entries(commandsByCategory).map(([category, cmds]) => (
-							<div key={category}>
-								<div className='px-1 text-xs font-semibold tracking-[0.16em] text-zinc-600 uppercase'>
-									{category}
-								</div>
-								<div className='mt-1 space-y-1'>
-									{cmds.map((command) => (
-										<button
-											key={command.label}
-											type='button'
-											onClick={() => {
-												command.action();
-												dispatch({
-													type: 'SET_COMMAND_PALETTE',
-													open: false,
-												});
-											}}
-											disabled={command.disabled}
-											className='flex w-full items-center justify-between rounded-lg px-3 py-2 text-left hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-50'>
-											<div>
-												<span className='block text-sm font-semibold text-zinc-100'>
-													{command.label}
-												</span>
-												<span className='block text-xs text-zinc-500'>
-													{command.description}
-												</span>
-											</div>
-											{command.shortcut && (
-												<span className='font-mono text-xs text-zinc-600'>
-													{command.shortcut}
-												</span>
-											)}
-										</button>
-									))}
-								</div>
+				<div className='space-y-3'>
+					{Object.entries(commandsByCategory).map(([category, cmds]) => (
+						<div key={category}>
+							<div className='px-1 text-xs font-semibold tracking-[0.16em] text-zinc-500 uppercase dark:text-zinc-600'>
+								{category}
 							</div>
-						))}
-					</div>
-				) : (
-					// Default view with categories
-					<div className='space-y-3'>
-						{Object.entries(commandsByCategory).map(([category, cmds]) => (
-							<div key={category}>
-								<span className='px-1 text-xs font-semibold tracking-[0.16em] text-zinc-600 uppercase'>
-									{category}
-								</span>
-								<div className='mt-1 space-y-1'>
-									{cmds.map((command) => (
-										<button
-											key={command.label}
-											type='button'
-											onClick={() => {
-												command.action();
-												dispatch({
-													type: 'SET_COMMAND_PALETTE',
-													open: false,
-												});
-											}}
-											disabled={command.disabled}
-											className='flex w-full items-center justify-between rounded-lg px-3 py-2 text-left hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-50'>
-											<div>
-												<span className='block text-sm font-semibold text-zinc-100'>
-													{command.label}
-												</span>
-												<span className='block text-xs text-zinc-500'>
-													{command.description}
-												</span>
-											</div>
-											{command.shortcut && (
-												<span className='font-mono text-xs text-zinc-600'>
-													{command.shortcut}
-												</span>
-											)}
-										</button>
-									))}
-								</div>
+							<div className='mt-1 space-y-1'>
+								{cmds.map((command) => (
+									<button
+										key={command.label}
+										type='button'
+										onClick={() => {
+											command.action();
+											dispatch({
+												type: 'SET_COMMAND_PALETTE',
+												open: false,
+											});
+										}}
+										disabled={command.disabled}
+										className='flex w-full items-center justify-between rounded-lg px-3 py-2 text-left hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-white/[0.06]'>
+										<div>
+											<span className='block text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
+												{command.label}
+											</span>
+											<span className='block text-xs text-zinc-500'>
+												{command.description}
+											</span>
+										</div>
+										{command.shortcut && (
+											<span className='font-mono text-xs text-zinc-400 dark:text-zinc-600'>
+												{command.shortcut}
+											</span>
+										)}
+									</button>
+								))}
 							</div>
-						))}
-					</div>
-				)}
-				<div className='pt-3 text-xs font-semibold tracking-[0.16em] text-zinc-600 uppercase'>
+						</div>
+					))}
+				</div>
+				<div className='pt-3 text-xs font-semibold tracking-[0.16em] text-zinc-500 uppercase dark:text-zinc-600'>
 					Add node
 				</div>
 				<div className='max-h-72 overflow-y-auto'>
@@ -290,12 +235,12 @@ const CommandPalette = () => {
 								});
 								dispatch({ type: 'SET_COMMAND_PALETTE', open: false });
 							}}
-							className='flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-white/[0.06]'>
-							<span className='flex h-7 w-7 items-center justify-center rounded bg-white/[0.07] text-[10px] font-black text-zinc-200'>
+							className='flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-zinc-100 dark:hover:bg-white/[0.06]'>
+							<span className='flex h-7 w-7 items-center justify-center rounded bg-zinc-100 text-[10px] font-black text-zinc-700 dark:bg-white/[0.07] dark:text-zinc-200'>
 								{node.icon}
 							</span>
 							<span>
-								<span className='block text-sm font-semibold text-zinc-100'>
+								<span className='block text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
 									{node.label}
 								</span>
 								<span className='block text-xs text-zinc-500'>

@@ -1,3 +1,4 @@
+import { activateOnKey } from '@/utils/activateOnKey.util';
 import { useEffect, useState } from 'react';
 import { useOutletContext, useNavigate, useParams } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -36,6 +37,7 @@ import type { TOnboardingStepKey } from '@/types/onboarding.type';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useDashboard } from './_helper/dashboard.adapter';
 import PendingApprovalsCard from './_partial/PendingApprovalsCard.partial';
+import PendingAgentActionsCard from './_partial/PendingAgentActionsCard.partial';
 import { STATUS_BADGE_COLORS, type TExecutionStatus } from './_types/dashboard.type';
 
 const workspacePages = pages.workspace.subPages!;
@@ -602,6 +604,7 @@ const DashboardPage = () => {
 					{/* Left: needs attention + recent runs */}
 					<div className='space-y-6 lg:col-span-2'>
 						<PendingApprovalsCard ws={currentWorkspaceId} />
+						<PendingAgentActionsCard ws={currentWorkspaceId} />
 
 						{/* Needs attention */}
 						<div className='border-border-main bg-bg-card overflow-hidden rounded-3xl border shadow-sm'>
@@ -705,7 +708,12 @@ const DashboardPage = () => {
 										return (
 											<div
 												key={run.id}
+												role='button'
+												tabIndex={0}
 												onClick={() => openRun(run.id, run.workflow_id)}
+												onKeyDown={activateOnKey(() =>
+													openRun(run.id, run.workflow_id),
+												)}
 												className='group flex cursor-pointer items-center justify-between gap-3 px-5 py-3.5 transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-800/15'>
 												<div className='flex min-w-0 items-center gap-3'>
 													<div className='border-primary-500/15 bg-primary-400/10 text-primary-500 dark:text-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border'>

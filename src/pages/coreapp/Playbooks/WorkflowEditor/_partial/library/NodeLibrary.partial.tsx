@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft, Search, Sparkles, X } from 'lucide-react';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { useWorkflowRouteParams } from '../../_hooks/useWorkflowRouteParams.hook';
 import { mapApiCategoriesToGroups } from '../../_helper/apiNodeCatalog.helper';
 import type { TNodeCategoryGroup } from '../../_helper/apiNodeCatalog.helper';
@@ -14,26 +14,27 @@ import HomePanel from './HomePanel.partial';
 import CategoryPanel from './CategoryPanel.partial';
 import CustomNodesPanel from './CustomNodesPanel.partial';
 import SearchPanel from './SearchPanel.partial';
+import { useAiPanelAvailability } from '../../_hooks/useAiPanelAvailability.hook';
 
 const SEARCH_DEBOUNCE_MS = 250;
 
 const NodeLibrary = () => {
 	const { state, dispatch } = useWorkflowEditor();
+	const { isAiPanelAvailable } = useAiPanelAvailability();
 	const { workspaceId } = useWorkflowRouteParams();
 
 	const [query, setQuery] = useState('');
 	const [debouncedQuery, setDebouncedQuery] = useState('');
 	const [selected, setSelected] = useState<TNodeCategoryGroup | null>(null);
-	const prevIntentRef = useRef<typeof state.ui.leftPanelIntent | null>(null);
+	const [appliedIntent, setAppliedIntent] = useState<typeof state.ui.leftPanelIntent | null>(
+		null,
+	);
 
 	const { data: categories } = useNodeCategories();
 
-	useEffect(() => {
-		if (!categories) return;
-		const intent = state.ui.leftPanelIntent;
-		if (prevIntentRef.current === intent) return;
-		prevIntentRef.current = intent;
-
+	const intent = state.ui.leftPanelIntent;
+	if (categories && appliedIntent !== intent) {
+		setAppliedIntent(intent);
 		if (intent === 'trigger') {
 			const groups = mapApiCategoriesToGroups(categories);
 			const triggersGroup = groups.find((g) => g.slug === 'triggers-events');
@@ -41,12 +42,16 @@ const NodeLibrary = () => {
 		} else {
 			setSelected(null);
 		}
-	}, [categories, state.ui.leftPanelIntent]);
+	}
 
 	useEffect(() => {
 		const id = setTimeout(() => setDebouncedQuery(query.trim()), SEARCH_DEBOUNCE_MS);
 		return () => clearTimeout(id);
 	}, [query]);
+
+	// Toggling with the panel's own intent closes it; without one the reducer reads
+	// 'home' and, from the Triggers view, switches views instead of closing.
+	const closePanel = () => dispatch({ type: 'TOGGLE_LEFT_PANEL', intent });
 
 	const addNode = (node: TNodeDefinition) => {
 		dispatch({
@@ -57,7 +62,7 @@ const NodeLibrary = () => {
 		});
 		setQuery('');
 		if (window.matchMedia('(max-width: 767px)').matches) {
-			dispatch({ type: 'TOGGLE_LEFT_PANEL' });
+			closePanel();
 		}
 	};
 
@@ -92,7 +97,7 @@ const NodeLibrary = () => {
 							aria-label='Back'
 							type='button'
 							onClick={() => setSelected(null)}
-							className='hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/10 dark:hover:text-primary-300 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg text-zinc-500 transition'>
+							className='hover:bg-primary-50 hover:text-primary-900 dark:hover:bg-primary-500/10 dark:hover:text-primary-300 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg text-zinc-500 transition'>
 							<ArrowLeft size={16} />
 						</button>
 						<span
@@ -111,9 +116,9 @@ const NodeLibrary = () => {
 					</div>
 					<button
 						type='button'
-						onClick={() => dispatch({ type: 'TOGGLE_LEFT_PANEL' })}
+						onClick={closePanel}
 						aria-label='Close node library'
-						className='flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-200 sm:h-6 sm:w-6 sm:rounded-lg dark:border-zinc-800 dark:bg-zinc-900'>
+						className='flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 sm:h-6 sm:w-6 sm:rounded-lg dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
 						<X size={13} />
 					</button>
 				</div>
@@ -124,9 +129,9 @@ const NodeLibrary = () => {
 					</h2>
 					<button
 						type='button'
-						onClick={() => dispatch({ type: 'TOGGLE_LEFT_PANEL' })}
+						onClick={closePanel}
 						aria-label='Close node library'
-						className='flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-200 sm:h-6 sm:w-6 sm:rounded-lg dark:border-zinc-800 dark:bg-zinc-900'>
+						className='flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 sm:h-6 sm:w-6 sm:rounded-lg dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
 						<X size={13} />
 					</button>
 				</div>
@@ -153,18 +158,20 @@ const NodeLibrary = () => {
 
 			<div className='min-h-0 flex-1 overflow-y-auto'>{body}</div>
 
-			<div className='flex justify-center border-t border-zinc-200 px-5 pt-3 pb-5 dark:border-white/[0.05]'>
-				<button
-					type='button'
-					onClick={() => dispatch({ type: 'TOGGLE_AI_PANEL' })}
-					className='border-primary-200 bg-primary-50/60 text-primary-700 hover:border-primary-300 hover:bg-primary-50 dark:border-primary-500/20 dark:bg-primary-400/[0.08] dark:text-primary-300 dark:hover:bg-primary-500/[0.14] flex h-9 w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-4 py-1.5 text-xs font-bold shadow-xs transition'>
-					<Sparkles
-						size={13}
-						className='fill-primary-500/20 text-primary-600 dark:fill-primary-400/20 dark:text-primary-400'
-					/>
-					<span>+ Ask AI for help</span>
-				</button>
-			</div>
+			{isAiPanelAvailable && (
+				<div className='flex justify-center border-t border-zinc-200 px-5 pt-3 pb-5 dark:border-white/[0.05]'>
+					<button
+						type='button'
+						onClick={() => dispatch({ type: 'TOGGLE_AI_PANEL' })}
+						className='border-primary-200 bg-primary-50/60 text-primary-700 hover:border-primary-300 hover:bg-primary-50 dark:border-primary-500/20 dark:bg-primary-400/[0.08] dark:text-primary-300 dark:hover:bg-primary-500/[0.14] flex h-9 w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-4 py-1.5 text-xs font-bold shadow-xs transition'>
+						<Sparkles
+							size={13}
+							className='fill-primary-500/20 text-primary-600 dark:fill-primary-400/20 dark:text-primary-400'
+						/>
+						<span>+ Ask AI for help</span>
+					</button>
+				</div>
+			)}
 		</aside>
 	);
 };

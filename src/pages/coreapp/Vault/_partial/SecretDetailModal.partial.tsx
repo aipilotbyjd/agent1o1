@@ -2,7 +2,12 @@ import { Copy, Key, Loader2, Lock, Pencil } from 'lucide-react';
 import { useSecret } from '@/api/modules/secrets';
 import { notify } from '@/api/core';
 import type { TSecret } from '@/types/secret.type';
-import Modal, { ModalHeader, ModalBody, ModalFooter, ModalFooterChild } from '@/components/ui/Modal';
+import Modal, {
+	ModalHeader,
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+} from '@/components/ui/Modal';
 import { primaryBtn, secondaryBtn } from '@/pages/settings/_shared/buttons';
 
 const fmtDateTime = (value: string | null) =>
@@ -89,7 +94,9 @@ const SecretDetailModal = ({
 						</div>
 
 						<div>
-							<p className='mb-1.5 text-xs font-bold text-zinc-700 dark:text-zinc-300'>Value</p>
+							<p className='mb-1.5 text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+								Value
+							</p>
 							{secret.is_secret || secret.value === null ? (
 								<p className='text-xs font-semibold text-zinc-400'>
 									Encrypted and write-only. Edit the secret to replace it.

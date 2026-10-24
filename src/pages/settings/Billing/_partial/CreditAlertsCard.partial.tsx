@@ -157,7 +157,7 @@ const CreditAlertsCard = ({ ws }: { ws: string }) => {
 										? `Up to ${settings.maximum_thresholds} alerts`
 										: 'Add a percentage, e.g. 90'
 								}
-								className='focus:border-primary-400 focus:ring-primary-200 h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-800 outline-none focus:ring-4 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:ring-primary-500/20'
+								className='focus:border-primary-400 focus:ring-primary-200 dark:focus:ring-primary-500/20 h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-800 outline-none focus:ring-4 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100'
 							/>
 							<button
 								type='submit'

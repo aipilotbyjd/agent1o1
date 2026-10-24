@@ -1,3 +1,4 @@
+import { activateOnKey } from '@/utils/activateOnKey.util';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -48,7 +49,7 @@ const getInitials = (name: string) =>
 		.slice(0, 2)
 		.toUpperCase();
 
-/** Owner is derived from workspace ownership, so it is never offered here —
+/** Owner is derived from workspace ownership, so it is never offered here:
  *  the same set the members settings screen grants. */
 const INVITE_ROLES: { value: TAssignableWorkspaceRole; label: string; hint: string }[] = [
 	{ value: 'admin', label: 'Admin', hint: 'Manage members, settings, and workflows.' },
@@ -234,7 +235,7 @@ const WorkspacesPage = () => {
 		const newParams = new URLSearchParams(searchParams);
 		newParams.delete('create');
 		setSearchParams(newParams, { replace: true });
-	}, []);
+	}, [searchParams, setSearchParams]);
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
@@ -457,7 +458,8 @@ const WorkspacesPage = () => {
 					role='button'
 					tabIndex={0}
 					className='flex cursor-pointer items-center gap-3'
-					onClick={() => navigate(brandHomePath)}>
+					onClick={() => navigate(brandHomePath)}
+					onKeyDown={activateOnKey(() => navigate(brandHomePath))}>
 					<AppLogo className='size-8' rounded='rounded-xl' alt='agent1o1' />
 					<span className='text-lg font-black tracking-tight text-zinc-950 dark:text-white'>
 						agent1o1

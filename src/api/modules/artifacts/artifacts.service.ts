@@ -13,7 +13,9 @@ import { ArtifactEndpoints as E } from './artifacts.endpoints';
 export const ArtifactService = {
 	list: (ws: string, params?: TArtifactListParams, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<TArtifact[]> & { meta: TPaginationMeta }>(E.list(ws), { params, signal })
+			.get<
+				TApiResponse<TArtifact[]> & { meta: TPaginationMeta }
+			>(E.list(ws), { params, signal })
 			.then((r) => ({ artifacts: r.data.data, meta: r.data.meta })),
 
 	detail: (ws: string, id: string, signal?: AbortSignal) =>
@@ -52,7 +54,7 @@ export const ArtifactService = {
 	removeShare: (ws: string, id: string, userId: string) =>
 		axiosClient.delete(E.removeShare(ws, id, userId)).then(() => undefined),
 
-	/** Fetches the file as a blob and triggers a browser save — the
+	/** Fetches the file as a blob and triggers a browser save: the
 	 *  AgentBuilder expects this, `downloadUrl` alone isn't enough. */
 	download: async (ws: string, id: string, filename: string) => {
 		const response = await axiosClient.get(E.download(ws, id), { responseType: 'blob' });

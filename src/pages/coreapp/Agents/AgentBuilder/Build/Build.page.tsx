@@ -1,4 +1,15 @@
-import { useState, useRef, useEffect, useMemo, memo, type ReactNode, type RefObject } from 'react';
+import { activateOnKey } from '@/utils/activateOnKey.util';
+import {
+	createElement,
+	useState,
+	useRef,
+	useEffect,
+	useEffectEvent,
+	useMemo,
+	memo,
+	type ReactNode,
+	type RefObject,
+} from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,7 +31,6 @@ import {
 	Database,
 	Users,
 	Mic,
-	CheckSquare,
 	Download,
 	SlidersHorizontal,
 	MoreHorizontal,
@@ -63,12 +73,16 @@ import MainAppBar, {
 	MainAppBarIconButton,
 } from '@/pages/coreapp/_partial/MainAppBar.partial';
 import { notify } from '@/api/core';
+import useComposerDraft, { readComposerDraft, writeComposerDraft } from '@/hooks/useComposerDraft';
 import useDarkMode from '@/hooks/useDarkMode';
+import useDraftFiles from '@/hooks/useDraftFiles';
+import { removeDraftFiles } from '@/utils/draftFiles.util';
+import AppLogo from '@/components/AppLogo';
 import DARK_MODE from '@/constants/darkMode.constant';
-import { LogoFyr } from '@/assets/images';
 import pages from '@/Routes/pages';
 import paths, { withWorkspace } from '@/Routes/paths';
 import { useWorkspaceContext } from '@/context/workspace';
+import ModelPicker from '@/components/ai/model-picker/ModelPicker';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import {
 	useAgent,
@@ -76,17 +90,18 @@ import {
 	useUpdateAgent,
 	useDeleteAgent,
 	useDuplicateAgent,
-	useAgentSkills,
-	useAttachAgentSkill,
-	useDetachAgentSkill,
-	useAgentTriggers,
-	useCreateAgentTrigger,
-	useUpdateAgentTrigger,
-	useDeleteAgentTrigger,
-	useFireAgentTrigger,
 	useAgentMetaModels,
 	useDraftAgent,
 	useImproveAgentInstructions,
+	agentKeys,
+	useAgents,
+} from '@/api/modules/agents';
+import { agentMemoryKeys } from '@/api/modules/agent-memory';
+import { agentSessionKeys, useAgentSessions } from '@/api/modules/agent-sessions';
+import { useAgentSkills } from '@/api/modules/agent-skills';
+import {
+	useAttachAgentSkill,
+	useDetachAgentSkill,
 	useAgentSkillAttachments,
 	useAgentToolBindings,
 	useCreateAgentToolBinding,
@@ -94,19 +109,14 @@ import {
 	useAgentWorkflowTools,
 	useAttachAgentWorkflow,
 	useDetachAgentWorkflow,
-	agentKeys,
-	agentVersionKeys,
 	agentSkillAttachmentKeys,
-	agentMemoryKeys,
-	agentSessionKeys,
 	agentSubagentKeys,
-	useAgents,
-	useAgentSessions,
 	useAgentSubagents,
 	useAttachSubagent,
 	useDetachSubagent,
 	useSubagentTasks,
-} from '@/api/modules/agents';
+} from '@/api/modules/agent-tools';
+import { agentVersionKeys } from '@/api/modules/agent-versions';
 import { agentSkillKeys } from '@/api/modules/agent-skills';
 import {
 	getSkillCategoryColor,
@@ -119,35 +129,94 @@ import { useConnectorCredentials } from '@/api/modules/connectors';
 import { useCurrentUser } from '@/api/modules/user';
 import type { TConnectorCredential } from '@/types/connector.type';
 import type { TNode } from '@/types/node.type';
-import type { TTrigger } from '@/types/trigger.type';
 import { AGENT_COLORS, AGENT_ICONS } from '@/types/agent.type';
-import type { TAgentColor, TAgentIcon, TAgentTriggerType } from '@/types/agent.type';
+import type { TAgentColor, TAgentIcon } from '@/types/agent.type';
 import type { TAgentTemplate } from '@/types/template.type';
-import { useAgentSession } from '@/api/modules/agents';
-import { AgentSessionService } from '@/api/modules/agents/agent-sessions.service';
+import { AgentSessionService, useAgentSession } from '@/api/modules/agent-sessions';
 import { useDownloadArtifact, ArtifactService } from '@/api/modules/artifacts';
 import type { TWorkflow } from '@/types/workflow.type';
 import type { TArtifact } from '@/types/artifact.type';
-import type { TAgentMessage, TAgentToolBinding, TSubagentTask } from '@/types/agent.type';
+import type {
+	TAgentMessage,
+	TAgentToolBinding,
+	TChosenSkill,
+	TSubagentTask,
+} from '@/types/agent.type';
 import type { TAgentSkill } from '@/types/agent-skill.type';
 import { useAgentChatStore } from '@/store/agentChat.store';
 import { useAgentBuilderStore } from '@/store/agentBuilder.store';
-import { XCircle, Wrench, FileDown, GitMerge, Brain, ScrollText } from 'lucide-react';
+import {
+	XCircle,
+	Wrench,
+	FileDown,
+	GitMerge,
+	Brain,
+	ScrollText,
+	PauseCircle,
+	FlaskConical,
+	Ban,
+} from 'lucide-react';
 import AgentDataPanel from './_partial/AgentDataPanel.partial';
 import AgentTagsPanel from './_partial/AgentTagsPanel.partial';
-import AgentKnowledgeSourcesPanel from './_partial/AgentKnowledgeSourcesPanel.partial';
+import AgentTriggersPanel from './_partial/AgentTriggersPanel.partial';
+import type { TTriggerDrawerTarget } from './_partial/AgentTriggerDrawer.partial';
+import AgentKnowledgePanel from './_partial/AgentKnowledgePanel.partial';
 import AgentSideDrawer, { AttachToggle } from './_partial/AgentSideDrawer.partial';
 import AgentChatsPanel from './_partial/AgentChatsPanel.partial';
+import AgentApprovalCards from './_partial/AgentApprovalCards.partial';
+import AgentPlanCard from './_partial/AgentPlanCard.partial';
+import AgentAutonomyPanel from './_partial/AgentAutonomyPanel.partial';
+import ChatModeBar from './_partial/ChatModeBar.partial';
+import SaveEvalCaseModal, { type TEvalCaseDraft } from './_partial/SaveEvalCaseModal.partial';
+import AttachDrawer from '@/components/common/AttachDrawer';
+import { ChatAttachmentTray, MessageAttachments } from '@/components/common/ChatAttachments';
+import {
+	ATTACHMENT_EXTENSIONS,
+	addChatAttachments,
+	canAttachFile,
+	type TChatAttachment,
+} from '@/utils/chatAttachments.util';
+import { fileIconFor, fileSolidToneFor } from '@/utils/fileDisplay.util';
+import {
+	SkillCommandHighlight,
+	SkillCommandTag,
+	SkillSlashMenu,
+} from './_partial/SkillSlashMenu.partial';
+import { useSkillPicker, type TSlashCommand } from './_hooks/useSkillPicker.hook';
+import {
+	AgentActionService,
+	agentActionKeys,
+	agentPlanKeys,
+	subscribeToAgentActions,
+	useAgentPlans,
+	useApproveAgentPlan,
+	useRejectAgentPlan,
+	useSessionAgentActions,
+} from '@/api/modules/agent-actions';
+import { useWorkspace } from '@/api/modules/workspaces';
+import { useRealtime } from '@/context/realtime';
+import type { IEchoLike } from '@/api/modules/workflow-builder/workflow-builder.realtime';
+import type { TAgentSessionStreamEvent } from '@/types/agent.type';
+import type {
+	TAgentAction,
+	TAgentActionDecision,
+	TAgentActionStatus,
+} from '@/types/agent-action.type';
+
+/** What a reply paused on approvals shows when the agent wrote nothing before stopping. */
+const AWAITING_APPROVAL_TEXT = '_Waiting for approval before carrying on._';
 
 const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 	messages
 		.filter((message) => message.role === 'user' || message.role === 'assistant')
 		.map((message) => ({
 			id: `msg-${message.id}`,
+			serverId: message.id,
 			sender: message.role === 'user' ? ('user' as const) : ('agent' as const),
+			skill: message.skill ?? undefined,
 			text:
 				typeof message.content === 'string'
-					? message.content
+					? message.content || (message.awaiting_approval ? AWAITING_APPROVAL_TEXT : '')
 					: JSON.stringify(message.content, null, 2),
 			timestamp: new Date(message.created_at).toLocaleTimeString([], {
 				hour: '2-digit',
@@ -160,8 +229,11 @@ const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 						id: call.id,
 						toolName: call.name,
 						arguments: call.arguments ?? {},
-						status: 'done' as const,
-						output: message.tool_results?.find((result) => result.id === call.id)?.output,
+						status: message.pending_tool_call_ids?.includes(call.id)
+							? ('waiting' as const)
+							: ('done' as const),
+						output: message.tool_results?.find((result) => result.id === call.id)
+							?.output,
 						taskId: message.subagent_task_ids?.[call.id],
 					}))
 				: undefined,
@@ -169,6 +241,8 @@ const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 				id: artifact.id,
 				filename: artifact.filename,
 				size: artifact.size,
+				mimeType: artifact.mime_type,
+				previewUrl: artifact.preview_url,
 			})),
 		}));
 
@@ -177,7 +251,7 @@ const EXPORT_FORMATS = ['pdf', 'xlsx', 'docx'];
 
 /**
  * The filename an `export_artifact` call is stored under. With a `format`, the
- * backend builds the document itself and swaps the extension — `report.md` +
+ * backend builds the document itself and swaps the extension: `report.md` +
  * pdf is saved as `report.pdf` (ExportArtifactTool::handle).
  */
 const exportedFilename = (filename: string, format: unknown) => {
@@ -195,6 +269,8 @@ const INVOKE_AGENT_TOOL = 'invoke_agent';
 const WAIT_SUBAGENTS_TOOL = 'wait_for_subagents';
 const UPDATE_SKILL_TOOL = 'update_skill';
 const REMEMBER_TOOL = 'remember';
+const FORGET_TOOL = 'forget';
+const RECALL_MEMORIES_TOOL = 'recall_memories';
 
 /** What each skill tool did, for the step line and the chip above a reply. */
 const SKILL_TOOL_VERBS: Record<string, { running: string; done: string; nameArg: string }> = {
@@ -202,27 +278,6 @@ const SKILL_TOOL_VERBS: Record<string, { running: string; done: string; nameArg:
 	[CREATE_SKILL_TOOL]: { running: 'Creating', done: 'Created', nameArg: 'name' },
 	[UPDATE_SKILL_TOOL]: { running: 'Updating', done: 'Updated', nameArg: 'skill' },
 };
-const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
-const MAX_ATTACHMENTS = 10;
-const ATTACHMENT_EXTENSIONS = [
-	'.png',
-	'.jpg',
-	'.jpeg',
-	'.gif',
-	'.webp',
-	'.pdf',
-	'.txt',
-	'.md',
-	'.html',
-	'.csv',
-	'.json',
-	'.xml',
-	'.yaml',
-	'.yml',
-];
-
-const webhookUrlFor = (trigger: TTrigger) =>
-	`${import.meta.env.VITE_API_URL ?? ''}/triggers/${trigger.id}/${trigger.token ?? ''}`;
 
 type TChatTimelineItem =
 	| { kind: 'text'; id: string; text: string }
@@ -231,7 +286,8 @@ type TChatTimelineItem =
 			id: string;
 			toolName: string;
 			arguments: Record<string, unknown>;
-			status: 'running' | 'done' | 'error';
+			/** `waiting`: paused for a person to approve it. */
+			status: 'running' | 'waiting' | 'done' | 'error';
 			output?: string;
 			/** The subagent task an `invoke_agent` call started. */
 			taskId?: string;
@@ -247,15 +303,19 @@ type TChatTimelineItem =
 
 interface TMessage {
 	id: string;
+	/** The stored message's id: known once the backend accepted the turn. */
+	serverId?: string;
 	sender: 'agent' | 'user';
 	text: string;
 	/** Original composer text, without attachment labels, for a failed-turn retry. */
 	retryText?: string;
-	/** Files sent with a user message. `id` is the stored artifact's — absent on
+	/** Files sent with a user message. `id` is the stored artifact's: absent on
 	 *  the copy shown while the turn is still in flight. */
-	attachments?: { id?: string; filename: string; size: number }[];
+	attachments?: TChatAttachment[];
 	/** The files as sent from this tab, kept so Regenerate can upload them again. */
 	files?: File[];
+	/** The skill picked for this (user) message with `/`. */
+	skill?: TChosenSkill;
 	timestamp: string;
 	type?: 'text' | 'table';
 	headers?: string[];
@@ -263,7 +323,7 @@ interface TMessage {
 	followUp?: string;
 	actions?: { label: string; type: string }[];
 	timeline?: TChatTimelineItem[];
-	/** Set on a reply the user cut short with Stop — the text is a partial. */
+	/** Set on a reply the user cut short with Stop: the text is a partial. */
 	stopped?: boolean;
 	failed?: boolean;
 }
@@ -272,107 +332,11 @@ interface TMessage {
 const draftKey = (agentId: string | null, sessionId: string | null) =>
 	`agent1o1:chat-draft:${agentId ?? 'draft'}:${sessionId ?? 'new'}`;
 
-/** Browser storage is unavailable in private windows and with site data blocked,
- *  so a lost draft must never take the composer down with it. */
-const readDraft = (key: string) => {
-	try {
-		return localStorage.getItem(key) ?? '';
-	} catch {
-		return '';
-	}
-};
-
-const writeDraft = (key: string, value: string) => {
-	try {
-		if (value.trim()) localStorage.setItem(key, value);
-		else localStorage.removeItem(key);
-	} catch {
-		// A draft that cannot be parked is not worth an error — it stays in state.
-	}
-};
-
 /** Grows the composer to fit its content. The height has to be reset first or
  *  scrollHeight only ever reports the taller of the two. */
 const autoSizeComposer = (el: HTMLTextAreaElement) => {
 	el.style.height = 'auto';
 	el.style.height = `${el.scrollHeight}px`;
-};
-
-const ChatAttachmentTray = ({
-	files,
-	busy,
-	onRemove,
-}: {
-	files: File[];
-	busy: boolean;
-	onRemove: (file: File) => void;
-}) => {
-	if (files.length === 0) return null;
-	return (
-		<div className='min-w-0 space-y-1.5' aria-live='polite'>
-			<div className='flex max-h-24 flex-wrap gap-1.5 overflow-y-auto'>
-				{files.map((file) => (
-					<button
-						key={`${file.name}-${file.size}-${file.lastModified}`}
-						type='button'
-						onClick={() => onRemove(file)}
-						disabled={busy}
-						aria-label={`Remove ${file.name}`}
-						className='flex min-h-10 max-w-full min-w-0 items-center gap-1.5 rounded-lg border border-zinc-200 px-2 text-xs disabled:opacity-60 dark:border-zinc-700'>
-						<span className='truncate'>📎 {file.name}</span>
-						<X size={14} className='shrink-0' />
-					</button>
-				))}
-			</div>
-		</div>
-	);
-};
-
-/** Files a member sent with a message, above its bubble. Downloadable once the
- *  turn is stored and the artifact has an id. */
-const MessageAttachments = ({
-	attachments,
-	ws,
-}: {
-	attachments: NonNullable<TMessage['attachments']>;
-	ws: string;
-}) => {
-	const downloadMutation = useDownloadArtifact(ws);
-	const chipClass =
-		'flex min-h-9 max-w-full min-w-0 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2.5 text-xs font-semibold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-200';
-
-	return (
-		<div className='mb-1.5 flex flex-wrap justify-end gap-1.5'>
-			{attachments.map((file, index) => {
-				const label = (
-					<>
-						<Paperclip size={12} className='shrink-0 text-zinc-400' />
-						<span className='truncate'>{file.filename}</span>
-						<span className='shrink-0 text-[10px] text-zinc-400'>
-							{formatArtifactSize(file.size)}
-						</span>
-					</>
-				);
-				const { id } = file;
-				return id ? (
-					<button
-						key={id}
-						type='button'
-						aria-label={`Download ${file.filename}`}
-						onClick={() =>
-							downloadMutation.mutate({ artifactId: id, filename: file.filename })
-						}
-						className={`${chipClass} cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800`}>
-						{label}
-					</button>
-				) : (
-					<span key={`${file.filename}-${index}`} className={chipClass}>
-						{label}
-					</span>
-				);
-			})}
-		</div>
-	);
 };
 
 const useDrawerFocus = (open: boolean, drawerRef: RefObject<HTMLDivElement | null>) => {
@@ -410,7 +374,11 @@ const useDrawerFocus = (open: boolean, drawerRef: RefObject<HTMLDivElement | nul
 };
 
 const mdComponents: Components = {
-	p: ({ children }) => <p className='mb-2 break-words whitespace-pre-line [overflow-wrap:anywhere] last:mb-0'>{children}</p>,
+	p: ({ children }) => (
+		<p className='mb-2 [overflow-wrap:anywhere] break-words whitespace-pre-line last:mb-0'>
+			{children}
+		</p>
+	),
 	strong: ({ children }) => (
 		<strong className='font-black text-zinc-900 dark:text-white'>{children}</strong>
 	),
@@ -438,7 +406,7 @@ const mdComponents: Components = {
 			href={href}
 			target='_blank'
 			rel='noreferrer'
-			className='hover:text-primary-600 dark:hover:text-primary-400 underline underline-offset-2 [overflow-wrap:anywhere]'>
+			className='hover:text-primary-600 dark:hover:text-primary-400 [overflow-wrap:anywhere] underline underline-offset-2'>
 			{children}
 		</a>
 	),
@@ -467,11 +435,18 @@ const toolStepLabel = (item: TToolItem, task?: TSubagentTask): string => {
 	const arg = (name: string) => String(item.arguments[name] ?? '');
 	const skillVerb = SKILL_TOOL_VERBS[item.toolName];
 
-	if (skillVerb) return `${skillVerb[running ? 'running' : 'done']} skill · ${arg(skillVerb.nameArg)}`;
-	if (item.toolName === REMEMBER_TOOL) return `${running ? 'Remembering' : 'Remembered'} · ${arg('key')}`;
+	if (skillVerb)
+		return `${skillVerb[running ? 'running' : 'done']} skill · ${arg(skillVerb.nameArg)}`;
+	if (item.toolName === REMEMBER_TOOL)
+		return `${running ? 'Remembering' : 'Remembered'} · ${arg('key')}`;
+	if (item.toolName === FORGET_TOOL)
+		return `${running ? 'Forgetting' : 'Forgot'} · ${arg('key')}`;
+	if (item.toolName === RECALL_MEMORIES_TOOL)
+		return `${running ? 'Recalling' : 'Recalled'} · ${arg('query')}`;
 	if (item.toolName === UPDATE_INSTRUCTIONS_TOOL)
 		return running ? 'Updating its instructions' : 'Updated its instructions';
-	if (item.toolName === INVOKE_AGENT_TOOL) return `Subagent · ${task?.agent.name ?? arg('agent')}`;
+	if (item.toolName === INVOKE_AGENT_TOOL)
+		return `Subagent · ${task?.agent.name ?? arg('agent')}`;
 	if (item.toolName === WAIT_SUBAGENTS_TOOL)
 		return running ? 'Waiting for subagents…' : 'Collected subagent results';
 	if (item.toolName === EXPORT_ARTIFACT_TOOL)
@@ -480,7 +455,8 @@ const toolStepLabel = (item: TToolItem, task?: TSubagentTask): string => {
 };
 
 const toolStepIcon = (toolName: string) => {
-	if (toolName === REMEMBER_TOOL) return Brain;
+	if (toolName === REMEMBER_TOOL || toolName === FORGET_TOOL || toolName === RECALL_MEMORIES_TOOL)
+		return Brain;
 	if (toolName === UPDATE_INSTRUCTIONS_TOOL) return ScrollText;
 	if (SKILL_TOOL_VERBS[toolName]) return Sparkles;
 	if (toolName === INVOKE_AGENT_TOOL || toolName === WAIT_SUBAGENTS_TOOL) return Bot;
@@ -518,6 +494,29 @@ const SUBAGENT_STATUS: Record<TSubagentTask['status'], { label: string; classNam
 	failed: { label: 'Failed', className: 'text-rose-600 dark:text-rose-400' },
 };
 
+type TStepBadge = { label: string; className: string };
+
+/** How a call's approval ended, when that differs from simply running. */
+const ACTION_OUTCOME: Partial<Record<TAgentActionStatus, TStepBadge>> = {
+	simulated: { label: 'Simulated', className: 'text-violet-600 dark:text-violet-300' },
+	denied: { label: 'Blocked', className: 'text-rose-600 dark:text-rose-400' },
+	rejected: { label: 'Rejected', className: 'text-rose-600 dark:text-rose-400' },
+	expired: { label: 'Expired', className: 'text-zinc-500 dark:text-zinc-400' },
+	cancelled: { label: 'Cancelled', className: 'text-zinc-500 dark:text-zinc-400' },
+};
+
+const APPROVED_BADGE: TStepBadge = {
+	label: 'Approved',
+	className: 'text-emerald-600 dark:text-emerald-400',
+};
+
+const SKIPPED_STATUSES: TAgentActionStatus[] = ['denied', 'rejected', 'expired', 'cancelled'];
+
+const actionBadge = (action: TAgentAction): TStepBadge | undefined =>
+	action.decided_by && ['approved', 'running', 'executed'].includes(action.status)
+		? APPROVED_BADGE
+		: ACTION_OUTCOME[action.status];
+
 const ToolStepDetail = ({ label, children }: { label: string; children: ReactNode }) => (
 	<div className='min-w-0'>
 		<p className='mb-1 text-[10px] font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
@@ -528,7 +527,7 @@ const ToolStepDetail = ({ label, children }: { label: string; children: ReactNod
 );
 
 const StepAnswer = ({ text }: { text: string }) => (
-	<div className='max-h-60 overflow-y-auto rounded-md bg-zinc-50 px-2.5 py-2 text-[12px] leading-relaxed font-semibold text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300'>
+	<div className='no-scrollbar max-h-60 overflow-y-auto rounded-md bg-zinc-50 px-2.5 py-2 text-[12px] leading-relaxed font-semibold text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300'>
 		<MessageMarkdown text={text} />
 	</div>
 );
@@ -581,12 +580,14 @@ const StepOutput = ({ output, failed }: { output: string; failed: boolean }) => 
 	const parsed = parseToolOutput(output);
 	return (
 		<pre
-			className={`max-h-40 overflow-y-auto rounded-md px-2 py-1 font-mono text-[11px] whitespace-pre-wrap [overflow-wrap:anywhere] ${
+			className={`no-scrollbar max-h-40 overflow-y-auto rounded-md px-2 py-1 font-mono text-[11px] [overflow-wrap:anywhere] whitespace-pre-wrap ${
 				failed
 					? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300'
 					: 'bg-zinc-50 text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300'
 			}`}>
-			{parsed !== undefined && typeof parsed === 'object' ? JSON.stringify(parsed, null, 2) : output}
+			{parsed !== undefined && typeof parsed === 'object'
+				? JSON.stringify(parsed, null, 2)
+				: output}
 		</pre>
 	);
 };
@@ -598,27 +599,36 @@ const ToolStep = ({
 	item,
 	isLast,
 	task,
+	action,
 	ws,
 }: {
 	item: TToolItem;
 	isLast: boolean;
 	task?: TSubagentTask;
+	/** The approvals record for this call, when the gate weighed it. */
+	action?: TAgentAction;
 	ws: string;
 }) => {
 	const [expanded, setExpanded] = useState(false);
 	const Icon = toolStepIcon(item.toolName);
 	const isSubagent = item.toolName === INVOKE_AGENT_TOOL;
 	const args = Object.entries(item.arguments).filter(([key]) => !(isSubagent && key === 'agent'));
-	const hasDetail = args.length > 0 || Boolean(item.output) || Boolean(task?.result || task?.error);
+	const hasDetail =
+		args.length > 0 || Boolean(item.output) || Boolean(task?.result || task?.error);
 
-	const dot: 'running' | 'done' | 'error' = task
+	const dot: TToolItem['status'] | 'simulated' | 'skipped' = task
 		? task.status === 'completed'
 			? 'done'
 			: task.status === 'failed'
 				? 'error'
 				: 'running'
-		: item.status;
-	const subagentStatus = task ? SUBAGENT_STATUS[task.status] : undefined;
+		: action?.status === 'simulated' && item.status === 'done'
+			? 'simulated'
+			: action && SKIPPED_STATUSES.includes(action.status) && item.status === 'done'
+				? 'skipped'
+				: item.status;
+	const badge = task ? SUBAGENT_STATUS[task.status] : action ? actionBadge(action) : undefined;
+	const badgeTitle = action?.decision_note ?? action?.reason?.detail ?? undefined;
 	const AgentIcon = task ? agentIconFor(task.agent.icon) : null;
 
 	return (
@@ -630,9 +640,14 @@ const ToolStep = ({
 				/>
 			)}
 			<span className='absolute top-1.5 left-0 flex h-[19px] w-[19px] items-center justify-center rounded-full border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900'>
-				{dot === 'running' && <Loader2 size={11} className='text-primary-500 animate-spin' />}
+				{dot === 'running' && (
+					<Loader2 size={11} className='text-primary-500 animate-spin' />
+				)}
+				{dot === 'waiting' && <PauseCircle size={11} className='text-amber-500' />}
 				{dot === 'done' && <CheckCircle2 size={11} className='text-emerald-500' />}
 				{dot === 'error' && <XCircle size={11} className='text-rose-500' />}
+				{dot === 'simulated' && <FlaskConical size={11} className='text-violet-500' />}
+				{dot === 'skipped' && <Ban size={11} className='text-rose-500' />}
 			</span>
 			<div className='rounded-xl border border-zinc-200/80 bg-white dark:border-zinc-800/85 dark:bg-zinc-900/60'>
 				<div className='flex min-w-0 items-center'>
@@ -645,10 +660,10 @@ const ToolStep = ({
 						{task && AgentIcon ? (
 							<span
 								className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border ${agentColorTileClass(task.agent.color)}`}>
-								<AgentIcon size={12} />
+								{createElement(AgentIcon, { size: 12 })}
 							</span>
 						) : (
-							<Icon size={13} className='shrink-0 text-zinc-400' />
+							createElement(Icon, { size: 13, className: 'shrink-0 text-zinc-400' })
 						)}
 						<span className='min-w-0 flex-1'>
 							<span className='block truncate text-[12.5px] font-bold text-zinc-700 dark:text-zinc-200'>
@@ -656,13 +671,17 @@ const ToolStep = ({
 							</span>
 							{isSubagent && (
 								<span className='block truncate text-[11px] font-semibold text-zinc-400 dark:text-zinc-500'>
-									{task?.status === 'failed' && task.error ? task.error : String(item.arguments.task ?? '')}
+									{task?.status === 'failed' && task.error
+										? task.error
+										: String(item.arguments.task ?? '')}
 								</span>
 							)}
 						</span>
-						{subagentStatus && (
-							<span className={`shrink-0 text-[11px] font-bold ${subagentStatus.className}`}>
-								{subagentStatus.label}
+						{badge && (
+							<span
+								title={badgeTitle}
+								className={`shrink-0 text-[11px] font-bold ${badge.className}`}>
+								{badge.label}
 							</span>
 						)}
 						{hasDetail && (
@@ -694,7 +713,7 @@ const ToolStep = ({
 											<dt className='font-mono text-[11px] font-bold text-zinc-500 dark:text-zinc-400'>
 												{key}
 											</dt>
-											<dd className='max-h-40 overflow-y-auto rounded-md bg-zinc-50 px-2 py-1 font-mono text-[11px] whitespace-pre-wrap text-zinc-700 [overflow-wrap:anywhere] dark:bg-zinc-950 dark:text-zinc-300'>
+											<dd className='no-scrollbar max-h-40 overflow-y-auto rounded-md bg-zinc-50 px-2 py-1 font-mono text-[11px] [overflow-wrap:anywhere] whitespace-pre-wrap text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300'>
 												{formatToolValue(value)}
 											</dd>
 										</div>
@@ -705,19 +724,28 @@ const ToolStep = ({
 						{isSubagent ? (
 							task?.status === 'failed' ? (
 								<ToolStepDetail label='Error'>
-									<StepOutput output={task.error ?? 'The subagent failed.'} failed />
+									<StepOutput
+										output={task.error ?? 'The subagent failed.'}
+										failed
+									/>
 								</ToolStepDetail>
 							) : task?.result ? (
 								<ToolStepDetail label='Answer'>
 									<StepAnswer text={task.result} />
 								</ToolStepDetail>
 							) : null
-						) : item.toolName === WAIT_SUBAGENTS_TOOL && item.output && item.status !== 'error' ? (
+						) : item.toolName === WAIT_SUBAGENTS_TOOL &&
+						  item.output &&
+						  item.status !== 'error' ? (
 							<CollectedSubagentResults output={item.output} />
 						) : (
 							item.output && (
-								<ToolStepDetail label={item.status === 'error' ? 'Error' : 'Output'}>
-									<StepOutput output={item.output} failed={item.status === 'error'} />
+								<ToolStepDetail
+									label={item.status === 'error' ? 'Error' : 'Output'}>
+									<StepOutput
+										output={item.output}
+										failed={item.status === 'error'}
+									/>
 								</ToolStepDetail>
 							)
 						)}
@@ -732,11 +760,13 @@ const ToolStep = ({
 const ToolTimeline = ({
 	items,
 	tasks,
+	actions = [],
 	ws,
 	className = '',
 }: {
 	items: TChatTimelineItem[];
 	tasks: TSubagentTask[];
+	actions?: TAgentAction[];
 	ws: string;
 	className?: string;
 }) => {
@@ -751,6 +781,7 @@ const ToolTimeline = ({
 					item={item}
 					isLast={index === tools.length - 1}
 					task={item.taskId ? tasks.find((task) => task.id === item.taskId) : undefined}
+					action={actions.find((action) => action.tool_call_id === item.id)}
 					ws={ws}
 				/>
 			))}
@@ -758,14 +789,8 @@ const ToolTimeline = ({
 	);
 };
 
-/** Skills the agent loaded, created or updated for a reply — always visible, like exported files. */
-const UsedSkills = ({
-	items,
-	skills,
-}: {
-	items: TChatTimelineItem[];
-	skills: TAgentSkill[];
-}) => {
+/** Skills the agent loaded, created or updated for a reply, always visible, like exported files. */
+const UsedSkills = ({ items, skills }: { items: TChatTimelineItem[]; skills: TAgentSkill[] }) => {
 	const seen = new Set<string>();
 	const entries = items.flatMap((item) => {
 		const verb = item.kind === 'tool' ? SKILL_TOOL_VERBS[item.toolName] : undefined;
@@ -816,11 +841,13 @@ const ArtifactCard = ({
 	ws: string;
 }) => {
 	const downloadMutation = useDownloadArtifact(ws);
+	const ArtifactIcon = fileIconFor(item.mimeType, item.filename);
 
 	return (
 		<div className='flex max-w-full min-w-0 items-center gap-3 rounded-2xl border border-zinc-200/80 bg-white px-4 py-3 shadow-2xs dark:border-zinc-800/85 dark:bg-zinc-900/60'>
-			<div className='bg-primary-400/10 text-primary-600 dark:text-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl'>
-				<FileDown size={16} />
+			<div
+				className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${fileSolidToneFor(item.mimeType, item.filename)}`}>
+				{createElement(ArtifactIcon, { size: 16 })}
 			</div>
 			<div className='min-w-0 flex-1'>
 				<p className='truncate text-xs font-bold text-zinc-800 dark:text-zinc-200'>
@@ -842,6 +869,8 @@ const ArtifactCard = ({
 	);
 };
 
+const messageId = (prefix: string) => `${prefix}-${Date.now()}`;
+
 const BuildPage = () => {
 	const { agentId: routeAgentId, workspaceId: routeWorkspaceId } = useParams<{
 		agentId?: string;
@@ -858,14 +887,14 @@ const BuildPage = () => {
 	const [currentAgentId, setCurrentAgentId] = useState<string | undefined>(routeAgentId);
 
 	// The open chat is shared with AgentAside, which lists this agent's past
-	// sessions and can switch between them — see store/agentChat.store.ts.
+	// sessions and can switch between them: see store/agentChat.store.ts.
 	const conversationId = useAgentChatStore((state) => state.sessionId);
 	const openSession = useAgentChatStore((state) => state.openSession);
 	const newSession = useAgentChatStore((state) => state.newSession);
 	const setChatAgentId = useAgentChatStore((state) => state.setAgentId);
 	const setIsSending = useAgentChatStore((state) => state.setIsSending);
 
-	// Live scratchpad for the reply currently streaming in — reset on every send.
+	// Live scratchpad for the reply currently streaming in: reset on every send.
 	const [streamTimeline, setStreamTimeline] = useState<TChatTimelineItem[]>([]);
 	const streamTimelineRef = useRef<TChatTimelineItem[]>([]);
 	const setTimeline = (updater: (prev: TChatTimelineItem[]) => TChatTimelineItem[]) => {
@@ -881,14 +910,14 @@ const BuildPage = () => {
 	const updateAgentMutation = useUpdateAgent(workspaceId);
 	const deleteAgentMutation = useDeleteAgent(workspaceId);
 
-	// Skills — workspace catalog + this agent's attachments
+	// Skills: workspace catalog + this agent's attachments
 	const { data: workspaceSkills } = useAgentSkills(workspaceId);
 	// Attached skills are a sub-resource here, not an `agent.skills` field.
 	const { data: attachedSkills } = useAgentSkillAttachments(workspaceId, currentAgentId ?? '');
 	const attachSkillMutation = useAttachAgentSkill(workspaceId, currentAgentId ?? '');
 	const detachSkillMutation = useDetachAgentSkill(workspaceId, currentAgentId ?? '');
 
-	// Subagents — other agents this one may hand work to, plus the tasks the open
+	// Subagents: other agents this one may hand work to, plus the tasks the open
 	// chat has started (polled while any are running).
 	const { data: workspaceAgents } = useAgents(workspaceId);
 	const { data: subagents } = useAgentSubagents(workspaceId, currentAgentId ?? '');
@@ -906,36 +935,15 @@ const BuildPage = () => {
 	const [isSkillEditorOpen, setIsSkillEditorOpen] = useState(false);
 	const [skillSearchQuery, setSkillSearchQuery] = useState('');
 
-	// Triggers
-	const { data: agentTriggers } = useAgentTriggers(workspaceId, currentAgentId ?? '');
-	const createTriggerMutation = useCreateAgentTrigger(workspaceId, currentAgentId ?? '');
-	const updateTriggerMutation = useUpdateAgentTrigger(workspaceId, currentAgentId ?? '');
-	const deleteTriggerMutation = useDeleteAgentTrigger(workspaceId, currentAgentId ?? '');
-	const fireTriggerMutation = useFireAgentTrigger(workspaceId, currentAgentId ?? '');
-	const [isTriggerPanelOpen, setIsTriggerPanelOpen] = useState(false);
+	const [triggerDrawer, setTriggerDrawer] = useState<TTriggerDrawerTarget | null>(null);
 
-	const { data: metaModelGroups } = useAgentMetaModels(workspaceId);
-	const modelOptions = useMemo(
-		() =>
-			(metaModelGroups ?? []).map((entry) => ({
-				id: entry.id,
-				slug: entry.slug,
-				label: entry.display_name,
-				tier: entry.brand,
-				description: entry.slug,
-				isAvailable: entry.is_available,
-			})),
-		[metaModelGroups],
-	);
-
-	const [newTriggerType, setNewTriggerType] = useState<TAgentTriggerType>('schedule');
-	const [newTriggerCron, setNewTriggerCron] = useState('0 9 * * *');
-	const [newTriggerEventName, setNewTriggerEventName] = useState('');
-	const [newTriggerInitialMessage, setNewTriggerInitialMessage] = useState('');
-	const [pendingDeleteTriggerId, setPendingDeleteTriggerId] = useState<string | null>(null);
+	const { data: catalogModels } = useAgentMetaModels(workspaceId);
 
 	const [activeTab, setActiveTab] = useState('All');
-	const [promptText, setPromptText] = useState('');
+	// The "describe your agent" prompt is kept per workspace until an agent is made from it.
+	const [promptText, setPromptText] = useComposerDraft(
+		workspaceId ? `agent1o1:agent-describe-draft:${workspaceId}` : null,
+	);
 	const { isDarkTheme, setDarkModeStatus } = useDarkMode();
 	const textareaRef = useRef<HTMLInputElement>(null);
 	const heroPromptRef = useRef<HTMLInputElement>(null);
@@ -956,23 +964,26 @@ const BuildPage = () => {
 		return () => window.removeEventListener('resize', checkMobile);
 	}, []);
 
-		const [isPreviewMode, setIsPreviewMode] = useState(Boolean(routeAgentId));
+	const [isPreviewMode, setIsPreviewMode] = useState(Boolean(routeAgentId));
 	const [agentName, setAgentName] = useState('');
 	const [agentIcon, setAgentIcon] = useState<TAgentIcon>('bot');
 	const [agentIconColor, setAgentIconColor] = useState<TAgentColor>('purple');
 	const [chatHistory, setChatHistory] = useState<TMessage[]>([]);
 	const [chatInput, setChatInput] = useState('');
-	const [chatAttachments, setChatAttachments] = useState<File[]>([]);
 	const attachmentInputRef = useRef<HTMLInputElement | null>(null);
 	const mobileComposerRef = useRef<HTMLTextAreaElement | null>(null);
 	const [mobileViewportHeight, setMobileViewportHeight] = useState<number | null>(null);
 	const [isMobileKeyboardOpen, setIsMobileKeyboardOpen] = useState(false);
 	const [isTyping, setIsTyping] = useState(false);
-	// Aborts the turn in flight. `streamMessage` already takes an AbortSignal —
-	// this is the Stop button's end of it.
+	// Aborts the turn in flight: the Stop button's end of `streamMessage`'s
+	// AbortSignal. It stops listening; the turn still finishes on the backend.
 	const streamAbortRef = useRef<AbortController | null>(null);
+	// Replies stream over Reverb, on the session's private channel.
+	const { echo } = useRealtime();
 	// Set while Regenerate downloads the original attachments, before the turn starts.
 	const regeneratingRef = useRef(false);
+	// The message Edit rewound to: the next send in that chat replaces it.
+	const editedMessageRef = useRef<{ sessionId: string; messageId: string } | null>(null);
 	// Message whose hover toolbar is pinned open on touch, where there is no hover.
 	const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
 	const composerRef = useRef<HTMLTextAreaElement | null>(null);
@@ -1002,7 +1013,7 @@ const BuildPage = () => {
 		setChatAgentId(currentAgentId ?? null);
 	}, [currentAgentId, setChatAgentId]);
 
-	// `?session=` opens a specific conversation — how a subagent card links to
+	// `?session=` opens a specific conversation: how a subagent card links to
 	// the conversation its task ran in.
 	const [searchParams] = useSearchParams();
 	const linkedSessionId = searchParams.get('session');
@@ -1010,7 +1021,7 @@ const BuildPage = () => {
 		if (linkedSessionId) openSession(linkedSessionId);
 	}, [linkedSessionId, openSession]);
 
-	const loadedSessionRef = useRef<string | null>(null);
+	const [loadedSessionId, setLoadedSessionId] = useState<string | null>(null);
 
 	const {
 		data: openedSession,
@@ -1024,8 +1035,37 @@ const BuildPage = () => {
 		conversationId ?? '',
 	);
 
+	// Approvals: actions the open chat's paused turn waits on (its subagents'
+	// included), and a plan waiting for review in Plan mode.
+	const { data: sessionActions } = useSessionAgentActions(
+		workspaceId,
+		currentAgentId ?? '',
+		conversationId ?? null,
+	);
+	const pendingActions = (sessionActions ?? []).filter((action) => action.status === 'pending');
+	const { data: sessionPlans } = useAgentPlans(
+		workspaceId,
+		currentAgentId ?? '',
+		conversationId ?? null,
+	);
+	// Plans come newest first; only the latest can still be open.
+	const proposedPlan = sessionPlans?.[0]?.status === 'proposed' ? sessionPlans[0] : null;
+	const approvePlanMutation = useApproveAgentPlan(
+		workspaceId,
+		currentAgentId ?? '',
+		conversationId ?? '',
+	);
+	const rejectPlanMutation = useRejectAgentPlan(
+		workspaceId,
+		currentAgentId ?? '',
+		conversationId ?? '',
+	);
+	// "Always allow" needs agent.manage: editors and up.
+	const { data: activeWorkspace } = useWorkspace(workspaceId);
+	const canManageAgents = ['owner', 'admin', 'editor'].includes(activeWorkspace?.role ?? '');
+
 	// A chat another conversation started as a subagent task. The parent is only
-	// linkable when it belongs to this agent (a "Me" clone) — the aside already
+	// linkable when it belongs to this agent (a "Me" clone): the aside already
 	// holds that list, so this reuses its cache.
 	const parentSessionId =
 		openedSession && String(openedSession.id) === String(conversationId)
@@ -1039,97 +1079,126 @@ const BuildPage = () => {
 		!!parentSessionId &&
 		!!agentSessions?.some((session) => String(session.id) === String(parentSessionId));
 
-	useEffect(() => {
-		if (!conversationId) {
-			if (loadedSessionRef.current === null) return;
-
-			loadedSessionRef.current = null;
+	if (!conversationId) {
+		if (loadedSessionId !== null) {
+			setLoadedSessionId(null);
 			setChatHistory([]);
-			return;
 		}
-
-		if (loadedSessionRef.current === conversationId) return;
-		if (!openedSession || String(openedSession.id) !== String(conversationId)) return;
-
-		loadedSessionRef.current = conversationId;
+	} else if (
+		loadedSessionId !== conversationId &&
+		openedSession &&
+		String(openedSession.id) === String(conversationId)
+	) {
+		setLoadedSessionId(conversationId);
 		setChatHistory(transcriptToMessages(openedSession.messages ?? []));
 		setIsPreviewMode(true);
-	}, [conversationId, openedSession]);
+	}
 
-	// An unsent message survives a chat switch, a tab change and a reload — it is
+	// An unsent message survives a chat switch, a tab change and a reload: it is
 	// parked per agent and per chat, so two chats never share one draft.
 	const draftKeyRef = useRef<string>('');
+	const chatDraftKey = draftKey(currentAgentId ?? null, conversationId ?? null);
+	const [chatAttachments, setChatAttachments] = useDraftFiles(chatDraftKey);
 	useEffect(() => {
-		const nextKey = draftKey(currentAgentId ?? null, conversationId ?? null);
-		if (nextKey === draftKeyRef.current) return;
-		draftKeyRef.current = nextKey;
-		setChatInput(readDraft(nextKey));
-	}, [currentAgentId, conversationId]);
+		if (chatDraftKey === draftKeyRef.current) return;
+		draftKeyRef.current = chatDraftKey;
+		setChatInput(readComposerDraft(chatDraftKey));
+	}, [chatDraftKey]);
 
 	/** Every write to the composer goes through here so the draft stays parked.
 	 *  Parking in an effect instead would race the restore above and blank it. */
 	const updateChatInput = (value: string) => {
 		setChatInput(value);
-		writeDraft(draftKeyRef.current, value);
+		writeComposerDraft(draftKeyRef.current, value);
 	};
 
+	/** Built-in actions in the composer's `/` menu, listed above the skills. Always
+	 *  all shown, so the list doesn't change shape; one that can't run yet says why. */
+	const hasMessages = chatHistory.length > 0;
+	const slashCommands: TSlashCommand[] = [
+		{
+			id: 'new-chat',
+			name: 'New chat',
+			description: 'Start a fresh conversation',
+			unavailable: isTyping
+				? 'Wait for the reply to finish'
+				: !hasMessages
+					? 'This chat is already empty'
+					: undefined,
+			run: () => {
+				newSession();
+				setLoadedSessionId(null);
+				setChatHistory([]);
+			},
+		},
+		{
+			id: 'regenerate',
+			name: 'Regenerate',
+			description: 'Write the last reply again',
+			unavailable: isTyping
+				? 'Wait for the reply to finish'
+				: chatHistory[chatHistory.length - 1]?.sender !== 'agent'
+					? 'No reply to redo yet'
+					: undefined,
+			run: () => void regenerateLastReply(),
+		},
+		{
+			id: 'copy-chat',
+			name: 'Copy chat',
+			description: 'Copy this conversation as text',
+			unavailable: hasMessages ? undefined : 'Nothing to copy yet',
+			run: () =>
+				void copyToClipboard(
+					chatHistory
+						.map(
+							(message) =>
+								`${message.sender === 'user' ? 'You' : agentName || 'Agent'}: ${message.text}`,
+						)
+						.join('\n\n'),
+					'Chat copied.',
+				),
+		},
+		{
+			id: 'settings',
+			name: 'Settings',
+			description: 'Instructions, model, tools and skills',
+			run: () => {
+				setActiveSidebarTab('agent');
+				setIsSettingsOpen(true);
+			},
+		},
+	];
+
+	const skillPicker = useSkillPicker({
+		skills: attachedSkills ?? [],
+		commands: slashCommands,
+		input: chatInput,
+		setInput: updateChatInput,
+	});
+
 	// A restored draft is set straight into state, so nothing has resized the box
-	// for it — a two-line draft would come back showing one line.
+	// for it: a two-line draft would come back showing one line.
 	useEffect(() => {
 		if (composerRef.current) autoSizeComposer(composerRef.current);
 		if (mobileComposerRef.current) autoSizeComposer(mobileComposerRef.current);
 	}, [chatInput]);
 
-	const selectChatAttachments = (files: FileList | null) => {
+	const [isAttachOpen, setIsAttachOpen] = useState(false);
+
+	const selectChatAttachments = (files: FileList | File[] | null) => {
 		if (!files) return;
-		const accepted: File[] = [];
-		for (const file of Array.from(files)) {
-			if (
-				!ATTACHMENT_EXTENSIONS.some((extension) =>
-					file.name.toLowerCase().endsWith(extension),
-				)
-			) {
-				notify.error(
-					`${file.name}: use an image (JPEG, PNG, GIF, WebP), a PDF, or a text, Markdown, HTML, CSV, JSON, XML, or YAML file.`,
-				);
-				continue;
-			}
-			if (file.size > MAX_ATTACHMENT_BYTES) {
-				notify.error(`${file.name}: maximum file size is 25 MB.`);
-				continue;
-			}
-			accepted.push(file);
-		}
-		const added = accepted.filter(
-			(file) =>
-				!chatAttachments.some(
-					(existing) =>
-						existing.name === file.name &&
-						existing.size === file.size &&
-						existing.lastModified === file.lastModified,
-				),
-		);
-		if (chatAttachments.length + added.length > MAX_ATTACHMENTS) {
-			notify.error(`You can attach up to ${MAX_ATTACHMENTS} files per message.`);
-		}
-		setChatAttachments([
-			...chatAttachments,
-			...added.slice(0, Math.max(MAX_ATTACHMENTS - chatAttachments.length, 0)),
-		]);
+		setChatAttachments(addChatAttachments(chatAttachments, files));
 		if (attachmentInputRef.current) attachmentInputRef.current.value = '';
 	};
 	const removeChatAttachment = (file: File) => {
 		setChatAttachments((current) => current.filter((item) => item !== file));
 	};
 
-	
-	const [skillEnabled, setSkillEnabled] = useState(true);
-
 	// Sidebar settings panel states
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-	const [activeSidebarTab, setActiveSidebarTab] = useState<
-				'agent' | 'chatDetails' | 'data'
-	>('agent');
+	const [activeSidebarTab, setActiveSidebarTab] = useState<'agent' | 'chatDetails' | 'data'>(
+		'agent',
+	);
 
 	const requestedDataSection = useAgentBuilderStore((state) => state.requestedDataSection);
 	useEffect(() => {
@@ -1141,11 +1210,16 @@ const BuildPage = () => {
 	const [instructionsChange, setInstructionsChange] = useState('');
 	const [agentModel, setAgentModel] = useState('');
 
-	useEffect(() => {
-		if (agentModel || modelOptions.length === 0) return;
-		setAgentModel((modelOptions.find((m) => m.isAvailable) ?? modelOptions[0]).id);
-	}, [agentModel, modelOptions]);
-	const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
+	// A new agent starts on the workspace's default model, else the first usable one.
+	if (!agentModel && catalogModels && catalogModels.length > 0) {
+		setAgentModel(
+			(
+				catalogModels.find((m) => m.is_default && m.is_available) ??
+				catalogModels.find((m) => m.is_available) ??
+				catalogModels[0]
+			).id,
+		);
+	}
 	const [allowSelfUpdates, setAllowSelfUpdates] = useState(false);
 	const [allowSkillEditing, setAllowSkillEditing] = useState(true);
 	const [allowSelfClone, setAllowSelfClone] = useState(true);
@@ -1209,7 +1283,7 @@ const BuildPage = () => {
 		const closeOnBack = () => {
 			if (drawerStateRef.current.tool) setIsAddAppOpen(false);
 			else if (drawerStateRef.current.settings) {
-				setPendingDeleteTriggerId(null);
+				setTriggerDrawer(null);
 				setIsSettingsOpen(false);
 			}
 		};
@@ -1231,7 +1305,7 @@ const BuildPage = () => {
 	const closeSettingsDrawer = () => {
 		if (window.history.state?.agentDrawer === 'settings') window.history.back();
 		else {
-			setPendingDeleteTriggerId(null);
+			setTriggerDrawer(null);
 			setIsSettingsOpen(false);
 		}
 	};
@@ -1249,8 +1323,9 @@ const BuildPage = () => {
 		setDarkModeStatus(isDarkTheme ? DARK_MODE.LIGHT : DARK_MODE.DARK);
 	};
 
-	useEffect(() => {
-		if (!existingAgent) return;
+	const [syncedAgent, setSyncedAgent] = useState<typeof existingAgent | null>(null);
+	if (existingAgent && syncedAgent !== existingAgent) {
+		setSyncedAgent(existingAgent);
 		setAgentName(existingAgent.name);
 		setAgentDescription(existingAgent.description ?? '');
 		setAgentInstructions(existingAgent.instructions ?? '');
@@ -1262,7 +1337,7 @@ const BuildPage = () => {
 		if (existingAgent.model_catalog_id) {
 			setAgentModel(existingAgent.model_catalog_id);
 		}
-	}, [existingAgent]);
+	}
 
 	// Returns the persisted agent's id so callers (chat, settings) can use it immediately.
 	const ensureAgentPersisted = async (overrides?: {
@@ -1321,20 +1396,21 @@ const BuildPage = () => {
 		setIsMoreDropdownOpen(false);
 		if (currentAgentId) {
 			await deleteAgentMutation.mutateAsync(currentAgentId);
+			notify.success(`"${agentName.trim() || 'Agent'}" moved to trash.`);
 		}
 		navigate(toWorkspacePath(pages.workspace.subPages!.agents.to));
 	};
 
-	// Skills/Triggers both operate on a real agent id — save a draft first if needed.
+	// Skills/Triggers both operate on a real agent id: save a draft first if needed.
 	const openSkillPanel = async () => {
 		await ensureAgentPersisted();
 		setSkillSearchQuery('');
 		setIsSkillPanelOpen(true);
 	};
 
-	const openTriggerPanel = async () => {
+	const openTriggerDrawer = async (target: TTriggerDrawerTarget = { mode: 'pick' }) => {
 		await ensureAgentPersisted();
-		setIsTriggerPanelOpen(true);
+		setTriggerDrawer(target);
 	};
 
 	const attachedSkillIds = new Set((attachedSkills ?? []).map((s) => s.id));
@@ -1352,66 +1428,6 @@ const BuildPage = () => {
 		detachSkillMutation.mutate(skillId);
 	};
 
-	const handleCreateTrigger = async () => {
-		if (!currentAgentId) return;
-		if (newTriggerType === 'schedule' && !newTriggerCron.trim()) {
-			notify.error('Enter a schedule before creating the trigger.');
-			return;
-		}
-		if (newTriggerType === 'event' && !newTriggerEventName.trim()) {
-			notify.error('Enter an event name before creating the trigger.');
-			return;
-		}
-		const config: Record<string, unknown> =
-			newTriggerType === 'schedule'
-				? { cron: newTriggerCron.trim() }
-				: newTriggerType === 'event'
-					? { event: newTriggerEventName.trim() }
-					: {};
-		if (newTriggerInitialMessage.trim()) config.initial_message = newTriggerInitialMessage.trim();
-
-		try {
-			await createTriggerMutation.mutateAsync({
-				type: newTriggerType,
-				config,
-				is_active: true,
-			});
-			setNewTriggerEventName('');
-			setNewTriggerInitialMessage('');
-			setIsTriggerPanelOpen(false);
-			notify.success('Trigger created.');
-		} catch {
-			// The mutation cache shows the API error; keep the form for correction.
-		}
-	};
-
-	const handleToggleTrigger = async (triggerId: string, isActive: boolean) => {
-		try {
-			await updateTriggerMutation.mutateAsync({ triggerId, body: { is_active: !isActive } });
-			notify.success(isActive ? 'Trigger disabled.' : 'Trigger enabled.');
-		} catch {
-			// The mutation cache reports the API error.
-		}
-	};
-
-	const handleDeleteTrigger = (triggerId: string) => {
-		deleteTriggerMutation.mutate(triggerId, {
-			onSuccess: () => {
-				setPendingDeleteTriggerId(null);
-				notify.success('Trigger deleted.');
-			},
-		});
-	};
-
-	const handleFireTrigger = async (triggerId: string) => {
-		try {
-			await fireTriggerMutation.mutateAsync({ triggerId });
-			notify.success('Trigger started.');
-		} catch {
-			// The mutation cache reports the API error.
-		}
-	};
-
 	const copyToClipboard = async (value: string, successMessage: string) => {
 		try {
 			await navigator.clipboard.writeText(value);
@@ -1419,10 +1435,6 @@ const BuildPage = () => {
 		} catch {
 			notify.error('Could not copy. Please try again.');
 		}
-	};
-
-	const handleCopyWebhookUrl = (url: string) => {
-		void copyToClipboard(url, 'Webhook URL copied!');
 	};
 
 	const handleChatScroll = () => {
@@ -1501,7 +1513,7 @@ const BuildPage = () => {
 		}
 	};
 
-		// Drafts the agent's name, description, instructions and look from the
+	// Drafts the agent's name, description, instructions and look from the
 	// description with the selected model, creates it as a new agent, and
 	// opens its chat.
 	const handleGenerateAgent = async () => {
@@ -1521,7 +1533,7 @@ const BuildPage = () => {
 				prompt: description,
 				model_catalog_id: agentModel,
 			});
-						const created = await createAgentMutation.mutateAsync({
+			const created = await createAgentMutation.mutateAsync({
 				...draft,
 				model_catalog_id: agentModel,
 				allow_self_updates: false,
@@ -1550,7 +1562,10 @@ const BuildPage = () => {
 	const handleTemplateClick = (template: TAgentTemplate) => {
 		if (useTemplateMutation.isPending) return;
 		useTemplateMutation.mutate(
-			{ id: template.id, body: { name: template.name, model_catalog_id: agentModel || null } },
+			{
+				id: template.id,
+				body: { name: template.name, model_catalog_id: agentModel || null },
+			},
 			{
 				onSuccess: (agent) => {
 					setCurrentAgentId(agent.id);
@@ -1566,10 +1581,10 @@ const BuildPage = () => {
 	/**
 	 * Files an `export_artifact` call produced during a turn, as download chips.
 	 *
-	 * The SSE `tool-result` event carries only the tool's id and name, not its
-	 * return value, so the artifact ids are not on the wire. They are read back
+	 * The `turn.tool` event carries at most a short, cut-off `output`, not the
+	 * tool's return value, so the artifact ids are not on the wire. They are read back
 	 * from `artifacts.index` instead, which returns one row per filename group
-	 * at its newest version — see ArtifactController::index's latestPerGroup().
+	 * at its newest version: see ArtifactController::index's latestPerGroup().
 	 */
 	const appendExportedArtifacts = async (agentId: string, filenames: string[]) => {
 		try {
@@ -1592,41 +1607,215 @@ const BuildPage = () => {
 
 			if (items.length > 0) setTimeline((prev) => [...prev, ...items]);
 		} catch {
-			// A failed lookup costs the download chip, not the reply — the file is
+			// A failed lookup costs the download chip, not the reply: the file is
 			// stored either way and still shows on the workspace's Artifacts page.
 		}
 	};
 
-	// Sends a message to the real agent — persists the agent first if this is
+	/**
+	 * Plays one turn's events (from Reverb) into the live timeline, then does
+	 * the turn's follow-up (exported files, refreshed panels). Shared by
+	 * sending a message and by deciding on a paused turn's actions, which
+	 * answers with the resumed turn's events. `paused` is set when the turn
+	 * stopped to wait for approval rather than finishing.
+	 */
+	const consumeTurnEvents = async (
+		events: AsyncIterable<TAgentSessionStreamEvent>,
+		agentIdForRun: string,
+		sessionId: string,
+	): Promise<{ replyText: string; paused: boolean }> => {
+		// Filenames exported during this turn, resolved to artifacts once it ends.
+		const exportedFilenames: string[] = [];
+		let updatedInstructions = false;
+		let changedSkills = false;
+		let rememberedFacts = false;
+		let replyText = '';
+		let sawComplete = false;
+		let paused = false;
+
+		// The reply arrives over Reverb as `turn.*` events on the session's
+		// channel; `openAgentTurnStream` has already turned them into these.
+		for await (const event of events) {
+			if (event.event === 'delta') {
+				setTimeline((prev) => {
+					const last = prev[prev.length - 1];
+					if (last && last.kind === 'text') {
+						return [...prev.slice(0, -1), { ...last, text: last.text + event.delta }];
+					}
+					return [
+						...prev,
+						{ kind: 'text', id: `text-${prev.length}`, text: event.delta },
+					];
+				});
+				continue;
+			}
+
+			if (event.event === 'tool-call') {
+				const args = (event.arguments ?? {}) as Record<string, unknown>;
+				if (event.name === EXPORT_ARTIFACT_TOOL && typeof args.filename === 'string') {
+					exportedFilenames.push(exportedFilename(args.filename, args.format));
+				}
+				setTimeline((prev) => [
+					...prev,
+					{
+						kind: 'tool',
+						id: event.id,
+						toolName: event.name,
+						arguments: args,
+						status: 'running',
+					},
+				]);
+				continue;
+			}
+
+			if (event.event === 'tool-result') {
+				if (event.successful) {
+					if (event.name === UPDATE_INSTRUCTIONS_TOOL) updatedInstructions = true;
+					if (event.name === CREATE_SKILL_TOOL || event.name === UPDATE_SKILL_TOOL)
+						changedSkills = true;
+					if (event.name === REMEMBER_TOOL || event.name === FORGET_TOOL)
+						rememberedFacts = true;
+				}
+				if (event.name === INVOKE_AGENT_TOOL) {
+					void queryClient.invalidateQueries({
+						queryKey: agentSubagentKeys.tasks(workspaceId, agentIdForRun, sessionId),
+					});
+				}
+				setTimeline((prev) =>
+					prev.map((item) =>
+						item.kind === 'tool' && item.id === event.id
+							? {
+									...item,
+									status: event.successful ? 'done' : 'error',
+									output: event.output,
+									taskId: event.result?.task_id,
+								}
+							: item,
+					),
+				);
+				continue;
+			}
+
+			if (event.event === 'approval-required') {
+				// The turn is pausing on these calls: show them as waiting,
+				// and fetch the cards to decide them.
+				const waitingIds = new Set(event.actions.map((action) => action.tool_call_id));
+				setTimeline((prev) =>
+					prev.map((item) =>
+						item.kind === 'tool' && waitingIds.has(item.id)
+							? { ...item, status: 'waiting' }
+							: item,
+					),
+				);
+				void queryClient.invalidateQueries({
+					queryKey: agentActionKeys.forSession(workspaceId, agentIdForRun, sessionId),
+				});
+				continue;
+			}
+
+			if (event.event === 'complete') {
+				sawComplete = true;
+				paused = event.status === 'awaiting_approval';
+				// The persisted reply. Same string the deltas spell out, and the
+				// fallback when a provider streamed none.
+				replyText = event.text ?? replyText;
+				continue;
+			}
+
+			if (event.event === 'error') {
+				throw new Error(event.message || 'The agent failed to respond.');
+			}
+		}
+
+		if (!sawComplete) {
+			throw new Error('The connection dropped before the agent finished replying.');
+		}
+
+		if (exportedFilenames.length > 0) {
+			await appendExportedArtifacts(agentIdForRun, exportedFilenames);
+		}
+
+		// The agent rewrote its own instructions; refetching the agent
+		// re-syncs the settings form, and the save made a new version.
+		if (updatedInstructions) {
+			void queryClient.invalidateQueries({
+				queryKey: agentKeys.detail(workspaceId, agentIdForRun),
+			});
+			void queryClient.invalidateQueries({
+				queryKey: agentVersionKeys.list(workspaceId, agentIdForRun),
+			});
+		}
+
+		// The agent saved or edited a skill; refresh the Skills card and library.
+		if (changedSkills) {
+			void queryClient.invalidateQueries({
+				queryKey: agentSkillAttachmentKeys.list(workspaceId, agentIdForRun),
+			});
+			void queryClient.invalidateQueries({ queryKey: agentSkillKeys.all(workspaceId) });
+		}
+
+		// The agent saved or forgot a fact; refresh the Memory panel.
+		if (rememberedFacts) {
+			void queryClient.invalidateQueries({
+				queryKey: agentMemoryKeys.list(workspaceId, agentIdForRun),
+			});
+		}
+
+		return { replyText, paused };
+	};
+
+	// Sends a message to the real agent: persists the agent first if this is
 	// still an unsaved draft, then starts or continues its conversation.
-	// `resendFiles` replaces the composer's attachments — Regenerate passes the
+	// `resendFiles` replaces the composer's attachments: Regenerate passes the
 	// ones the original message carried.
-	const sendChatMessage = async (messageText: string, resendFiles?: File[]) => {
+	const sendChatMessage = async (
+		messageText: string,
+		resendFiles?: File[],
+		skill?: TChosenSkill | null,
+		replacing?: string,
+	) => {
 		const trimmed = messageText.trim();
 		const files = resendFiles ?? [...chatAttachments];
-		if ((!trimmed && files.length === 0) || !workspaceId || streamAbortRef.current) return;
-		// The backend requires message text, even when only files are sent.
-		const prompt = trimmed || 'Please review the attached files.';
+		// Starting a chat gives it an id, which moves the draft key mid-send.
+		const sentFromKey = chatDraftKey;
+		if ((!trimmed && files.length === 0 && !skill) || !workspaceId || streamAbortRef.current)
+			return;
+		const edited = editedMessageRef.current;
+		editedMessageRef.current = null;
+		const replacesMessageId =
+			replacing ?? (edited && edited.sessionId === conversationId ? edited.messageId : null);
+		// The backend requires message text, even when only files or a skill are sent.
+		setIsAttachOpen(false);
+		const prompt =
+			trimmed ||
+			(files.length > 0
+				? 'Please review the attached files.'
+				: `Use the ${skill?.name} skill.`);
 		followLatestRef.current = true;
 		setShowLatestButton(false);
 
 		const userMsg: TMessage = {
-			id: 'user-' + Date.now(),
+			id: messageId('user'),
 			sender: 'user',
 			text: prompt,
 			retryText: trimmed,
 			attachments:
 				files.length > 0
-					? files.map((file) => ({ filename: file.name, size: file.size }))
+					? files.map((file) => ({
+							filename: file.name,
+							size: file.size,
+							mimeType: file.type,
+						}))
 					: undefined,
 			files: files.length > 0 ? files : undefined,
+			skill: skill ?? undefined,
 			timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
 		};
 
 		setIsTyping(true);
 		setTimeline(() => []);
 
-		// One controller per turn — Stop aborts this one, and `finally` clears it
+		// One controller per turn: Stop aborts this one, and `finally` clears it
 		// so a later Stop can never abort a turn that already ended.
 		const controller = new AbortController();
 		streamAbortRef.current = controller;
@@ -1639,7 +1828,7 @@ const BuildPage = () => {
 
 			// Conversations are "sessions" in this backend. The old API created one
 			// implicitly with the first message and handed its id back on the reply;
-			// here it is an explicit resource — created once, then reused for every
+			// here it is an explicit resource: created once, then reused for every
 			// later turn so the agent keeps the thread's history.
 			let sessionId = conversationId;
 			if (!sessionId) {
@@ -1653,138 +1842,43 @@ const BuildPage = () => {
 					queryKey: agentSessionKeys.list(workspaceId, agentIdForRun),
 					exact: true,
 				});
-				// This transcript is already on screen — keep the loader off it.
-				loadedSessionRef.current = sessionId;
+				// This transcript is already on screen: keep the loader off it.
+				setLoadedSessionId(sessionId);
 				openSession(sessionId);
 			}
 			setChatHistory((prev) => [...prev, userMsg]);
 			turnStarted = true;
 
-			// Filenames exported during this turn, resolved to artifacts once it ends.
-			const exportedFilenames: string[] = [];
-			let updatedInstructions = false;
-			let changedSkills = false;
-			let rememberedFacts = false;
-			let replyText = '';
-			let sawComplete = false;
-
-			// The reply arrives as server-sent events on `.../messages/stream` — the
-			// old backend broadcast it over Echo instead, which this one never does.
-			for await (const event of AgentSessionService.streamMessage(
-				workspaceId,
+			const { replyText, paused } = await consumeTurnEvents(
+				AgentSessionService.streamMessage(
+					echo as unknown as IEchoLike | null,
+					workspaceId,
+					agentIdForRun,
+					sessionId,
+					{
+						message: prompt,
+						attachments: files,
+						skill_id: skill?.id,
+						replaces_message_id: replacesMessageId,
+					},
+					controller.signal,
+					({ user_message_id }) =>
+						setChatHistory((prev) =>
+							prev.map((message) =>
+								message.id === userMsg.id
+									? { ...message, serverId: user_message_id }
+									: message,
+							),
+						),
+				),
 				agentIdForRun,
 				sessionId,
-				{ message: prompt, attachments: files },
-				controller.signal,
-			)) {
-				if (event.event === 'delta') {
-					setTimeline((prev) => {
-						const last = prev[prev.length - 1];
-						if (last && last.kind === 'text') {
-							return [
-								...prev.slice(0, -1),
-								{ ...last, text: last.text + event.delta },
-							];
-						}
-						return [
-							...prev,
-							{ kind: 'text', id: `text-${prev.length}`, text: event.delta },
-						];
-					});
-					continue;
-				}
-
-				if (event.event === 'tool-call') {
-					const args = (event.arguments ?? {}) as Record<string, unknown>;
-					if (event.name === EXPORT_ARTIFACT_TOOL && typeof args.filename === 'string') {
-						exportedFilenames.push(exportedFilename(args.filename, args.format));
-					}
-					setTimeline((prev) => [
-						...prev,
-						{
-							kind: 'tool',
-							id: event.id,
-							toolName: event.name,
-							arguments: args,
-							status: 'running',
-						},
-					]);
-					continue;
-				}
-
-				if (event.event === 'tool-result') {
-					if (event.successful) {
-						if (event.name === UPDATE_INSTRUCTIONS_TOOL) updatedInstructions = true;
-						if (event.name === CREATE_SKILL_TOOL || event.name === UPDATE_SKILL_TOOL)
-							changedSkills = true;
-						if (event.name === REMEMBER_TOOL) rememberedFacts = true;
-					}
-					if (event.name === INVOKE_AGENT_TOOL) {
-						void queryClient.invalidateQueries({
-							queryKey: agentSubagentKeys.tasks(workspaceId, agentIdForRun, sessionId),
-						});
-					}
-					setTimeline((prev) =>
-						prev.map((item) =>
-							item.kind === 'tool' && item.id === event.id
-								? {
-										...item,
-										status: event.successful ? 'done' : 'error',
-										output: event.output,
-										taskId: event.result?.task_id,
-									}
-								: item,
-						),
-					);
-					continue;
-				}
-
-				if (event.event === 'complete') {
-					sawComplete = true;
-					// The persisted reply. Same string the deltas spell out, and the
-					// fallback when a provider streamed none.
-					replyText = event.text ?? replyText;
-					continue;
-				}
-
-				if (event.event === 'error') {
-					throw new Error(event.message || 'The agent failed to respond.');
-				}
-			}
-
-			if (!sawComplete) {
-				throw new Error('The connection dropped before the agent finished replying.');
-			}
-
-			if (exportedFilenames.length > 0) {
-				await appendExportedArtifacts(agentIdForRun, exportedFilenames);
-			}
-
-			// The agent rewrote its own instructions; refetching the agent
-			// re-syncs the settings form, and the save made a new version.
-			if (updatedInstructions) {
-				void queryClient.invalidateQueries({
-					queryKey: agentKeys.detail(workspaceId, agentIdForRun),
-				});
-				void queryClient.invalidateQueries({
-					queryKey: agentVersionKeys.list(workspaceId, agentIdForRun),
-				});
-			}
-
-			// The agent saved or edited a skill; refresh the Skills card and library.
-			if (changedSkills) {
-				void queryClient.invalidateQueries({
-					queryKey: agentSkillAttachmentKeys.list(workspaceId, agentIdForRun),
-				});
-				void queryClient.invalidateQueries({ queryKey: agentSkillKeys.all(workspaceId) });
-			}
-
-			// The agent saved a fact; refresh the Memory panel.
-			if (rememberedFacts) {
-				void queryClient.invalidateQueries({
-					queryKey: agentMemoryKeys.list(workspaceId, agentIdForRun),
-				});
-			}
+			);
+			// Calls the gate simulated, blocked or let through were recorded
+			// during the turn: fetch them so each step shows how it went.
+			void queryClient.invalidateQueries({
+				queryKey: agentActionKeys.forSession(workspaceId, agentIdForRun, sessionId),
+			});
 
 			const finishedTimeline = streamTimelineRef.current;
 			const streamedText = finishedTimeline
@@ -1793,9 +1887,9 @@ const BuildPage = () => {
 				.join('');
 
 			const agentMsg: TMessage = {
-				id: 'agent-' + Date.now(),
+				id: messageId('agent'),
 				sender: 'agent',
-				text: replyText || streamedText,
+				text: replyText || streamedText || (paused ? AWAITING_APPROVAL_TEXT : ''),
 				timestamp: new Date().toLocaleTimeString([], {
 					hour: '2-digit',
 					minute: '2-digit',
@@ -1805,22 +1899,26 @@ const BuildPage = () => {
 			};
 			setChatHistory((prev) => [...prev, agentMsg]);
 			// A regenerate never used the composer's files, so leave them staged.
-			if (!resendFiles) setChatAttachments([]);
+			if (!resendFiles) {
+				setChatAttachments([]);
+				void removeDraftFiles(sentFromKey);
+			}
 		} catch (err) {
 			if (!turnStarted) {
+				editedMessageRef.current = edited;
 				setChatInput((current) => {
 					const restored =
 						current.trim() && current.trim() !== trimmed
 							? `${trimmed}\n\n${current}`
 							: trimmed;
-					writeDraft(draftKeyRef.current, restored);
+					writeComposerDraft(draftKeyRef.current, restored);
 					return restored;
 				});
 				if (!controller.signal.aborted)
 					notify.error(err instanceof Error ? err.message : 'Failed to start the chat.');
 				return;
 			}
-			// Stop is not a failure. Keep whatever the agent had already streamed —
+			// Stop is not a failure. Keep whatever the agent had already streamed:
 			// throwing it away is the one thing a Stop button must not do.
 			if (controller.signal.aborted) {
 				const partial = streamTimelineRef.current;
@@ -1831,7 +1929,7 @@ const BuildPage = () => {
 				setChatHistory((prev) => [
 					...prev,
 					{
-						id: 'agent-stopped-' + Date.now(),
+						id: messageId('agent-stopped'),
 						sender: 'agent',
 						text: partialText || '_Stopped before the agent replied._',
 						timestamp: new Date().toLocaleTimeString([], {
@@ -1844,7 +1942,7 @@ const BuildPage = () => {
 					},
 				]);
 			} else {
-				// The steps that ran before the failure still happened — keep them.
+				// The steps that ran before the failure still happened: keep them.
 				const partial = streamTimelineRef.current.map((item) =>
 					item.kind === 'tool' && item.status === 'running'
 						? { ...item, status: 'error' as const }
@@ -1853,7 +1951,7 @@ const BuildPage = () => {
 				setChatHistory((prev) => [
 					...prev,
 					{
-						id: 'agent-error-' + Date.now(),
+						id: messageId('agent-error'),
 						sender: 'agent',
 						text: "Sorry, I couldn't process that - please try again.",
 						timeline: partial.length > 0 ? partial : undefined,
@@ -1880,8 +1978,122 @@ const BuildPage = () => {
 		streamAbortRef.current?.abort();
 	};
 
-	/** Re-runs the last user message. The backend keeps the abandoned turn in the
-	 *  session's history — this appends a fresh one rather than replacing it. */
+	/**
+	 * Rebuilds the transcript from the server. A turn resumed after approvals
+	 * is written onto the reply it paused on, so the settled conversation is
+	 * the backend's, not what this tab pieced together while it streamed.
+	 */
+	const reloadTranscript = async () => {
+		const { data } = await refetchSession();
+		if (data && String(data.id) === String(conversationId)) {
+			setChatHistory(transcriptToMessages(data.messages ?? []));
+		}
+	};
+
+	/**
+	 * Records decisions on the paused turn's actions. When that leaves the turn
+	 * fully decided, the backend carries it on from its queue: streamed here
+	 * over Reverb like any reply; otherwise only the decisions are recorded and
+	 * the rest of the cards wait.
+	 */
+	const decideActions = async (decisions: TAgentActionDecision[]) => {
+		const agentIdForRun = currentAgentId;
+		const sessionId = conversationId;
+		if (!workspaceId || !agentIdForRun || !sessionId || streamAbortRef.current) return;
+
+		const controller = new AbortController();
+		streamAbortRef.current = controller;
+		setIsSending(true);
+		setIsTyping(true);
+		setTimeline(() => []);
+		followLatestRef.current = true;
+
+		try {
+			const result = await AgentActionService.decideInChat(
+				echo as unknown as IEchoLike | null,
+				workspaceId,
+				agentIdForRun,
+				sessionId,
+				{ decisions },
+				controller.signal,
+			);
+
+			if (result.resumed) {
+				await consumeTurnEvents(result.events, agentIdForRun, sessionId);
+			}
+		} catch (err) {
+			if (!controller.signal.aborted) {
+				notify.error(err instanceof Error ? err.message : 'Could not record the decision.');
+			}
+		} finally {
+			streamAbortRef.current = null;
+			setIsSending(false);
+			setIsTyping(false);
+			setTimeline(() => []);
+			void queryClient.invalidateQueries({
+				queryKey: agentActionKeys.forSession(workspaceId, agentIdForRun, sessionId),
+			});
+			void queryClient.invalidateQueries({
+				queryKey: agentSessionKeys.list(workspaceId, agentIdForRun),
+			});
+			await reloadTranscript();
+		}
+	};
+
+	/** Approves the proposed plan, then tells the agent to carry it out, as a
+	 *  normal message, so the chat streams the work instead of it happening
+	 *  out of sight on the queue. */
+	const approvePlan = async (skipStepIds: string[], note: string | null) => {
+		if (!proposedPlan) return;
+		const plan = await approvePlanMutation.mutateAsync({
+			planId: proposedPlan.id,
+			body: { skip_step_ids: skipStepIds, note },
+		});
+		if (plan.status === 'approved') {
+			void sendChatMessage(
+				note
+					? `Your plan "${plan.title}" is approved. Carry out its steps now. ${note}`
+					: `Your plan "${plan.title}" is approved. Carry out its steps now.`,
+			);
+		}
+	};
+
+	/** Sends the plan back; the note tells the agent what to change. */
+	const rejectPlan = async (note: string | null) => {
+		if (!proposedPlan) return;
+		await rejectPlanMutation.mutateAsync({ planId: proposedPlan.id, body: { note } });
+		void sendChatMessage(
+			note ? `I rejected the plan. ${note}` : 'I rejected the plan. Propose a different one.',
+		);
+	};
+
+	// Actions decided elsewhere (the inbox, an email link, Slack, another tab)
+	// resume the turn on the backend's queue. Follow along: refresh the cards,
+	// and the transcript once the resumed turn has written to it.
+	const onActionsChanged = useEffectEvent(() => {
+		if (!currentAgentId || !conversationId) return;
+		void queryClient.invalidateQueries({
+			queryKey: agentActionKeys.forSession(workspaceId, currentAgentId, conversationId),
+		});
+		void queryClient.invalidateQueries({
+			queryKey: agentPlanKeys.list(workspaceId, currentAgentId, conversationId),
+		});
+		// A turn streaming in this tab reloads itself when it ends.
+		if (!streamAbortRef.current) void reloadTranscript();
+	});
+	useEffect(() => {
+		if (!echo || !workspaceId || !conversationId) return;
+
+		return subscribeToAgentActions(
+			echo as unknown as IEchoLike,
+			workspaceId,
+			conversationId,
+			onActionsChanged,
+		);
+	}, [echo, workspaceId, conversationId]);
+
+	/** Re-runs the last user message, replacing it and the reply on the backend
+	 *  too, so the model never sees the abandoned turn. */
 	const regenerateLastReply = async () => {
 		if (isTyping || regeneratingRef.current) return;
 		const lastUser = [...chatHistory].reverse().find((message) => message.sender === 'user');
@@ -1898,11 +2110,17 @@ const BuildPage = () => {
 					lastUser.attachments
 						.filter((attachment) => attachment.id)
 						.map((attachment) =>
-							ArtifactService.fetchFile(workspaceId, String(attachment.id), attachment.filename),
+							ArtifactService.fetchFile(
+								workspaceId,
+								String(attachment.id),
+								attachment.filename,
+							),
 						),
 				);
 			} catch {
-				notify.error('Could not load the original attachments, so the reply was not regenerated.');
+				notify.error(
+					'Could not load the original attachments, so the reply was not regenerated.',
+				);
 				return;
 			} finally {
 				regeneratingRef.current = false;
@@ -1914,17 +2132,30 @@ const BuildPage = () => {
 			const lastUserIdx = prev.map((m) => m.id).lastIndexOf(lastUser.id);
 			return lastUserIdx === -1 ? prev : prev.slice(0, lastUserIdx);
 		});
-		void sendChatMessage(lastUser.retryText ?? lastUser.text, files ?? []);
+		void sendChatMessage(
+			lastUser.retryText ?? lastUser.text,
+			files ?? [],
+			lastUser.skill,
+			lastUser.serverId,
+		);
 	};
 
 	/** Puts a sent message back in the composer and rewinds the transcript to it. */
 	const editUserMessage = (message: TMessage) => {
 		if (isTyping) return;
+		editedMessageRef.current =
+			message.serverId && conversationId
+				? { sessionId: conversationId, messageId: message.serverId }
+				: null;
 		setChatHistory((prev) => {
 			const idx = prev.map((m) => m.id).lastIndexOf(message.id);
 			return idx === -1 ? prev : prev.slice(0, idx);
 		});
-		updateChatInput(message.text);
+		updateChatInput(
+			message.skill
+				? `/${message.skill.name} ${message.retryText ?? message.text}`
+				: message.text,
+		);
 		// The composer only exists on the desktop layout; mobile falls back to state.
 		requestAnimationFrame(() => composerRef.current?.focus());
 	};
@@ -1932,14 +2163,26 @@ const BuildPage = () => {
 	const copyMessage = (text: string) => {
 		void copyToClipboard(text, 'Message copied.');
 	};
-	const useSuggestedPrompt = (prompt: string) => {
+
+	const [evalCaseDraft, setEvalCaseDraft] = useState<TEvalCaseDraft | null>(null);
+
+	/** The case input is the user message this reply answered. */
+	const saveReplyAsEvalCase = (replyIndex: number) => {
+		const asked = chatHistory
+			.slice(0, replyIndex)
+			.reverse()
+			.find((message) => message.sender === 'user');
+		if (!asked) return;
+		setEvalCaseDraft({ input: asked.text, reply: chatHistory[replyIndex].text });
+	};
+	const applySuggestedPrompt = (prompt: string) => {
 		updateChatInput(prompt);
 		requestAnimationFrame(() => mobileComposerRef.current?.focus());
 	};
 	const openGetStartedTrigger = () => {
 		setActiveSidebarTab('agent');
 		setIsSettingsOpen(true);
-		void openTriggerPanel().catch(() => {});
+		void openTriggerDrawer().catch(() => {});
 	};
 	const openGetStartedTool = () => {
 		void openToolDrawer().catch(() => {});
@@ -1952,7 +2195,7 @@ const BuildPage = () => {
 	};
 
 	// Add selected app to active connected apps
-	/** Tools need a saved agent to hang off — same rule as skills and triggers. */
+	/** Tools need a saved agent to hang off: same rule as skills and triggers. */
 	const openToolDrawer = async () => {
 		await ensureAgentPersisted();
 		setAppSearchQuery('');
@@ -1984,12 +2227,13 @@ const BuildPage = () => {
 	};
 
 	const templateTabs = useMemo(
-		() => [
-			'All',
-			...Array.from(
-				new Set(agentTemplates.map((template) => template.category).filter(Boolean)),
-			).sort(),
-		] as string[],
+		() =>
+			[
+				'All',
+				...Array.from(
+					new Set(agentTemplates.map((template) => template.category).filter(Boolean)),
+				).sort(),
+			] as string[],
 		[agentTemplates],
 	);
 	const filteredTemplates =
@@ -2001,12 +2245,14 @@ const BuildPage = () => {
 	const attachedNodeTypes = new Set((toolBindings ?? []).map((binding) => binding.node_type));
 	const attachedWorkflowIds = new Set((workflowTools ?? []).map((w) => String(w.id)));
 	const toolQuery = appSearchQuery.trim().toLowerCase();
-	const isToolListPending = toolTab === 'nodes'
-		? isNodeCatalogPending || isToolBindingsPending
-		: isWorkflowsPending || isWorkflowToolsPending;
-	const isToolListError = toolTab === 'nodes'
-		? isNodeCatalogError || isToolBindingsError
-		: isWorkflowsError || isWorkflowToolsError;
+	const isToolListPending =
+		toolTab === 'nodes'
+			? isNodeCatalogPending || isToolBindingsPending
+			: isWorkflowsPending || isWorkflowToolsPending;
+	const isToolListError =
+		toolTab === 'nodes'
+			? isNodeCatalogError || isToolBindingsError
+			: isWorkflowsError || isWorkflowToolsError;
 	const retryToolList = () => {
 		if (toolTab === 'nodes') {
 			void refetchNodeCatalog();
@@ -2039,7 +2285,7 @@ const BuildPage = () => {
 
 	/**
 	 * Mirrors the backend's `ResolvesConnectorCredential`: a credential pinned in the
-	 * binding wins, else the caller's personal default, else the team default — where
+	 * binding wins, else the caller's personal default, else the team default, where
 	 * a default is the one marked so, or the only one in that scope.
 	 */
 	const hasUsableCredential = (binding: TAgentToolBinding, connectorKey: string) => {
@@ -2055,7 +2301,8 @@ const BuildPage = () => {
 			preferredOf(
 				forConnector.filter(
 					(credential) =>
-						credential.scope === 'personal' && credential.created_by === currentUser?.id,
+						credential.scope === 'personal' &&
+						credential.created_by === currentUser?.id,
 				),
 			) ?? preferredOf(forConnector.filter((credential) => credential.scope === 'team'));
 
@@ -2070,12 +2317,12 @@ const BuildPage = () => {
 			: currentAgentId
 				? 'Ready'
 				: 'Draft';
-	const chatStatusColor = chatStatus === 'Ready' || chatStatus === 'Responding'
-		? 'text-emerald-600 dark:text-emerald-400'
-		: 'text-zinc-500 dark:text-zinc-400';
-	const chatStatusDot = chatStatus === 'Ready' || chatStatus === 'Responding'
-		? 'bg-emerald-500'
-		: 'bg-zinc-400';
+	const chatStatusColor =
+		chatStatus === 'Ready' || chatStatus === 'Responding'
+			? 'text-emerald-600 dark:text-emerald-400'
+			: 'text-zinc-500 dark:text-zinc-400';
+	const chatStatusDot =
+		chatStatus === 'Ready' || chatStatus === 'Responding' ? 'bg-emerald-500' : 'bg-zinc-400';
 
 	return (
 		<div
@@ -2085,7 +2332,7 @@ const BuildPage = () => {
 			<div className='bg-primary-400/8 dark:bg-primary-400/12 pointer-events-none absolute top-[-100px] left-1/4 -z-10 h-[380px] w-[380px] rounded-full blur-[120px]' />
 			<div className='pointer-events-none absolute right-1/4 bottom-1/4 -z-10 h-[450px] w-[450px] rounded-full bg-emerald-500/8 blur-[140px] dark:bg-emerald-600/12' />
 
-						{!currentAgentId && !isPreviewMode ? (
+			{!currentAgentId && !isPreviewMode ? (
 				<>
 					{/* Main Header / Top Bar */}
 					<MainAppBar
@@ -2143,12 +2390,12 @@ const BuildPage = () => {
 						</MainAppBarPillButton>
 					</MainAppBar>
 
-					<main className='min-h-0 flex-1 overflow-y-auto'>
+					<main className='no-scrollbar min-h-0 flex-1 overflow-y-auto'>
 						<motion.div
 							initial={{ y: 18, opacity: 0 }}
 							animate={{ y: 0, opacity: 1 }}
 							transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-							className='mx-auto flex min-h-full w-full max-w-[1120px] flex-col px-5 pt-10 pb-5 sm:px-8 sm:pt-12 lg:px-10 lg:pt-14'>
+							className='mx-auto flex min-h-full w-full max-w-[1120px] flex-col px-5 pt-10 sm:px-8 sm:pt-12 lg:px-10 lg:pt-14'>
 							{/* Hero Banner Section */}
 							<section className='border-primary-100/50 from-primary-400/5 via-primary-400/5 to-primary-400/5 dark:border-border-main dark:from-bg-card dark:to-bg-card relative z-10 overflow-hidden rounded-3xl border bg-linear-to-tr p-6 sm:p-8 lg:p-10'>
 								{/* Background glow overlay */}
@@ -2177,6 +2424,7 @@ const BuildPage = () => {
 								<div className='mt-8 max-w-2xl'>
 									<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 dark:border-border-main relative flex items-center rounded-full border border-zinc-200/80 bg-white p-1.5 shadow-sm transition-all focus-within:ring-4 dark:bg-zinc-950/40'>
 										<input
+											aria-label='Describe what your agent should do...'
 											ref={heroPromptRef}
 											type='text'
 											placeholder='Describe what your agent should do...'
@@ -2199,7 +2447,9 @@ const BuildPage = () => {
 											) : (
 												<Sparkles size={13} />
 											)}
-											{draftAgentMutation.isPending ? 'Generating…' : 'Generate agent'}
+											{draftAgentMutation.isPending
+												? 'Generating…'
+												: 'Generate agent'}
 										</button>
 									</div>
 								</div>
@@ -2266,7 +2516,8 @@ const BuildPage = () => {
 													template={template}
 													isCreating={
 														useTemplateMutation.isPending &&
-														useTemplateMutation.variables?.id === template.id
+														useTemplateMutation.variables?.id ===
+															template.id
 													}
 													onClick={() => handleTemplateClick(template)}
 												/>
@@ -2276,8 +2527,10 @@ const BuildPage = () => {
 								</div>
 							</section>
 
-							{/* Chat Console Cockpit */}
-							<section className='relative z-10 mt-12 lg:mt-14'>
+							{/* Chat Console Cockpit: pinned to the bottom while the templates
+							    scroll behind it, which the fade at its top softens. */}
+							<div className='pointer-events-none mt-auto' />
+							<section className='sticky bottom-0 z-20 mt-6 bg-linear-to-t from-zinc-50 from-75% to-transparent pt-6 pb-5 lg:mt-8 dark:from-zinc-950'>
 								{/* Prompt Suggestions */}
 								<div className='mb-4 flex flex-wrap items-center gap-3'>
 									<span className='text-xs font-semibold text-zinc-400 dark:text-zinc-500'>
@@ -2290,7 +2543,7 @@ const BuildPage = () => {
 												key={chip.label}
 												type='button'
 												onClick={() => handleChipClick(chip.text)}
-												className='dark:border-border-main dark:hover:border-border-main dark:hover:bg-bg-card inline-flex items-center gap-1.5 rounded-full border border-zinc-200/80 bg-white/70 px-4 py-1.5 text-[11px] font-black text-zinc-600 shadow-2xs backdrop-blur-xs transition-all hover:bg-zinc-50/50 hover:text-zinc-950 dark:hover:text-white dark:bg-zinc-950/40 dark:text-zinc-400'>
+												className='dark:border-border-main dark:hover:border-border-main dark:hover:bg-bg-card inline-flex items-center gap-1.5 rounded-full border border-zinc-200/80 bg-white/70 px-4 py-1.5 text-[11px] font-black text-zinc-600 shadow-2xs backdrop-blur-xs transition-all hover:bg-zinc-50/50 hover:text-zinc-950 dark:bg-zinc-950/40 dark:text-zinc-400 dark:hover:text-white'>
 												<ChipIcon size={12} className='text-primary-500' />
 												{chip.label}
 											</button>
@@ -2304,6 +2557,7 @@ const BuildPage = () => {
 										<Sparkles size={18} />
 									</div>
 									<input
+										aria-label='Or describe your agent here...'
 										ref={textareaRef}
 										type='text'
 										value={promptText}
@@ -2326,8 +2580,6 @@ const BuildPage = () => {
 									</button>
 								</div>
 							</section>
-
-							<div className='pointer-events-none mt-auto h-6' />
 						</motion.div>
 					</main>
 
@@ -2370,7 +2622,6 @@ const BuildPage = () => {
 							Configure
 						</button>
 					</nav>
-
 				</>
 			) : (
 				// Premium Chat Interface View (from user screenshot)
@@ -2380,17 +2631,21 @@ const BuildPage = () => {
 					<header className='border-zinc-150 flex min-h-14 shrink-0 items-center justify-between gap-2 border-b bg-white px-3 md:hidden dark:border-zinc-800 dark:bg-zinc-900'>
 						<button
 							aria-label='Back to agent builder'
-							onClick={() => (currentAgentId ? navigate(paths.agents(workspaceId)) : setIsPreviewMode(false))}
+							onClick={() =>
+								currentAgentId
+									? navigate(paths.agents(workspaceId))
+									: setIsPreviewMode(false)
+							}
 							type='button'
 							className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-zinc-500 active:bg-zinc-100 dark:text-zinc-400 dark:active:bg-zinc-800'>
 							<ChevronRight size={20} className='rotate-180' />
 						</button>
 						<div className='flex min-w-0 flex-1 items-center gap-2'>
 							<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white dark:border dark:border-white/10 dark:bg-zinc-900'>
-								<AgentIconComponent
-									size={17}
-									className={agentColorTextClass(agentIconColor)}
-								/>
+								{createElement(AgentIconComponent, {
+									size: 17,
+									className: agentColorTextClass(agentIconColor),
+								})}
 							</div>
 							<div className='min-w-0'>
 								<p className='truncate text-sm font-black text-zinc-900 dark:text-white'>
@@ -2438,18 +2693,21 @@ const BuildPage = () => {
 							{/* Back button */}
 							<button
 								aria-label='Close'
-								onClick={() => (currentAgentId ? navigate(paths.agents(workspaceId)) : setIsPreviewMode(false))}
+								onClick={() =>
+									currentAgentId
+										? navigate(paths.agents(workspaceId))
+										: setIsPreviewMode(false)
+								}
 								className='flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-400 dark:hover:bg-white/[0.07] dark:hover:text-white'>
 								<X size={16} />
 							</button>
 
 							{/* Agent Avatar */}
-							<div
-								className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white shadow-md dark:border dark:border-white/10 dark:bg-zinc-900`}>
-								<AgentIconComponent
-									size={20}
-									className={agentColorTextClass(agentIconColor)}
-								/>
+							<div className='relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white shadow-md dark:border dark:border-white/10 dark:bg-zinc-900'>
+								{createElement(AgentIconComponent, {
+									size: 20,
+									className: agentColorTextClass(agentIconColor),
+								})}
 							</div>
 
 							{/* Agent name & status */}
@@ -2491,8 +2749,6 @@ const BuildPage = () => {
 								<span>Share</span>
 							</MainAppBarPillButton>
 
-							
-
 							<div className='relative'>
 								<MainAppBarIconButton
 									title='More options'
@@ -2504,6 +2760,7 @@ const BuildPage = () => {
 										<>
 											{/* Click outside backdrop */}
 											<div
+												aria-hidden='true'
 												className='fixed inset-0 z-40'
 												onClick={() => setIsMoreDropdownOpen(false)}
 											/>
@@ -2519,10 +2776,10 @@ const BuildPage = () => {
 													disabled={isTyping}
 													onClick={() => {
 														setIsMoreDropdownOpen(false);
-														// Leaves the stored session intact — it stays in the
+														// Leaves the stored session intact: it stays in the
 														// aside's Recents; the next message opens a new one.
 														newSession();
-														loadedSessionRef.current = null;
+														setLoadedSessionId(null);
 														setChatHistory([]);
 														notify.success('Chat history cleared!');
 													}}
@@ -2550,15 +2807,9 @@ const BuildPage = () => {
 																),
 															],
 														};
-														const dataStr =
-															'data:text/json;charset=utf-8,' +
-															encodeURIComponent(
-																JSON.stringify(
-																	agentConfig,
-																	null,
-																	2,
-																),
-															);
+														const dataStr = `data:text/json;charset=utf-8,${encodeURIComponent(
+															JSON.stringify(agentConfig, null, 2),
+														)}`;
 														const downloadAnchor =
 															document.createElement('a');
 														downloadAnchor.setAttribute(
@@ -2581,41 +2832,54 @@ const BuildPage = () => {
 													Export Agent JSON
 												</button>
 
-																									<button
-														disabled={!currentAgentId || duplicateAgentMutation.isPending}
-														onClick={() => {
-															setIsMoreDropdownOpen(false);
-															if (!currentAgentId) return;
-															duplicateAgentMutation.mutate(currentAgentId, {
+												<button
+													disabled={
+														!currentAgentId ||
+														duplicateAgentMutation.isPending
+													}
+													onClick={() => {
+														setIsMoreDropdownOpen(false);
+														if (!currentAgentId) return;
+														duplicateAgentMutation.mutate(
+															currentAgentId,
+															{
 																onSuccess: (copy) => {
-																	notify.success(`"${copy.name}" created.`);
-																	navigate(paths.editAgent(workspaceId, copy.id));
+																	notify.success(
+																		`"${copy.name}" created.`,
+																	);
+																	navigate(
+																		paths.editAgent(
+																			workspaceId,
+																			copy.id,
+																		),
+																	);
 																},
-															});
-														}}
-														className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-white/[0.04]'>
-														<Copy size={13} />
-														Duplicate Agent
-													</button>
+															},
+														);
+													}}
+													className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-white/[0.04]'>
+													<Copy size={13} />
+													Duplicate Agent
+												</button>
 
-													<button
-														disabled={!currentAgentId}
-														onClick={() => {
-															setIsMoreDropdownOpen(false);
-															setIsSaveAsTemplateOpen(true);
-														}}
-														className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-white/[0.04]'>
-														<LayoutTemplate size={13} />
-														Save as Template
-													</button>
+												<button
+													disabled={!currentAgentId}
+													onClick={() => {
+														setIsMoreDropdownOpen(false);
+														setIsSaveAsTemplateOpen(true);
+													}}
+													className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-white/[0.04]'>
+													<LayoutTemplate size={13} />
+													Save as Template
+												</button>
 
-													<div className='my-1 border-t border-zinc-100 dark:border-white/5' />
+												<div className='my-1 border-t border-zinc-100 dark:border-white/5' />
 
-													<button
-														onClick={handleDeleteAgent}
+												<button
+													onClick={handleDeleteAgent}
 													className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/20'>
 													<Trash2 size={13} />
-													Delete Agent
+													Move to Trash
 												</button>
 											</motion.div>
 										</>
@@ -2623,7 +2887,7 @@ const BuildPage = () => {
 								</AnimatePresence>
 							</div>
 
-														<button
+							<button
 								onClick={() => {
 									setActiveSidebarTab('agent');
 									setIsSettingsOpen(true);
@@ -2640,543 +2904,644 @@ const BuildPage = () => {
 						<div
 							ref={chatScrollRef}
 							onScroll={handleChatScroll}
-							className='mx-auto h-full w-full max-w-4xl space-y-6 overflow-y-auto px-4 py-6 md:px-8'>
-							{parentSessionId && (
-								<div className='flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-[11px] font-semibold text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
-									<Bot size={13} className='shrink-0' />
-									<span className='min-w-0 flex-1'>
-										Subagent task — another conversation handed this chat its job, and
-										the final reply went back to it.
-									</span>
-									{parentSessionInAgent && (
-										<button
-											type='button'
-											onClick={() => openSession(String(parentSessionId))}
+							className='no-scrollbar h-full w-full overflow-y-auto'>
+							<div className='mx-auto w-full max-w-4xl space-y-6 px-4 py-6 md:px-8'>
+								{parentSessionId && (
+									<div className='flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-[11px] font-semibold text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
+										<Bot size={13} className='shrink-0' />
+										<span className='min-w-0 flex-1'>
+											Subagent task: another conversation handed this chat its
+											job, and the final reply went back to it.
+										</span>
+										{parentSessionInAgent && (
+											<button
+												type='button'
+												onClick={() => openSession(String(parentSessionId))}
+												disabled={isTyping}
+												className='text-primary-600 dark:text-primary-400 min-h-8 shrink-0 cursor-pointer rounded-lg px-2 font-bold hover:underline disabled:cursor-not-allowed disabled:opacity-50'>
+												Open parent chat
+											</button>
+										)}
+									</div>
+								)}
+								{existingAgent &&
+									openedSession &&
+									String(openedSession.id) === String(conversationId) && (
+										<ChatModeBar
+											ws={workspaceId}
+											agent={existingAgent}
+											session={openedSession}
 											disabled={isTyping}
-											className='text-primary-600 dark:text-primary-400 min-h-8 shrink-0 cursor-pointer rounded-lg px-2 font-bold hover:underline disabled:cursor-not-allowed disabled:opacity-50'>
-											Open parent chat
-										</button>
-									)}
-								</div>
-							)}
-							{conversationId &&
-							loadedSessionRef.current !== conversationId &&
-							isSessionError ? (
-								<div
-									role='alert'
-									className='mx-auto max-w-sm rounded-xl border border-rose-200 p-4 text-center text-sm text-zinc-700 dark:border-rose-900 dark:text-zinc-200'>
-									<p>Could not load this chat.</p>
-									<button
-										type='button'
-										onClick={() => void refetchSession()}
-										className='bg-primary-400 text-primary-950 mt-3 min-h-10 rounded-lg px-4 text-xs font-bold'>
-										Retry
-									</button>
-								</div>
-							) : conversationId &&
-							  loadedSessionRef.current !== conversationId &&
-							  isSessionPending ? (
-								<div
-									role='status'
-									className='flex items-center justify-center gap-2 py-12 text-sm text-zinc-500'>
-									<Loader2 size={16} className='animate-spin' /> Loading chat…
-								</div>
-							) : isMobile &&
-							  chatHistory.filter((m) => m.sender === 'user').length === 0 ? (
-								<div className='flex flex-col items-center justify-center px-2 pt-8 pb-4 select-none'>
-									{/* Centered Fire/Flame Logo */}
-									<div className='mb-6 flex items-center justify-center'>
-										<img
-											src={LogoFyr}
-											alt='Fyr Logo'
-											className='h-[88px] w-[88px] object-contain'
 										/>
-									</div>
-
-									{/* Centered Title */}
-									<h2 className='mb-6 px-4 text-center text-[22px] font-black tracking-tight text-zinc-900 dark:text-white'>
-										{agentName}
-									</h2>
-
-									{/* Row of circular buttons */}
-									<div className='flex w-full max-w-sm flex-wrap items-center justify-center gap-3.5 px-4'>
+									)}
+								{conversationId &&
+								loadedSessionId !== conversationId &&
+								isSessionError ? (
+									<div
+										role='alert'
+										className='mx-auto max-w-sm rounded-xl border border-rose-200 p-4 text-center text-sm text-zinc-700 dark:border-rose-900 dark:text-zinc-200'>
+										<p>Could not load this chat.</p>
 										<button
-											aria-label='Draft a research question'
-											title='Research question'
 											type='button'
-											onClick={() =>
-												useSuggestedPrompt(
-													'Research this topic and summarize the key findings: ',
-												)
-											}
-											className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-orange-50/60 text-orange-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-orange-500/20 dark:bg-orange-500/10'>
-											<Flame size={18} />
-										</button>
-										<button
-											aria-label='Draft a comparison request'
-											title='Compare options'
-											type='button'
-											onClick={() =>
-												useSuggestedPrompt(
-													'Compare these options in a clear table: ',
-												)
-											}
-											className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50/60 text-blue-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-blue-500/20 dark:bg-blue-500/10'>
-											<FileText size={18} />
-										</button>
-										<button
-											aria-label='Draft a structured plan request'
-											title='Make a plan'
-											type='button'
-											onClick={() =>
-												useSuggestedPrompt('Make a step-by-step plan for: ')
-											}
-											className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
-											<Layers size={18} />
-										</button>
-										<button
-											aria-label='Draft a web research question'
-											title='Web research question'
-											type='button'
-											onClick={() =>
-												useSuggestedPrompt(
-													'What should I know about this topic? Include sources if available: ',
-												)
-											}
-											className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
-											<Globe size={18} />
-										</button>
-										<button
-											aria-label='Draft a file request'
-											title='Ask for a file'
-											type='button'
-											onClick={() =>
-												useSuggestedPrompt(
-													'Create a downloadable file containing: ',
-												)
-											}
-											className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
-											<Download size={18} />
-										</button>
-										<button
-											aria-label='Draft an image request'
-											title='Describe an image'
-											type='button'
-											onClick={() =>
-												useSuggestedPrompt(
-													'Help me describe an image for: ',
-												)
-											}
-											className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
-											<ImageIcon size={18} />
+											onClick={() => void refetchSession()}
+											className='bg-primary-400 text-primary-950 mt-3 min-h-10 rounded-lg px-4 text-xs font-bold'>
+											Retry
 										</button>
 									</div>
-
-									{/* Get started section */}
-									{showGetStarted && (
-										<div className='mt-12 w-full px-4'>
-											<div className='mb-4 flex items-center justify-between'>
-												<span className='text-[15px] font-black text-zinc-800 dark:text-zinc-100'>
-													Get started
-												</span>
-												<button
-													type='button'
-													onClick={() => setShowGetStarted(false)}
-													className='text-xs font-bold text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'>
-													Dismiss
-												</button>
-											</div>
-
-											{/* Horizontal scrolling grid container */}
-											<div className='flex [scrollbar-width:none] gap-4 overflow-x-auto scroll-smooth pb-4 [&::-webkit-scrollbar]:hidden'>
-												{/* Card 1 */}
-												<button
-													type='button'
-													onClick={openGetStartedTrigger}
-													className='border-zinc-150 flex max-w-[270px] min-w-[270px] flex-col rounded-2xl border bg-white p-5 text-left shadow-2xs transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:border-zinc-800/80 dark:bg-zinc-900'>
-													<div className='mb-2 flex items-center gap-2 text-zinc-800 dark:text-zinc-200'>
-														<Zap
-															size={16}
-															className='text-zinc-450 dark:text-zinc-400'
-														/>
-														<span className='text-xs font-black'>
-															Set up a trigger
-														</span>
-													</div>
-													<p className='text-[11px] leading-relaxed font-semibold text-zinc-500 dark:text-zinc-400'>
-														Open trigger settings to run this agent on a
-														schedule or from an event.
-													</p>
-												</button>
-
-												{/* Card 2 */}
-												<button
-													type='button'
-													onClick={openGetStartedTool}
-													className='border-zinc-150 flex max-w-[270px] min-w-[270px] flex-col rounded-2xl border bg-white p-5 text-left shadow-2xs transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60 dark:border-zinc-800/80 dark:bg-zinc-900'>
-													<div className='mb-2 flex items-center gap-2 text-zinc-800 dark:text-zinc-200'>
-														<Layers
-															size={16}
-															className='text-zinc-455 dark:text-zinc-400'
-														/>
-														<span className='text-xs font-black'>
-															Add a tool
-														</span>
-													</div>
-													<p className='text-[11px] leading-relaxed font-semibold text-zinc-500 dark:text-zinc-400'>
-														Choose a tool or workflow this agent can use
-														while answering.
-													</p>
-												</button>
-											</div>
+								) : conversationId &&
+								  loadedSessionId !== conversationId &&
+								  isSessionPending ? (
+									<div
+										role='status'
+										className='flex items-center justify-center gap-2 py-12 text-sm text-zinc-500'>
+										<Loader2 size={16} className='animate-spin' /> Loading chat…
+									</div>
+								) : isMobile &&
+								  chatHistory.filter((m) => m.sender === 'user').length === 0 ? (
+									<div className='flex flex-col items-center justify-center px-2 pt-8 pb-4 select-none'>
+										<div className='mb-6 flex items-center justify-center'>
+											<AppLogo
+												className='size-[88px]'
+												rounded='rounded-3xl'
+												alt=''
+											/>
 										</div>
-									)}
-								</div>
-							) : chatHistory.length === 0 ? (
-								<div className='flex flex-col items-center justify-center px-4 pt-16 pb-8 text-center select-none'>
-									<div className='mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-zinc-200 bg-white shadow-2xs dark:border-zinc-800 dark:bg-zinc-900'>
-										<AgentIconComponent
-											size={30}
-											className={agentColorTextClass(agentIconColor)}
-										/>
+
+										{/* Centered Title */}
+										<h2 className='mb-6 px-4 text-center text-[22px] font-black tracking-tight text-zinc-900 dark:text-white'>
+											{agentName}
+										</h2>
+
+										{/* Row of circular buttons */}
+										<div className='flex w-full max-w-sm flex-wrap items-center justify-center gap-3.5 px-4'>
+											<button
+												aria-label='Draft a research question'
+												title='Research question'
+												type='button'
+												onClick={() =>
+													applySuggestedPrompt(
+														'Research this topic and summarize the key findings: ',
+													)
+												}
+												className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-orange-100 bg-orange-50/60 text-orange-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-orange-500/20 dark:bg-orange-500/10'>
+												<Flame size={18} />
+											</button>
+											<button
+												aria-label='Draft a comparison request'
+												title='Compare options'
+												type='button'
+												onClick={() =>
+													applySuggestedPrompt(
+														'Compare these options in a clear table: ',
+													)
+												}
+												className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50/60 text-blue-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-blue-500/20 dark:bg-blue-500/10'>
+												<FileText size={18} />
+											</button>
+											<button
+												aria-label='Draft a structured plan request'
+												title='Make a plan'
+												type='button'
+												onClick={() =>
+													applySuggestedPrompt(
+														'Make a step-by-step plan for: ',
+													)
+												}
+												className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
+												<Layers size={18} />
+											</button>
+											<button
+												aria-label='Draft a web research question'
+												title='Web research question'
+												type='button'
+												onClick={() =>
+													applySuggestedPrompt(
+														'What should I know about this topic? Include sources if available: ',
+													)
+												}
+												className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
+												<Globe size={18} />
+											</button>
+											<button
+												aria-label='Draft a file request'
+												title='Ask for a file'
+												type='button'
+												onClick={() =>
+													applySuggestedPrompt(
+														'Create a downloadable file containing: ',
+													)
+												}
+												className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
+												<Download size={18} />
+											</button>
+											<button
+												aria-label='Draft an image request'
+												title='Describe an image'
+												type='button'
+												onClick={() =>
+													applySuggestedPrompt(
+														'Help me describe an image for: ',
+													)
+												}
+												className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50/60 text-zinc-500 shadow-2xs transition hover:scale-105 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800'>
+												<ImageIcon size={18} />
+											</button>
+										</div>
+
+										{/* Get started section */}
+										{showGetStarted && (
+											<div className='mt-12 w-full px-4'>
+												<div className='mb-4 flex items-center justify-between'>
+													<span className='text-[15px] font-black text-zinc-800 dark:text-zinc-100'>
+														Get started
+													</span>
+													<button
+														type='button'
+														onClick={() => setShowGetStarted(false)}
+														className='text-xs font-bold text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300'>
+														Dismiss
+													</button>
+												</div>
+
+												{/* Horizontal scrolling grid container */}
+												<div className='flex [scrollbar-width:none] gap-4 overflow-x-auto scroll-smooth pb-4 [&::-webkit-scrollbar]:hidden'>
+													{/* Card 1 */}
+													<button
+														type='button'
+														onClick={openGetStartedTrigger}
+														className='border-zinc-150 flex max-w-[270px] min-w-[270px] flex-col rounded-2xl border bg-white p-5 text-left shadow-2xs transition hover:bg-zinc-50 dark:border-zinc-800/80 dark:bg-zinc-900 dark:hover:bg-zinc-800/60'>
+														<div className='mb-2 flex items-center gap-2 text-zinc-800 dark:text-zinc-200'>
+															<Zap
+																size={16}
+																className='text-zinc-450 dark:text-zinc-400'
+															/>
+															<span className='text-xs font-black'>
+																Set up a trigger
+															</span>
+														</div>
+														<p className='text-[11px] leading-relaxed font-semibold text-zinc-500 dark:text-zinc-400'>
+															Open trigger settings to run this agent
+															on a schedule or from an event.
+														</p>
+													</button>
+
+													{/* Card 2 */}
+													<button
+														type='button'
+														onClick={openGetStartedTool}
+														className='border-zinc-150 flex max-w-[270px] min-w-[270px] flex-col rounded-2xl border bg-white p-5 text-left shadow-2xs transition hover:bg-zinc-50 dark:border-zinc-800/80 dark:bg-zinc-900 dark:hover:bg-zinc-800/60'>
+														<div className='mb-2 flex items-center gap-2 text-zinc-800 dark:text-zinc-200'>
+															<Layers
+																size={16}
+																className='text-zinc-455 dark:text-zinc-400'
+															/>
+															<span className='text-xs font-black'>
+																Add a tool
+															</span>
+														</div>
+														<p className='text-[11px] leading-relaxed font-semibold text-zinc-500 dark:text-zinc-400'>
+															Choose a tool or workflow this agent can
+															use while answering.
+														</p>
+													</button>
+												</div>
+											</div>
+										)}
 									</div>
-									<h2 className='text-xl font-black tracking-tight text-zinc-900 dark:text-white'>
-										{agentName || 'Untitled Agent'}
-									</h2>
-									{agentDescription && (
-										<p className='mt-2 max-w-md text-sm font-semibold text-zinc-500 dark:text-zinc-400'>
-											{agentDescription}
-										</p>
-									)}
-								</div>
-							) : (
-								chatHistory.map((message, messageIdx) => {
-									const isUser = message.sender === 'user';
-									// Regenerate only makes sense on the reply that is actually last —
-									// re-running an older turn would strand everything after it.
-									const isLastMessage = messageIdx === chatHistory.length - 1;
-									return (
-										<div
-											key={message.id}
-											className={`group flex w-full ${isUser ? 'justify-end' : 'justify-start'}`}>
+								) : chatHistory.length === 0 ? (
+									<div className='flex flex-col items-center justify-center px-4 pt-16 pb-8 text-center select-none'>
+										<div className='mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-zinc-200 bg-white shadow-2xs dark:border-zinc-800 dark:bg-zinc-900'>
+											{createElement(AgentIconComponent, {
+												size: 30,
+												className: agentColorTextClass(agentIconColor),
+											})}
+										</div>
+										<h2 className='text-xl font-black tracking-tight text-zinc-900 dark:text-white'>
+											{agentName || 'Untitled Agent'}
+										</h2>
+										{agentDescription && (
+											<p className='mt-2 max-w-md text-sm font-semibold text-zinc-500 dark:text-zinc-400'>
+												{agentDescription}
+											</p>
+										)}
+									</div>
+								) : (
+									chatHistory.map((message, messageIdx) => {
+										const isUser = message.sender === 'user';
+										// Regenerate only makes sense on the reply that is actually last:
+										// re-running an older turn would strand everything after it.
+										const isLastMessage = messageIdx === chatHistory.length - 1;
+										return (
 											<div
-												className={`flex gap-3 ${isUser ? 'max-w-[90%] flex-row-reverse sm:max-w-[80%]' : 'w-full max-w-3xl flex-row'}`}>
-												{/* Agent Avatar in body */}
-												{!isUser && (
+												key={message.id}
+												className={`group flex w-full ${isUser ? 'justify-end' : 'justify-start'}`}>
+												<div
+													className={`flex gap-3 ${isUser ? 'max-w-[90%] flex-row-reverse sm:max-w-[80%]' : 'w-full max-w-3xl flex-row'}`}>
+													{/* Agent Avatar in body */}
+													{!isUser && (
+														<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-zinc-950 text-white dark:border-white/10 dark:bg-zinc-900'>
+															{createElement(AgentIconComponent, {
+																size: 16,
+																className:
+																	agentColorTextClass(
+																		agentIconColor,
+																	),
+															})}
+														</div>
+													)}
+
 													<div
-														className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-zinc-950 text-white dark:border-white/10 dark:bg-zinc-900`}>
-														<AgentIconComponent
-															size={16}
-															className={agentColorTextClass(
-																agentIconColor,
+														className={`flex min-w-0 flex-col ${isUser ? '' : 'flex-1'}`}>
+														{/* What the agent did to produce this reply, step by step */}
+														{!isUser &&
+															message.timeline &&
+															message.timeline.length > 0 && (
+																<>
+																	<UsedSkills
+																		items={message.timeline}
+																		skills={
+																			workspaceSkills ?? []
+																		}
+																	/>
+																	<ToolTimeline
+																		items={message.timeline}
+																		tasks={subagentTasks ?? []}
+																		actions={sessionActions}
+																		ws={workspaceId}
+																		className='mb-3'
+																	/>
+																</>
 															)}
-														/>
-													</div>
-												)}
 
-												<div className={`flex min-w-0 flex-col ${isUser ? '' : 'flex-1'}`}>
-													{/* What the agent did to produce this reply, step by step */}
-													{!isUser &&
-														message.timeline &&
-														message.timeline.length > 0 && (
-															<>
-																<UsedSkills
-																	items={message.timeline}
-																	skills={workspaceSkills ?? []}
-																/>
-																<ToolTimeline
-																	items={message.timeline}
-																	tasks={subagentTasks ?? []}
-																	ws={workspaceId}
-																	className='mb-3'
-																/>
-															</>
-														)}
-
-													{/* Files the agent exported — always shown, never collapsed */}
-													{!isUser &&
-														message.timeline &&
-														message.timeline.length > 0 && (
-															<div className='mb-1.5 flex flex-col gap-1.5'>
-																{message.timeline.map((item) =>
-																	item.kind === 'artifact' ? (
-																		<ArtifactCard
-																			key={item.id}
-																			item={item}
-																			ws={workspaceId}
-																		/>
-																	) : null,
-																)}
-															</div>
-														)}
-
-													{/* Files the member sent with this message */}
-													{isUser &&
-														message.attachments &&
-														message.attachments.length > 0 && (
-															<MessageAttachments
-																attachments={message.attachments}
-																ws={workspaceId}
-															/>
-														)}
-
-													{/* The user's bubble, or the agent's answer as plain prose under its steps */}
-													<div
-														className={`max-w-full min-w-0 text-sm leading-relaxed font-semibold [overflow-wrap:anywhere] ${
-															isUser
-																? 'bg-primary-400/10 dark:bg-primary-400/25 rounded-2xl rounded-tr-none px-4 py-3 text-zinc-950 dark:text-zinc-100'
-																: 'pt-1.5 text-zinc-800 dark:text-zinc-200'
-														}`}>
-														{isUser ? (
-															<p className='whitespace-pre-line'>
-																{message.text}
-															</p>
-														) : (
-															<MessageMarkdown
-																text={message.text}
-															/>
-														)}
-
-														{/* Structured Table for data responses */}
-														{message.type === 'table' &&
-															message.headers &&
-															message.data && (
-																<div className='mt-4 overflow-hidden rounded-xl border border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950'>
-																	<div className='overflow-x-auto'>
-																		<table className='w-full text-left text-xs font-semibold text-zinc-600 dark:text-zinc-400'>
-																			<thead className='border-b border-zinc-200 bg-zinc-50/50 text-[11px] font-black tracking-wider text-zinc-600 uppercase dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400'>
-																				<tr>
-																					{message.headers.map(
-																						(h) => (
-																							<th
-																								key={
-																									h
-																								}
-																								className='px-4 py-2.5 font-bold'>
-																								{h}
-																							</th>
-																						),
-																					)}
-																				</tr>
-																			</thead>
-																			<tbody className='divide-y divide-zinc-200/80 dark:divide-zinc-800'>
-																				{message.data.map(
-																					(row, rIdx) => (
-																						<tr
-																							key={
-																								rIdx
-																							}
-																							className='hover:bg-zinc-50/40 dark:hover:bg-zinc-900/20'>
-																							{message.headers!.map(
-																								(
-																									h,
-																								) => (
-																									<td
-																										key={
-																											h
-																										}
-																										className='px-4 py-2.5 whitespace-nowrap text-zinc-900 dark:text-zinc-100'>
-																										{
-																											row[
-																												h
-																											]
-																										}
-																									</td>
-																								),
-																							)}
-																						</tr>
-																					),
-																				)}
-																			</tbody>
-																		</table>
-																	</div>
+														{/* Files the agent exported, always shown, never collapsed */}
+														{!isUser &&
+															message.timeline &&
+															message.timeline.length > 0 && (
+																<div className='mb-1.5 flex flex-col gap-1.5'>
+																	{message.timeline.map((item) =>
+																		item.kind === 'artifact' ? (
+																			<ArtifactCard
+																				key={item.id}
+																				item={item}
+																				ws={workspaceId}
+																			/>
+																		) : null,
+																	)}
 																</div>
 															)}
 
-														{/* Follow up text */}
-														{message.followUp && (
-															<p className='mt-4 text-xs font-bold text-zinc-500 dark:text-zinc-400'>
-																{message.followUp}
-															</p>
-														)}
-													</div>
+														{/* Files the member sent with this message */}
+														{isUser &&
+															message.attachments &&
+															message.attachments.length > 0 && (
+																<MessageAttachments
+																	attachments={
+																		message.attachments
+																	}
+																	files={message.files}
+																	ws={workspaceId}
+																/>
+															)}
 
-													{message.failed && (
-														<button
-															type='button'
-															aria-label={`Actions for message at ${message.timestamp}`}
-															onClick={regenerateLastReply}
-															disabled={isTyping}
-															className='mt-2 inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-zinc-200 px-3 text-xs font-bold text-zinc-700 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200'>
-															<RefreshCw size={14} /> Retry response
-														</button>
-													)}
-
-													{/* Action Buttons for agent messages */}
-													{!isUser &&
-														message.actions &&
-														message.actions.length > 0 && (
-															<div className='mt-3.5 flex flex-wrap gap-2.5'>
-																{message.actions.map((act) => {
-																	let IconComp = Sparkles;
-																	if (
-																		act.type === 'export_csv' ||
-																		act.type === 'pdf_digest'
-																	)
-																		IconComp = Download;
-																	if (
-																		act.type === 'refine' ||
-																		act.type === 'set_alert'
-																	)
-																		IconComp =
-																			SlidersHorizontal;
-
-																	return (
-																		<button
-																			key={act.label}
-																			onClick={() =>
-																				handleActionClick(
-																					act,
-																				)
-																			}
-																			className='inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-4 py-1.5 text-xs font-black text-zinc-700 shadow-2xs transition hover:bg-zinc-50 active:scale-95 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/80'>
-																			<IconComp
-																				size={12}
-																				className='text-primary-500'
-																			/>
-																			<span>{act.label}</span>
-																		</button>
-																	);
-																})}
-															</div>
-														)}
-
-													{/* Timestamp + per-message actions. The toolbar rides the row's
-												    hover; on touch there is none, so tapping the timestamp pins it. */}
-													<div
-														className={`mt-1.5 flex items-center gap-1.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-														<button
-															type='button'
-															onClick={() =>
-																setActiveMessageId((current) =>
-																	current === message.id
-																		? null
-																		: message.id,
-																)
-															}
-															className='flex min-h-10 items-center gap-1 rounded-md px-2 text-[10px] font-semibold text-zinc-400 md:min-h-0 md:px-0 dark:text-zinc-500'>
-															{message.timestamp}
-															<MoreHorizontal
-																size={14}
-																className='md:hidden'
-															/>
-														</button>
-
-														{message.stopped && (
-															<span className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[9px] font-black tracking-wide text-zinc-500 uppercase dark:bg-zinc-800 dark:text-zinc-400'>
-																Stopped
-															</span>
-														)}
-
+														{/* The user's bubble, or the agent's answer as plain prose under its steps */}
 														<div
-															className={`flex items-center gap-0.5 transition ${
-																activeMessageId === message.id
-																	? 'opacity-100'
-																	: 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100'
+															className={`max-w-full min-w-0 text-sm leading-relaxed font-semibold [overflow-wrap:anywhere] ${
+																isUser
+																	? 'bg-primary-400/10 dark:bg-primary-400/25 rounded-2xl rounded-tr-none px-4 py-3 text-zinc-950 dark:text-zinc-100'
+																	: 'pt-1.5 text-zinc-800 dark:text-zinc-200'
 															}`}>
+															{isUser ? (
+																<p className='whitespace-pre-line'>
+																	{message.skill && (
+																		<SkillCommandTag
+																			skill={message.skill}
+																		/>
+																	)}
+																	{message.text}
+																</p>
+															) : (
+																<MessageMarkdown
+																	text={message.text}
+																/>
+															)}
+
+															{/* Structured Table for data responses */}
+															{message.type === 'table' &&
+																message.headers &&
+																message.data && (
+																	<div className='mt-4 overflow-hidden rounded-xl border border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950'>
+																		<div className='overflow-x-auto'>
+																			<table className='w-full text-left text-xs font-semibold text-zinc-600 dark:text-zinc-400'>
+																				<thead className='border-b border-zinc-200 bg-zinc-50/50 text-[11px] font-black tracking-wider text-zinc-600 uppercase dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400'>
+																					<tr>
+																						{message.headers.map(
+																							(h) => (
+																								<th
+																									key={
+																										h
+																									}
+																									className='px-4 py-2.5 font-bold'>
+																									{
+																										h
+																									}
+																								</th>
+																							),
+																						)}
+																					</tr>
+																				</thead>
+																				<tbody className='divide-y divide-zinc-200/80 dark:divide-zinc-800'>
+																					{message.data.map(
+																						(
+																							row,
+																							rIdx,
+																						) => (
+																							<tr
+																								key={
+																									rIdx
+																								}
+																								className='hover:bg-zinc-50/40 dark:hover:bg-zinc-900/20'>
+																								{message.headers!.map(
+																									(
+																										h,
+																									) => (
+																										<td
+																											key={
+																												h
+																											}
+																											className='px-4 py-2.5 whitespace-nowrap text-zinc-900 dark:text-zinc-100'>
+																											{
+																												row[
+																													h
+																												]
+																											}
+																										</td>
+																									),
+																								)}
+																							</tr>
+																						),
+																					)}
+																				</tbody>
+																			</table>
+																		</div>
+																	</div>
+																)}
+
+															{/* Follow up text */}
+															{message.followUp && (
+																<p className='mt-4 text-xs font-bold text-zinc-500 dark:text-zinc-400'>
+																	{message.followUp}
+																</p>
+															)}
+														</div>
+
+														{message.failed && (
+															<button
+																type='button'
+																aria-label={`Actions for message at ${message.timestamp}`}
+																onClick={regenerateLastReply}
+																disabled={isTyping}
+																className='mt-2 inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-zinc-200 px-3 text-xs font-bold text-zinc-700 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200'>
+																<RefreshCw size={14} /> Retry
+																response
+															</button>
+														)}
+
+														{/* Action Buttons for agent messages */}
+														{!isUser &&
+															message.actions &&
+															message.actions.length > 0 && (
+																<div className='mt-3.5 flex flex-wrap gap-2.5'>
+																	{message.actions.map((act) => {
+																		let IconComp = Sparkles;
+																		if (
+																			act.type ===
+																				'export_csv' ||
+																			act.type ===
+																				'pdf_digest'
+																		)
+																			IconComp = Download;
+																		if (
+																			act.type === 'refine' ||
+																			act.type === 'set_alert'
+																		)
+																			IconComp =
+																				SlidersHorizontal;
+
+																		return (
+																			<button
+																				key={act.label}
+																				onClick={() =>
+																					handleActionClick(
+																						act,
+																					)
+																				}
+																				className='inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-4 py-1.5 text-xs font-black text-zinc-700 shadow-2xs transition hover:bg-zinc-50 active:scale-95 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/80'>
+																				<IconComp
+																					size={12}
+																					className='text-primary-500'
+																				/>
+																				<span>
+																					{act.label}
+																				</span>
+																			</button>
+																		);
+																	})}
+																</div>
+															)}
+
+														{/* Timestamp + per-message actions. The toolbar rides the row's
+													    hover; on touch there is none, so tapping the timestamp pins it. */}
+														<div
+															className={`mt-1.5 flex items-center gap-1.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
 															<button
 																type='button'
 																onClick={() =>
-																	copyMessage(message.text)
+																	setActiveMessageId((current) =>
+																		current === message.id
+																			? null
+																			: message.id,
+																	)
 																}
-																title='Copy message'
-																className='flex h-10 w-10 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 md:h-auto md:w-auto md:p-1 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
-																<Copy size={11} />
+																className='flex min-h-10 items-center gap-1 rounded-md px-2 text-[10px] font-semibold text-zinc-400 md:min-h-0 md:px-0 dark:text-zinc-500'>
+																{message.timestamp}
+																<MoreHorizontal
+																	size={14}
+																	className='md:hidden'
+																/>
 															</button>
 
-															{isUser && (
-																<button
-																	aria-label='Edit and resend message'
-																	type='button'
-																	onClick={() =>
-																		editUserMessage(message)
-																	}
-																	disabled={isTyping}
-																	title='Edit and resend'
-																	className='flex h-10 w-10 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 md:h-auto md:w-auto md:p-1 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
-																	<SquarePen size={11} />
-																</button>
+															{message.stopped && (
+																<span className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[9px] font-black tracking-wide text-zinc-500 uppercase dark:bg-zinc-800 dark:text-zinc-400'>
+																	Stopped
+																</span>
 															)}
 
-															{!isUser && isLastMessage && (
+															<div
+																className={`flex items-center gap-0.5 transition ${
+																	activeMessageId === message.id
+																		? 'opacity-100'
+																		: 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100'
+																}`}>
 																<button
 																	type='button'
-																	onClick={regenerateLastReply}
-																	disabled={isTyping}
-																	title='Regenerate reply'
-																	className='flex h-10 w-10 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 md:h-auto md:w-auto md:p-1 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
-																	<RefreshCw size={11} />
+																	onClick={() =>
+																		copyMessage(message.text)
+																	}
+																	title='Copy message'
+																	className='flex h-10 w-10 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 md:h-auto md:w-auto md:p-1 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
+																	<Copy size={11} />
 																</button>
-															)}
+
+																{isUser && (
+																	<button
+																		aria-label='Edit and resend message'
+																		type='button'
+																		onClick={() =>
+																			editUserMessage(message)
+																		}
+																		disabled={isTyping}
+																		title='Edit and resend'
+																		className='flex h-10 w-10 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 md:h-auto md:w-auto md:p-1 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
+																		<SquarePen size={11} />
+																	</button>
+																)}
+
+																{!isUser &&
+																	currentAgentId &&
+																	messageIdx > 0 && (
+																		<button
+																			type='button'
+																			aria-label='Save as eval case'
+																			onClick={() =>
+																				saveReplyAsEvalCase(
+																					messageIdx,
+																				)
+																			}
+																			title='Save as eval case'
+																			className='flex h-10 w-10 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 md:h-auto md:w-auto md:p-1 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
+																			<FlaskConical
+																				size={11}
+																			/>
+																		</button>
+																	)}
+
+																{!isUser && isLastMessage && (
+																	<button
+																		type='button'
+																		onClick={
+																			regenerateLastReply
+																		}
+																		disabled={isTyping}
+																		title='Regenerate reply'
+																		className='flex h-10 w-10 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 md:h-auto md:w-auto md:p-1 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
+																		<RefreshCw size={11} />
+																	</button>
+																)}
+															</div>
 														</div>
 													</div>
 												</div>
 											</div>
-										</div>
-									);
-								})
-							)}
+										);
+									})
+								)}
 
-							{/* The reply streaming in — same layout it settles into once finished */}
-							{isTyping && (
-								<div className='flex w-full justify-start'>
-									<div className='flex w-full max-w-3xl flex-row gap-3'>
-										<div
-											className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-zinc-950 text-white dark:border-white/10 dark:bg-zinc-900`}>
-											<AgentIconComponent
-												size={16}
-												className={agentColorTextClass(agentIconColor)}
-											/>
-										</div>
-										<div className='min-w-0 flex-1'>
-											<ToolTimeline
-												items={streamTimeline}
-												tasks={subagentTasks ?? []}
-												ws={workspaceId}
-												className='mb-3'
-											/>
-											{streamTimeline.some((item) => item.kind === 'artifact') && (
-												<div className='mb-3 flex flex-col gap-1.5'>
-													{streamTimeline.map((item) =>
-														item.kind === 'artifact' ? (
-															<ArtifactCard key={item.id} item={item} ws={workspaceId} />
-														) : null,
-													)}
-												</div>
-											)}
-											{streamTimeline.some((item) => item.kind === 'text') ? (
-												<div className='pt-1.5 text-sm leading-relaxed font-semibold text-zinc-800 [overflow-wrap:anywhere] dark:text-zinc-200'>
-													<MessageMarkdown
-														text={streamTimeline
-															.map((item) => (item.kind === 'text' ? item.text : ''))
-															.join('')}
-													/>
-													<span className='ml-0.5 inline-block h-3.5 w-[2px] animate-pulse bg-current align-middle' />
-												</div>
-											) : (
-												!streamTimeline.some(
-													(item) => item.kind === 'tool' && item.status === 'running',
+								{/* The reply streaming in: same layout it settles into once finished */}
+								{isTyping && (
+									<div className='flex w-full justify-start'>
+										<div className='flex w-full max-w-3xl flex-row gap-3'>
+											<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border bg-zinc-950 text-white dark:border-white/10 dark:bg-zinc-900'>
+												{createElement(AgentIconComponent, {
+													size: 16,
+													className: agentColorTextClass(agentIconColor),
+												})}
+											</div>
+											<div className='min-w-0 flex-1'>
+												<ToolTimeline
+													items={streamTimeline}
+													tasks={subagentTasks ?? []}
+													actions={sessionActions}
+													ws={workspaceId}
+													className='mb-3'
+												/>
+												{streamTimeline.some(
+													(item) => item.kind === 'artifact',
 												) && (
-													<div className='flex min-h-9 items-center gap-2 text-[12.5px] font-bold text-zinc-400 dark:text-zinc-500'>
-														<Loader2 size={13} className='text-primary-500 animate-spin' />
-														{streamTimeline.length === 0 ? 'Thinking…' : 'Working…'}
+													<div className='mb-3 flex flex-col gap-1.5'>
+														{streamTimeline.map((item) =>
+															item.kind === 'artifact' ? (
+																<ArtifactCard
+																	key={item.id}
+																	item={item}
+																	ws={workspaceId}
+																/>
+															) : null,
+														)}
 													</div>
-												)
-											)}
+												)}
+												{streamTimeline.some(
+													(item) => item.kind === 'text',
+												) ? (
+													<div className='pt-1.5 text-sm leading-relaxed font-semibold [overflow-wrap:anywhere] text-zinc-800 dark:text-zinc-200'>
+														<MessageMarkdown
+															text={streamTimeline
+																.map((item) =>
+																	item.kind === 'text'
+																		? item.text
+																		: '',
+																)
+																.join('')}
+														/>
+														<span className='ml-0.5 inline-block h-3.5 w-[2px] animate-pulse bg-current align-middle' />
+													</div>
+												) : (
+													!streamTimeline.some(
+														(item) =>
+															item.kind === 'tool' &&
+															item.status === 'running',
+													) && (
+														<div className='flex min-h-9 items-center gap-2 text-[12.5px] font-bold text-zinc-400 dark:text-zinc-500'>
+															<Loader2
+																size={13}
+																className='text-primary-500 animate-spin'
+															/>
+															{streamTimeline.length === 0
+																? 'Thinking…'
+																: 'Working…'}
+														</div>
+													)
+												)}
+											</div>
 										</div>
 									</div>
-								</div>
-							)}
+								)}
+
+								{/* A paused turn's waiting actions, and Plan mode's plan up for review */}
+								{!isTyping && conversationId && (
+									<>
+										<AgentApprovalCards
+											actions={pendingActions}
+											busy={isTyping}
+											canRemember={canManageAgents}
+											onDecide={(decisions) => void decideActions(decisions)}
+										/>
+										{proposedPlan && pendingActions.length === 0 && (
+											<AgentPlanCard
+												key={proposedPlan.id}
+												plan={proposedPlan}
+												busy={
+													approvePlanMutation.isPending ||
+													rejectPlanMutation.isPending
+												}
+												onApprove={(skipIds, note) =>
+													void approvePlan(skipIds, note)
+												}
+												onReject={(note) => void rejectPlan(note)}
+											/>
+										)}
+									</>
+								)}
+							</div>
 						</div>
 						{showLatestButton && (
 							<button
@@ -3200,117 +3565,168 @@ const BuildPage = () => {
 						aria-label='Choose files to attach'
 					/>
 					{isMobile ? (
-						<footer className='border-zinc-150 dark:border-zinc-850 border-t bg-zinc-50/95 px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl dark:bg-zinc-950/95'>
-							<div className='mx-auto flex w-full max-w-4xl flex-col gap-3'>
+						<footer className='border-zinc-150 dark:border-zinc-850 shrink-0 border-t bg-zinc-50/95 px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl dark:bg-zinc-950/95'>
+							<div className='relative mx-auto flex w-full max-w-4xl flex-col gap-3'>
+								<SkillSlashMenu picker={skillPicker} />
 								<ChatAttachmentTray
 									files={chatAttachments}
 									busy={isTyping}
 									onRemove={removeChatAttachment}
 								/>
 								{/* Chat Input Container */}
-								<div className='flex flex-col rounded-2xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/60'>
-									{/* Input Text Area */}
-									<textarea
-										ref={mobileComposerRef}
-										rows={1}
-										value={chatInput}
-										onChange={(e) => {
-											updateChatInput(e.target.value);
-											autoSizeComposer(e.currentTarget);
-										}}
-										onKeyDown={(e) => {
-											if (
-												e.nativeEvent.isComposing ||
-												e.nativeEvent.keyCode === 229
-											)
-												return;
-											if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-												e.preventDefault();
-												if (
-													(chatInput.trim() || chatAttachments.length) &&
-													!isTyping
-												) {
-													sendChatMessage(chatInput);
-													updateChatInput('');
-												}
+								<div>
+									{isAttachOpen && (
+										<AttachDrawer
+											ws={workspaceId}
+											onClose={() => setIsAttachOpen(false)}
+											onUpload={() => {
+												setIsAttachOpen(false);
+												attachmentInputRef.current?.click();
+											}}
+											onAttach={(file) => selectChatAttachments([file])}
+											canAttach={canAttachFile}
+											onOpenLibrary={() =>
+												navigate(paths.library(workspaceId))
 											}
-										}}
-										placeholder='Send a message to your agent'
-										className='placeholder:text-zinc-450 max-h-32 w-full resize-none overflow-y-auto border-none bg-transparent px-1 text-base font-semibold text-zinc-800 outline-none focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
-									/>
-									{/* Bottom Controls Row */}
-									<div className='mt-2 flex items-center justify-between border-t border-zinc-100/50 pt-2 dark:border-zinc-800/50'>
-										{/* Plus button */}
-										<button
-											aria-label='Attach files'
-											type='button'
-											disabled={isTyping}
-											onClick={() => attachmentInputRef.current?.click()}
-											className='flex h-11 w-11 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-500 dark:hover:bg-zinc-800'>
-											<Plus size={18} />
-										</button>
-
-										{/* Right controls: Loader, Mic, Send */}
-										<div className='flex items-center gap-2.5'>
-											{/* Loading spinner — only while a turn is actually in flight */}
-											{isTyping && (
-												<div
-													className='flex size-4 h-4 w-4 shrink-0 animate-spin items-center justify-center rounded-full border border-zinc-200 border-t-zinc-400'
-													style={{
-														borderTopColor: '#3b82f6',
-														borderWidth: '1.5px',
-													}}
-												/>
-											)}
-
-											{/* Mic */}
-											<button
-												aria-label='Voice input'
-												type='button'
-												onClick={() =>
-													notify.info('Voice input is not supported yet.')
-												}
-												className='flex h-11 w-11 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-50 dark:text-zinc-500 dark:hover:bg-zinc-800'>
-												<Mic size={18} />
-											</button>
-
-											{/* Send button — becomes Stop for the duration of a turn */}
-											<button
-												type='button'
-												aria-label={
-													isTyping ? 'Stop generating' : 'Send message'
-												}
-												onClick={() => {
-													if (isTyping) {
-														stopStreaming();
-														return;
-													}
+										/>
+									)}
+									<div
+										className={`flex flex-col border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/60 ${
+											isAttachOpen ? 'rounded-b-2xl' : 'rounded-2xl'
+										}`}>
+										{/* Input Text Area */}
+										<div className='relative'>
+											<SkillCommandHighlight
+												text={chatInput}
+												token={skillPicker.token}
+												textareaRef={mobileComposerRef}
+												className='px-1 text-base font-semibold'
+											/>
+											<textarea
+												aria-label='Send a message to your agent'
+												ref={mobileComposerRef}
+												onBlur={skillPicker.close}
+												rows={1}
+												value={chatInput}
+												onChange={(e) => {
+													updateChatInput(e.target.value);
+													autoSizeComposer(e.currentTarget);
+												}}
+												onKeyDown={(e) => {
 													if (
-														chatInput.trim() ||
-														chatAttachments.length
+														e.nativeEvent.isComposing ||
+														e.nativeEvent.keyCode === 229
+													)
+														return;
+													if (skillPicker.handleKeyDown(e)) return;
+													if (
+														e.key === 'Enter' &&
+														(e.ctrlKey || e.metaKey)
 													) {
-														sendChatMessage(chatInput);
-														updateChatInput('');
+														e.preventDefault();
+														if (
+															(chatInput.trim() ||
+																chatAttachments.length) &&
+															!isTyping
+														) {
+															sendChatMessage(
+																skillPicker.message,
+																undefined,
+																skillPicker.skill,
+															);
+															updateChatInput('');
+														}
 													}
 												}}
-												title={
-													isTyping ? 'Stop generating' : 'Send message'
-												}
-												className={`flex h-11 w-11 items-center justify-center rounded-full shadow-2xs transition hover:opacity-90 active:scale-95 ${
-													isTyping
-														? 'bg-zinc-900 text-white dark:bg-zinc-200 dark:text-zinc-900'
-														: 'from-primary-400 to-primary-400 text-primary-950 bg-linear-to-tr'
-												}`}>
-												{isTyping ? (
-													<Square
-														size={12}
-														strokeWidth={3}
-														className='fill-current'
-													/>
-												) : (
-													<ArrowUp size={16} strokeWidth={2.5} />
-												)}
+												placeholder='Send a message to your agent'
+												className='no-scrollbar placeholder:text-zinc-450 relative block max-h-32 w-full resize-none overflow-y-auto border-none bg-transparent px-1 text-base font-semibold text-zinc-800 outline-none focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
+											/>
+										</div>
+										{/* Bottom Controls Row */}
+										<div className='mt-2 flex items-center justify-between border-t border-zinc-100/50 pt-2 dark:border-zinc-800/50'>
+											{/* Plus button */}
+											<button
+												aria-label='Add files'
+												aria-expanded={isAttachOpen}
+												type='button'
+												disabled={isTyping}
+												onClick={() => setIsAttachOpen((open) => !open)}
+												className='flex h-11 w-11 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-500 dark:hover:bg-zinc-800'>
+												<Plus size={18} />
 											</button>
+
+											{/* Right controls: Loader, Mic, Send */}
+											<div className='flex items-center gap-2.5'>
+												{/* Loading spinner, only while a turn is actually in flight */}
+												{isTyping && (
+													<div
+														className='flex size-4 h-4 w-4 shrink-0 animate-spin items-center justify-center rounded-full border border-zinc-200 border-t-zinc-400'
+														style={{
+															borderTopColor: '#3b82f6',
+															borderWidth: '1.5px',
+														}}
+													/>
+												)}
+
+												{/* Mic */}
+												<button
+													aria-label='Voice input'
+													type='button'
+													onClick={() =>
+														notify.info(
+															'Voice input is not supported yet.',
+														)
+													}
+													className='flex h-11 w-11 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-50 dark:text-zinc-500 dark:hover:bg-zinc-800'>
+													<Mic size={18} />
+												</button>
+
+												{/* Send button: becomes Stop for the duration of a turn */}
+												<button
+													type='button'
+													aria-label={
+														isTyping
+															? 'Stop generating'
+															: 'Send message'
+													}
+													onClick={() => {
+														if (isTyping) {
+															stopStreaming();
+															return;
+														}
+														if (
+															chatInput.trim() ||
+															chatAttachments.length
+														) {
+															sendChatMessage(
+																skillPicker.message,
+																undefined,
+																skillPicker.skill,
+															);
+															updateChatInput('');
+														}
+													}}
+													title={
+														isTyping
+															? 'Stop generating'
+															: 'Send message'
+													}
+													className={`flex h-11 w-11 items-center justify-center rounded-full shadow-2xs transition hover:opacity-90 active:scale-95 ${
+														isTyping
+															? 'bg-zinc-900 text-white dark:bg-zinc-200 dark:text-zinc-900'
+															: 'from-primary-400 to-primary-400 text-primary-950 bg-linear-to-tr'
+													}`}>
+													{isTyping ? (
+														<Square
+															size={12}
+															strokeWidth={3}
+															className='fill-current'
+														/>
+													) : (
+														<ArrowUp size={16} strokeWidth={2.5} />
+													)}
+												</button>
+											</div>
 										</div>
 									</div>
 								</div>
@@ -3327,130 +3743,168 @@ const BuildPage = () => {
 												'noopener,noreferrer',
 											)
 										}
-										className='hover:text-zinc-700 dark:hover:text-zinc-300 underline'>
+										className='underline hover:text-zinc-700 dark:hover:text-zinc-300'>
 										Report an Issue or Bug
 									</button>
 								</div>
 							</div>
 						</footer>
 					) : (
-						<footer className='border-t border-zinc-200 bg-white px-4 py-4 dark:border-white/10 dark:bg-zinc-950/90'>
-							<div className='mx-auto flex w-full max-w-4xl flex-col gap-3'>
+						<footer className='shrink-0 border-t border-zinc-200 bg-white px-4 py-4 dark:border-white/10 dark:bg-zinc-950/90'>
+							<div className='relative mx-auto flex w-full max-w-4xl flex-col gap-3'>
+								<SkillSlashMenu picker={skillPicker} />
 								<ChatAttachmentTray
 									files={chatAttachments}
 									busy={isTyping}
 									onRemove={removeChatAttachment}
 								/>
-								<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 relative flex items-center rounded-2xl border border-zinc-200 bg-white p-2 shadow-2xs focus-within:ring-4 dark:border-zinc-800 dark:bg-zinc-900/60'>
-									{/* Left attachments & skill checkbox */}
-									<div className='flex items-center gap-1 px-1.5'>
-										<button
-											type='button'
-											onClick={() => attachmentInputRef.current?.click()}
-											title='Attach a text file'
-											className='flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-500'>
-											<Paperclip size={18} />
-										</button>
-										{/* Skill checkbox */}
-										<button
-											onClick={() => setSkillEnabled(!skillEnabled)}
-											title='Toggle Skills'
-											className='flex h-9 items-center gap-1.5 rounded-lg border border-zinc-100 bg-zinc-50/50 px-2.5 text-xs font-bold text-zinc-500 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-400 dark:hover:bg-zinc-800'>
-											{skillEnabled ? (
-												<CheckSquare
-													size={14}
-													className='text-primary-600 dark:text-primary-400'
-												/>
-											) : (
-												<Square size={14} />
-											)}
-											<span>Skill</span>
-										</button>
-									</div>
-
-									{/* Chat Input — a textarea, so Shift+Enter can open a new line.
-									    It grows with the message and stops at ~6 rows. */}
-									<textarea
-										ref={composerRef}
-										rows={1}
-										value={chatInput}
-										onChange={(e) => {
-											updateChatInput(e.target.value);
-											autoSizeComposer(e.currentTarget);
-										}}
-										onKeyDown={(e) => {
-											if (
-												e.nativeEvent.isComposing ||
-												e.nativeEvent.keyCode === 229
-											)
-												return;
-											if (e.key === 'Enter' && !e.shiftKey) {
-												e.preventDefault();
-												if (
-													(chatInput.trim() || chatAttachments.length) &&
-													!isTyping
-												) {
-													sendChatMessage(chatInput);
-													updateChatInput('');
-													// The box grew with the draft — put it back to one row.
-													requestAnimationFrame(() => {
-														if (composerRef.current)
-															autoSizeComposer(composerRef.current);
-													});
-												}
-											}
-										}}
-										placeholder='Send a message to your agent...'
-										className='max-h-[9rem] flex-1 resize-none self-center border-none bg-transparent px-3 py-1.5 text-sm font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
-									/>
-
-									{/* Right features: Mic & Send */}
-									<div className='flex items-center gap-3 px-1.5'>
-
-										{/* Mic icon */}
-										<button
-											type='button'
-											disabled
-											title='Voice input is not supported yet'
-											className='flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-500'>
-											<Mic size={18} />
-										</button>
-
-										{/* Send Button — turns into Stop while the agent is replying */}
-										<button
-											aria-label={
-												isTyping ? 'Stop generating' : 'Send message'
-											}
-											onClick={() => {
-												if (isTyping) {
-													stopStreaming();
-													return;
-												}
-												if (chatInput.trim() || chatAttachments.length) {
-													sendChatMessage(chatInput);
-													updateChatInput('');
-												}
+								<div>
+									{isAttachOpen && (
+										<AttachDrawer
+											ws={workspaceId}
+											onClose={() => setIsAttachOpen(false)}
+											onUpload={() => {
+												setIsAttachOpen(false);
+												attachmentInputRef.current?.click();
 											}}
-											title={isTyping ? 'Stop generating' : 'Send message'}
-											className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full shadow-md transition active:scale-95 ${
-												isTyping
-													? 'bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-200 dark:text-zinc-900 dark:hover:bg-white'
-													: 'bg-primary-400 text-primary-950 hover:bg-primary-500'
-											}`}>
-											{isTyping ? (
-												<Square
-													size={13}
-													strokeWidth={3}
-													className='fill-current'
-												/>
-											) : (
-												<ArrowUp size={16} strokeWidth={2.5} />
-											)}
-										</button>
+											onAttach={(file) => selectChatAttachments([file])}
+											canAttach={canAttachFile}
+											onOpenLibrary={() =>
+												navigate(paths.library(workspaceId))
+											}
+										/>
+									)}
+									<div
+										className={`focus-within:border-primary-500/50 focus-within:ring-primary-500/5 relative flex items-center border border-zinc-200 bg-white p-2 shadow-2xs focus-within:ring-4 dark:border-zinc-800 dark:bg-zinc-900/60 ${
+											isAttachOpen ? 'rounded-b-2xl' : 'rounded-2xl'
+										}`}>
+										{/* Left attachments */}
+										<div className='flex items-center gap-1 px-1.5'>
+											<button
+												type='button'
+												onClick={() => setIsAttachOpen((open) => !open)}
+												disabled={isTyping}
+												aria-expanded={isAttachOpen}
+												title='Add files'
+												className={`flex h-9 w-9 items-center justify-center rounded-lg transition disabled:cursor-not-allowed disabled:opacity-50 ${
+													isAttachOpen
+														? 'bg-zinc-100 text-zinc-800 dark:bg-white/10 dark:text-zinc-100'
+														: 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-white/5 dark:hover:text-zinc-200'
+												}`}>
+												<Paperclip size={18} />
+											</button>
+										</div>
+
+										{/* Chat Input: a textarea, so Shift+Enter can open a new line.
+										    It grows with the message and stops at ~6 rows. */}
+										<div className='relative flex min-w-0 flex-1 self-center'>
+											<SkillCommandHighlight
+												text={chatInput}
+												token={skillPicker.token}
+												textareaRef={composerRef}
+												className='px-3 py-1.5 text-sm font-semibold'
+											/>
+											<textarea
+												aria-label='Send a message to your agent...'
+												ref={composerRef}
+												onBlur={skillPicker.close}
+												rows={1}
+												value={chatInput}
+												onChange={(e) => {
+													updateChatInput(e.target.value);
+													autoSizeComposer(e.currentTarget);
+												}}
+												onKeyDown={(e) => {
+													if (
+														e.nativeEvent.isComposing ||
+														e.nativeEvent.keyCode === 229
+													)
+														return;
+													if (skillPicker.handleKeyDown(e)) return;
+													if (e.key === 'Enter' && !e.shiftKey) {
+														e.preventDefault();
+														if (
+															(chatInput.trim() ||
+																chatAttachments.length) &&
+															!isTyping
+														) {
+															sendChatMessage(
+																skillPicker.message,
+																undefined,
+																skillPicker.skill,
+															);
+															updateChatInput('');
+															// The box grew with the draft: put it back to one row.
+															requestAnimationFrame(() => {
+																if (composerRef.current)
+																	autoSizeComposer(
+																		composerRef.current,
+																	);
+															});
+														}
+													}
+												}}
+												placeholder='Send a message to your agent...'
+												className='no-scrollbar relative block max-h-[9rem] w-full resize-none border-none bg-transparent px-3 py-1.5 text-sm font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-0 dark:text-zinc-100 dark:placeholder:text-zinc-500'
+											/>
+										</div>
+
+										{/* Right features: Mic & Send */}
+										<div className='flex items-center gap-3 px-1.5'>
+											{/* Mic icon */}
+											<button
+												type='button'
+												disabled
+												title='Voice input is not supported yet'
+												className='flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-500'>
+												<Mic size={18} />
+											</button>
+
+											{/* Send Button: turns into Stop while the agent is replying */}
+											<button
+												aria-label={
+													isTyping ? 'Stop generating' : 'Send message'
+												}
+												onClick={() => {
+													if (isTyping) {
+														stopStreaming();
+														return;
+													}
+													if (
+														chatInput.trim() ||
+														chatAttachments.length
+													) {
+														sendChatMessage(
+															skillPicker.message,
+															undefined,
+															skillPicker.skill,
+														);
+														updateChatInput('');
+													}
+												}}
+												title={
+													isTyping ? 'Stop generating' : 'Send message'
+												}
+												className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full shadow-md transition active:scale-95 ${
+													isTyping
+														? 'bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-200 dark:text-zinc-900 dark:hover:bg-white'
+														: 'bg-primary-400 text-primary-950 hover:bg-primary-500'
+												}`}>
+												{isTyping ? (
+													<Square
+														size={13}
+														strokeWidth={3}
+														className='fill-current'
+													/>
+												) : (
+													<ArrowUp size={16} strokeWidth={2.5} />
+												)}
+											</button>
+										</div>
 									</div>
 								</div>
 
-																<p className='text-center text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
+								<p className='text-center text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
 									Agent can make mistakes. Please verify important information.
 								</p>
 							</div>
@@ -3522,7 +3976,7 @@ const BuildPage = () => {
 										<MessageSquare size={14} />
 										<span>Chats</span>
 									</button>
-									{/* Tab: Data (knowledge / memory / runs / analytics) */}
+									{/* Tab: Data (memory / versions) */}
 									<button
 										onClick={(event) => {
 											setActiveSidebarTab('data');
@@ -3547,7 +4001,7 @@ const BuildPage = () => {
 									<button
 										onClick={() => closeSettingsDrawer()}
 										title='Go back'
-										className='flex h-11 w-11 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 dark:hover:text-white md:h-8 md:w-8 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'>
+										className='flex h-11 w-11 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 md:h-8 md:w-8 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white'>
 										<Undo2 size={14} />
 									</button>
 									<button
@@ -3562,8 +4016,8 @@ const BuildPage = () => {
 							</div>
 
 							{/* Settings Body - Render conditionally based on activeSidebarTab */}
-														{activeSidebarTab === 'agent' && (
-								<div className='flex-1 space-y-4 overflow-y-auto bg-zinc-50/40 p-4 dark:bg-zinc-950/20'>
+							{activeSidebarTab === 'agent' && (
+								<div className='no-scrollbar flex-1 space-y-4 overflow-y-auto bg-zinc-50/40 p-4 dark:bg-zinc-950/20'>
 									{/* Personalization Section */}
 									<div className='space-y-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900/40'>
 										{/* Section Header */}
@@ -3596,16 +4050,22 @@ const BuildPage = () => {
 
 												{/* Large Chosen Icon Avatar Box */}
 												<div
+													role='button'
+													tabIndex={0}
+													aria-label='Choose an icon'
+													aria-expanded={isIconPickerOpen}
 													onClick={() =>
 														setIsIconPickerOpen(!isIconPickerOpen)
 													}
+													onKeyDown={activateOnKey(() =>
+														setIsIconPickerOpen(!isIconPickerOpen),
+													)}
 													className='relative flex h-24 w-24 cursor-pointer items-center justify-center rounded-2xl border border-zinc-200 bg-white p-2.5 shadow-2xs select-none dark:border-zinc-700 dark:bg-zinc-950/45'>
-													<AgentIconComponent
-														size={44}
-														className={agentColorTextClass(
-															agentIconColor,
-														)}
-													/>
+													{createElement(AgentIconComponent, {
+														size: 44,
+														className:
+															agentColorTextClass(agentIconColor),
+													})}
 													{/* Pencil edit badge overlay */}
 													<div className='bg-primary-400 text-primary-950 shadow-primary-500/10 absolute -right-1 -bottom-1 flex h-6.5 w-6.5 cursor-pointer items-center justify-center rounded-full border border-white shadow-md dark:border-zinc-900'>
 														<SquarePen size={11} />
@@ -3626,30 +4086,34 @@ const BuildPage = () => {
 
 															{/* Icons Grid (10 icons) */}
 															<div className='relative z-10 grid grid-cols-5 gap-2'>
-																{AGENT_ICONS.map(
-																	(iconName) => {
-																		const Icon =
-																			AGENT_ICON_COMPONENTS[iconName];
-																		const isSelected =
-																			agentIcon === iconName;
-																		return (
-																			<button
-																				key={iconName}
-																				type='button'
-																				title={iconName}
-																				onClick={() =>
-																					setAgentIcon(iconName)
-																				}
-																				className={`flex h-9 w-9 items-center justify-center rounded-xl border transition active:scale-95 ${
-																					isSelected
-																						? 'border-primary-600 bg-primary-50 text-primary-600 dark:border-primary-400 dark:bg-primary-400/10 dark:text-primary-400'
-																						: 'border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'
-																				}`}>
-																				<Icon size={16} />
-																			</button>
-																		);
-																	},
-																)}
+																{AGENT_ICONS.map((iconName) => {
+																	const Icon =
+																		AGENT_ICON_COMPONENTS[
+																			iconName
+																		];
+																	const isSelected =
+																		agentIcon === iconName;
+																	return (
+																		<button
+																			key={iconName}
+																			type='button'
+																			title={iconName}
+																			onClick={() =>
+																				setAgentIcon(
+																					iconName,
+																				)
+																			}
+																			className={`flex h-9 w-9 items-center justify-center rounded-xl border transition active:scale-95 ${
+																				isSelected
+																					? 'border-primary-600 bg-primary-50 text-primary-600 dark:border-primary-400 dark:bg-primary-400/10 dark:text-primary-400'
+																					: 'border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'
+																			}`}>
+																			{createElement(Icon, {
+																				size: 16,
+																			})}
+																		</button>
+																	);
+																})}
 															</div>
 
 															{/* Colors Selector */}
@@ -3660,13 +4124,16 @@ const BuildPage = () => {
 																<div className='flex items-center gap-2.5'>
 																	{AGENT_COLORS.map((color) => {
 																		const isSelected =
-																			agentIconColor === color;
+																			agentIconColor ===
+																			color;
 																		return (
 																			<button
 																				key={color}
 																				type='button'
 																				onClick={() =>
-																					setAgentIconColor(color)
+																					setAgentIconColor(
+																						color,
+																					)
 																				}
 																				className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${AGENT_COLOR_SWATCHES[color]} ${
 																					isSelected
@@ -3674,7 +4141,8 @@ const BuildPage = () => {
 																						: 'border-zinc-200 dark:border-zinc-700'
 																				}`}
 																				title={color}>
-																				{color === 'rainbow' && (
+																				{color ===
+																					'rainbow' && (
 																					<div className='from-primary-400 h-full w-full rounded-full bg-gradient-to-tr via-emerald-500 to-rose-500' />
 																				)}
 																			</button>
@@ -3691,11 +4159,15 @@ const BuildPage = () => {
 											<div className='w-full space-y-4 pt-12 md:col-span-7 md:pt-0'>
 												{/* Agent Name input field */}
 												<div className='w-full space-y-1.5'>
-													<label className='text-[11px] font-black text-zinc-500 dark:text-zinc-400'>
+													<label
+														htmlFor='build-agent-name'
+														className='text-[11px] font-black text-zinc-500 dark:text-zinc-400'>
 														Agent Name
 													</label>
 													<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 relative flex items-center rounded-xl border border-zinc-200 bg-white px-3.5 py-3 shadow-2xs focus-within:ring-4 dark:border-zinc-800 dark:bg-zinc-950/20'>
 														<input
+															id='build-agent-name'
+															aria-label='Name your agent...'
 															type='text'
 															value={agentName}
 															onChange={(e) =>
@@ -3715,7 +4187,9 @@ const BuildPage = () => {
 												{/* Description textarea box */}
 												<div className='w-full space-y-1.5'>
 													<div className='flex flex-col'>
-														<label className='text-[11px] font-black text-zinc-600 dark:text-zinc-300'>
+														<label
+															htmlFor='build-description'
+															className='text-[11px] font-black text-zinc-600 dark:text-zinc-300'>
 															Description
 														</label>
 														<span className='mt-0.5 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
@@ -3726,6 +4200,8 @@ const BuildPage = () => {
 													{/* Border wrapping both textarea and character count at bottom right */}
 													<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 relative flex flex-col rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs focus-within:ring-4 dark:border-zinc-800 dark:bg-zinc-950/20'>
 														<textarea
+															id='build-description'
+															aria-label='Describe agent capability...'
 															rows={4}
 															value={agentDescription}
 															onChange={(e) =>
@@ -3748,7 +4224,6 @@ const BuildPage = () => {
 										</div>
 									</div>
 
-
 									{/* Agent Preferences Section */}
 									<div className='space-y-4 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
 										{/* Preferences Header */}
@@ -3769,73 +4244,14 @@ const BuildPage = () => {
 											</button>
 										</div>
 
-										{/* Model Selector Card */}
-										<div className='relative'>
-											<button
-												type='button'
-												onClick={() => setIsModelPickerOpen((v) => !v)}
-												className='flex w-full cursor-pointer items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950/20 dark:hover:border-zinc-700'>
-												<div className='flex items-center gap-3'>
-													<div className='flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:bg-blue-500/5 dark:text-blue-400'>
-														<Sparkles size={16} fill='currentColor' />
-													</div>
-													<div className='flex flex-col text-left'>
-														<span className='text-[10px] font-black tracking-wide text-zinc-400 uppercase'>
-															Model
-														</span>
-														<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
-															{modelOptions.find(
-																(m) => m.id === agentModel,
-															)?.label ?? 'Select a model'}
-														</span>
-													</div>
-												</div>
-												<ChevronDown
-													size={14}
-													className={`text-zinc-400 transition-transform ${isModelPickerOpen ? 'rotate-180' : ''}`}
-												/>
-											</button>
+										<ModelPicker
+											ws={workspaceId}
+											value={agentModel || null}
+											onChange={(id) => setAgentModel(id ?? '')}
+											requirements={{ tools: (toolBindings ?? []).length }}
+										/>
 
-											{isModelPickerOpen && (
-												<>
-													<div
-														className='fixed inset-0 z-10'
-														onClick={() => setIsModelPickerOpen(false)}
-													/>
-													<div className='absolute right-0 left-0 z-20 mt-1.5 rounded-xl border border-zinc-200 bg-white p-1.5 shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
-														{modelOptions.map((option) => (
-															<button
-																key={option.id}
-																type='button'
-																disabled={!option.isAvailable}
-																onClick={() => {
-																	setAgentModel(option.id);
-																	setIsModelPickerOpen(false);
-																}}
-																className={`flex w-full flex-col items-start gap-0.5 rounded-lg px-3 py-2 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
-																	option.id === agentModel
-																		? 'bg-primary-50 dark:bg-primary-950/30'
-																		: 'hover:bg-zinc-50 dark:hover:bg-zinc-800'
-																}`}>
-																<div className='flex w-full items-center justify-between'>
-																	<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
-																		{option.label}
-																	</span>
-																	<span className='rounded-full bg-zinc-100 px-2 py-0.5 text-[9px] font-bold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'>
-																		{option.isAvailable ? option.tier : 'No API key'}
-																	</span>
-																</div>
-																<span className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-																	{option.description}
-																</span>
-															</button>
-														))}
-													</div>
-												</>
-											)}
-										</div>
-
-																				{/* Instructions */}
+										{/* Instructions */}
 										<div className='flex flex-col gap-1.5'>
 											<label
 												htmlFor='agent-instructions'
@@ -3843,13 +4259,17 @@ const BuildPage = () => {
 												Instructions
 											</label>
 											<span className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-												The agent's system prompt: its role, how it works, and what it must never do.
+												The agent's system prompt: its role, how it works,
+												and what it must never do.
 											</span>
 											<div className='flex items-center gap-2'>
 												<input
+													aria-label='What should change? (optional)'
 													type='text'
 													value={instructionsChange}
-													onChange={(e) => setInstructionsChange(e.target.value)}
+													onChange={(e) =>
+														setInstructionsChange(e.target.value)
+													}
 													onKeyDown={(e) => {
 														if (e.key === 'Enter') {
 															e.preventDefault();
@@ -3866,19 +4286,25 @@ const BuildPage = () => {
 													disabled={improveInstructionsMutation.isPending}
 													className='bg-primary-500/10 text-primary-600 hover:bg-primary-500/15 dark:text-primary-400 flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-black transition-colors disabled:opacity-60'>
 													<Sparkles size={13} />
-													{improveInstructionsMutation.isPending ? 'Rewriting…' : 'Improve with AI'}
+													{improveInstructionsMutation.isPending
+														? 'Rewriting…'
+														: 'Improve with AI'}
 												</button>
 											</div>
 											<textarea
+												aria-label='You are an agent that...'
 												id='agent-instructions'
 												rows={14}
 												value={agentInstructions}
-												onChange={(e) => setAgentInstructions(e.target.value)}
+												onChange={(e) =>
+													setAgentInstructions(e.target.value)
+												}
 												placeholder='You are an agent that...'
 												className='focus:border-primary-500/50 focus:ring-primary-500/5 min-h-[240px] w-full resize-y rounded-xl border border-zinc-200 bg-white p-3 font-mono text-xs leading-relaxed text-zinc-800 outline-none placeholder:text-zinc-400 focus:ring-4 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950/25 dark:text-zinc-200 dark:placeholder:text-zinc-500'
 											/>
 											<span className='text-right text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
-												{agentInstructions.length.toLocaleString()} characters
+												{agentInstructions.length.toLocaleString()}{' '}
+												characters
 											</span>
 										</div>
 
@@ -3893,8 +4319,9 @@ const BuildPage = () => {
 														Allow Self-Updates
 													</span>
 													<span className='mt-0.5 text-[10px] leading-normal font-semibold text-zinc-400 dark:text-zinc-400'>
-														Let the agent update its own instructions when
-														you correct it. Each change is a new version.
+														Let the agent update its own instructions
+														when you correct it. Each change is a new
+														version.
 													</span>
 												</div>
 											</div>
@@ -3932,8 +4359,8 @@ const BuildPage = () => {
 														Skill Editing & Creation
 													</span>
 													<span className='mt-0.5 text-[10px] leading-normal font-semibold text-zinc-400 dark:text-zinc-400'>
-														Let the agent save new skills and improve its
-														skills when you correct it.
+														Let the agent save new skills and improve
+														its skills when you correct it.
 													</span>
 												</div>
 											</div>
@@ -3942,7 +4369,9 @@ const BuildPage = () => {
 												role='switch'
 												aria-checked={allowSkillEditing}
 												aria-label='Allow skill editing and creation'
-												onClick={() => setAllowSkillEditing(!allowSkillEditing)}
+												onClick={() =>
+													setAllowSkillEditing(!allowSkillEditing)
+												}
 												className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
 													allowSkillEditing
 														? 'bg-primary-400 dark:bg-primary-400'
@@ -3950,164 +4379,34 @@ const BuildPage = () => {
 												}`}>
 												<span
 													className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-														allowSkillEditing ? 'translate-x-4' : 'translate-x-0'
+														allowSkillEditing
+															? 'translate-x-4'
+															: 'translate-x-0'
 													}`}
 												/>
 											</button>
 										</div>
 									</div>
 
+									{/* Autonomy & approvals */}
+									<AgentAutonomyPanel
+										ws={workspaceId}
+										agentId={currentAgentId}
+										nodeName={(nodeType) => nodeFor(nodeType)?.name}
+									/>
+
 									{/* Tags Section */}
 									<AgentTagsPanel ws={workspaceId} agentId={currentAgentId} />
 
-									{/* Triggers Section */}
-									<div className='space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
-										<div className='flex items-center justify-between'>
-											<div className='flex items-center gap-2'>
-												<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-7 w-7 items-center justify-center rounded-lg'>
-													<Zap size={14} fill='currentColor' />
-												</div>
-												<h4 className='text-xs font-black text-zinc-900 dark:text-white'>
-													Triggers
-												</h4>
-											</div>
-											<button
-												onClick={openTriggerPanel}
-												className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex min-h-11 items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 md:min-h-0 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
-												<Plus size={10} />
-												<span>Trigger</span>
-											</button>
-										</div>
-
-										{(agentTriggers ?? []).length === 0 && (
-												<p className='pl-9 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-													Define events or conditions that activate this
-													agent.
-												</p>
-											)}
-
-										{(agentTriggers ?? []).length > 0 && (
-											<div className='space-y-2 pl-9'>
-												{(agentTriggers ?? []).map((trigger) => (
-													<div
-														key={trigger.id}
-														className='flex flex-col gap-1.5 rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
-														<div className='flex items-center justify-between'>
-															<div className='flex items-center gap-2'>
-																<span className='rounded-full bg-zinc-100 px-2 py-0.5 text-[9px] font-black text-zinc-600 uppercase dark:bg-zinc-800 dark:text-zinc-400'>
-																	{trigger.type}
-																</span>
-																<button
-																	type='button'
-																	role='switch'
-																	aria-checked={trigger.is_active}
-																	aria-label={`${trigger.is_active ? 'Disable' : 'Enable'} ${trigger.type} trigger`}
-																	disabled={
-																		updateTriggerMutation.isPending
-																	}
-																	onClick={() =>
-																		handleToggleTrigger(
-																			trigger.id,
-																			trigger.is_active,
-																		)
-																	}
-																	className='flex h-11 w-11 shrink-0 items-center justify-center rounded-lg disabled:opacity-50 md:h-7 md:w-8'>
-																	<span
-																		className={`relative inline-flex h-4 w-7 rounded-full border-2 border-transparent transition-colors ${trigger.is_active ? 'bg-primary-400' : 'bg-zinc-200 dark:bg-zinc-800'}`}>
-																		<span
-																			className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow-sm transition duration-200 ${
-																				trigger.is_active
-																					? 'translate-x-3'
-																					: 'translate-x-0'
-																			}`}
-																		/>
-																	</span>
-																</button>
-															</div>
-															<div className='flex items-center gap-2'>
-																<button
-																	aria-label={`Fire ${trigger.type} trigger now`}
-																	disabled={
-																		fireTriggerMutation.isPending
-																	}
-																	onClick={() =>
-																		handleFireTrigger(
-																			trigger.id,
-																		)
-																	}
-																	title='Fire now'
-																	className='hover:text-primary-600 dark:hover:text-primary-400 flex h-11 w-11 items-center justify-center rounded-lg text-zinc-400 disabled:opacity-50 md:h-7 md:w-7'>
-																	<Play size={12} />
-																</button>
-																<button
-																	aria-label={`Delete ${trigger.type} trigger`}
-																	onClick={() =>
-																		setPendingDeleteTriggerId(
-																			trigger.id,
-																		)
-																	}
-																	title='Delete trigger'
-																	className='flex h-11 w-11 items-center justify-center rounded-lg text-zinc-400 hover:text-rose-500 md:h-7 md:w-7'>
-																	<Trash2 size={12} />
-																</button>
-															</div>
-														</div>
-														{pendingDeleteTriggerId === trigger.id && (
-															<div className='flex flex-wrap items-center justify-end gap-2 rounded-lg bg-rose-50 p-2 text-[11px] font-semibold text-rose-700 dark:bg-rose-950/30 dark:text-rose-300'>
-																<span className='mr-auto'>
-																	Delete this trigger?
-																</span>
-																<button
-																	type='button'
-																	onClick={() =>
-																		setPendingDeleteTriggerId(
-																			null,
-																		)
-																	}
-																	className='min-h-11 rounded-lg px-3 md:min-h-0'>
-																	Cancel
-																</button>
-																<button
-																	type='button'
-																	disabled={
-																		deleteTriggerMutation.isPending
-																	}
-																	onClick={() =>
-																		handleDeleteTrigger(
-																			trigger.id,
-																		)
-																	}
-																	className='min-h-11 rounded-lg bg-rose-600 px-3 font-bold text-white disabled:opacity-50 md:min-h-0'>
-																	{deleteTriggerMutation.isPending
-																		? 'Deleting…'
-																		: 'Delete'}
-																</button>
-															</div>
-														)}
-														{trigger.token && (
-															<button
-																aria-label='Copy'
-																onClick={() =>
-																	handleCopyWebhookUrl(
-																		webhookUrlFor(trigger),
-																	)
-																}
-																className='hover:text-primary-600 dark:hover:text-primary-400 flex items-center gap-1.5 truncate text-left text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-																<Copy
-																	size={10}
-																	className='shrink-0'
-																/>
-																<span className='truncate'>
-																	{webhookUrlFor(trigger)}
-																</span>
-															</button>
-														)}
-													</div>
-												))}
-											</div>
-										)}
-
-									</div>
+									<AgentTriggersPanel
+										ws={workspaceId}
+										agentId={currentAgentId}
+										drawerTarget={triggerDrawer}
+										onOpenDrawer={(target) =>
+											void openTriggerDrawer(target).catch(() => {})
+										}
+										onCloseDrawer={() => setTriggerDrawer(null)}
+									/>
 
 									{/* Apps Section */}
 									<div className='space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
@@ -4137,7 +4436,7 @@ const BuildPage = () => {
 											</button>
 										</div>
 
-										{/* Attached tools — node bindings first, then whole workflows */}
+										{/* Attached tools: node bindings first, then whole workflows */}
 										{(toolBindings ?? []).length === 0 &&
 											(workflowTools ?? []).length === 0 && (
 												<p className='pl-9 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
@@ -4172,7 +4471,10 @@ const BuildPage = () => {
 																	'requires_connector' in node &&
 																	node.requires_connector &&
 																	connectorCredentials &&
-																	!hasUsableCredential(binding, node.category) && (
+																	!hasUsableCredential(
+																		binding,
+																		node.category,
+																	) && (
 																		<span className='mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-bold text-amber-600 dark:bg-amber-500/5 dark:text-amber-400'>
 																			Needs a connector
 																			credential
@@ -4247,16 +4549,17 @@ const BuildPage = () => {
 										</div>
 
 										{(attachedSkills ?? []).length === 0 && (
-												<p className='pl-9 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-													Add custom skills to extend your agent's
-													abilities.
-												</p>
-											)}
+											<p className='pl-9 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+												Add custom skills to extend your agent's abilities.
+											</p>
+										)}
 
 										{(attachedSkills ?? []).length > 0 && (
 											<div className='space-y-2 pl-9'>
 												{(attachedSkills ?? []).map((skill) => {
-													const SkillIcon = getSkillIconComponent(skill.icon);
+													const SkillIcon = getSkillIconComponent(
+														skill.icon,
+													);
 													return (
 														<div
 															key={skill.id}
@@ -4297,11 +4600,14 @@ const BuildPage = () => {
 												})}
 											</div>
 										)}
-
 									</div>
 
-									{/* Knowledge Sources Section */}
-									<AgentKnowledgeSourcesPanel ws={workspaceId} agentId={currentAgentId} />
+									{/* Knowledge Section */}
+									<AgentKnowledgePanel
+										ws={workspaceId}
+										agentId={currentAgentId}
+										agentName={agentName}
+									/>
 
 									{/* Subagents Section */}
 									<div className='space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
@@ -4332,14 +4638,17 @@ const BuildPage = () => {
 												<div className='flex min-w-0 items-center gap-3'>
 													<div
 														className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${agentColorTileClass(agentIconColor)}`}>
-														<AgentIconComponent size={15} />
+														{createElement(AgentIconComponent, {
+															size: 15,
+														})}
 													</div>
 													<div className='flex min-w-0 flex-col'>
 														<span className='truncate text-xs font-black text-zinc-800 dark:text-zinc-200'>
 															{agentName || 'This agent'} (Me)
 														</span>
 														<span className='mt-0.5 text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
-															Clones itself to work on subtasks in parallel.
+															Clones itself to work on subtasks in
+															parallel.
 														</span>
 													</div>
 												</div>
@@ -4365,7 +4674,9 @@ const BuildPage = () => {
 													}`}>
 													<span
 														className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-															allowSelfClone ? 'translate-x-4' : 'translate-x-0'
+															allowSelfClone
+																? 'translate-x-4'
+																: 'translate-x-0'
 														}`}
 													/>
 												</button>
@@ -4394,7 +4705,11 @@ const BuildPage = () => {
 															</div>
 														</div>
 														<button
-															onClick={() => detachSubagentMutation.mutate(String(subagent.id))}
+															onClick={() =>
+																detachSubagentMutation.mutate(
+																	String(subagent.id),
+																)
+															}
 															title='Remove subagent'
 															className='cursor-pointer p-1 text-zinc-400 hover:text-red-500 dark:hover:text-red-400'>
 															<Trash2 size={14} />
@@ -4425,8 +4740,8 @@ const BuildPage = () => {
 							)}
 
 							{/* Chats Tab */}
-														{activeSidebarTab === 'chatDetails' && (
-								<div className='flex-1 overflow-y-auto bg-zinc-50/40 p-4 dark:bg-zinc-950/20'>
+							{activeSidebarTab === 'chatDetails' && (
+								<div className='no-scrollbar flex-1 overflow-y-auto bg-zinc-50/40 p-4 dark:bg-zinc-950/20'>
 									<AgentChatsPanel
 										ws={workspaceId}
 										agentId={currentAgentId}
@@ -4479,7 +4794,7 @@ const BuildPage = () => {
 								<button
 									aria-label='Close'
 									onClick={() => closeToolDrawer()}
-									className='flex h-11 w-11 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 dark:hover:text-zinc-200 md:h-8 md:w-8 dark:text-zinc-500 dark:hover:bg-zinc-800'>
+									className='flex h-11 w-11 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 md:h-8 md:w-8 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
 									<X size={18} />
 								</button>
 							</div>
@@ -4508,7 +4823,10 @@ const BuildPage = () => {
 									</div>
 
 									{/* The two kinds of tool this backend supports */}
-									<div role='group' aria-label='Tool type' className='grid w-full grid-cols-2 rounded-lg bg-zinc-100 p-0.5 md:flex md:w-auto md:shrink-0 dark:bg-zinc-950/45'>
+									<div
+										role='group'
+										aria-label='Tool type'
+										className='grid w-full grid-cols-2 rounded-lg bg-zinc-100 p-0.5 md:flex md:w-auto md:shrink-0 dark:bg-zinc-950/45'>
 										<button
 											aria-pressed={toolTab === 'nodes'}
 											onClick={() => setToolTab('nodes')}
@@ -4533,9 +4851,9 @@ const BuildPage = () => {
 								</div>
 							</div>
 
-							{/* Attachable tools. Each row attaches on click — there is no
+							{/* Attachable tools. Each row attaches on click: there is no
 							    staged selection to save, so the drawer has no footer. */}
-							<div className='flex-1 space-y-3 overflow-y-auto p-4 dark:bg-zinc-950/10'>
+							<div className='no-scrollbar flex-1 space-y-3 overflow-y-auto p-4 dark:bg-zinc-950/10'>
 								<h4 className='pl-1 text-[10px] font-black tracking-widest text-zinc-400 uppercase'>
 									{toolTab === 'nodes'
 										? 'Available nodes'
@@ -4543,7 +4861,9 @@ const BuildPage = () => {
 								</h4>
 
 								<div className='space-y-1.5'>
-									{toolTab === 'nodes' && !isToolListPending && !isToolListError &&
+									{toolTab === 'nodes' &&
+										!isToolListPending &&
+										!isToolListError &&
 										attachableNodes.map((node) => (
 											<div
 												key={node.type}
@@ -4571,7 +4891,9 @@ const BuildPage = () => {
 											</div>
 										))}
 
-									{toolTab === 'workflows' && !isToolListPending && !isToolListError &&
+									{toolTab === 'workflows' &&
+										!isToolListPending &&
+										!isToolListError &&
 										attachableWorkflows.map((workflow) => (
 											<div
 												key={workflow.id}
@@ -4601,22 +4923,38 @@ const BuildPage = () => {
 										))}
 
 									{isToolListPending ? (
-										<div role='status' className='flex items-center justify-center gap-2 py-8 text-xs font-bold text-zinc-500'>
-											<Loader2 size={14} className='animate-spin' /> Loading tools…
+										<div
+											role='status'
+											className='flex items-center justify-center gap-2 py-8 text-xs font-bold text-zinc-500'>
+											<Loader2 size={14} className='animate-spin' /> Loading
+											tools…
 										</div>
 									) : isToolListError ? (
-										<div role='alert' className='py-8 text-center text-xs font-bold text-zinc-500'>
-											<p>Could not load {toolTab === 'nodes' ? 'nodes' : 'workflows'}.</p>
-											<button type='button' onClick={retryToolList} className='bg-primary-400 text-primary-950 mt-3 min-h-11 rounded-lg px-4'>Retry</button>
+										<div
+											role='alert'
+											className='py-8 text-center text-xs font-bold text-zinc-500'>
+											<p>
+												Could not load{' '}
+												{toolTab === 'nodes' ? 'nodes' : 'workflows'}.
+											</p>
+											<button
+												type='button'
+												onClick={retryToolList}
+												className='bg-primary-400 text-primary-950 mt-3 min-h-11 rounded-lg px-4'>
+												Retry
+											</button>
 										</div>
-									) : ((toolTab === 'nodes' && attachableNodes.length === 0) ||
-										(toolTab === 'workflows' && attachableWorkflows.length === 0)) ? (
+									) : (toolTab === 'nodes' && attachableNodes.length === 0) ||
+									  (toolTab === 'workflows' &&
+											attachableWorkflows.length === 0) ? (
 										<div className='py-8 text-center text-xs font-bold text-zinc-400 dark:text-zinc-500'>
 											{appSearchQuery.trim()
 												? `Nothing matches "${appSearchQuery}"`
-												: toolTab === 'nodes' && (nodeCatalog ?? []).length === 0
+												: toolTab === 'nodes' &&
+													  (nodeCatalog ?? []).length === 0
 													? 'No nodes available.'
-													: toolTab === 'workflows' && (workspaceWorkflows ?? []).length === 0
+													: toolTab === 'workflows' &&
+														  (workspaceWorkflows ?? []).length === 0
 														? 'No workflows in this workspace.'
 														: 'Everything here is already attached.'}
 										</div>
@@ -4665,7 +5003,10 @@ const BuildPage = () => {
 								<AttachToggle
 									label={agent.name}
 									isAttached={isAttached}
-									disabled={attachSubagentMutation.isPending || detachSubagentMutation.isPending}
+									disabled={
+										attachSubagentMutation.isPending ||
+										detachSubagentMutation.isPending
+									}
 									onClick={() =>
 										isAttached
 											? detachSubagentMutation.mutate(String(agent.id))
@@ -4719,7 +5060,8 @@ const BuildPage = () => {
 									<div
 										style={{
 											backgroundColor:
-												skill.color || getSkillCategoryColor(skill.category),
+												skill.color ||
+												getSkillCategoryColor(skill.category),
 										}}
 										className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white shadow-2xs'>
 										<SkillIcon size={16} />
@@ -4729,14 +5071,19 @@ const BuildPage = () => {
 											{skill.name}
 										</span>
 										<span className='mt-0.5 truncate text-[9px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
-											{skill.description || skill.category || 'No description provided.'}
+											{skill.description ||
+												skill.category ||
+												'No description provided.'}
 										</span>
 									</div>
 								</div>
 								<AttachToggle
 									label={skill.name}
 									isAttached={attachedSkillIds.has(skill.id)}
-									disabled={attachSkillMutation.isPending || detachSkillMutation.isPending}
+									disabled={
+										attachSkillMutation.isPending ||
+										detachSkillMutation.isPending
+									}
 									onClick={() =>
 										attachedSkillIds.has(skill.id)
 											? handleDetachSkill(skill.id)
@@ -4756,88 +5103,6 @@ const BuildPage = () => {
 				</div>
 			</AgentSideDrawer>
 
-			<AgentSideDrawer
-				isOpen={isTriggerPanelOpen}
-				title='Add a trigger'
-				onClose={() => setIsTriggerPanelOpen(false)}
-				footer={
-					<div className='flex justify-end gap-2'>
-						<button
-							onClick={() => setIsTriggerPanelOpen(false)}
-							className='min-h-11 rounded-lg px-4 py-1.5 text-xs font-bold text-zinc-500 hover:bg-zinc-100 md:min-h-0 dark:hover:bg-zinc-800'>
-							Cancel
-						</button>
-						<button
-							onClick={() => void handleCreateTrigger()}
-							disabled={createTriggerMutation.isPending}
-							className='bg-primary-400 text-primary-950 hover:bg-primary-500 min-h-11 rounded-lg px-4 py-1.5 text-xs font-black disabled:opacity-60 md:min-h-0'>
-							{createTriggerMutation.isPending ? 'Creating…' : 'Create trigger'}
-						</button>
-					</div>
-				}>
-				<div className='space-y-1.5'>
-					<span className='pl-1 text-[10px] font-black tracking-widest text-zinc-400 uppercase'>
-						Type
-					</span>
-					<div role='group' aria-label='Trigger type' className='grid grid-cols-3 rounded-lg bg-zinc-100 p-0.5 dark:bg-zinc-950/45'>
-						{(['schedule', 'webhook', 'event'] as TAgentTriggerType[]).map((t) => (
-							<button
-								key={t}
-								type='button'
-								aria-pressed={newTriggerType === t}
-								onClick={() => setNewTriggerType(t)}
-								className={`min-h-11 rounded-md px-3 py-1.5 text-[10px] font-black capitalize transition md:min-h-0 ${
-									newTriggerType === t
-										? 'bg-white text-zinc-900 shadow-2xs dark:bg-zinc-800 dark:text-white'
-										: 'text-zinc-400 hover:text-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-300'
-								}`}>
-								{t}
-							</button>
-						))}
-					</div>
-				</div>
-				{newTriggerType === 'schedule' && (
-					<label className='block space-y-1.5'>
-						<span className='pl-1 text-[10px] font-black tracking-widest text-zinc-400 uppercase'>
-							Schedule (cron)
-						</span>
-						<input
-							type='text'
-							value={newTriggerCron}
-							onChange={(e) => setNewTriggerCron(e.target.value)}
-							placeholder='0 9 * * *'
-							className='focus:border-primary-500/50 min-h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 font-mono text-base text-zinc-800 outline-none md:min-h-0 md:text-xs dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
-						/>
-					</label>
-				)}
-				{newTriggerType === 'event' && (
-					<label className='block space-y-1.5'>
-						<span className='pl-1 text-[10px] font-black tracking-widest text-zinc-400 uppercase'>
-							Event name
-						</span>
-						<input
-							type='text'
-							value={newTriggerEventName}
-							onChange={(e) => setNewTriggerEventName(e.target.value)}
-							placeholder='Event name'
-							className='focus:border-primary-500/50 min-h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-base font-semibold text-zinc-800 outline-none md:min-h-0 md:text-xs dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
-						/>
-					</label>
-				)}
-				<label className='block space-y-1.5'>
-					<span className='pl-1 text-[10px] font-black tracking-widest text-zinc-400 uppercase'>
-						Initial message (optional)
-					</span>
-					<textarea
-						rows={3}
-						value={newTriggerInitialMessage}
-						onChange={(e) => setNewTriggerInitialMessage(e.target.value)}
-						placeholder='What the agent is told when this trigger fires'
-						className='focus:border-primary-500/50 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-base font-semibold text-zinc-800 outline-none md:text-xs dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200'
-					/>
-				</label>
-			</AgentSideDrawer>
-
 			<SkillEditorDrawer
 				ws={workspaceId}
 				isOpen={isSkillEditorOpen}
@@ -4845,6 +5110,15 @@ const BuildPage = () => {
 				onClose={() => setIsSkillEditorOpen(false)}
 				onCreated={(skill) => handleAttachSkill(skill.id)}
 			/>
+
+			{currentAgentId && (
+				<SaveEvalCaseModal
+					ws={workspaceId}
+					agentId={currentAgentId}
+					draft={evalCaseDraft}
+					onClose={() => setEvalCaseDraft(null)}
+				/>
+			)}
 
 			{currentAgentId && (
 				<SaveAsTemplateModal

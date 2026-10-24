@@ -12,7 +12,9 @@ import { OnboardingEndpoints as E } from './onboarding.endpoints';
 
 export const OnboardingService = {
 	state: (signal?: AbortSignal) =>
-		axiosClient.get<TApiResponse<TOnboardingState>>(E.state, { signal }).then(unwrap<TOnboardingState>),
+		axiosClient
+			.get<TApiResponse<TOnboardingState>>(E.state, { signal })
+			.then(unwrap<TOnboardingState>),
 
 	dismiss: () => axiosClient.post(E.dismiss).then(() => undefined),
 

@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { TCreateNotificationChannelDto, TUpdateNotificationChannelDto } from '@/types/notification.type';
+import type {
+	TCreateNotificationChannelDto,
+	TUpdateNotificationChannelDto,
+} from '@/types/notification.type';
 import { NotificationChannelService } from './notification-channels.service';
 import { notificationChannelKeys } from './notification-channels.keys';
 
@@ -13,7 +16,8 @@ export const useNotificationChannels = (ws: string) =>
 export const useCreateNotificationChannel = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (payload: TCreateNotificationChannelDto) => NotificationChannelService.create(ws, payload),
+		mutationFn: (payload: TCreateNotificationChannelDto) =>
+			NotificationChannelService.create(ws, payload),
 		onSuccess: () => qc.invalidateQueries({ queryKey: notificationChannelKeys.lists(ws) }),
 		meta: { errorMessage: 'Failed to create notification channel' },
 	});

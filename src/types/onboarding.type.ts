@@ -3,7 +3,7 @@
 // ------------------------------------------------------------
 // Every onboarding action (invite team, select role/plan, submit
 // discovery, complete, dismiss) returns the same `TOnboardingState`
-// snapshot except `dismiss`, which returns nothing — see
+// snapshot except `dismiss`, which returns nothing: see
 // `OnboardingService::state()`.
 // ============================================================
 import type { TPlan } from './billing.type';

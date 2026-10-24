@@ -12,26 +12,18 @@ type Draft = {
 	edges: TCanvasEdge[];
 };
 
-// Autosave, Save, and Run can overlap. Serialize writes for each workflow so an
-// older autosave cannot finish last and replace a newer graph.
+// Autosave, Save, Run and restoring a version can overlap. Serialize writes for
+// each workflow so an older autosave cannot finish last and replace a newer graph.
 const pendingWrites = new Map<string, Promise<unknown>>();
 
-export const persistWorkflowDraft = (draft: Draft) => {
-	const key = `${draft.workspaceId}:${draft.workflowId}`;
+export const queueDraftWrite = <T>(
+	workspaceId: string,
+	workflowId: string,
+	writeDraft: () => Promise<T>,
+): Promise<T> => {
+	const key = `${workspaceId}:${workflowId}`;
 	const previous = pendingWrites.get(key) ?? Promise.resolve();
-	const write = previous
-		.catch(() => undefined)
-		.then(async () => {
-			await WorkflowService.update(draft.workspaceId, draft.workflowId, {
-				name: draft.name,
-				description: draft.description,
-			});
-			return WorkflowDiagnosticsService.replaceGraph(
-				draft.workspaceId,
-				draft.workflowId,
-				buildGraphPayload(draft.nodes, draft.edges),
-			);
-		});
+	const write = previous.catch(() => undefined).then(writeDraft);
 	pendingWrites.set(key, write);
 	void write
 		.finally(() => {
@@ -40,3 +32,16 @@ export const persistWorkflowDraft = (draft: Draft) => {
 		.catch(() => undefined);
 	return write;
 };
+
+export const persistWorkflowDraft = (draft: Draft) =>
+	queueDraftWrite(draft.workspaceId, draft.workflowId, async () => {
+		await WorkflowService.update(draft.workspaceId, draft.workflowId, {
+			name: draft.name,
+			description: draft.description,
+		});
+		return WorkflowDiagnosticsService.replaceGraph(
+			draft.workspaceId,
+			draft.workflowId,
+			buildGraphPayload(draft.nodes, draft.edges),
+		);
+	});

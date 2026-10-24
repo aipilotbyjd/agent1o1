@@ -4,8 +4,9 @@
 // A trigger attaches to either a workflow or an agent (the
 // `target_type`/`target_id` pair) through one shared resource.
 // `token` is present only when `type` is a token-bearing mechanism
-// (webhook) — see `TriggerType::usesToken()`.
+// (webhook): see `TriggerType::usesToken()`.
 // ============================================================
+import type { TPaginationMeta } from './api.type';
 import type { TTriggerMechanism } from './catalog.type';
 
 export type TTriggerTargetType = 'workflow' | 'agent';
@@ -15,13 +16,26 @@ export type TTrigger = {
 	workspace_id: string;
 	target_type: TTriggerTargetType;
 	target_id: string;
+	/** The canvas node that owns this trigger; null for one made outside the canvas. */
+	trigger_node_key: string | null;
 	type: TTriggerMechanism;
 	preset_id: string | null;
 	config: Record<string, unknown> | null;
 	token: string | null;
+	has_signing_secret?: boolean;
+	/** The connected account a polling trigger reads with. */
+	credential_id: string | null;
 	is_active: boolean;
 	consecutive_failure_count: number;
 	last_run_at: string | null;
+	/** Schedules only: when it next fires (UTC). */
+	next_run_at?: string | null;
+	consecutive_skip_count?: number;
+	/** Failures in a row before it switches itself off. */
+	max_failures?: number;
+	/** Counts over the last 24 hours, from the list endpoint. */
+	stats_24h?: { fired: number; failed: number; skipped: number; rejected: number };
+	target_name?: string | null;
 	created_by: string;
 	created_at: string;
 	updated_at: string;
@@ -29,7 +43,7 @@ export type TTrigger = {
 
 /** An event's `source` is the backend's `TriggerType` value. */
 export type TTriggerEventSource = 'webhook' | 'schedule' | 'manual' | 'polling';
-/** `TriggerEventStatus` — `queued`/`running` are in flight, the rest are terminal. */
+/** `TriggerEventStatus` - `queued`/`running` are in flight, the rest are terminal. */
 export type TTriggerEventStatus =
 	| 'queued'
 	| 'running'
@@ -71,6 +85,25 @@ export type TCreateTriggerDto = {
 export type TUpdateTriggerDto = {
 	config?: Record<string, unknown> | null;
 	is_active?: boolean;
+	/** Polling only: switch the connected account it reads with. */
+	credential_id?: string | null;
+	/** An empty string or null clears it. */
+	signing_secret?: string | null;
+};
+
+/** Narrows `GET /triggers` to one target's triggers. */
+export type TTriggerListFilter = {
+	target_type: TTriggerTargetType;
+	target_id: string;
+};
+
+/** `GET .../triggers/{trigger}/events`: newest first, one page. */
+export type TTriggerEventPage = { events: TTriggerEvent[]; meta: TPaginationMeta };
+
+export type TTriggerEventParams = {
+	page?: number;
+	per_page?: number;
+	status?: TTriggerEventStatus[];
 };
 
 /** Result of `POST .../triggers/{trigger}/run`. */
