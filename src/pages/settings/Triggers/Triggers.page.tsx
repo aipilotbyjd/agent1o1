@@ -23,6 +23,7 @@ import {
 } from '@/api/modules/triggers';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useConfirm } from '@/context/confirm';
+import { useRealtimePollInterval } from '@/context/realtime';
 import paths from '@/Routes/paths';
 import Spinner from '@/components/ui/Spinner';
 import TriggerEventsPart from '@/parts/TriggerEvents.part';
@@ -32,6 +33,8 @@ import {
 	webhookCurlFor,
 	webhookUrlFor,
 } from '@/pages/coreapp/Playbooks/WorkflowEditor/_helper/trigger.helper';
+
+const TRIGGERS_REFRESH_MS = 10_000;
 
 const TYPE_ICON: Record<string, typeof Webhook> = {
 	webhook: Webhook,
@@ -51,7 +54,12 @@ type TFilter = 'all' | 'on' | 'off';
 const TriggersPage = () => {
 	const { activeWorkspaceId } = useWorkspaceContext();
 	const { confirm } = useConfirm();
-	const { data: triggers = [], isLoading, isError } = useTriggers(activeWorkspaceId);
+	const refetchInterval = useRealtimePollInterval(TRIGGERS_REFRESH_MS);
+	const {
+		data: triggers = [],
+		isLoading,
+		isError,
+	} = useTriggers(activeWorkspaceId, undefined, { refetchInterval });
 	const updateTrigger = useUpdateTrigger(activeWorkspaceId);
 	const runTrigger = useRunTrigger(activeWorkspaceId);
 	const deleteTrigger = useDeleteTrigger(activeWorkspaceId);

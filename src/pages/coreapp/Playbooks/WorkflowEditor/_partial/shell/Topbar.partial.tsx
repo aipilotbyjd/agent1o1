@@ -53,6 +53,7 @@ import SaveAsTemplateModal from '@/parts/SaveAsTemplateModal.part';
 import DraftStatusPill from '../versions/DraftStatusPill.partial';
 import { useDraftStatus } from '../../_hooks/useDraftStatus.hook';
 import PublishPopover from '../versions/PublishPopover.partial';
+import WorkflowPresence from './WorkflowPresence.partial';
 import { usePublishReview } from '../../_hooks/usePublishReview.hook';
 import { useAiPanelAvailability } from '../../_hooks/useAiPanelAvailability.hook';
 import WorkflowPagesMenu from '@/pages/coreapp/WorkflowPages/_partial/WorkflowPagesMenu.partial';
@@ -686,6 +687,8 @@ const Topbar = () => {
 						<span>Templates</span>
 					</button>
 				</EditorTooltip>
+
+				<WorkflowPresence />
 
 				{/* Share Dropdown */}
 				<div className='relative hidden sm:block'>

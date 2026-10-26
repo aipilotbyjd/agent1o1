@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRealtimePollInterval } from '@/context/realtime';
 import { NotificationService } from './notifications.service';
 import { notificationKeys } from './notifications.keys';
 
@@ -15,12 +16,15 @@ export const useNotificationEvents = () =>
 		staleTime: 30 * 60_000,
 	});
 
-export const useUnreadNotificationCount = () =>
-	useQuery({
+export const useUnreadNotificationCount = () => {
+	const refetchInterval = useRealtimePollInterval(60_000);
+
+	return useQuery({
 		queryKey: notificationKeys.unreadCount(),
 		queryFn: ({ signal }) => NotificationService.unreadCount(signal),
-		refetchInterval: 60_000,
+		refetchInterval,
 	});
+};
 
 export const useMarkNotificationRead = () => {
 	const qc = useQueryClient();

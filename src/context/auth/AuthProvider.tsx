@@ -5,7 +5,7 @@ import { authEvents, clearTokens, getAccessToken, TOKEN_CHANGE_EVENT } from '@/a
 import { useCurrentUser } from '@/api/modules/user';
 import { useLogout } from '@/api/modules/auth';
 import { WorkspaceProvider } from '@/context/workspace';
-import { RealtimeProvider } from '@/context/realtime';
+import { RealtimeProvider, RunsRealtimeSync } from '@/context/realtime';
 import { BrandRealtimeSync } from '@/context/brand';
 import pages from '@/Routes/pages';
 import AuthContext from './AuthContext';
@@ -102,6 +102,7 @@ export const AuthProvider = () => {
 			<WorkspaceProvider>
 				<RealtimeProvider>
 					<BrandRealtimeSync />
+					<RunsRealtimeSync />
 					<Outlet />
 				</RealtimeProvider>
 			</WorkspaceProvider>

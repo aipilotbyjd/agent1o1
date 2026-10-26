@@ -1,4 +1,13 @@
-import { createContext, createElement, useContext, useRef, useState, type ReactNode } from 'react';
+import {
+	createContext,
+	createElement,
+	useContext,
+	useEffect,
+	useEffectEvent,
+	useRef,
+	useState,
+	type ReactNode,
+} from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
 	usePublishApprovalPolicy,
@@ -8,8 +17,15 @@ import {
 	WorkflowVersionService,
 	workflowVersionKeys,
 } from '@/api/modules/workflows';
-import { RunService } from '@/api/modules/runs';
+import {
+	RunService,
+	createStaleEventGuard,
+	subscribeToRun,
+	type INodeRunStateChangedEvent,
+	type IRunStateChangedEvent,
+} from '@/api/modules/runs';
 import { ApiError } from '@/api/core';
+import { useRealtime } from '@/context/realtime';
 import type { TWorkflowInterfaceField } from '@/types/workflow-extras.type';
 import { useConfirm } from '@/context/confirm';
 import type { TNodeRunDetail, TRun, TRunStatus } from '@/types/run.type';
@@ -33,6 +49,8 @@ const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, 
 
 /** Poll quickly during active work, then less often for approval/callback waits. */
 const POLL_INTERVAL_MS = 2000;
+/** Runs started elsewhere are often over in seconds, so follow them closely enough to see each step. */
+const OBSERVED_POLL_INTERVAL_MS = 700;
 const WAITING_POLL_INTERVAL_MS = 10000;
 const MAX_CONSECUTIVE_POLL_FAILURES = 5;
 
@@ -58,6 +76,14 @@ const errorText = (error: unknown): string | undefined => {
 	return undefined;
 };
 
+const epochMs = (iso: string | null | undefined): number | undefined =>
+	iso ? Date.parse(iso) : undefined;
+
+const plainObject = (value: unknown): Record<string, unknown> | undefined =>
+	value && typeof value === 'object' && !Array.isArray(value)
+		? (value as Record<string, unknown>)
+		: undefined;
+
 type TInputRequest = {
 	ws: string;
 	wfId: string;
@@ -78,8 +104,10 @@ const ACTIVE_RUN_STATUSES = new Set<TRunStatus>([
 
 const useRunWorkflowController = () => {
 	const { state, dispatch } = useWorkflowEditor();
+	const { echo } = useRealtime();
 	const stopped = useRef(false);
 	const starting = useRef(false);
+	const followedRunId = useRef<string | null>(null);
 	// Set once the user has agreed that Run may publish the draft.
 	const publishConfirmed = useRef(false);
 	// What was last entered on the run form, so "Run again" starts from it.
@@ -119,6 +147,25 @@ const useRunWorkflowController = () => {
 		}
 	};
 
+	/** A live step change. The events leave out input and output, which polling fills in. */
+	const applyNodeEvent = (event: INodeRunStateChangedEvent) => {
+		const startedAt = epochMs(event.started_at);
+		const finishedAt = epochMs(event.finished_at);
+		dispatch({
+			type: 'SET_NODE_STATUS',
+			id: event.key,
+			status: API_NODE_STATUS_MAP[event.status] ?? 'idle',
+			durationMs:
+				startedAt !== undefined && finishedAt !== undefined
+					? finishedAt - startedAt
+					: undefined,
+			error: errorText(event.error),
+		});
+		if (event.status === 'running') {
+			dispatch({ type: 'RUN_CURRENT_NODE', nodeId: event.key });
+		}
+	};
+
 	/** Finalise a remote run from the backend's recorded status. */
 	const finishRemoteRun = async (ws: string, run: TRun, nodeRuns: TNodeRunDetail[]) => {
 		let finalRun = run;
@@ -143,7 +190,12 @@ const useRunWorkflowController = () => {
 				: finalRun.status === 'cancelled'
 					? 'stopped'
 					: 'error';
-		dispatch({ type: 'RUN_FINISH', status: finalStatus, output: finalRun.output });
+		dispatch({
+			type: 'RUN_FINISH',
+			status: finalStatus,
+			output: finalRun.output,
+			finishedAt: epochMs(finalRun.finished_at),
+		});
 		dispatch({
 			type: 'APPEND_LOG',
 			log: {
@@ -155,10 +207,10 @@ const useRunWorkflowController = () => {
 			type: 'PUSH_RUN_HISTORY',
 			record: {
 				id: finalRun.id,
-				startedAt: finalRun.started_at ? Date.parse(finalRun.started_at) : Date.now(),
-				finishedAt: finalRun.finished_at ? Date.parse(finalRun.finished_at) : Date.now(),
+				startedAt: epochMs(finalRun.started_at) ?? Date.now(),
+				finishedAt: epochMs(finalRun.finished_at) ?? Date.now(),
 				status: finalStatus,
-				trigger: 'manual',
+				trigger: finalRun.trigger_type || 'manual',
 				versionId: finalRun.workflow_version_id ?? undefined,
 				nodeRuns: nodeRuns.map((nodeRun) => ({
 					nodeId: nodeRun.key,
@@ -182,7 +234,11 @@ const useRunWorkflowController = () => {
 	};
 
 	/** Poll the backend because a realtime completion event may precede subscription. */
-	const runViaPolling = async (ws: string, initialRun: TRun) => {
+	const runViaPolling = async (
+		ws: string,
+		initialRun: TRun,
+		pollIntervalMs = POLL_INTERVAL_MS,
+	) => {
 		let run = initialRun;
 		let nodeRuns: TNodeRunDetail[] = [];
 		let attempts = 0;
@@ -192,7 +248,7 @@ const useRunWorkflowController = () => {
 				await wait(
 					run.status === 'awaiting_approval' || run.status === 'awaiting_callback'
 						? WAITING_POLL_INTERVAL_MS
-						: POLL_INTERVAL_MS,
+						: pollIntervalMs,
 				);
 			}
 			if (stopped.current) break;
@@ -224,9 +280,17 @@ const useRunWorkflowController = () => {
 	/**
 	 * Follow a started backend run and use the backend record as the source of truth.
 	 */
-	const followRemoteRun = async (ws: string, run: TRun, input?: Record<string, unknown>) => {
+	const followRemoteRun = async (
+		ws: string,
+		run: TRun,
+		input?: Record<string, unknown>,
+		pollIntervalMs?: number,
+	) => {
+		if (followedRunId.current === run.id) return;
+		followedRunId.current = run.id;
+		let unsubscribe: (() => void) | undefined;
 		try {
-			dispatch({ type: 'RUN_START', id: run.id, input });
+			dispatch({ type: 'RUN_START', id: run.id, input, startedAt: epochMs(run.started_at) });
 			dispatch({
 				type: 'APPEND_LOG',
 				log: {
@@ -235,7 +299,16 @@ const useRunWorkflowController = () => {
 				},
 			});
 
-			const result = await runViaPolling(ws, run);
+			const isFresh = createStaleEventGuard();
+			unsubscribe = echo
+				? subscribeToRun(echo, ws, run.id, {
+						onNodeState: (event) => {
+							if (isFresh(event.key, event.emitted_at)) applyNodeEvent(event);
+						},
+					})
+				: undefined;
+
+			const result = await runViaPolling(ws, run, pollIntervalMs);
 			if (result.lostContact) {
 				notify.error(
 					'Lost contact with the server while the run was in progress. It may still be running: check Run History.',
@@ -247,6 +320,8 @@ const useRunWorkflowController = () => {
 		} catch (error) {
 			notify.error(messageFromError(error, 'Lost track of the run'));
 			dispatch({ type: 'RUN_FINISH', status: 'error' });
+		} finally {
+			unsubscribe?.();
 		}
 	};
 
@@ -435,6 +510,24 @@ const useRunWorkflowController = () => {
 			starting.current = false;
 		}
 	};
+
+	const observeRun = useEffectEvent((event: IRunStateChangedEvent) => {
+		if (!ws || event.workflow_id !== wfId || !ACTIVE_RUN_STATUSES.has(event.status)) return;
+		if (state.run.status === 'running' || starting.current || inputRequest) return;
+		if (followedRunId.current === event.id) return;
+
+		stopped.current = false;
+		RunService.detail(ws, event.id)
+			.then((run) =>
+				followRemoteRun(ws, run, plainObject(run.input), OBSERVED_POLL_INTERVAL_MS),
+			)
+			.catch(() => undefined);
+	});
+
+	useEffect(() => {
+		if (!echo || !ws) return;
+		return subscribeToRun(echo, ws, null, { onRunState: observeRun });
+	}, [echo, ws]);
 
 	const stopRun = () => {
 		stopped.current = true;

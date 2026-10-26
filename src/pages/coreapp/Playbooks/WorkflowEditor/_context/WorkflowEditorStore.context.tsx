@@ -73,8 +73,13 @@ export type TWorkflowEditorAction =
 	| { type: 'SET_COMMAND_PALETTE'; open: boolean }
 	| { type: 'SET_QUICK_ADD'; open: boolean }
 	| { type: 'SET_IMPORT_EXPORT'; open: boolean }
-	| { type: 'RUN_START'; id: string; input?: Record<string, unknown> }
-	| { type: 'RUN_FINISH'; status: 'success' | 'error' | 'stopped'; output?: unknown }
+	| { type: 'RUN_START'; id: string; input?: Record<string, unknown>; startedAt?: number }
+	| {
+			type: 'RUN_FINISH';
+			status: 'success' | 'error' | 'stopped';
+			output?: unknown;
+			finishedAt?: number;
+	  }
 	| { type: 'RUN_CURRENT_NODE'; nodeId: string | null }
 	| { type: 'APPEND_LOG'; log: Omit<TRunLog, 'id' | 'at'> }
 	| { type: 'SET_LOGS'; logs: TRunLog[] }
@@ -692,7 +697,7 @@ export const workflowEditorReducer = (
 				run: {
 					id: action.id,
 					status: 'running',
-					startedAt: Date.now(),
+					startedAt: action.startedAt ?? Date.now(),
 					finishedAt: null,
 					currentNodeId: null,
 					logs: [],
@@ -712,7 +717,7 @@ export const workflowEditorReducer = (
 					...state.run,
 					status: action.status,
 					currentNodeId: null,
-					finishedAt: Date.now(),
+					finishedAt: action.finishedAt ?? Date.now(),
 					output: action.output,
 				},
 			};
@@ -749,8 +754,14 @@ export const workflowEditorReducer = (
 									status: action.status,
 									durationMs: action.durationMs,
 									error: action.error,
-									inputPreview: action.inputPreview,
-									outputPreview: action.outputPreview,
+									inputPreview:
+										'inputPreview' in action
+											? action.inputPreview
+											: node.data.inputPreview,
+									outputPreview:
+										'outputPreview' in action
+											? action.outputPreview
+											: node.data.outputPreview,
 								},
 							}
 						: node,
