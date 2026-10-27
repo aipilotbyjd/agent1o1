@@ -7,11 +7,13 @@ import {
 	KeyRound,
 	Play,
 	RefreshCw,
+	RotateCcw,
 	Terminal,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { notify } from '@/api/core';
 import {
+	useReplayTriggerEvent,
 	useRotateTriggerToken,
 	useRunTrigger,
 	useTriggerEvents,
@@ -19,6 +21,7 @@ import {
 } from '@/api/modules/triggers';
 import { useConfirm } from '@/context/confirm';
 import paths from '@/Routes/paths';
+import TriggerSample from '@/parts/TriggerSample.part';
 import type { TTrigger } from '@/types/trigger.type';
 import {
 	copyWithNotice,
@@ -176,6 +179,8 @@ type Props = {
 const TriggerDetails = ({ workspaceId, trigger, showEvents = true }: Props) => {
 	const { confirm } = useConfirm();
 	const runTrigger = useRunTrigger(workspaceId);
+	const replayEvent = useReplayTriggerEvent(workspaceId);
+	const updateTrigger = useUpdateTrigger(workspaceId);
 	const rotateToken = useRotateTriggerToken(workspaceId);
 	const [eventsOpen, setEventsOpen] = useState(false);
 	// Only fetched once the list is opened; an empty id keeps the query disabled.
@@ -210,7 +215,7 @@ const TriggerDetails = ({ workspaceId, trigger, showEvents = true }: Props) => {
 
 	return (
 		<div className='nodrag flex flex-col gap-2' onPointerDown={stop}>
-			{(stats || trigger.next_run_at) && (
+			{(stats || trigger.next_run_at || trigger.next_poll_at) && (
 				<div className='flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[9px] font-semibold text-zinc-400'>
 					{stats && (
 						<span title='Over the last 24 hours'>
@@ -224,6 +229,16 @@ const TriggerDetails = ({ workspaceId, trigger, showEvents = true }: Props) => {
 							{stats.skipped > 0 && <span> · {stats.skipped} skipped</span>}
 						</span>
 					)}
+					{trigger.is_active &&
+						trigger.next_poll_at &&
+						trigger.status?.delivery.mode === 'polling' && (
+							<span>
+								Next check{' '}
+								{formatDistanceToNow(new Date(trigger.next_poll_at), {
+									addSuffix: true,
+								})}
+							</span>
+						)}
 					{trigger.is_active && trigger.next_run_at && (
 						<span>
 							Next{' '}
@@ -233,6 +248,36 @@ const TriggerDetails = ({ workspaceId, trigger, showEvents = true }: Props) => {
 						</span>
 					)}
 				</div>
+			)}
+			{trigger.status && (trigger.status.hint || trigger.status.action) && (
+				<div className='flex items-start justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50/70 px-2 py-1.5 dark:border-amber-900/50 dark:bg-amber-950/20'>
+					<span className='text-[9px] font-semibold text-amber-800 dark:text-amber-300'>
+						{trigger.status.hint ?? trigger.status.label}
+					</span>
+					{trigger.status.action === 'resume' && (
+						<button
+							type='button'
+							disabled={updateTrigger.isPending}
+							onClick={(event) => {
+								stop(event);
+								updateTrigger.mutate({ id: trigger.id, body: { is_active: true } });
+							}}
+							className='shrink-0 cursor-pointer text-[9px] font-bold text-amber-900 underline disabled:opacity-50 dark:text-amber-200'>
+							Switch on
+						</button>
+					)}
+					{trigger.status.action === 'reconnect' && (
+						<Link
+							to={paths.apps(workspaceId)}
+							onClick={stop}
+							className='shrink-0 text-[9px] font-bold text-amber-900 underline dark:text-amber-200'>
+							Reconnect
+						</Link>
+					)}
+				</div>
+			)}
+			{trigger.type === 'polling' && (
+				<TriggerSample ws={workspaceId} triggerId={trigger.id} />
 			)}
 			{webhookUrl && (
 				<div className='flex flex-col gap-1'>
@@ -287,19 +332,19 @@ const TriggerDetails = ({ workspaceId, trigger, showEvents = true }: Props) => {
 
 			<div className={`flex items-center ${showEvents ? 'justify-between' : 'justify-end'}`}>
 				{showEvents && (
-				<button
-					type='button'
-					onClick={(event) => {
-						stop(event);
-						setEventsOpen((open) => !open);
-					}}
-					className='flex cursor-pointer items-center gap-1 text-[10px] font-semibold text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'>
-					<ChevronRight
-						size={11}
-						className={`transition-transform ${eventsOpen ? 'rotate-90' : ''}`}
-					/>
-					Recent events
-				</button>
+					<button
+						type='button'
+						onClick={(event) => {
+							stop(event);
+							setEventsOpen((open) => !open);
+						}}
+						className='flex cursor-pointer items-center gap-1 text-[10px] font-semibold text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'>
+						<ChevronRight
+							size={11}
+							className={`transition-transform ${eventsOpen ? 'rotate-90' : ''}`}
+						/>
+						Recent events
+					</button>
 				)}
 				<button
 					type='button'
@@ -343,6 +388,22 @@ const TriggerDetails = ({ workspaceId, trigger, showEvents = true }: Props) => {
 									addSuffix: true,
 								})}
 							</span>
+							{event.payload !== null && event.payload !== undefined && (
+								<button
+									type='button'
+									title='Run this event again'
+									disabled={replayEvent.isPending}
+									onClick={(click) => {
+										stop(click);
+										replayEvent.mutate(
+											{ id: trigger.id, eventId: event.id },
+											{ onSuccess: () => notify.success('Replay queued') },
+										);
+									}}
+									className='hover:text-primary-900 dark:hover:text-primary-400 shrink-0 cursor-pointer text-zinc-400 disabled:opacity-50'>
+									<RotateCcw size={9} />
+								</button>
+							)}
 							{event.run_id && (
 								<Link
 									to={paths.trail(workspaceId, event.run_id)}

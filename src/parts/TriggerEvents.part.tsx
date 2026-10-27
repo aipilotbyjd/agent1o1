@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { format, formatDistanceToNow } from 'date-fns';
-import { ChevronRight, ExternalLink, Loader2 } from 'lucide-react';
-import { useTriggerEventFeed } from '@/api/modules/triggers';
+import { ChevronRight, ExternalLink, Loader2, RotateCcw } from 'lucide-react';
+import { notify } from '@/api/core';
+import { useReplayTriggerEvent, useTriggerEventFeed } from '@/api/modules/triggers';
 import paths from '@/Routes/paths';
 import type { TTriggerEvent, TTriggerEventStatus } from '@/types/trigger.type';
 import { eventStatusDot } from '@/pages/coreapp/Playbooks/WorkflowEditor/_helper/trigger.helper';
@@ -45,6 +46,7 @@ const SOURCE_LABEL: Record<string, string> = {
 
 const EventRow = ({ ws, event }: { ws: string; event: TTriggerEvent }) => {
 	const [open, setOpen] = useState(false);
+	const replay = useReplayTriggerEvent(ws);
 	const hasPayload =
 		event.payload !== null &&
 		event.payload !== undefined &&
@@ -86,6 +88,22 @@ const EventRow = ({ ws, event }: { ws: string; event: TTriggerEvent }) => {
 					className='shrink-0 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
 					{formatDistanceToNow(created, { addSuffix: true })}
 				</time>
+				{hasPayload && event.status !== 'queued' && event.status !== 'running' && (
+					<button
+						type='button'
+						title='Run this event again'
+						disabled={replay.isPending}
+						onClick={() =>
+							replay.mutate(
+								{ id: event.trigger_id, eventId: event.id },
+								{ onSuccess: () => notify.success('Replay queued') },
+							)
+						}
+						className='flex shrink-0 cursor-pointer items-center gap-0.5 text-[10px] font-black text-zinc-500 transition hover:text-zinc-800 disabled:opacity-50 dark:text-zinc-400 dark:hover:text-zinc-200'>
+						<RotateCcw size={10} />
+						Replay
+					</button>
+				)}
 				{event.run_id && (
 					<Link
 						to={paths.trail(ws, event.run_id)}

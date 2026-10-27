@@ -12,4 +12,7 @@ export const TriggerEndpoints = {
 	run: (ws: string, id: string) => `${trigger(ws, id)}/run`,
 	rotateToken: (ws: string, id: string) => `${trigger(ws, id)}/rotate-token`,
 	events: (ws: string, id: string) => `${trigger(ws, id)}/events`,
+	sample: (ws: string, id: string) => `${trigger(ws, id)}/sample`,
+	replay: (ws: string, id: string, eventId: string) =>
+		`${trigger(ws, id)}/events/${eventId}/replay`,
 } as const;

@@ -11,6 +11,37 @@ import type { TTriggerMechanism } from './catalog.type';
 
 export type TTriggerTargetType = 'workflow' | 'agent';
 
+/** How a trigger gets its events: `instant` is push, `polling` is a timer. */
+export type TTriggerDeliveryMode = 'instant' | 'polling' | 'webhook' | 'schedule' | 'manual';
+
+/** What the trigger is doing right now; each state comes with at most one action. */
+export type TTriggerState =
+	| 'listening'
+	| 'checking'
+	| 'connecting'
+	| 'degraded'
+	| 'reconnect_needed'
+	| 'scheduled'
+	| 'manual'
+	| 'paused'
+	| 'off_failures'
+	| 'off_skips'
+	| 'suspended';
+
+export type TTriggerStatusAction = 'resume' | 'reconnect' | 'retry' | null;
+
+/** Computed by the backend (`TriggerStatus`) so every screen says the same thing. */
+export type TTriggerStatus = {
+	delivery: { mode: TTriggerDeliveryMode; label: string };
+	state: TTriggerState;
+	label: string;
+	hint: string | null;
+	action: TTriggerStatusAction;
+	last_event_at: string | null;
+	/** When the next check or scheduled run happens (UTC). */
+	next_check_at: string | null;
+};
+
 export type TTrigger = {
 	id: string;
 	workspace_id: string;
@@ -30,6 +61,10 @@ export type TTrigger = {
 	last_run_at: string | null;
 	/** Schedules only: when it next fires (UTC). */
 	next_run_at?: string | null;
+	/** Polling only: when it next checks (UTC). */
+	next_poll_at?: string | null;
+	/** How events arrive and whether it is working. */
+	status?: TTriggerStatus;
 	consecutive_skip_count?: number;
 	/** Failures in a row before it switches itself off. */
 	max_failures?: number;
@@ -105,6 +140,9 @@ export type TTriggerEventParams = {
 	per_page?: number;
 	status?: TTriggerEventStatus[];
 };
+
+/** One item a trigger sees right now, as a run would receive it. */
+export type TTriggerSampleItem = { id: string; payload: Record<string, unknown> };
 
 /** Result of `POST .../triggers/{trigger}/run`. */
 export type TTriggerRunResult = { event: TTriggerEvent };

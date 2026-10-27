@@ -96,10 +96,40 @@ export const useTriggerEventFeed = (ws: string, id: string, status?: TTriggerEve
 	useInfiniteQuery({
 		queryKey: triggerEventKeys.feed(ws, id, status),
 		queryFn: ({ pageParam, signal }) =>
-			TriggerService.events(ws, id, { page: pageParam, per_page: EVENTS_PER_PAGE, status }, signal),
+			TriggerService.events(
+				ws,
+				id,
+				{ page: pageParam, per_page: EVENTS_PER_PAGE, status },
+				signal,
+			),
 		initialPageParam: 1,
 		getNextPageParam: (page) =>
 			page.meta.current_page < page.meta.last_page ? page.meta.current_page + 1 : undefined,
 		enabled: !!ws && !!id,
 		refetchInterval: 10_000,
 	});
+
+/**
+ * Reads what the trigger sees right now, so fields can be mapped from real
+ * data. A mutation, not a query: it calls the connected app, so it only runs
+ * when asked, never on its own.
+ */
+export const useTriggerSample = (ws: string) =>
+	useMutation({
+		mutationFn: (id: string) => TriggerService.sample(ws, id),
+		meta: { errorMessage: 'Could not read a sample' },
+	});
+
+/** Runs a past event again as a new event, then refreshes the event lists. */
+export const useReplayTriggerEvent = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({ id, eventId }: { id: string; eventId: string }) =>
+			TriggerService.replay(ws, id, eventId),
+		onSuccess: (_event, { id }) => {
+			qc.invalidateQueries({ queryKey: triggerEventKeys.list(ws, id) });
+			qc.invalidateQueries({ queryKey: triggerKeys.lists(ws) });
+		},
+		meta: { errorMessage: 'Failed to replay event' },
+	});
+};

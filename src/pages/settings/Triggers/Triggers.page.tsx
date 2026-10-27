@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { formatDistanceToNow } from 'date-fns';
 import {
-	AlertTriangle,
 	CalendarClock,
 	Copy,
 	Hand,
@@ -26,6 +25,7 @@ import { useConfirm } from '@/context/confirm';
 import paths from '@/Routes/paths';
 import Spinner from '@/components/ui/Spinner';
 import TriggerEventsPart from '@/parts/TriggerEvents.part';
+import TriggerStatusBadge from '@/parts/TriggerStatusBadge.part';
 import type { TTrigger } from '@/types/trigger.type';
 import {
 	copyWithNotice,
@@ -146,7 +146,6 @@ const TriggersPage = () => {
 						const isWorkflow = trigger.target_type === 'workflow';
 						const isLegacy = isWorkflow && !trigger.trigger_node_key;
 						const stats = trigger.stats_24h;
-						const failures = trigger.consecutive_failure_count ?? 0;
 						const appNode =
 							typeof trigger.config?.node_type === 'string'
 								? trigger.config.node_type.replace(/_/g, ' ')
@@ -154,166 +153,187 @@ const TriggersPage = () => {
 
 						return (
 							<div key={trigger.id}>
-							<div className='flex flex-wrap items-center gap-4 px-5 py-4'>
-								<span className='bg-primary-100 text-primary-700 dark:bg-primary-950/40 dark:text-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg'>
-									<Icon size={16} />
-								</span>
+								<div className='flex flex-wrap items-center gap-4 px-5 py-4'>
+									<span className='bg-primary-100 text-primary-700 dark:bg-primary-950/40 dark:text-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg'>
+										<Icon size={16} />
+									</span>
 
-								<div className='min-w-0 flex-1'>
-									<div className='flex flex-wrap items-center gap-2'>
-										<span className='truncate text-sm font-bold text-zinc-900 dark:text-zinc-100'>
-											{trigger.target_name ??
-												`Deleted ${trigger.target_type}`}
-										</span>
-										<span className='text-xs font-semibold text-zinc-500 capitalize'>
-											{appNode ?? trigger.type}
-										</span>
-										{isLegacy && (
-											<span
-												title='Made outside the canvas. Convert it with `php artisan triggers:legacy --convert`, or delete it.'
-												className='rounded-full bg-zinc-100 px-2 py-0.5 text-[9px] font-bold text-zinc-500 uppercase dark:bg-zinc-800 dark:text-zinc-400'>
-												Legacy
+									<div className='min-w-0 flex-1'>
+										<div className='flex flex-wrap items-center gap-2'>
+											<span className='truncate text-sm font-bold text-zinc-900 dark:text-zinc-100'>
+												{trigger.target_name ??
+													`Deleted ${trigger.target_type}`}
 											</span>
+											<span className='text-xs font-semibold text-zinc-500 capitalize'>
+												{appNode ?? trigger.type}
+											</span>
+											{isLegacy && (
+												<span
+													title='Made outside the canvas. Convert it with `php artisan triggers:legacy --convert`, or delete it.'
+													className='rounded-full bg-zinc-100 px-2 py-0.5 text-[9px] font-bold text-zinc-500 uppercase dark:bg-zinc-800 dark:text-zinc-400'>
+													Legacy
+												</span>
+											)}
+											{trigger.target_type === 'agent' && (
+												<span className='rounded-full bg-violet-100 px-2 py-0.5 text-[9px] font-bold text-violet-700 uppercase dark:bg-violet-950/40 dark:text-violet-300'>
+													Agent
+												</span>
+											)}
+										</div>
+										{trigger.status && (
+											<div className='mt-1 flex flex-wrap items-center gap-x-3 gap-y-1'>
+												<TriggerStatusBadge status={trigger.status} />
+												{trigger.status.action === 'reconnect' && (
+													<Link
+														to={paths.apps(activeWorkspaceId)}
+														className='text-xs font-bold text-amber-700 underline dark:text-amber-400'>
+														Reconnect account
+													</Link>
+												)}
+											</div>
 										)}
-										{trigger.target_type === 'agent' && (
-											<span className='rounded-full bg-violet-100 px-2 py-0.5 text-[9px] font-bold text-violet-700 uppercase dark:bg-violet-950/40 dark:text-violet-300'>
-												Agent
-											</span>
+										{trigger.status?.hint && (
+											<p className='mt-1 text-xs font-medium text-zinc-500 dark:text-zinc-400'>
+												{trigger.status.hint}
+											</p>
+										)}
+										<p className='mt-0.5 text-xs text-zinc-500 dark:text-zinc-400'>
+											{trigger.last_run_at
+												? `Last fired ${formatDistanceToNow(new Date(trigger.last_run_at), { addSuffix: true })}`
+												: 'Never fired'}
+											{trigger.is_active && trigger.next_run_at
+												? ` · next ${formatDistanceToNow(new Date(trigger.next_run_at), { addSuffix: true })}`
+												: ''}
+											{trigger.is_active &&
+											trigger.next_poll_at &&
+											trigger.status?.delivery.mode === 'polling'
+												? ` · next check ${formatDistanceToNow(new Date(trigger.next_poll_at), { addSuffix: true })}`
+												: ''}
+											{trigger.status?.last_event_at
+												? ` · last event ${formatDistanceToNow(new Date(trigger.status.last_event_at), { addSuffix: true })}`
+												: ''}
+											{stats
+												? ` · 24h: ${stats.fired} run${stats.fired === 1 ? '' : 's'}, ${stats.failed} failed, ${stats.rejected} rejected, ${stats.skipped} skipped`
+												: ''}
+										</p>
+										{trigger.type === 'webhook' && trigger.token && (
+											<div className='mt-2 flex max-w-full items-center gap-1.5'>
+												<code className='min-w-0 truncate rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 font-mono text-[11px] text-zinc-700 select-all dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300'>
+													{webhookUrlFor(trigger.token)}
+												</code>
+												<button
+													type='button'
+													title='Copy webhook URL'
+													onClick={() =>
+														copyWithNotice(
+															webhookUrlFor(trigger.token ?? ''),
+															'Webhook URL',
+														)
+													}
+													className='flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/[0.06]'>
+													<Copy size={13} />
+												</button>
+												<button
+													type='button'
+													title='Copy a curl example for this webhook'
+													onClick={() =>
+														copyWithNotice(
+															webhookCurlFor(trigger),
+															'curl example',
+														)
+													}
+													className='flex h-7 shrink-0 items-center gap-1 rounded-lg px-2 text-[11px] font-bold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/[0.06]'>
+													<Terminal size={12} />
+													curl
+												</button>
+											</div>
 										)}
 									</div>
-									<p className='mt-0.5 text-xs text-zinc-500 dark:text-zinc-400'>
-										{trigger.last_run_at
-											? `Last fired ${formatDistanceToNow(new Date(trigger.last_run_at), { addSuffix: true })}`
-											: 'Never fired'}
-										{trigger.is_active && trigger.next_run_at
-											? ` · next ${formatDistanceToNow(new Date(trigger.next_run_at), { addSuffix: true })}`
-											: ''}
-										{stats
-											? ` · 24h: ${stats.fired} run${stats.fired === 1 ? '' : 's'}, ${stats.failed} failed, ${stats.rejected} rejected, ${stats.skipped} skipped`
-											: ''}
-									</p>
-									{trigger.type === 'webhook' && trigger.token && (
-										<div className='mt-2 flex max-w-full items-center gap-1.5'>
-											<code className='min-w-0 truncate rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 font-mono text-[11px] text-zinc-700 select-all dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300'>
-												{webhookUrlFor(trigger.token)}
-											</code>
-											<button
-												type='button'
-												title='Copy webhook URL'
-												onClick={() =>
-													copyWithNotice(
-														webhookUrlFor(trigger.token ?? ''),
-														'Webhook URL',
-													)
-												}
-												className='flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/[0.06]'>
-												<Copy size={13} />
-											</button>
-											<button
-												type='button'
-												title='Copy a curl example for this webhook'
-												onClick={() =>
-													copyWithNotice(
-														webhookCurlFor(trigger),
-														'curl example',
-													)
-												}
-												className='flex h-7 shrink-0 items-center gap-1 rounded-lg px-2 text-[11px] font-bold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/[0.06]'>
-												<Terminal size={12} />
-												curl
-											</button>
-										</div>
-									)}
-									{!trigger.is_active && failures > 0 && (
-										<p className='mt-1 flex items-center gap-1 text-xs font-semibold text-amber-700 dark:text-amber-400'>
-											<AlertTriangle size={12} />
-											Switched off after {failures} failures in a row. Fix the
-											cause, then switch it back on.
-										</p>
-									)}
-								</div>
 
-								<div className='flex shrink-0 items-center gap-2'>
-									{isWorkflow && (
-										<Link
-											to={paths.editPlaybook(
-												activeWorkspaceId,
-												trigger.target_id,
-											)}
-											className='rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-white/[0.04]'>
-											Open workflow
-										</Link>
-									)}
-									<button
-										type='button'
-										aria-expanded={eventsFor === trigger.id}
-										onClick={() =>
-											setEventsFor((current) =>
-												current === trigger.id ? null : trigger.id,
-											)
-										}
-										className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold transition ${
-											eventsFor === trigger.id
-												? 'border-primary-400 bg-primary-50 text-primary-800 dark:border-primary-600 dark:bg-primary-950/30 dark:text-primary-300'
-												: 'border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-white/[0.04]'
-										}`}>
-										<History size={13} />
-										Events
-									</button>
-									<button
-										type='button'
-										title='Fire it now, as if an event had arrived'
-										disabled={!trigger.is_active || runTrigger.isPending}
-										onClick={() =>
-											runTrigger.mutate(trigger.id, {
-												onSuccess: () => notify.success('Run queued'),
-											})
-										}
-										className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-white/[0.06]'>
-										<Play size={14} />
-									</button>
-									{(isLegacy || trigger.target_type === 'agent') && (
+									<div className='flex shrink-0 items-center gap-2'>
+										{isWorkflow && (
+											<Link
+												to={paths.editPlaybook(
+													activeWorkspaceId,
+													trigger.target_id,
+												)}
+												className='rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-white/[0.04]'>
+												Open workflow
+											</Link>
+										)}
 										<button
 											type='button'
-											title='Delete trigger'
-											disabled={deleteTrigger.isPending}
-											onClick={() => handleDelete(trigger)}
-											className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-950/30'>
-											<Trash2 size={14} />
+											aria-expanded={eventsFor === trigger.id}
+											onClick={() =>
+												setEventsFor((current) =>
+													current === trigger.id ? null : trigger.id,
+												)
+											}
+											className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold transition ${
+												eventsFor === trigger.id
+													? 'border-primary-400 bg-primary-50 text-primary-800 dark:border-primary-600 dark:bg-primary-950/30 dark:text-primary-300'
+													: 'border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-white/[0.04]'
+											}`}>
+											<History size={13} />
+											Events
 										</button>
-									)}
-									<button
-										type='button'
-										role='switch'
-										aria-checked={trigger.is_active}
-										aria-label={
-											trigger.is_active
-												? 'Switch trigger off'
-												: 'Switch trigger on'
-										}
-										disabled={updateTrigger.isPending}
-										onClick={() =>
-											updateTrigger.mutate({
-												id: trigger.id,
-												body: { is_active: !trigger.is_active },
-											})
-										}
-										className={`flex h-5 w-9 items-center rounded-full border p-0.5 transition-all disabled:opacity-50 ${
-											trigger.is_active
-												? 'border-primary-400 bg-primary-400 justify-end'
-												: 'justify-start border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800'
-										}`}>
-										<span
-											className={`size-3.5 rounded-full shadow-sm ${trigger.is_active ? 'bg-white' : 'bg-zinc-300 dark:bg-zinc-600'}`}
+										<button
+											type='button'
+											title='Fire it now, as if an event had arrived'
+											disabled={!trigger.is_active || runTrigger.isPending}
+											onClick={() =>
+												runTrigger.mutate(trigger.id, {
+													onSuccess: () => notify.success('Run queued'),
+												})
+											}
+											className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-white/[0.06]'>
+											<Play size={14} />
+										</button>
+										{(isLegacy || trigger.target_type === 'agent') && (
+											<button
+												type='button'
+												title='Delete trigger'
+												disabled={deleteTrigger.isPending}
+												onClick={() => handleDelete(trigger)}
+												className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-950/30'>
+												<Trash2 size={14} />
+											</button>
+										)}
+										<button
+											type='button'
+											role='switch'
+											aria-checked={trigger.is_active}
+											aria-label={
+												trigger.is_active
+													? 'Switch trigger off'
+													: 'Switch trigger on'
+											}
+											disabled={updateTrigger.isPending}
+											onClick={() =>
+												updateTrigger.mutate({
+													id: trigger.id,
+													body: { is_active: !trigger.is_active },
+												})
+											}
+											className={`flex h-5 w-9 items-center rounded-full border p-0.5 transition-all disabled:opacity-50 ${
+												trigger.is_active
+													? 'border-primary-400 bg-primary-400 justify-end'
+													: 'justify-start border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800'
+											}`}>
+											<span
+												className={`size-3.5 rounded-full shadow-sm ${trigger.is_active ? 'bg-white' : 'bg-zinc-300 dark:bg-zinc-600'}`}
+											/>
+										</button>
+									</div>
+								</div>
+								{eventsFor === trigger.id && (
+									<div className='border-t border-zinc-100 bg-zinc-50/60 px-5 py-4 dark:border-zinc-800 dark:bg-zinc-950/30'>
+										<TriggerEventsPart
+											ws={activeWorkspaceId}
+											triggerId={trigger.id}
 										/>
-									</button>
-								</div>
-							</div>
-							{eventsFor === trigger.id && (
-								<div className='border-t border-zinc-100 bg-zinc-50/60 px-5 py-4 dark:border-zinc-800 dark:bg-zinc-950/30'>
-									<TriggerEventsPart ws={activeWorkspaceId} triggerId={trigger.id} />
-								</div>
-							)}
+									</div>
+								)}
 							</div>
 						);
 					})}
