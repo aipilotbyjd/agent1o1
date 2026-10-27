@@ -15,12 +15,18 @@ const FILTERS: { value: TFilter; label: string; status?: TTriggerEventStatus[] }
 	{ value: 'fired', label: 'Ran', status: ['fired'] },
 	{ value: 'failed', label: 'Failed', status: ['failed'] },
 	{ value: 'rejected', label: 'Rejected', status: ['rejected'] },
-	{ value: 'skipped', label: 'Skipped', status: ['skipped', 'ignored', 'duplicate'] },
+	{
+		value: 'skipped',
+		label: 'Skipped',
+		status: ['skipped', 'ignored', 'duplicate', 'held', 'batched'],
+	},
 ];
 
 const STATUS_LABEL: Record<TTriggerEventStatus, string> = {
 	queued: 'Queued',
 	running: 'Running',
+	held: 'Held',
+	batched: 'Grouped',
 	fired: 'Ran',
 	ignored: 'Ignored',
 	skipped: 'Skipped',

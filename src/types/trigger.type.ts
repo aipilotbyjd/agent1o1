@@ -82,6 +82,8 @@ export type TTriggerEventSource = 'webhook' | 'schedule' | 'manual' | 'polling';
 export type TTriggerEventStatus =
 	| 'queued'
 	| 'running'
+	| 'held'
+	| 'batched'
 	| 'fired'
 	| 'ignored'
 	| 'skipped'

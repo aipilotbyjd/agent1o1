@@ -21,6 +21,7 @@ import {
 } from '@/api/modules/triggers';
 import { useConfirm } from '@/context/confirm';
 import paths from '@/Routes/paths';
+import TriggerListen from '@/parts/TriggerListen.part';
 import TriggerSample from '@/parts/TriggerSample.part';
 import type { TTrigger } from '@/types/trigger.type';
 import {
@@ -276,8 +277,11 @@ const TriggerDetails = ({ workspaceId, trigger, showEvents = true }: Props) => {
 					)}
 				</div>
 			)}
-			{trigger.type === 'polling' && (
-				<TriggerSample ws={workspaceId} triggerId={trigger.id} />
+			{trigger.type !== 'manual' && (
+				<>
+					<TriggerSample ws={workspaceId} triggerId={trigger.id} />
+					<TriggerListen ws={workspaceId} triggerId={trigger.id} />
+				</>
 			)}
 			{webhookUrl && (
 				<div className='flex flex-col gap-1'>
