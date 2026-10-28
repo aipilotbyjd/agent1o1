@@ -63,6 +63,8 @@ export const webhookCurlFor = (trigger: TTrigger): string => {
 export const eventStatusDot: Record<TTriggerEventStatus, string> = {
 	queued: 'bg-sky-500',
 	running: 'bg-sky-500',
+	held: 'bg-amber-400',
+	batched: 'bg-zinc-300 dark:bg-zinc-600',
 	fired: 'bg-emerald-500',
 	ignored: 'bg-zinc-300 dark:bg-zinc-600',
 	skipped: 'bg-zinc-300 dark:bg-zinc-600',
@@ -100,13 +102,48 @@ export const CRON_SHORTCUTS = [
 
 const CRON_FIELD = /^(\*|\d+(-\d+)?)(\/\d+)?(,(\*|\d+(-\d+)?)(\/\d+)?)*$/;
 
+const CRON_MACROS = new Set([
+	'@yearly',
+	'@annually',
+	'@monthly',
+	'@weekly',
+	'@daily',
+	'@midnight',
+	'@hourly',
+]);
+
+// Month and weekday names the scheduler accepts, as the numbers they stand for.
+const CRON_NAMES: Record<string, string> = {
+	jan: '1',
+	feb: '2',
+	mar: '3',
+	apr: '4',
+	may: '5',
+	jun: '6',
+	jul: '7',
+	aug: '8',
+	sep: '9',
+	oct: '10',
+	nov: '11',
+	dec: '12',
+	sun: '0',
+	mon: '1',
+	tue: '2',
+	wed: '3',
+	thu: '4',
+	fri: '5',
+	sat: '6',
+};
+
 /**
- * The backend stores `config.cron` unchecked and the scheduler parses it every
- * minute, so a malformed value is only caught here. Five numeric fields only:
- * no `@daily` macros or month/day names.
+ * A quick check before saving; the backend still validates the expression
+ * properly. Five fields of numbers, ranges, lists and steps, with month and
+ * weekday names (`mon-fri`, `jan`) and the `@daily`-style macros.
  */
 export const isValidCron = (cron: string) => {
-	const fields = cron.trim().split(/\s+/);
+	const trimmed = cron.trim().toLowerCase();
+	if (CRON_MACROS.has(trimmed)) return true;
+	const fields = trimmed.replace(/[a-z]{3}/g, (name) => CRON_NAMES[name] ?? name).split(/\s+/);
 	return fields.length === 5 && fields.every((field) => CRON_FIELD.test(field));
 };
 

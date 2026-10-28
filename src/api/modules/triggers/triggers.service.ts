@@ -4,6 +4,7 @@ import type { TApiResponse, TListParams } from '@/api/core';
 import type {
 	TTrigger,
 	TTriggerEvent,
+	TTriggerSampleItem,
 	TCreateTriggerDto,
 	TUpdateTriggerDto,
 	TTriggerEventPage,
@@ -49,4 +50,16 @@ export const TriggerService = {
 				signal,
 			})
 			.then((r): TTriggerEventPage => ({ events: r.data.data, meta: r.data.meta })),
+
+	// What the trigger sees right now, without running anything.
+	sample: (ws: string, id: string) =>
+		axiosClient
+			.get<TApiResponse<{ items: TTriggerSampleItem[] }>>(E.sample(ws, id))
+			.then(unwrapKey<TTriggerSampleItem[]>('items')),
+
+	// Runs a past event's payload again as a new event.
+	replay: (ws: string, id: string, eventId: string) =>
+		axiosClient
+			.post<TApiResponse<{ event: TTriggerEvent }>>(E.replay(ws, id, eventId))
+			.then(unwrapKey<TTriggerEvent>('event')),
 };

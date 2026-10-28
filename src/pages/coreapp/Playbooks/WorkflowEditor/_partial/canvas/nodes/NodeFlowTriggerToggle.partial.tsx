@@ -5,6 +5,7 @@ import {
 	useResumeWorkflowTrigger,
 	useWorkflowTrigger,
 } from '@/api/modules/workflows/workflows.hooks';
+import TriggerStatusBadge from '@/parts/TriggerStatusBadge.part';
 import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 import { useWorkflowRouteParams } from '../../../_hooks/useWorkflowRouteParams.hook';
 
@@ -84,13 +85,17 @@ const NodeFlowTriggerToggle = ({ nodeId, active }: Props) => {
 			</span>
 
 			<span className='flex shrink-0 items-center gap-2'>
-				<span
-					className={[
-						'text-[11px] font-bold',
-						active ? 'text-primary-600 dark:text-primary-400' : 'text-zinc-400',
-					].join(' ')}>
-					{status ?? 'No'}
-				</span>
+				{active && liveTrigger?.status ? (
+					<TriggerStatusBadge status={liveTrigger.status} />
+				) : (
+					<span
+						className={[
+							'text-[11px] font-bold',
+							active ? 'text-primary-600 dark:text-primary-400' : 'text-zinc-400',
+						].join(' ')}>
+						{status ?? 'No'}
+					</span>
+				)}
 				<button
 					type='button'
 					role='switch'
