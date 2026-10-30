@@ -151,6 +151,17 @@ export interface INodeType {
 export type TNodeCategoryKind = 'core' | 'app';
 
 // Node category from API
+export interface INodeCategoryFunction {
+	slug: string;
+	label: string;
+	order: number;
+}
+
+export interface INodeCategoryVendor {
+	slug: string;
+	label: string;
+}
+
 export interface INodeCategory {
 	id: string;
 	name: string;
@@ -159,6 +170,14 @@ export interface INodeCategory {
 	icon: string;
 	color: string;
 	kind?: TNodeCategoryKind;
+	/** What an app category is used for, primary first; empty for core categories. */
+	functions?: INodeCategoryFunction[];
+	/** Whether the signed-in user pinned this app to their "Your apps". */
+	is_pinned?: boolean;
+	/** The primary of `functions`. */
+	function?: string | null;
+	/** Who makes the app, when it belongs to a suite. */
+	vendor?: INodeCategoryVendor | null;
 	sort_order: number;
 	nodes_count?: number;
 	nodes?: INodeType[];

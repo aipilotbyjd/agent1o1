@@ -9,6 +9,7 @@
 export const CatalogEndpoints = {
 	nodeCategories: '/node-categories',
 	nodeCategory: (id: string) => `/node-categories/${id}`,
+	nodeCategoryPin: (id: string) => `/node-categories/${id}/pin`,
 	triggerPresets: '/catalog/trigger-presets',
 	modelCatalog: '/model-catalog',
 } as const;

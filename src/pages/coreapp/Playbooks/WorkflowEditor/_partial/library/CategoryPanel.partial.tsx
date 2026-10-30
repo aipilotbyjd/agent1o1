@@ -5,6 +5,8 @@ import { mapApiCategoryToGroup } from '../../_helper/apiNodeCatalog.helper';
 import type { TNodeDefinition } from '../../_types/node.type';
 import { useConnectedApps } from '../../_hooks/useConnectedApps.hook';
 import { NodeRow, PanelLoader, RetryButton, StateMessage } from './LibraryItems.partial';
+import AppCategoryPanel from './AppCategoryPanel.partial';
+import TriggersCategoryPanel from './TriggersCategoryPanel.partial';
 
 type Props = {
 	categoryId: string;
@@ -50,16 +52,23 @@ const CategoryPanel = ({ categoryId, workspaceId, onAdd }: Props) => {
 		);
 	}
 
+	if (group.kind === 'app') {
+		return (
+			<AppCategoryPanel
+				group={group}
+				workspaceId={workspaceId}
+				connected={connected}
+				onAdd={onAdd}
+			/>
+		);
+	}
+
+	if (group.slug === 'triggers-events') {
+		return <TriggersCategoryPanel group={group} onAdd={onAdd} />;
+	}
+
 	return (
 		<div className='space-y-1 px-4 pb-4'>
-			{group.kind === 'app' && (
-				<div className='px-1 pb-2 text-[10px] font-black tracking-widest uppercase'>
-					<span className={connected ? 'text-emerald-500' : 'text-zinc-400'}>
-						{connected ? '● Connected' : '○ Not connected'}
-					</span>
-					<span className='text-zinc-400'> · {group.nodes.length} nodes</span>
-				</div>
-			)}
 			{group.nodes.map((node) => (
 				<NodeRow key={node.key} node={node} onAdd={onAdd} />
 			))}

@@ -102,6 +102,10 @@ export type TNodeDefinition = {
 	supportsLoopMode?: boolean;
 	/** Node can be promoted to the flow's entry trigger (shows the "Activate as flow trigger" strip). */
 	supportsTrigger?: boolean;
+	/** The app category this node belongs to (`slack`), for grouping nodes from many apps. */
+	appSlug?: string;
+	/** Whether the node starts a flow on its own (an instant trigger) or does a job in one. */
+	nodeKind?: 'trigger' | 'action';
 	/** Picked from Triggers & Events: the new node starts with its trigger switched on. */
 	startsAsTrigger?: boolean;
 	/** False for a retired node (the manual trigger): kept resolvable, hidden from the library. */

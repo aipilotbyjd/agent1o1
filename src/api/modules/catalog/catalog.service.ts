@@ -30,6 +30,10 @@ export const CatalogService = {
 			>(E.nodeCategory(id), { signal })
 			.then((r) => r.data.data),
 
+	/** Pins or unpins an app for the signed-in user, so "Your apps" follows their account. */
+	pinNodeCategory: (id: string, isPinned: boolean) =>
+		axiosClient.patch(E.nodeCategoryPin(id), { is_pinned: isPinned }).then(() => undefined),
+
 	/** Grouped by preset category, e.g. `{ github: [...], stripe: [...] }`. */
 	triggerPresets: (signal?: AbortSignal) =>
 		axiosClient

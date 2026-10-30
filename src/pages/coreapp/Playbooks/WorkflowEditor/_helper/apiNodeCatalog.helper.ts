@@ -15,6 +15,9 @@ import type {
 	TPortType,
 } from '../_types/node.type';
 
+export type TCategoryFunction = { slug: string; label: string; order: number };
+export type TCategoryVendor = { slug: string; label: string };
+
 export type TNodeCategoryGroup = {
 	id: string;
 	slug: string;
@@ -24,6 +27,10 @@ export type TNodeCategoryGroup = {
 	color: string;
 	colorHex: string;
 	kind: 'core' | 'app';
+	/** What an app is used for, primary first; empty for core categories. */
+	functions: TCategoryFunction[];
+	/** Who makes it, when it belongs to a suite (Google, Zoho...). */
+	vendor: TCategoryVendor | null;
 	order: number;
 	nodesCount: number;
 	/** What the library offers: listed nodes only. */
@@ -272,6 +279,8 @@ export const mapApiNodeToDefinition = (
 		outputs: outputPorts,
 		fields,
 		requiresCredential: Boolean(credentialType),
+		appSlug: slug ?? (typeof node.category === 'string' ? node.category : undefined),
+		nodeKind: node.node_kind === 'trigger' ? 'trigger' : 'action',
 		supportsTrigger: Boolean(node.supports_trigger),
 		startsAsTrigger: Boolean(node.trigger_mode),
 		listed: node.listed !== false,
@@ -297,6 +306,8 @@ export const mapApiCategoryToGroup = (
 		color: normalizeHue(category.color),
 		colorHex: category.color,
 		kind: category.kind === 'app' ? 'app' : 'core',
+		functions: category.functions ?? [],
+		vendor: category.vendor ?? null,
 		order: category.sort_order,
 		nodesCount: category.nodes_count ?? category.nodes?.length ?? 0,
 		nodes: allNodes.filter(isListed),
@@ -307,3 +318,123 @@ export const mapApiCategoryToGroup = (
 export const mapApiCategoriesToGroups = (
 	categories: Array<INodeCategory | TNodeCategoryWithCount>,
 ): TNodeCategoryGroup[] => categories.map(mapApiCategoryToGroup).sort((a, b) => a.order - b.order);
+
+export type TAppSection = {
+	id: string;
+	label: string;
+	order: number;
+	apps: TNodeCategoryGroup[];
+};
+
+const OTHER_SECTION: TCategoryFunction = {
+	slug: 'other',
+	label: 'Other apps',
+	order: Number.MAX_SAFE_INTEGER,
+};
+
+/** App categories filed under each function they are used for, sections in the backend's order and apps in theirs. An app with several functions appears in each. */
+export const groupAppsBySection = (apps: TNodeCategoryGroup[]): TAppSection[] => {
+	const sections = new Map<string, TAppSection>();
+
+	for (const app of apps) {
+		for (const fn of app.functions.length > 0 ? app.functions : [OTHER_SECTION]) {
+			const section = sections.get(fn.slug) ?? {
+				id: fn.slug,
+				label: fn.label,
+				order: fn.order,
+				apps: [],
+			};
+			section.apps.push(app);
+			sections.set(fn.slug, section);
+		}
+	}
+
+	return [...sections.values()]
+		.map((section) => ({
+			...section,
+			apps: [...section.apps].sort((a, b) => a.order - b.order),
+		}))
+		.sort((a, b) => a.order - b.order);
+};
+
+/** Makers with two or more apps: a one-app maker has no family worth a filter. */
+export const appVendors = (apps: TNodeCategoryGroup[]): TCategoryVendor[] => {
+	const counts = new Map<string, { vendor: TCategoryVendor; count: number }>();
+
+	for (const app of apps) {
+		if (!app.vendor) continue;
+		const entry = counts.get(app.vendor.slug) ?? { vendor: app.vendor, count: 0 };
+		entry.count += 1;
+		counts.set(app.vendor.slug, entry);
+	}
+
+	return [...counts.values()]
+		.filter((entry) => entry.count > 1)
+		.map((entry) => entry.vendor)
+		.sort((a, b) => a.label.localeCompare(b.label));
+};
+
+/** Apps whose name, maker or any function matches the words typed, so "marketing" finds Google Analytics. */
+export const matchApps = (apps: TNodeCategoryGroup[], query: string): TNodeCategoryGroup[] => {
+	const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+	if (words.length === 0) return [];
+
+	return apps.filter((app) => {
+		const haystack = [
+			app.label,
+			app.slug,
+			app.vendor?.label,
+			...app.functions.map((fn) => fn.label),
+		]
+			.filter(Boolean)
+			.join(' ')
+			.toLowerCase();
+		return words.every((word) => haystack.includes(word));
+	});
+};
+
+/** Nodes whose name or description contains every word typed. */
+export const filterNodes = (nodes: TNodeDefinition[], query: string): TNodeDefinition[] => {
+	const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+	if (words.length === 0) return nodes;
+
+	return nodes.filter((node) => {
+		const haystack = `${node.label} ${node.description}`.toLowerCase();
+		return words.every((word) => haystack.includes(word));
+	});
+};
+
+const canStartFlow = (node: TNodeDefinition) =>
+	node.nodeKind === 'trigger' || Boolean(node.supportsTrigger);
+
+/** An app's nodes split into the ones that can start a flow (instant triggers and readers) and the ones that only do a job in it. */
+export const splitNodesByKind = (nodes: TNodeDefinition[]) => ({
+	triggers: nodes.filter(canStartFlow),
+	actions: nodes.filter((node) => !canStartFlow(node)),
+});
+
+export type TAppNodes = { slug: string; label: string; nodes: TNodeDefinition[] };
+
+/** Nodes from many apps filed under their app, the built-in ones first and then apps by name. */
+export const groupNodesByApp = (
+	nodes: TNodeDefinition[],
+	labelFor: (appSlug: string) => string | undefined,
+	builtInSlug = 'triggers-events',
+): TAppNodes[] => {
+	const apps = new Map<string, TAppNodes>();
+
+	for (const node of nodes) {
+		const slug = node.appSlug ?? builtInSlug;
+		const app = apps.get(slug) ?? {
+			slug,
+			label: slug === builtInSlug ? 'Built-in' : (labelFor(slug) ?? slug),
+			nodes: [],
+		};
+		app.nodes.push(node);
+		apps.set(slug, app);
+	}
+
+	return [...apps.values()].sort((a, b) =>
+		a.slug === builtInSlug ? -1 : b.slug === builtInSlug ? 1 : a.label.localeCompare(b.label),
+	);
+};

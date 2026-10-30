@@ -54,3 +54,64 @@ export const getNodeAccentColor = (
 	explicitColor ??
 	defColorHex ??
 	NODE_COLOR_PALETTE[hashString(nodeId) % NODE_COLOR_PALETTE.length];
+
+export type TFocusDirection = 'up' | 'down' | 'left' | 'right';
+
+/**
+ * Moves focus to the library item nearest in `direction` from where focus is,
+ * so arrow keys walk a grid of tiles and a list of rows alike. From the search
+ * box it enters the first item; up from the first item returns to the search.
+ */
+export const focusNeighbour = (
+	root: HTMLElement,
+	from: Element | null,
+	direction: TFocusDirection,
+) => {
+	const items = [...root.querySelectorAll<HTMLElement>('[data-library-item]')].filter(
+		(item) => item.offsetParent !== null,
+	);
+	const search = root.querySelector<HTMLElement>('[data-library-search]');
+	const current =
+		from instanceof HTMLElement ? from.closest<HTMLElement>('[data-library-item]') : null;
+
+	if (!current) {
+		(direction === 'up' ? items[items.length - 1] : items[0])?.focus();
+		return;
+	}
+
+	const origin = current.getBoundingClientRect();
+	const originX = origin.left + origin.width / 2;
+	const originY = origin.top + origin.height / 2;
+	const vertical = direction === 'up' || direction === 'down';
+	let best: HTMLElement | null = null;
+	let bestScore = Infinity;
+
+	for (const item of items) {
+		if (item === current) continue;
+		const rect = item.getBoundingClientRect();
+		const dx = rect.left + rect.width / 2 - originX;
+		const dy = rect.top + rect.height / 2 - originY;
+		const ahead =
+			direction === 'down'
+				? dy > origin.height / 2
+				: direction === 'up'
+					? dy < -origin.height / 2
+					: direction === 'right'
+						? dx > origin.width / 2 && Math.abs(dy) < origin.height / 2
+						: dx < -origin.width / 2 && Math.abs(dy) < origin.height / 2;
+		if (!ahead) continue;
+
+		const score = vertical ? Math.abs(dy) + Math.abs(dx) * 2 : Math.abs(dx) + Math.abs(dy) * 2;
+		if (score < bestScore) {
+			best = item;
+			bestScore = score;
+		}
+	}
+
+	if (best) {
+		best.focus();
+		best.scrollIntoView({ block: 'nearest' });
+	} else if (direction === 'up') {
+		search?.focus();
+	}
+};

@@ -1,3 +1,4 @@
+import { createElement, type SVGProps } from 'react';
 import {
 	Briefcase,
 	Code2,
@@ -8,13 +9,7 @@ import {
 	MessageSquare,
 	Plug,
 } from 'lucide-react';
-import Github from '@/components/icon/huge/Github';
-import Slack from '@/components/icon/huge/Slack';
-import Mail01 from '@/components/icon/huge/Mail01';
-import GoogleDrive from '@/components/icon/huge/GoogleDrive';
-import GoogleSheet from '@/components/icon/huge/GoogleSheet';
-import GoogleDoc from '@/components/icon/huge/GoogleDoc';
-import Calendar03 from '@/components/icon/huge/Calendar03';
+import Icon from '@/components/icon/Icon';
 import type {
 	TConnector,
 	TConnectorCredential,
@@ -24,19 +19,36 @@ import type {
 } from '@/types/connector.type';
 import type { IAvailableApp, SvgIconComponent } from '../_types/apps.type';
 
-/** The backend names an icon (`connectors.icon`); this is the one place it becomes a component. */
-const CONNECTOR_ICONS: Record<string, SvgIconComponent> = {
-	github: Github,
-	slack: Slack,
-	mail: Mail01,
-	drive: GoogleDrive,
-	sheets: GoogleSheet,
-	docs: GoogleDoc,
-	calendar: Calendar03,
+/** Icon names older seeds sent, still on a database that has not been re-seeded. */
+const LEGACY_ICON_NAMES: Record<string, string> = {
+	mail: 'mail-01',
+	drive: 'google-drive',
+	sheets: 'google-sheet',
+	docs: 'google-doc',
+	calendar: 'google-calendar',
 };
 
-export const connectorIconFor = (icon: string | null): SvgIconComponent =>
-	(icon && CONNECTOR_ICONS[icon]) || Plug;
+const connectorIcons = new Map<string, SvgIconComponent>();
+
+/**
+ * The backend names an icon (`connectors.icon`); `<Icon>` draws any name it
+ * knows, brand logos included. One component per name, so a re-render does not
+ * remount it.
+ */
+export const connectorIconFor = (icon: string | null): SvgIconComponent => {
+	if (!icon) return Plug;
+
+	const name = LEGACY_ICON_NAMES[icon] ?? icon;
+	let component = connectorIcons.get(name);
+
+	if (!component) {
+		component = (props: SVGProps<SVGSVGElement>) =>
+			createElement(Icon, { ...(props as object), icon: name });
+		connectorIcons.set(name, component);
+	}
+
+	return component;
+};
 
 /** The backend names each category's icon (`ConnectorCategory::icon()`). */
 const CATEGORY_ICONS: Record<string, SvgIconComponent> = {

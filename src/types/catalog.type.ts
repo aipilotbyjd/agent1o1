@@ -18,6 +18,8 @@ export type TNodeCategory = {
 	color: string | null;
 	sort_order: number;
 	kind: string;
+	/** Whether the signed-in user pinned this app to their "Your apps". */
+	is_pinned?: boolean;
 };
 
 export type TNodeCategoryWithCount = TNodeCategory & {
