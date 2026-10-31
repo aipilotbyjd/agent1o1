@@ -31,9 +31,11 @@ import { AuthService } from './auth.service';
 const applySuccessfulLogin = (
 	qc: ReturnType<typeof useQueryClient>,
 	data: { user: unknown; tokens: { access_token: string; expires_in: number } },
-	rememberMe?: boolean,
+	// Sign-up and social sign-in have no checkbox: they keep the user signed in, as login's
+	// default-ticked "remember me" does.
+	rememberMe: boolean = true,
 ) => {
-	setToken(data.tokens.access_token, data.tokens.expires_in, !!rememberMe);
+	setToken(data.tokens.access_token, data.tokens.expires_in, rememberMe);
 	qc.setQueryData(userKeys.current(), data.user);
 };
 
