@@ -8,7 +8,7 @@ import pages from '@/Routes/pages';
 import { withWorkspace } from '@/Routes/paths';
 import type { TPendingApproval } from '@/types/dashboard.type';
 
-/** "12m", "3h", "2d" — how long a run has been paused on this approval. */
+/** "12m", "3h", "2d": how long a run has been paused on this approval. */
 const formatWaiting = (seconds: number | null) => {
 	if (seconds === null) return null;
 	if (seconds < 60) return 'just now';

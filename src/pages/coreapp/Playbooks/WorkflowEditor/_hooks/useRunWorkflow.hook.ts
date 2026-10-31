@@ -1,33 +1,58 @@
-import { createContext, createElement, useContext, useRef, type ReactNode } from 'react';
-import { useWorkflow, WorkflowService, WorkflowVersionService } from '@/api/modules/workflows';
-import { RunService } from '@/api/modules/runs';
+import {
+	createContext,
+	createElement,
+	useContext,
+	useEffect,
+	useEffectEvent,
+	useRef,
+	useState,
+	type ReactNode,
+} from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+	usePublishApprovalPolicy,
+	useWorkflow,
+	WorkflowInterfaceService,
+	WorkflowService,
+	WorkflowVersionService,
+	workflowVersionKeys,
+} from '@/api/modules/workflows';
+import {
+	RunService,
+	createStaleEventGuard,
+	subscribeToRun,
+	type INodeRunStateChangedEvent,
+	type IRunStateChangedEvent,
+} from '@/api/modules/runs';
+import { ApiError } from '@/api/core';
+import { useRealtime } from '@/context/realtime';
+import type { TWorkflowInterfaceField } from '@/types/workflow-extras.type';
 import { useConfirm } from '@/context/confirm';
 import type { TNodeRunDetail, TRun, TRunStatus } from '@/types/run.type';
-import { createId } from '../_context/WorkflowEditorStore.context';
-import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
-import { getRunOrder } from '../_helper/runGraph.helper';
-import { persistWorkflowDraft } from '../_helper/persistDraft.helper';
-import {
-	buildRuntimeContext,
-	executeNode,
-	firstList,
-	isEdgeActive,
-	resolveNodeValues,
-	type TNodeOutputs,
-} from '../_helper/runtime.helper';
+import type { TWorkflow } from '@/types/workflow.type';
+import { useWorkflowEditor } from './useWorkflowEditor.hook';
+import { usePersistWorkflowDraft } from './usePersistWorkflowDraft.hook';
 import { getNodeDefinition } from '../_helper/nodeCatalog.constants';
-import type { TNodeRunRecord, TRunRecord } from '../_types/run.type';
+import { serverValidationIssues } from '../_helper/validation.helper';
 import type { TNodeRunStatus } from '../_types/node.type';
-import { notify } from '@/api/core/notify';
+import { messageFromError, notify } from '@/api/core/notify';
+import { useCredentialResolver } from './useCredentialResolver.hook';
+import {
+	initialRunFormValues,
+	RunFormJsonError,
+	runFormInput,
+	type TRunFormValues,
+} from '@/utils/runForm.util';
+import RunInputsDialog from '../_partial/run/RunInputsDialog.partial';
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /** Poll quickly during active work, then less often for approval/callback waits. */
 const POLL_INTERVAL_MS = 2000;
+/** Runs started elsewhere are often over in seconds, so follow them closely enough to see each step. */
+const OBSERVED_POLL_INTERVAL_MS = 700;
 const WAITING_POLL_INTERVAL_MS = 10000;
-
-/** How long a breakpoint waits for a manual step before auto-continuing. */
-const BREAKPOINT_TIMEOUT_MS = 60_000;
+const MAX_CONSECUTIVE_POLL_FAILURES = 5;
 
 /** Map a backend node-run status onto the editor's local run status. */
 const API_NODE_STATUS_MAP: Record<string, TNodeRunStatus> = {
@@ -51,6 +76,25 @@ const errorText = (error: unknown): string | undefined => {
 	return undefined;
 };
 
+const epochMs = (iso: string | null | undefined): number | undefined =>
+	iso ? Date.parse(iso) : undefined;
+
+const plainObject = (value: unknown): Record<string, unknown> | undefined =>
+	value && typeof value === 'object' && !Array.isArray(value)
+		? (value as Record<string, unknown>)
+		: undefined;
+
+type TInputRequest = {
+	ws: string;
+	wfId: string;
+	fields: TWorkflowInterfaceField[];
+	initialValues: TRunFormValues;
+	errors: Record<string, string>;
+	submitting: boolean;
+};
+
+const INPUT_ERROR_PREFIX = 'input.';
+
 const ACTIVE_RUN_STATUSES = new Set<TRunStatus>([
 	'pending',
 	'running',
@@ -60,39 +104,25 @@ const ACTIVE_RUN_STATUSES = new Set<TRunStatus>([
 
 const useRunWorkflowController = () => {
 	const { state, dispatch } = useWorkflowEditor();
+	const { echo } = useRealtime();
 	const stopped = useRef(false);
 	const starting = useRef(false);
+	const followedRunId = useRef<string | null>(null);
 	// Set once the user has agreed that Run may publish the draft.
 	const publishConfirmed = useRef(false);
+	// What was last entered on the run form, so "Run again" starts from it.
+	const lastInputValues = useRef<TRunFormValues>({});
+	const [inputRequest, setInputRequest] = useState<TInputRequest | null>(null);
 	const { confirm } = useConfirm();
-	const stepResolveRef = useRef<(() => void) | null>(null);
+	const { isMissing: isCredentialMissing } = useCredentialResolver();
+	const persistWorkflowDraft = usePersistWorkflowDraft();
+	const queryClient = useQueryClient();
+	const { data: publishPolicy } = usePublishApprovalPolicy(state.workflow.workspaceId ?? '');
 
 	const ws = state.workflow.workspaceId;
 	const wfId = state.workflow.apiId;
 	const workflowQuery = useWorkflow(ws || '', wfId || '');
 	const isApiError = workflowQuery.isError;
-
-	/** Finalise a local run: flip status and push the record into history. */
-	const finishLocalRun = (
-		status: TRunRecord['status'],
-		runId: string,
-		runStartedAt: number,
-		nodeRuns: TNodeRunRecord[],
-	) => {
-		dispatch({ type: 'RUN_FINISH', status });
-		dispatch({
-			type: 'PUSH_RUN_HISTORY',
-			record: {
-				id: runId,
-				startedAt: runStartedAt,
-				finishedAt: Date.now(),
-				status,
-				trigger: 'manual',
-				nodeRuns,
-				logs: [],
-			},
-		});
-	};
 
 	/** Mirror a single node result onto the editor state. */
 	const applyNodeResult = (
@@ -114,6 +144,25 @@ const useRunWorkflowController = () => {
 		});
 		if (status === 'running') {
 			dispatch({ type: 'RUN_CURRENT_NODE', nodeId: nodeRunKey });
+		}
+	};
+
+	/** A live step change. The events leave out input and output, which polling fills in. */
+	const applyNodeEvent = (event: INodeRunStateChangedEvent) => {
+		const startedAt = epochMs(event.started_at);
+		const finishedAt = epochMs(event.finished_at);
+		dispatch({
+			type: 'SET_NODE_STATUS',
+			id: event.key,
+			status: API_NODE_STATUS_MAP[event.status] ?? 'idle',
+			durationMs:
+				startedAt !== undefined && finishedAt !== undefined
+					? finishedAt - startedAt
+					: undefined,
+			error: errorText(event.error),
+		});
+		if (event.status === 'running') {
+			dispatch({ type: 'RUN_CURRENT_NODE', nodeId: event.key });
 		}
 	};
 
@@ -141,7 +190,12 @@ const useRunWorkflowController = () => {
 				: finalRun.status === 'cancelled'
 					? 'stopped'
 					: 'error';
-		dispatch({ type: 'RUN_FINISH', status: finalStatus });
+		dispatch({
+			type: 'RUN_FINISH',
+			status: finalStatus,
+			output: finalRun.output,
+			finishedAt: epochMs(finalRun.finished_at),
+		});
 		dispatch({
 			type: 'APPEND_LOG',
 			log: {
@@ -153,10 +207,11 @@ const useRunWorkflowController = () => {
 			type: 'PUSH_RUN_HISTORY',
 			record: {
 				id: finalRun.id,
-				startedAt: finalRun.started_at ? Date.parse(finalRun.started_at) : Date.now(),
-				finishedAt: finalRun.finished_at ? Date.parse(finalRun.finished_at) : Date.now(),
+				startedAt: epochMs(finalRun.started_at) ?? Date.now(),
+				finishedAt: epochMs(finalRun.finished_at) ?? Date.now(),
 				status: finalStatus,
-				trigger: 'manual',
+				trigger: finalRun.trigger_type || 'manual',
+				versionId: finalRun.workflow_version_id ?? undefined,
 				nodeRuns: nodeRuns.map((nodeRun) => ({
 					nodeId: nodeRun.key,
 					label:
@@ -170,6 +225,7 @@ const useRunWorkflowController = () => {
 								: 'error',
 					durationMs: nodeRun.duration_ms ?? undefined,
 					output: nodeRun.output,
+					input: nodeRun.input,
 					error: nodeRun.error ?? undefined,
 				})),
 				logs: [],
@@ -178,22 +234,28 @@ const useRunWorkflowController = () => {
 	};
 
 	/** Poll the backend because a realtime completion event may precede subscription. */
-	const runViaPolling = async (ws: string, initialRun: TRun) => {
+	const runViaPolling = async (
+		ws: string,
+		initialRun: TRun,
+		pollIntervalMs = POLL_INTERVAL_MS,
+	) => {
 		let run = initialRun;
 		let nodeRuns: TNodeRunDetail[] = [];
 		let attempts = 0;
+		let failures = 0;
 		do {
 			if (attempts > 0) {
 				await wait(
 					run.status === 'awaiting_approval' || run.status === 'awaiting_callback'
 						? WAITING_POLL_INTERVAL_MS
-						: POLL_INTERVAL_MS,
+						: pollIntervalMs,
 				);
 			}
 			if (stopped.current) break;
 			try {
 				run = await RunService.detail(ws, run.id);
 				nodeRuns = await RunService.nodeRuns(ws, run.id);
+				failures = 0;
 				for (const nodeRun of nodeRuns) {
 					applyNodeResult(
 						nodeRun.key,
@@ -204,21 +266,31 @@ const useRunWorkflowController = () => {
 						nodeRun.input,
 					);
 				}
-			} catch (error) {
-				console.error('Error polling run:', error);
+			} catch {
+				failures += 1;
+				if (failures >= MAX_CONSECUTIVE_POLL_FAILURES) {
+					return { run, nodeRuns, lostContact: true };
+				}
 			}
 			attempts += 1;
 		} while (ACTIVE_RUN_STATUSES.has(run.status) && !stopped.current);
-		return { run, nodeRuns };
+		return { run, nodeRuns, lostContact: false };
 	};
 
 	/**
-	 * Drive a real backend run and use the backend record as the source of truth.
+	 * Follow a started backend run and use the backend record as the source of truth.
 	 */
-	const runRemoteWorkflow = async (ws: string, wfId: string) => {
+	const followRemoteRun = async (
+		ws: string,
+		run: TRun,
+		input?: Record<string, unknown>,
+		pollIntervalMs?: number,
+	) => {
+		if (followedRunId.current === run.id) return;
+		followedRunId.current = run.id;
+		let unsubscribe: (() => void) | undefined;
 		try {
-			const run = await RunService.start(ws, wfId, { input: {} });
-			dispatch({ type: 'RUN_START', id: run.id });
+			dispatch({ type: 'RUN_START', id: run.id, input, startedAt: epochMs(run.started_at) });
 			dispatch({
 				type: 'APPEND_LOG',
 				log: {
@@ -227,249 +299,115 @@ const useRunWorkflowController = () => {
 				},
 			});
 
-			const result = await runViaPolling(ws, run);
+			const isFresh = createStaleEventGuard();
+			unsubscribe = echo
+				? subscribeToRun(echo, ws, run.id, {
+						onNodeState: (event) => {
+							if (isFresh(event.key, event.emitted_at)) applyNodeEvent(event);
+						},
+					})
+				: undefined;
+
+			const result = await runViaPolling(ws, run, pollIntervalMs);
+			if (result.lostContact) {
+				notify.error(
+					'Lost contact with the server while the run was in progress. It may still be running: check Run History.',
+				);
+				dispatch({ type: 'RUN_FINISH', status: 'error' });
+				return;
+			}
 			await finishRemoteRun(ws, result.run, result.nodeRuns);
 		} catch (error) {
-			const msg = error instanceof Error ? error.message : 'Failed to start run';
-			notify.error(msg);
+			notify.error(messageFromError(error, 'Lost track of the run'));
 			dispatch({ type: 'RUN_FINISH', status: 'error' });
+		} finally {
+			unsubscribe?.();
 		}
+	};
+
+	/**
+	 * Start the published version: straight away when it takes no input,
+	 * otherwise once the run form is filled in (see `submitRunInputs`).
+	 */
+	const startRemoteRun = async (ws: string, wfId: string) => {
+		const runForm = await WorkflowInterfaceService.show(ws, wfId);
+		if (runForm.fields.length > 0) {
+			setInputRequest({
+				ws,
+				wfId,
+				fields: runForm.fields,
+				initialValues: initialRunFormValues(runForm.fields, lastInputValues.current),
+				errors: {},
+				submitting: false,
+			});
+			return;
+		}
+		let run: TRun;
+		try {
+			run = await RunService.start(ws, wfId, { input: {} });
+		} catch (error) {
+			notify.error(messageFromError(error, 'Failed to start run'));
+			return;
+		}
+		await followRemoteRun(ws, run);
+	};
+
+	const submitRunInputs = async (values: TRunFormValues) => {
+		if (!inputRequest || inputRequest.submitting) return;
+		const { ws, wfId, fields } = inputRequest;
+		let input: Record<string, unknown>;
+		try {
+			input = runFormInput(fields, values);
+		} catch (error) {
+			if (!(error instanceof RunFormJsonError)) throw error;
+			setInputRequest({ ...inputRequest, errors: { [error.field.key]: error.message } });
+			return;
+		}
+		setInputRequest({ ...inputRequest, errors: {}, submitting: true });
+		let run: TRun;
+		try {
+			run = await WorkflowInterfaceService.submit(ws, wfId, { input });
+		} catch (error) {
+			const errors = ApiError.is(error) && error.isValidation ? inputFieldErrors(error) : {};
+			if (!Object.keys(errors).length) {
+				notify.error(messageFromError(error, 'Failed to start run'));
+			}
+			setInputRequest({ ...inputRequest, errors, submitting: false });
+			return;
+		}
+		lastInputValues.current = values;
+		setInputRequest(null);
+		await followRemoteRun(ws, run, input);
 	};
 
 	/**
 	 * Run the deterministic frontend simulation. Outputs flow node → node,
 	 * branches gate edges, and nodes whose inbound edges are all inactive skip.
 	 */
-	const runLocalWorkflow = async (runId: string, runStartedAt: number) => {
-		const order = getRunOrder(state.nodes, state.edges);
-
-		const outputs: TNodeOutputs = {};
-		const branches: Record<string, string> = {};
-		const skipped = new Set<string>();
-		const nodeRuns: TNodeRunRecord[] = [];
-
-		for (const node of order) {
-			if (stopped.current) break;
-
-			const incoming = state.edges.filter((edge) => edge.target === node.id);
-			const activeIncoming = incoming.filter((edge) =>
-				isEdgeActive(edge, outputs, branches, skipped),
-			);
-
-			// Skip when every inbound path is gated off by an upstream branch/skip.
-			if (incoming.length > 0 && activeIncoming.length === 0) {
-				skipped.add(node.id);
-				dispatch({ type: 'SET_NODE_STATUS', id: node.id, status: 'skipped' });
-				nodeRuns.push({ nodeId: node.id, label: node.data.label, status: 'skipped' });
-				dispatch({
-					type: 'APPEND_LOG',
-					log: {
-						nodeId: node.id,
-						level: 'info',
-						message: `${node.data.label} skipped (inactive branch)`,
-					},
-				});
-				continue;
-			}
-
-			// Breakpoint: pause until the user steps (or a safety timeout fires).
-			if (node.data.breakpoint && state.ui.stepMode) {
-				dispatch({
-					type: 'APPEND_LOG',
-					log: {
-						nodeId: node.id,
-						level: 'info',
-						message: `⏸ Breakpoint hit at ${node.data.label}`,
-					},
-				});
-				dispatch({ type: 'RUN_CURRENT_NODE', nodeId: node.id });
-				dispatch({ type: 'STEP_WAIT' });
-				let resolved = false;
-				let safetyTimer: ReturnType<typeof setTimeout>;
-				await new Promise<void>((resolve) => {
-					stepResolveRef.current = () => {
-						resolved = true;
-						clearTimeout(safetyTimer);
-						resolve();
-					};
-					safetyTimer = setTimeout(() => {
-						if (!resolved) resolve();
-					}, BREAKPOINT_TIMEOUT_MS);
-				});
-				stepResolveRef.current = null;
-				dispatch({ type: 'STEP_NEXT' });
-				if (stopped.current) break;
-			}
-
-			const started = performance.now();
-			dispatch({ type: 'RUN_CURRENT_NODE', nodeId: node.id });
-			dispatch({ type: 'SET_NODE_STATUS', id: node.id, status: 'running' });
-
-			// Pinned nodes reuse their saved output instead of re-executing.
-			const usePinned = node.data.pinned && node.data.pinnedOutput !== undefined;
-
-			dispatch({
-				type: 'APPEND_LOG',
-				log: {
-					nodeId: node.id,
-					level: 'info',
-					message: usePinned
-						? `${node.data.label} using pinned data`
-						: `${node.data.label} started`,
-				},
-			});
-
-			if (!usePinned) {
-				await wait(state.ui.stepMode ? 150 : 300);
-			}
-
-			if (stopped.current) break;
-
-			// Resolve {{expressions}} against upstream outputs, gather active inputs.
-			const ctx = buildRuntimeContext(state.nodes, outputs);
-			const resolvedValues = resolveNodeValues(node.data.values, ctx);
-			const inputs = activeIncoming.map((edge) => outputs[edge.source]);
-
-			let output: unknown;
-			let runError: string | undefined;
-			try {
-				if (usePinned) {
-					output = node.data.pinnedOutput;
-				} else if (node.data.loopMode) {
-					// Per-node Loop Mode: fan out over the incoming list, running the
-					// node once per item and collecting outputs — mirrors the backend
-					// NodeRunner. Falls back to a single run when no list is available.
-					const primaryInput = inputs.length <= 1 ? inputs[0] : inputs;
-					const list = firstList(primaryInput);
-					if (list) {
-						const itemOutputs = list.map(
-							(item) => executeNode(node, [item], resolvedValues).output,
-						);
-						output = { items: itemOutputs, count: itemOutputs.length };
-					} else {
-						const result = executeNode(node, inputs, resolvedValues);
-						output = result.output;
-						if (result.branch) branches[node.id] = result.branch;
-					}
-				} else {
-					const result = executeNode(node, inputs, resolvedValues);
-					output = result.output;
-					if (result.branch) branches[node.id] = result.branch;
-				}
-			} catch (error) {
-				runError = error instanceof Error ? error.message : 'Node execution failed';
-			}
-
-			const durationMs = Math.round(performance.now() - started);
-
-			if (runError) {
-				dispatch({
-					type: 'SET_NODE_STATUS',
-					id: node.id,
-					status: 'error',
-					durationMs,
-					error: runError,
-				});
-				dispatch({
-					type: 'APPEND_LOG',
-					log: {
-						nodeId: node.id,
-						level: 'error',
-						message: `${node.data.label} failed: ${runError}`,
-					},
-				});
-				nodeRuns.push({
-					nodeId: node.id,
-					label: node.data.label,
-					status: 'error',
-					durationMs,
-					error: runError,
-				});
-				finishLocalRun('error', runId, runStartedAt, nodeRuns);
-				return;
-			}
-
-			outputs[node.id] = output;
-			dispatch({
-				type: 'SET_NODE_STATUS',
-				id: node.id,
-				status: 'success',
-				durationMs,
-				// Mirrors the backend's persisted shape (`{ config: <resolved config> }`)
-				// so the card renders identically for simulated and real runs.
-				inputPreview: { config: resolvedValues },
-				outputPreview: output,
-			});
-			nodeRuns.push({
-				nodeId: node.id,
-				label: node.data.label,
-				status: 'success',
-				durationMs,
-				output,
-			});
-			dispatch({
-				type: 'APPEND_LOG',
-				log: {
-					nodeId: node.id,
-					level: 'info',
-					message:
-						branches[node.id] !== undefined
-							? `${node.data.label} → branch "${branches[node.id]}" (${durationMs}ms)`
-							: `${node.data.label} finished in ${durationMs}ms`,
-				},
-			});
-
-			// In step mode (non-breakpoint), pause between every node.
-			if (state.ui.stepMode && !node.data.breakpoint) {
-				await wait(80);
-			}
-		}
-
-		finishLocalRun(stopped.current ? 'stopped' : 'success', runId, runStartedAt, nodeRuns);
-	};
-
 	const runWorkflow = async () => {
-		const isRunDisabled =
-			state.nodes.length === 0 && state.ui.emptyCanvasView !== 'chat-started';
-		if (isRunDisabled) return;
-		if (state.run.status === 'running' || starting.current) return;
+		if (state.nodes.length === 0) return;
+		if (state.run.status === 'running' || starting.current || inputRequest) return;
 
 		// Check for missing credentials.
-		const hasMissingCredentials = state.nodes.some((node) => {
-			const def = getNodeDefinition(node.data.defKey, node.data.definition);
-			return Boolean(def?.requiresCredential) && !node.data.values.credential_id;
-		});
+		const missingCredentialNode = state.nodes.find((node) =>
+			isCredentialMissing(
+				getNodeDefinition(node.data.defKey, node.data.definition),
+				node.data.values,
+			),
+		);
 
-		const isMockEmptyState =
-			state.nodes.length === 0 && state.ui.emptyCanvasView === 'chat-started';
-
-		if (hasMissingCredentials || isMockEmptyState) {
-			dispatch({ type: 'SET_LINK_CREDENTIALS_OPEN', open: true });
+		if (missingCredentialNode) {
+			dispatch({
+				type: 'SET_LINK_CREDENTIALS_OPEN',
+				open: true,
+			});
 			return;
 		}
 
 		stopped.current = false;
-		const runId = createId('run');
-		const runStartedAt = Date.now();
 
-		// Step-through is a local debugger: the backend cannot pause between
-		// nodes, so step mode runs the in-browser simulation — and says so.
-		if (state.ui.stepMode) {
-			dispatch({ type: 'RUN_START', id: runId });
-			dispatch({
-				type: 'APPEND_LOG',
-				log: {
-					level: 'warn',
-					message:
-						'Step mode runs a local simulation. Nothing is executed on the server.',
-				},
-			});
-			await runLocalWorkflow(runId, runStartedAt);
-			return;
-		}
-
-		// Every other run goes to the server. When that is not possible, fail
-		// loudly: a simulated "success" here would look like the workflow ran.
+		// Runs go to the server. When that is not possible, fail loudly: a
+		// simulated "success" here would look like the workflow ran.
 		if (!ws || !wfId) {
 			notify.error('This workflow is not saved to the server yet, so it cannot run.');
 			return;
@@ -485,20 +423,52 @@ const useRunWorkflowController = () => {
 		try {
 			// Runs are pinned to a published version on this backend. Save any
 			// pending canvas edits, then publish the draft if it differs from live.
-			const workflow =
-				state.workflow.savingState === 'saved'
-					? await WorkflowService.detail(ws, wfId)
-					: await persistWorkflowDraft({
-							workspaceId: ws,
-							workflowId: wfId,
-							name: state.workflow.name,
-							description: state.workflow.description,
-							nodes: state.nodes,
-							edges: state.edges,
-						});
-			if (workflow.has_unpublished_changes || !workflow.current_version_id) {
-				// Publishing replaces the live version — the one triggers and every
-				// other caller run — so ask once per editor session before doing it
+			let workflow: TWorkflow;
+			try {
+				workflow =
+					state.workflow.savingState === 'saved'
+						? await WorkflowService.detail(ws, wfId)
+						: await persistWorkflowDraft({
+								workspaceId: ws,
+								workflowId: wfId,
+								name: state.workflow.name,
+								description: state.workflow.description,
+								nodes: state.nodes,
+								edges: state.edges,
+							});
+			} catch (error) {
+				const issues = serverValidationIssues(error);
+				if (issues.length) {
+					dispatch({ type: 'SET_ISSUES_PANEL', open: true, serverIssues: issues });
+				} else {
+					notify.error(
+						messageFromError(error, 'Could not save the workflow before running'),
+					);
+				}
+				dispatch({ type: 'SET_SAVE_STATE', savingState: 'error' });
+				return;
+			}
+			const needsPublish = workflow.has_unpublished_changes || !workflow.current_version_id;
+			if (needsPublish && publishPolicy?.requires_approval) {
+				// Changes go live only through a review here, so Run can't publish
+				// them; it can still run what's live, without them.
+				if (!workflow.current_version_id) {
+					notify.error(
+						'Nothing has been approved yet, so there is no live version to run. Send your changes for review first.',
+					);
+					return;
+				}
+				const confirmed = await confirm({
+					title: 'Run the live version?',
+					message:
+						'Your changes need a review before they go live, so this runs the live version without them.',
+					confirmText: 'Run live version',
+					tone: 'primary',
+				});
+				if (!confirmed) return;
+			} else if (needsPublish) {
+				// Publishing replaces the live version (the one triggers and every
+				// other caller run) so ask once per editor session before doing it
 				// on the user's behalf. A first publish replaces nothing.
 				if (workflow.current_version_id && !publishConfirmed.current) {
 					const confirmed = await confirm({
@@ -511,7 +481,12 @@ const useRunWorkflowController = () => {
 					if (!confirmed) return;
 					publishConfirmed.current = true;
 				}
-				const published = await WorkflowVersionService.publish(ws, wfId);
+				const published = await WorkflowVersionService.publish(ws, wfId, {
+					notes: 'Published to run',
+				});
+				void queryClient.invalidateQueries({
+					queryKey: workflowVersionKeys.list(ws, wfId),
+				});
 				dispatch({
 					type: 'SET_WORKFLOW_META',
 					patch: {
@@ -519,41 +494,84 @@ const useRunWorkflowController = () => {
 						currentVersionNumber: published.version.version,
 					},
 				});
-				notify.info(`Published v${published.version.version} — running it now.`);
+				notify.info(`Published v${published.version.version}.`);
 			}
-			await runRemoteWorkflow(ws, wfId);
+			await startRemoteRun(ws, wfId);
 		} catch (error) {
-			notify.error(
-				error instanceof Error
-					? error.message
-					: 'Could not save the workflow before running',
-			);
-			dispatch({ type: 'SET_SAVE_STATE', savingState: 'error' });
+			const issues = serverValidationIssues(error);
+			if (issues.length) {
+				dispatch({ type: 'SET_ISSUES_PANEL', open: true, serverIssues: issues });
+			} else {
+				notify.error(
+					messageFromError(error, 'Could not publish the workflow before running'),
+				);
+			}
 		} finally {
 			starting.current = false;
 		}
 	};
 
+	const observeRun = useEffectEvent((event: IRunStateChangedEvent) => {
+		if (!ws || event.workflow_id !== wfId || !ACTIVE_RUN_STATUSES.has(event.status)) return;
+		if (state.run.status === 'running' || starting.current || inputRequest) return;
+		if (followedRunId.current === event.id) return;
+
+		stopped.current = false;
+		RunService.detail(ws, event.id)
+			.then((run) =>
+				followRemoteRun(ws, run, plainObject(run.input), OBSERVED_POLL_INTERVAL_MS),
+			)
+			.catch(() => undefined);
+	});
+
+	useEffect(() => {
+		if (!echo || !ws) return;
+		return subscribeToRun(echo, ws, null, { onRunState: observeRun });
+	}, [echo, ws]);
+
 	const stopRun = () => {
 		stopped.current = true;
-		stepResolveRef.current?.();
 		dispatch({ type: 'RUN_FINISH', status: 'stopped' });
 	};
 
-	const stepNext = () => {
-		stepResolveRef.current?.();
-		dispatch({ type: 'STEP_NEXT' });
-	};
+	const cancelRunInputs = () => setInputRequest(null);
 
-	return { runWorkflow, stopRun, stepNext };
+	return { runWorkflow, stopRun, inputRequest, submitRunInputs, cancelRunInputs };
 };
+
+/** 422 messages keyed by run-form field, from the server's `input.<key>` errors. */
+const inputFieldErrors = (error: ApiError): Record<string, string> =>
+	Object.fromEntries(
+		Object.entries(error.fieldErrors())
+			.filter(([field]) => field.startsWith(INPUT_ERROR_PREFIX))
+			.map(([field, message]) => [field.slice(INPUT_ERROR_PREFIX.length), message]),
+	);
 
 type TRunWorkflowController = ReturnType<typeof useRunWorkflowController>;
 const WorkflowRunContext = createContext<TRunWorkflowController | null>(null);
 
+const RunInputsHost = () => {
+	const { inputRequest, submitRunInputs, cancelRunInputs } = useRunWorkflow();
+	if (!inputRequest) return null;
+	return createElement(RunInputsDialog, {
+		key: `${inputRequest.ws}:${inputRequest.wfId}`,
+		fields: inputRequest.fields,
+		initialValues: inputRequest.initialValues,
+		errors: inputRequest.errors,
+		submitting: inputRequest.submitting,
+		onSubmit: (values: TRunFormValues) => void submitRunInputs(values),
+		onCancel: cancelRunInputs,
+	});
+};
+
 export const WorkflowRunProvider = ({ children }: { children: ReactNode }) => {
 	const controller = useRunWorkflowController();
-	return createElement(WorkflowRunContext.Provider, { value: controller }, children);
+	return createElement(
+		WorkflowRunContext.Provider,
+		{ value: controller },
+		children,
+		createElement(RunInputsHost),
+	);
 };
 
 export const useRunWorkflow = () => {

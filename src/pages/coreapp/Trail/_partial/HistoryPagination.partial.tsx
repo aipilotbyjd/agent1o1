@@ -53,7 +53,7 @@ const HistoryPagination = ({
 					onClick={() => onPageChange(page as number)}
 					className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-xs font-extrabold transition-all duration-200 ${
 						isPageActive
-							? 'bg-primary-400 text-primary-950 shadow-sm dark:bg-primary-400'
+							? 'bg-primary-400 text-primary-950 dark:bg-primary-400 shadow-sm'
 							: 'border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:border-zinc-800/50 dark:text-zinc-400 dark:hover:bg-zinc-800/50'
 					}`}>
 					{page}
@@ -77,7 +77,7 @@ const HistoryPagination = ({
 					aria-label='Previous'
 					disabled={currentPage === 1}
 					onClick={() => onPageChange(currentPage - 1)}
-					className='text-slate-550 dark:hover:bg-zinc-800 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white shadow-xs transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'>
+					className='text-slate-550 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white shadow-xs transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800'>
 					<ChevronLeft size={15} />
 				</button>
 				{renderPageNumbers()}
@@ -85,7 +85,7 @@ const HistoryPagination = ({
 					aria-label='Next'
 					disabled={currentPage === totalPages}
 					onClick={() => onPageChange(currentPage + 1)}
-					className='text-slate-550 dark:hover:bg-zinc-800 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white shadow-xs transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'>
+					className='text-slate-550 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white shadow-xs transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800'>
 					<ChevronRight size={15} />
 				</button>
 			</div>
@@ -97,7 +97,7 @@ const HistoryPagination = ({
 						value={rowsPerPage}
 						onChange={(e) => onRowsPerPageChange(Number(e.target.value))}
 						style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
-						className='h-9 cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white bg-[url("/src/assets/required/chevron-down.svg")] bg-[length:12px] bg-[right_12px_center] bg-no-repeat pr-8 pl-3.5 text-xs font-bold shadow-xs transition-colors outline-none focus:border-primary-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'>
+						className='focus:border-primary-500 h-9 cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white bg-[url("/src/assets/required/chevron-down.svg")] bg-[length:12px] bg-[right_12px_center] bg-no-repeat pr-8 pl-3.5 text-xs font-bold shadow-xs transition-colors outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'>
 						{[10, 20, 50].map((val) => (
 							<option key={val} value={val}>
 								{val} per page

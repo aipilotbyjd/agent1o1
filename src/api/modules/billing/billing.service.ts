@@ -87,7 +87,7 @@ export const BillingService = {
 			.post<TApiResponse<TCheckoutCreditPackResult>>(E.creditPacksCheckout(ws), payload)
 			.then((r) => r.data.data),
 
-	// The workspace's credit ledger — paginates internally.
+	// The workspace's credit ledger: paginates internally.
 	credits: (ws: string, params?: { page?: number; per_page?: number }, signal?: AbortSignal) =>
 		axiosClient
 			.get<TApiResponse<TCreditTransaction[]> & { meta: TPaginationMeta }>(E.credits(ws), {
@@ -123,7 +123,7 @@ export const BillingService = {
 			>(E.creditNotifications(ws), payload)
 			.then(unwrapKey<TCreditNotifications>('credit_notifications')),
 
-	// Cursor-paginated — Stripe's list API has no total count or offset.
+	// Cursor-paginated: Stripe's list API has no total count or offset.
 	invoices: (ws: string, params?: { per_page?: number; cursor?: string }, signal?: AbortSignal) =>
 		axiosClient
 			.get<TApiResponse<TInvoice[]> & { meta: TCursorPaginationMeta }>(E.invoices(ws), {

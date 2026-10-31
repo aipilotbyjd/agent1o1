@@ -25,7 +25,7 @@ const safeStorage = {
 		try {
 			area(kind).removeItem(key);
 		} catch {
-			// Storage blocked — nothing to remove.
+			// Storage blocked: nothing to remove.
 		}
 	},
 };

@@ -40,13 +40,13 @@ const Checkbox = forwardRef<HTMLInputElement, ICheckboxProps>((props, ref) => {
 		id,
 		inputClassName,
 		isInline = false,
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 		isValidMessage,
 		label,
 		description,
 		rounded = themeConfig.rounded,
 		dimension = 'default',
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 		validFeedback,
 		variant = 'default',
 		isValid,

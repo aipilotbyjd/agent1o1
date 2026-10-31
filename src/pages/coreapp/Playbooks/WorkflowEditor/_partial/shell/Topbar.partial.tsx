@@ -6,31 +6,32 @@ import {
 	Sun,
 	Boxes,
 	Rocket,
+	Send,
+	FileCheck2,
 	Share2,
 	ChevronDown,
 	ChevronLeft,
-	Save,
 	Keyboard,
 	GitCompare,
 	Library,
 	MoreVertical,
 	Sparkles,
-	AlertCircle,
 	Loader2,
 	Pencil,
 	LayoutGrid,
 	ShieldCheck,
 	Download,
-	FileCheck,
 	FormInput,
 	LayoutTemplate,
 	ListChecks,
 	Copy,
 	Check,
+	CloudCheck,
+	CloudOff,
+	CloudUpload,
 	Folder,
 	Layers,
 	Square,
-	Zap,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
@@ -38,10 +39,10 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import DARK_MODE from '@/constants/darkMode.constant';
 import useDarkMode from '@/hooks/useDarkMode';
-import { useCreateWorkflowVersion } from '@/api/modules/workflows';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
-import { ApiError, notify } from '@/api/core';
-import { persistWorkflowDraft } from '../../_helper/persistDraft.helper';
+import IssuesChecklist from './IssuesChecklist.partial';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
+import { useAutoLayout } from '../../_hooks/useAutoLayout.hook';
+import { usePersistWorkflowDraft } from '../../_hooks/usePersistWorkflowDraft.hook';
 import { useRunWorkflow } from '../../_hooks/useRunWorkflow.hook';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import pages from '@/Routes/pages';
@@ -49,9 +50,16 @@ import paths from '@/Routes/paths';
 import NotificationsDropdown from '@/components/notifications/NotificationsDropdown';
 import AppLogo from '@/components/AppLogo';
 import SaveAsTemplateModal from '@/parts/SaveAsTemplateModal.part';
+import DraftStatusPill from '../versions/DraftStatusPill.partial';
+import { useDraftStatus } from '../../_hooks/useDraftStatus.hook';
+import PublishPopover from '../versions/PublishPopover.partial';
+import WorkflowPresence from './WorkflowPresence.partial';
+import { usePublishReview } from '../../_hooks/usePublishReview.hook';
+import { useAiPanelAvailability } from '../../_hooks/useAiPanelAvailability.hook';
+import WorkflowPagesMenu from '@/pages/coreapp/WorkflowPages/_partial/WorkflowPagesMenu.partial';
 
 /** Which topbar menu is open. Only one may be open at a time. */
-type TopbarMenu = 'save' | 'share' | 'mobile' | null;
+type TopbarMenu = 'publish' | 'save' | 'share' | 'mobile' | null;
 
 /**
  * Shared focus ring. Every control in the bar is keyboard reachable, so every
@@ -95,9 +103,11 @@ export const EditorTooltip = ({
 
 	// Never leave a tooltip hanging over a menu that just opened, and never let a
 	// pending timer fire after the trigger unmounts.
-	useEffect(() => {
+	const [wasDisabled, setWasDisabled] = useState(disabled);
+	if (wasDisabled !== disabled) {
+		setWasDisabled(disabled);
 		if (disabled) setVisible(false);
-	}, [disabled]);
+	}
 
 	useEffect(
 		() => () => {
@@ -157,9 +167,11 @@ export const EditableWorkflowName = ({
 	const [draft, setDraft] = useState(name);
 	const inputRef = useRef<HTMLInputElement>(null);
 
-	useEffect(() => {
+	const [syncedName, setSyncedName] = useState(name);
+	if (syncedName !== name) {
+		setSyncedName(name);
 		setDraft(name);
-	}, [name]);
+	}
 
 	useEffect(() => {
 		if (isEditing) {
@@ -183,6 +195,7 @@ export const EditableWorkflowName = ({
 		return (
 			<input
 				ref={inputRef}
+				aria-label='Workflow name'
 				value={draft}
 				onChange={(e) => setDraft(e.target.value)}
 				onBlur={commit}
@@ -276,64 +289,61 @@ const SaveStatusBadge = ({
 }) => {
 	const [isOpen, setIsOpen] = useState(false);
 
-	let content = (
-		<div className='border-primary-400/50 bg-primary-100/70 text-primary-800 hover:bg-primary-100 dark:border-primary-400/30 dark:bg-primary-400/10 dark:text-primary-300 dark:hover:bg-primary-400/20 flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold transition'>
-			<span className='bg-primary-500 h-1.5 w-1.5 rounded-full'></span>
-			<span>Saved</span>
-		</div>
-	);
-
-	if (savingState === 'saving') {
-		content = (
-			<div className='border-primary-200/70 bg-primary-50/80 text-primary-700 dark:border-primary-800/60 dark:bg-primary-950/40 dark:text-primary-300 flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold'>
-				<Loader2
-					size={10}
-					className='text-primary-600 dark:text-primary-400 animate-spin'
-				/>
-				<span>Saving...</span>
-			</div>
-		);
-	} else if (savingState === 'dirty') {
-		content = (
-			<div className='flex items-center gap-1.5 rounded-full border border-amber-200/70 bg-amber-50/80 px-2 py-0.5 text-[10px] font-semibold text-amber-700 transition hover:bg-amber-100/80 dark:border-amber-800/50 dark:bg-amber-950/40 dark:text-amber-400'>
-				<span className='relative flex h-1.5 w-1.5'>
-					<span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75'></span>
-					<span className='relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-500'></span>
-				</span>
-				<span>Unsaved changes</span>
-			</div>
-		);
-	} else if (savingState === 'error') {
-		content = (
-			<div className='flex items-center gap-1.5 rounded-full border border-rose-200/80 bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700 transition hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-950/50 dark:text-rose-400'>
-				<AlertCircle size={10} className='text-rose-500' />
-				<span>Save failed (Retry)</span>
-			</div>
-		);
-	}
+	const { Icon, label, className } = {
+		saved: {
+			Icon: CloudCheck,
+			label: 'All changes saved',
+			className: 'text-primary-700 dark:text-primary-400',
+		},
+		saving: {
+			Icon: Loader2,
+			label: 'Saving…',
+			className: 'text-primary-600 dark:text-primary-400 animate-spin',
+		},
+		dirty: {
+			Icon: CloudUpload,
+			label: 'Unsaved changes',
+			className: 'text-amber-600 dark:text-amber-400',
+		},
+		error: {
+			Icon: CloudOff,
+			label: 'Save failed. Click to retry',
+			className: 'text-rose-600 dark:text-rose-400',
+		},
+	}[savingState];
 
 	return (
 		<div className='relative hidden sm:block'>
-			<button
-				type='button'
-				aria-haspopup='dialog'
-				aria-expanded={isOpen}
-				aria-label={`Save status: ${savingState}`}
-				className={`rounded-full ${FOCUS_RING}`}
-				onClick={() => {
-					if (savingState === 'error' && onRetry) {
-						onRetry();
-					} else {
-						setIsOpen(!isOpen);
-					}
-				}}>
-				{content}
-			</button>
+			<EditorTooltip label={label} disabled={isOpen}>
+				<button
+					type='button'
+					aria-haspopup='dialog'
+					aria-expanded={isOpen}
+					aria-label={label}
+					className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${
+						savingState === 'error'
+							? 'bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 dark:hover:bg-rose-950/70'
+							: 'hover:bg-primary-100/70 dark:hover:bg-primary-400/10'
+					} ${FOCUS_RING}`}
+					onClick={() => {
+						if (savingState === 'error' && onRetry) {
+							onRetry();
+						} else {
+							setIsOpen(!isOpen);
+						}
+					}}>
+					<Icon size={15} className={className} />
+				</button>
+			</EditorTooltip>
 
 			<AnimatePresence>
 				{isOpen && (
 					<>
-						<div className='fixed inset-0 z-40' onClick={() => setIsOpen(false)} />
+						<div
+							aria-hidden='true'
+							className='fixed inset-0 z-40'
+							onClick={() => setIsOpen(false)}
+						/>
 						<motion.div
 							initial={{ opacity: 0, y: 4, scale: 0.96 }}
 							animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -348,13 +358,13 @@ const SaveStatusBadge = ({
 								</span>
 							</div>
 							<div className='mt-2 space-y-1.5 text-[11px] text-zinc-600 dark:text-zinc-400'>
-								<p>Autosave keeps your canvas drafts locally preserved.</p>
+								<p>Your draft saves automatically as you work.</p>
 								<p className='text-[10px] text-zinc-400 dark:text-zinc-500'>
 									Press{' '}
 									<kbd className='bg-primary-100/80 text-primary-900 dark:bg-primary-400/15 dark:text-primary-300 rounded px-1 py-0.5 font-mono'>
 										⌘S
 									</kbd>{' '}
-									to publish a permanent version.
+									to publish it as the live version.
 								</p>
 							</div>
 						</motion.div>
@@ -366,20 +376,24 @@ const SaveStatusBadge = ({
 };
 
 const Topbar = () => {
+	const persistWorkflowDraft = usePersistWorkflowDraft();
 	const { state, dispatch } = useWorkflowEditor();
+	const autoLayout = useAutoLayout();
 	const { isDarkTheme, setDarkModeStatus } = useDarkMode();
 	const { runWorkflow, stopRun } = useRunWorkflow();
+	const { isAiPanelAvailable, isAiPanelShown } = useAiPanelAvailability();
 	const workspaceId = state.workflow.workspaceId ?? '';
 	const playbooksPath = workspaceId ? paths.playbooks(workspaceId) : pages.choose.to;
 	const dashboardPath = workspaceId ? paths.dashboard(workspaceId) : pages.choose.to;
 
-	const saveVersion = useCreateWorkflowVersion(workspaceId);
 	const setGovModalOpen = useWorkflowShellStore((store) => store.setGovModalOpen);
 	const setGovModalTab = useWorkflowShellStore((store) => store.setGovModalTab);
+	const openVersionPanel = useWorkflowShellStore((store) => store.openVersionPanel);
 	// One menu at a time. Previously each menu had its own backdrop, so clicking a
 	// second trigger while one was open was swallowed by that backdrop and the user
 	// had to click twice.
 	const [openMenu, setOpenMenu] = useState<TopbarMenu>(null);
+	const isPublishOpen = openMenu === 'publish';
 	const isSaveDropdownOpen = openMenu === 'save';
 	const isShareDropdownOpen = openMenu === 'share';
 	const isMobileMenuOpen = openMenu === 'mobile';
@@ -389,28 +403,23 @@ const Topbar = () => {
 	const [copiedLink, setCopiedLink] = useState(false);
 	const [isSaveAsTemplateOpen, setIsSaveAsTemplateOpen] = useState(false);
 	const [runSeconds, setRunSeconds] = useState(0);
-	const stateRef = useRef(state);
-	stateRef.current = state;
-	const publishingRef = useRef(false);
 
 	const isRunning = state.run.status === 'running';
-	const isRunDisabled = state.nodes.length === 0 && state.ui.emptyCanvasView !== 'chat-started';
+	const isRunDisabled = state.nodes.length === 0;
 
 	// Live Run Timer
+	const [timedRun, setTimedRun] = useState(isRunning);
+	if (timedRun !== isRunning) {
+		setTimedRun(isRunning);
+		setRunSeconds(0);
+	}
 	useEffect(() => {
-		let timer: number | null = null;
-		if (isRunning) {
-			const start = Date.now();
-			setRunSeconds(0);
-			timer = window.setInterval(() => {
-				setRunSeconds(Math.floor((Date.now() - start) / 1000));
-			}, 500);
-		} else {
-			setRunSeconds(0);
-		}
-		return () => {
-			if (timer) clearInterval(timer);
-		};
+		if (!isRunning) return;
+		const start = Date.now();
+		const timer = window.setInterval(() => {
+			setRunSeconds(Math.floor((Date.now() - start) / 1000));
+		}, 500);
+		return () => clearInterval(timer);
 	}, [isRunning]);
 
 	// Escape closes whichever topbar menu is open.
@@ -433,74 +442,45 @@ const Topbar = () => {
 		dispatch({ type: 'SET_WORKFLOW_META', patch: { name, savingState: 'dirty' } });
 	};
 
-	// The Save tooltip advertises Cmd/Ctrl+S, but nothing listened for it, so the
-	// browser's own "Save page" dialog took over instead. Wire it to the real save.
-	const saveRef = useRef<() => void>(() => {});
+	// Cmd/Ctrl+S opens Publish; the draft itself already saves on its own.
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
 				event.preventDefault();
-				saveRef.current();
+				setOpenMenu('publish');
 			}
 		};
 		window.addEventListener('keydown', onKeyDown);
 		return () => window.removeEventListener('keydown', onKeyDown);
 	}, []);
 
-	const handleSave = async () => {
-		if (publishingRef.current) return;
-		if (!state.workflow.workspaceId || !state.workflow.apiId) {
-			dispatch({ type: 'SET_SAVE_STATE', savingState: 'dirty' });
-			return;
-		}
-
-		publishingRef.current = true;
-		const draft = state;
-		dispatch({ type: 'SET_SAVE_STATE', savingState: 'saving' });
-		// Publishing snapshots the server-side draft, so push the canvas first —
-		// otherwise anything still inside the autosave debounce is left out.
-		try {
-			await persistWorkflowDraft({
-				workspaceId: state.workflow.workspaceId,
-				workflowId: state.workflow.apiId,
-				name: state.workflow.name,
-				description: state.workflow.description,
-				nodes: state.nodes,
-				edges: state.edges,
-			});
-			const data = await saveVersion.mutateAsync({ workflowId: state.workflow.apiId });
-			const current = stateRef.current;
-			const changed =
-				current.nodes !== draft.nodes ||
-				current.edges !== draft.edges ||
-				current.workflow.name !== draft.workflow.name ||
-				current.workflow.description !== draft.workflow.description;
-			dispatch({
-				type: 'SET_WORKFLOW_META',
-				patch: {
-					currentVersionId: data.version.id,
-					currentVersionNumber: data.version.version,
-					savingState: changed ? 'dirty' : 'saved',
-				},
-			});
-		} catch (error) {
-			notify.error(ApiError.is(error) ? error.message : 'Could not save the workflow');
-			dispatch({ type: 'SET_SAVE_STATE', savingState: 'error' });
-		} finally {
-			publishingRef.current = false;
-		}
+	const openVersionHistory = () => {
+		closeMenu();
+		if (state.ui.runPanelOpen) dispatch({ type: 'TOGGLE_RUN_PANEL' });
+		openVersionPanel();
 	};
 
-	useEffect(() => {
-		saveRef.current = () => {
-			if (!saveVersion.isPending) handleSave();
-		};
-	});
-
-	const isDirty = state.workflow.savingState === 'dirty';
+	const { status: draftStatus, label: draftStatusLabel } = useDraftStatus();
+	const hasUnpublishedWork = draftStatus === 'changed' || draftStatus === 'unpublished';
+	const { requiresApproval, pending: pendingReview } = usePublishReview();
+	const setReviewRequestId = useWorkflowShellStore((store) => store.setReviewRequestId);
+	// An open review takes the Publish slot: following it shows the request,
+	// and a newer draft is sent from there or from the Publish menu again.
+	const publishLabel = pendingReview
+		? 'In review'
+		: requiresApproval
+			? 'Request review'
+			: 'Publish';
+	const publishTooltip = pendingReview
+		? 'See the changes waiting for review'
+		: requiresApproval
+			? 'Send your changes for review'
+			: hasUnpublishedWork
+				? 'Publish your changes'
+				: 'Publish';
 
 	return (
-		<header className='relative z-20 flex h-14 shrink-0 items-center justify-between border-b border-zinc-200/80 bg-white/90 px-3 backdrop-blur-md select-none sm:px-4 dark:border-white/[0.08] dark:bg-[#07080b]/90'>
+		<header className='relative z-40 flex h-14 shrink-0 items-center justify-between border-b border-zinc-200/80 bg-white/90 px-3 backdrop-blur-md select-none sm:px-4 dark:border-white/[0.08] dark:bg-[#07080b]/90'>
 			{/* Primary accent hairline tying the bar to the brand colour. */}
 			<span
 				aria-hidden
@@ -520,11 +500,8 @@ const Topbar = () => {
 				<EditorTooltip label='Agent1o1 Dashboard'>
 					<Link
 						to={dashboardPath}
-						className={`group text-primary-700 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 hidden items-center gap-1.5 rounded-lg px-0.5 transition sm:flex ${FOCUS_RING}`}>
+						className={`group text-primary-700 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 hidden items-center rounded-lg transition sm:flex ${FOCUS_RING}`}>
 						<AppLogo className='ring-primary-500/20 dark:ring-primary-400/20 size-7 ring-1' />
-						<span className='hidden text-sm font-extrabold tracking-tight sm:inline'>
-							agent101
-						</span>
 					</Link>
 				</EditorTooltip>
 
@@ -532,9 +509,18 @@ const Topbar = () => {
 
 				{/* Folder (if categorized) */}
 				{state.workflow.folder && (
-					<div className='hidden items-center gap-1 text-xs text-zinc-400 lg:flex dark:text-zinc-500'>
-						<Folder size={12} className='text-primary-700 dark:text-primary-400' />
-						<span className='max-w-[80px] truncate'>{state.workflow.folder}</span>
+					<div className='hidden items-center gap-1.5 lg:flex'>
+						<EditorTooltip label={`Folder: ${state.workflow.folder}`}>
+							<span
+								role='img'
+								aria-label={`Folder: ${state.workflow.folder}`}
+								className='flex h-7 w-7 items-center justify-center rounded-lg'>
+								<Folder
+									size={14}
+									className='text-primary-700 dark:text-primary-400'
+								/>
+							</span>
+						</EditorTooltip>
 						<span className='text-zinc-300 dark:text-zinc-700'>/</span>
 					</div>
 				)}
@@ -542,30 +528,31 @@ const Topbar = () => {
 				{/* Editable Workflow Title */}
 				<EditableWorkflowName name={state.workflow.name} onSave={handleRenameWorkflow} />
 
-				{/* Version Pill */}
-				<EditorTooltip label='Open Version History'>
-					<button
-						type='button'
-						aria-label={`Version ${state.workflow.currentVersionNumber || 1}, open version history`}
-						onClick={() => {
-							setGovModalTab('versions');
-							setGovModalOpen(true);
-						}}
-						className={`border-primary-400/40 bg-primary-100/60 text-primary-800 hover:border-primary-400/70 hover:bg-primary-100 dark:border-primary-400/25 dark:bg-primary-400/10 dark:text-primary-300 dark:hover:bg-primary-400/20 hidden rounded-md border px-2 py-0.5 text-[10px] font-bold transition sm:inline-flex ${FOCUS_RING}`}>
-						v{state.workflow.currentVersionNumber || 1}
-					</button>
+				{/* Draft vs. live */}
+				<EditorTooltip label={`${draftStatusLabel} · Version history`}>
+					<DraftStatusPill
+						onClick={openVersionHistory}
+						className={`hidden sm:inline-flex ${FOCUS_RING}`}
+					/>
 				</EditorTooltip>
 
 				{/* Node Count Chip */}
-				<EditorTooltip label='Canvas nodes and connections'>
-					<div className='bg-primary-100/50 text-primary-800 dark:bg-primary-400/10 dark:text-primary-300/90 hidden items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-medium xl:flex'>
-						<Layers size={11} className='text-primary-700 dark:text-primary-400' />
-						<span>{state.nodes.length} nodes</span>
+				<EditorTooltip
+					label={`${state.nodes.length} nodes · ${state.edges.length} connections`}>
+					<div
+						role='img'
+						aria-label={`${state.nodes.length} nodes, ${state.edges.length} connections`}
+						className='text-primary-800 dark:text-primary-300/90 hidden h-7 items-center gap-1 rounded-lg px-1.5 text-[11px] font-semibold tabular-nums xl:flex'>
+						<Layers size={14} className='text-primary-700 dark:text-primary-400' />
+						<span>{state.nodes.length}</span>
 					</div>
 				</EditorTooltip>
 
 				{/* Live Save Status */}
-				<SaveStatusBadge savingState={state.workflow.savingState} onRetry={handleSave} />
+				<SaveStatusBadge
+					savingState={state.workflow.savingState}
+					onRetry={() => dispatch({ type: 'SET_SAVE_STATE', savingState: 'dirty' })}
+				/>
 			</div>
 
 			{/* Center Section: Smooth Segmented Studio Control (Apps, Triggers, AI Chat) */}
@@ -603,22 +590,29 @@ const Topbar = () => {
 					<span>Triggers</span>
 				</button>
 
-				<div className='bg-primary-500/20 dark:bg-primary-400/20 mx-0.5 h-3.5 w-px' />
+				{isAiPanelAvailable && (
+					<>
+						<div className='bg-primary-500/20 dark:bg-primary-400/20 mx-0.5 h-3.5 w-px' />
 
-				<button
-					type='button'
-					aria-pressed={state.ui.aiPanelOpen}
-					onClick={() => dispatch({ type: 'TOGGLE_AI_PANEL' })}
-					className={[
-						'relative flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition duration-150',
-						FOCUS_RING,
-						state.ui.aiPanelOpen
-							? 'bg-primary-500/15 text-primary-800 ring-primary-500/35 dark:bg-primary-400/15 dark:text-primary-300 dark:ring-primary-400/40 shadow-xs ring-1'
-							: 'hover:bg-primary-100/60 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 text-zinc-600 dark:text-zinc-400',
-					].join(' ')}>
-					<Sparkles size={13} className='text-primary-700 dark:text-primary-400' />
-					<span>AI Chat</span>
-				</button>
+						<button
+							type='button'
+							aria-pressed={isAiPanelShown}
+							onClick={() => dispatch({ type: 'TOGGLE_AI_PANEL' })}
+							className={[
+								'relative flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition duration-150',
+								FOCUS_RING,
+								isAiPanelShown
+									? 'bg-primary-500/15 text-primary-800 ring-primary-500/35 dark:bg-primary-400/15 dark:text-primary-300 dark:ring-primary-400/40 shadow-xs ring-1'
+									: 'hover:bg-primary-100/60 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 text-zinc-600 dark:text-zinc-400',
+							].join(' ')}>
+							<Sparkles
+								size={13}
+								className='text-primary-700 dark:text-primary-400'
+							/>
+							<span>AI Chat</span>
+						</button>
+					</>
+				)}
 			</div>
 
 			{/* Right Section: Canvas Controls & Actions */}
@@ -661,10 +655,7 @@ const Topbar = () => {
 					</div>
 
 					{/* Auto-layout */}
-					<TopbarIconButton
-						label='Auto-layout canvas'
-						shortcut='L'
-						onClick={() => dispatch({ type: 'AUTO_LAYOUT' })}>
+					<TopbarIconButton label='Auto-layout canvas' shortcut='L' onClick={autoLayout}>
 						<LayoutGrid size={13} />
 					</TopbarIconButton>
 
@@ -697,6 +688,8 @@ const Topbar = () => {
 					</button>
 				</EditorTooltip>
 
+				<WorkflowPresence />
+
 				{/* Share Dropdown */}
 				<div className='relative hidden sm:block'>
 					<button
@@ -722,13 +715,17 @@ const Topbar = () => {
 					<AnimatePresence>
 						{isShareDropdownOpen && (
 							<>
-								<div className='fixed inset-0 z-40' onClick={() => closeMenu()} />
+								<div
+									aria-hidden='true'
+									className='fixed inset-0 z-40'
+									onClick={() => closeMenu()}
+								/>
 								<motion.div
 									initial={{ opacity: 0, y: 4, scale: 0.96 }}
 									animate={{ opacity: 1, y: 0, scale: 1 }}
 									exit={{ opacity: 0, y: 4, scale: 0.96 }}
 									role='menu'
-									className='border-primary-500/20 dark:border-primary-400/20 absolute top-10 right-0 z-50 w-56 origin-top-right rounded-xl border bg-white p-1.5 shadow-xl ring-1 ring-black/5 dark:bg-zinc-950 dark:ring-white/5'>
+									className='border-primary-500/20 dark:border-primary-400/20 absolute top-10 right-0 z-50 w-64 origin-top-right rounded-xl border bg-white p-1.5 shadow-xl ring-1 ring-black/5 dark:bg-zinc-950 dark:ring-white/5'>
 									<button
 										type='button'
 										onClick={handleCopyShareLink}
@@ -767,6 +764,17 @@ const Topbar = () => {
 
 									<div className='bg-primary-500/15 dark:bg-primary-400/15 my-1 h-px' />
 
+									{workspaceId && state.workflow.apiId && (
+										<>
+											<WorkflowPagesMenu
+												ws={workspaceId}
+												workflowId={state.workflow.apiId}
+												onNavigate={closeMenu}
+											/>
+											<div className='bg-primary-500/15 dark:bg-primary-400/15 my-1 h-px' />
+										</>
+									)}
+
 									<button
 										type='button'
 										onClick={() => {
@@ -792,44 +800,63 @@ const Topbar = () => {
 					<NotificationsDropdown />
 				</div>
 
-				{/* Save Split Button */}
+				<IssuesChecklist />
+
+				{/* Publish Split Button */}
 				<div
 					className={[
 						'relative flex items-center rounded-lg border shadow-xs transition duration-150',
-						// Unsaved work earns the accent, so there is something to notice.
-						isDirty
+						// Something waiting to go live earns the accent.
+						hasUnpublishedWork
 							? 'border-primary-400/70 bg-primary-100/60 dark:border-primary-400/40 dark:bg-primary-400/10'
 							: 'border-zinc-200/80 bg-white dark:border-white/10 dark:bg-zinc-900/80',
 					].join(' ')}>
 					<EditorTooltip
-						label={isDirty ? 'Save New Version (unsaved changes)' : 'Save New Version'}
-						shortcut='⌘S'
-						disabled={isSaveDropdownOpen}>
+						label={publishTooltip}
+						shortcut={pendingReview ? undefined : '⌘S'}
+						disabled={isSaveDropdownOpen || isPublishOpen}>
 						<button
 							type='button'
-							onClick={handleSave}
-							disabled={saveVersion.isPending}
+							aria-haspopup='dialog'
+							aria-expanded={isPublishOpen}
+							onClick={() => {
+								if (pendingReview) {
+									closeMenu();
+									setReviewRequestId(pendingReview.id);
+								} else {
+									toggleMenu('publish');
+								}
+							}}
 							className={[
-								'hover:bg-primary-100/70 dark:hover:bg-primary-400/10 flex h-8 items-center gap-1.5 rounded-l-lg px-2.5 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-40 sm:px-3',
+								'hover:bg-primary-100/70 dark:hover:bg-primary-400/10 flex h-8 items-center gap-1.5 rounded-l-lg px-2.5 text-xs font-bold transition sm:px-3',
 								FOCUS_RING,
-								isDirty
+								hasUnpublishedWork
 									? 'text-primary-900 dark:text-primary-300'
 									: 'hover:text-primary-900 dark:hover:text-primary-300 text-zinc-700 dark:text-zinc-200',
 							].join(' ')}>
-							{saveVersion.isPending ? (
-								<Loader2
+							{pendingReview ? (
+								<FileCheck2
 									size={13}
-									className='text-primary-600 dark:text-primary-400 animate-spin'
+									className='text-amber-600 dark:text-amber-400'
+								/>
+							) : requiresApproval ? (
+								<Send
+									size={13}
+									className='text-primary-700 dark:text-primary-400'
 								/>
 							) : (
-								<Save
+								<Rocket
 									size={13}
 									className='text-primary-700 dark:text-primary-400'
 								/>
 							)}
-							<span>{saveVersion.isPending ? 'Saving...' : 'Save'}</span>
+							<span>{publishLabel}</span>
 						</button>
 					</EditorTooltip>
+
+					<AnimatePresence>
+						{isPublishOpen && <PublishPopover onClose={closeMenu} />}
+					</AnimatePresence>
 
 					<button
 						type='button'
@@ -847,7 +874,11 @@ const Topbar = () => {
 					<AnimatePresence>
 						{isSaveDropdownOpen && (
 							<>
-								<div className='fixed inset-0 z-40' onClick={() => closeMenu()} />
+								<div
+									aria-hidden='true'
+									className='fixed inset-0 z-40'
+									onClick={() => closeMenu()}
+								/>
 								<motion.div
 									initial={{ opacity: 0, y: 4, scale: 0.96 }}
 									animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -860,11 +891,7 @@ const Topbar = () => {
 									</div>
 									<button
 										type='button'
-										onClick={() => {
-											closeMenu();
-											setGovModalTab('versions');
-											setGovModalOpen(true);
-										}}
+										onClick={openVersionHistory}
 										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
 										<GitCompare
 											size={14}
@@ -884,49 +911,7 @@ const Topbar = () => {
 											size={14}
 											className='text-primary-700 dark:text-primary-400'
 										/>
-										<span>Request Approval</span>
-									</button>
-									<button
-										type='button'
-										onClick={() => {
-											closeMenu();
-											setGovModalTab('releases');
-											setGovModalOpen(true);
-										}}
-										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
-										<Rocket
-											size={14}
-											className='text-primary-700 dark:text-primary-400'
-										/>
-										<span>Deploy Release</span>
-									</button>
-									<button
-										type='button'
-										onClick={() => {
-											closeMenu();
-											setGovModalTab('contracts');
-											setGovModalOpen(true);
-										}}
-										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
-										<FileCheck
-											size={14}
-											className='text-primary-700 dark:text-primary-400'
-										/>
-										<span>Contracts Verification</span>
-									</button>
-									<button
-										type='button'
-										onClick={() => {
-											closeMenu();
-											setGovModalTab('checks');
-											setGovModalOpen(true);
-										}}
-										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
-										<ListChecks
-											size={14}
-											className='text-primary-700 dark:text-primary-400'
-										/>
-										<span>Validate & Dry Run</span>
+										<span>Approvals</span>
 									</button>
 									<button
 										type='button'
@@ -941,20 +926,6 @@ const Topbar = () => {
 											className='text-primary-700 dark:text-primary-400'
 										/>
 										<span>Run Form</span>
-									</button>
-									<button
-										type='button'
-										onClick={() => {
-											closeMenu();
-											setGovModalTab('triggers');
-											setGovModalOpen(true);
-										}}
-										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
-										<Zap
-											size={14}
-											className='text-primary-700 dark:text-primary-400'
-										/>
-										<span>Triggers</span>
 									</button>
 
 									<div className='bg-primary-500/15 dark:bg-primary-400/15 my-1 h-px' />
@@ -991,6 +962,16 @@ const Topbar = () => {
 						)}
 					</AnimatePresence>
 				</div>
+
+				<button
+					type='button'
+					aria-label='Toggle runs panel'
+					aria-pressed={state.ui.runPanelOpen}
+					onClick={() => dispatch({ type: 'TOGGLE_RUN_PANEL' })}
+					className={`hidden h-8 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition md:inline-flex ${FOCUS_RING} ${state.ui.runPanelOpen ? 'border-zinc-300 bg-zinc-100 text-zinc-900 dark:border-white/15 dark:bg-white/10 dark:text-white' : 'border-zinc-200 text-zinc-500 hover:bg-zinc-50 dark:border-white/10 dark:text-zinc-400 dark:hover:bg-white/5'}`}>
+					<ListChecks size={14} />
+					Runs
+				</button>
 
 				{/* Primary Run Action */}
 				<EditorTooltip
@@ -1043,7 +1024,11 @@ const Topbar = () => {
 					<AnimatePresence>
 						{isMobileMenuOpen && (
 							<>
-								<div className='fixed inset-0 z-40' onClick={() => closeMenu()} />
+								<div
+									aria-hidden='true'
+									className='fixed inset-0 z-40'
+									onClick={() => closeMenu()}
+								/>
 								<motion.div
 									initial={{ opacity: 0, y: 4, scale: 0.96 }}
 									animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1082,19 +1067,21 @@ const Topbar = () => {
 										/>
 										<span>Triggers</span>
 									</button>
-									<button
-										type='button'
-										onClick={() => {
-											closeMenu();
-											dispatch({ type: 'TOGGLE_AI_PANEL' });
-										}}
-										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
-										<Sparkles
-											size={14}
-											className='text-primary-700 dark:text-primary-400'
-										/>
-										<span>AI Assistant</span>
-									</button>
+									{isAiPanelAvailable && (
+										<button
+											type='button'
+											onClick={() => {
+												closeMenu();
+												dispatch({ type: 'TOGGLE_AI_PANEL' });
+											}}
+											className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
+											<Sparkles
+												size={14}
+												className='text-primary-700 dark:text-primary-400'
+											/>
+											<span>AI Assistant</span>
+										</button>
+									)}
 
 									<div className='bg-primary-500/15 dark:bg-primary-400/15 my-1 h-px' />
 
@@ -1126,11 +1113,7 @@ const Topbar = () => {
 									</button>
 									<button
 										type='button'
-										onClick={() => {
-											closeMenu();
-											setGovModalTab('versions');
-											setGovModalOpen(true);
-										}}
+										onClick={openVersionHistory}
 										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
 										<GitCompare
 											size={14}
@@ -1191,7 +1174,7 @@ const Topbar = () => {
 					onClose={() => setIsSaveAsTemplateOpen(false)}
 					defaultName={state.workflow.name}
 					beforeSave={async () => {
-						// The template copies the server-side draft — push the canvas first.
+						// The template copies the server-side draft: push the canvas first.
 						await persistWorkflowDraft({
 							workspaceId,
 							workflowId: state.workflow.apiId!,

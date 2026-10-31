@@ -8,6 +8,7 @@ import { useAuth } from '@/context/auth';
 import useAfterAuthRedirect, { AFTER_AUTH_PATH } from '@/hooks/useAfterAuthRedirect';
 import pages from '@/Routes/pages';
 import applyApiFieldErrors from '@/utils/apiFormErrors.util';
+import { clearReferralAttribution, getReferralAttribution } from '@/utils/referralAttribution.util';
 import Icon from '@/components/icon/Icon';
 import Spinner from '@/components/ui/Spinner';
 import Progress from '@/components/ui/Progress';
@@ -66,7 +67,13 @@ const RegisterPage = () => {
 		validationSchema,
 		onSubmit: async (values) => {
 			try {
-				await register.mutateAsync(values);
+				const referral = getReferralAttribution();
+				await register.mutateAsync({
+					...values,
+					referral_code: referral?.code,
+					referral_visitor_id: referral?.visitor_id,
+				});
+				clearReferralAttribution();
 				await redirectAfterAuth(from);
 			} catch (error) {
 				applyApiFieldErrors(error, formik);
@@ -96,7 +103,7 @@ const RegisterPage = () => {
 						<Link
 							to={pages.identity.login.to}
 							state={location.state}
-							className='text-primary-600 hover:text-primary-700 font-semibold hover:underline'>
+							className='decoration-primary-500 hover:decoration-primary-700 font-semibold text-zinc-950 underline decoration-2 underline-offset-4 transition-colors'>
 							Sign in
 						</Link>
 					</>
@@ -142,6 +149,7 @@ const RegisterPage = () => {
 					<div className='focus-within:border-primary-500 focus-within:ring-primary-500/15 flex items-center gap-2.5 rounded-xl border border-[#d8e2ee] bg-[#eef2f8] px-3.5 py-2.5 transition-all focus-within:bg-white focus-within:ring-2'>
 						<Icon icon='User' className='size-4 shrink-0 text-zinc-400' />
 						<input
+							aria-label='Jane Doe'
 							className='input-clean w-full border-0 border-none bg-transparent p-0 text-sm font-medium text-zinc-950 shadow-none placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
 							id='name'
 							name='name'
@@ -167,6 +175,7 @@ const RegisterPage = () => {
 					<div className='focus-within:border-primary-500 focus-within:ring-primary-500/15 flex items-center gap-2.5 rounded-xl border border-[#d8e2ee] bg-[#eef2f8] px-3.5 py-2.5 transition-all focus-within:bg-white focus-within:ring-2'>
 						<Icon icon='Mail01' className='size-4 shrink-0 text-zinc-400' />
 						<input
+							aria-label='name@example.com'
 							className='input-clean w-full border-0 border-none bg-transparent p-0 text-sm font-medium text-zinc-950 shadow-none placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
 							id='email'
 							name='email'
@@ -193,6 +202,7 @@ const RegisterPage = () => {
 					<div className='focus-within:border-primary-500 focus-within:ring-primary-500/15 flex items-center gap-2.5 rounded-xl border border-[#d8e2ee] bg-[#eef2f8] px-3.5 py-2.5 transition-all focus-within:bg-white focus-within:ring-2'>
 						<Icon icon='SquareLockPassword' className='size-4 shrink-0 text-zinc-400' />
 						<input
+							aria-label='Create a password'
 							type={showPassword ? 'text' : 'password'}
 							className='input-clean w-full border-0 border-none bg-transparent p-0 font-mono text-sm text-zinc-950 shadow-none placeholder:font-sans placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
 							id='password'
@@ -229,6 +239,7 @@ const RegisterPage = () => {
 					<div className='focus-within:border-primary-500 focus-within:ring-primary-500/15 flex items-center gap-2.5 rounded-xl border border-[#d8e2ee] bg-[#eef2f8] px-3.5 py-2.5 transition-all focus-within:bg-white focus-within:ring-2'>
 						<Icon icon='SquareLockPassword' className='size-4 shrink-0 text-zinc-400' />
 						<input
+							aria-label='Confirm your password'
 							type={showConfirm ? 'text' : 'password'}
 							className='input-clean w-full border-0 border-none bg-transparent p-0 font-mono text-sm text-zinc-950 shadow-none placeholder:font-sans placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
 							id='password_confirmation'
@@ -316,7 +327,7 @@ const RegisterPage = () => {
 				<button
 					type='submit'
 					disabled={register.isPending || passedCount < 5}
-					className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 active:bg-primary-800 mt-3 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-md transition-all disabled:pointer-events-none disabled:opacity-50'>
+					className='bg-primary-600 hover:bg-primary-700 active:bg-primary-800 mt-3 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-[0_8px_20px_-6px_rgb(183_229_47/0.55)] transition-all disabled:pointer-events-none disabled:opacity-50'>
 					{register.isPending && <Spinner className='size-4' />}
 					CREATE ACCOUNT ›
 				</button>
@@ -328,7 +339,7 @@ const RegisterPage = () => {
 				<Link
 					to={pages.identity.login.to}
 					state={location.state}
-					className='text-primary-600 hover:text-primary-700 font-bold transition-colors'>
+					className='decoration-primary-500 hover:decoration-primary-700 font-semibold text-zinc-950 underline decoration-2 underline-offset-4 transition-colors'>
 					Sign in
 				</Link>
 			</p>

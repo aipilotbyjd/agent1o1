@@ -1,8 +1,8 @@
 import { AlertCircle } from 'lucide-react';
-import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 
 /** Shown when a node declares `requiresCredential` but none is selected. */
-const NodeAuthWarning = () => {
+const NodeAuthWarning = ({ nodeId }: { nodeId: string }) => {
 	const { dispatch } = useWorkflowEditor();
 
 	return (
@@ -21,9 +21,9 @@ const NodeAuthWarning = () => {
 					onPointerDown={(event) => event.stopPropagation()}
 					onClick={(event) => {
 						event.stopPropagation();
-						dispatch({ type: 'SET_LINK_CREDENTIALS_OPEN', open: true });
+						dispatch({ type: 'SET_LINK_CREDENTIALS_OPEN', open: true, nodeId });
 					}}
-					className='border-zinc-250 nodrag mt-1 flex cursor-pointer items-center gap-1.5 self-start rounded-md border bg-white px-2.5 py-1 text-[11px] font-semibold text-primary-600 shadow-xs hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-primary-400 dark:hover:bg-zinc-800'>
+					className='border-zinc-250 nodrag text-primary-600 dark:text-primary-400 mt-1 flex cursor-pointer items-center gap-1.5 self-start rounded-md border bg-white px-2.5 py-1 text-[11px] font-semibold shadow-xs hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
 					Authenticate credentials
 				</button>
 			</div>

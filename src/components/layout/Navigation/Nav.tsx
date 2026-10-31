@@ -187,7 +187,7 @@ export const NavItem: FC<INavItemProps> = (props) => {
 		to,
 		end = true,
 		className,
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 		subPages,
 		iconColor,
 		isActiveOverwrite,
@@ -318,15 +318,16 @@ interface INavCollapseProps extends HTMLAttributes<HTMLLIElement> {
 	to: string;
 	className?: string;
 	subPages?: unknown;
+	defaultOpen?: boolean;
 }
 export const NavCollapse: FC<INavCollapseProps> = (props) => {
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	const { children, icon, text, className, to, subPages, iconColor, ...rest } = props;
+	const { children, icon, text, className, to, subPages, iconColor, defaultOpen, ...rest } =
+		props;
 
 	const { t } = useTranslation('menu');
 
 	const id = useId();
-	const [isActive, setIsActive] = useState<boolean>(false);
+	const [isActive, setIsActive] = useState<boolean>(!!defaultOpen);
 
 	const { asideStatus } = useAsideStatus();
 
@@ -334,9 +335,10 @@ export const NavCollapse: FC<INavCollapseProps> = (props) => {
 	const here = to !== '/' && location.pathname.includes(to);
 
 	useEffect(() => {
+		if (defaultOpen && !here) return;
 		// eslint-disable-next-line react-hooks/set-state-in-effect
 		setIsActive(here);
-	}, [here, location.pathname]);
+	}, [here, location.pathname, defaultOpen]);
 
 	return (
 		<li
@@ -441,7 +443,7 @@ interface INavUserProps extends HTMLAttributes<HTMLLIElement> {
 }
 export const NavUser: FC<INavUserProps> = (props) => {
 	// TODO
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 	const { children, image, text, to, className, ...rest } = props;
 
 	const { t } = useTranslation('menu');

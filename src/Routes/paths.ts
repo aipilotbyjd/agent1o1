@@ -24,6 +24,7 @@ export const withWorkspace = (to: string, workspaceId: string) => buildPath(to, 
 const workspacePages = pages.workspace.subPages!;
 const playbookEditorPages = pages.playbookEditor.subPages!;
 const agentEditorPages = pages.agentEditor.subPages!;
+const pageEditorPages = pages.pageEditor.subPages!;
 const settingsPages = pages.settings.subPages!;
 const billingPages = settingsPages.billing.subPages!;
 
@@ -39,14 +40,26 @@ const paths = {
 	viewPlaybook: (workspaceId: string, workflowId: string | number) =>
 		buildPath(playbookEditorPages.view.to, { workspaceId, workflowId }),
 
+	pages: (workspaceId: string) => buildPath(workspacePages.pages.to, { workspaceId }),
+	usePage: (workspaceId: string, pageId: string) =>
+		buildPath(pageEditorPages.use.to, { workspaceId, pageId }),
+	editPage: (workspaceId: string, pageId: string) =>
+		buildPath(pageEditorPages.edit.to, { workspaceId, pageId }),
+	pageInsights: (workspaceId: string, pageId: string) =>
+		buildPath(pageEditorPages.insights.to, { workspaceId, pageId }),
+	publicPage: (token: string) => buildPath(pages.publicPage.to, { token }),
+
 	agents: (workspaceId: string) => buildPath(workspacePages.agents.to, { workspaceId }),
 	newAgent: (workspaceId: string) => buildPath(agentEditorPages.add.to, { workspaceId }),
 	editAgent: (workspaceId: string, agentId: string | number) =>
 		buildPath(agentEditorPages.edit.to, { workspaceId, agentId }),
 	agentInsights: (workspaceId: string, agentId: string | number, tab?: string) =>
-		buildPath(agentEditorPages.insights.to, { workspaceId, agentId }) + (tab ? `?tab=${tab}` : ''),
+		buildPath(agentEditorPages.insights.to, { workspaceId, agentId }) +
+		(tab ? `?tab=${tab}` : ''),
+	library: (workspaceId: string) => buildPath(agentEditorPages.library.to, { workspaceId }),
 
 	apps: (workspaceId: string) => buildPath(workspacePages.apps.to, { workspaceId }),
+	approvals: (workspaceId: string) => buildPath(workspacePages.approvals.to, { workspaceId }),
 	trail: (workspaceId: string, runId?: string) =>
 		buildPath(workspacePages.trail.to, { workspaceId }) + (runId ? `?run=${runId}` : ''),
 
@@ -54,6 +67,10 @@ const paths = {
 	members: (workspaceId: string) => buildPath(settingsPages.members.to, { workspaceId }),
 	notificationSettings: (workspaceId: string) =>
 		buildPath(settingsPages.notifications.to, { workspaceId }),
+	referrals: (workspaceId: string) => buildPath(settingsPages.referrals.to, { workspaceId }),
+	agentPolicy: (workspaceId: string) => buildPath(settingsPages.agentPolicy.to, { workspaceId }),
+	triggersSettings: (workspaceId: string) =>
+		buildPath(settingsPages.triggers.to, { workspaceId }),
 	billing: (workspaceId: string) => buildPath(settingsPages.billing.to, { workspaceId }),
 	billingPlans: (workspaceId: string) => buildPath(billingPages.plans.to, { workspaceId }),
 	billingCredits: (workspaceId: string) => buildPath(billingPages.credits.to, { workspaceId }),

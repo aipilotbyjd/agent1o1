@@ -1,5 +1,5 @@
 import { Building2, Check, HelpCircle, Link as LinkIcon } from 'lucide-react';
-import { useOnboardingStore } from '../../_context/OnboardingStore.context';
+import { useOnboardingStore } from '../../_hooks/useOnboardingStore.hook';
 import { slugify } from '../../_helper/onboarding.helper';
 
 interface IWorkspaceStepProps {
@@ -62,6 +62,7 @@ const WorkspaceStep = ({ workspaceError }: IWorkspaceStepProps) => {
 						<div className='focus-within:border-primary-500 focus-within:ring-primary-400/10 relative flex items-center rounded-2xl border border-slate-200/80 bg-slate-50/50 shadow-2xs transition-all duration-300 focus-within:bg-white focus-within:ring-4 dark:border-zinc-800/80 dark:bg-zinc-950/30 dark:focus-within:bg-zinc-950'>
 							<Building2 className='absolute left-4.5 h-4 w-4 text-slate-400' />
 							<input
+								aria-label='Acme Automation'
 								id='ws-name'
 								type='text'
 								placeholder='Acme Automation'
@@ -85,7 +86,7 @@ const WorkspaceStep = ({ workspaceError }: IWorkspaceStepProps) => {
 						<div className='focus-within:border-primary-500 focus-within:ring-primary-400/10 relative flex h-12 items-center rounded-2xl border border-slate-200/80 bg-slate-50/50 shadow-2xs transition-all duration-300 focus-within:bg-white focus-within:ring-4 dark:border-zinc-800/80 dark:bg-zinc-950/30 dark:focus-within:bg-zinc-950'>
 							<LinkIcon className='absolute left-4.5 h-3.5 w-3.5 text-slate-400' />
 							<span className='flex h-full items-center pr-1 pl-12 text-sm font-bold text-slate-400 select-none dark:text-zinc-500'>
-								agent1o1.app/
+								agent1o1.com/
 							</span>
 							<span
 								id='ws-slug'
@@ -101,7 +102,7 @@ const WorkspaceStep = ({ workspaceError }: IWorkspaceStepProps) => {
 							<span className='bg-primary-400 h-1.5 w-1.5 animate-pulse rounded-full' />
 							<span>Live URL:</span>
 							<span className='font-black break-all text-slate-700 dark:text-zinc-300'>
-								https://agent1o1.app/{workspaceSlug || 'your-slug'}
+								https://agent1o1.com/{workspaceSlug || 'your-slug'}
 							</span>
 						</div>
 					</div>

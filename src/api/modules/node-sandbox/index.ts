@@ -17,7 +17,7 @@ export interface INodeSandboxResult {
  * Ported-frontend adapter.
  *
  * Old ran arbitrary node code in a server-side sandbox via its own endpoint.
- * This backend exposes nothing equivalent — the closest thing, testing a node,
+ * This backend exposes nothing equivalent: the closest thing, testing a node,
  * requires that node to already exist inside a saved workflow. Kept so the
  * ported sandbox panel compiles, and failing loudly so the gap is visible at the
  * point of use.

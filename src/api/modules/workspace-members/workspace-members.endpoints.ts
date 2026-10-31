@@ -1,7 +1,7 @@
 // ============================================================
 // Workspace Member / Invitation Endpoints
 // ------------------------------------------------------------
-// A member is addressed by user id, not a membership row id —
+// A member is addressed by user id, not a membership row id:
 // `Route::patch('members/{member}', ...)` binds `{member}` to
 // `User`. Accepting an invitation isn't workspace-scoped in the
 // URL: the workspace comes from the invitation itself.

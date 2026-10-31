@@ -1,6 +1,6 @@
 import { AlertTriangle, CheckCircle2, CircleAlert, GitBranch, Timer } from 'lucide-react';
 import { validateWorkflow } from '../../_helper/validation.helper';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 
 const StatusBar = () => {
 	const { state } = useWorkflowEditor();

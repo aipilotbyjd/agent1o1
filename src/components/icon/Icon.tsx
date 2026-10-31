@@ -33,7 +33,7 @@ const RefWrapper = forwardRef<HTMLSpanElement, IRefWrapperProps>(({ children }, 
 });
 RefWrapper.displayName = 'RefWrapper';
 
-// Looked up by name at runtime, like `SvgIcon` below — the props are not checked.
+// Looked up by name at runtime, like `SvgIcon` below: the props are not checked.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type THugeSet = Record<string, ComponentType<any> | undefined>;
 let allHuge: THugeSet | null = null;
@@ -66,7 +66,7 @@ const Icon = forwardRef<HTMLSpanElement, IIconProps>((props, ref) => {
 	useEffect(() => {
 		if (!needsFullSet) return;
 		if (import.meta.env.DEV)
-			console.warn(`Icon "${icon}" is not in huge/used.ts — run \`yarn icons:used\`.`);
+			console.warn(`Icon "${icon}" is not in huge/used.ts: run \`yarn icons:used\`.`);
 		let active = true;
 		void loadAllHuge().then(() => active && rerender());
 		return () => {

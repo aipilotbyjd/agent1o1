@@ -282,7 +282,7 @@ const RichText: FC<IRichTextProps> = (props) => {
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		isValidMessage = true,
 		rounded = themeConfig.rounded,
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 		validFeedback,
 		variant = 'solid',
 		value,

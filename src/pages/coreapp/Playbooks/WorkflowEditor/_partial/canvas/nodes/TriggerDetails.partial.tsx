@@ -1,42 +1,197 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { ChevronRight, Copy, ExternalLink, Play, RefreshCw } from 'lucide-react';
+import {
+	ChevronRight,
+	Copy,
+	ExternalLink,
+	KeyRound,
+	Play,
+	RefreshCw,
+	RotateCcw,
+	Terminal,
+} from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { notify } from '@/api/core';
-import { useRotateTriggerToken, useRunTrigger, useTriggerEvents } from '@/api/modules/triggers';
+import {
+	useReplayTriggerEvent,
+	useRotateTriggerToken,
+	useRunTrigger,
+	useTriggerEvents,
+	useUpdateTrigger,
+} from '@/api/modules/triggers';
 import { useConfirm } from '@/context/confirm';
 import paths from '@/Routes/paths';
+import TriggerListen from '@/parts/TriggerListen.part';
+import TriggerSample from '@/parts/TriggerSample.part';
 import type { TTrigger } from '@/types/trigger.type';
-import { eventStatusDot as statusDot, webhookUrlFor } from '../../../_helper/trigger.helper';
+import {
+	copyWithNotice,
+	eventStatusDot as statusDot,
+	webhookCurlFor,
+	webhookUrlFor,
+} from '../../../_helper/trigger.helper';
 
 const EVENTS_SHOWN = 5;
 
-/** Canvas nodes are draggable — every control here has to keep the pointer to itself. */
+const DEFAULT_TOKEN_HEADER = 'X-Webhook-Token';
+
+/** A long random token for Header token authentication. */
+const generateToken = () =>
+	Array.from(crypto.getRandomValues(new Uint8Array(24)), (byte) =>
+		byte.toString(16).padStart(2, '0'),
+	).join('');
+
+/**
+ * The secret behind the Webhook node's Authentication setting (published
+ * value): a token the sender puts in a header, or the key it signs the body
+ * with. Write-only: the API only says whether one is set. A method that
+ * needs a secret rejects every request until one is added, so that's
+ * flagged. A legacy webhook with a provider source keeps its old secret field.
+ */
+const WebhookSecret = ({ workspaceId, trigger }: { workspaceId: string; trigger: TTrigger }) => {
+	const updateTrigger = useUpdateTrigger(workspaceId);
+	const [isEditing, setIsEditing] = useState(false);
+	const [secret, setSecret] = useState('');
+
+	const authentication = String(trigger.config?.authentication ?? '');
+	const header = String(trigger.config?.header_name || DEFAULT_TOKEN_HEADER);
+	const isToken = authentication === 'header_token';
+	const isLegacySource = !authentication && Boolean(trigger.preset_id);
+
+	if (
+		authentication === 'none' ||
+		(!authentication && !isLegacySource && !trigger.has_signing_secret)
+	) {
+		return (
+			<span className='text-[9px] text-zinc-400'>
+				No authentication: anyone with the URL can start a run.
+			</span>
+		);
+	}
+
+	const noun = isToken ? 'Token' : 'Signing secret';
+
+	const save = (value: string | null) =>
+		updateTrigger.mutate(
+			{ id: trigger.id, body: { signing_secret: value } },
+			{
+				onSuccess: () => {
+					notify.success(value ? `${noun} saved` : `${noun} removed`);
+					setIsEditing(false);
+					setSecret('');
+				},
+			},
+		);
+
+	if (isEditing) {
+		return (
+			<div className='flex items-center gap-1'>
+				<input
+					type={isToken ? 'text' : 'password'}
+					value={secret}
+					placeholder={isToken ? 'Paste or generate a token' : 'Paste the signing secret'}
+					onChange={(event) => setSecret(event.target.value)}
+					className='focus:border-primary-400 min-w-0 flex-1 rounded-md border border-zinc-200 bg-white px-1.5 py-0.5 font-mono text-[10px] text-zinc-700 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'
+				/>
+				{isToken && (
+					<button
+						type='button'
+						onClick={() => setSecret(generateToken())}
+						className='hover:text-primary-900 dark:hover:text-primary-400 cursor-pointer text-[9px] font-semibold text-zinc-500'>
+						Generate
+					</button>
+				)}
+				<button
+					type='button'
+					disabled={!secret.trim() || updateTrigger.isPending}
+					onClick={() => save(secret.trim())}
+					className='text-primary-600 dark:text-primary-400 cursor-pointer text-[9px] font-semibold disabled:cursor-not-allowed disabled:opacity-50'>
+					Save
+				</button>
+				<button
+					type='button'
+					onClick={() => setIsEditing(false)}
+					className='cursor-pointer text-[9px] font-semibold text-zinc-400 hover:text-zinc-600'>
+					Cancel
+				</button>
+			</div>
+		);
+	}
+
+	return (
+		<div className='flex flex-col gap-0.5'>
+			<div className='flex items-center justify-between text-[10px]'>
+				<span
+					className={`flex items-center gap-1 font-semibold ${trigger.has_signing_secret ? 'text-zinc-500 dark:text-zinc-400' : 'text-rose-500'}`}>
+					<KeyRound size={10} />
+					{trigger.has_signing_secret
+						? `${noun} set`
+						: `No ${noun.toLowerCase()}: every request is rejected`}
+				</span>
+				<div className='flex items-center gap-2'>
+					{trigger.has_signing_secret && (
+						<button
+							type='button'
+							disabled={updateTrigger.isPending}
+							onClick={() => save(null)}
+							className='cursor-pointer text-[9px] font-semibold text-rose-500 hover:text-rose-600'>
+							Remove
+						</button>
+					)}
+					<button
+						type='button'
+						onClick={() => setIsEditing(true)}
+						className='hover:text-primary-900 dark:hover:text-primary-400 cursor-pointer text-[9px] font-semibold text-zinc-500'>
+						{trigger.has_signing_secret ? 'Replace' : 'Add'}
+					</button>
+				</div>
+			</div>
+			<span className='text-[9px] text-zinc-400'>
+				{isToken ? (
+					<>
+						Send it as the <code className='font-mono'>{header}</code> header.
+					</>
+				) : isLegacySource ? (
+					'The sending app’s signing secret.'
+				) : (
+					<>
+						Sign the raw body:{' '}
+						<code className='font-mono'>
+							X-Signature-256: sha256=HMAC-SHA256(body, secret)
+						</code>
+						.
+					</>
+				)}
+			</span>
+		</div>
+	);
+};
+
+/** Canvas nodes are draggable: every control here has to keep the pointer to itself. */
 const stop = (event: React.SyntheticEvent) => event.stopPropagation();
 
 type Props = {
 	workspaceId: string;
 	trigger: TTrigger;
+	/** Off where the full event history is shown beside it (the agent's trigger drawer). */
+	showEvents?: boolean;
 };
 
-const TriggerDetails = ({ workspaceId, trigger }: Props) => {
+const TriggerDetails = ({ workspaceId, trigger, showEvents = true }: Props) => {
 	const { confirm } = useConfirm();
 	const runTrigger = useRunTrigger(workspaceId);
+	const replayEvent = useReplayTriggerEvent(workspaceId);
+	const updateTrigger = useUpdateTrigger(workspaceId);
 	const rotateToken = useRotateTriggerToken(workspaceId);
 	const [eventsOpen, setEventsOpen] = useState(false);
 	// Only fetched once the list is opened; an empty id keeps the query disabled.
 	const events = useTriggerEvents(workspaceId, eventsOpen ? trigger.id : '');
 
-	const webhookUrl = trigger.type === 'webhook' && trigger.token ? webhookUrlFor(trigger.token) : '';
+	const webhookUrl =
+		trigger.type === 'webhook' && trigger.token ? webhookUrlFor(trigger.token) : '';
 
-	const handleCopy = async () => {
-		try {
-			await navigator.clipboard.writeText(webhookUrl);
-			notify.success('Webhook URL copied');
-		} catch {
-			notify.error('Could not copy the webhook URL');
-		}
-	};
+	const handleCopy = () => copyWithNotice(webhookUrl, 'Webhook URL');
+	const handleCopyCurl = () => copyWithNotice(webhookCurlFor(trigger), 'curl example');
 
 	const handleRotate = async () => {
 		const confirmed = await confirm({
@@ -57,8 +212,77 @@ const TriggerDetails = ({ workspaceId, trigger }: Props) => {
 		});
 	};
 
+	const stats = trigger.stats_24h;
+
 	return (
 		<div className='nodrag flex flex-col gap-2' onPointerDown={stop}>
+			{(stats || trigger.next_run_at || trigger.next_poll_at) && (
+				<div className='flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[9px] font-semibold text-zinc-400'>
+					{stats && (
+						<span title='Over the last 24 hours'>
+							24h: {stats.fired} run{stats.fired === 1 ? '' : 's'}
+							{stats.failed > 0 && (
+								<span className='text-rose-500'> · {stats.failed} failed</span>
+							)}
+							{stats.rejected > 0 && (
+								<span className='text-rose-500'> · {stats.rejected} rejected</span>
+							)}
+							{stats.skipped > 0 && <span> · {stats.skipped} skipped</span>}
+						</span>
+					)}
+					{trigger.is_active &&
+						trigger.next_poll_at &&
+						trigger.status?.delivery.mode === 'polling' && (
+							<span>
+								Next check{' '}
+								{formatDistanceToNow(new Date(trigger.next_poll_at), {
+									addSuffix: true,
+								})}
+							</span>
+						)}
+					{trigger.is_active && trigger.next_run_at && (
+						<span>
+							Next{' '}
+							{formatDistanceToNow(new Date(trigger.next_run_at), {
+								addSuffix: true,
+							})}
+						</span>
+					)}
+				</div>
+			)}
+			{trigger.status && (trigger.status.hint || trigger.status.action) && (
+				<div className='flex items-start justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50/70 px-2 py-1.5 dark:border-amber-900/50 dark:bg-amber-950/20'>
+					<span className='text-[9px] font-semibold text-amber-800 dark:text-amber-300'>
+						{trigger.status.hint ?? trigger.status.label}
+					</span>
+					{trigger.status.action === 'resume' && (
+						<button
+							type='button'
+							disabled={updateTrigger.isPending}
+							onClick={(event) => {
+								stop(event);
+								updateTrigger.mutate({ id: trigger.id, body: { is_active: true } });
+							}}
+							className='shrink-0 cursor-pointer text-[9px] font-bold text-amber-900 underline disabled:opacity-50 dark:text-amber-200'>
+							Switch on
+						</button>
+					)}
+					{trigger.status.action === 'reconnect' && (
+						<Link
+							to={paths.apps(workspaceId)}
+							onClick={stop}
+							className='shrink-0 text-[9px] font-bold text-amber-900 underline dark:text-amber-200'>
+							Reconnect
+						</Link>
+					)}
+				</div>
+			)}
+			{trigger.type !== 'manual' && (
+				<>
+					<TriggerSample ws={workspaceId} triggerId={trigger.id} />
+					<TriggerListen ws={workspaceId} triggerId={trigger.id} />
+				</>
+			)}
 			{webhookUrl && (
 				<div className='flex flex-col gap-1'>
 					<div className='flex items-center justify-between'>
@@ -73,8 +297,19 @@ const TriggerDetails = ({ workspaceId, trigger }: Props) => {
 									stop(event);
 									handleCopy();
 								}}
-								className='flex h-5 w-5 cursor-pointer items-center justify-center rounded text-zinc-400 transition hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/40 dark:hover:text-primary-400'>
+								className='hover:bg-primary-100 hover:text-primary-900 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-5 w-5 cursor-pointer items-center justify-center rounded text-zinc-400 transition'>
 								<Copy size={11} />
+							</button>
+							<button
+								type='button'
+								title='Copy a curl example for this webhook'
+								onClick={(event) => {
+									stop(event);
+									handleCopyCurl();
+								}}
+								className='hover:bg-primary-100 hover:text-primary-900 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-5 cursor-pointer items-center justify-center gap-0.5 rounded px-1 text-[9px] font-semibold text-zinc-400 transition'>
+								<Terminal size={10} />
+								curl
 							</button>
 							<button
 								type='button'
@@ -84,31 +319,37 @@ const TriggerDetails = ({ workspaceId, trigger }: Props) => {
 									stop(event);
 									handleRotate();
 								}}
-								className='flex h-5 w-5 cursor-pointer items-center justify-center rounded text-zinc-400 transition hover:bg-primary-100 hover:text-primary-600 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-primary-900/40 dark:hover:text-primary-400'>
-								<RefreshCw size={11} className={rotateToken.isPending ? 'animate-spin' : ''} />
+								className='hover:bg-primary-100 hover:text-primary-900 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-5 w-5 cursor-pointer items-center justify-center rounded text-zinc-400 transition disabled:cursor-not-allowed disabled:opacity-50'>
+								<RefreshCw
+									size={11}
+									className={rotateToken.isPending ? 'animate-spin' : ''}
+								/>
 							</button>
 						</div>
 					</div>
 					<span className='cursor-text rounded-lg border border-zinc-200 bg-white p-1.5 font-mono text-[9px] font-semibold break-all text-zinc-700 select-all select-text dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'>
 						{webhookUrl}
 					</span>
+					<WebhookSecret workspaceId={workspaceId} trigger={trigger} />
 				</div>
 			)}
 
-			<div className='flex items-center justify-between'>
-				<button
-					type='button'
-					onClick={(event) => {
-						stop(event);
-						setEventsOpen((open) => !open);
-					}}
-					className='flex cursor-pointer items-center gap-1 text-[10px] font-semibold text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'>
-					<ChevronRight
-						size={11}
-						className={`transition-transform ${eventsOpen ? 'rotate-90' : ''}`}
-					/>
-					Recent events
-				</button>
+			<div className={`flex items-center ${showEvents ? 'justify-between' : 'justify-end'}`}>
+				{showEvents && (
+					<button
+						type='button'
+						onClick={(event) => {
+							stop(event);
+							setEventsOpen((open) => !open);
+						}}
+						className='flex cursor-pointer items-center gap-1 text-[10px] font-semibold text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'>
+						<ChevronRight
+							size={11}
+							className={`transition-transform ${eventsOpen ? 'rotate-90' : ''}`}
+						/>
+						Recent events
+					</button>
+				)}
 				<button
 					type='button'
 					title='Fire this trigger now, as if an event had arrived'
@@ -117,13 +358,13 @@ const TriggerDetails = ({ workspaceId, trigger }: Props) => {
 						stop(event);
 						handleRun();
 					}}
-					className='flex cursor-pointer items-center gap-1 rounded-md border border-zinc-200 bg-white px-1.5 py-0.5 text-[9px] font-semibold text-zinc-600 transition hover:border-primary-300 hover:text-primary-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:text-primary-400'>
+					className='hover:border-primary-300 hover:text-primary-900 dark:hover:text-primary-400 flex cursor-pointer items-center gap-1 rounded-md border border-zinc-200 bg-white px-1.5 py-0.5 text-[9px] font-semibold text-zinc-600 transition disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300'>
 					<Play size={9} />
 					{runTrigger.isPending ? 'Queuing…' : 'Run now'}
 				</button>
 			</div>
 
-			{eventsOpen && (
+			{showEvents && eventsOpen && (
 				<div className='flex flex-col gap-1'>
 					{events.isLoading && (
 						<span className='text-[9px] text-zinc-400'>Loading events…</span>
@@ -139,20 +380,40 @@ const TriggerDetails = ({ workspaceId, trigger }: Props) => {
 							key={event.id}
 							title={event.error ?? undefined}
 							className='flex items-center gap-1.5 rounded-md bg-white/70 px-1.5 py-1 text-[9px] dark:bg-zinc-900/70'>
-							<span className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusDot[event.status]}`} />
+							<span
+								className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusDot[event.status]}`}
+							/>
 							<span className='font-semibold text-zinc-700 capitalize dark:text-zinc-300'>
 								{event.status}
 							</span>
 							<span className='text-zinc-400'>· {event.source}</span>
 							<span className='ml-auto shrink-0 text-zinc-400'>
-								{formatDistanceToNow(new Date(event.created_at), { addSuffix: true })}
+								{formatDistanceToNow(new Date(event.created_at), {
+									addSuffix: true,
+								})}
 							</span>
+							{event.payload !== null && event.payload !== undefined && (
+								<button
+									type='button'
+									title='Run this event again'
+									disabled={replayEvent.isPending}
+									onClick={(click) => {
+										stop(click);
+										replayEvent.mutate(
+											{ id: trigger.id, eventId: event.id },
+											{ onSuccess: () => notify.success('Replay queued') },
+										);
+									}}
+									className='hover:text-primary-900 dark:hover:text-primary-400 shrink-0 cursor-pointer text-zinc-400 disabled:opacity-50'>
+									<RotateCcw size={9} />
+								</button>
+							)}
 							{event.run_id && (
 								<Link
 									to={paths.trail(workspaceId, event.run_id)}
 									title='Open this run in Trail'
 									onClick={stop}
-									className='shrink-0 text-zinc-400 hover:text-primary-600 dark:hover:text-primary-400'>
+									className='hover:text-primary-900 dark:hover:text-primary-400 shrink-0 text-zinc-400'>
 									<ExternalLink size={9} />
 								</Link>
 							)}

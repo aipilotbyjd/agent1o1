@@ -1,11 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
+import { dynamicInputId } from '../../../_helper/dynamicInputs.helper';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 import type { TNodeField } from '../../../_types/node.type';
 import FieldInput from './FieldInput.partial';
 import NodeHelpTip from './NodeHelpTip.partial';
 
 const COLLAPSED_COUNT = 3;
+/** How long a field glows after the checklist jumps to it. */
+const FOCUS_GLOW_MS = 1800;
+const NO_DYNAMIC_INPUTS: string[] = [];
 
 type Props = {
 	nodeId: string;
@@ -16,7 +21,10 @@ type Props = {
 };
 
 const NodeFields = ({ nodeId, fields, values, forceExpanded }: Props) => {
-	const { dispatch } = useWorkflowEditor();
+	const { state, dispatch } = useWorkflowEditor();
+	const dynamicKeys =
+		state.nodes.find((node) => node.id === nodeId)?.data.dynamicInputKeys ?? NO_DYNAMIC_INPUTS;
+	const updateNodeInternals = useUpdateNodeInternals();
 	const [expanded, setExpanded] = useState(false);
 
 	// A definition that marks fields `advanced` controls its own split; otherwise
@@ -25,15 +33,43 @@ const NodeFields = ({ nodeId, fields, values, forceExpanded }: Props) => {
 		const flagged = fields.some((field) => field.advanced);
 		if (flagged) {
 			return {
-				always: fields.filter((field) => !field.advanced),
-				extra: fields.filter((field) => field.advanced),
+				always: fields.filter(
+					(field) => !field.advanced || dynamicKeys.includes(field.key),
+				),
+				extra: fields.filter((field) => field.advanced && !dynamicKeys.includes(field.key)),
 			};
 		}
 		return {
-			always: fields.slice(0, COLLAPSED_COUNT),
-			extra: fields.slice(COLLAPSED_COUNT),
+			always: fields.filter(
+				(field, index) => index < COLLAPSED_COUNT || dynamicKeys.includes(field.key),
+			),
+			extra: fields.filter(
+				(field, index) => index >= COLLAPSED_COUNT && !dynamicKeys.includes(field.key),
+			),
 		};
-	}, [fields]);
+	}, [fields, dynamicKeys]);
+
+	// The "Fix before publishing" checklist asks a field to show itself: open
+	// the extra options if it's hidden there, then glow it briefly.
+	const focus = state.ui.fieldFocus?.nodeId === nodeId ? state.ui.fieldFocus : null;
+	const [handledFocus, setHandledFocus] = useState(0);
+	const [glowKey, setGlowKey] = useState<string | null>(null);
+	if (focus && focus.requestId !== handledFocus) {
+		setHandledFocus(focus.requestId);
+		setGlowKey(focus.fieldKey);
+		if (focus.fieldKey && extra.some((field) => field.key === focus.fieldKey))
+			setExpanded(true);
+	}
+
+	useEffect(() => {
+		if (!glowKey) return;
+		const timer = setTimeout(() => setGlowKey(null), FOCUS_GLOW_MS);
+		return () => clearTimeout(timer);
+	}, [glowKey, handledFocus]);
+
+	useEffect(() => {
+		if (!forceExpanded) updateNodeInternals(nodeId);
+	}, [nodeId, updateNodeInternals, dynamicKeys, expanded, forceExpanded]);
 
 	if (fields.length === 0) return null;
 
@@ -44,12 +80,38 @@ const NodeFields = ({ nodeId, fields, values, forceExpanded }: Props) => {
 			className='nodrag nowheel flex flex-col gap-3'
 			onPointerDown={(event) => event.stopPropagation()}>
 			{visible.map((field) => (
-				<div key={field.key}>
+				<div
+					key={field.key}
+					className={`relative rounded-lg transition-shadow duration-500 ${
+						glowKey === field.key
+							? 'ring-primary-400/70 ring-2 ring-offset-4 ring-offset-white dark:ring-offset-zinc-950'
+							: ''
+					}`}>
+					{!forceExpanded && dynamicKeys.includes(field.key) && (
+						<Handle
+							id={dynamicInputId(field.key)}
+							type='target'
+							position={Position.Left}
+							title={`Connect an output to ${field.label}`}
+							aria-label={`${field.label} dynamic input`}
+							style={{ left: -27, top: 10, width: 12, height: 12 }}
+							className='border-primary-400! border-2! bg-white! dark:bg-zinc-900!'
+						/>
+					)}
 					<div className='mb-1.5 flex items-center gap-1'>
 						<span className='truncate text-[11px] font-bold text-zinc-800 dark:text-zinc-200'>
 							{field.label}
 						</span>
-						{field.required && <span className='text-rose-500'>*</span>}
+						{dynamicKeys.includes(field.key) && (
+							<span className='text-primary-600 dark:text-primary-400 ml-auto text-[9px] font-medium'>
+								Dynamic input
+							</span>
+						)}
+						{field.required && (
+							<span className='text-[9px] font-medium text-zinc-400 dark:text-zinc-500'>
+								Required
+							</span>
+						)}
 						{field.help && <NodeHelpTip text={field.help} />}
 					</div>
 					<FieldInput

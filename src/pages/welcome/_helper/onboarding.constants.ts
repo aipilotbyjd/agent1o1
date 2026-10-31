@@ -1,4 +1,5 @@
 import type { TWorkspaceRole } from '@/types/workspace.type';
+import type { TOnboardingStepKey } from '@/types/onboarding.type';
 import type { IRoleData, IPlan } from '../_types/onboarding.type';
 
 export const ROLES: IRoleData[] = [
@@ -122,3 +123,14 @@ export const STEP_LABELS = [
 ];
 
 export const TOTAL_STEPS = STEP_LABELS.length;
+
+/** Backend step keys in screen order: the index of a key is the step's screen index. */
+export const ONBOARDING_STEP_KEYS: TOnboardingStepKey[] = [
+	'profile_picture',
+	'create_workspace',
+	'invite_team',
+	'role_selection',
+	'choose_plan',
+	'connect_apps',
+	'discovery_survey',
+];

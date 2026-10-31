@@ -7,12 +7,16 @@ import type {
 	TSelectRoleDto,
 	TSelectPlanDto,
 	TSubmitDiscoveryDto,
+	TSkipStepDto,
+	TContinueStepDto,
 } from '@/types/onboarding.type';
 import { OnboardingEndpoints as E } from './onboarding.endpoints';
 
 export const OnboardingService = {
 	state: (signal?: AbortSignal) =>
-		axiosClient.get<TApiResponse<TOnboardingState>>(E.state, { signal }).then(unwrap<TOnboardingState>),
+		axiosClient
+			.get<TApiResponse<TOnboardingState>>(E.state, { signal })
+			.then(unwrap<TOnboardingState>),
 
 	dismiss: () => axiosClient.post(E.dismiss).then(() => undefined),
 
@@ -34,6 +38,16 @@ export const OnboardingService = {
 	submitDiscovery: (payload: TSubmitDiscoveryDto) =>
 		axiosClient
 			.post<TApiResponse<TOnboardingState>>(E.submitDiscovery, payload)
+			.then(unwrap<TOnboardingState>),
+
+	continueStep: (payload: TContinueStepDto) =>
+		axiosClient
+			.post<TApiResponse<TOnboardingState>>(E.continueStep, payload)
+			.then(unwrap<TOnboardingState>),
+
+	skipStep: (payload: TSkipStepDto) =>
+		axiosClient
+			.post<TApiResponse<TOnboardingState>>(E.skip, payload)
 			.then(unwrap<TOnboardingState>),
 
 	complete: () =>

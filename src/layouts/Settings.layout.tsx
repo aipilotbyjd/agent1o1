@@ -1,24 +1,26 @@
 import { Outlet } from 'react-router';
 import { Suspense } from 'react';
 import Wrapper from '@/components/layout/Wrapper';
+import AnnouncementBannersTemplate from '@/templates/announcements/AnnouncementBanners.template';
 import SettingsAsideTemplate from '@/templates/asides/SettingsAside.template';
 import Container from '@/components/layout/Container';
 import Skeleton from '@/components/ui/Skeleton';
 import Subheader, { SubheaderLeft, SubheaderRight } from '@/components/layout/Subheader';
 import Header, { HeaderLeft, HeaderRight } from '@/components/layout/Header';
 import NotificationsDropdown from '@/components/notifications/NotificationsDropdown';
-import DropdownWorkspaceSwitcher from '@/examples/ui/dropdown/DropdownWorkspaceSwitcher.example';
+import WorkspaceSwitcher from '@/components/layout/WorkspaceSwitcher';
 
 const SettingsLayout = () => {
 	return (
 		<>
 			<SettingsAsideTemplate />
 			<Wrapper className='min-h-0 overflow-y-auto'>
+				<AnnouncementBannersTemplate />
 				<Header>
 					<HeaderLeft>Settings</HeaderLeft>
 					<HeaderRight>
 						<NotificationsDropdown />
-						<DropdownWorkspaceSwitcher />
+						<WorkspaceSwitcher />
 					</HeaderRight>
 				</Header>
 				<Suspense

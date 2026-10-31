@@ -1,5 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { TCreateCustomNodeDto, TUpdateCustomNodeDto } from '@/types/node.type';
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type {
+	TCreateCustomNodeDto,
+	TNodeOptionsParams,
+	TUpdateCustomNodeDto,
+} from '@/types/node.type';
 import { NodeService } from './nodes.service';
 import { nodeKeys } from './nodes.keys';
 
@@ -31,6 +35,27 @@ export const useRecentlyUsedNodes = (ws: string) =>
 		queryKey: nodeKeys.recentlyUsed(ws),
 		queryFn: ({ signal }) => NodeService.recentlyUsed(ws, signal),
 		enabled: !!ws,
+	});
+
+/**
+ * A node field's live dropdown, page by page. Kept warm for a few minutes so
+ * reopening a dropdown (or several nodes using the same list) doesn't refetch.
+ */
+export const useNodeOptions = (
+	ws: string,
+	params: Omit<TNodeOptionsParams, 'cursor'>,
+	enabled: boolean,
+) =>
+	useInfiniteQuery({
+		queryKey: nodeKeys.options(ws, params),
+		queryFn: ({ pageParam, signal }) =>
+			NodeService.options(ws, { ...params, cursor: pageParam ?? undefined }, signal),
+		initialPageParam: null as string | null,
+		getNextPageParam: (page) => page.next_cursor,
+		enabled: !!ws && enabled,
+		staleTime: 5 * 60_000,
+		retry: false,
+		meta: { silent: true },
 	});
 
 export const useNode = (ws: string, id: string) =>

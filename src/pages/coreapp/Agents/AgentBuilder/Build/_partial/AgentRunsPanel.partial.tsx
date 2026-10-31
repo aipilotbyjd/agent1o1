@@ -11,7 +11,8 @@ import {
 	Play,
 } from 'lucide-react';
 import { useAgentRuns } from '@/api/modules/agents';
-import AgentRunLog, { AGENT_RUN_KINDS } from '@/components/common/AgentRunLog';
+import AgentRunLog from '@/components/common/AgentRunLog';
+import { AGENT_RUN_KINDS } from '@/components/common/agentRunKinds.constants';
 import type { TAgentRunStatus } from '@/types/agent.type';
 import type { TRun, TRunStatus } from '@/types/run.type';
 
@@ -76,7 +77,8 @@ const RunRow = ({ ws, run }: { ws: string; run: TRun }) => {
 						</span>
 					</div>
 					<span className='text-[9px] font-semibold text-zinc-400 capitalize dark:text-zinc-600'>
-						{run.trigger_type.replace(/_/g, ' ')} · {new Date(run.created_at).toLocaleString()}
+						{run.trigger_type.replace(/_/g, ' ')} ·{' '}
+						{new Date(run.created_at).toLocaleString()}
 					</span>
 				</div>
 				<div className='flex shrink-0 flex-col items-end'>
@@ -99,8 +101,8 @@ const RunRow = ({ ws, run }: { ws: string; run: TRun }) => {
 };
 
 /**
- * Read-only run history for an agent — every reply, trigger fire, and manual run.
- * Backed by {agent}/runs — see AgentRunController.
+ * Read-only run history for an agent: every reply, trigger fire, and manual run.
+ * Backed by {agent}/runs: see AgentRunController.
  */
 const AgentRunsPanel = ({ ws, agentId }: TProps) => {
 	const [statusFilter, setStatusFilter] = useState<TRunStatus | undefined>(undefined);

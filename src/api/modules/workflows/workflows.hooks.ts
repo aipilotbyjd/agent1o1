@@ -1,14 +1,23 @@
 import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createResource } from '@/api/core';
-import type { TSyncWorkflowTagsDto, TPinWorkflowNodeDto, TStartRunDto } from '@/types/workflow.type';
+import type {
+	TSyncWorkflowTagsDto,
+	TPinWorkflowNodeDto,
+	TStartRunDto,
+} from '@/types/workflow.type';
 import { RunService } from '@/api/modules/runs';
-import { useTriggers, useCreateTrigger, useUpdateTrigger, useDeleteTrigger } from '@/api/modules/triggers';
+import {
+	useTriggers,
+	useCreateTrigger,
+	useUpdateTrigger,
+	useDeleteTrigger,
+} from '@/api/modules/triggers';
 import type { TTriggerMechanism } from '@/types/catalog.type';
 import type { TTriggerTargetType } from '@/types/trigger.type';
 import { WorkflowService } from './workflows.service';
 import { WorkflowVersionService } from './workflow-versions.service';
-import { workflowKeys } from './workflows.keys';
+import { workflowKeys, workflowTrashKey } from './workflows.keys';
 
 const Workflows = createResource({
 	service: WorkflowService,
@@ -20,9 +29,51 @@ export const useWorkflows = Workflows.useList;
 export const useWorkflow = Workflows.useDetail;
 export const useCreateWorkflow = Workflows.useCreate;
 export const useUpdateWorkflow = Workflows.useUpdate;
-export const useDeleteWorkflow = Workflows.useDelete;
 
-// ─── Custom actions — not CRUD, so hand-written alongside the factory ──
+// ─── Custom actions, not CRUD, so hand-written alongside the factory ──
+
+// Deleting only moves the workflow to the trash, so the trash has to refetch too.
+export const useDeleteWorkflow = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => WorkflowService.remove(ws, id),
+		onSuccess: () =>
+			Promise.all([
+				qc.invalidateQueries({ queryKey: workflowKeys.lists(ws) }),
+				qc.invalidateQueries({ queryKey: workflowTrashKey(ws) }),
+			]),
+		meta: { errorMessage: 'Failed to move workflow to trash' },
+	});
+};
+
+export const useWorkflowTrash = (ws: string) =>
+	useQuery({
+		queryKey: workflowTrashKey(ws),
+		queryFn: ({ signal }) => WorkflowService.trash(ws, signal),
+		enabled: !!ws,
+	});
+
+export const useRestoreWorkflow = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => WorkflowService.restore(ws, id),
+		onSuccess: () =>
+			Promise.all([
+				qc.invalidateQueries({ queryKey: workflowKeys.lists(ws) }),
+				qc.invalidateQueries({ queryKey: workflowTrashKey(ws) }),
+			]),
+		meta: { errorMessage: 'Failed to restore workflow' },
+	});
+};
+
+export const useForceDeleteWorkflow = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => WorkflowService.forceDelete(ws, id),
+		onSuccess: () => qc.invalidateQueries({ queryKey: workflowTrashKey(ws) }),
+		meta: { errorMessage: 'Failed to delete workflow permanently' },
+	});
+};
 
 export const useDuplicateWorkflow = (ws: string) => {
 	const qc = useQueryClient();
@@ -71,12 +122,12 @@ export const useUnpinWorkflowNode = (ws: string, id: string) => {
 //
 // The old workflows list calls four actions this backend models differently, or
 // not at all. These keep the old names and call signatures so the ported page
-// needed no changes — same approach as the agent-builder adapters in
+// needed no changes: same approach as the agent-builder adapters in
 // `agents.hooks.ts`. What each one maps onto is spelled out per hook, and the
 // two unsupported ones fail loudly rather than pretending to have worked.
 
 /** Old flipped a `status` flag between `active`/`inactive`. Here a workflow goes
- *  live by publishing a version — that is what `is_published` reflects. */
+ *  live by publishing a version: that is what `is_published` reflects. */
 export const useActivateWorkflow = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
@@ -87,12 +138,14 @@ export const useActivateWorkflow = (ws: string) => {
 };
 
 /** No counterpart here: publishing is one-way, there is no unpublish/deactivate
- *  endpoint. Kept so the ported page compiles — the backend-adaptation pass has
+ *  endpoint. Kept so the ported page compiles: the backend-adaptation pass has
  *  to decide what this button should do. */
 export const useDeactivateWorkflow = (_ws: string) =>
 	useMutation({
 		mutationFn: (_id: string): Promise<never> =>
-			Promise.reject(new Error('Deactivating a workflow is not supported by this backend yet')),
+			Promise.reject(
+				new Error('Deactivating a workflow is not supported by this backend yet'),
+			),
 		meta: { errorMessage: 'Deactivating a workflow is not supported yet' },
 	});
 
@@ -125,14 +178,22 @@ export const useExecuteWorkflow = (ws: string) => {
 
 const WORKFLOW_TARGET: TTriggerTargetType = 'workflow';
 
+/** Keeps the editor's trigger state and 24h stats current while webhooks and schedules fire. */
+const WORKFLOW_TRIGGERS_REFRESH_MS = 15_000;
+
 /** Old returned the workflow's trigger set from a workflow-scoped endpoint;
- *  here the list is workspace-wide and filtered by target. */
+ *  here the list is filtered by target server-side, and again below as a guard. */
 export const useWorkflowTrigger = (ws: string, workflowId: string) => {
-	const query = useTriggers(ws);
+	const query = useTriggers(
+		ws,
+		{ target_type: WORKFLOW_TARGET, target_id: workflowId },
+		{ refetchInterval: WORKFLOW_TRIGGERS_REFRESH_MS },
+	);
 	const data = useMemo(
 		() =>
 			(query.data ?? []).filter(
-				(t) => t.target_type === WORKFLOW_TARGET && String(t.target_id) === String(workflowId),
+				(t) =>
+					t.target_type === WORKFLOW_TARGET && String(t.target_id) === String(workflowId),
 			),
 		[query.data, workflowId],
 	);
@@ -187,12 +248,13 @@ export const useDeleteWorkflowTrigger = (ws: string) => useDeleteTrigger(ws);
 // ── Ported-frontend adapters: governance ──────────────────────────────────────
 //
 // The old frontend shipped a governance modal covering shares, approval
-// requests, releases and contract tests. This backend models none of them: there
-// is no share, approval-request, release or contract endpoint on a workflow
-// (its `approvals` are per-run pauses, a different concept entirely).
+// requests, releases and contract tests. Approval requests are real now (see
+// publish-requests.hooks.ts); releases and contracts were dropped, since
+// publishing, versions and the dry run cover them. Only sharing is left, and
+// this backend has no share endpoint on a workflow.
 //
-// They are kept only so the ported modal loads. Reads resolve empty — that is
-// what this backend actually has — and writes fail loudly rather than looking
+// They are kept only so the ported modal loads. Reads resolve empty (that is
+// what this backend actually has) and writes fail loudly rather than looking
 // like they succeeded. Whether the modal should exist here at all is the
 // backend-adaptation pass's call.
 
@@ -209,30 +271,14 @@ export type TLegacyWorkflowShare = {
 	clone_count: number;
 	expires_at: TIsoDate | null;
 };
-export type TLegacyApprovalRequest = {
-	id: string;
-	status: 'pending' | 'approved' | 'rejected';
-	notes: string | null;
-	requested_by: { name: string };
-	reviewed_by: { name: string } | null;
-	reviewed_at: TIsoDate | null;
-	created_at: TIsoDate;
-};
-export type TLegacyRelease = {
-	id: string;
-	version_id: string;
-	environment_id: string;
-	notes: string | null;
-	created_at: TIsoDate;
-};
-export type TLegacyContract = {
-	id: string;
-	status: string;
-	created_at: TIsoDate;
-};
 
-const useMissingCollection = <T,>() =>
-	useQuery<T[]>({ queryKey: ['unsupported'], queryFn: () => Promise.resolve([]), enabled: false, initialData: [] });
+const useMissingCollection = <T>() =>
+	useQuery<T[]>({
+		queryKey: ['unsupported'],
+		queryFn: () => Promise.resolve([]),
+		enabled: false,
+		initialData: [],
+	});
 
 /** Writes with no counterpart: reject with the reason. */
 const useMissingMutation = (what: string) =>
@@ -248,45 +294,3 @@ export const useCreateWorkflowShare = (_ws: string, _workflowId: string) =>
 	useMissingMutation('Sharing a workflow');
 export const useDeleteWorkflowShare = (_ws: string, _workflowId: string) =>
 	useMissingMutation('Removing a workflow share');
-
-export const useWorkflowApprovals = (_ws: string, _workflowId?: string, _enabled?: boolean) =>
-	useMissingCollection<TLegacyApprovalRequest>();
-export const useRequestApproval = (_ws: string, _workflowId: string) =>
-	useMissingMutation('Requesting workflow approval');
-export const useApproveRequest = (_ws: string, _workflowId: string) =>
-	useMissingMutation('Approving a workflow request');
-export const useRejectRequest = (_ws: string, _workflowId: string) =>
-	useMissingMutation('Rejecting a workflow request');
-
-export const useWorkflowReleases = (_ws: string, _workflowId?: string, _enabled?: boolean) =>
-	useMissingCollection<TLegacyRelease>();
-export const useDeployRelease = (_ws: string, _workflowId: string) =>
-	useMissingMutation('Deploying a workflow release');
-
-export const useWorkflowContracts = (_ws: string, _workflowId?: string, _enabled?: boolean) =>
-	useMissingCollection<TLegacyContract>();
-export const useGenerateContract = (_ws: string, _workflowId: string) =>
-	useMissingMutation('Generating a workflow contract');
-export const useRunContractTest = (_ws: string, _workflowId: string) =>
-	useMissingMutation('Running a contract test');
-
-// ── Ported-frontend adapters: versions ────────────────────────────────────────
-
-/** Old snapshotted a version explicitly; here publishing is what creates one. */
-export const useCreateWorkflowVersion = (ws: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: ({ workflowId }: { workflowId: string }) =>
-			WorkflowVersionService.publish(ws, workflowId),
-		onSuccess: () => qc.invalidateQueries({ queryKey: workflowKeys.lists(ws) }),
-		meta: { errorMessage: 'Failed to create a workflow version' },
-	});
-};
-
-/** Versions are immutable snapshots here with no rollback endpoint. */
-export const useRollbackWorkflowVersion = (_ws: string) =>
-	useMissingMutation('Rolling a workflow back to an earlier version');
-
-/** Publishing snapshots the current draft; an older version can't be re-published. */
-export const useRepublishWorkflowVersion = (_ws: string) =>
-	useMissingMutation('Publishing an earlier workflow version');

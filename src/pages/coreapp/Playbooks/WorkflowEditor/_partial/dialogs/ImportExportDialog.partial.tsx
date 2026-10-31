@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { exportWorkflow, parseWorkflowImport } from '../../_helper/importExport.helper';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import Modal from './Modal.partial';
 
 type TExportFormat = 'json' | 'yaml';
@@ -111,7 +111,7 @@ const ImportExportDialog = () => {
 										'rounded-lg px-3 py-1 text-xs font-bold uppercase transition',
 										format === fmt
 											? 'bg-primary-400 text-primary-950'
-											: 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:hover:bg-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
+											: 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700',
 									].join(' ')}>
 									{fmt}
 								</button>
@@ -120,6 +120,7 @@ const ImportExportDialog = () => {
 
 						<textarea
 							readOnly
+							aria-label='Exported workflow'
 							value={displayValue}
 							className='h-64 w-full rounded-xl border border-zinc-300 bg-white p-3 font-mono text-xs text-zinc-800 transition outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200'
 						/>
@@ -131,7 +132,7 @@ const ImportExportDialog = () => {
 								onClick={() => {
 									navigator.clipboard.writeText(displayValue);
 								}}
-								className='flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300'>
+								className='flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800'>
 								Copy to clipboard
 							</button>
 							<button
@@ -143,7 +144,7 @@ const ImportExportDialog = () => {
 										format === 'json' ? 'application/json' : 'text/yaml',
 									)
 								}
-								className='flex-1 rounded-lg bg-primary-400 px-3 py-2 text-xs font-black text-primary-950 hover:bg-primary-500'>
+								className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex-1 rounded-lg px-3 py-2 text-xs font-black'>
 								Download .{format}
 							</button>
 						</div>
@@ -151,6 +152,7 @@ const ImportExportDialog = () => {
 				) : (
 					<>
 						<textarea
+							aria-label='Paste workflow JSON here…'
 							value={raw}
 							onChange={(event) => setRaw(event.target.value)}
 							placeholder='Paste workflow JSON here…'

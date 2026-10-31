@@ -2,8 +2,8 @@
 // Onboarding Types
 // ------------------------------------------------------------
 // Every onboarding action (invite team, select role/plan, submit
-// discovery, complete, dismiss) returns the same `TOnboardingState`
-// snapshot except `dismiss`, which returns nothing — see
+// discovery, skip, complete, dismiss) returns the same `TOnboardingState`
+// snapshot except `dismiss`, which returns nothing: see
 // `OnboardingService::state()`.
 // ============================================================
 import type { TPlan } from './billing.type';
@@ -22,6 +22,7 @@ export type TOnboardingStep = {
 	label: string;
 	description: string;
 	completed: boolean;
+	skipped: boolean;
 };
 
 export type TJobRole = string;
@@ -56,6 +57,14 @@ export type TSelectRoleDto = {
 
 export type TSelectPlanDto = {
 	plan_slug: string;
+};
+
+export type TSkipStepDto = {
+	step: TOnboardingStepKey;
+};
+
+export type TContinueStepDto = {
+	step: TOnboardingStepKey;
 };
 
 export type TSubmitDiscoveryDto = {

@@ -56,7 +56,7 @@ const BillingPlansPage = () => {
 		try {
 			const result = await checkout.mutateAsync({ plan_id: planId, interval });
 			if ('checkout_url' in result) {
-				window.location.href = result.checkout_url;
+				window.location.assign(result.checkout_url);
 				return;
 			}
 			setSwapTarget(null);

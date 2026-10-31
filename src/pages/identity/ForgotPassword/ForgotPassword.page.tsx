@@ -51,7 +51,7 @@ const ForgotPasswordPage = () => {
 				right={
 					<Link
 						to={pages.identity.login.to}
-						className='text-primary-600 hover:text-primary-700 font-semibold hover:underline'>
+						className='decoration-primary-500 hover:decoration-primary-700 font-semibold text-zinc-950 underline decoration-2 underline-offset-4 transition-colors'>
 						Back to sign in
 					</Link>
 				}
@@ -84,7 +84,7 @@ const ForgotPasswordPage = () => {
 							type='button'
 							disabled={forgotPassword.isPending}
 							onClick={handleResend}
-							className='flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white py-3 text-xs font-bold tracking-wider text-zinc-700 uppercase shadow-2xs hover:bg-zinc-50 disabled:opacity-50'>
+							className='flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white py-3 text-xs font-bold tracking-wider text-zinc-700 uppercase shadow-[0_1px_2px_rgb(16_24_40/0.06)] hover:bg-zinc-50 disabled:opacity-50'>
 							{forgotPassword.isPending && <Spinner className='size-4' />}
 							RESEND LINK
 						</button>
@@ -92,7 +92,7 @@ const ForgotPasswordPage = () => {
 						<Link to={pages.identity.login.to}>
 							<button
 								type='button'
-								className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-md transition-all'>
+								className='bg-primary-600 hover:bg-primary-700 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-[0_8px_20px_-6px_rgb(183_229_47/0.55)] transition-all'>
 								BACK TO SIGN IN ›
 							</button>
 						</Link>
@@ -119,6 +119,7 @@ const ForgotPasswordPage = () => {
 							<div className='focus-within:border-primary-500 focus-within:ring-primary-500/15 flex items-center gap-2.5 rounded-xl border border-[#d8e2ee] bg-[#eef2f8] px-3.5 py-2.5 transition-all focus-within:bg-white focus-within:ring-2'>
 								<Icon icon='Mail01' className='size-4 shrink-0 text-zinc-400' />
 								<input
+									aria-label='name@example.com'
 									className='input-clean w-full border-0 border-none bg-transparent p-0 text-sm font-medium text-zinc-950 shadow-none placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
 									id='email'
 									name='email'
@@ -139,7 +140,7 @@ const ForgotPasswordPage = () => {
 						<button
 							type='submit'
 							disabled={forgotPassword.isPending}
-							className='bg-primary-600 shadow-primary-600/25 hover:bg-primary-700 active:bg-primary-800 mt-2 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-md transition-all disabled:pointer-events-none disabled:opacity-50'>
+							className='bg-primary-600 hover:bg-primary-700 active:bg-primary-800 mt-2 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-3.5 text-xs font-bold tracking-wider text-zinc-950 uppercase shadow-[0_8px_20px_-6px_rgb(183_229_47/0.55)] transition-all disabled:pointer-events-none disabled:opacity-50'>
 							{forgotPassword.isPending && <Spinner className='size-4' />}
 							SEND RESET LINK ›
 						</button>
@@ -149,7 +150,7 @@ const ForgotPasswordPage = () => {
 						Remember your password?{' '}
 						<Link
 							to={pages.identity.login.to}
-							className='text-primary-600 hover:text-primary-700 font-bold transition-colors'>
+							className='decoration-primary-500 hover:decoration-primary-700 font-semibold text-zinc-950 underline decoration-2 underline-offset-4 transition-colors'>
 							Sign in
 						</Link>
 					</p>

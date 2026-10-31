@@ -1,5 +1,5 @@
 import { Check, Zap, Sparkles, Crown } from 'lucide-react';
-import { useOnboardingStore } from '../../_context/OnboardingStore.context';
+import { useOnboardingStore } from '../../_hooks/useOnboardingStore.hook';
 import { PLANS } from '../../_helper/onboarding.constants';
 import { useOnboardingState } from '@/api/modules/onboarding';
 

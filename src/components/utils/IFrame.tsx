@@ -48,7 +48,6 @@ const IFrame: FC<IIFrameProps> = (props) => {
       </html>
     `;
 
-		// eslint-disable-next-line react-hooks/set-state-in-effect
 		setIframeContent(iframeHtml);
 
 		const onLoad = () => {
