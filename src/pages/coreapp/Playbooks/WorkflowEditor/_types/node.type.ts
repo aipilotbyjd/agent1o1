@@ -104,6 +104,9 @@ export type TNodeDefinition = {
 	supportsTrigger?: boolean;
 	/** The app category this node belongs to (`slack`), for grouping nodes from many apps. */
 	appSlug?: string;
+	/** An admin's flag: the node is offered but marked beta or deprecated, with an optional note. */
+	status?: 'beta' | 'deprecated';
+	statusNote?: string;
 	/** Whether the node starts a flow on its own (an instant trigger) or does a job in one. */
 	nodeKind?: 'trigger' | 'action';
 	/** Picked from Triggers & Events: the new node starts with its trigger switched on. */

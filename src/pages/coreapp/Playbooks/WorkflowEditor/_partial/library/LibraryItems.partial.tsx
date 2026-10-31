@@ -29,8 +29,19 @@ export const NodeRow = ({ node, onAdd }: TNodeProps) => (
 			<NodeIcon icon={node.icon} size={16} />
 		</span>
 		<span className='min-w-0 flex-1'>
-			<span className='group-hover:text-primary-700 dark:group-hover:text-primary-300 block truncate text-xs font-bold text-zinc-900 transition dark:text-zinc-100'>
-				{node.label}
+			<span className='group-hover:text-primary-700 dark:group-hover:text-primary-300 flex items-center gap-1.5 truncate text-xs font-bold text-zinc-900 transition dark:text-zinc-100'>
+				<span className='truncate'>{node.label}</span>
+				{node.status && (
+					<span
+						title={node.statusNote ?? undefined}
+						className={`shrink-0 rounded-full px-1.5 py-px text-[9px] font-black tracking-wide uppercase ${
+							node.status === 'beta'
+								? 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300'
+								: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
+						}`}>
+						{node.status}
+					</span>
+				)}
 			</span>
 			<span className='mt-0.5 line-clamp-2 text-[10px] leading-normal text-zinc-400 dark:text-zinc-500'>
 				{node.description}
@@ -116,11 +127,21 @@ export const AppCard = ({ group, connected, pinned, onTogglePin, onSelect }: TAp
 				{group.label}
 			</span>
 		</button>
-		{connected && (
+		{group.status !== 'operational' ? (
 			<span
-				className='pointer-events-none absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-emerald-500'
-				title='Connected'
+				className='pointer-events-none absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-amber-500'
+				title={
+					group.statusNote ??
+					(group.status === 'degraded' ? 'Having problems' : 'Down for maintenance')
+				}
 			/>
+		) : (
+			connected && (
+				<span
+					className='pointer-events-none absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-emerald-500'
+					title='Connected'
+				/>
+			)
 		)}
 		<button
 			type='button'

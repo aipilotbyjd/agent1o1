@@ -31,6 +31,9 @@ export type TNodeCategoryGroup = {
 	functions: TCategoryFunction[];
 	/** Who makes it, when it belongs to a suite (Google, Zoho...). */
 	vendor: TCategoryVendor | null;
+	/** What an admin says about the app right now: fine, slow, or down for maintenance. */
+	status: 'operational' | 'degraded' | 'maintenance';
+	statusNote: string | null;
 	order: number;
 	nodesCount: number;
 	/** What the library offers: listed nodes only. */
@@ -279,6 +282,8 @@ export const mapApiNodeToDefinition = (
 		outputs: outputPorts,
 		fields,
 		requiresCredential: Boolean(credentialType),
+		status: node.status === 'beta' || node.status === 'deprecated' ? node.status : undefined,
+		statusNote: node.status_note ?? undefined,
 		appSlug: slug ?? (typeof node.category === 'string' ? node.category : undefined),
 		nodeKind: node.node_kind === 'trigger' ? 'trigger' : 'action',
 		supportsTrigger: Boolean(node.supports_trigger),
@@ -308,6 +313,8 @@ export const mapApiCategoryToGroup = (
 		kind: category.kind === 'app' ? 'app' : 'core',
 		functions: category.functions ?? [],
 		vendor: category.vendor ?? null,
+		status: category.status ?? 'operational',
+		statusNote: category.status_note ?? null,
 		order: category.sort_order,
 		nodesCount: category.nodes_count ?? category.nodes?.length ?? 0,
 		nodes: allNodes.filter(isListed),

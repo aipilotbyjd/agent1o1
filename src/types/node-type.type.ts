@@ -128,6 +128,9 @@ export interface INodeType {
 	trigger_mode?: boolean;
 	/** False for a retired node: still described so saved workflows render, but not offered. */
 	listed?: boolean;
+	/** An admin's flag on the node: still offered while `beta` or `deprecated`. */
+	status?: 'beta' | 'deprecated' | 'hidden' | null;
+	status_note?: string | null;
 	tags?: string[];
 	inputs?: INodeIO[];
 	outputs?: INodeIO[];
@@ -172,6 +175,9 @@ export interface INodeCategory {
 	kind?: TNodeCategoryKind;
 	/** What an app category is used for, primary first; empty for core categories. */
 	functions?: INodeCategoryFunction[];
+	/** `degraded` or `maintenance` when an admin says the app has a problem. */
+	status?: 'operational' | 'degraded' | 'maintenance';
+	status_note?: string | null;
 	/** Whether the signed-in user pinned this app to their "Your apps". */
 	is_pinned?: boolean;
 	/** The primary of `functions`. */
