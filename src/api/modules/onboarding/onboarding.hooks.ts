@@ -4,6 +4,8 @@ import type {
 	TSelectRoleDto,
 	TSelectPlanDto,
 	TSubmitDiscoveryDto,
+	TSkipStepDto,
+	TContinueStepDto,
 } from '@/types/onboarding.type';
 import { OnboardingService } from './onboarding.service';
 import { onboardingKeys } from './onboarding.keys';
@@ -56,6 +58,24 @@ export const useSubmitOnboardingDiscovery = () => {
 		mutationFn: (payload: TSubmitDiscoveryDto) => OnboardingService.submitDiscovery(payload),
 		onSuccess: (state) => qc.setQueryData(onboardingKeys.state(), state),
 		meta: { errorMessage: 'Failed to save discovery answer' },
+	});
+};
+
+export const useContinueOnboardingStep = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (payload: TContinueStepDto) => OnboardingService.continueStep(payload),
+		onSuccess: (state) => qc.setQueryData(onboardingKeys.state(), state),
+		meta: { errorMessage: 'Failed to save progress' },
+	});
+};
+
+export const useSkipOnboardingStep = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (payload: TSkipStepDto) => OnboardingService.skipStep(payload),
+		onSuccess: (state) => qc.setQueryData(onboardingKeys.state(), state),
+		meta: { errorMessage: 'Failed to skip step' },
 	});
 };
 

@@ -1,8 +1,12 @@
 import { useNavigate } from 'react-router';
 import { useOnboardingStore } from './useOnboardingStore.hook';
-import { TOTAL_STEPS } from '../_helper/onboarding.constants';
+import { ONBOARDING_STEP_KEYS, TOTAL_STEPS } from '../_helper/onboarding.constants';
 import { parseEmails, isValidEmail } from '../_helper/onboarding.helper';
-import { useDismissOnboarding } from '@/api/modules/onboarding';
+import {
+	useContinueOnboardingStep,
+	useDismissOnboarding,
+	useSkipOnboardingStep,
+} from '@/api/modules/onboarding';
 import { useAuth } from '@/context/auth';
 import pages, { type TPages } from '@/Routes/pages';
 import type { TOnboardingStep } from '../_types/onboarding.type';
@@ -12,6 +16,8 @@ const dashboardPath = (pages.workspace.subPages as TPages).dashboard.to;
 export const useOnboardingNavigation = () => {
 	const navigate = useNavigate();
 	const dismissMutation = useDismissOnboarding();
+	const skipMutation = useSkipOnboardingStep();
+	const continueMutation = useContinueOnboardingStep();
 	const { userData } = useAuth();
 	const { state, dispatch } = useOnboardingStore();
 
@@ -43,14 +49,20 @@ export const useOnboardingNavigation = () => {
 
 	const handleSkip = () => {
 		if (currentStep < TOTAL_STEPS - 1) {
+			skipMutation.mutate({ step: ONBOARDING_STEP_KEYS[currentStep] });
 			dispatch({ type: 'SET_STEP', payload: (currentStep + 1) as TOnboardingStep });
 		} else {
 			void handleDismissAll();
 		}
 	};
 
-	const advanceStep = () => {
+	const advanceStep = async () => {
 		if (currentStep < TOTAL_STEPS - 1) {
+			try {
+				await continueMutation.mutateAsync({ step: ONBOARDING_STEP_KEYS[currentStep] });
+			} catch {
+				return;
+			}
 			dispatch({ type: 'SET_STEP', payload: (currentStep + 1) as TOnboardingStep });
 		} else {
 			goToApp();
