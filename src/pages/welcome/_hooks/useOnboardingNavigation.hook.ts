@@ -1,15 +1,15 @@
 import { useNavigate } from 'react-router';
 import { useOnboardingStore } from './useOnboardingStore.hook';
-import { ONBOARDING_STEP_KEYS, TOTAL_STEPS } from '../_helper/onboarding.constants';
-import { parseEmails, isValidEmail } from '../_helper/onboarding.helper';
+import { ONBOARDING_STEP_KEYS } from '../_helper/onboarding.constants';
+import { parseEmails, isValidEmail, findPendingStep } from '../_helper/onboarding.helper';
 import {
 	useContinueOnboardingStep,
 	useDismissOnboarding,
+	useOnboardingState,
 	useSkipOnboardingStep,
 } from '@/api/modules/onboarding';
 import { useAuth } from '@/context/auth';
 import pages, { type TPages } from '@/Routes/pages';
-import type { TOnboardingStep } from '../_types/onboarding.type';
 
 const dashboardPath = (pages.workspace.subPages as TPages).dashboard.to;
 
@@ -20,6 +20,8 @@ export const useOnboardingNavigation = () => {
 	const continueMutation = useContinueOnboardingStep();
 	const { userData } = useAuth();
 	const { state, dispatch } = useOnboardingStore();
+	const { data: onboardingData } = useOnboardingState();
+	const steps = onboardingData?.steps ?? [];
 
 	const { currentStep, inviteEmails, invitesSent, createdWorkspaceId } = state;
 
@@ -41,29 +43,33 @@ export const useOnboardingNavigation = () => {
 		);
 	};
 
+	// Completed steps are never shown again, in either direction.
+	const previousStep = findPendingStep(steps, currentStep, -1);
+	const nextStep = findPendingStep(steps, currentStep, 1);
+
 	const handlePrevStep = () => {
-		if (currentStep > 0) {
-			dispatch({ type: 'SET_STEP', payload: (currentStep - 1) as TOnboardingStep });
+		if (previousStep !== null) {
+			dispatch({ type: 'SET_STEP', payload: previousStep });
 		}
 	};
 
 	const handleSkip = () => {
-		if (currentStep < TOTAL_STEPS - 1) {
+		if (nextStep !== null) {
 			skipMutation.mutate({ step: ONBOARDING_STEP_KEYS[currentStep] });
-			dispatch({ type: 'SET_STEP', payload: (currentStep + 1) as TOnboardingStep });
+			dispatch({ type: 'SET_STEP', payload: nextStep });
 		} else {
 			void handleDismissAll();
 		}
 	};
 
 	const advanceStep = async () => {
-		if (currentStep < TOTAL_STEPS - 1) {
+		if (nextStep !== null) {
 			try {
 				await continueMutation.mutateAsync({ step: ONBOARDING_STEP_KEYS[currentStep] });
 			} catch {
 				return;
 			}
-			dispatch({ type: 'SET_STEP', payload: (currentStep + 1) as TOnboardingStep });
+			dispatch({ type: 'SET_STEP', payload: nextStep });
 		} else {
 			goToApp();
 		}
@@ -82,6 +88,8 @@ export const useOnboardingNavigation = () => {
 	return {
 		currentStep,
 		handlePrevStep,
+		canGoBack: previousStep !== null,
+		isLastPendingStep: nextStep === null,
 		handleSkip,
 		advanceStep,
 		handleDismissAll,

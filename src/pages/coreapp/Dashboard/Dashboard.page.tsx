@@ -41,8 +41,6 @@ import PendingAgentActionsCard from './_partial/PendingAgentActionsCard.partial'
 import { STATUS_BADGE_COLORS, type TExecutionStatus } from './_types/dashboard.type';
 
 const workspacePages = pages.workspace.subPages!;
-const settingsPages = pages.settings.subPages!;
-const welcomePages = pages.welcome.subPages!;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const formatRelativeTime = (value?: number) => {
@@ -188,34 +186,11 @@ const DashboardPage = () => {
 	const nextOnboardingStep = onboarding?.steps.find((item) => !item.completed);
 
 	/**
-	 * The onboarding wizard is one route driven by its own step store, so only
-	 * the steps with a destination of their own get a direct link; the rest drop
-	 * the user back into the wizard.
+	 * Every checklist item reopens the one onboarding wizard on its own step,
+	 * so the dashboard never lands on a different page than the wizard shows.
 	 */
 	const handleOnboardingAction = (key: TOnboardingStepKey) => {
-		switch (key) {
-			case 'profile_picture':
-				navigate(toWorkspacePath(settingsPages.profile.to));
-				break;
-			case 'create_workspace':
-				navigate(welcomePages.createWorkspace.to);
-				break;
-			case 'invite_team':
-				navigate(welcomePages.inviteTeam.to);
-				break;
-			case 'connect_apps':
-				// Apps reads `connect` on mount to open the connect modal, then
-				// clears the flag - the step should land with it already open.
-				navigate(`${toWorkspacePath(workspacePages.apps.to)}?connect=true`);
-				break;
-			case 'choose_plan':
-				navigate(paths.billingPlans(currentWorkspaceId));
-				break;
-			case 'role_selection':
-			case 'discovery_survey':
-				navigate(pages.welcome.to);
-				break;
-		}
+		navigate(`${pages.welcome.to}?step=${key}`);
 	};
 
 	const handleDismissOnboarding = () => {

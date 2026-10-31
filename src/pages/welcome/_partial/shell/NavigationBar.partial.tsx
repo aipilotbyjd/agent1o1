@@ -4,6 +4,7 @@ import { TOTAL_STEPS, PLANS } from '../../_helper/onboarding.constants';
 interface INavigationBarProps {
 	step: number;
 	isLastStep: boolean;
+	canGoBack: boolean;
 	isContinueDisabled: boolean;
 	isWorkspaceLoading: boolean;
 	sendInvitationPending: boolean;
@@ -18,6 +19,7 @@ interface INavigationBarProps {
 const NavigationBar = ({
 	step,
 	isLastStep,
+	canGoBack,
 	isContinueDisabled,
 	isWorkspaceLoading,
 	sendInvitationPending,
@@ -40,7 +42,7 @@ const NavigationBar = ({
 
 	return (
 		<div className='mt-8 flex items-center justify-between border-t border-slate-100 pt-4 dark:border-zinc-800/80'>
-			{step > 0 ? (
+			{canGoBack ? (
 				<button
 					onClick={onPrev}
 					className='flex h-11 items-center gap-2 rounded-xl px-4 text-xs font-black text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'>

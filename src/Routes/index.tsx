@@ -8,6 +8,7 @@ import UnderConstructionPage from '@/pages/UnderConstruction.page';
 import IdentityPages from '@/Routes/appPages/identityPages';
 import WelcomePages from '@/Routes/appPages/welcomePages';
 import CoreAppPages from '@/Routes/appPages/coreappPages';
+import WorkspaceGuardLayout from '@/layouts/WorkspaceGuard.layout';
 import pages, { accountCallbacks, billingCallbacks } from '@/Routes/pages';
 
 const WorkspaceListPage = lazy(() => import('@/pages/choose/WorkspaceList.page'));
@@ -47,8 +48,8 @@ const router = createBrowserRouter([
 						element: <PublicPagePage />,
 					},
 					{
-						path: pages.choose.to,
-						element: <WorkspaceListPage />,
+						element: <WorkspaceGuardLayout />,
+						children: [{ path: pages.choose.to, element: <WorkspaceListPage /> }],
 					},
 					// Stripe returns here (see BillingReturn.page.tsx); must be registered
 					// before the `/:workspaceId` core-app routes or it falls through.

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import OnboardingProvider from '../../_context/OnboardingProvider.context';
 import { useOnboardingStore } from '../../_hooks/useOnboardingStore.hook';
-import { TOTAL_STEPS, ROLES } from '../../_helper/onboarding.constants';
-import { parseEmails, isValidEmail } from '../../_helper/onboarding.helper';
+import { ROLES } from '../../_helper/onboarding.constants';
+import { parseEmails, isValidEmail, resolveStartStep } from '../../_helper/onboarding.helper';
 import { useOnboardingNavigation } from '../../_hooks/useOnboardingNavigation.hook';
 import { useOnboardingSubmit } from '../../_hooks/useOnboardingSubmit.hook';
 import StepIndicator from './StepIndicator.partial';
@@ -19,40 +20,26 @@ import ConnectAppsStep from '../steps/ConnectAppsStep.partial';
 import DiscoveryStep from '../steps/DiscoveryStep.partial';
 
 import { useOnboardingState } from '@/api/modules/onboarding';
-import type { TOnboardingStep } from '../../_types/onboarding.type';
 import AppLogo from '@/components/AppLogo';
 import { useAuth } from '@/context/auth';
-
-const mapStepKeyToIndex = (key: string): TOnboardingStep => {
-	switch (key) {
-		case 'profile_picture':
-			return 0;
-		case 'create_workspace':
-			return 1;
-		case 'invite_team':
-			return 2;
-		case 'role_selection':
-			return 3;
-		case 'choose_plan':
-			return 4;
-		case 'connect_apps':
-			return 5;
-		case 'discovery_survey':
-			return 6;
-		default:
-			return 0;
-	}
-};
 
 const OnboardingShellInner = () => {
 	const { userData } = useAuth();
 	const { state, dispatch } = useOnboardingStore();
 	const { data: onboardingData, isLoading } = useOnboardingState();
 	const initialized = useRef(false);
+	const [searchParams] = useSearchParams();
+	// `?step=<key>` (from the dashboard checklist) wins over the saved step,
+	// unless that step is already completed.
+	const requestedStep = searchParams.get('step');
 
 	useEffect(() => {
 		if (onboardingData && !initialized.current) {
-			const stepIndex = mapStepKeyToIndex(onboardingData.current_step);
+			const stepIndex = resolveStartStep(
+				onboardingData.steps,
+				requestedStep,
+				onboardingData.current_step,
+			);
 			const workspace = userData?.current_workspace;
 
 			dispatch({ type: 'SET_STEP', payload: stepIndex });
@@ -76,7 +63,7 @@ const OnboardingShellInner = () => {
 			});
 			initialized.current = true;
 		}
-	}, [onboardingData, dispatch, userData]);
+	}, [onboardingData, dispatch, userData, requestedStep]);
 
 	const {
 		currentStep: step,
@@ -92,11 +79,12 @@ const OnboardingShellInner = () => {
 	// Local UI state that isn't part of the global onboarding data
 	const [workspaceError, setWorkspaceError] = useState('');
 
-	const { handlePrevStep, handleSkip, handleDismissAll } = useOnboardingNavigation();
+	const { handlePrevStep, handleSkip, handleDismissAll, canGoBack, isLastPendingStep } =
+		useOnboardingNavigation();
 	const { handleNextStep, isWorkspaceLoading, sendInvitationPending } = useOnboardingSubmit();
 
 	const isDualColumn = step >= 1;
-	const isLastStep = step === TOTAL_STEPS - 1;
+	const isLastStep = isLastPendingStep;
 
 	const parsedInviteEmails = parseEmails(inviteEmails);
 	const validInviteEmails = parsedInviteEmails.filter(isValidEmail);
@@ -240,6 +228,7 @@ const OnboardingShellInner = () => {
 							<NavigationBar
 								step={step}
 								isLastStep={isLastStep}
+								canGoBack={canGoBack}
 								isContinueDisabled={isContinueDisabled}
 								isWorkspaceLoading={isWorkspaceLoading}
 								sendInvitationPending={sendInvitationPending}

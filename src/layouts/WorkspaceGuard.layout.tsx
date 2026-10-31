@@ -1,53 +1,35 @@
-import { useEffect, useRef, useState } from 'react';
 import { Navigate, Outlet, useParams } from 'react-router';
 import { useWorkspaceContext } from '@/context/workspace';
+import useSyncActiveWorkspace from '@/hooks/useSyncActiveWorkspace';
 import pages from '@/Routes/pages';
 
 /**
- * Membership gate for everything under `/:workspaceId`. It carries no chrome, so
- * the core-app shell, the settings shell and the full-screen editors can all sit
- * under it as siblings without stacking layouts.
+ * Gate for everything under `/:workspaceId`, and for the workspace picker. It
+ * carries no chrome, so the core-app shell, the settings shell and the
+ * full-screen editors can all sit under it as siblings.
  *
- * The URL decides the workspace: opening a link to another workspace the member
- * belongs to makes it their current one, so every page and the sidebar agree.
- * Only a change of the URL's workspace is reconciled; a switcher that moves the
- * current workspace and then navigates is not switched back in between.
+ * In order: no workspace at all goes to onboarding (signup creates none and
+ * that step is mandatory); a workspace the user does not belong to goes to the
+ * picker; otherwise the URL's workspace becomes the current one.
  */
 const WorkspaceGuardLayout = () => {
 	const { workspaceId } = useParams<{ workspaceId: string }>();
-	const { workspaces, isLoading, activeWorkspaceId, switchWorkspace } = useWorkspaceContext();
-	const [syncedFor, setSyncedFor] = useState<string | null>(null);
-	const switchingFor = useRef<string | null>(null);
+	const { workspaces, isLoading } = useWorkspaceContext();
 
-	// Ids are typed `string` here but Laravel sends them as numbers, so the raw
-	// comparison never matched and every workspace bounced straight back to the
-	// chooser.
-	const isMember = workspaces.some((w) => String(w.id) === String(workspaceId));
-	const isUnsynced = !isLoading && isMember && !!workspaceId && syncedFor !== workspaceId;
-	const isActive = String(activeWorkspaceId) === String(workspaceId);
+	// Ids are typed `string` but Laravel sends numbers, so compare as strings.
+	const isMember = workspaces.some((workspace) => String(workspace.id) === workspaceId);
+	const isSwitching = useSyncActiveWorkspace(isMember ? workspaceId : undefined);
 
-	if (isUnsynced && isActive) setSyncedFor(workspaceId);
+	if (isLoading) return null;
 
-	const needsSwitch = isUnsynced && !isActive;
+	if (workspaces.length === 0) return <Navigate to={pages.welcome.to} replace />;
 
-	useEffect(() => {
-		if (!needsSwitch || !workspaceId || switchingFor.current === workspaceId) return;
-		switchingFor.current = workspaceId;
-		switchWorkspace(workspaceId)
-			.catch(() => undefined)
-			.finally(() => {
-				switchingFor.current = null;
-				setSyncedFor(workspaceId);
-			});
-	}, [needsSwitch, switchWorkspace, workspaceId]);
+	// The picker has no workspace in its URL, so there is nothing to join.
+	if (!workspaceId) return <Outlet />;
 
-	if (!isLoading && !isMember) {
-		return <Navigate to={pages.choose.to} replace />;
-	}
+	if (!isMember) return <Navigate to={pages.choose.to} replace />;
 
-	if (isLoading || needsSwitch) return null;
-
-	return <Outlet />;
+	return isSwitching ? null : <Outlet />;
 };
 
 export default WorkspaceGuardLayout;

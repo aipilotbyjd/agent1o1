@@ -5,19 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
 	Search,
 	Plus,
-	MoreVertical,
 	LogOut,
 	Sun,
 	Moon,
-	Trash2,
-	Edit2,
 	UserPlus,
 	Mail,
-	ArrowRight,
 	Check,
 	X,
-	Layers,
-	Cpu,
 	ChevronDown,
 } from 'lucide-react';
 import useDarkMode from '@/hooks/useDarkMode';
@@ -39,16 +33,11 @@ import {
 import { useInviteWorkspaceMember } from '@/api/modules/workspace-members';
 import Spinner from '@/components/ui/Spinner';
 import { useConfirm } from '@/context/confirm';
+import WorkspaceCard from './_partial/WorkspaceCard.partial';
+import { getInitials } from './_helper/workspace.helper';
+import type { ITeammate, IWorkspaceCard } from './_types/workspace.type';
 
 // ─── helpers ───────────────────────────────────────────────────────────────────
-const getInitials = (name: string) =>
-	name
-		.split(' ')
-		.map((n) => n[0])
-		.join('')
-		.slice(0, 2)
-		.toUpperCase();
-
 /** Owner is derived from workspace ownership, so it is never offered here:
  *  the same set the members settings screen grants. */
 const INVITE_ROLES: { value: TAssignableWorkspaceRole; label: string; hint: string }[] = [
@@ -59,28 +48,6 @@ const INVITE_ROLES: { value: TAssignableWorkspaceRole; label: string; hint: stri
 ];
 
 // ─── types ─────────────────────────────────────────────────────────────────────
-interface ITeammate {
-	name: string;
-	initials: string;
-	color: string;
-}
-
-interface IWorkspaceCard {
-	id: string;
-	name: string;
-	tier: 'Free' | 'Pro' | 'Enterprise';
-	role: 'Owner' | 'Admin' | 'Member';
-	activeFlowsCount: number;
-	totalNodes: number;
-	activeAgentsCount: number;
-	members: ITeammate[];
-	gradientFrom: string;
-	gradientTo: string;
-	accentColor: string;
-	lastActive: string;
-	hasActiveRuns: boolean;
-}
-
 interface IInvitation {
 	id: string;
 	name: string;
@@ -304,11 +271,11 @@ const WorkspacesPage = () => {
 		const name = workspaces.find((w: IWorkspaceCard) => w.id === id)?.name ?? 'workspace';
 		triggerToast(`Entering workspace "${name}"...`, 'info');
 		await switchWorkspace(id);
-		const agentsPath = (pages.workspace.subPages as TPages).agents.to.replace(
+		const dashboardPath = (pages.workspace.subPages as TPages).dashboard.to.replace(
 			':workspaceId',
 			id,
 		);
-		setTimeout(() => navigate(agentsPath), 800);
+		setTimeout(() => navigate(dashboardPath), 800);
 	};
 
 	const handleCreateWorkspace = async (e: React.FormEvent) => {
@@ -753,9 +720,11 @@ const WorkspacesPage = () => {
 										key={wsp.id}
 										wsp={wsp}
 										index={i}
-										activeMenuId={activeMenuId}
+										isMenuOpen={activeMenuId === wsp.id}
 										onSelect={handleSelectWorkspace}
-										onMenuToggle={(id) => setActiveMenuId(id)}
+										onMenuChange={(isOpen) =>
+											setActiveMenuId(isOpen ? wsp.id : null)
+										}
 										onRename={(w: IWorkspaceCard) => {
 											setSelectedWorkspace(w);
 											setRenameWspName(w.name);
@@ -1143,224 +1112,5 @@ const ModalLabel = ({ children }: { children: React.ReactNode }) => (
 		{children}
 	</label>
 );
-
-// ─── Workspace Card Component ──────────────────────────────────────────────────
-interface WorkspaceCardProps {
-	wsp: IWorkspaceCard;
-	index: number;
-	activeMenuId: string | null;
-	onSelect: (id: string) => void;
-	onMenuToggle: (id: string | null) => void;
-	onRename: (wsp: IWorkspaceCard) => void;
-	onDelete: (id: string, name: string) => void;
-	onLeave: (id: string, name: string) => void;
-	onInvite: (wsp: IWorkspaceCard) => void;
-}
-
-const WorkspaceCard = ({
-	wsp,
-	index,
-	activeMenuId,
-	onSelect,
-	onMenuToggle,
-	onRename,
-	onDelete,
-	onLeave,
-	onInvite,
-}: WorkspaceCardProps) => {
-	return (
-		<motion.div
-			layout
-			initial={{ opacity: 0, y: 16 }}
-			animate={{ opacity: 1, y: 0 }}
-			exit={{ opacity: 0, scale: 0.95 }}
-			transition={{ duration: 0.3, delay: index * 0.05 }}
-			whileHover={{ y: -5 }}
-			onClick={() => onSelect(wsp.id)}
-			className='group hover:border-primary-500/30 hover:shadow-primary-500/20/[0.02] relative cursor-pointer overflow-hidden rounded-3xl border border-slate-200/60 bg-white p-5 shadow-[0_4px_25px_rgba(0,0,0,0.01)] transition-all duration-300 hover:shadow-md dark:border-zinc-800/80 dark:bg-[#10131e]/50'>
-			{/* Hover Accent Glow */}
-			<div
-				className='pointer-events-none absolute inset-[-30%] rounded-full opacity-0 transition-opacity duration-500 group-hover:opacity-[0.05] dark:group-hover:opacity-[0.08]'
-				style={{
-					background: `radial-gradient(circle, ${wsp.accentColor}, transparent 60%)`,
-					filter: 'blur(50px)',
-				}}
-			/>
-
-			{/* Top accent bar */}
-			<div
-				className='absolute top-0 right-0 left-0 h-[3px]'
-				style={{
-					background: `linear-gradient(to right, ${wsp.gradientFrom}, ${wsp.gradientTo})`,
-				}}
-			/>
-
-			{/* Top bar header */}
-			<div className='mt-1 flex items-start justify-between'>
-				{/* Avatar container */}
-				<div className='relative shrink-0'>
-					<div
-						className='flex h-12 w-12 items-center justify-center rounded-2xl text-base font-black text-white shadow-sm ring-1 ring-white/10'
-						style={{
-							background: `linear-gradient(135deg, ${wsp.gradientFrom}, ${wsp.gradientTo})`,
-							boxShadow: `0 6px 16px -6px ${wsp.accentColor}`,
-						}}>
-						{getInitials(wsp.name)}
-					</div>
-					{wsp.hasActiveRuns && (
-						<span className='absolute -top-1 -right-1 flex h-3 w-3'>
-							<span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75'></span>
-							<span className='relative inline-flex h-3 w-3 rounded-full border border-white bg-emerald-500 dark:border-zinc-950'></span>
-						</span>
-					)}
-				</div>
-
-				{/* Tier tag & option kebab menu */}
-				<div className='flex items-center gap-2'>
-					<span className='border-primary-100 bg-primary-50 text-primary-600 dark:border-primary-900/30 dark:bg-primary-950/20 dark:text-primary-400 rounded-full border px-2.5 py-0.5 text-[9px] font-black tracking-wide uppercase shadow-2xs'>
-						{wsp.tier}
-					</span>
-
-					{/* Kebab Popover Dropdown */}
-					<div className='relative'>
-						<button
-							aria-label='Workspace options'
-							onClick={(e) => {
-								e.stopPropagation();
-								onMenuToggle(activeMenuId === wsp.id ? null : wsp.id);
-							}}
-							className='flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-transparent text-slate-400 transition-colors hover:border-slate-200 hover:bg-slate-50 hover:text-slate-700 dark:hover:border-zinc-800 dark:hover:bg-zinc-900 dark:hover:text-zinc-200'>
-							<MoreVertical size={14} />
-						</button>
-
-						<AnimatePresence>
-							{activeMenuId === wsp.id && (
-								<motion.div
-									initial={{ opacity: 0, scale: 0.95, y: 5 }}
-									animate={{ opacity: 1, scale: 1, y: 0 }}
-									exit={{ opacity: 0, scale: 0.95, y: 5 }}
-									className='absolute right-0 z-50 mt-1.5 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
-									<button
-										onClick={(e) => {
-											e.stopPropagation();
-											onMenuToggle(null);
-											onRename(wsp);
-										}}
-										className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-800'>
-										<Edit2 size={12} className='text-primary-500' /> Rename
-									</button>
-									{wsp.role === 'Owner' ? (
-										<button
-											onClick={(e) => {
-												e.stopPropagation();
-												onMenuToggle(null);
-												onDelete(wsp.id, wsp.name);
-											}}
-											className='dark:hover:bg-rose-955 flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 dark:hover:bg-rose-950/20'>
-											<Trash2 size={12} /> Delete
-										</button>
-									) : (
-										<button
-											onClick={(e) => {
-												e.stopPropagation();
-												onMenuToggle(null);
-												onLeave(wsp.id, wsp.name);
-											}}
-											className='dark:hover:bg-rose-955 flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 dark:hover:bg-rose-950/20'>
-											<LogOut size={12} /> Leave
-										</button>
-									)}
-								</motion.div>
-							)}
-						</AnimatePresence>
-					</div>
-				</div>
-			</div>
-
-			{/* Title & Info */}
-			<div className='text-left'>
-				<h3 className='group-hover:text-primary-600 dark:group-hover:text-primary-400 mt-5 text-lg font-black tracking-tight text-slate-900 transition-colors dark:text-white'>
-					{wsp.name}
-				</h3>
-				<p className='mt-1 text-[11px] font-semibold text-slate-400 dark:text-zinc-500'>
-					Role:{' '}
-					<span className='text-slate-650 dark:text-zinc-350 font-bold'>{wsp.role}</span>{' '}
-					• {wsp.lastActive}
-				</p>
-			</div>
-
-			{/* Metrics block */}
-			<div className='border-slate-150/60 dark:border-zinc-850 my-5 grid grid-cols-2 gap-3.5 rounded-2xl border bg-slate-50/50 p-3.5 dark:bg-zinc-950/20'>
-				<div className='flex items-center gap-2.5 text-left'>
-					<div className='bg-primary-50 text-primary-600 dark:bg-primary-950/30 dark:text-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-2xs'>
-						<Layers size={15} />
-					</div>
-					<div className='min-w-0'>
-						<span className='block text-[9px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
-							Active Flows
-						</span>
-						<span className='dark:text-zinc-350 block truncate text-xs font-extrabold text-slate-700'>
-							{wsp.activeFlowsCount} flows
-						</span>
-					</div>
-				</div>
-
-				<div className='flex items-center gap-2.5 text-left'>
-					<div className='bg-primary-50 text-primary-600 dark:bg-primary-950/30 dark:text-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-2xs'>
-						<Cpu size={15} />
-					</div>
-					<div className='min-w-0'>
-						<span className='block text-[9px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
-							Deployments
-						</span>
-						<span className='dark:text-zinc-350 block truncate text-xs font-extrabold text-slate-700'>
-							{wsp.activeAgentsCount} agent{wsp.activeAgentsCount !== 1 ? 's' : ''}
-						</span>
-					</div>
-				</div>
-			</div>
-
-			{/* Card Footer */}
-			<div className='flex items-center justify-between'>
-				{/* Members circle avatares */}
-				<div className='flex items-center -space-x-1.5'>
-					{wsp.members.map((member, idx) => (
-						<div
-							key={idx}
-							title={member.name}
-							className={`text-primary-950 flex h-7.5 w-7.5 items-center justify-center rounded-full border border-white text-[9px] font-black shadow-2xs ${member.color} dark:border-zinc-950`}>
-							{member.initials}
-						</div>
-					))}
-					<button
-						type='button'
-						aria-label={`Invite a member to ${wsp.name}`}
-						title={`Invite a member to ${wsp.name}`}
-						onClick={(e) => {
-							e.stopPropagation();
-							onInvite(wsp);
-						}}
-						className='text-slate-555 hover:bg-primary-500 hover:text-primary-950 flex h-7.5 w-7.5 items-center justify-center rounded-full border border-dashed border-slate-300 bg-slate-50 transition-all hover:scale-105 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'>
-						<UserPlus size={10} />
-					</button>
-				</div>
-
-				{/* Arrow enter button. The card root owns the click; this is the
-					    affordance for it, so it only needs to not be a submit button. */}
-				<button
-					type='button'
-					tabIndex={-1}
-					aria-hidden
-					className='text-primary-600 dark:text-primary-400 group-hover:from-primary-400 group-hover:to-primary-400 group-hover:text-primary-950 group-hover:shadow-primary-500/10 flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white transition-all duration-300 group-hover:border-transparent group-hover:bg-gradient-to-r group-hover:shadow-md active:scale-95 dark:border-zinc-800 dark:bg-zinc-900'>
-					<ArrowRight
-						size={16}
-						strokeWidth={2.5}
-						className='transition-transform duration-300 group-hover:translate-x-0.5'
-					/>
-				</button>
-			</div>
-		</motion.div>
-	);
-};
 
 export default WorkspacesPage;
