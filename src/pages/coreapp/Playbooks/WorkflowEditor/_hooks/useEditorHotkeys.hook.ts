@@ -86,15 +86,24 @@ export const useEditorHotkeys = () => {
 				return;
 			}
 
+			if (event.altKey && !mod && !event.shiftKey) {
+				// Template library
+				if (event.code === 'KeyT') {
+					event.preventDefault();
+					dispatch({ type: 'SET_TEMPLATE_LIBRARY', open: true });
+					return;
+				}
+				if (event.code === 'KeyR') {
+					event.preventDefault();
+					dispatch({ type: 'TOGGLE_RUN_PANEL' });
+					return;
+				}
+			}
+
 			// Toggle panels
 			if (mod && event.shiftKey && event.key.toLowerCase() === 'l') {
 				event.preventDefault();
 				dispatch({ type: 'TOGGLE_LEFT_PANEL' });
-				return;
-			}
-			if (mod && event.shiftKey && event.key.toLowerCase() === 'r') {
-				event.preventDefault();
-				dispatch({ type: 'TOGGLE_RUN_PANEL' });
 				return;
 			}
 			if (mod && event.shiftKey && event.key.toLowerCase() === 'e') {
@@ -104,7 +113,7 @@ export const useEditorHotkeys = () => {
 			}
 
 			// Canvas search
-			if (mod && event.key.toLowerCase() === 'f') {
+			if (mod && !event.shiftKey && event.key.toLowerCase() === 'f') {
 				event.preventDefault();
 				dispatch({ type: 'SET_CANVAS_SEARCH', open: true });
 				return;
@@ -114,13 +123,6 @@ export const useEditorHotkeys = () => {
 			if (!isTypingTarget(event.target) && event.key === '?') {
 				event.preventDefault();
 				dispatch({ type: 'SET_SHORTCUTS_OPEN', open: true });
-				return;
-			}
-
-			// Template library
-			if (mod && event.shiftKey && event.key.toLowerCase() === 't') {
-				event.preventDefault();
-				dispatch({ type: 'SET_TEMPLATE_LIBRARY', open: true });
 				return;
 			}
 
@@ -160,7 +162,12 @@ export const useEditorHotkeys = () => {
 			}
 
 			// Auto-layout
-			if (!isTypingTarget(event.target) && event.key.toLowerCase() === 'l') {
+			if (
+				!isTypingTarget(event.target) &&
+				!mod &&
+				!event.altKey &&
+				event.key.toLowerCase() === 'l'
+			) {
 				event.preventDefault();
 				autoLayout();
 				return;

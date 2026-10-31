@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
-import { NODE_CATALOG } from '../../_helper/nodeCatalog.constants';
+import { useNodeCategories } from '@/api/modules/catalog';
+import { mapApiCategoriesToGroups } from '../../_helper/apiNodeCatalog.helper';
+import type { TNodeDefinition } from '../../_types/node.type';
 import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { useAutoLayout } from '../../_hooks/useAutoLayout.hook';
 import { useAiPanelAvailability } from '../../_hooks/useAiPanelAvailability.hook';
@@ -14,14 +16,43 @@ const CommandPalette = () => {
 	const [query, setQuery] = useState('');
 	const needle = query.trim().toLowerCase();
 
-	const filteredNodes = useMemo(() => {
-		if (!needle) return NODE_CATALOG;
-		return NODE_CATALOG.filter((node) =>
-			[node.label, node.description, node.category, node.key].some((value) =>
-				value.toLowerCase().includes(needle),
-			),
-		);
-	}, [needle]);
+	const {
+		data: apiCategories,
+		isLoading: isNodesLoading,
+		isError: isNodesError,
+	} = useNodeCategories(true);
+
+	const nodeGroups = useMemo(
+		() => (apiCategories?.length ? mapApiCategoriesToGroups(apiCategories) : []),
+		[apiCategories],
+	);
+
+	const filteredNodeGroups = useMemo(() => {
+		if (!needle) return nodeGroups;
+		return nodeGroups
+			.map((group) => ({
+				...group,
+				nodes: group.nodes.filter((node) =>
+					[node.label, node.description, node.category, node.key].some((value) =>
+						value?.toLowerCase().includes(needle),
+					),
+				),
+			}))
+			.filter((group) => group.nodes.length);
+	}, [nodeGroups, needle]);
+
+	const addNode = (node: TNodeDefinition) => {
+		dispatch({
+			type: 'ADD_NODE',
+			defKey: node.key,
+			definition: node,
+			position: {
+				x: 160 + state.nodes.length * 24,
+				y: 140 + state.nodes.length * 18,
+			},
+		});
+		dispatch({ type: 'SET_COMMAND_PALETTE', open: false });
+	};
 
 	const commands = [
 		{
@@ -73,7 +104,7 @@ const CommandPalette = () => {
 		{
 			label: 'Toggle run console',
 			description: 'Show execution logs and node output',
-			shortcut: '⌘⇧R',
+			shortcut: '⌥R',
 			action: () => dispatch({ type: 'TOGGLE_RUN_PANEL' }),
 			category: 'Workflow',
 		},
@@ -87,7 +118,7 @@ const CommandPalette = () => {
 		{
 			label: 'Template library',
 			description: 'Start from a pre-built workflow template',
-			shortcut: '⌘⇧T',
+			shortcut: '⌥T',
 			action: () => dispatch({ type: 'SET_TEMPLATE_LIBRARY', open: true }),
 			category: 'File',
 		},
@@ -220,34 +251,48 @@ const CommandPalette = () => {
 					Add node
 				</div>
 				<div className='max-h-72 overflow-y-auto'>
-					{filteredNodes.map((node) => (
-						<button
-							key={node.key}
-							type='button'
-							onClick={() => {
-								dispatch({
-									type: 'ADD_NODE',
-									defKey: node.key,
-									position: {
-										x: 160 + state.nodes.length * 24,
-										y: 140 + state.nodes.length * 18,
-									},
-								});
-								dispatch({ type: 'SET_COMMAND_PALETTE', open: false });
-							}}
-							className='flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-zinc-100 dark:hover:bg-white/[0.06]'>
-							<span className='flex h-7 w-7 items-center justify-center rounded bg-zinc-100 text-[10px] font-black text-zinc-700 dark:bg-white/[0.07] dark:text-zinc-200'>
-								{node.icon}
-							</span>
-							<span>
-								<span className='block text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
-									{node.label}
-								</span>
-								<span className='block text-xs text-zinc-500'>
-									{node.description}
-								</span>
-							</span>
-						</button>
+					{isNodesLoading && (
+						<div className='space-y-2 py-1'>
+							<div className='h-10 animate-pulse rounded-lg bg-zinc-100 dark:bg-white/[0.05]' />
+							<div className='h-10 animate-pulse rounded-lg bg-zinc-100 dark:bg-white/[0.05]' />
+							<div className='h-10 animate-pulse rounded-lg bg-zinc-100 dark:bg-white/[0.05]' />
+						</div>
+					)}
+					{isNodesError && (
+						<div className='px-3 py-4 text-xs text-red-500'>
+							Couldn&apos;t load nodes. Try again in a moment.
+						</div>
+					)}
+					{!isNodesLoading && !isNodesError && !filteredNodeGroups.length && (
+						<div className='px-3 py-4 text-xs text-zinc-500'>
+							{needle ? 'No nodes match your search' : 'No nodes available'}
+						</div>
+					)}
+					{filteredNodeGroups.map((group) => (
+						<div key={group.id} className='pb-2'>
+							<div className='px-3 pt-1 pb-0.5 text-[10px] font-semibold tracking-[0.14em] text-zinc-400 uppercase dark:text-zinc-600'>
+								{group.label}
+							</div>
+							{group.nodes.map((node) => (
+								<button
+									key={node.key}
+									type='button'
+									onClick={() => addNode(node)}
+									className='flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-zinc-100 dark:hover:bg-white/[0.06]'>
+									<span className='flex h-7 w-7 items-center justify-center rounded bg-zinc-100 text-[10px] font-black text-zinc-700 dark:bg-white/[0.07] dark:text-zinc-200'>
+										{node.icon}
+									</span>
+									<span>
+										<span className='block text-sm font-semibold text-zinc-900 dark:text-zinc-100'>
+											{node.label}
+										</span>
+										<span className='block text-xs text-zinc-500'>
+											{node.description}
+										</span>
+									</span>
+								</button>
+							))}
+						</div>
 					))}
 				</div>
 			</div>

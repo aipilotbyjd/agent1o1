@@ -78,6 +78,18 @@ const draftEdgesToCanvas = (nodes: TWorkflowNode[], edges: TWorkflowEdge[]): TCa
 	});
 };
 
+export const templateGraphToCanvas = (
+	graph: TReplaceGraphDto,
+): { nodes: TCanvasNode[]; edges: TCanvasEdge[] } => ({
+	nodes: graph.nodes.map((node) => graphNodeToCanvas({ ...node, config: node.config ?? {} })),
+	edges: restoreInputConnections(
+		graph.edges.map((edge, index) =>
+			graphEdgeToCanvas({ ...edge, condition: edge.condition ?? null }, index),
+		),
+		graph.nodes,
+	),
+});
+
 /** A workflow's saved draft as canvas nodes and edges. */
 export const workflowDraftToCanvas = (
 	workflow: TWorkflow,

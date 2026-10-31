@@ -36,6 +36,7 @@ export type TWorkflowEditorAction =
 			definition?: TNodeDefinition;
 	  }
 	| { type: 'ADD_TEMPLATE'; defKeys: string[]; name: string }
+	| { type: 'APPLY_TEMPLATE'; name: string; nodes: TCanvasNode[]; edges: TCanvasEdge[] }
 	| { type: 'MOVE_NODE'; id: string; position: TCanvasPosition }
 	| { type: 'REQUEST_NODE_TEST'; id: string }
 	| { type: 'SELECT_NODE'; id: string | null }
@@ -328,6 +329,20 @@ export const workflowEditorReducer = (
 					...next.ui,
 					selectedNodeId: nodes[0]?.id ?? null,
 					selectedNodeIds: nodes[0] ? [nodes[0].id] : [],
+				},
+			};
+		}
+		case 'APPLY_TEMPLATE': {
+			const next = withHistory(state);
+			return {
+				...next,
+				workflow: { ...next.workflow, name: action.name, savingState: 'dirty' },
+				nodes: action.nodes,
+				edges: action.edges,
+				ui: {
+					...next.ui,
+					selectedNodeId: action.nodes[0]?.id ?? null,
+					selectedNodeIds: action.nodes[0] ? [action.nodes[0].id] : [],
 				},
 			};
 		}
