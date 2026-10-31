@@ -3152,7 +3152,7 @@ __metadata:
     react-dom: "npm:^19.2.7"
     react-i18next: "npm:^17.0.8"
     react-markdown: "npm:^10.1.0"
-    react-router: "npm:^7.16.0"
+    react-router: "npm:^7.18.2"
     react-svg-worldmap: "npm:^2.0.2"
     react-syntax-highlighter: "npm:^16.1.1"
     react-toastify: "npm:^11.1.0"
@@ -7752,9 +7752,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-router@npm:^7.16.0":
-  version: 7.16.0
-  resolution: "react-router@npm:7.16.0"
+"react-router@npm:^7.18.2":
+  version: 7.18.5
+  resolution: "react-router@npm:7.18.5"
   dependencies:
     cookie: "npm:^1.0.1"
     set-cookie-parser: "npm:^2.6.0"
@@ -7764,7 +7764,7 @@ __metadata:
   peerDependenciesMeta:
     react-dom:
       optional: true
-  checksum: 10c0/a3d7825c945183dd16f9cb7cf7c16bed859f78cf3049b467d6c9b84bdf0f7357027e821b1f3e187cecfb41e82c0f0bb625432e0ef9aa9d94b778a533204f6b7c
+  checksum: 10c0/dbed9b4d0019873615028e2fe7bf7782ab4f41d9f287595b9a82f4a6d619dc5d3b88449fb3e717282f9f558312f29f88325372a7bb67355472703291607f9280
   languageName: node
   linkType: hard
 
