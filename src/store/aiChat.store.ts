@@ -83,6 +83,8 @@ type TAiChatState = {
 	pendingMessageId: string | null;
 	workspaceId: string | null;
 	workflowId: string | null;
+	/** The catalog model the member picked for the builder; null runs its own default. */
+	modelCatalogId: string | null;
 	// Persisted map of workflow → its builder session, so a reload resumes the
 	// same backend conversation instead of showing stale local chat.
 	sessionByWorkflow: Record<string, string>;
@@ -168,6 +170,7 @@ type TAiChatState = {
 	stopThinking: () => void;
 
 	setThinking: (thinking: boolean) => void;
+	setModelCatalogId: (id: string | null) => void;
 	resetChat: () => void;
 	exitChat: () => void;
 	newChat: () => void;
@@ -297,6 +300,7 @@ export const useAiChatStore = create<TAiChatState>()(
 			pendingMessageId: null,
 			workspaceId: null,
 			workflowId: null,
+			modelCatalogId: null,
 			sessionByWorkflow: {},
 			hydratedSessionId: null,
 			draftLockVersion: null,
@@ -412,6 +416,7 @@ export const useAiChatStore = create<TAiChatState>()(
 								mode,
 								attachments: files,
 								context,
+								model_catalog_id: get().modelCatalogId,
 							},
 						);
 						set({ pendingMessageId: reply.id });
@@ -626,6 +631,7 @@ export const useAiChatStore = create<TAiChatState>()(
 			},
 
 			setThinking: (thinking) => set({ isThinking: thinking }),
+			setModelCatalogId: (id) => set({ modelCatalogId: id }),
 
 			resetChat: () => {
 				const messages = [{ ...WELCOME_MESSAGE, timestamp: getCurrentTimeStr() }];
@@ -739,6 +745,7 @@ export const useAiChatStore = create<TAiChatState>()(
 				})),
 				activeSessionId: state.activeSessionId,
 				sessionByWorkflow: state.sessionByWorkflow,
+				modelCatalogId: state.modelCatalogId,
 			}),
 		},
 	),

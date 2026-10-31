@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
+import BuilderModelPicker from './BuilderModelPicker.partial';
 import { useAiChatStore, type TAiChatMessage, type TAiTimelineItem } from '@/store/aiChat.store';
 import { useAuth } from '@/context/auth';
 import { useConfirm } from '@/context/confirm';
@@ -943,6 +944,10 @@ const AiBuilderPanel = () => {
 								}`}>
 								<Paperclip size={14} />
 							</button>
+							<BuilderModelPicker
+								workspaceId={state.workflow.workspaceId ?? ''}
+								disabled={isThinking}
+							/>
 						</div>
 
 						<div className='flex items-center gap-2'>

@@ -12,6 +12,7 @@ import AccountSelect from './nodes/AccountSelect.partial';
 import { usePromptAppShortcuts } from '../../_hooks/usePromptMentionItems.hook';
 import PromptAppShortcuts from './PromptAppShortcuts.partial';
 import PromptEditor from './PromptEditor.partial';
+import BuilderModelPicker from '../ai/BuilderModelPicker.partial';
 import { describeToolCall } from '../../_helper/builderToolCalls.helper';
 import {
 	connectedAccountElement,
@@ -280,6 +281,11 @@ const CanvasEmptyState = () => {
 														}`}>
 														<Paperclip size={18} />
 													</button>
+
+													<BuilderModelPicker
+														workspaceId={workspaceId}
+														disabled={isThinking}
+													/>
 
 													<span className='mx-0.5 h-3.5 w-[1px] bg-zinc-200 dark:bg-zinc-800' />
 

@@ -52,6 +52,8 @@ export type TBuilderMessage = {
 	mode: TBuilderMessageMode;
 	/** What a user message referenced with `/` and `@`. */
 	context: TBuilderMessageContext | null;
+	/** The model a user message asked for; `null` for the builder's default. */
+	model_catalog_id: string | null;
 	content: string;
 	actions: TBuilderMessageAction[] | null;
 	processing_status: TBuilderMessageStatus;
@@ -130,6 +132,8 @@ export type TSendBuilderMessageDto = {
 	/** Defaults to `build`. */
 	mode?: TBuilderMessageMode;
 	context?: TBuilderMessageContext;
+	/** The catalog model to run this turn on; empty runs the builder's own default. */
+	model_catalog_id?: string | null;
 	/** Sent as multipart `attachments[]`: the service builds the `FormData`. */
 	attachments?: File[];
 };

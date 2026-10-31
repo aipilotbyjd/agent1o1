@@ -1,7 +1,14 @@
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import classNames from 'classnames';
-import { AlertTriangle, CalendarClock, ChevronDown, ExternalLink, Sparkles } from 'lucide-react';
+import {
+	AlertTriangle,
+	BrainCircuit,
+	CalendarClock,
+	ChevronDown,
+	ExternalLink,
+	Sparkles,
+} from 'lucide-react';
 import { useModelCatalog } from '@/api/modules/catalog';
 import { useCurrentUser } from '@/api/modules/user';
 import type { TModelCatalogEntry } from '@/types/catalog.type';
@@ -31,6 +38,8 @@ interface IModelPickerProps {
 	label?: string;
 	disabled?: boolean;
 	compact?: boolean;
+	/** A borderless, content-width trigger for toolbars; problems show as a tooltip, not text below. */
+	inline?: boolean;
 	className?: string;
 }
 
@@ -50,6 +59,7 @@ const ModelPicker = ({
 	label = 'Model',
 	disabled,
 	compact,
+	inline,
 	className,
 }: IModelPickerProps) => {
 	const { data: models = [], isLoading } = useModelCatalog(ws);
@@ -82,6 +92,68 @@ const ModelPicker = ({
 				? 'Loading…'
 				: 'Model no longer available'
 			: (emptyOption?.label ?? 'Select a model'));
+
+	const problem = isUnknown
+		? 'This model was removed from the catalog. Pick another one.'
+		: reason
+			? `${reason}.`
+			: missing.length > 0
+				? `${selected?.display_name} can't use ${missing.join(' or ')}.`
+				: null;
+
+	if (inline) {
+		return (
+			<div className={className}>
+				<button
+					type='button'
+					disabled={disabled}
+					onClick={() => setIsOpen(true)}
+					aria-haspopup='dialog'
+					aria-label={`${label}: ${triggerName}`}
+					title={problem ?? `${label}: ${triggerName}`}
+					className={classNames(
+						'relative flex max-w-44 items-center gap-1.5 rounded-md p-1 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-zinc-900',
+						selected
+							? 'text-zinc-700 dark:text-zinc-200'
+							: 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200',
+					)}>
+					{selected ? (
+						<ProviderLogo
+							provider={selected.brand}
+							label={brandLabel(selected.brand)}
+							size='xs'
+						/>
+					) : (
+						<BrainCircuit size={18} />
+					)}
+					{selected && (
+						<span className='truncate text-xs font-bold'>{selected.display_name}</span>
+					)}
+					{problem && (
+						<AlertTriangle
+							size={10}
+							className='absolute -top-0.5 -right-0.5 text-amber-500'
+						/>
+					)}
+				</button>
+				{isOpen && (
+					<ModelPickerDialog
+						ws={ws}
+						models={models}
+						selected={selected}
+						emptyOption={emptyOption}
+						isEmptySelected={!value}
+						requirements={requirements}
+						favorites={prefs.favorites}
+						recent={prefs.recent}
+						onToggleFavorite={prefs.toggleFavorite}
+						onSelect={pick}
+						onClose={() => setIsOpen(false)}
+					/>
+				)}
+			</div>
+		);
+	}
 
 	return (
 		<div className={className}>
