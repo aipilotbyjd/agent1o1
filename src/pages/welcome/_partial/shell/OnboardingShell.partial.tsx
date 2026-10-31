@@ -79,8 +79,15 @@ const OnboardingShellInner = () => {
 	// Local UI state that isn't part of the global onboarding data
 	const [workspaceError, setWorkspaceError] = useState('');
 
-	const { handlePrevStep, handleSkip, handleDismissAll, canGoBack, isLastPendingStep } =
-		useOnboardingNavigation();
+	const {
+		handlePrevStep,
+		handleSkip,
+		handleDismissAll,
+		canGoBack,
+		canSkipStep,
+		canLeaveOnboarding,
+		isLastPendingStep,
+	} = useOnboardingNavigation();
 	const { handleNextStep, isWorkspaceLoading, sendInvitationPending } = useOnboardingSubmit();
 
 	const isDualColumn = step >= 1;
@@ -156,7 +163,7 @@ const OnboardingShellInner = () => {
 							agent1o1
 						</span>
 					</span>
-					{step > 1 && (
+					{canLeaveOnboarding && (
 						<button
 							type='button'
 							onClick={handleDismissAll}
@@ -187,7 +194,7 @@ const OnboardingShellInner = () => {
 											agent1o1
 										</span>
 									</span>
-									{step > 1 && (
+									{canLeaveOnboarding && (
 										<button
 											type='button'
 											onClick={handleDismissAll}
@@ -229,6 +236,7 @@ const OnboardingShellInner = () => {
 								step={step}
 								isLastStep={isLastStep}
 								canGoBack={canGoBack}
+								canSkip={step > 1 && canSkipStep}
 								isContinueDisabled={isContinueDisabled}
 								isWorkspaceLoading={isWorkspaceLoading}
 								sendInvitationPending={sendInvitationPending}

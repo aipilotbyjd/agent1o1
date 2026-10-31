@@ -43,6 +43,12 @@ export const useOnboardingNavigation = () => {
 		);
 	};
 
+	// The workspace and plan steps are required: until both are done the wizard
+	// cannot be skipped past or closed (the backend refuses it too).
+	const isStepDone = (key: string) => steps.find((step) => step.key === key)?.completed === true;
+	const canSkipStep = ONBOARDING_STEP_KEYS[currentStep] !== 'choose_plan';
+	const canLeaveOnboarding = isStepDone('create_workspace') && isStepDone('choose_plan');
+
 	// Completed steps are never shown again, in either direction.
 	const previousStep = findPendingStep(steps, currentStep, -1);
 	const nextStep = findPendingStep(steps, currentStep, 1);
@@ -89,6 +95,8 @@ export const useOnboardingNavigation = () => {
 		currentStep,
 		handlePrevStep,
 		canGoBack: previousStep !== null,
+		canSkipStep,
+		canLeaveOnboarding,
 		isLastPendingStep: nextStep === null,
 		handleSkip,
 		advanceStep,

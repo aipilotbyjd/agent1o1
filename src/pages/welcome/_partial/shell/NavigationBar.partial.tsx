@@ -5,6 +5,7 @@ interface INavigationBarProps {
 	step: number;
 	isLastStep: boolean;
 	canGoBack: boolean;
+	canSkip: boolean;
 	isContinueDisabled: boolean;
 	isWorkspaceLoading: boolean;
 	sendInvitationPending: boolean;
@@ -20,6 +21,7 @@ const NavigationBar = ({
 	step,
 	isLastStep,
 	canGoBack,
+	canSkip,
 	isContinueDisabled,
 	isWorkspaceLoading,
 	sendInvitationPending,
@@ -65,8 +67,7 @@ const NavigationBar = ({
 
 			{/* Actions */}
 			<div className='flex items-center gap-3'>
-				{/* Skip: available on all steps except the first 2 steps */}
-				{step > 1 && (
+				{canSkip && (
 					<button
 						onClick={onSkip}
 						className='h-11 rounded-xl px-4 text-xs font-black text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300'>
