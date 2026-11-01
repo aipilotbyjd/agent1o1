@@ -73,6 +73,31 @@ export type TBillingOverage = {
 	credits_remaining: number | null;
 };
 
+export type TCreditGrantSource =
+	| 'plan'
+	| 'free'
+	| 'trial'
+	| 'rollover'
+	| 'topup'
+	| 'promo'
+	| 'referral'
+	| 'admin'
+	| 'migration';
+
+/** One block of credits in the workspace's wallet, listed in spend order. */
+export type TCreditGrant = {
+	id: string;
+	source: TCreditGrantSource;
+	amount: number;
+	remaining: number;
+	expires_at: string | null;
+	reason: string | null;
+	created_at: string;
+};
+
+/** Present only on the free plan: whether this workspace gets the free monthly credits. */
+export type TFreeCreditsStatus = { eligible: boolean; reason: string | null };
+
 export type TBillingOverview = {
 	subscription: TSubscription | null;
 	plan_grant: TPlanGrant | null;
@@ -80,6 +105,9 @@ export type TBillingOverview = {
 	usage_period: TUsagePeriod;
 	topup_credits: number;
 	credits_available: number | null;
+	credit_grants: TCreditGrant[];
+	credit_debt: number;
+	free_credits: TFreeCreditsStatus | null;
 	limits: Record<string, TPlanLimitUsage>;
 	overage: TBillingOverage;
 	dunning: TBillingDunning | null;
@@ -189,6 +217,8 @@ export type TCreditTransaction = {
 	credits: number;
 	topup_credits: number;
 	overage_credits: number;
+	debt_credits: number;
+	paid_by?: { source: TCreditGrantSource; credits: number }[];
 	reason: string | null;
 	created_at: string;
 };
