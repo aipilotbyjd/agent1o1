@@ -4,7 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import BuilderModelPicker from './BuilderModelPicker.partial';
-import { useAiChatStore, type TAiChatMessage, type TAiTimelineItem } from '@/store/aiChat.store';
+import {
+	useAiChatStore,
+	type TAiChatMessage,
+	type TAiChatMessageModel,
+	type TAiTimelineItem,
+} from '@/store/aiChat.store';
+import ProviderLogo from '@/components/ai/ProviderLogo';
+import { brandLabel } from '@/components/ai/model-picker/modelPicker.helper';
 import { useAuth } from '@/context/auth';
 import { useConfirm } from '@/context/confirm';
 import { ApiError, messageFromError, notify } from '@/api/core';
@@ -1410,10 +1417,37 @@ const ChatMessage = ({
 						</button>
 					)}
 				</div>
+
+				{!isUser && !message.isError && message.model && (
+					<AnsweredBy model={message.model} />
+				)}
 			</div>
 		</div>
 	);
 };
+
+/**
+ * Which model wrote this reply. It sits under the reply, not by the model
+ * picker, because the picker shows what was asked for and this shows what
+ * answered: they differ when a pick can't run and the builder's own default
+ * steps in.
+ */
+const AnsweredBy = ({ model }: { model: TAiChatMessageModel }) => (
+	<span
+		title={
+			model.isDefault
+				? "Answered by the workflow builder's own recommended model"
+				: `Answered by ${model.name}`
+		}
+		className='flex items-center gap-1 px-1 text-[10.5px] font-medium text-zinc-400 dark:text-zinc-500'>
+		{model.brand ? (
+			<ProviderLogo provider={model.brand} label={brandLabel(model.brand)} size='xxs' />
+		) : (
+			<Sparkles size={10} />
+		)}
+		<span className='truncate'>{model.name}</span>
+	</span>
+);
 
 /**
  * What the AI actually did to produce this reply, shown exactly as it looked

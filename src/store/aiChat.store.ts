@@ -30,6 +30,19 @@ export type TAiTimelineItem =
 			status: 'running' | 'done' | 'error';
 	  };
 
+export type TAiChatMessageModel = {
+	name: string;
+	/** The maker, for the logo; absent for the builder's default. */
+	brand?: string;
+	isDefault: boolean;
+};
+
+/** The model that answered a builder reply, in the chat UI's shape. */
+const answeredBy = (model: TBuilderMessage['model']): TAiChatMessageModel | undefined =>
+	model
+		? { name: model.display_name, brand: model.brand ?? undefined, isDefault: model.is_default }
+		: undefined;
+
 export type TAiChatMessage = {
 	id: string;
 	role: 'assistant' | 'user';
@@ -60,6 +73,8 @@ export type TAiChatMessage = {
 	/** Lighter-weight equivalent for messages loaded from history: the backend
 	 * only persists the before/after diff, not the full reasoning stream. */
 	actionsSummary?: TBuilderMessageAction[];
+	/** On an assistant reply, the model that answered it. */
+	model?: TAiChatMessageModel;
 };
 
 export type TAiChatSession = {
@@ -233,6 +248,7 @@ const mapBackendMessage = (m: TBuilderMessage): TAiChatMessage => ({
 	isError: m.processing_status === 'failed',
 	mode: m.role === 'user' ? m.mode : undefined,
 	actionsSummary: m.actions && m.actions.length > 0 ? m.actions : undefined,
+	model: m.role === 'assistant' ? answeredBy(m.model) : undefined,
 	attachments: m.attachments?.length
 		? m.attachments.map((artifact) => ({
 				id: artifact.id,
@@ -531,6 +547,7 @@ export const useAiChatStore = create<TAiChatState>()(
 							state.streamTimeline.length > 0 ? state.streamTimeline : undefined,
 						actionsSummary:
 							reply.actions && reply.actions.length > 0 ? reply.actions : undefined,
+						model: answeredBy(reply.model),
 					};
 
 					const messages = [...state.messages, assistantMsg];

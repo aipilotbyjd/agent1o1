@@ -43,6 +43,7 @@ const logos: Record<string, { src: string; mono: boolean }> = {
 };
 
 const sizes = {
+	xxs: { box: 'h-4 w-4 rounded', img: 'h-2.5 w-2.5', text: 'text-[8px]' },
 	xs: { box: 'h-6 w-6 rounded-md', img: 'h-3.5 w-3.5', text: 'text-[10px]' },
 	sm: { box: 'h-8 w-8 rounded-lg', img: 'h-4 w-4', text: 'text-xs' },
 	md: { box: 'h-10 w-10 rounded-xl', img: 'h-5 w-5', text: 'text-sm' },

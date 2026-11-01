@@ -41,6 +41,16 @@ export type TBuilderMessageAction =
 	| { type: 'node_added' | 'node_updated' | 'node_removed'; key: string; node_type: string }
 	| { type: 'edge_added' | 'edge_removed'; from: string; to: string; condition: string | null };
 
+export type TBuilderMessageModel = {
+	id: string;
+	slug: string;
+	/** "Builder default" when the builder's own model answered. */
+	display_name: string;
+	/** The maker, for the logo; `null` for the builder's default. */
+	brand: string | null;
+	is_default: boolean;
+};
+
 export type TBuilderMessage = {
 	id: string;
 	session_id: string;
@@ -54,6 +64,13 @@ export type TBuilderMessage = {
 	context: TBuilderMessageContext | null;
 	/** The model a user message asked for; `null` for the builder's default. */
 	model_catalog_id: string | null;
+	/**
+	 * The model behind a message. On an assistant reply it is the one that
+	 * actually answered, which is not always the one picked (a pick with no
+	 * working route falls back to the builder's default); on a user message it
+	 * is the one picked. `null`/absent when the default provider answered.
+	 */
+	model?: TBuilderMessageModel | null;
 	content: string;
 	actions: TBuilderMessageAction[] | null;
 	processing_status: TBuilderMessageStatus;
