@@ -29,6 +29,21 @@ export const useRun = (ws: string, id: string) =>
 		enabled: !!ws && !!id,
 	});
 
+/** How often a run's cost is re-read while it is still running. */
+export const RUN_COST_POLL_MS = 3000;
+
+/**
+ * What a run has cost so far. Polls while the run is in progress, so a live
+ * cost badge keeps up as steps finish, and stops once it is done.
+ */
+export const useRunCost = (ws: string, id: string, options?: { enabled?: boolean }) =>
+	useQuery({
+		queryKey: runKeys.cost(ws, id),
+		queryFn: ({ signal }) => RunService.cost(ws, id, signal),
+		enabled: !!ws && !!id && (options?.enabled ?? true),
+		refetchInterval: (query) => (query.state.data?.in_progress ? RUN_COST_POLL_MS : false),
+	});
+
 export const useCancelRun = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({

@@ -45,6 +45,8 @@ const InvoicesViwPage = lazy(() => import('@/pages/apps/invoices/InvoicesViw.pag
 const ChatLayout = lazy(() => import('@/pages/apps/chat/_layouts/Chat.layout'));
 const ChatDashboardPage = lazy(() => import('@/pages/apps/chat/ChatDashboard.page'));
 
+const UsageInsightsPage = lazy(() => import('@/pages/billing/UsageInsights.page'));
+
 const MailLayoutPage = lazy(() => import('@/pages/apps/mail/_layouts/Mail.layout.page'));
 const MailDashboardPage = lazy(() => import('@/pages/apps/mail/MailDashboard.page'));
 const MailInboxPage = lazy(() => import('@/pages/apps/mail/MailInbox.page'));
@@ -91,6 +93,11 @@ const router = createBrowserRouter([
 							{
 								element: <DefaultLayout />,
 								children: [
+									// Billing
+									{
+										path: '/workspaces/:workspaceId/usage',
+										element: <UsageInsightsPage />,
+									},
 									// Apps
 									{
 										// Sales

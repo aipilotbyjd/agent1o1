@@ -6,6 +6,7 @@ export const runKeys = {
 	list: (ws: string, params?: TRunListParams) => ['runs', ws, 'list', params ?? {}] as const,
 	details: (ws: string) => ['runs', ws, 'detail'] as const,
 	detail: (ws: string, id: string) => ['runs', ws, 'detail', id] as const,
+	cost: (ws: string, id: string) => ['runs', ws, 'detail', id, 'cost'] as const,
 	nodeRuns: (ws: string, runId: string) => ['runs', ws, runId, 'node-runs'] as const,
 	nodeRun: (ws: string, runId: string, nodeRunId: string) =>
 		['runs', ws, runId, 'node-runs', nodeRunId] as const,
