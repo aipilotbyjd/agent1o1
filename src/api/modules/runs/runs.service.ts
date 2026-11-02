@@ -9,6 +9,7 @@ import type {
 	TDecideApprovalDto,
 } from '@/types/run.type';
 import type { TStartRunDto } from '@/types/workflow.type';
+import type { TRunCost } from '@/types/billing.type';
 import { RunEndpoints as E } from './runs.endpoints';
 
 export const RunService = {
@@ -28,6 +29,12 @@ export const RunService = {
 		axiosClient
 			.get<TApiResponse<{ run: TRun }>>(E.detail(ws, id), { signal })
 			.then(unwrapKey<TRun>('run')),
+
+	// What the run has cost so far, line by line (credits only).
+	cost: (ws: string, id: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<TRunCost>>(E.cost(ws, id), { signal })
+			.then((r) => r.data.data),
 
 	cancel: (ws: string, id: string) =>
 		axiosClient

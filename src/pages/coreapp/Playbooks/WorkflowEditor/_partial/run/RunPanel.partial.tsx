@@ -19,6 +19,7 @@ import { useRunWorkflow } from '../../_hooks/useRunWorkflow.hook';
 import { getRunOrder } from '../../_helper/runGraph.helper';
 import NodeRunOutput from './NodeRunOutput.partial';
 import RunConsole from './RunConsole.partial';
+import RunCost from './RunCost.partial';
 import RunHistory from './RunHistory.partial';
 import RunValues from './RunValues.partial';
 import { WORKFLOW_OUTPUT_TYPE } from '../../_helper/variables.helper';
@@ -200,6 +201,9 @@ const RunPanel = () => {
 									</dd>
 								</div>
 							</dl>
+							{state.workflow.workspaceId && run.id && (
+								<RunCost workspaceId={state.workflow.workspaceId} runId={run.id} />
+							)}
 						</div>
 						{state.ui.runPanelTab === 'results' ? (
 							<div className='px-5 py-5'>

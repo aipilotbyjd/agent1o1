@@ -23,6 +23,7 @@ import { useCreditUsage } from '@/api/modules/dashboard';
 import pages from '@/Routes/pages';
 import { withWorkspace } from '@/Routes/paths';
 import { CREDIT_SOURCE_LABELS } from '@/constants/creditSource.constant';
+import UsageInsights from './_partial/UsageInsights.partial';
 
 const billingPages = pages.settings.subPages!.billing.subPages!;
 
@@ -572,6 +573,8 @@ const UsagePage = () => {
 					})}
 				</div>
 			</section>
+
+			{ws && <UsageInsights workspaceId={ws} />}
 
 			{/* Activity log */}
 			<section>
