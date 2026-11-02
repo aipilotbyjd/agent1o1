@@ -36,3 +36,5 @@ export * as dashboardApi from './modules/dashboard';
 export * as notificationsApi from './modules/notifications';
 export * as notificationChannelsApi from './modules/notification-channels';
 export * as notificationPreferencesApi from './modules/notification-preferences';
+export * as publicPagesApi from './modules/public-pages';
+export * as referralsApi from './modules/referrals';

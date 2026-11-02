@@ -1,5 +1,5 @@
 import { createBrowserRouter, RouterProvider } from 'react-router';
-import { lazy } from 'react';
+import { lazy, Suspense } from 'react';
 import LoginPage from '@/pages/Login.page';
 import Protected from '@/Protected/Protected';
 import Root from '@/Root';
@@ -50,6 +50,8 @@ const MailDashboardPage = lazy(() => import('@/pages/apps/mail/MailDashboard.pag
 const MailInboxPage = lazy(() => import('@/pages/apps/mail/MailInbox.page'));
 const MailNewPage = lazy(() => import('@/pages/apps/mail/MailNew.page'));
 
+const PublicPagePage = lazy(() => import('@/pages/PublicPage.page'));
+
 const router = createBrowserRouter([
 	{
 		path: '/',
@@ -71,6 +73,15 @@ const router = createBrowserRouter([
 					{
 						path: pages.pagesExamples.signup.to,
 						element: <RegisterPage />,
+					},
+					{
+						// A published workflow page at its public link.
+						path: '/p/:token',
+						element: (
+							<Suspense fallback={null}>
+								<PublicPagePage />
+							</Suspense>
+						),
 					},
 					{
 						element: <DefaultLayout />,

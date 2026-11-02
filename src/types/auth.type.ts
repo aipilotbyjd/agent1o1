@@ -33,6 +33,9 @@ export type TRegisterDto = {
 	email: string;
 	password: string;
 	password_confirmation: string;
+	/** From a `?ref=` landing (see `utils/referral.util.ts`). */
+	referral_code?: string | null;
+	referral_visitor_id?: string | null;
 };
 
 export type TForgotPasswordDto = {

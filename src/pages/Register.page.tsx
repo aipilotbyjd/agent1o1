@@ -17,6 +17,9 @@ import List, { Li } from '@/components/ui/List';
 import classNames from 'classnames';
 import { TColors } from '@/types/colors.type';
 import * as Yup from 'yup';
+import { useRegister } from '@/api/modules/auth';
+import { ApiError } from '@/api/core';
+import { clearStoredReferral, getStoredReferral, readReferralParams } from '@/utils/referral.util';
 
 interface IFormValues {
 	username: string;
@@ -24,6 +27,7 @@ interface IFormValues {
 	rememberMe: boolean;
 }
 interface IRegisterFormValues {
+	registerName: string;
 	registerEmail: string;
 	newPassword: string;
 	repeatPassword: string;
@@ -38,6 +42,11 @@ const passwordChecks = (password: string) => ({
 });
 
 const validationSchema = Yup.object().shape({
+	registerName: Yup.string().trim().required('Name is required').max(255),
+	registerEmail: Yup.string()
+		.trim()
+		.required('Email is required')
+		.email('Enter a valid email address'),
 	newPassword: Yup.string()
 		.required('New password is required')
 		.min(8, 'Must be at least 8 characters')
@@ -85,15 +94,47 @@ const RegisterPage = () => {
 		},
 	});
 
+	const register = useRegister();
+
 	const formikRegister = useFormik<IRegisterFormValues>({
 		initialValues: {
+			registerName: '',
 			registerEmail: '',
 			newPassword: '',
 			repeatPassword: '',
 		},
 		validationSchema,
-		onSubmit: (values) => {
-			console.log(values);
+		onSubmit: (values, { setErrors }) => {
+			// The stored landing wins (it has a visitor id); the URL covers a
+			// visitor whose browser blocks storage.
+			const stored = getStoredReferral();
+			const fromUrl = readReferralParams(window.location.search);
+
+			register.mutate(
+				{
+					name: values.registerName.trim(),
+					email: values.registerEmail.trim(),
+					password: values.newPassword,
+					password_confirmation: values.repeatPassword,
+					referral_code: stored?.code ?? fromUrl?.code ?? null,
+					referral_visitor_id: stored?.visitor_id ?? null,
+				},
+				{
+					onSuccess: () => {
+						clearStoredReferral();
+						navigate('/');
+					},
+					onError: (error) => {
+						if (!ApiError.is(error) || !error.isValidation) return;
+						const fields = error.fieldErrors();
+						setErrors({
+							registerName: fields.name,
+							registerEmail: fields.email,
+							newPassword: fields.password,
+						});
+					},
+				},
+			);
 		},
 	});
 
@@ -179,19 +220,45 @@ const RegisterPage = () => {
 							<div>
 								<div className='grid gap-y-4'>
 									<div>
+										<Label htmlFor='registerName' className='w-auto!'>
+											Name
+										</Label>
+										<Validation
+											isValid={formikRegister.isValid}
+											isTouched={formikRegister.touched.registerName}
+											invalidFeedback={formikRegister.errors.registerName}>
+											<Input
+												className='bg-transparent!'
+												id='registerName'
+												name='registerName'
+												autoComplete='section-register name'
+												value={formikRegister.values.registerName}
+												onChange={formikRegister.handleChange}
+												onBlur={formikRegister.handleBlur}
+												placeholder='Enter your name'
+											/>
+										</Validation>
+									</div>
+									<div>
 										<Label htmlFor='registerEmail' className='w-auto!'>
 											Email address
 										</Label>
-										<Input
-											className='bg-transparent!'
-											id='registerEmail'
-											name='registerEmail'
-											autoComplete='section-register email'
-											type='email'
-											value={formikRegister.values.registerEmail}
-											onChange={formikRegister.handleChange}
-											placeholder='Enter email address'
-										/>
+										<Validation
+											isValid={formikRegister.isValid}
+											isTouched={formikRegister.touched.registerEmail}
+											invalidFeedback={formikRegister.errors.registerEmail}>
+											<Input
+												className='bg-transparent!'
+												id='registerEmail'
+												name='registerEmail'
+												autoComplete='section-register email'
+												type='email'
+												value={formikRegister.values.registerEmail}
+												onChange={formikRegister.handleChange}
+												onBlur={formikRegister.handleBlur}
+												placeholder='Enter email address'
+											/>
+										</Validation>
 									</div>
 
 									<div className='flex flex-col gap-4'>
@@ -390,10 +457,9 @@ const RegisterPage = () => {
 										aria-label='Sign up'
 										variant='solid'
 										className='py-2.5! font-bold'
-										isDisable={passedCount < 4}
-										// For demo
-										onClick={formik.submitForm}>
-										Sign up
+										isDisable={passedCount < 4 || register.isPending}
+										onClick={formikRegister.submitForm}>
+										{register.isPending ? 'Creating account…' : 'Sign up'}
 									</Button>
 								</div>
 							</div>
