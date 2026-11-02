@@ -31,6 +31,7 @@ import { withWorkspace } from '@/Routes/paths';
 import type { TSubscription } from '@/types/billing.type';
 import OverageCard from './_partial/OverageCard.partial';
 import CreditAlertsCard from './_partial/CreditAlertsCard.partial';
+import CreditBreakdown from './_partial/CreditBreakdown.partial';
 
 const billingPages = pages.settings.subPages!.billing.subPages!;
 
@@ -368,6 +369,11 @@ const BillingOverviewPage = () => {
 							/>
 						</div>
 					)}
+					<CreditBreakdown
+						grants={overview.credit_grants ?? []}
+						debt={overview.credit_debt ?? 0}
+						freeCredits={overview.free_credits ?? null}
+					/>
 					<Link
 						to={toWorkspacePath(billingPages.credits.to)}
 						className='text-primary-600 dark:text-primary-400 mt-3 inline-flex items-center gap-1 text-xs font-bold'>

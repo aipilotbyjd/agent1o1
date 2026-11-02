@@ -22,6 +22,7 @@ import { useBillingOverview, useCredits } from '@/api/modules/billing';
 import { useCreditUsage } from '@/api/modules/dashboard';
 import pages from '@/Routes/pages';
 import { withWorkspace } from '@/Routes/paths';
+import { CREDIT_SOURCE_LABELS } from '@/constants/creditSource.constant';
 
 const billingPages = pages.settings.subPages!.billing.subPages!;
 
@@ -651,6 +652,16 @@ const UsagePage = () => {
 											</span>
 											<span className='min-w-0 flex-1 truncate text-xs font-bold text-zinc-600 dark:text-zinc-400'>
 												{tx.reason || '-'}
+												{!!tx.paid_by?.length && (
+													<span className='ml-2 font-semibold text-zinc-400 dark:text-zinc-500'>
+														{tx.paid_by
+															.map(
+																(part) =>
+																	`${part.credits.toLocaleString()} ${CREDIT_SOURCE_LABELS[part.source].toLowerCase()}`,
+															)
+															.join(' + ')}
+													</span>
+												)}
 											</span>
 
 											<div
