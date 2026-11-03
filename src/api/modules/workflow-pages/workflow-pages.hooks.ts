@@ -1,5 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+	TClonePageDto,
 	TCreateWorkflowPageDto,
 	TPageBlock,
 	TPageSubmissionFilters,
@@ -220,6 +221,19 @@ export const useDuplicateWorkflowPage = (ws: string) => {
 		mutationFn: (id: string) => WorkflowPageService.duplicate(ws, id),
 		onSuccess: store,
 		meta: { errorMessage: 'Could not duplicate the page' },
+	});
+};
+
+/** Copies a page into another workspace; the new page is in that workspace's list. */
+export const useCloneWorkflowPage = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({ id, ...payload }: TClonePageDto & { id: string }) =>
+			WorkflowPageService.clone(ws, id, payload),
+		onSuccess: (_page, variables) => {
+			qc.invalidateQueries({ queryKey: [...workflowPageKeys.all(variables.target_workspace_id), 'list'] });
+		},
+		meta: { errorMessage: 'Could not copy the page' },
 	});
 };
 

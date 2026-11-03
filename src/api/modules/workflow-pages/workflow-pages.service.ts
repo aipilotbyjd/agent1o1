@@ -2,6 +2,7 @@ import { axiosClient } from '@/api/client';
 import { unwrapKey } from '@/api/core';
 import type { TApiResponse } from '@/api/core';
 import type {
+	TClonePageDto,
 	TCreateWorkflowPageDto,
 	TPageSubmissionRecord,
 	TPageSubmissionResult,
@@ -65,6 +66,10 @@ export const WorkflowPageService = {
 
 	duplicate: (ws: string, id: string) =>
 		axiosClient.post<TPageResponse>(E.duplicate(ws, id)).then(unwrapKey<TWorkflowPage>('page')),
+
+	/** Copies the page into another workspace, wired to one of its workflows. */
+	clone: (ws: string, id: string, payload: TClonePageDto) =>
+		axiosClient.post<TPageResponse>(E.clone(ws, id), payload).then(unwrapKey<TWorkflowPage>('page')),
 
 	/** Refused with a 422 listing what to fix when the draft has errors. */
 	publish: (ws: string, id: string) =>
