@@ -8,6 +8,8 @@ export type TPageMeta = {
 	image_url: string | null;
 	theme_color: string;
 	site_name: string;
+	/** Set when the page asks search engines to leave it out of their results. */
+	noindex?: boolean;
 };
 
 const TIMEOUT_MS = 1500;
@@ -57,12 +59,13 @@ export const injectPageMeta = (html: string, meta: TPageMeta, pageUrl: string) =
 		`<meta name="twitter:title" content="${escape(meta.title)}" />`,
 		`<meta name="twitter:description" content="${escape(meta.description)}" />`,
 		`<meta name="twitter:image" content="${escape(image)}" />`,
+		...(meta.noindex ? [`<meta name="robots" content="noindex, nofollow" />`] : []),
 	].join('\n\t\t');
 
 	return html
 		.replace(/<title>[\s\S]*?<\/title>\s*/i, '')
 		.replace(
-			/<meta\s+(?:name|property)="(?:description|theme-color|og:[^"]+|twitter:[^"]+)"[^>]*>\s*/gi,
+			/<meta\s+(?:name|property)="(?:description|theme-color|robots|og:[^"]+|twitter:[^"]+)"[^>]*>\s*/gi,
 			'',
 		)
 		.replace(/<link\s+rel="canonical"[^>]*>\s*/gi, '')

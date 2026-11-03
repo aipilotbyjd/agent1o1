@@ -75,6 +75,49 @@ export type TPageBlockProps = {
 		items: { title: string; description: string }[];
 		columns: 2 | 3 | 4;
 	};
+	code: { code: string; language: string | null; filename: string | null; show_copy: boolean };
+	pricing: {
+		title: string | null;
+		items: {
+			name: string;
+			price: string;
+			period: string;
+			description: string;
+			/** One feature per line. */
+			features: string;
+			cta_label: string;
+			cta_url: string | null;
+			highlighted: boolean;
+		}[];
+	};
+	/** `url` is an https link on a host the server allows embedding. */
+	embed: { url: string | null; title: string | null; height: 'md' | 'sm' | 'lg' | 'xl' };
+	gallery: {
+		items: { url: string; alt: string | null }[];
+		columns: 2 | 3 | 4;
+		ratio: 'square' | 'landscape' | 'auto';
+		lightbox: boolean;
+	};
+	compare: {
+		mode: 'slider' | 'lists';
+		before_url: string | null;
+		after_url: string | null;
+		before_label: string | null;
+		after_label: string | null;
+		/** One item per line. */
+		before_items: string | null;
+		after_items: string | null;
+	};
+	progress: { title: string | null; items: { label: string; value: number }[]; show_values: boolean };
+	social: {
+		items: { network: TPageSocialNetwork; url: string }[];
+		align: TPageAlign;
+		style: 'solid' | 'outline';
+	};
+	timeline: {
+		title: string | null;
+		items: { date: string; title: string; description: string }[];
+	};
 	section: {
 		background: 'none' | 'subtle' | 'accent' | 'dark' | 'image';
 		image_url: string | null;
@@ -89,6 +132,18 @@ export type TPageBlockProps = {
 	column: { background: 'none' | 'subtle' };
 };
 
+export type TPageSocialNetwork =
+	| 'website'
+	| 'x'
+	| 'linkedin'
+	| 'github'
+	| 'youtube'
+	| 'instagram'
+	| 'facebook'
+	| 'tiktok'
+	| 'discord'
+	| 'email';
+
 export type TPageColumnLayout = '1-1' | '1-2' | '2-1' | '1-1-1' | '1-1-1-1';
 
 export type TPageBlockType = keyof TPageBlockProps;
@@ -101,12 +156,25 @@ export interface TPageBlockChildren {
 	children: TPageBlock[];
 }
 
+export type TPageVisibility = 'all' | 'desktop' | 'mobile';
+export type TPageSpacing = 'none' | 'sm' | 'md' | 'lg';
+
+/** How a block shows up around its props. `mobile_*` apply on narrow screens only. */
+export type TPageBlockDisplay = {
+	visibility: TPageVisibility;
+	/** Builder only: a locked block can't be edited, moved or deleted until unlocked. */
+	locked: boolean;
+	space_above: TPageSpacing;
+	mobile_space_above: TPageSpacing | null;
+	mobile_align: TPageAlign | null;
+};
+
 export type TPageBlockOf<T extends TPageBlockType> = {
 	id: string;
 	type: T;
 	width: TPageBlockWidth;
 	props: TPageBlockProps[T];
-} & (T extends TPageContainerType ? TPageBlockChildren : unknown);
+} & TPageBlockDisplay & (T extends TPageContainerType ? TPageBlockChildren : unknown);
 
 export type TPageBlock = { [T in TPageBlockType]: TPageBlockOf<T> }[TPageBlockType];
 
@@ -170,6 +238,8 @@ export type TPageSharePreview = {
 	image_url: string | null;
 	theme_color: string;
 	site_name: string;
+	/** The page asks search engines to leave it out of their results. */
+	noindex: boolean;
 };
 
 export type TWorkflowPage = {
@@ -191,7 +261,12 @@ export type TWorkflowPage = {
 	is_enabled: boolean;
 	max_runs_per_day: number | null;
 	/** The link card the builder chose; null parts are worked out from the page. */
-	share: { title: string | null; description: string | null; image_url: string | null };
+	share: {
+		title: string | null;
+		description: string | null;
+		image_url: string | null;
+		hide_from_search: boolean;
+	};
 	/** The link card as it will show. Left out of list responses. */
 	share_preview?: TPageSharePreview;
 	/** List only: runs started from the page, not counting builder test runs. */
@@ -223,6 +298,13 @@ export type TCreateWorkflowPageDto = {
 	template_id?: string;
 };
 
+export type TClonePageDto = {
+	target_workspace_id: string;
+	/** A workflow of the workspace the page is copied into. */
+	workflow_id: string;
+	name?: string;
+};
+
 export type TUpdateWorkflowPageDto = Partial<{
 	name: string;
 	description: string | null;
@@ -235,6 +317,7 @@ export type TUpdateWorkflowPageDto = Partial<{
 	share_title: string | null;
 	share_description: string | null;
 	share_image_url: string | null;
+	hide_from_search: boolean;
 	variant_content: TPageContent;
 	variant_split: number;
 	/** The `draft_revision` the draft being saved was based on; a mismatch is refused (409). */

@@ -8,6 +8,7 @@ export const WorkflowPageEndpoints = {
 	update: page,
 	delete: page,
 	duplicate: (ws: string, id: string) => `${page(ws, id)}/duplicate`,
+	clone: (ws: string, id: string) => `${page(ws, id)}/clone`,
 	publish: (ws: string, id: string) => `${page(ws, id)}/publish`,
 	unpublish: (ws: string, id: string) => `${page(ws, id)}/unpublish`,
 	rotateLink: (ws: string, id: string) => `${page(ws, id)}/rotate-link`,

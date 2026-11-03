@@ -173,6 +173,65 @@ const Sketch = ({ block }: { block: TPageBlock }) => {
 					))}
 				</div>
 			);
+		case 'code':
+			return (
+				<div className='space-y-1 rounded-[calc(var(--pg-radius)/3)] bg-zinc-800 p-1.5'>
+					<Bar className='h-1 w-1/2 bg-zinc-500' />
+					<Bar className='h-1 w-3/4 bg-zinc-600' />
+				</div>
+			);
+		case 'pricing':
+			return (
+				<div className='grid grid-cols-3 gap-1'>
+					{[0, 1, 2].map((i) => (
+						<span
+							key={i}
+							className={`block h-5 rounded-[calc(var(--pg-radius)/3)] border ${i === 1 ? 'border-[var(--pg-accent)]' : 'border-[var(--pg-border)]'}`}
+						/>
+					))}
+				</div>
+			);
+		case 'embed':
+			return (
+				<span className='block h-6 rounded-[calc(var(--pg-radius)/3)] border border-dashed border-[var(--pg-border)] bg-[var(--pg-subtle)]' />
+			);
+		case 'gallery':
+			return (
+				<div className='grid grid-cols-3 gap-0.5'>
+					{[0, 1, 2].map((i) => (
+						<span key={i} className='block h-3 rounded-sm bg-zinc-300 dark:bg-zinc-700' />
+					))}
+				</div>
+			);
+		case 'compare':
+			return (
+				<div className='grid grid-cols-2 gap-1'>
+					<span className='block h-5 rounded-[calc(var(--pg-radius)/3)] border border-[var(--pg-border)]' />
+					<span className='block h-5 rounded-[calc(var(--pg-radius)/3)] bg-[var(--pg-accent-soft)]' />
+				</div>
+			);
+		case 'progress':
+			return (
+				<div className='space-y-1'>
+					<Bar className='h-1 w-3/4 bg-[var(--pg-accent)]' />
+					<Bar className='h-1 w-1/2 bg-[var(--pg-accent)]' />
+				</div>
+			);
+		case 'social':
+			return (
+				<div className='flex justify-center gap-1'>
+					{[0, 1, 2].map((i) => (
+						<span key={i} className='block size-2.5 rounded-full bg-[var(--pg-accent)]' />
+					))}
+				</div>
+			);
+		case 'timeline':
+			return (
+				<div className='space-y-1 border-l border-[var(--pg-border)] pl-1.5'>
+					<Bar className='h-1 w-2/3 bg-[var(--pg-muted)] opacity-40' />
+					<Bar className='h-1 w-1/2 bg-[var(--pg-muted)] opacity-40' />
+				</div>
+			);
 		case 'section':
 			return (
 				<div

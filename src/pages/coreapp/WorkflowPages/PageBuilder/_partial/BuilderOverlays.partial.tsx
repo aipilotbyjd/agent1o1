@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Bookmark, Keyboard, LogOut, Search, TextCursorInput, X } from 'lucide-react';
+import { Bookmark, Keyboard, LogOut, Replace, Search, TextCursorInput, X } from 'lucide-react';
 import { usePageSections } from '@/api/modules/workflow-pages';
 import { humanize } from '@/components/workflowPage/PageBlocks';
 import type { TPageBlock, TPageBlockType } from '@/types/workflow-page.type';
 import { BLOCK_CATALOG, createBlock, newBlockId } from '../_helper/blockCatalog.helper';
 import { cloneBlock } from '../_helper/blockTree.helper';
+import { findInBlocks } from '../_helper/findReplace.helper';
+import { notify } from '@/api/core';
 import { usePageBuilderStore } from '../_store/pageBuilder.store';
 import { usePageBuilder } from '../_context/PageBuilder.context';
 
@@ -224,6 +226,9 @@ const SHORTCUTS: { group: string; items: [string, string][] }[] = [
 	{
 		group: 'Page',
 		items: [
+			['⇧⌘F', 'Find and replace text'],
+			['⌥⌘C · ⌥⌘V', 'Copy a block’s style, paste it'],
+			['⌘+ · ⌘−', 'Zoom the canvas in or out'],
 			['⌘Z · ⇧⌘Z', 'Undo, redo'],
 			['⌘P', 'Switch between edit and preview'],
 			['⌘S', 'Publish'],
@@ -281,6 +286,115 @@ const ShortcutsSheet = ({ onClose }: { onClose: () => void }) => {
 	);
 };
 
+/** ⇧⌘F: finds text across every block, jumps to a match, and replaces it everywhere. */
+const FindReplace = ({ onClose }: { onClose: () => void }) => {
+	const blocks = usePageBuilderStore((store) => store.content?.blocks);
+	const select = usePageBuilderStore((store) => store.select);
+	const replaceText = usePageBuilderStore((store) => store.replaceText);
+	const [query, setQuery] = useState('');
+	const [replacement, setReplacement] = useState('');
+	const [matchCase, setMatchCase] = useState(false);
+	const matches = useMemo(() => findInBlocks(blocks ?? [], query, { matchCase }), [blocks, query, matchCase]);
+	const total = matches.reduce((sum, match) => sum + match.count, 0);
+	const names = useMemo(() => {
+		const map = new Map<string, string>();
+		const walk = (list: TPageBlock[]) =>
+			list.forEach((block) => {
+				map.set(block.id, BLOCK_CATALOG[block.type].label);
+				if ('children' in block) walk(block.children);
+			});
+		walk(blocks ?? []);
+		return map;
+	}, [blocks]);
+
+	useEffect(() => {
+		const onKey = (event: KeyboardEvent) => event.key === 'Escape' && onClose();
+		window.addEventListener('keydown', onKey);
+		return () => window.removeEventListener('keydown', onKey);
+	}, [onClose]);
+
+	const replaceAll = () => {
+		const replaced = replaceText(query, replacement, { matchCase });
+		notify.success(replaced > 0 ? `Replaced ${replaced} ${replaced === 1 ? 'match' : 'matches'}` : 'Nothing to replace');
+		if (replaced > 0) setQuery('');
+	};
+
+	const input =
+		'h-9 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm outline-none focus:border-primary-500 dark:border-white/10 dark:bg-zinc-900 dark:text-white';
+	return (
+		<Backdrop onClose={onClose}>
+			<div className='flex items-center gap-2 border-b border-zinc-100 px-4 py-3 dark:border-white/[0.06]'>
+				<Replace size={15} className='text-zinc-400' />
+				<p className='text-sm font-bold text-zinc-900 dark:text-white'>Find and replace</p>
+				<button
+					type='button'
+					onClick={onClose}
+					aria-label='Close'
+					className='ml-auto rounded-md p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/[0.06]'>
+					<X size={15} />
+				</button>
+			</div>
+			<div className='space-y-2 p-4'>
+				<input
+					autoFocus
+					value={query}
+					onChange={(event) => setQuery(event.target.value)}
+					placeholder='Find'
+					aria-label='Find'
+					className={input}
+				/>
+				<input
+					value={replacement}
+					onChange={(event) => setReplacement(event.target.value)}
+					onKeyDown={(event) => event.key === 'Enter' && matches.length > 0 && replaceAll()}
+					placeholder='Replace with'
+					aria-label='Replace with'
+					className={input}
+				/>
+				<div className='flex items-center justify-between gap-3'>
+					<label className='flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-300'>
+						<input type='checkbox' checked={matchCase} onChange={(event) => setMatchCase(event.target.checked)} />
+						Match case
+					</label>
+					<button
+						type='button'
+						disabled={matches.length === 0}
+						onClick={replaceAll}
+						className='h-8 rounded-lg bg-zinc-900 px-3 text-xs font-bold text-white transition hover:bg-zinc-700 disabled:opacity-40 dark:bg-white dark:text-zinc-900'>
+						Replace all{total > 0 ? ` (${total})` : ''}
+					</button>
+				</div>
+			</div>
+			<ul className='max-h-64 overflow-y-auto border-t border-zinc-100 p-1.5 dark:border-white/[0.06]'>
+				{query && matches.length === 0 && (
+					<li className='px-3 py-6 text-center text-xs text-zinc-400'>No matches</li>
+				)}
+				{matches.map((match) => (
+					<li key={match.blockId}>
+						<button
+							type='button'
+							onClick={() => {
+								select(match.blockId);
+								onClose();
+							}}
+							className='flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-zinc-50 dark:hover:bg-white/[0.04]'>
+							<span className='min-w-0 flex-1'>
+								<span className='block truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100'>
+									{match.preview}
+								</span>
+								<span className='block text-[10px] text-zinc-400'>{names.get(match.blockId)}</span>
+							</span>
+							<span className='shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-bold text-zinc-600 dark:bg-white/10 dark:text-zinc-300'>
+								{match.count}
+							</span>
+						</button>
+					</li>
+				))}
+			</ul>
+		</Backdrop>
+	);
+};
+
 /** The palette and shortcut sheet, opened from the keyboard (see `useBuilderHotkeys`). */
 const BuilderOverlays = () => {
 	const overlay = usePageBuilderStore((store) => store.overlay);
@@ -288,6 +402,7 @@ const BuilderOverlays = () => {
 	const close = () => setOverlay(null);
 	if (overlay === 'palette') return <QuickAddPalette onClose={close} />;
 	if (overlay === 'shortcuts') return <ShortcutsSheet onClose={close} />;
+	if (overlay === 'find') return <FindReplace onClose={close} />;
 	return null;
 };
 
