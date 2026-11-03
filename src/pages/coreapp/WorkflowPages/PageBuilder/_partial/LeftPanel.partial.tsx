@@ -244,7 +244,7 @@ const AddTab = () => {
 
 			<PanelSection title='Sections'>
 				<div className='space-y-1.5'>
-					{(['faq', 'testimonial', 'stats', 'logos', 'tabs', 'countdown'] as const).map(generic)}
+					{(['faq', 'testimonial', 'stats', 'logos', 'tabs', 'countdown', 'steps', 'features'] as const).map(generic)}
 				</div>
 			</PanelSection>
 		</>

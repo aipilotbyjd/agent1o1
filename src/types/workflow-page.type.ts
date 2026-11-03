@@ -69,6 +69,12 @@ export type TPageBlockProps = {
 		ended_text: string | null;
 		show_seconds: boolean;
 	};
+	steps: { title: string | null; items: { title: string; description: string }[] };
+	features: {
+		title: string | null;
+		items: { title: string; description: string }[];
+		columns: 2 | 3 | 4;
+	};
 	section: {
 		background: 'none' | 'subtle' | 'accent' | 'dark' | 'image';
 		image_url: string | null;

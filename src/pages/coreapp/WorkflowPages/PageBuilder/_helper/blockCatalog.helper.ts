@@ -6,8 +6,10 @@ import {
 	Columns2,
 	Heading,
 	Image,
+	LayoutGrid,
 	LayoutPanelTop,
 	Link2,
+	ListOrdered,
 	LogOut,
 	Megaphone,
 	Minus,
@@ -187,6 +189,35 @@ export const BLOCK_CATALOG: { [T in TPageBlockType]: TBlockMeta<T> } = {
 		group: 'content',
 		defaults: { target: null, label: 'Starts in', ended_text: null, show_seconds: true },
 	},
+	steps: {
+		label: 'Steps',
+		description: 'A numbered “how it works”',
+		icon: ListOrdered,
+		group: 'content',
+		defaults: {
+			title: 'How it works',
+			items: [
+				{ title: 'Fill in the form', description: 'Tell us what you need.' },
+				{ title: 'Run it', description: 'The workflow does the work for you.' },
+				{ title: 'Get your result', description: 'Copy it or share it right away.' },
+			],
+		},
+	},
+	features: {
+		label: 'Features',
+		description: 'A grid of benefit cards',
+		icon: LayoutGrid,
+		group: 'content',
+		defaults: {
+			title: null,
+			items: [
+				{ title: 'Fast', description: 'Results in seconds, not hours.' },
+				{ title: 'Accurate', description: 'Checked against your own data.' },
+				{ title: 'Private', description: 'Only what’s needed is stored.' },
+			],
+			columns: 3,
+		},
+	},
 	section: {
 		label: 'Section',
 		description: 'A band with its own background',
@@ -301,6 +332,10 @@ export const blockSummary = (block: TPageBlock, fields: TWorkflowInterfaceField[
 			return block.props.items.map((item) => item.label).join(' · ') || 'No tabs yet';
 		case 'countdown':
 			return block.props.target ? new Date(block.props.target).toLocaleString() : 'No date yet';
+		case 'steps':
+			return block.props.title || `${block.props.items.length} step${block.props.items.length === 1 ? '' : 's'}`;
+		case 'features':
+			return block.props.title || `${block.props.items.length} feature${block.props.items.length === 1 ? '' : 's'}`;
 		case 'section':
 			return `${block.children.length} block${block.children.length === 1 ? '' : 's'}`;
 		case 'columns':

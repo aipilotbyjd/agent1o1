@@ -392,3 +392,73 @@ export const CountdownBlock = ({
 		</div>
 	);
 };
+
+export const StepsBlock = ({ block, mode }: { block: TPageBlockOf<'steps'>; mode: TPageMode }) => {
+	const { title, items } = block.props;
+	if (items.length === 0)
+		return mode === 'edit' ? <Placeholder>Add steps in the inspector</Placeholder> : null;
+	return (
+		<div className='space-y-4'>
+			{title && <h3 className='text-lg font-extrabold tracking-tight'>{title}</h3>}
+			<ol className='space-y-5'>
+				{items.map((item, index) => (
+					<li key={index} className='flex gap-4'>
+						<span className='flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--pg-accent)] text-sm font-bold text-[var(--pg-accent-fg)]'>
+							{index + 1}
+						</span>
+						<div className='min-w-0 pt-0.5'>
+							<p className='text-sm font-bold'>
+								{item.title || <span className='text-[var(--pg-muted)]'>Step {index + 1}</span>}
+							</p>
+							{item.description && (
+								<PageMarkdown className='mt-1 text-sm text-[var(--pg-text)]/75'>
+									{item.description}
+								</PageMarkdown>
+							)}
+						</div>
+					</li>
+				))}
+			</ol>
+		</div>
+	);
+};
+
+const FEATURES_COLUMNS = {
+	2: 'grid-cols-1 @lg:grid-cols-2',
+	3: 'grid-cols-1 @lg:grid-cols-2 @3xl:grid-cols-3',
+	4: 'grid-cols-1 @lg:grid-cols-2 @3xl:grid-cols-4',
+} as const;
+
+export const FeaturesBlock = ({
+	block,
+	mode,
+}: {
+	block: TPageBlockOf<'features'>;
+	mode: TPageMode;
+}) => {
+	const { title, items, columns } = block.props;
+	if (items.length === 0)
+		return mode === 'edit' ? <Placeholder>Add features in the inspector</Placeholder> : null;
+	return (
+		<div className='space-y-4'>
+			{title && <h3 className='text-lg font-extrabold tracking-tight'>{title}</h3>}
+			<div className={`grid gap-3 ${FEATURES_COLUMNS[columns]}`}>
+				{items.map((item, index) => (
+					<div
+						key={index}
+						className='rounded-[var(--pg-radius)] border border-[var(--pg-border)] bg-[var(--pg-surface)] p-4'>
+						<span className='mb-3 block h-1 w-8 rounded-full bg-[var(--pg-accent)]' />
+						<p className='text-sm font-bold'>
+							{item.title || <span className='text-[var(--pg-muted)]'>Feature</span>}
+						</p>
+						{item.description && (
+							<PageMarkdown className='mt-1 text-xs text-[var(--pg-text)]/75'>
+								{item.description}
+							</PageMarkdown>
+						)}
+					</div>
+				))}
+			</div>
+		</div>
+	);
+};

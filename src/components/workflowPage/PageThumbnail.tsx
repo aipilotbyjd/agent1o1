@@ -151,6 +151,28 @@ const Sketch = ({ block }: { block: TPageBlock }) => {
 					))}
 				</div>
 			);
+		case 'steps':
+			return (
+				<div className='space-y-1'>
+					{[0, 1, 2].map((i) => (
+						<div key={i} className='flex items-center gap-1'>
+							<span className='block size-1.5 rounded-full bg-[var(--pg-accent)]' />
+							<Bar className='h-1 w-3/4 bg-[var(--pg-muted)] opacity-40' />
+						</div>
+					))}
+				</div>
+			);
+		case 'features':
+			return (
+				<div className='grid grid-cols-3 gap-1'>
+					{[0, 1, 2].map((i) => (
+						<span
+							key={i}
+							className='block h-4 rounded-[calc(var(--pg-radius)/3)] border border-[var(--pg-border)]'
+						/>
+					))}
+				</div>
+			);
 		case 'section':
 			return (
 				<div
