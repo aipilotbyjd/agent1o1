@@ -245,6 +245,53 @@ const Column = ({ block }: { block: TPageBlockOf<'column'> }) => {
  * page a member opens in the app and the page at its public link, so what
  * the builder shows is what people get.
  */
+/**
+ * The "Made with Agent1o1" pill: pinned to the bottom-right corner of the
+ * viewport on a live page, so it stays in view while scrolling. Elsewhere
+ * (the builder, template previews) it sticks to the bottom of the preview
+ * instead of covering the app around it.
+ */
+const MadeWithBadge = ({
+	url,
+	onClick,
+	floating,
+}: {
+	url?: string | null;
+	onClick?: () => void;
+	floating: boolean;
+}) => {
+	const position = floating
+		? 'fixed bottom-4 right-4 z-50'
+		: 'sticky bottom-3 ml-auto mt-6 w-fit';
+	const classes = `${position} group flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900/90 py-1.5 pl-1.5 pr-3.5 text-xs font-medium text-white shadow-lg backdrop-blur transition hover:-translate-y-0.5 hover:bg-neutral-900`;
+	const content = (
+		<>
+			<img
+				src='/a-logo-light-256.png'
+				alt=''
+				className='size-6 rounded-full bg-white object-contain p-0.5'
+			/>
+			<span>
+				Made with <span className='font-bold'>Agent1o1</span>
+			</span>
+		</>
+	);
+
+	return url ? (
+		<a
+			href={url}
+			target='_blank'
+			rel='noopener noreferrer'
+			onClick={onClick}
+			title='Build your own free with Agent1o1'
+			className={classes}>
+			{content}
+		</a>
+	) : (
+		<div className={classes}>{content}</div>
+	);
+};
+
 const PageRenderer = ({
 	theme,
 	blocks,
@@ -254,7 +301,6 @@ const PageRenderer = ({
 	empty,
 	after,
 	containerEnd,
-	workspaceName,
 	brandingUrl,
 	onBrandingClick,
 	fill,
@@ -311,26 +357,14 @@ const PageRenderer = ({
 						)}
 					</div>
 				</div>
-				{theme.show_branding && (
-					<p className='mt-6 text-center text-xs text-[var(--pg-muted)]'>
-						{workspaceName ? `${workspaceName} · ` : ''}Made with{' '}
-						<span className='font-bold text-[var(--pg-text)]'>Agent1o1</span>
-						{brandingUrl && (
-							<>
-								{' · '}
-								<a
-									href={brandingUrl}
-									target='_blank'
-									rel='noopener'
-									onClick={onBrandingClick}
-									className='font-semibold text-[var(--pg-accent)] underline-offset-2 hover:underline'>
-									Build your own free →
-								</a>
-							</>
-						)}
-					</p>
-				)}
 			</div>
+			{theme.show_branding && (
+				<MadeWithBadge
+					url={brandingUrl}
+					onClick={onBrandingClick}
+					floating={mode === 'live'}
+				/>
+			)}
 		</div>
 	);
 };
