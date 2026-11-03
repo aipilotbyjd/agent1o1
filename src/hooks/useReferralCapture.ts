@@ -39,13 +39,20 @@ const useReferralCapture = () => {
 		ReferralService.recordVisit({
 			code,
 			visitor_id: previous?.visitor_id,
-			landing_url: window.location.href,
-			referrer_url: document.referrer || undefined,
+			// The API caps both at 2048; a longer URL would 422 and lose the code.
+			landing_url: window.location.href.slice(0, 2048),
+			referrer_url: document.referrer ? document.referrer.slice(0, 2048) : undefined,
 			utm: Object.keys(utm).length ? utm : undefined,
 		})
 			.then((result) => saveReferralAttribution(result.code, result.visitor_id))
 			.catch((error: unknown) => {
-				if (ApiError.is(error) && error.status === 404) clearReferralAttribution();
+				if (ApiError.is(error) && error.status === 404) {
+					clearReferralAttribution();
+					return;
+				}
+				// Network or server trouble: keep the code without a visitor id so
+				// signup can still credit the referrer.
+				if (previous?.code !== code) saveReferralAttribution(code);
 			});
 	}, [location.search]);
 };

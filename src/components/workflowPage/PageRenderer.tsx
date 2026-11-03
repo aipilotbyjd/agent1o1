@@ -53,6 +53,9 @@ type Props = {
 	/** Appended inside a section or column, after its blocks (the builder's drop zones). */
 	containerEnd?: (container: TContainer) => ReactNode;
 	workspaceName?: string | null;
+	/** Public page: where the "Made with Agent1o1" badge links (signup with the creator's referral code). */
+	brandingUrl?: string | null;
+	onBrandingClick?: () => void;
 	/** Grow to fill the container rather than sizing to the content. */
 	fill?: boolean;
 	/** Set when the page renders dark regardless of its own setting. */
@@ -252,6 +255,8 @@ const PageRenderer = ({
 	after,
 	containerEnd,
 	workspaceName,
+	brandingUrl,
+	onBrandingClick,
 	fill,
 	forceDark,
 	className,
@@ -310,6 +315,19 @@ const PageRenderer = ({
 					<p className='mt-6 text-center text-xs text-[var(--pg-muted)]'>
 						{workspaceName ? `${workspaceName} · ` : ''}Made with{' '}
 						<span className='font-bold text-[var(--pg-text)]'>Agent1o1</span>
+						{brandingUrl && (
+							<>
+								{' · '}
+								<a
+									href={brandingUrl}
+									target='_blank'
+									rel='noopener'
+									onClick={onBrandingClick}
+									className='font-semibold text-[var(--pg-accent)] underline-offset-2 hover:underline'>
+									Build your own free →
+								</a>
+							</>
+						)}
 					</p>
 				)}
 			</div>

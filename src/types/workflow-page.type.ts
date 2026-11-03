@@ -250,6 +250,11 @@ export type TPageView = {
 	description: string | null;
 	workspace_name: string | null;
 	theme: TPageTheme;
+	/**
+	 * The "Made with Agent1o1" badge as the server decided it: `url` is
+	 * signup with the page creator's `?ref=` code. Null when hidden.
+	 */
+	branding?: { show: boolean; url: string | null };
 	/** A password page before the password is entered: no blocks. */
 	locked: boolean;
 	requires_password: boolean;
