@@ -18,10 +18,17 @@ import type {
 	TUpdateCreditOverageDto,
 	TCreditNotifications,
 	TUpdateCreditNotificationsDto,
+	TUsageInsights,
 } from '@/types/billing.type';
 import { BillingEndpoints as E } from './billing.endpoints';
 
 export const BillingService = {
+	// Where the workspace's credits went over the last `days` days.
+	usageInsights: (ws: string, days = 30, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<TUsageInsights>>(E.usageInsights(ws), { params: { days }, signal })
+			.then((r) => r.data.data),
+
 	overview: (ws: string, signal?: AbortSignal) =>
 		axiosClient
 			.get<TApiResponse<TBillingOverview>>(E.overview(ws), { signal })

@@ -16,6 +16,14 @@ export const useBillingOverview = (ws: string) =>
 		enabled: !!ws,
 	});
 
+export const useUsageInsights = (ws: string, days = 30) =>
+	useQuery({
+		queryKey: billingKeys.usageInsights(ws, days),
+		queryFn: ({ signal }) => BillingService.usageInsights(ws, days, signal),
+		enabled: !!ws,
+		staleTime: 60_000,
+	});
+
 export const usePlans = (ws: string) =>
 	useQuery({
 		queryKey: billingKeys.plans(ws),

@@ -187,6 +187,8 @@ export type TCreditOverage = {
 	credits_used: number;
 	credits_remaining: number | null;
 	credit_value_usd: number;
+	/** What one overage credit is invoiced at (above `credit_value_usd`). */
+	overage_credit_value_usd: number;
 };
 
 export type TUpdateCreditOverageDto = {
@@ -221,4 +223,77 @@ export type TCreditTransaction = {
 	paid_by?: { source: TCreditGrantSource; credits: number }[];
 	reason: string | null;
 	created_at: string;
+};
+
+// ============================================================
+// Run cost & usage insights
+// ------------------------------------------------------------
+// `GET .../runs/{run}/cost` breaks one run down the way the chat
+// details panel shows it. Credits only: what a model costs the
+// platform is never exposed to customers.
+// ============================================================
+
+export type TRunCostLineKey =
+	| 'reasoning'
+	| 'tool_calls'
+	| 'compute'
+	| 'orchestration'
+	| 'waived_reasoning'
+	| 'base'
+	| 'ai'
+	| 'other';
+
+export type TRunCostLine = {
+	key: TRunCostLineKey;
+	label: string;
+	credits: number;
+	/** Work on the workspace's own API key: shown struck through as Free. */
+	waived?: boolean;
+	would_have_cost?: number;
+};
+
+export type TRunCostStep = {
+	node_run_id: string;
+	key: string;
+	type: string;
+	status: string;
+	credits: number;
+	charged: boolean;
+};
+
+export type TRunCostModel = {
+	provider: string;
+	model: string;
+	calls: number;
+	input_tokens: number;
+	output_tokens: number;
+	own_key: boolean;
+};
+
+export type TRunCost = {
+	run_id: string;
+	status: string;
+	/** While true, poll: the credits grow as steps finish. */
+	in_progress: boolean;
+	credits: number;
+	charged_credits: number;
+	lines: TRunCostLine[];
+	steps: TRunCostStep[];
+	models: TRunCostModel[];
+};
+
+export type TUsageInsights = {
+	days: number;
+	total_credits: number;
+	daily: { date: string; credits: number }[];
+	by_kind: { kind: string; charges: number; credits: number }[];
+	top_workflows: { id: string; name: string; runs: number; credits: number }[];
+	top_agents: { id: string; name: string; turns: number; credits: number }[];
+	models: {
+		model: string;
+		calls: number;
+		own_key_calls: number;
+		input_tokens: number;
+		output_tokens: number;
+	}[];
 };
