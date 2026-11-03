@@ -24,8 +24,10 @@ import {
 	ButtonBlock,
 	CountdownBlock,
 	FaqBlock,
+	FeaturesBlock,
 	LogosBlock,
 	StatsBlock,
+	StepsBlock,
 	TabsBlock,
 	TestimonialBlock,
 	VideoBlock,
@@ -151,6 +153,10 @@ const Leaf = ({ block }: { block: TRenderBlock }) => {
 			return <TabsBlock block={block} mode={mode} />;
 		case 'countdown':
 			return <CountdownBlock block={block} mode={mode} />;
+		case 'steps':
+			return <StepsBlock block={block} mode={mode} />;
+		case 'features':
+			return <FeaturesBlock block={block} mode={mode} />;
 		case 'field':
 			return <FieldBlock block={block} field={block.field} mode={mode} run={run} />;
 		case 'submit':

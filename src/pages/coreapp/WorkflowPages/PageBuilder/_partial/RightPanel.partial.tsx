@@ -616,6 +616,52 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 					</ListEditor>
 				</PanelSection>
 			);
+		case 'steps':
+			return (
+				<PanelSection title='Steps'>
+					<PanelText label='Title' value={block.props.title} placeholder='Optional' onChange={(title) => set({ title }, 'title')} />
+					<ListEditor
+						items={block.props.items}
+						onChange={(items) => set({ items }, 'items')}
+						create={() => ({ title: '', description: '' })}
+						max={10}
+						addLabel='Add a step'
+						title={(item, i) => item.title || `Step ${i + 1}`}>
+						{(item, update) => (
+							<>
+								<PanelText label='Step' value={item.title} onChange={(title) => update({ title })} />
+								<PanelText label='Details' multiline rows={3} value={item.description} hint='Markdown works.' onChange={(description) => update({ description })} />
+							</>
+						)}
+					</ListEditor>
+				</PanelSection>
+			);
+		case 'features':
+			return (
+				<PanelSection title='Features'>
+					<PanelText label='Title' value={block.props.title} placeholder='Optional' onChange={(title) => set({ title }, 'title')} />
+					<ListEditor
+						items={block.props.items}
+						onChange={(items) => set({ items }, 'items')}
+						create={() => ({ title: '', description: '' })}
+						max={9}
+						addLabel='Add a feature'
+						title={(item, i) => item.title || `Feature ${i + 1}`}>
+						{(item, update) => (
+							<>
+								<PanelText label='Name' value={item.title} onChange={(title) => update({ title })} />
+								<PanelText label='Details' multiline rows={3} value={item.description} hint='Markdown works.' onChange={(description) => update({ description })} />
+							</>
+						)}
+					</ListEditor>
+					<Segmented
+						label='Columns'
+						value={block.props.columns}
+						onChange={(columns) => set({ columns })}
+						options={([2, 3, 4] as const).map((value) => ({ value, label: String(value) }))}
+					/>
+				</PanelSection>
+			);
 		case 'countdown':
 			return (
 				<PanelSection title='Countdown'>
