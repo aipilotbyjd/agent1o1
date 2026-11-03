@@ -3,7 +3,14 @@ import {
 	AppWindow,
 	ChartColumn,
 	CircleHelp,
+	CodeXml,
 	Columns2,
+	Globe,
+	GalleryHorizontal,
+	ChartGantt,
+	Gauge,
+	ArrowLeftRight,
+	CreditCard,
 	Heading,
 	Image,
 	LayoutGrid,
@@ -27,6 +34,7 @@ import {
 import type { TWorkflowInterfaceField } from '@/types/workflow-extras.type';
 import type {
 	TPageBlock,
+	TPageBlockDisplay,
 	TPageBlockProps,
 	TPageBlockType,
 	TPageBlockWidth,
@@ -218,6 +226,89 @@ export const BLOCK_CATALOG: { [T in TPageBlockType]: TBlockMeta<T> } = {
 			columns: 3,
 		},
 	},
+	code: {
+		label: 'Code',
+		description: 'A snippet with a copy button',
+		icon: CodeXml,
+		group: 'content',
+		defaults: { code: "curl https://api.example.com/run", language: 'bash', filename: null, show_copy: true },
+	},
+	pricing: {
+		label: 'Pricing',
+		description: 'Plan cards with prices',
+		icon: CreditCard,
+		group: 'content',
+		defaults: {
+			title: null,
+			items: [
+				{ name: 'Starter', price: '$0', period: '/month', description: 'For trying it out', features: 'Basic runs\nCommunity support', cta_label: 'Get started', cta_url: null, highlighted: false },
+				{ name: 'Pro', price: '$29', period: '/month', description: 'For busy teams', features: 'Unlimited runs\nPriority support\nShared history', cta_label: 'Choose Pro', cta_url: null, highlighted: true },
+			],
+		},
+	},
+	embed: {
+		label: 'Embed',
+		description: 'Calendly, Typeform, Tally, Figma…',
+		icon: Globe,
+		group: 'content',
+		defaults: { url: null, title: null, height: 'md' },
+	},
+	gallery: {
+		label: 'Gallery',
+		description: 'A grid of images with a viewer',
+		icon: GalleryHorizontal,
+		group: 'content',
+		defaults: { items: [], columns: 3, ratio: 'landscape', lightbox: true },
+	},
+	compare: {
+		label: 'Compare',
+		description: 'Before / after, or without / with',
+		icon: ArrowLeftRight,
+		group: 'content',
+		defaults: {
+			mode: 'lists',
+			before_url: null,
+			after_url: null,
+			before_label: 'Without',
+			after_label: 'With',
+			before_items: 'Hours of manual work\nEasy to make mistakes',
+			after_items: 'Done in seconds\nConsistent every time',
+		},
+	},
+	progress: {
+		label: 'Progress bars',
+		description: 'Labelled bars from 0 to 100',
+		icon: Gauge,
+		group: 'content',
+		defaults: {
+			title: null,
+			items: [
+				{ label: 'Accuracy', value: 95 },
+				{ label: 'Speed', value: 80 },
+			],
+			show_values: true,
+		},
+	},
+	social: {
+		label: 'Social links',
+		description: 'A row of round link buttons',
+		icon: Link2,
+		group: 'content',
+		defaults: { items: [], align: 'center', style: 'solid' },
+	},
+	timeline: {
+		label: 'Timeline',
+		description: 'Dated milestones in order',
+		icon: ChartGantt,
+		group: 'content',
+		defaults: {
+			title: null,
+			items: [
+				{ date: '2024', title: 'Started', description: 'Where it began.' },
+				{ date: '2025', title: 'Launched', description: 'Open to everyone.' },
+			],
+		},
+	},
 	section: {
 		label: 'Section',
 		description: 'A band with its own background',
@@ -248,6 +339,15 @@ export const WIDTH_OPTIONS: { value: TPageBlockWidth; label: string }[] = [
 	{ value: 'third', label: '1/3' },
 ];
 
+/** Matches what `PageSchema::display()` fills in on the server. */
+export const DISPLAY_DEFAULTS: TPageBlockDisplay = {
+	visibility: 'all',
+	locked: false,
+	space_above: 'none',
+	mobile_space_above: null,
+	mobile_align: null,
+};
+
 export const newBlockId = () =>
 	`b_${Array.from(crypto.getRandomValues(new Uint8Array(8)), (byte) => (byte % 36).toString(36)).join('')}`;
 
@@ -266,6 +366,7 @@ export const createBlock = <T extends TPageBlockType>(
 		id: newBlockId(),
 		type,
 		width: 'full',
+		...DISPLAY_DEFAULTS,
 		props: merged,
 		...(children ? { children } : {}),
 	} as unknown as Extract<TPageBlock, { type: T }>;
@@ -336,6 +437,22 @@ export const blockSummary = (block: TPageBlock, fields: TWorkflowInterfaceField[
 			return block.props.title || `${block.props.items.length} step${block.props.items.length === 1 ? '' : 's'}`;
 		case 'features':
 			return block.props.title || `${block.props.items.length} feature${block.props.items.length === 1 ? '' : 's'}`;
+		case 'code':
+			return block.props.filename || block.props.language || block.props.code.split('\n')[0].slice(0, 50) || 'No code yet';
+		case 'pricing':
+			return block.props.items.map((plan) => plan.name).filter(Boolean).join(' · ') || 'No plans yet';
+		case 'embed':
+			return block.props.title || (block.props.url ? new URL(block.props.url).hostname : 'No link yet');
+		case 'gallery':
+			return `${block.props.items.length} image${block.props.items.length === 1 ? '' : 's'}`;
+		case 'compare':
+			return block.props.mode === 'slider' ? 'Before / after' : 'Two lists';
+		case 'progress':
+			return block.props.title || `${block.props.items.length} bar${block.props.items.length === 1 ? '' : 's'}`;
+		case 'social':
+			return `${block.props.items.length} link${block.props.items.length === 1 ? '' : 's'}`;
+		case 'timeline':
+			return block.props.title || `${block.props.items.length} milestone${block.props.items.length === 1 ? '' : 's'}`;
 		case 'section':
 			return `${block.children.length} block${block.children.length === 1 ? '' : 's'}`;
 		case 'columns':

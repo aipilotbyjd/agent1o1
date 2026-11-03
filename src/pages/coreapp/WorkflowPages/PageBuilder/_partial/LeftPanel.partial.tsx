@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { DragEvent, ReactNode } from 'react';
-import { Bookmark, Check, Columns3, GripVertical, Layers, LogOut, Palette, Plus, TextCursorInput, Trash2 } from 'lucide-react';
+import { Bookmark, Check, Columns3, EyeOff, GripVertical, Layers, Lock, LogOut, Palette, Plus, TextCursorInput, Trash2 } from 'lucide-react';
 import type { TPageBlock, TPageBlockType, TPageFont, TPageTheme } from '@/types/workflow-page.type';
 import { PAGE_FONTS, usePageFonts } from '@/components/workflowPage/pageTheme';
 import { humanize } from '@/components/workflowPage/PageBlocks';
@@ -238,13 +238,13 @@ const AddTab = () => {
 
 			<PanelSection title='Content'>
 				<div className='space-y-1.5'>
-					{(['heading', 'text', 'image', 'button', 'video', 'callout', 'divider', 'spacer'] as const).map(generic)}
+					{(['heading', 'text', 'image', 'button', 'video', 'callout', 'code', 'gallery', 'compare', 'embed', 'social', 'divider', 'spacer'] as const).map(generic)}
 				</div>
 			</PanelSection>
 
 			<PanelSection title='Sections'>
 				<div className='space-y-1.5'>
-					{(['faq', 'testimonial', 'stats', 'logos', 'tabs', 'countdown', 'steps', 'features'] as const).map(generic)}
+					{(['faq', 'testimonial', 'stats', 'logos', 'tabs', 'countdown', 'steps', 'features', 'timeline', 'pricing', 'progress'] as const).map(generic)}
 				</div>
 			</PanelSection>
 		</>
@@ -341,6 +341,10 @@ const LayerRows = ({
 										{!isContainer(block) && block.width !== 'full' && ` · ${block.width.replace('_', ' ')}`}
 									</span>
 								</span>
+								{block.locked && <Lock size={11} className='shrink-0 text-amber-500' aria-label='Locked' />}
+								{block.visibility !== 'all' && (
+									<EyeOff size={11} className='shrink-0 opacity-50' aria-label={`Only on ${block.visibility}`} />
+								)}
 								{flag && (
 									<span
 										className={`size-2 shrink-0 rounded-full ${flag === 'error' ? 'bg-rose-500' : 'bg-amber-500'}`}
@@ -348,7 +352,7 @@ const LayerRows = ({
 									/>
 								)}
 							</button>
-							{!isColumn && (
+							{!isColumn && !block.locked && (
 								<button
 									type='button'
 									onClick={() => removeBlock(block.id)}

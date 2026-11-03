@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { flattenBlocks } from '@/components/workflowPage/pageTree';
-import { usePageBuilderStore } from '../_store/pageBuilder.store';
+import { usePageBuilderStore, ZOOM_STEP } from '../_store/pageBuilder.store';
 import { findBlock } from '../_helper/blockTree.helper';
 import { copyBlocks, cutBlocks, pasteBlocks } from '../_helper/clipboard.helper';
 import { INLINE_EDITABLE } from '../_partial/InlineEditor.partial';
@@ -45,7 +45,7 @@ export const useBuilderHotkeys = (onPublish: () => void) => {
 				store.redo();
 				return;
 			}
-			if (mod && key === 'v') {
+			if (mod && !event.altKey && key === 'v') {
 				event.preventDefault();
 				void pasteBlocks();
 				return;
@@ -57,6 +57,16 @@ export const useBuilderHotkeys = (onPublish: () => void) => {
 					selectedIds: ids,
 					selectedId: ids[ids.length - 1] ?? null,
 				});
+				return;
+			}
+			if (mod && (key === '=' || key === '+' || key === '-') && !event.altKey) {
+				event.preventDefault();
+				store.setZoom(store.zoom + (key === '-' ? -ZOOM_STEP : ZOOM_STEP));
+				return;
+			}
+			if (mod && event.shiftKey && key === 'f') {
+				event.preventDefault();
+				store.setOverlay('find');
 				return;
 			}
 			if (key === '/' || (mod && key === 'k')) {
@@ -80,6 +90,12 @@ export const useBuilderHotkeys = (onPublish: () => void) => {
 				event.preventDefault();
 				if (ids.length > 1) store.removeBlocks(ids);
 				else store.removeBlock(ids[0]);
+			} else if (mod && event.altKey && event.code === 'KeyC' && selected) {
+				event.preventDefault();
+				store.copyStyle(selected);
+			} else if (mod && event.altKey && event.code === 'KeyV') {
+				event.preventDefault();
+				store.pasteStyle(ids);
 			} else if (mod && key === 'c') {
 				event.preventDefault();
 				void copyBlocks(ids);

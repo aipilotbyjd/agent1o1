@@ -13,6 +13,10 @@ import {
 	ExternalLink,
 	GitMerge,
 	Keyboard,
+	Ruler,
+	Search,
+	ZoomIn,
+	ZoomOut,
 	LayoutTemplate,
 	Loader2,
 	Monitor,
@@ -33,7 +37,7 @@ import useDarkMode from '@/hooks/useDarkMode';
 import paths from '@/Routes/paths';
 import { useUpdateWorkflowPage } from '@/api/modules/workflow-pages';
 import SaveAsTemplateModal from '@/parts/SaveAsTemplateModal.part';
-import { usePageBuilderStore, type TBuilderDevice } from '../_store/pageBuilder.store';
+import { usePageBuilderStore, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP, type TBuilderDevice } from '../_store/pageBuilder.store';
 import { usePageBuilder } from '../_context/PageBuilder.context';
 import PublishMenu from './PublishMenu.partial';
 import ShareMenu from './ShareMenu.partial';
@@ -228,6 +232,10 @@ const BuilderTopbar = ({ publishOpen, setPublishOpen }: { publishOpen: boolean; 
 	const redo = usePageBuilderStore((store) => store.redo);
 	const device = usePageBuilderStore((store) => store.device);
 	const setDevice = usePageBuilderStore((store) => store.setDevice);
+	const zoom = usePageBuilderStore((store) => store.zoom);
+	const setZoom = usePageBuilderStore((store) => store.setZoom);
+	const guides = usePageBuilderStore((store) => store.guides);
+	const setGuides = usePageBuilderStore((store) => store.setGuides);
 	const mode = usePageBuilderStore((store) => store.mode);
 	const setMode = usePageBuilderStore((store) => store.setMode);
 	const [shareOpen, setShareOpen] = useState(false);
@@ -291,6 +299,24 @@ const BuilderTopbar = ({ publishOpen, setPublishOpen }: { publishOpen: boolean; 
 						</IconButton>
 					))}
 				</div>
+				<div className='flex items-center rounded-lg border border-zinc-200/80 bg-zinc-50/70 p-0.5 dark:border-white/10 dark:bg-zinc-900/60'>
+					<IconButton label='Zoom out' onClick={() => setZoom(zoom - ZOOM_STEP)} disabled={zoom <= ZOOM_MIN}>
+						<ZoomOut size={14} />
+					</IconButton>
+					<button
+						type='button'
+						title='Reset zoom'
+						onClick={() => setZoom(100)}
+						className={`h-7 min-w-10 rounded-md px-1 text-[11px] font-bold text-zinc-600 tabular-nums hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/[0.06] ${FOCUS_RING}`}>
+						{zoom}%
+					</button>
+					<IconButton label='Zoom in' onClick={() => setZoom(zoom + ZOOM_STEP)} disabled={zoom >= ZOOM_MAX}>
+						<ZoomIn size={14} />
+					</IconButton>
+					<IconButton label='Show outlines and the centre line' active={guides} onClick={() => setGuides(!guides)} disabled={mode === 'preview'}>
+						<Ruler size={14} />
+					</IconButton>
+				</div>
 				<div role='radiogroup' aria-label='Mode' className='flex items-center rounded-xl border border-zinc-200/80 bg-zinc-100/80 p-0.5 dark:border-white/10 dark:bg-zinc-900/80'>
 					{(
 						[
@@ -323,6 +349,9 @@ const BuilderTopbar = ({ publishOpen, setPublishOpen }: { publishOpen: boolean; 
 						label={isDarkTheme ? 'Light mode' : 'Dark mode'}
 						onClick={() => setDarkModeStatus(isDarkTheme ? DARK_MODE.LIGHT : DARK_MODE.DARK)}>
 						{isDarkTheme ? <Sun size={14} /> : <Moon size={14} />}
+					</IconButton>
+					<IconButton label='Find and replace (⇧⌘F)' onClick={() => usePageBuilderStore.getState().setOverlay('find')} disabled={mode === 'preview'}>
+						<Search size={14} />
 					</IconButton>
 					<IconButton label='Keyboard shortcuts (?)' onClick={() => usePageBuilderStore.getState().setOverlay('shortcuts')}>
 						<Keyboard size={14} />
