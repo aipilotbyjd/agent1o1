@@ -227,6 +227,12 @@ const awaitingText = (message: TAgentMessage) =>
 		? AWAITING_ANSWER_TEXT
 		: AWAITING_APPROVAL_TEXT;
 
+/** What a reply that ran out of steps shows when the agent wrote nothing before stopping. */
+const STEP_LIMIT_TEXT = '_Reached the step limit for this turn before finishing._';
+
+/** Sent by the Continue button on a reply that ran out of steps. */
+const CONTINUE_PROMPT = 'Continue where you left off.';
+
 const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 	messages
 		.filter((message) => message.role === 'user' || message.role === 'assistant')
@@ -237,8 +243,14 @@ const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 			skill: message.skill ?? undefined,
 			text:
 				typeof message.content === 'string'
-					? message.content || (message.awaiting_approval ? awaitingText(message) : '')
+					? message.content ||
+						(message.awaiting_approval
+							? awaitingText(message)
+							: message.stop_reason === 'step_limit'
+								? STEP_LIMIT_TEXT
+								: '')
 					: JSON.stringify(message.content, null, 2),
+			stepLimit: message.stop_reason === 'step_limit',
 			timestamp: new Date(message.created_at).toLocaleTimeString([], {
 				hour: '2-digit',
 				minute: '2-digit',
@@ -356,6 +368,8 @@ interface TMessage {
 	timeline?: TChatTimelineItem[];
 	/** Set on a reply the user cut short with Stop: the text is a partial. */
 	stopped?: boolean;
+	/** Set on a reply whose turn ran out of steps before it finished. */
+	stepLimit?: boolean;
 	failed?: boolean;
 	/** The sources a stored reply's `[ref]` markers cite (`[]` when none). */
 	citations?: TAgentCitation[];
@@ -1698,7 +1712,7 @@ const BuildPage = () => {
 		events: AsyncIterable<TAgentSessionStreamEvent>,
 		agentIdForRun: string,
 		sessionId: string,
-	): Promise<{ replyText: string; paused: boolean }> => {
+	): Promise<{ replyText: string; paused: boolean; stepLimit: boolean }> => {
 		// Filenames exported during this turn, resolved to artifacts once it ends.
 		const exportedFilenames: string[] = [];
 		let updatedInstructions = false;
@@ -1707,6 +1721,7 @@ const BuildPage = () => {
 		let replyText = '';
 		let sawComplete = false;
 		let paused = false;
+		let stepLimit = false;
 
 		// The reply arrives over Reverb as `turn.*` events on the session's
 		// channel; `openAgentTurnStream` has already turned them into these.
@@ -1791,6 +1806,7 @@ const BuildPage = () => {
 			if (event.event === 'complete') {
 				sawComplete = true;
 				paused = event.status === 'awaiting_approval';
+				stepLimit = event.stop_reason === 'step_limit';
 				// The persisted reply. Same string the deltas spell out, and the
 				// fallback when a provider streamed none.
 				replyText = event.text ?? replyText;
@@ -1836,7 +1852,7 @@ const BuildPage = () => {
 			});
 		}
 
-		return { replyText, paused };
+		return { replyText, paused, stepLimit };
 	};
 
 	// Sends a message to the real agent: persists the agent first if this is
@@ -1924,7 +1940,7 @@ const BuildPage = () => {
 			setChatHistory((prev) => [...prev, userMsg]);
 			turnStarted = true;
 
-			const { replyText, paused } = await consumeTurnEvents(
+			const { replyText, paused, stepLimit } = await consumeTurnEvents(
 				AgentSessionService.streamMessage(
 					echo as unknown as IEchoLike | null,
 					workspaceId,
@@ -1964,7 +1980,11 @@ const BuildPage = () => {
 			const agentMsg: TMessage = {
 				id: messageId('agent'),
 				sender: 'agent',
-				text: replyText || streamedText || (paused ? AWAITING_APPROVAL_TEXT : ''),
+				text:
+					replyText ||
+					streamedText ||
+					(paused ? AWAITING_APPROVAL_TEXT : stepLimit ? STEP_LIMIT_TEXT : ''),
+				stepLimit,
 				timestamp: new Date().toLocaleTimeString([], {
 					hour: '2-digit',
 					minute: '2-digit',
@@ -3471,6 +3491,29 @@ const BuildPage = () => {
 																<span className='rounded-full bg-zinc-100 px-1.5 py-0.5 text-[9px] font-black tracking-wide text-zinc-500 uppercase dark:bg-zinc-800 dark:text-zinc-400'>
 																	Stopped
 																</span>
+															)}
+
+															{message.stepLimit && (
+																<span
+																	title='The agent used all of its steps for this turn before finishing.'
+																	className='rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-black tracking-wide text-amber-700 uppercase dark:bg-amber-500/15 dark:text-amber-300'>
+																	Step limit
+																</span>
+															)}
+
+															{message.stepLimit && isLastMessage && (
+																<button
+																	type='button'
+																	onClick={() =>
+																		void sendChatMessage(
+																			CONTINUE_PROMPT,
+																			[],
+																		)
+																	}
+																	disabled={isTyping}
+																	className='flex min-h-10 items-center gap-1 rounded-md border border-zinc-200 px-2 text-[11px] font-bold text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 md:min-h-0 md:py-0.5 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800'>
+																	Continue
+																</button>
 															)}
 
 															<div

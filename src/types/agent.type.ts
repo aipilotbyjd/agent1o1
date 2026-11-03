@@ -170,6 +170,8 @@ export type TAgentMessage = {
 	origin?: TAgentMessageOrigin | null;
 	/** The knowledge sources the reply's `[ref]` markers cite, numbered in order of first appearance. */
 	citations?: TAgentCitation[];
+	/** `step_limit`: the turn ran out of steps before it finished. */
+	stop_reason?: 'step_limit' | null;
 	created_at: string;
 };
 
@@ -265,6 +267,8 @@ export type TAgentSessionStreamEvent =
 			message_id: string | null;
 			text: string | null;
 			pending_action_ids?: string[];
+			/** `step_limit` when the turn ran out of steps before it finished. */
+			stop_reason?: string | null;
 	  }
 	| { event: 'error'; message: string }
 	| { event: 'done' };
@@ -724,6 +728,8 @@ export type TAgentTurnChangedEvent = {
 		status: 'running' | 'awaiting_approval' | 'completed' | 'failed';
 		message_id?: string;
 		pending_action_ids?: string[];
+		/** `step_limit` when the turn ran out of steps before it finished. */
+		stop_reason?: string;
 		error?: string;
 	};
 };
