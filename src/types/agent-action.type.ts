@@ -35,7 +35,8 @@ export const AUTONOMY_MODE_META: Record<TAutonomyMode, { label: string; descript
 };
 
 export type TActionEffect = 'read' | 'write' | 'external' | 'destructive';
-export type TActionToolKind = 'node' | 'workflow' | 'builtin';
+/** `question` is a question the agent asked the person chatting (`ask_user`), answered rather than approved. */
+export type TActionToolKind = 'node' | 'workflow' | 'builtin' | 'question';
 export type TActionVerdict = 'allow' | 'simulate' | 'ask' | 'deny';
 export type TActionRisk = 'low' | 'medium' | 'high';
 
@@ -94,7 +95,8 @@ export type TAgentAction = {
 	created_at: string;
 };
 
-export type TAgentActionDecisionKind = 'approve' | 'edit' | 'reject';
+/** `answer` is the only way to answer a question (`tool_kind: 'question'`); `reject` skips it. */
+export type TAgentActionDecisionKind = 'approve' | 'edit' | 'reject' | 'answer';
 
 /** One decision on a waiting action: see `ResolveAgentActionsAction`. */
 export type TAgentActionDecision = {
@@ -107,7 +109,43 @@ export type TAgentActionDecision = {
 	stop?: boolean;
 	/** On an approve: run this tool without asking from now on. */
 	remember?: boolean;
+	/** Required for `answer`: text, the picked option(s), or a form's values by field name. */
+	answer?: TUserQuestionAnswer;
 };
+
+// ─── Questions the agent asks (`ask_user`) ────────────────────
+
+export type TUserQuestionFieldType =
+	| 'text'
+	| 'textarea'
+	| 'number'
+	| 'date'
+	| 'select'
+	| 'checkbox';
+
+export type TUserQuestionField = {
+	name: string;
+	label: string;
+	type: TUserQuestionFieldType;
+	options: string[];
+	required: boolean;
+	placeholder: string | null;
+};
+
+/**
+ * A question action's `arguments`, as the backend normalised them
+ * (`App\Services\Agents\UserQuestions`): free text, a choice of `options`,
+ * or a small form of `fields`.
+ */
+export type TUserQuestion = {
+	question: string;
+	options: string[];
+	multiple: boolean;
+	allow_other: boolean;
+	fields: TUserQuestionField[];
+};
+
+export type TUserQuestionAnswer = string | string[] | Record<string, string | boolean | null>;
 
 export type TDecideAgentActionsDto = { decisions: TAgentActionDecision[] };
 

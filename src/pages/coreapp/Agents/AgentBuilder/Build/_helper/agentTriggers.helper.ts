@@ -1,7 +1,14 @@
 import type { TTrigger } from '@/types/trigger.type';
 import type { TNodeDefinition } from '@/pages/coreapp/Playbooks/WorkflowEditor/_types/node.type';
 
-export type TScheduleFrequency = 'minutes' | 'hourly' | 'daily' | 'weekdays' | 'weekly' | 'monthly' | 'custom';
+export type TScheduleFrequency =
+	| 'minutes'
+	| 'hourly'
+	| 'daily'
+	| 'weekdays'
+	| 'weekly'
+	| 'monthly'
+	| 'custom';
 
 export type TSchedule = {
 	frequency: TScheduleFrequency;
@@ -19,7 +26,15 @@ export type TSchedule = {
 
 export const MINUTE_STEPS = [5, 10, 15, 30];
 
-export const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+export const WEEKDAYS = [
+	'Sunday',
+	'Monday',
+	'Tuesday',
+	'Wednesday',
+	'Thursday',
+	'Friday',
+	'Saturday',
+];
 
 export const FREQUENCIES: { value: TScheduleFrequency; label: string }[] = [
 	{ value: 'minutes', label: 'Every few minutes' },
@@ -83,9 +98,11 @@ export const cronToSchedule = (cron: string): TSchedule => {
 	if (dom === '*' && dow === '*') return { ...timed, frequency: 'daily' };
 	if (dom === '*' && dow === '1-5') return { ...timed, frequency: 'weekdays' };
 	const weekday = int(dow ?? '');
-	if (dom === '*' && weekday !== null && weekday <= 6) return { ...timed, frequency: 'weekly', weekday };
+	if (dom === '*' && weekday !== null && weekday <= 6)
+		return { ...timed, frequency: 'weekly', weekday };
 	const day = int(dom ?? '');
-	if (dow === '*' && day !== null && day >= 1 && day <= 31) return { ...timed, frequency: 'monthly', day };
+	if (dow === '*' && day !== null && day >= 1 && day <= 31)
+		return { ...timed, frequency: 'monthly', day };
 	return { ...timed, frequency: 'custom' };
 };
 
@@ -106,7 +123,9 @@ export const describeCron = (cron: string) => {
 		case 'minutes':
 			return `Every ${schedule.every} minutes`;
 		case 'hourly':
-			return schedule.minute ? `Every hour at :${String(schedule.minute).padStart(2, '0')}` : 'Every hour';
+			return schedule.minute
+				? `Every hour at :${String(schedule.minute).padStart(2, '0')}`
+				: 'Every hour';
 		case 'daily':
 			return `Every day at ${at}`;
 		case 'weekdays':
@@ -129,11 +148,20 @@ export const splitEventName = (name: string) => {
 };
 
 /** Settings PollTrigger and FireTriggerEvent read off the trigger, not the reader's own config. */
-export const APP_TRIGGER_KEYS = ['activate', 'poll_interval_minutes', 'if_already_running', 'max_failures'];
+export const APP_TRIGGER_KEYS = [
+	'activate',
+	'poll_interval_minutes',
+	'if_already_running',
+	'max_failures',
+];
 
 export const WEBHOOK_AUTH: { value: string; label: string; hint: string }[] = [
 	{ value: 'none', label: 'None', hint: 'Anyone with the URL can start the agent.' },
-	{ value: 'header_token', label: 'Header token', hint: 'The sender puts a shared token in a header.' },
+	{
+		value: 'header_token',
+		label: 'Header token',
+		hint: 'The sender puts a shared token in a header.',
+	},
 	{ value: 'signature', label: 'Signature', hint: 'The sender signs the body with HMAC-SHA256.' },
 ];
 
@@ -142,7 +170,17 @@ export const appEventFor = (trigger: TTrigger, appEvents: TNodeDefinition[]) =>
 		? appEvents.find((event) => event.key === trigger.config?.node_type)
 		: undefined;
 
+/** What makes a trigger a follow-up the agent scheduled itself (`AgentFollowUps` on the backend). */
+type TFollowUpConfig = { title?: string | null; task?: string | null; agent_session_id?: string };
+
+export const followUpOf = (trigger: TTrigger): TFollowUpConfig | null => {
+	const followUp = trigger.config?.follow_up;
+	return followUp && typeof followUp === 'object' ? (followUp as TFollowUpConfig) : null;
+};
+
 export const triggerTitle = (trigger: TTrigger, appEvents: TNodeDefinition[]) => {
+	const followUp = followUpOf(trigger);
+	if (followUp) return followUp.title ? `Follow-up · ${followUp.title}` : 'Follow-up';
 	const event = appEventFor(trigger, appEvents);
 	if (event) return event.label;
 	if (trigger.type === 'schedule') return 'Schedule';
@@ -154,7 +192,15 @@ export const triggerTitle = (trigger: TTrigger, appEvents: TNodeDefinition[]) =>
 export const triggerSummary = (trigger: TTrigger, appEvents: TNodeDefinition[]) => {
 	const config = trigger.config ?? {};
 	if (trigger.type === 'schedule') {
-		const timezone = typeof config.timezone === 'string' && config.timezone ? ` (${config.timezone})` : '';
+		const timezone =
+			typeof config.timezone === 'string' && config.timezone ? ` (${config.timezone})` : '';
+		if (typeof config.run_once_at === 'string' && config.run_once_at) {
+			const at = new Date(config.run_once_at);
+			const when = Number.isNaN(at.getTime())
+				? config.run_once_at
+				: at.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+			return `Once, ${when}`;
+		}
 		return `${describeCron(String(config.cron ?? ''))}${timezone}`;
 	}
 	if (trigger.type === 'webhook') {
@@ -166,7 +212,9 @@ export const triggerSummary = (trigger: TTrigger, appEvents: TNodeDefinition[]) 
 	if (trigger.type === 'polling') {
 		const minutes = Number(config.poll_interval_minutes ?? 0);
 		const event = appEventFor(trigger, appEvents);
-		const what = event ? `Each ${splitEventName(event.label).event.toLowerCase()}` : 'Each new item';
+		const what = event
+			? `Each ${splitEventName(event.label).event.toLowerCase()}`
+			: 'Each new item';
 		return minutes ? `${what} · checked every ${minutes} min` : what;
 	}
 	return 'Only when run by hand';

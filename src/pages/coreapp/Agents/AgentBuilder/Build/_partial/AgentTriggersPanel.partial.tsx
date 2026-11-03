@@ -21,6 +21,7 @@ import {
 	appEventFor,
 	isTripped,
 	triggerSummary,
+	followUpOf,
 	triggerTitle,
 } from '../_helper/agentTriggers.helper';
 import AgentTriggerDrawer, {
@@ -86,7 +87,15 @@ const TriggerCard = ({
 		trigger.type === 'polling' ? 'app' : trigger.type === 'webhook' ? 'webhook' : 'schedule';
 	const tripped = isTripped(trigger);
 	const stats = trigger.stats_24h;
-	const message = typeof trigger.config?.message === 'string' ? trigger.config.message : '';
+	const followUp = followUpOf(trigger);
+	const message = followUp
+		? (followUp.task ?? '')
+		: typeof trigger.config?.message === 'string'
+			? trigger.config.message
+			: '';
+	// A follow-up is the agent's own: it can be paused, run or deleted here,
+	// but its task and time are set by asking the agent, not in the editor.
+	const edit = followUp ? undefined : onEdit;
 
 	// Failures already raise the mutation's error toast.
 	const toggle = () =>
@@ -129,12 +138,17 @@ const TriggerCard = ({
 			<div className='flex items-start gap-3 p-3'>
 				<button
 					type='button'
-					onClick={onEdit}
+					onClick={edit}
+					disabled={!edit}
 					aria-label={`Edit ${triggerTitle(trigger, appEvents)}`}
 					className={trigger.is_active ? '' : 'opacity-50 grayscale'}>
 					<KindIcon kind={kind} event={event} size='sm' />
 				</button>
-				<button type='button' onClick={onEdit} className='min-w-0 flex-1 text-left'>
+				<button
+					type='button'
+					onClick={edit}
+					disabled={!edit}
+					className='min-w-0 flex-1 text-left disabled:cursor-default'>
 					<span className='flex items-center gap-1.5'>
 						<span className='truncate text-xs font-black text-zinc-900 dark:text-white'>
 							{triggerTitle(trigger, appEvents)}
@@ -194,16 +208,18 @@ const TriggerCard = ({
 									className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
 									<Play size={12} /> Run now
 								</button>
-								<button
-									role='menuitem'
-									type='button'
-									onClick={() => {
-										setMenuOpen(false);
-										onEdit();
-									}}
-									className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
-									<Pencil size={12} /> Edit
-								</button>
+								{edit && (
+									<button
+										role='menuitem'
+										type='button'
+										onClick={() => {
+											setMenuOpen(false);
+											edit();
+										}}
+										className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
+										<Pencil size={12} /> Edit
+									</button>
+								)}
 								{trigger.token && (
 									<button
 										role='menuitem'

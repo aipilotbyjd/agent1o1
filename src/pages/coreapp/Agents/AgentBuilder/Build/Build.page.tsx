@@ -137,7 +137,9 @@ import { useDownloadArtifact, ArtifactService } from '@/api/modules/artifacts';
 import type { TWorkflow } from '@/types/workflow.type';
 import type { TArtifact } from '@/types/artifact.type';
 import type {
+	TAgentCitation,
 	TAgentMessage,
+	TAgentMessageOrigin,
 	TAgentToolBinding,
 	TChosenSkill,
 	TSubagentTask,
@@ -155,6 +157,9 @@ import {
 	PauseCircle,
 	FlaskConical,
 	Ban,
+	AlarmClock,
+	MessageCircleQuestionMark,
+	History,
 } from 'lucide-react';
 import AgentDataPanel from './_partial/AgentDataPanel.partial';
 import AgentTagsPanel from './_partial/AgentTagsPanel.partial';
@@ -164,6 +169,13 @@ import AgentKnowledgePanel from './_partial/AgentKnowledgePanel.partial';
 import AgentSideDrawer, { AttachToggle } from './_partial/AgentSideDrawer.partial';
 import AgentChatsPanel from './_partial/AgentChatsPanel.partial';
 import AgentApprovalCards from './_partial/AgentApprovalCards.partial';
+import {
+	CitationChip,
+	CitationsProvider,
+	MessageSources,
+} from './_partial/MessageCitations.partial';
+import FollowUpMessage from './_partial/FollowUpMessage.partial';
+import { citationRefFromHref, linkCitations } from './_helper/citations.helper';
 import AgentPlanCard from './_partial/AgentPlanCard.partial';
 import AgentAutonomyPanel from './_partial/AgentAutonomyPanel.partial';
 import ChatModeBar from './_partial/ChatModeBar.partial';
@@ -205,6 +217,15 @@ import type {
 
 /** What a reply paused on approvals shows when the agent wrote nothing before stopping. */
 const AWAITING_APPROVAL_TEXT = '_Waiting for approval before carrying on._';
+/** The same, when what it's waiting on is a question it asked you (`ask_user`). */
+const AWAITING_ANSWER_TEXT = '_Waiting for your answer before carrying on._';
+
+const awaitingText = (message: TAgentMessage) =>
+	message.tool_calls?.some(
+		(call) => call.name === 'ask_user' && message.pending_tool_call_ids?.includes(call.id),
+	)
+		? AWAITING_ANSWER_TEXT
+		: AWAITING_APPROVAL_TEXT;
 
 const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 	messages
@@ -216,7 +237,7 @@ const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 			skill: message.skill ?? undefined,
 			text:
 				typeof message.content === 'string'
-					? message.content || (message.awaiting_approval ? AWAITING_APPROVAL_TEXT : '')
+					? message.content || (message.awaiting_approval ? awaitingText(message) : '')
 					: JSON.stringify(message.content, null, 2),
 			timestamp: new Date(message.created_at).toLocaleTimeString([], {
 				hour: '2-digit',
@@ -244,6 +265,8 @@ const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 				mimeType: artifact.mime_type,
 				previewUrl: artifact.preview_url,
 			})),
+			citations: message.role === 'assistant' ? (message.citations ?? []) : undefined,
+			origin: message.origin ?? undefined,
 		}));
 
 const EXPORT_ARTIFACT_TOOL = 'ExportArtifactTool';
@@ -271,6 +294,14 @@ const UPDATE_SKILL_TOOL = 'update_skill';
 const REMEMBER_TOOL = 'remember';
 const FORGET_TOOL = 'forget';
 const RECALL_MEMORIES_TOOL = 'recall_memories';
+const SCHEDULE_FOLLOW_UP_TOOL = 'schedule_follow_up';
+const LIST_FOLLOW_UPS_TOOL = 'list_follow_ups';
+const CANCEL_FOLLOW_UP_TOOL = 'cancel_follow_up';
+const ASK_USER_TOOL = 'ask_user';
+const SEARCH_PAST_CONVERSATIONS_TOOL = 'search_past_conversations';
+const READ_PAST_CONVERSATION_TOOL = 'read_past_conversation';
+const FOLLOW_UP_TOOLS = [SCHEDULE_FOLLOW_UP_TOOL, LIST_FOLLOW_UPS_TOOL, CANCEL_FOLLOW_UP_TOOL];
+const HISTORY_TOOLS = [SEARCH_PAST_CONVERSATIONS_TOOL, READ_PAST_CONVERSATION_TOOL];
 
 /** What each skill tool did, for the step line and the chip above a reply. */
 const SKILL_TOOL_VERBS: Record<string, { running: string; done: string; nameArg: string }> = {
@@ -326,6 +357,10 @@ interface TMessage {
 	/** Set on a reply the user cut short with Stop: the text is a partial. */
 	stopped?: boolean;
 	failed?: boolean;
+	/** The sources a stored reply's `[ref]` markers cite (`[]` when none). */
+	citations?: TAgentCitation[];
+	/** Where a user-role message no person typed came from, e.g. a scheduled follow-up. */
+	origin?: TAgentMessageOrigin;
 }
 
 /** Where an unsent composer draft is parked, per agent and per chat. */
@@ -401,15 +436,20 @@ const mdComponents: Components = {
 			{children}
 		</pre>
 	),
-	a: ({ children, href }) => (
-		<a
-			href={href}
-			target='_blank'
-			rel='noreferrer'
-			className='hover:text-primary-600 dark:hover:text-primary-400 [overflow-wrap:anywhere] underline underline-offset-2'>
-			{children}
-		</a>
-	),
+	a: ({ children, href }) => {
+		// A citation marker, linked by `linkCitations()`: a numbered chip.
+		const citationRef = citationRefFromHref(href);
+		if (citationRef) return <CitationChip citationRef={citationRef} label={children} />;
+		return (
+			<a
+				href={href}
+				target='_blank'
+				rel='noreferrer'
+				className='hover:text-primary-600 dark:hover:text-primary-400 [overflow-wrap:anywhere] underline underline-offset-2'>
+				{children}
+			</a>
+		);
+	},
 	table: ({ children }) => (
 		<div className='mb-2 max-w-full overflow-x-auto'>
 			<table className='min-w-max text-left text-xs'>{children}</table>
@@ -420,8 +460,28 @@ const mdComponents: Components = {
 // Markdown parsing is the costliest part of a chat row. The page re-renders on
 // every keystroke and every streamed delta; memoising on `text` means only the
 // reply that is actually changing gets re-parsed.
-const MessageMarkdown = memo(function MessageMarkdown({ text }: { text: string }) {
-	return <ReactMarkdown components={mdComponents}>{text}</ReactMarkdown>;
+//
+// `citations` turns a reply's `[ref]` markers into numbered source chips: the
+// stored reply's resolved sources, or `'streaming'` for a reply still being
+// written, whose sources aren't known yet. Left out, markers aren't touched.
+const MessageMarkdown = memo(function MessageMarkdown({
+	text,
+	citations,
+}: {
+	text: string;
+	citations?: TAgentCitation[] | 'streaming';
+}) {
+	if (citations === undefined) {
+		return <ReactMarkdown components={mdComponents}>{text}</ReactMarkdown>;
+	}
+
+	const resolved = citations === 'streaming' ? undefined : citations;
+
+	return (
+		<CitationsProvider citations={resolved}>
+			<ReactMarkdown components={mdComponents}>{linkCitations(text, resolved)}</ReactMarkdown>
+		</CitationsProvider>
+	);
 });
 
 const prettifyToolName = (raw: string) =>
@@ -451,6 +511,18 @@ const toolStepLabel = (item: TToolItem, task?: TSubagentTask): string => {
 		return running ? 'Waiting for subagents…' : 'Collected subagent results';
 	if (item.toolName === EXPORT_ARTIFACT_TOOL)
 		return `${running ? 'Exporting' : 'Exported'} · ${arg('filename')}`;
+	if (item.toolName === SCHEDULE_FOLLOW_UP_TOOL)
+		return `${running ? 'Scheduling' : 'Scheduled'} a follow-up · ${arg('title') || arg('task')}`;
+	if (item.toolName === LIST_FOLLOW_UPS_TOOL)
+		return running ? 'Checking its follow-ups' : 'Checked its follow-ups';
+	if (item.toolName === CANCEL_FOLLOW_UP_TOOL)
+		return running ? 'Cancelling a follow-up' : 'Cancelled a follow-up';
+	if (item.toolName === ASK_USER_TOOL)
+		return `${item.status === 'waiting' ? 'Asking you' : 'Asked you'} · ${arg('question')}`;
+	if (item.toolName === SEARCH_PAST_CONVERSATIONS_TOOL)
+		return `${running ? 'Searching' : 'Searched'} past chats · ${arg('query')}`;
+	if (item.toolName === READ_PAST_CONVERSATION_TOOL)
+		return running ? 'Reading a past chat' : 'Read a past chat';
 	return prettifyToolName(item.toolName.replace(/Tool$/, ''));
 };
 
@@ -461,6 +533,9 @@ const toolStepIcon = (toolName: string) => {
 	if (SKILL_TOOL_VERBS[toolName]) return Sparkles;
 	if (toolName === INVOKE_AGENT_TOOL || toolName === WAIT_SUBAGENTS_TOOL) return Bot;
 	if (toolName === EXPORT_ARTIFACT_TOOL) return FileDown;
+	if (FOLLOW_UP_TOOLS.includes(toolName)) return AlarmClock;
+	if (toolName === ASK_USER_TOOL) return MessageCircleQuestionMark;
+	if (HISTORY_TOOLS.includes(toolName)) return History;
 	if (/search/i.test(toolName)) return Search;
 	if (/fetch|web|http|url/i.test(toolName)) return Globe;
 	return Wrench;
@@ -3131,6 +3206,17 @@ const BuildPage = () => {
 										// Regenerate only makes sense on the reply that is actually last:
 										// re-running an older turn would strand everything after it.
 										const isLastMessage = messageIdx === chatHistory.length - 1;
+										// A follow-up the agent scheduled itself: not something the person typed.
+										if (isUser && message.origin?.type === 'follow_up') {
+											return (
+												<FollowUpMessage
+													key={message.id}
+													origin={message.origin}
+													text={message.text}
+													timestamp={message.timestamp}
+												/>
+											);
+										}
 										return (
 											<div
 												key={message.id}
@@ -3220,9 +3306,20 @@ const BuildPage = () => {
 																	{message.text}
 																</p>
 															) : (
-																<MessageMarkdown
-																	text={message.text}
-																/>
+																<>
+																	<MessageMarkdown
+																		text={message.text}
+																		citations={
+																			message.citations ??
+																			'streaming'
+																		}
+																	/>
+																	<MessageSources
+																		citations={
+																			message.citations
+																		}
+																	/>
+																</>
 															)}
 
 															{/* Structured Table for data responses */}
@@ -3491,6 +3588,7 @@ const BuildPage = () => {
 																		: '',
 																)
 																.join('')}
+															citations='streaming'
 														/>
 														<span className='ml-0.5 inline-block h-3.5 w-[2px] animate-pulse bg-current align-middle' />
 													</div>
