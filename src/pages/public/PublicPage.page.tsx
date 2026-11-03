@@ -30,7 +30,17 @@ const LivePage = ({ token, view, accessToken }: { token: string; view: TPageView
 		[token, accessToken],
 	);
 	const run = usePageRun(fields, transport);
-	return <PageRenderer theme={view.theme} blocks={view.blocks} mode='live' run={run} workspaceName={view.workspace_name} />;
+	return (
+		<PageRenderer
+			theme={view.theme}
+			blocks={view.blocks}
+			mode='live'
+			run={run}
+			workspaceName={view.workspace_name}
+			brandingUrl={view.branding?.url}
+			onBrandingClick={() => void PublicPageService.badgeClicked(token).catch(() => undefined)}
+		/>
+	);
 };
 
 const PasswordGate = ({ token, view, onUnlocked }: { token: string; view: TPageView; onUnlocked: (accessToken: string, view: TPageView) => void }) => {

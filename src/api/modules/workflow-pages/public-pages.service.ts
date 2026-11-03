@@ -43,6 +43,10 @@ export const PublicPageService = {
 	started: (token: string) =>
 		axiosClient.post(E.events(token), { type: 'start' }, { headers: accessHeaders() }).then(() => undefined),
 
+	/** The visitor clicked the "Made with Agent1o1" badge. */
+	badgeClicked: (token: string) =>
+		axiosClient.post(E.events(token), { type: 'badge_click' }, { headers: accessHeaders() }).then(() => undefined),
+
 	result: (token: string, submissionId: string, secret: string, signal?: AbortSignal) =>
 		axiosClient
 			.get<TApiResponse<{ submission: TPageSubmissionResult }>>(E.result(token, submissionId), {
