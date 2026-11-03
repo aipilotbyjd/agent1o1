@@ -238,6 +238,8 @@ export type TPageSharePreview = {
 	image_url: string | null;
 	theme_color: string;
 	site_name: string;
+	/** The page asks search engines to leave it out of their results. */
+	noindex: boolean;
 };
 
 export type TWorkflowPage = {
@@ -259,7 +261,12 @@ export type TWorkflowPage = {
 	is_enabled: boolean;
 	max_runs_per_day: number | null;
 	/** The link card the builder chose; null parts are worked out from the page. */
-	share: { title: string | null; description: string | null; image_url: string | null };
+	share: {
+		title: string | null;
+		description: string | null;
+		image_url: string | null;
+		hide_from_search: boolean;
+	};
 	/** The link card as it will show. Left out of list responses. */
 	share_preview?: TPageSharePreview;
 	/** List only: runs started from the page, not counting builder test runs. */
@@ -291,6 +298,13 @@ export type TCreateWorkflowPageDto = {
 	template_id?: string;
 };
 
+export type TClonePageDto = {
+	target_workspace_id: string;
+	/** A workflow of the workspace the page is copied into. */
+	workflow_id: string;
+	name?: string;
+};
+
 export type TUpdateWorkflowPageDto = Partial<{
 	name: string;
 	description: string | null;
@@ -303,6 +317,7 @@ export type TUpdateWorkflowPageDto = Partial<{
 	share_title: string | null;
 	share_description: string | null;
 	share_image_url: string | null;
+	hide_from_search: boolean;
 	variant_content: TPageContent;
 	variant_split: number;
 	/** The `draft_revision` the draft being saved was based on; a mismatch is refused (409). */

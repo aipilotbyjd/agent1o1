@@ -5,6 +5,7 @@ import {
 	AlertTriangle,
 	AppWindow,
 	Copy,
+	CopyPlus,
 	ExternalLink,
 	GitMerge,
 	Globe,
@@ -29,6 +30,7 @@ import { useDeleteWorkflowPage, useDuplicateWorkflowPage, useWorkflowPages } fro
 import type { TWorkflowPage } from '@/types/workflow-page.type';
 import relativeTime from '@/utils/relativeTime.util';
 import type { OutletContextType } from './_layouts/WorkflowPages.layout';
+import ClonePageModal from './_partial/ClonePageModal.partial';
 import CreatePageModal from './_partial/CreatePageModal.partial';
 
 type TFilter = 'all' | 'live' | 'draft' | 'attention';
@@ -64,6 +66,7 @@ const PageCard = ({ ws, page }: { ws: string; page: TWorkflowPage }) => {
 	const duplicate = useDuplicateWorkflowPage(ws);
 	const remove = useDeleteWorkflowPage(ws);
 	const [menuOpen, setMenuOpen] = useState(false);
+	const [cloneOpen, setCloneOpen] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
 	const pill = status(page);
 	const access = ACCESS[page.access];
@@ -96,6 +99,7 @@ const PageCard = ({ ws, page }: { ws: string; page: TWorkflowPage }) => {
 	const menuItem = 'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold transition';
 
 	return (
+		<>
 		<article className='group hover:border-primary-400/50 relative flex flex-col rounded-3xl border border-zinc-200 bg-white shadow-xs transition hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
 			<Link
 				to={paths.editPage(ws, page.id)}
@@ -169,6 +173,16 @@ const PageCard = ({ ws, page }: { ws: string; page: TWorkflowPage }) => {
 									className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
 									<Copy size={13} /> Duplicate
 								</button>
+								<button
+									role='menuitem'
+									type='button'
+									onClick={() => {
+										setMenuOpen(false);
+										setCloneOpen(true);
+									}}
+									className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
+									<CopyPlus size={13} /> Copy to workspace…
+								</button>
 								<button role='menuitem' type='button' onClick={() => void onDelete()} className={`${menuItem} text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10`}>
 									<Trash2 size={13} /> Delete
 								</button>
@@ -203,6 +217,8 @@ const PageCard = ({ ws, page }: { ws: string; page: TWorkflowPage }) => {
 				</p>
 			</div>
 		</article>
+		<ClonePageModal ws={ws} page={page} isOpen={cloneOpen} onClose={() => setCloneOpen(false)} />
+		</>
 	);
 };
 

@@ -23,6 +23,7 @@ const pageMeta = async (request: Request, context: TContext) => {
 
 	const headers = new Headers(response.headers);
 	headers.delete('content-length');
+	if (meta.noindex) headers.set('X-Robots-Tag', 'noindex, nofollow');
 
 	return new Response(injectPageMeta(await response.text(), meta, request.url), {
 		status: response.status,

@@ -165,6 +165,20 @@ const ShareMenu = ({ onClose }: { onClose: () => void }) => {
 	const { host, pathname } = new URL(url);
 	const preview = page.share_preview;
 	const canShare = page.is_published;
+	/**
+	 * The card as it would look with what is typed in the form. A part left
+	 * empty falls back the way the server does: the page's name, and what it
+	 * works out for the description and image (kept only while no custom one
+	 * is saved, since the saved preview then still holds the worked-out one).
+	 */
+	const livePreview = preview && {
+		...preview,
+		title: card.share_title.trim() || page.name,
+		description:
+			card.share_description.trim() ||
+			(page.share.description ? (page.description ?? '') : preview.description),
+		image_url: card.share_image_url.trim() || (page.share.image_url ? null : preview.image_url),
+	};
 
 	useEffect(() => {
 		if (!showQr) return;
@@ -534,7 +548,7 @@ const ShareMenu = ({ onClose }: { onClose: () => void }) => {
 								</button>
 							)
 						}>
-						<LinkCard preview={preview} host={host} />
+						<LinkCard preview={editingCard && livePreview ? livePreview : preview} host={host} />
 						{editingCard ? (
 							<div className='space-y-2'>
 								<label className='block space-y-1'>
@@ -605,6 +619,17 @@ const ShareMenu = ({ onClose }: { onClose: () => void }) => {
 								may keep an old preview for a while after a change.
 							</p>
 						)}
+					</Section>
+				)}
+
+				{isPublic && (
+					<Section title='Search engines'>
+						<Toggle
+							label='Hide from search results'
+							hint='Asks Google and others not to list this page. People with the link can still open it.'
+							checked={page.share.hide_from_search}
+							onChange={(hide_from_search) => update.mutate({ hide_from_search })}
+						/>
 					</Section>
 				)}
 

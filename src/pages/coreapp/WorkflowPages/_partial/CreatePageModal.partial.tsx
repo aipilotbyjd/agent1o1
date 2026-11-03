@@ -126,6 +126,7 @@ const CreatePageModal = ({
 	const [templateId, setTemplateId] = useState<string | null>(initialTemplateId ?? null);
 	const [name, setName] = useState('');
 	const [category, setCategory] = useState(ALL);
+	const [layoutQuery, setLayoutQuery] = useState('');
 	const [previewId, setPreviewId] = useState<string | null>(null);
 
 	const filtered = useMemo(() => {
@@ -157,12 +158,18 @@ const CreatePageModal = ({
 	);
 	const hasOwn = sortedTemplates.some((template) => template.workspace_id !== null);
 
-	const shownTemplates = sortedTemplates.filter((template) =>
-		category === ALL
-			? true
-			: category === OWN
-				? template.workspace_id !== null
-				: template.workspace_id === null && template.category === category,
+	const layoutSearch = layoutQuery.trim().toLowerCase();
+	const shownTemplates = sortedTemplates.filter(
+		(template) =>
+			(category === ALL
+				? true
+				: category === OWN
+					? template.workspace_id !== null
+					: template.workspace_id === null && template.category === category) &&
+			(!layoutSearch ||
+				`${template.name} ${template.category ?? ''} ${template.description ?? ''}`
+					.toLowerCase()
+					.includes(layoutSearch)),
 	);
 
 	const previewed = sortedTemplates.find((template) => template.id === previewId);
@@ -313,6 +320,20 @@ const CreatePageModal = ({
 								<p className='mb-2 text-xs font-bold text-zinc-700 dark:text-zinc-300'>
 									Start from a layout
 								</p>
+								<div className='relative mb-2'>
+									<Search
+										size={14}
+										className='absolute top-1/2 left-3 -translate-y-1/2 text-zinc-400'
+									/>
+									<input
+										type='search'
+										value={layoutQuery}
+										onChange={(e) => setLayoutQuery(e.target.value)}
+										placeholder='Search layouts…'
+										aria-label='Search layouts'
+										className='h-9 w-full rounded-xl border border-zinc-200 bg-white pr-3 pl-9 text-xs outline-none focus:border-primary-500 dark:border-white/10 dark:bg-zinc-900 dark:text-white'
+									/>
+								</div>
 								<div
 									role='tablist'
 									aria-label='Layout categories'
@@ -341,7 +362,7 @@ const CreatePageModal = ({
 									role='listbox'
 									aria-label='Layouts'
 									className='grid max-h-[340px] grid-cols-2 gap-2.5 overflow-y-auto p-0.5 sm:grid-cols-3'>
-									{category === ALL && (
+									{category === ALL && !layoutSearch && (
 										<LayoutCard
 											name='Standard'
 											tag='Built from the workflow'
@@ -365,6 +386,11 @@ const CreatePageModal = ({
 											onPreview={() => setPreviewId(template.id)}
 										/>
 									))}
+									{!templatesLoading && layoutSearch && shownTemplates.length === 0 && (
+										<p className='col-span-full py-6 text-center text-xs text-zinc-400'>
+											No layouts match “{layoutQuery.trim()}”.
+										</p>
+									)}
 									{templatesLoading &&
 										Array.from({ length: 2 }, (_, i) => (
 											<div
