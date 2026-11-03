@@ -166,9 +166,32 @@ export type TAgentMessage = {
 	awaiting_approval?: boolean;
 	/** The tool calls it is waiting on. */
 	pending_tool_call_ids?: string[];
+	/** Set on a user-role message no person typed, e.g. a follow-up the agent scheduled itself. */
+	origin?: TAgentMessageOrigin | null;
+	/** The knowledge sources the reply's `[ref]` markers cite, numbered in order of first appearance. */
+	citations?: TAgentCitation[];
 	/** `step_limit`: the turn ran out of steps before it finished. */
 	stop_reason?: 'step_limit' | null;
 	created_at: string;
+};
+
+export type TAgentMessageOrigin = {
+	type: 'follow_up';
+	trigger_id: string;
+	title: string | null;
+	scheduled_for: string | null;
+};
+
+/** One source a reply cites: see `App\Services\Agents\KnowledgeCitations`. */
+export type TAgentCitation = {
+	number: number;
+	/** What the reply's marker says, e.g. `K1A2B3C` (a search hit) or `D1A2B3C` (a document). */
+	ref: string;
+	kind: 'chunk' | 'document';
+	collection: string | null;
+	source: string | null;
+	url: string | null;
+	snippet: string;
 };
 
 export type TAgentSession = {

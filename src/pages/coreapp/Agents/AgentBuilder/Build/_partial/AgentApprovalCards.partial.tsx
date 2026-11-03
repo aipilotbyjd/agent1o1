@@ -1,4 +1,5 @@
 import { prettifyActionTool } from '../_helper/actionTool.helper';
+import AgentQuestionCard from './AgentQuestionCard.partial';
 import { useState } from 'react';
 import { AlertTriangle, Check, Clock, PencilLine, ShieldAlert, ShieldCheck, X } from 'lucide-react';
 import type {
@@ -287,8 +288,9 @@ export const ApprovalCard = ({
 
 /**
  * The actions a paused turn is waiting on, as approve / edit / reject cards
- * under the chat. The turn resumes once every one is decided: the last
- * decision streams the agent carrying on, right here.
+ * under the chat, and any question the agent asked (`ask_user`) as a card to
+ * answer. The turn resumes once every one is decided: the last decision
+ * streams the agent carrying on, right here.
  */
 const AgentApprovalCards = ({
 	actions,
@@ -303,45 +305,79 @@ const AgentApprovalCards = ({
 }) => {
 	if (actions.length === 0) return null;
 
+	const questions = actions.filter((action) => action.tool_kind === 'question');
+	const approvals = actions.filter((action) => action.tool_kind !== 'question');
+
 	return (
 		<div className='flex w-full justify-start'>
 			<div className='w-full max-w-3xl space-y-2.5 pl-12'>
-				<div className='flex items-center gap-2'>
-					<ShieldCheck size={14} className='text-amber-600 dark:text-amber-400' />
-					<span className='text-[12.5px] font-bold text-zinc-700 dark:text-zinc-200'>
-						{actions.length === 1
-							? 'The agent is waiting for your approval'
-							: `The agent is waiting for approval on ${actions.length} actions`}
-					</span>
-					{actions.length > 1 && (
-						<button
-							type='button'
-							disabled={busy}
-							onClick={() =>
-								onDecide(
-									actions.map((action) => ({
-										action_id: action.id,
-										decision: 'approve' as const,
-									})),
-								)
-							}
-							className='ml-auto min-h-8 rounded-lg px-2.5 text-[12px] font-bold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40'>
-							Approve all
-						</button>
-					)}
-				</div>
-				{actions.map((action) => (
-					<ApprovalCard
+				{questions.map((action) => (
+					<AgentQuestionCard
 						key={action.id}
 						action={action}
 						busy={busy}
-						canRemember={canRemember}
 						onDecide={(decision) => onDecide([decision])}
 					/>
 				))}
+				{approvals.length > 0 && (
+					<ApprovalList
+						actions={approvals}
+						busy={busy}
+						canRemember={canRemember}
+						onDecide={onDecide}
+					/>
+				)}
 			</div>
 		</div>
 	);
 };
+
+const ApprovalList = ({
+	actions,
+	busy,
+	canRemember,
+	onDecide,
+}: {
+	actions: TAgentAction[];
+	busy: boolean;
+	canRemember: boolean;
+	onDecide: (decisions: TAgentActionDecision[]) => void;
+}) => (
+	<>
+		<div className='flex items-center gap-2'>
+			<ShieldCheck size={14} className='text-amber-600 dark:text-amber-400' />
+			<span className='text-[12.5px] font-bold text-zinc-700 dark:text-zinc-200'>
+				{actions.length === 1
+					? 'The agent is waiting for your approval'
+					: `The agent is waiting for approval on ${actions.length} actions`}
+			</span>
+			{actions.length > 1 && (
+				<button
+					type='button'
+					disabled={busy}
+					onClick={() =>
+						onDecide(
+							actions.map((action) => ({
+								action_id: action.id,
+								decision: 'approve' as const,
+							})),
+						)
+					}
+					className='ml-auto min-h-8 rounded-lg px-2.5 text-[12px] font-bold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40'>
+					Approve all
+				</button>
+			)}
+		</div>
+		{actions.map((action) => (
+			<ApprovalCard
+				key={action.id}
+				action={action}
+				busy={busy}
+				canRemember={canRemember}
+				onDecide={(decision) => onDecide([decision])}
+			/>
+		))}
+	</>
+);
 
 export default AgentApprovalCards;
