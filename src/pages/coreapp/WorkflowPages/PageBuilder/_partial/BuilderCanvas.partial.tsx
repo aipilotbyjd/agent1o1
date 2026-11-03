@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent, ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowDown, ArrowUp, Copy, Eye, GripVertical, MessageSquare, MousePointerClick, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Copy, Eye, GripVertical, Lock, MessageSquare, MousePointerClick, Plus, Trash2 } from 'lucide-react';
 import PageRenderer, { type TRenderBlock } from '@/components/workflowPage/PageRenderer';
 import { usePageRun, type TPageTransport } from '@/components/workflowPage/usePageRun';
 import { WorkflowPageService, useWorkflowPageComments, workflowPageKeys } from '@/api/modules/workflow-pages';
@@ -238,7 +238,8 @@ const BlockFrame = ({ block, children }: { block: TRenderBlock; children: ReactN
 	return (
 		<div
 			ref={ref}
-			draggable={!isColumn}
+			data-block-frame=''
+			draggable={!isColumn && !block.locked}
 			onDragStart={(event) => {
 				event.stopPropagation();
 				startDrag(event, { kind: 'move', id: block.id });
@@ -290,8 +291,12 @@ const BlockFrame = ({ block, children }: { block: TRenderBlock; children: ReactN
 							? 'pointer-events-none opacity-0'
 							: 'bg-zinc-800/85 opacity-0 group-hover/block:opacity-100'
 				}`}>
-				{!isColumn && <GripVertical size={10} className='cursor-grab' />}
+				{!isColumn && !block.locked && <GripVertical size={10} className='cursor-grab' />}
+				{block.locked && <Lock size={10} />}
 				{meta.label}
+				{block.visibility !== 'all' && (
+					<span className='rounded bg-white/20 px-1 text-[9px] uppercase'>{block.visibility} only</span>
+				)}
 			</span>
 			{primary && !editing && (
 				<div className='absolute -top-6 right-0 z-20 flex items-center gap-0.5 rounded-lg bg-zinc-900 p-0.5 text-white shadow-lg dark:bg-zinc-800'>
@@ -306,7 +311,7 @@ const BlockFrame = ({ block, children }: { block: TRenderBlock; children: ReactN
 							<ToolbarButton label='Duplicate' onClick={() => store().duplicateBlock(block.id)}>
 								<Copy size={12} />
 							</ToolbarButton>
-							<ToolbarButton label='Delete' danger onClick={() => store().removeBlock(block.id)}>
+							<ToolbarButton label={block.locked ? 'Locked' : 'Delete'} danger onClick={() => store().removeBlock(block.id)}>
 								<Trash2 size={12} />
 							</ToolbarButton>
 						</>
@@ -460,6 +465,8 @@ const BuilderCanvas = () => {
 	const setDropTarget = usePageBuilderStore((store) => store.setDropTarget);
 	const blocks = useMemo(() => resolveBlocks(rawBlocks, fields), [rawBlocks, fields]);
 	const width = DEVICE_WIDTH[device];
+	const zoom = usePageBuilderStore((store) => store.zoom) / 100;
+	const guides = usePageBuilderStore((store) => store.guides);
 
 	if (!theme) return null;
 
@@ -484,10 +491,12 @@ const BuilderCanvas = () => {
 			)}
 			<div className='min-h-0 flex-1 overflow-hidden p-4 sm:p-6'>
 				<div
-					className='mx-auto flex h-full flex-col overflow-hidden border border-zinc-300/80 bg-white shadow-[0_20px_60px_-25px_rgba(0,0,0,0.35)] transition-[width] duration-300 dark:border-white/10 dark:bg-zinc-950'
+					className='relative mx-auto flex flex-col overflow-hidden border border-zinc-300/80 bg-white shadow-[0_20px_60px_-25px_rgba(0,0,0,0.35)] transition-[width] duration-300 dark:border-white/10 dark:bg-zinc-950'
 					style={{
-						width: width ?? '100%',
-						maxWidth: '100%',
+						zoom,
+						width: width ?? `${100 / zoom}%`,
+						maxWidth: `${100 / zoom}%`,
+						height: `${100 / zoom}%`,
 						borderRadius: device === 'mobile' ? 32 : 14,
 					}}>
 					{device !== 'mobile' && (
@@ -497,7 +506,15 @@ const BuilderCanvas = () => {
 							<span className='size-2.5 rounded-full bg-emerald-400/80' />
 						</div>
 					)}
-					<div className='min-h-0 flex-1 overflow-y-auto'>
+					<div
+						className={`relative min-h-0 flex-1 overflow-y-auto ${
+							guides && mode === 'edit'
+								? '[&_[data-block-frame]]:outline [&_[data-block-frame]]:outline-1 [&_[data-block-frame]]:outline-dashed [&_[data-block-frame]]:outline-offset-2 [&_[data-block-frame]]:outline-sky-400/70'
+								: ''
+						}`}>
+						{guides && mode === 'edit' && (
+							<span aria-hidden className='pointer-events-none absolute inset-y-0 left-1/2 z-40 w-px border-l border-dashed border-fuchsia-400/60' />
+						)}
 						{mode === 'preview' ? (
 							<PreviewSurface blocks={blocks} />
 						) : (

@@ -75,6 +75,49 @@ export type TPageBlockProps = {
 		items: { title: string; description: string }[];
 		columns: 2 | 3 | 4;
 	};
+	code: { code: string; language: string | null; filename: string | null; show_copy: boolean };
+	pricing: {
+		title: string | null;
+		items: {
+			name: string;
+			price: string;
+			period: string;
+			description: string;
+			/** One feature per line. */
+			features: string;
+			cta_label: string;
+			cta_url: string | null;
+			highlighted: boolean;
+		}[];
+	};
+	/** `url` is an https link on a host the server allows embedding. */
+	embed: { url: string | null; title: string | null; height: 'md' | 'sm' | 'lg' | 'xl' };
+	gallery: {
+		items: { url: string; alt: string | null }[];
+		columns: 2 | 3 | 4;
+		ratio: 'square' | 'landscape' | 'auto';
+		lightbox: boolean;
+	};
+	compare: {
+		mode: 'slider' | 'lists';
+		before_url: string | null;
+		after_url: string | null;
+		before_label: string | null;
+		after_label: string | null;
+		/** One item per line. */
+		before_items: string | null;
+		after_items: string | null;
+	};
+	progress: { title: string | null; items: { label: string; value: number }[]; show_values: boolean };
+	social: {
+		items: { network: TPageSocialNetwork; url: string }[];
+		align: TPageAlign;
+		style: 'solid' | 'outline';
+	};
+	timeline: {
+		title: string | null;
+		items: { date: string; title: string; description: string }[];
+	};
 	section: {
 		background: 'none' | 'subtle' | 'accent' | 'dark' | 'image';
 		image_url: string | null;
@@ -89,6 +132,18 @@ export type TPageBlockProps = {
 	column: { background: 'none' | 'subtle' };
 };
 
+export type TPageSocialNetwork =
+	| 'website'
+	| 'x'
+	| 'linkedin'
+	| 'github'
+	| 'youtube'
+	| 'instagram'
+	| 'facebook'
+	| 'tiktok'
+	| 'discord'
+	| 'email';
+
 export type TPageColumnLayout = '1-1' | '1-2' | '2-1' | '1-1-1' | '1-1-1-1';
 
 export type TPageBlockType = keyof TPageBlockProps;
@@ -101,12 +156,25 @@ export interface TPageBlockChildren {
 	children: TPageBlock[];
 }
 
+export type TPageVisibility = 'all' | 'desktop' | 'mobile';
+export type TPageSpacing = 'none' | 'sm' | 'md' | 'lg';
+
+/** How a block shows up around its props. `mobile_*` apply on narrow screens only. */
+export type TPageBlockDisplay = {
+	visibility: TPageVisibility;
+	/** Builder only: a locked block can't be edited, moved or deleted until unlocked. */
+	locked: boolean;
+	space_above: TPageSpacing;
+	mobile_space_above: TPageSpacing | null;
+	mobile_align: TPageAlign | null;
+};
+
 export type TPageBlockOf<T extends TPageBlockType> = {
 	id: string;
 	type: T;
 	width: TPageBlockWidth;
 	props: TPageBlockProps[T];
-} & (T extends TPageContainerType ? TPageBlockChildren : unknown);
+} & TPageBlockDisplay & (T extends TPageContainerType ? TPageBlockChildren : unknown);
 
 export type TPageBlock = { [T in TPageBlockType]: TPageBlockOf<T> }[TPageBlockType];
 

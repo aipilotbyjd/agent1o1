@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
-import { AlignCenter, AlignLeft, AlignRight, BookmarkPlus, Copy, CopyPlus, ExternalLink, History, LayoutPanelTop, MessageSquare, Play, RefreshCw, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, BookmarkPlus, Copy, CopyPlus, ExternalLink, History, LayoutPanelTop, Lock, LockOpen, MessageSquare, Play, RefreshCw, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { TPageAlign, TPageBlock, TPageBlockOf, TPageBlockProps, TPageColumnLayout } from '@/types/workflow-page.type';
+import type { TPageAlign, TPageBlock, TPageBlockDisplay, TPageBlockOf, TPageBlockProps, TPageColumnLayout, TPageSpacing } from '@/types/workflow-page.type';
 import { flattenBlocks } from '@/components/workflowPage/pageTree';
 import { useWorkflows } from '@/api/modules/workflows';
 import {
@@ -20,6 +20,7 @@ import relativeTime from '@/utils/relativeTime.util';
 import { BLOCK_CATALOG, WIDTH_OPTIONS } from '../_helper/blockCatalog.helper';
 import { findBlock, findPlace, isContainer } from '../_helper/blockTree.helper';
 import { copyBlocks } from '../_helper/clipboard.helper';
+import { alignBlock, canAlign, loadStylePresets, storeStylePresets, type TSavedStylePreset, captureStyle } from '../_helper/stylePreset.helper';
 import CommentsPanel from './CommentsPanel.partial';
 import HistoryPanel from './HistoryPanel.partial';
 import { selectSelected, usePageBuilderStore, type TBuilderRightTab } from '../_store/pageBuilder.store';
@@ -32,6 +33,19 @@ const ALIGN_OPTIONS: { value: TPageAlign; label: ReactNode; title: string }[] = 
 	{ value: 'left', label: <AlignLeft size={13} />, title: 'Left' },
 	{ value: 'center', label: <AlignCenter size={13} />, title: 'Centre' },
 	{ value: 'right', label: <AlignRight size={13} />, title: 'Right' },
+];
+
+const SOCIAL_NETWORK_OPTIONS = [
+	{ value: 'website', label: 'Website' },
+	{ value: 'x', label: 'X' },
+	{ value: 'linkedin', label: 'LinkedIn' },
+	{ value: 'github', label: 'GitHub' },
+	{ value: 'youtube', label: 'YouTube' },
+	{ value: 'instagram', label: 'Instagram' },
+	{ value: 'facebook', label: 'Facebook' },
+	{ value: 'tiktok', label: 'TikTok' },
+	{ value: 'discord', label: 'Discord' },
+	{ value: 'email', label: 'Email' },
 ];
 
 type TPropsEditor<T extends keyof TPageBlockProps> = {
@@ -662,6 +676,213 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 					/>
 				</PanelSection>
 			);
+		case 'code':
+			return (
+				<PanelSection title='Code'>
+					<PanelText label='Code' multiline rows={8} mono value={block.props.code} onChange={(code) => set({ code }, 'code')} />
+					<div className='grid grid-cols-2 gap-2'>
+						<PanelText label='Language' value={block.props.language} placeholder='bash' onChange={(language) => set({ language: language || null }, 'language')} />
+						<PanelText label='File name' value={block.props.filename} placeholder='Optional' onChange={(filename) => set({ filename: filename || null }, 'filename')} />
+					</div>
+					<Toggle label='Show a copy button' checked={block.props.show_copy} onChange={(show_copy) => set({ show_copy })} />
+				</PanelSection>
+			);
+		case 'pricing':
+			return (
+				<PanelSection title='Plans'>
+					<PanelText label='Title' value={block.props.title} placeholder='Optional' onChange={(title) => set({ title }, 'title')} />
+					<ListEditor
+						items={block.props.items}
+						onChange={(items) => set({ items }, 'items')}
+						create={() => ({ name: '', price: '', period: '', description: '', features: '', cta_label: '', cta_url: null, highlighted: false })}
+						max={4}
+						addLabel='Add a plan'
+						title={(item, i) => item.name || `Plan ${i + 1}`}>
+						{(item, update) => (
+							<>
+								<PanelText label='Name' value={item.name} onChange={(name) => update({ name })} />
+								<div className='grid grid-cols-2 gap-2'>
+									<PanelText label='Price' value={item.price} placeholder='$29' onChange={(price) => update({ price })} />
+									<PanelText label='Per' value={item.period} placeholder='/month' onChange={(period) => update({ period })} />
+								</div>
+								<PanelText label='Short description' value={item.description} onChange={(description) => update({ description })} />
+								<PanelText label='Features' multiline rows={4} value={item.features} hint='One per line.' onChange={(features) => update({ features })} />
+								<PanelText label='Button label' value={item.cta_label} onChange={(cta_label) => update({ cta_label })} />
+								<PanelText label='Button link' type='url' value={item.cta_url} placeholder='https://…' onChange={(cta_url) => update({ cta_url: cta_url || null })} />
+								<Toggle label='Highlight as popular' checked={item.highlighted} onChange={(highlighted) => update({ highlighted })} />
+							</>
+						)}
+					</ListEditor>
+				</PanelSection>
+			);
+		case 'embed':
+			return (
+				<PanelSection title='Embed'>
+					<PanelText
+						label='Link'
+						type='url'
+						value={block.props.url}
+						placeholder='https://calendly.com/…'
+						hint='https links from Calendly, Cal.com, Typeform, Tally, Google Forms and Maps, Airtable, Figma, Notion, Loom, Spotify and CodePen. Others are removed when saved.'
+						onChange={(url) => set({ url: url || null }, 'url')}
+					/>
+					<PanelText label='Title' value={block.props.title} placeholder='Read out by screen readers' onChange={(title) => set({ title: title || null }, 'title')} />
+					<Segmented
+						label='Height'
+						value={block.props.height}
+						onChange={(height) => set({ height })}
+						options={[
+							{ value: 'sm', label: 'S' },
+							{ value: 'md', label: 'M' },
+							{ value: 'lg', label: 'L' },
+							{ value: 'xl', label: 'XL' },
+						]}
+					/>
+				</PanelSection>
+			);
+		case 'gallery':
+			return (
+				<PanelSection title='Images'>
+					<ListEditor
+						items={block.props.items}
+						onChange={(items) => set({ items }, 'items')}
+						create={() => ({ url: '', alt: null })}
+						max={12}
+						addLabel='Add an image'
+						title={(item, i) => item.alt || `Image ${i + 1}`}>
+						{(item, update) => (
+							<>
+								<PanelText label='Image link' type='url' value={item.url} placeholder='https://…' onChange={(url) => update({ url })} />
+								<PanelText label='Description' value={item.alt} placeholder='Read out by screen readers' onChange={(alt) => update({ alt: alt || null })} />
+							</>
+						)}
+					</ListEditor>
+					<Segmented
+						label='Columns'
+						value={block.props.columns}
+						onChange={(columns) => set({ columns })}
+						options={([2, 3, 4] as const).map((value) => ({ value, label: String(value) }))}
+					/>
+					<Segmented
+						label='Shape'
+						value={block.props.ratio}
+						onChange={(ratio) => set({ ratio })}
+						options={[
+							{ value: 'square', label: 'Square' },
+							{ value: 'landscape', label: '4:3' },
+							{ value: 'auto', label: 'Original' },
+						]}
+					/>
+					<Toggle label='Open images full size on click' checked={block.props.lightbox} onChange={(lightbox) => set({ lightbox })} />
+				</PanelSection>
+			);
+		case 'compare':
+			return (
+				<PanelSection title='Compare'>
+					<Segmented
+						label='Style'
+						value={block.props.mode}
+						onChange={(mode) => set({ mode })}
+						options={[
+							{ value: 'lists', label: 'Two lists' },
+							{ value: 'slider', label: 'Image slider' },
+						]}
+					/>
+					<div className='grid grid-cols-2 gap-2'>
+						<PanelText label='Left title' value={block.props.before_label} placeholder='Before' onChange={(before_label) => set({ before_label: before_label || null }, 'before_label')} />
+						<PanelText label='Right title' value={block.props.after_label} placeholder='After' onChange={(after_label) => set({ after_label: after_label || null }, 'after_label')} />
+					</div>
+					{block.props.mode === 'slider' ? (
+						<>
+							<PanelText label='Before image' type='url' value={block.props.before_url} placeholder='https://…' onChange={(before_url) => set({ before_url: before_url || null }, 'before_url')} />
+							<PanelText label='After image' type='url' value={block.props.after_url} placeholder='https://…' onChange={(after_url) => set({ after_url: after_url || null }, 'after_url')} />
+						</>
+					) : (
+						<>
+							<PanelText label='Left list' multiline rows={4} value={block.props.before_items} hint='One per line.' onChange={(before_items) => set({ before_items }, 'before_items')} />
+							<PanelText label='Right list' multiline rows={4} value={block.props.after_items} hint='One per line.' onChange={(after_items) => set({ after_items }, 'after_items')} />
+						</>
+					)}
+				</PanelSection>
+			);
+		case 'progress':
+			return (
+				<PanelSection title='Bars'>
+					<PanelText label='Title' value={block.props.title} placeholder='Optional' onChange={(title) => set({ title }, 'title')} />
+					<ListEditor
+						items={block.props.items}
+						onChange={(items) => set({ items }, 'items')}
+						create={() => ({ label: '', value: 50 })}
+						max={10}
+						addLabel='Add a bar'
+						title={(item, i) => item.label || `Bar ${i + 1}`}>
+						{(item, update) => (
+							<div className='grid grid-cols-[1fr_4.5rem] gap-2'>
+								<PanelText label='Label' value={item.label} onChange={(label) => update({ label })} />
+								<PanelText label='Percent' type='number' value={String(item.value)} onChange={(value) => update({ value: Math.max(0, Math.min(100, Math.round(Number(value) || 0))) })} />
+							</div>
+						)}
+					</ListEditor>
+					<Toggle label='Show the percentages' checked={block.props.show_values} onChange={(show_values) => set({ show_values })} />
+				</PanelSection>
+			);
+		case 'social':
+			return (
+				<PanelSection title='Links'>
+					<ListEditor
+						items={block.props.items}
+						onChange={(items) => set({ items }, 'items')}
+						create={() => ({ network: 'website' as const, url: '' })}
+						max={10}
+						addLabel='Add a link'
+						title={(item, i) => humanize(item.network) || `Link ${i + 1}`}>
+						{(item, update) => (
+							<>
+								<PanelSelect
+									label='Where'
+									value={item.network}
+									onChange={(network) => update({ network: network as typeof item.network })}
+									options={SOCIAL_NETWORK_OPTIONS}
+								/>
+								<PanelText label={item.network === 'email' ? 'Email address' : 'Link'} value={item.url.replace(/^mailto:/, '')} placeholder={item.network === 'email' ? 'hello@example.com' : 'https://…'} onChange={(url) => update({ url })} />
+							</>
+						)}
+					</ListEditor>
+					<Segmented label='Align' value={block.props.align} onChange={(align) => set({ align })} options={ALIGN_OPTIONS} />
+					<Segmented
+						label='Style'
+						value={block.props.style}
+						onChange={(style) => set({ style })}
+						options={[
+							{ value: 'solid', label: 'Filled' },
+							{ value: 'outline', label: 'Outline' },
+						]}
+					/>
+				</PanelSection>
+			);
+		case 'timeline':
+			return (
+				<PanelSection title='Milestones'>
+					<PanelText label='Title' value={block.props.title} placeholder='Optional' onChange={(title) => set({ title }, 'title')} />
+					<ListEditor
+						items={block.props.items}
+						onChange={(items) => set({ items }, 'items')}
+						create={() => ({ date: '', title: '', description: '' })}
+						max={12}
+						addLabel='Add a milestone'
+						title={(item, i) => item.title || `Milestone ${i + 1}`}>
+						{(item, update) => (
+							<>
+								<div className='grid grid-cols-[6rem_1fr] gap-2'>
+									<PanelText label='When' value={item.date} placeholder='2025' onChange={(date) => update({ date })} />
+									<PanelText label='Title' value={item.title} onChange={(title) => update({ title })} />
+								</div>
+								<PanelText label='Details' multiline rows={3} value={item.description} hint='Markdown works.' onChange={(description) => update({ description })} />
+							</>
+						)}
+					</ListEditor>
+				</PanelSection>
+			);
 		case 'countdown':
 			return (
 				<PanelSection title='Countdown'>
@@ -790,6 +1011,139 @@ const SaveToLibrary = ({ block, onDone }: { block: TPageBlock; onDone: () => voi
 	);
 };
 
+/** Copy a block's look onto others, or keep it as a named preset on this browser. */
+const StyleTools = ({ block }: { block: TPageBlock }) => {
+	const copiedStyle = usePageBuilderStore((store) => store.copiedStyle);
+	const copyStyle = usePageBuilderStore((store) => store.copyStyle);
+	const pasteStyle = usePageBuilderStore((store) => store.pasteStyle);
+	const [presets, setPresets] = useState<TSavedStylePreset[]>([]);
+	const [name, setName] = useState('');
+	useEffect(() => setPresets(loadStylePresets()), []);
+	const mine = presets.filter((item) => item.preset.type === block.type);
+	const save = () => {
+		const label = name.trim();
+		if (!label) return;
+		const next = [...presets, { id: crypto.randomUUID(), name: label, preset: captureStyle(block) }];
+		setPresets(next);
+		storeStylePresets(next);
+		setName('');
+	};
+	const remove = (id: string) => {
+		const next = presets.filter((item) => item.id !== id);
+		setPresets(next);
+		storeStylePresets(next);
+	};
+	const small =
+		'h-8 flex-1 rounded-lg border border-zinc-200 px-2 text-[11px] font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-40 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-white/[0.04]';
+	return (
+		<PanelSection title='Style'>
+			<div className='flex gap-2'>
+				<button type='button' className={small} onClick={() => copyStyle(block.id)}>
+					Copy style
+				</button>
+				<button
+					type='button'
+					className={small}
+					disabled={!copiedStyle}
+					onClick={() => pasteStyle([block.id])}>
+					Paste style
+				</button>
+			</div>
+			{mine.length > 0 && (
+				<ul className='space-y-1'>
+					{mine.map((item) => (
+						<li key={item.id} className='flex items-center gap-1'>
+							<button
+								type='button'
+								onClick={() => pasteStyle([block.id], item.preset)}
+								className='h-8 min-w-0 flex-1 truncate rounded-lg bg-zinc-50 px-2.5 text-left text-[11px] font-semibold text-zinc-700 hover:bg-zinc-100 dark:bg-white/[0.04] dark:text-zinc-200'>
+								{item.name}
+							</button>
+							<button
+								type='button'
+								aria-label={`Delete preset ${item.name}`}
+								onClick={() => remove(item.id)}
+								className='rounded p-1.5 text-zinc-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10'>
+								<Trash2 size={12} />
+							</button>
+						</li>
+					))}
+				</ul>
+			)}
+			<div className='flex gap-2'>
+				<input
+					value={name}
+					onChange={(event) => setName(event.target.value)}
+					onKeyDown={(event) => event.key === 'Enter' && save()}
+					placeholder='Name a preset'
+					aria-label='Preset name'
+					className={`${panelInputClass} flex-1`}
+				/>
+				<button type='button' className={`${small} flex-none px-3`} disabled={!name.trim()} onClick={save}>
+					Save
+				</button>
+			</div>
+			<p className='text-[10px] leading-snug text-zinc-400 dark:text-zinc-500'>
+				Presets are kept in this browser and work on any page.
+			</p>
+		</PanelSection>
+	);
+};
+
+const SPACE_OPTIONS = [
+	{ value: 'none', label: 'None' },
+	{ value: 'sm', label: 'Small' },
+	{ value: 'md', label: 'Medium' },
+	{ value: 'lg', label: 'Large' },
+];
+
+/** Where a block shows, and the spacing and alignment it asks for on phones. */
+const DisplaySettings = ({ block }: { block: TPageBlock }) => {
+	const updateBlock = usePageBuilderStore((store) => store.updateBlock);
+	const display = (patch: Partial<TPageBlockDisplay>) => updateBlock(block.id, { display: patch });
+	return (
+		<PanelSection title='Display'>
+			<Segmented
+				label='Show on'
+				value={block.visibility}
+				onChange={(visibility) => display({ visibility })}
+				options={[
+					{ value: 'all', label: 'Everywhere' },
+					{ value: 'desktop', label: 'Desktop' },
+					{ value: 'mobile', label: 'Mobile' },
+				]}
+			/>
+			<PanelSelect
+				label='Space above'
+				value={block.space_above}
+				onChange={(space_above) => display({ space_above: space_above as TPageSpacing })}
+				options={SPACE_OPTIONS}
+			/>
+			<PanelSelect
+				label='Space above on phones'
+				value={block.mobile_space_above ?? ''}
+				placeholder='Same as above'
+				onChange={(value) => display({ mobile_space_above: (value || null) as TPageSpacing | null })}
+				options={SPACE_OPTIONS}
+			/>
+			<PanelSelect
+				label='Alignment on phones'
+				value={block.mobile_align ?? ''}
+				placeholder='Same as on desktop'
+				onChange={(value) => display({ mobile_align: (value || null) as TPageAlign | null })}
+				options={[
+					{ value: 'left', label: 'Left' },
+					{ value: 'center', label: 'Centre' },
+					{ value: 'right', label: 'Right' },
+				]}
+			/>
+			<p className='text-[10px] leading-snug text-zinc-400 dark:text-zinc-500'>
+				A block hidden on the screen you’re previewing shows faded here, and is left out on the page.
+			</p>
+		</PanelSection>
+	);
+};
+
 const BlockInspector = ({ block }: { block: TPageBlock }) => {
 	const { page } = usePageBuilder();
 	const updateBlock = usePageBuilderStore((store) => store.updateBlock);
@@ -818,6 +1172,15 @@ const BlockInspector = ({ block }: { block: TPageBlock }) => {
 				<>
 				<button
 					type='button'
+					aria-label={block.locked ? 'Unlock block' : 'Lock block'}
+					title={block.locked ? 'Unlock' : 'Lock, so it can’t be edited, moved or deleted by accident'}
+					aria-pressed={block.locked}
+					onClick={() => updateBlock(block.id, { display: { locked: !block.locked } })}
+					className={`rounded-lg p-1.5 transition ${block.locked ? 'bg-amber-100 text-amber-800 dark:bg-amber-400/15 dark:text-amber-300' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200'}`}>
+					{block.locked ? <Lock size={14} /> : <LockOpen size={14} />}
+				</button>
+				<button
+					type='button'
 					aria-label='Save to library'
 					title='Save to library, to reuse on any page'
 					aria-pressed={saving}
@@ -837,8 +1200,9 @@ const BlockInspector = ({ block }: { block: TPageBlock }) => {
 					type='button'
 					aria-label='Delete block'
 					title='Delete (⌫)'
+					disabled={block.locked}
 					onClick={() => removeBlock(block.id)}
-					className='rounded-lg p-1.5 text-zinc-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10'>
+					className='rounded-lg p-1.5 text-zinc-400 transition hover:bg-rose-50 disabled:pointer-events-none disabled:opacity-40 hover:text-rose-600 dark:hover:bg-rose-500/10'>
 					<Trash2 size={14} />
 				</button>
 				</>
@@ -850,20 +1214,29 @@ const BlockInspector = ({ block }: { block: TPageBlock }) => {
 					<IssueList issues={issues} />
 				</div>
 			)}
-			<PropsInspector block={block} set={(props, coalesce) => updateBlock(block.id, { props }, coalesce)} />
-			{!isContainer(block) && !inColumn && (
-			<PanelSection title='Layout'>
-				<Segmented
-					label='Width'
-					value={block.width}
-					onChange={(width) => updateBlock(block.id, { width })}
-					options={WIDTH_OPTIONS}
-				/>
-				<p className='text-[10px] leading-snug text-zinc-400 dark:text-zinc-500'>
-					Narrow blocks sit side by side on wide screens and stack on phones.
-				</p>
-			</PanelSection>
+			{block.locked && (
+				<div className='flex items-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-[11px] font-semibold text-amber-800 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-300'>
+					<Lock size={12} /> Locked. Unlock it to make changes.
+				</div>
 			)}
+			<fieldset disabled={block.locked} className={`m-0 min-w-0 border-0 p-0 ${block.locked ? 'opacity-50' : ''}`}>
+				<PropsInspector block={block} set={(props, coalesce) => updateBlock(block.id, { props }, coalesce)} />
+				{!isContainer(block) && !inColumn && (
+				<PanelSection title='Layout'>
+					<Segmented
+						label='Width'
+						value={block.width}
+						onChange={(width) => updateBlock(block.id, { width })}
+						options={WIDTH_OPTIONS}
+					/>
+					<p className='text-[10px] leading-snug text-zinc-400 dark:text-zinc-500'>
+						Narrow blocks sit side by side on wide screens and stack on phones.
+					</p>
+				</PanelSection>
+				)}
+				{!isColumn && <DisplaySettings block={block} />}
+				{!isColumn && <StyleTools block={block} />}
+			</fieldset>
 		</>
 	);
 };
@@ -1047,7 +1420,14 @@ const SelectionPanel = ({ ids }: { ids: string[] }) => {
 	const removeBlocks = usePageBuilderStore((store) => store.removeBlocks);
 	const wrapInSection = usePageBuilderStore((store) => store.wrapInSection);
 	const updateBlock = usePageBuilderStore((store) => store.updateBlock);
+	const updateBlocks = usePageBuilderStore((store) => store.updateBlocks);
+	const pasteStyle = usePageBuilderStore((store) => store.pasteStyle);
+	const copiedStyle = usePageBuilderStore((store) => store.copiedStyle);
 	const blocks = usePageBuilderStore((store) => store.content?.blocks ?? []);
+	const alignable = ids.some((id) => {
+		const block = findBlock(blocks, id);
+		return !!block && canAlign(block);
+	});
 	const onPage = ids.every((id) => {
 		const place = findPlace(blocks, id);
 		return place?.parent === null && place.siblings[place.index].type !== 'section';
@@ -1082,6 +1462,28 @@ const SelectionPanel = ({ ids }: { ids: string[] }) => {
 				</button>
 				<button type='button' className={`${button} text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10`} onClick={() => removeBlocks(ids)}>
 					<Trash2 size={13} /> Delete <span className='ml-auto text-[10px] text-zinc-400'>⌫</span>
+				</button>
+			</PanelSection>
+			{alignable && (
+				<PanelSection title='Align'>
+					<Segmented
+						value={'' as TPageAlign}
+						onChange={(align) => updateBlocks(ids, (block) => alignBlock(block, align))}
+						options={ALIGN_OPTIONS}
+					/>
+					<p className='text-[10px] leading-snug text-zinc-400 dark:text-zinc-500'>
+						Aligns the headings, text, buttons and links among them.
+					</p>
+				</PanelSection>
+			)}
+			<PanelSection title='Style'>
+				<button
+					type='button'
+					className={button}
+					disabled={!copiedStyle}
+					title={copiedStyle ? undefined : 'Pick a block, then use Copy style in its Style section.'}
+					onClick={() => pasteStyle(ids)}>
+					Paste copied style
 				</button>
 			</PanelSection>
 			{resizable && (

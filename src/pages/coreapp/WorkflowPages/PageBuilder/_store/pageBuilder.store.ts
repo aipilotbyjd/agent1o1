@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type {
 	TPageBlock,
+	TPageBlockDisplay,
 	TPageBlockType,
 	TPageColumnLayout,
 	TPageContent,
@@ -8,6 +9,8 @@ import type {
 	TPageVariant,
 } from '@/types/workflow-page.type';
 import { createBlock, newBlockId } from '../_helper/blockCatalog.helper';
+import { replaceInBlocks, type TFindOptions } from '../_helper/findReplace.helper';
+import { applyStyle, captureStyle, type TStylePreset } from '../_helper/stylePreset.helper';
 import {
 	cloneBlock,
 	findBlock,
@@ -22,6 +25,7 @@ import {
 	type TBlockPlace,
 } from '../_helper/blockTree.helper';
 
+export type TBuilderOverlay = 'palette' | 'shortcuts' | 'find';
 export type TBuilderDevice = 'desktop' | 'tablet' | 'mobile';
 export type TBuilderMode = 'edit' | 'preview';
 export type TBuilderLeftTab = 'add' | 'layers' | 'theme';
@@ -69,6 +73,10 @@ export const placeForDrop = (blocks: TPageBlock[], target: TDropTarget): TBlockP
 	return { parentId: place.parent?.id ?? null, index: place.index + (target.side === 'after' ? 1 : 0) };
 };
 
+export const ZOOM_MIN = 50;
+export const ZOOM_MAX = 150;
+export const ZOOM_STEP = 10;
+
 const HISTORY_LIMIT = 100;
 /** Edits to the same prop this close together undo as one step. */
 const COALESCE_MS = 1000;
@@ -93,9 +101,13 @@ type TState = {
 	selectedIds: string[];
 	/** The block whose text is being edited in place on the canvas. */
 	editingId: string | null;
-	/** The quick-add palette (`/`) or the shortcut sheet (`?`). */
-	overlay: 'palette' | 'shortcuts' | null;
+	/** The quick-add palette (`/`), the shortcut sheet (`?`) or find and replace (⇧⌘F). */
+	overlay: TBuilderOverlay | null;
 	device: TBuilderDevice;
+	/** How big the canvas is drawn, in percent. */
+	zoom: number;
+	/** Outlines every block, and marks the page's centre line. */
+	guides: boolean;
 	mode: TBuilderMode;
 	leftTab: TBuilderLeftTab;
 	rightTab: TBuilderRightTab;
@@ -111,8 +123,17 @@ type TActions = {
 	/** `additive` adds or removes `id` from the selection; `keepTab` leaves the right panel where it is. */
 	select: (id: string | null, options?: { additive?: boolean; keepTab?: boolean }) => void;
 	setEditing: (id: string | null) => void;
-	setOverlay: (overlay: 'palette' | 'shortcuts' | null) => void;
+	setOverlay: (overlay: TBuilderOverlay | null) => void;
 	insertBlocks: (blocks: TPageBlock[]) => void;
+	/** The look of the block last copied with Copy style, to paste onto others. */
+	copiedStyle: TStylePreset | null;
+	copyStyle: (id: string) => void;
+	/** Pastes a style (the copied one by default) onto blocks; widths stay put inside columns and containers. */
+	pasteStyle: (ids: string[], preset?: TStylePreset) => void;
+	/** Changes several blocks as one undo step; locked blocks are skipped. */
+	updateBlocks: (ids: string[], update: (block: TPageBlock) => TPageBlock) => void;
+	/** Replaces text in every unlocked block; returns how many replacements were made. */
+	replaceText: (query: string, replacement: string, options: TFindOptions) => number;
 	removeBlocks: (ids: string[]) => void;
 	duplicateBlocks: (ids: string[]) => void;
 	wrapInSection: (ids: string[]) => void;
@@ -121,7 +142,11 @@ type TActions = {
 	moveBlock: (id: string, place: TBlockPlace) => void;
 	setColumnsLayout: (id: string, layout: TPageColumnLayout) => void;
 	nudgeBlock: (id: string, by: -1 | 1) => void;
-	updateBlock: (id: string, patch: { props?: Record<string, unknown>; width?: TPageBlock['width'] }, coalesceKey?: string) => void;
+	updateBlock: (
+		id: string,
+		patch: { props?: Record<string, unknown>; width?: TPageBlock['width']; display?: Partial<TPageBlockDisplay> },
+		coalesceKey?: string,
+	) => void;
 	removeBlock: (id: string) => void;
 	duplicateBlock: (id: string) => void;
 	updateTheme: (patch: Partial<TPageTheme>, coalesceKey?: string) => void;
@@ -130,6 +155,8 @@ type TActions = {
 	markConflict: () => void;
 	markSaveFailed: () => void;
 	setDevice: (device: TBuilderDevice) => void;
+	setZoom: (zoom: number) => void;
+	setGuides: (guides: boolean) => void;
 	setMode: (mode: TBuilderMode) => void;
 	setLeftTab: (tab: TBuilderLeftTab) => void;
 	setRightTab: (tab: TBuilderRightTab) => void;
@@ -153,6 +180,8 @@ const initial: TState = {
 	editingId: null,
 	overlay: null,
 	device: 'desktop',
+	zoom: 100,
+	guides: false,
 	mode: 'edit',
 	leftTab: 'add',
 	rightTab: 'design',
@@ -184,6 +213,8 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 	};
 
 	const blocks = () => get().content?.blocks ?? [];
+	/** A locked block can't be edited, moved or deleted until it is unlocked. */
+	const isLocked = (id: string) => !!findBlock(blocks(), id)?.locked;
 
 	return {
 		...initial,
@@ -196,6 +227,8 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 				variant,
 				baseRevision,
 				device: get().device,
+				zoom: get().zoom,
+				guides: get().guides,
 				leftTab: get().leftTab,
 				// Reloading the same page (a restore, another version) keeps the panel open where it was.
 				rightTab: get().pageId === pageId ? get().rightTab : initial.rightTab,
@@ -253,8 +286,39 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 			set({ selectedId: id, selectedIds: [id], rightTab: tab, editingId: get().editingId === id ? id : null });
 		},
 
-		setEditing: (editingId) => set({ editingId }),
+		setEditing: (editingId) => set({ editingId: editingId && isLocked(editingId) ? null : editingId }),
 		setOverlay: (overlay) => set({ overlay }),
+
+		copiedStyle: null,
+
+		copyStyle: (id) => {
+			const block = findBlock(blocks(), id);
+			if (block) set({ copiedStyle: captureStyle(block) });
+		},
+
+		pasteStyle: (ids, preset) => {
+			const style = preset ?? get().copiedStyle;
+			if (!style) return;
+			get().updateBlocks(ids, (block) => {
+				const place = findPlace(blocks(), block.id);
+				return applyStyle(block, style, isContainer(block) || place?.parent?.type === 'column');
+			});
+		},
+
+		updateBlocks: (ids, update) => {
+			const targets = ids.filter((id) => !isLocked(id));
+			if (targets.length === 0) return;
+			get().change((content) => ({
+				...content,
+				blocks: targets.reduce((list, id) => updateById(list, id, update), content.blocks),
+			}));
+		},
+
+		replaceText: (query, replacement, options) => {
+			const result = replaceInBlocks(blocks(), query, replacement, options);
+			if (result.replaced > 0) get().change((content) => ({ ...content, blocks: result.blocks }));
+			return result.replaced;
+		},
 
 		insertBlocks: (incoming) => {
 			let anchor = get().selectedId;
@@ -271,7 +335,8 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 			set({ selectedIds: inserted, selectedId: inserted[inserted.length - 1] ?? null });
 		},
 
-		removeBlocks: (ids) => {
+		removeBlocks: (all) => {
+			const ids = all.filter((id) => !isLocked(id));
 			if (ids.length === 0) return;
 			get().change((content) => ({ ...content, blocks: ids.reduce((list, id) => removeById(list, id), content.blocks) }));
 			set({ selectedId: null, selectedIds: [], editingId: null });
@@ -294,6 +359,7 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 		},
 
 		wrapInSection: (ids) => {
+			if (ids.some(isLocked)) return;
 			const list = blocks();
 			const places = ids.map((id) => ({ id, place: findPlace(list, id) }));
 			// Only blocks side by side on the page itself can go into a new section.
@@ -324,7 +390,7 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 			const list = blocks();
 			const block = findBlock(list, id);
 			const parent = place.parentId === null ? null : findBlock(list, place.parentId);
-			if (!block || (place.parentId !== null && !parent)) return;
+			if (!block || block.locked || (place.parentId !== null && !parent)) return;
 			if (!fitsIn(block.type, parent?.type ?? null)) return;
 			if (parent && findBlock([block], parent.id)) return;
 			const next = moveTo(list, id, place);
@@ -339,20 +405,23 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 			get().moveBlock(id, { parentId: place.parent?.id ?? null, index: by > 0 ? target + 1 : target });
 		},
 
-		updateBlock: (id, patch, coalesceKey) =>
+		updateBlock: (id, patch, coalesceKey) => {
+			if (isLocked(id) && patch.display?.locked !== false) return;
 			get().change(
 				(content) => ({
 					...content,
 					blocks: updateById(content.blocks, id, (block) =>
 						({
 							...block,
+							...patch.display,
 							width: patch.width ?? block.width,
 							props: { ...block.props, ...patch.props },
 						}) as TPageBlock,
 					),
 				}),
 				coalesceKey ? `${id}:${coalesceKey}` : undefined,
-			),
+			);
+		},
 
 		setColumnsLayout: (id, layout) =>
 			get().change((content) => ({
@@ -370,7 +439,7 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 
 		removeBlock: (id) => {
 			const place = findPlace(blocks(), id);
-			if (!place) return;
+			if (!place || isLocked(id)) return;
 			const selectedId = get().selectedId;
 			const neighbour = place.siblings[place.index + 1] ?? place.siblings[place.index - 1] ?? place.parent;
 			get().change((content) => ({ ...content, blocks: removeById(content.blocks, id) }));
@@ -399,6 +468,8 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 		markSaveFailed: () => set({ saveState: 'error' }),
 
 		setDevice: (device) => set({ device }),
+		setZoom: (zoom) => set({ zoom: Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(zoom / ZOOM_STEP) * ZOOM_STEP)) }),
+		setGuides: (guides) => set({ guides }),
 		setMode: (mode) =>
 			set(
 				mode === 'preview'

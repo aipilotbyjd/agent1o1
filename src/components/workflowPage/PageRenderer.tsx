@@ -32,6 +32,16 @@ import {
 	TestimonialBlock,
 	VideoBlock,
 } from './PageContentBlocks';
+import {
+	CodeBlock,
+	CompareBlock,
+	EmbedBlock,
+	GalleryBlock,
+	PricingBlock,
+	ProgressBlock,
+	SocialBlock,
+	TimelineBlock,
+} from './PageMoreBlocks';
 import { DARK, PAGE_BLOCK_SPAN, PAGE_WIDTH, pageThemeStyle, usePageDark, usePageFonts } from './pageTheme';
 import type { TPageRun } from './usePageRun';
 
@@ -157,6 +167,22 @@ const Leaf = ({ block }: { block: TRenderBlock }) => {
 			return <StepsBlock block={block} mode={mode} />;
 		case 'features':
 			return <FeaturesBlock block={block} mode={mode} />;
+		case 'code':
+			return <CodeBlock block={block} mode={mode} />;
+		case 'pricing':
+			return <PricingBlock block={block} mode={mode} />;
+		case 'embed':
+			return <EmbedBlock block={block} mode={mode} />;
+		case 'gallery':
+			return <GalleryBlock block={block} mode={mode} />;
+		case 'compare':
+			return <CompareBlock block={block} mode={mode} />;
+		case 'progress':
+			return <ProgressBlock block={block} mode={mode} />;
+		case 'social':
+			return <SocialBlock block={block} mode={mode} />;
+		case 'timeline':
+			return <TimelineBlock block={block} mode={mode} />;
 		case 'field':
 			return <FieldBlock block={block} field={block.field} mode={mode} run={run} />;
 		case 'submit':
@@ -181,17 +207,64 @@ const Node = ({ block }: { block: TRenderBlock }) => {
 	return <>{wrapBlock ? wrapBlock(block, content) : content}</>;
 };
 
+const SPACE_ABOVE = { none: '', sm: 'mt-3', md: 'mt-6', lg: 'mt-10' } as const;
+const MOBILE_SPACE_ABOVE = {
+	none: '@max-xl:mt-0',
+	sm: '@max-xl:mt-3',
+	md: '@max-xl:mt-6',
+	lg: '@max-xl:mt-10',
+} as const;
+const MOBILE_ALIGN = {
+	left: '@max-xl:text-left @max-xl:[&_h1]:text-left @max-xl:[&_h2]:text-left @max-xl:[&_h3]:text-left @max-xl:[&>.flex]:justify-start',
+	center:
+		'@max-xl:text-center @max-xl:[&_h1]:text-center @max-xl:[&_h2]:text-center @max-xl:[&_h3]:text-center @max-xl:[&>.flex]:justify-center',
+	right:
+		'@max-xl:text-right @max-xl:[&_h1]:text-right @max-xl:[&_h2]:text-right @max-xl:[&_h3]:text-right @max-xl:[&>.flex]:justify-end',
+} as const;
+
+/**
+ * What a block's display settings add to the cell it sits in: spacing above
+ * it, alignment on narrow screens, and the screens it shows on. In the
+ * builder a block hidden on the current screen is dimmed rather than gone,
+ * so it can still be picked.
+ */
+export const displayClasses = (block: TPageBlock, mode: TPageMode): string => {
+	const hidden =
+		block.visibility === 'desktop'
+			? mode === 'edit'
+				? '@max-xl:opacity-30'
+				: '@max-xl:hidden'
+			: block.visibility === 'mobile'
+				? mode === 'edit'
+					? '@xl:opacity-30'
+					: '@xl:hidden'
+				: '';
+	return [
+		SPACE_ABOVE[block.space_above ?? 'none'],
+		block.mobile_space_above ? MOBILE_SPACE_ABOVE[block.mobile_space_above] : '',
+		block.mobile_align ? MOBILE_ALIGN[block.mobile_align] : '',
+		hidden,
+	]
+		.filter(Boolean)
+		.join(' ');
+};
+
 /** Blocks laid out on the page's six-column grid, narrow ones side by side. */
-const Grid = ({ blocks, children }: { blocks: TPageBlock[]; children?: ReactNode }) => (
-	<div className='grid grid-cols-6 gap-x-4 gap-y-5'>
-		{blocks.map((block) => (
-			<div key={block.id} className={`${PAGE_BLOCK_SPAN[block.width]} min-w-0`}>
-				<Node block={block} />
-			</div>
-		))}
-		{children}
-	</div>
-);
+const Grid = ({ blocks, children }: { blocks: TPageBlock[]; children?: ReactNode }) => {
+	const { mode } = useContext(TreeContext);
+	return (
+		<div className='grid grid-cols-6 gap-x-4 gap-y-5'>
+			{blocks.map((block) => (
+				<div
+					key={block.id}
+					className={`${PAGE_BLOCK_SPAN[block.width]} min-w-0 ${displayClasses(block, mode)}`}>
+					<Node block={block} />
+				</div>
+			))}
+			{children}
+		</div>
+	);
+};
 
 const Section = ({ block }: { block: TPageBlockOf<'section'> }) => {
 	const { containerEnd } = useContext(TreeContext);
@@ -228,7 +301,7 @@ const Columns = ({ block }: { block: TPageBlockOf<'columns'> }) => {
 };
 
 const Column = ({ block }: { block: TPageBlockOf<'column'> }) => {
-	const { containerEnd } = useContext(TreeContext);
+	const { containerEnd, mode } = useContext(TreeContext);
 	return (
 		<div
 			className={`flex min-h-full flex-col gap-5 ${
@@ -237,7 +310,7 @@ const Column = ({ block }: { block: TPageBlockOf<'column'> }) => {
 					: ''
 			}`}>
 			{block.children.map((child) => (
-				<div key={child.id} className='min-w-0'>
+				<div key={child.id} className={`min-w-0 ${displayClasses(child, mode)}`}>
 					<Node block={child} />
 				</div>
 			))}
