@@ -439,3 +439,24 @@
 .rdrDateInput.rdrDateDisplayItem.rdrDateDisplayItemActive {
 	@apply bg-transparent dark:bg-transparent;
 }
+
+
+/* The "Built with Agent 101" badge: a gradient that drifts through the name and a soft sheen that crosses the pill now and then. */
+@keyframes badge-flow {
+	from {
+		background-position: 0% 0;
+	}
+	to {
+		background-position: 100% 0;
+	}
+}
+
+@keyframes badge-sheen {
+	0%,
+	65% {
+		transform: translateX(-160%) skewX(-12deg);
+	}
+	100% {
+		transform: translateX(420%) skewX(-12deg);
+	}
+}

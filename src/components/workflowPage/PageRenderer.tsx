@@ -325,7 +325,7 @@ const Column = ({ block }: { block: TPageBlockOf<'column'> }) => {
  * the builder shows is what people get.
  */
 /**
- * The "Made with Agent1o1" pill: pinned to the bottom-right corner of the
+ * The "Built with Agent 101" glass pill: pinned to the bottom-right corner of the
  * viewport on a live page, so it stays in view while scrolling. Elsewhere
  * (the builder, template previews) it sticks to the bottom of the preview
  * instead of covering the app around it.
@@ -334,24 +334,38 @@ const MadeWithBadge = ({
 	url,
 	onClick,
 	floating,
+	dark,
 }: {
 	url?: string | null;
 	onClick?: () => void;
 	floating: boolean;
+	dark: boolean;
 }) => {
 	const position = floating
 		? 'fixed bottom-4 right-4 z-50'
 		: 'sticky bottom-3 ml-auto mt-6 w-fit';
-	const classes = `${position} group flex items-center gap-2 rounded-full border border-white/10 bg-neutral-900/90 py-1.5 pl-1.5 pr-3.5 text-xs font-medium text-white shadow-lg backdrop-blur transition hover:-translate-y-0.5 hover:bg-neutral-900`;
+	/** White glass glows on a dark page; on a light one it would vanish, so it turns into dark-text frost with a visible edge. */
+	const tone = dark
+		? 'border-white/50 bg-linear-to-b from-white/30 to-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_0_14px_rgba(255,255,255,0.35),0_3px_8px_rgba(0,0,0,0.1)] [text-shadow:0_1px_2px_rgba(0,0,0,0.3)]'
+		: 'border-neutral-900/10 bg-linear-to-b from-white/80 to-white/50 text-neutral-800 shadow-[inset_0_1px_0_#fff,0_1px_2px_rgba(20,20,40,0.08),0_4px_14px_rgba(20,20,40,0.14)]';
+	/** The brand name in an indigo-to-pink gradient: pastel stops on dark glass, saturated ones on light frost so it stays readable. */
+	const nameGradient = dark
+		? 'from-indigo-300 via-violet-300 to-pink-300'
+		: 'from-indigo-600 via-fuchsia-600 to-pink-600';
+	const classes = `${position} ${tone} overflow-hidden flex items-center gap-2 whitespace-nowrap rounded-full border py-1 pl-1 pr-3.5 text-xs leading-none tracking-[0.01em] backdrop-blur-[14px] backdrop-saturate-[1.6] transition duration-200 hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400`;
 	const content = (
 		<>
+			<span
+				aria-hidden='true'
+				className='pointer-events-none absolute inset-y-0 left-0 w-1/3 -skew-x-12 bg-linear-to-r from-transparent via-white/60 to-transparent motion-safe:animate-[badge-sheen_7s_ease-in-out_infinite]'
+			/>
 			<img
 				src='/a-logo-light-256.png'
 				alt=''
-				className='size-6 rounded-full bg-white object-contain p-0.5'
+				className='size-[22px] rounded-full bg-white object-contain p-[3px] ring-[1.5px] ring-indigo-400'
 			/>
 			<span>
-				Made with <span className='font-bold'>Agent1o1</span>
+				Built with <span className={`font-semibold [text-shadow:none] bg-linear-to-r bg-[length:200%_100%] bg-clip-text text-transparent motion-safe:animate-[badge-flow_5s_ease-in-out_infinite_alternate] ${nameGradient}`}>Agent 101</span>
 			</span>
 		</>
 	);
@@ -362,7 +376,7 @@ const MadeWithBadge = ({
 			target='_blank'
 			rel='noopener noreferrer'
 			onClick={onClick}
-			title='Build your own free with Agent1o1'
+			title='Build your own free with Agent 101'
 			className={classes}>
 			{content}
 		</a>
@@ -442,6 +456,7 @@ const PageRenderer = ({
 					url={brandingUrl}
 					onClick={onBrandingClick}
 					floating={mode === 'live'}
+					dark={dark}
 				/>
 			)}
 		</div>
