@@ -234,6 +234,7 @@ export async function openAgentTurnStream(
 					message_id: turn.message_id ?? null,
 					text: null,
 					pending_action_ids: turn.pending_action_ids,
+					stop_reason: turn.stop_reason ?? null,
 				};
 				yield { event: 'done' };
 				return;
