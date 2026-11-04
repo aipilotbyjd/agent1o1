@@ -4,6 +4,7 @@ import type {
 	TAgentSessionStreamEvent,
 	TAgentTurnChangedEvent,
 	TAgentTurnDeltaEvent,
+	TAgentTurnReasoningEvent,
 	TAgentTurnToolEvent,
 } from '@/types/agent.type';
 import type {
@@ -15,7 +16,7 @@ import type {
  * A chat turn's reply is broadcast on the session's private channel while a
  * queue job writes it (`App\Services\Agents\AgentTurnBroadcaster`):
  * `turn.changed` (started / paused / finished / failed), `turn.delta` (batched
- * reply text) and `turn.tool` (a tool call started or finished). `streamAgentTurn`
+ * reply text), `turn.reasoning` (batched reasoning, live only) and `turn.tool` (a tool call started or finished). `streamAgentTurn`
  * plays them back as the `TAgentSessionStreamEvent`s the chat renders, for
  * both sending a message and deciding on a paused turn's actions.
  *
@@ -58,6 +59,7 @@ export function subscribeToAgentSession(
 /** Names from `AgentTurnDelta` / `AgentTurnToolActivity` / `AgentTurnChanged`. */
 export const AGENT_TURN_EVENTS = {
 	delta: '.turn.delta',
+	reasoning: '.turn.reasoning',
 	tool: '.turn.tool',
 	changed: '.turn.changed',
 } as const;
@@ -72,6 +74,7 @@ const SUBSCRIBE_WAIT_MS = 3000;
 
 type TTurnSignal =
 	| { kind: 'delta'; payload: TAgentTurnDeltaEvent }
+	| { kind: 'reasoning'; payload: TAgentTurnReasoningEvent }
 	| { kind: 'tool'; payload: TAgentTurnToolEvent }
 	| { kind: 'changed'; payload: TAgentTurnChangedEvent };
 
@@ -128,6 +131,9 @@ export async function openAgentTurnStream(
 		.listen(AGENT_TURN_EVENTS.delta, (payload) =>
 			push({ kind: 'delta', payload: payload as TAgentTurnDeltaEvent }),
 		)
+		.listen(AGENT_TURN_EVENTS.reasoning, (payload) =>
+			push({ kind: 'reasoning', payload: payload as TAgentTurnReasoningEvent }),
+		)
 		.listen(AGENT_TURN_EVENTS.tool, (payload) =>
 			push({ kind: 'tool', payload: payload as TAgentTurnToolEvent }),
 		)
@@ -137,6 +143,7 @@ export async function openAgentTurnStream(
 
 	const close = () => {
 		channel.stopListening?.(AGENT_TURN_EVENTS.delta);
+		channel.stopListening?.(AGENT_TURN_EVENTS.reasoning);
 		channel.stopListening?.(AGENT_TURN_EVENTS.tool);
 		channel.stopListening?.(AGENT_TURN_EVENTS.changed);
 	};
@@ -181,6 +188,13 @@ export async function openAgentTurnStream(
 				if (next.kind === 'delta') {
 					if (next.payload.run_id === runId) {
 						yield { event: 'delta', delta: next.payload.text };
+					}
+					continue;
+				}
+
+				if (next.kind === 'reasoning') {
+					if (next.payload.run_id === runId) {
+						yield { event: 'reasoning', delta: next.payload.text };
 					}
 					continue;
 				}

@@ -251,6 +251,7 @@ const transcriptToMessages = (messages: TAgentMessage[]): TMessage[] =>
 								: '')
 					: JSON.stringify(message.content, null, 2),
 			stepLimit: message.stop_reason === 'step_limit',
+			reasoning: message.reasoning || undefined,
 			timestamp: new Date(message.created_at).toLocaleTimeString([], {
 				hour: '2-digit',
 				minute: '2-digit',
@@ -370,6 +371,9 @@ interface TMessage {
 	stopped?: boolean;
 	/** Set on a reply whose turn ran out of steps before it finished. */
 	stepLimit?: boolean;
+	/** The model's thinking behind the reply, and how long it took when known. */
+	reasoning?: string;
+	reasoningSeconds?: number;
 	failed?: boolean;
 	/** The sources a stored reply's `[ref]` markers cite (`[]` when none). */
 	citations?: TAgentCitation[];
@@ -681,6 +685,108 @@ const StepOutput = ({ output, failed }: { output: string; failed: boolean }) => 
 	);
 };
 
+/** The latest line of the reasoning, stripped of Markdown marks: what the model
+ *  is on right now, shown while the panel is folded. */
+const latestReasoningLine = (text: string) => {
+	const line = text
+		.split('\n')
+		.map((part) =>
+			part
+				.replace(/^[\s>*#\-\d.)]+/, '')
+				.replace(/[*_`]/g, '')
+				.trim(),
+		)
+		.filter(Boolean)
+		.pop();
+	return line ?? '';
+};
+
+/** The model's reasoning, live while it thinks. Open while there is no answer
+ *  yet, then folds to "Thought for Ns" (the member can reopen it). While it is
+ *  folded and still thinking, the line it is on shows under the title. */
+const ReasoningPanel = ({
+	text,
+	answering,
+	seconds: knownSeconds,
+}: {
+	text: string;
+	answering: boolean;
+	/** How long it thought, when known (a stored reply may not say). */
+	seconds?: number;
+}) => {
+	// Follows the turn (open until the answer starts) unless the member toggles it.
+	const [chosen, setChosen] = useState<boolean | null>(null);
+	const open = chosen ?? !answering;
+	const [seconds, setSeconds] = useState(0);
+	const bodyRef = useRef<HTMLDivElement>(null);
+	const thinking = !answering;
+
+	useEffect(() => {
+		if (answering) return;
+		const timer = setInterval(() => setSeconds((value) => value + 1), 1000);
+		return () => clearInterval(timer);
+	}, [answering]);
+
+	useEffect(() => {
+		if (open && bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+	}, [text, open]);
+
+	const preview = thinking && !open ? latestReasoningLine(text) : '';
+
+	return (
+		<div className='mb-3 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 dark:border-white/10 dark:bg-white/[0.03]'>
+			<button
+				type='button'
+				onClick={() => setChosen(!open)}
+				aria-expanded={open}
+				className='flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-zinc-100/70 dark:hover:bg-white/[0.04]'>
+				<span
+					className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${
+						thinking
+							? 'bg-primary-400/15 text-primary-600 dark:text-primary-400'
+							: 'bg-zinc-200/70 text-zinc-500 dark:bg-white/10 dark:text-zinc-400'
+					}`}>
+					{thinking ? (
+						<Loader2 size={13} className='animate-spin' />
+					) : (
+						<Brain size={13} />
+					)}
+				</span>
+				<span className='min-w-0 flex-1'>
+					<span className='block text-[13px] font-bold text-zinc-700 dark:text-zinc-200'>
+						{thinking
+							? 'Thinking'
+							: (knownSeconds ?? seconds) > 0
+								? `Thought for ${Math.max(1, knownSeconds ?? seconds)}s`
+								: 'Thought process'}
+						{thinking && (
+							<span className='ml-1.5 font-semibold text-zinc-400 tabular-nums dark:text-zinc-500'>
+								{seconds}s
+							</span>
+						)}
+					</span>
+					{preview && (
+						<span className='mt-0.5 block truncate text-[12px] font-medium text-zinc-500 dark:text-zinc-400'>
+							{preview}
+						</span>
+					)}
+				</span>
+				<ChevronDown
+					size={15}
+					className={`shrink-0 text-zinc-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+				/>
+			</button>
+			{open && (
+				<div
+					ref={bodyRef}
+					className='max-h-48 overflow-y-auto border-t border-zinc-200 px-3.5 py-3 text-[13px] leading-6 font-medium [overflow-wrap:anywhere] whitespace-pre-wrap text-zinc-600 dark:border-white/10 dark:text-zinc-400'>
+					{text}
+				</div>
+			)}
+		</div>
+	);
+};
+
 /** One tool call on the timeline: a status dot on the rail, a one-line summary,
  *  and what went in and came out when expanded. A subagent's step follows the
  *  subagent's own status rather than the call that started it. */
@@ -985,6 +1091,8 @@ const BuildPage = () => {
 
 	// Live scratchpad for the reply currently streaming in: reset on every send.
 	const [streamTimeline, setStreamTimeline] = useState<TChatTimelineItem[]>([]);
+	/** The model's reasoning for the turn in flight: live only, never stored. */
+	const [streamReasoning, setStreamReasoning] = useState('');
 	const streamTimelineRef = useRef<TChatTimelineItem[]>([]);
 	const setTimeline = (updater: (prev: TChatTimelineItem[]) => TChatTimelineItem[]) => {
 		streamTimelineRef.current = updater(streamTimelineRef.current);
@@ -1712,7 +1820,13 @@ const BuildPage = () => {
 		events: AsyncIterable<TAgentSessionStreamEvent>,
 		agentIdForRun: string,
 		sessionId: string,
-	): Promise<{ replyText: string; paused: boolean; stepLimit: boolean }> => {
+	): Promise<{
+		replyText: string;
+		paused: boolean;
+		stepLimit: boolean;
+		reasoning: string;
+		reasoningSeconds: number;
+	}> => {
 		// Filenames exported during this turn, resolved to artifacts once it ends.
 		const exportedFilenames: string[] = [];
 		let updatedInstructions = false;
@@ -1722,11 +1836,15 @@ const BuildPage = () => {
 		let sawComplete = false;
 		let paused = false;
 		let stepLimit = false;
+		let reasoning = '';
+		let reasoningStartedAt = 0;
+		let reasoningEndedAt = 0;
 
 		// The reply arrives over Reverb as `turn.*` events on the session's
 		// channel; `openAgentTurnStream` has already turned them into these.
 		for await (const event of events) {
 			if (event.event === 'delta') {
+				if (reasoningStartedAt && !reasoningEndedAt) reasoningEndedAt = Date.now();
 				setTimeline((prev) => {
 					const last = prev[prev.length - 1];
 					if (last && last.kind === 'text') {
@@ -1737,6 +1855,13 @@ const BuildPage = () => {
 						{ kind: 'text', id: `text-${prev.length}`, text: event.delta },
 					];
 				});
+				continue;
+			}
+
+			if (event.event === 'reasoning') {
+				if (!reasoningStartedAt) reasoningStartedAt = Date.now();
+				reasoning += event.delta;
+				setStreamReasoning((prev) => prev + event.delta);
 				continue;
 			}
 
@@ -1852,7 +1977,15 @@ const BuildPage = () => {
 			});
 		}
 
-		return { replyText, paused, stepLimit };
+		return {
+			replyText,
+			paused,
+			stepLimit,
+			reasoning,
+			reasoningSeconds: reasoningStartedAt
+				? Math.round(((reasoningEndedAt || Date.now()) - reasoningStartedAt) / 1000)
+				: 0,
+		};
 	};
 
 	// Sends a message to the real agent: persists the agent first if this is
@@ -1905,6 +2038,7 @@ const BuildPage = () => {
 
 		setIsTyping(true);
 		setTimeline(() => []);
+		setStreamReasoning('');
 
 		// One controller per turn: Stop aborts this one, and `finally` clears it
 		// so a later Stop can never abort a turn that already ended.
@@ -1940,31 +2074,32 @@ const BuildPage = () => {
 			setChatHistory((prev) => [...prev, userMsg]);
 			turnStarted = true;
 
-			const { replyText, paused, stepLimit } = await consumeTurnEvents(
-				AgentSessionService.streamMessage(
-					echo as unknown as IEchoLike | null,
-					workspaceId,
+			const { replyText, paused, stepLimit, reasoning, reasoningSeconds } =
+				await consumeTurnEvents(
+					AgentSessionService.streamMessage(
+						echo as unknown as IEchoLike | null,
+						workspaceId,
+						agentIdForRun,
+						sessionId,
+						{
+							message: prompt,
+							attachments: files,
+							skill_id: skill?.id,
+							replaces_message_id: replacesMessageId,
+						},
+						controller.signal,
+						({ user_message_id }) =>
+							setChatHistory((prev) =>
+								prev.map((message) =>
+									message.id === userMsg.id
+										? { ...message, serverId: user_message_id }
+										: message,
+								),
+							),
+					),
 					agentIdForRun,
 					sessionId,
-					{
-						message: prompt,
-						attachments: files,
-						skill_id: skill?.id,
-						replaces_message_id: replacesMessageId,
-					},
-					controller.signal,
-					({ user_message_id }) =>
-						setChatHistory((prev) =>
-							prev.map((message) =>
-								message.id === userMsg.id
-									? { ...message, serverId: user_message_id }
-									: message,
-							),
-						),
-				),
-				agentIdForRun,
-				sessionId,
-			);
+				);
 			// Calls the gate simulated, blocked or let through were recorded
 			// during the turn: fetch them so each step shows how it went.
 			void queryClient.invalidateQueries({
@@ -1985,6 +2120,8 @@ const BuildPage = () => {
 					streamedText ||
 					(paused ? AWAITING_APPROVAL_TEXT : stepLimit ? STEP_LIMIT_TEXT : ''),
 				stepLimit,
+				reasoning: reasoning.trim() || undefined,
+				reasoningSeconds: reasoningSeconds || undefined,
 				timestamp: new Date().toLocaleTimeString([], {
 					hour: '2-digit',
 					minute: '2-digit',
@@ -2065,6 +2202,7 @@ const BuildPage = () => {
 			setIsSending(false);
 			setIsTyping(false);
 			setTimeline(() => []);
+			setStreamReasoning('');
 		}
 	};
 
@@ -2101,6 +2239,7 @@ const BuildPage = () => {
 		setIsSending(true);
 		setIsTyping(true);
 		setTimeline(() => []);
+		setStreamReasoning('');
 		followLatestRef.current = true;
 
 		try {
@@ -2125,6 +2264,7 @@ const BuildPage = () => {
 			setIsSending(false);
 			setIsTyping(false);
 			setTimeline(() => []);
+			setStreamReasoning('');
 			void queryClient.invalidateQueries({
 				queryKey: agentActionKeys.forSession(workspaceId, agentIdForRun, sessionId),
 			});
@@ -3258,6 +3398,15 @@ const BuildPage = () => {
 
 													<div
 														className={`flex min-w-0 flex-col ${isUser ? '' : 'flex-1'}`}>
+														{/* The model's thinking behind this reply */}
+														{!isUser && message.reasoning && (
+															<ReasoningPanel
+																text={message.reasoning}
+																answering
+																seconds={message.reasoningSeconds}
+															/>
+														)}
+
 														{/* What the agent did to produce this reply, step by step */}
 														{!isUser &&
 															message.timeline &&
@@ -3597,6 +3746,14 @@ const BuildPage = () => {
 												})}
 											</div>
 											<div className='min-w-0 flex-1'>
+												{streamReasoning.trim() !== '' && (
+													<ReasoningPanel
+														text={streamReasoning}
+														answering={streamTimeline.some(
+															(item) => item.kind === 'text',
+														)}
+													/>
+												)}
 												<ToolTimeline
 													items={streamTimeline}
 													tasks={subagentTasks ?? []}
@@ -3636,6 +3793,7 @@ const BuildPage = () => {
 														<span className='ml-0.5 inline-block h-3.5 w-[2px] animate-pulse bg-current align-middle' />
 													</div>
 												) : (
+													streamReasoning.trim() === '' &&
 													!streamTimeline.some(
 														(item) =>
 															item.kind === 'tool' &&

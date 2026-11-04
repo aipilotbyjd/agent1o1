@@ -172,6 +172,8 @@ export type TAgentMessage = {
 	citations?: TAgentCitation[];
 	/** `step_limit`: the turn ran out of steps before it finished. */
 	stop_reason?: 'step_limit' | null;
+	/** The model's thinking behind a reply, when it gave any. */
+	reasoning?: string | null;
 	created_at: string;
 };
 
@@ -246,6 +248,7 @@ export type TSendAgentMessageDto = {
  *  the transcript is the source of truth. */
 export type TAgentSessionStreamEvent =
 	| { event: 'delta'; delta: string }
+	| { event: 'reasoning'; delta: string }
 	| { event: 'tool-call'; id: string; name: string; arguments: unknown }
 	| {
 			event: 'tool-result';
@@ -698,12 +701,16 @@ export type TSkillFilters = {
 	is_shared?: boolean;
 };
 
-// The reply streams over Reverb as `turn.delta` / `turn.tool` / `turn.changed`
+// The reply streams over Reverb as `turn.delta` / `turn.reasoning` / `turn.tool` / `turn.changed`
 // on the session's private channel (the `TAgentTurn*Event` types below)
 // which `streamAgentTurn` turns into `TAgentSessionStreamEvent`s.
 
 /** `App\Events\Agents\AgentTurnDelta` (`.turn.delta`): a batched chunk of reply text. */
 export type TAgentTurnDeltaEvent = { run_id: string; text: string };
+
+/** `App\Events\Agents\AgentTurnReasoning` (`.turn.reasoning`): a batched chunk
+ *  of the model's reasoning. Live only: it is not stored with the reply. */
+export type TAgentTurnReasoningEvent = { run_id: string; text: string };
 
 /** `App\Events\Agents\AgentTurnToolActivity` (`.turn.tool`). `arguments` is
  *  sent when a call starts and `output` when it finishes, each only when small. */
