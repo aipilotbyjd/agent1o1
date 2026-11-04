@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { CalendarClock, ExternalLink, KeyRound, Loader2, Play, Sparkles } from 'lucide-react';
+import { CalendarClock, ExternalLink, KeyRound, Lock, Loader2, Play, Sparkles } from 'lucide-react';
 import { ApiError } from '@/api/core';
 import { useTryModel } from '@/api/modules/models';
 import type { TModelCatalogEntry } from '@/types/catalog.type';
@@ -13,8 +13,10 @@ import {
 	connectProviderPath,
 	formatContext,
 	missingRequirements,
+	needsUpgrade,
 	speedLabels,
 	unavailableText,
+	upgradePlanPath,
 	type TModelRequirements,
 } from './modelPicker.helper';
 
@@ -169,6 +171,17 @@ const ModelDetails = ({ ws, model, replacement, requirements, onSelect }: IModel
 							<ExternalLink size={11} />
 						</a>
 					))}
+					{needsUpgrade(model) && (
+						<a
+							href={upgradePlanPath(ws)}
+							target='_blank'
+							rel='noreferrer'
+							className='text-primary-700 dark:text-primary-400 ms-2 inline-flex items-center gap-1 font-bold hover:underline'>
+							<Lock size={11} />
+							Upgrade to {model.required_plan?.name ?? 'a higher plan'}
+							<ExternalLink size={11} />
+						</a>
+					)}
 				</div>
 			)}
 

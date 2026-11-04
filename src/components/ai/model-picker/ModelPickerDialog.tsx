@@ -1,6 +1,15 @@
 import { useMemo, useState } from 'react';
 import classNames from 'classnames';
-import { ArrowLeft, CalendarClock, Check, ExternalLink, Info, Search, Star } from 'lucide-react';
+import {
+	ArrowLeft,
+	CalendarClock,
+	Check,
+	ExternalLink,
+	Info,
+	Lock,
+	Search,
+	Star,
+} from 'lucide-react';
 import type { TModelCatalogEntry } from '@/types/catalog.type';
 import Modal, { ModalBody, ModalHeader } from '@/components/ui/Modal';
 import ProviderLogo from '../ProviderLogo';
@@ -16,7 +25,9 @@ import {
 	matchesFilter,
 	matchesSearch,
 	missingRequirements,
+	needsUpgrade,
 	unavailableText,
+	upgradePlanPath,
 	type TModelFilter,
 	type TModelRequirements,
 } from './modelPicker.helper';
@@ -304,6 +315,16 @@ const ModelPickerDialog = ({
 															className='text-primary-700 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-950/30 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold'>
 															Connect
 															<ExternalLink size={10} />
+														</a>
+													)}
+													{needsUpgrade(model) && (
+														<a
+															href={upgradePlanPath(ws)}
+															target='_blank'
+															rel='noreferrer'
+															className='text-primary-700 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-950/30 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold'>
+															<Lock size={10} />
+															Upgrade
 														</a>
 													)}
 													<button

@@ -126,6 +126,10 @@ export const unavailableText = (model: TModelCatalogEntry): string | null => {
 	switch (model.unavailable_reason) {
 		case 'not_allowed':
 			return 'Not allowed in this workspace';
+		case 'plan_required':
+			return model.required_plan
+				? `Requires the ${model.required_plan.name} plan`
+				: 'Requires a higher plan';
 		case 'needs_key':
 			return `Needs ${providers}`;
 		case 'policy_needs_key':
@@ -139,6 +143,13 @@ export const unavailableText = (model: TModelCatalogEntry): string | null => {
 
 export const connectProviderPath = (ws: string, provider: string) =>
 	`${buildPath(pages.settings.subPages!.aiProviders.to, { workspaceId: ws })}?connect=${encodeURIComponent(provider)}`;
+
+/** Where an "Upgrade" link on a model locked to a higher plan goes. */
+export const upgradePlanPath = (ws: string) =>
+	buildPath(pages.settings.subPages!.billing.subPages!.plans.to, { workspaceId: ws });
+
+export const needsUpgrade = (model: TModelCatalogEntry) =>
+	model.unavailable_reason === 'plan_required';
 
 export const isRetiring = (model: TModelCatalogEntry) => !!model.retires_at;
 
