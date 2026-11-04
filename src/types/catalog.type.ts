@@ -50,10 +50,12 @@ export type TModelSpeed = 'fast' | 'balanced' | 'thorough';
  * Why a model can't run for this member: an admin hasn't allowed it, it
  * needs a key the workspace hasn't added (`connect_providers` lists which),
  * the key policy only allows the workspace's own keys and none covers it,
- * or nothing can serve it right now.
+ * the workspace's plan doesn't include it (`required_plan` names the plan
+ * to upgrade to), or nothing can serve it right now.
  */
 export type TModelUnavailableReason =
 	| 'not_allowed'
+	| 'plan_required'
 	| 'needs_key'
 	| 'policy_needs_key'
 	| 'unavailable';
@@ -86,4 +88,6 @@ export type TModelCatalogEntry = {
 	is_default: boolean;
 	/** Rough credits for one typical chat message; null when it can't run. */
 	credits_per_message: number | null;
+	/** The cheapest plan that may use this model; null when every plan may. */
+	required_plan: { slug: string; name: string } | null;
 };

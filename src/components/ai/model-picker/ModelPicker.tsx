@@ -7,6 +7,7 @@ import {
 	CalendarClock,
 	ChevronDown,
 	ExternalLink,
+	Lock,
 	Sparkles,
 } from 'lucide-react';
 import { useModelCatalog } from '@/api/modules/catalog';
@@ -20,7 +21,9 @@ import {
 	brandLabel,
 	connectProviderPath,
 	missingRequirements,
+	needsUpgrade,
 	unavailableText,
+	upgradePlanPath,
 	type TModelRequirements,
 } from './modelPicker.helper';
 import useModelPrefs from './useModelPrefs';
@@ -222,6 +225,17 @@ const ModelPicker = ({
 									rel='noreferrer'
 									className='ms-1 inline-flex items-center gap-0.5 font-bold underline underline-offset-2'>
 									Connect {selected.connect_providers[0].label}
+									<ExternalLink size={10} />
+								</a>
+							)}
+							{needsUpgrade(selected) && (
+								<a
+									href={upgradePlanPath(ws)}
+									target='_blank'
+									rel='noreferrer'
+									className='ms-1 inline-flex items-center gap-0.5 font-bold underline underline-offset-2'>
+									<Lock size={10} />
+									Upgrade
 									<ExternalLink size={10} />
 								</a>
 							)}
