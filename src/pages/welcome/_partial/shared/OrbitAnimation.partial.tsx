@@ -164,9 +164,10 @@ const OrbitAnimation = ({
 						(selectedPlan === 'free'
 							? 'Free Plan Active'
 							: `${PLANS.find((p) => p.id === selectedPlan)?.name} Plan Selected`)}
-					{step === 5 &&
+					{step === 5 && 'Your AI, Your Key'}
+					{step === 6 &&
 						`${connectedApps.length} App${connectedApps.length !== 1 ? 's' : ''} Connected`}
-					{step === 6 && 'Almost There!'}
+					{step === 7 && 'Almost There!'}
 				</h3>
 				<p className='mx-auto mt-1 max-w-[200px] text-[10px] text-slate-400'>
 					{step === 1 &&
@@ -178,8 +179,10 @@ const OrbitAnimation = ({
 					{step === 4 &&
 						'Upgrade any time from your workspace settings - no commitments.'}
 					{step === 5 &&
-						'Your secure connections are live-linked directly with the cloud nodes.'}
+						'Agents run on your own AI account: you pay the provider directly, at their prices.'}
 					{step === 6 &&
+						'Your secure connections are live-linked directly with the cloud nodes.'}
+					{step === 7 &&
 						'Your workspace is set up. One last question to personalize your experience.'}
 				</p>
 			</div>

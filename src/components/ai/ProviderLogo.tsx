@@ -1,46 +1,5 @@
 import classNames from 'classnames';
-import anthropic from '@/assets/images/ai-providers/anthropic.svg';
-import deepseek from '@/assets/images/ai-providers/deepseek.svg';
-import fireworks from '@/assets/images/ai-providers/fireworks.svg';
-import gemini from '@/assets/images/ai-providers/gemini.svg';
-import groq from '@/assets/images/ai-providers/groq.svg';
-import mistral from '@/assets/images/ai-providers/mistral.svg';
-import openai from '@/assets/images/ai-providers/openai.svg';
-import openrouter from '@/assets/images/ai-providers/openrouter.svg';
-import together from '@/assets/images/ai-providers/together.svg';
-import xai from '@/assets/images/ai-providers/xai.svg';
-import alibaba from '@/assets/images/ai-providers/alibaba.svg';
-import google from '@/assets/images/ai-providers/google.svg';
-import meta from '@/assets/images/ai-providers/meta.svg';
-import minimax from '@/assets/images/ai-providers/minimax.svg';
-import moonshot from '@/assets/images/ai-providers/moonshot.svg';
-import nvidia from '@/assets/images/ai-providers/nvidia.svg';
-import zhipu from '@/assets/images/ai-providers/zhipu.svg';
-
-/**
- * Keyed by AI provider (`config/byok.php`) and by model brand (the catalog's
- * `brand`), which overlap. `mono` logos are drawn in one dark colour and are
- * inverted in dark mode.
- */
-const logos: Record<string, { src: string; mono: boolean }> = {
-	openai: { src: openai, mono: true },
-	anthropic: { src: anthropic, mono: true },
-	gemini: { src: gemini, mono: false },
-	mistral: { src: mistral, mono: false },
-	deepseek: { src: deepseek, mono: false },
-	xai: { src: xai, mono: true },
-	groq: { src: groq, mono: true },
-	openrouter: { src: openrouter, mono: true },
-	fireworks: { src: fireworks, mono: false },
-	together: { src: together, mono: false },
-	google: { src: google, mono: false },
-	meta: { src: meta, mono: false },
-	moonshot: { src: moonshot, mono: false },
-	zhipu: { src: zhipu, mono: false },
-	minimax: { src: minimax, mono: false },
-	alibaba: { src: alibaba, mono: false },
-	nvidia: { src: nvidia, mono: false },
-};
+import { aiLogoFor } from './providerLogos';
 
 const sizes = {
 	xxs: { box: 'h-4 w-4 rounded', img: 'h-2.5 w-2.5', text: 'text-[8px]' },
@@ -58,7 +17,7 @@ interface IProviderLogoProps {
 }
 
 const ProviderLogo = ({ provider, label, size = 'md' }: IProviderLogoProps) => {
-	const logo = logos[provider];
+	const logo = aiLogoFor(provider);
 	const s = sizes[size];
 
 	return (

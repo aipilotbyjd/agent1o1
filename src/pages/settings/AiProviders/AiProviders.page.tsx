@@ -1,16 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import classNames from 'classnames';
 import { Cpu, KeyRound, Plus, User, Users } from 'lucide-react';
 import {
 	useAiProviderCredentials,
 	useAiProviders,
+	useConnectAiProvider,
 	useDeleteAiProviderCredential,
 	useRestoreAiProviderCredential,
 	useSetDefaultAiProviderCredential,
 	useValidateAiProviderCredential,
 } from '@/api/modules/ai-providers';
-import { notify } from '@/api/core';
+import { ApiError, notify } from '@/api/core';
 import { useWorkspaceContext } from '@/context/workspace';
 import type { TAiProviderCredential } from '@/types/ai-provider.type';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -60,6 +61,24 @@ const AiProvidersPage = () => {
 	const restoreKey = useRestoreAiProviderCredential(ws);
 	const setDefault = useSetDefaultAiProviderCredential(ws);
 	const validateKey = useValidateAiProviderCredential(ws);
+	const connectProvider = useConnectAiProvider(ws);
+	const oneClickPending = connectProvider.isPending ? (connectProvider.variables ?? null) : null;
+
+	// A one-click sign-in finished outside the popup (blocked, or a new tab)
+	// comes back here with its outcome on the query string.
+	useEffect(() => {
+		const connectedLabel = searchParams.get('ai_connected');
+		const connectError = searchParams.get('ai_error');
+		if (connectedLabel === null && connectError === null) return;
+
+		if (connectError !== null) notify.error(connectError);
+		else notify.success(`${connectedLabel || 'AI provider'} connected.`);
+
+		const next = new URLSearchParams(searchParams);
+		next.delete('ai_connected');
+		next.delete('ai_error');
+		setSearchParams(next, { replace: true });
+	}, [searchParams, setSearchParams]);
 
 	// `?connect=<provider>`: the model picker's "Connect" link; opens the
 	// connect dialog on that provider.
@@ -89,6 +108,17 @@ const AiProvidersPage = () => {
 
 	const switchTab = (next: TTab) =>
 		setSearchParams(next === 'keys' ? {} : { tab: next }, { replace: true });
+
+	const handleOneClick = async (provider: string) => {
+		try {
+			const result = await connectProvider.mutateAsync(provider);
+			notify.success(
+				`${result.providerLabel ?? 'AI provider'} connected${result.scope === 'personal' ? ' for you' : ''}.`,
+			);
+		} catch (error) {
+			notify.error(ApiError.is(error) ? error.message : 'Could not connect. Try again.');
+		}
+	};
 
 	const handleValidate = async (credential: TAiProviderCredential) => {
 		try {
@@ -224,7 +254,13 @@ const AiProvidersPage = () => {
 			) : (
 				<>
 					{connected.length === 0 ? (
-						<EmptyState canAdd={canAdd} onConnect={() => setConnectingFor(null)} />
+						<EmptyState
+							canAdd={canAdd}
+							onConnect={() => setConnectingFor(null)}
+							oneClickProviders={(providers.providers ?? []).filter((p) => p.connect)}
+							onOneClick={handleOneClick}
+							oneClickPending={oneClickPending}
+						/>
 					) : (
 						<div className='mb-10 space-y-4'>
 							{connected.map((provider) => (
@@ -257,6 +293,8 @@ const AiProvidersPage = () => {
 								providers={unconnected}
 								canAdd={canAdd}
 								onConnect={setConnectingFor}
+								onOneClick={handleOneClick}
+								oneClickPending={oneClickPending}
 							/>
 						</>
 					)}
@@ -272,6 +310,7 @@ const AiProvidersPage = () => {
 							? connectingFor
 							: null
 					}
+					onOneClick={handleOneClick}
 					onClose={() => {
 						setConnectingFor(undefined);
 						if (searchParams.has('connect')) {

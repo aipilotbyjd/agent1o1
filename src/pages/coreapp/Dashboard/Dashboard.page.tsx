@@ -24,6 +24,7 @@ import {
 	History,
 	Inbox,
 	ShieldCheck,
+	KeyRound,
 } from 'lucide-react';
 import { OutletContextType } from '@/pages/coreapp/Dashboard/_layouts/Dashboard.layout';
 import Breadcrumb from '@/components/layout/Breadcrumb';
@@ -90,6 +91,7 @@ const onboardingIcons: Record<TOnboardingStepKey, React.ComponentType<{ size?: n
 	invite_team: Mail,
 	role_selection: ShieldCheck,
 	choose_plan: Crown,
+	connect_ai: KeyRound,
 	connect_apps: GitMerge,
 	discovery_survey: FileText,
 };

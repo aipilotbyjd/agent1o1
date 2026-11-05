@@ -1,4 +1,5 @@
 import { Globe } from 'lucide-react';
+import { aiLogoFor } from '@/components/ai/providerLogos';
 
 const BrandLogo = ({ name, className = 'w-6 h-6' }: { name: string; className?: string }) => {
 	const getIcon = () => {
@@ -231,8 +232,19 @@ const BrandLogo = ({ name, className = 'w-6 h-6' }: { name: string; className?: 
 						<span className='text-[10px] font-black tracking-tight'>S</span>
 					</div>
 				);
-			default:
+			default: {
+				// AI providers and model brands (the "Connect AI" step).
+				const aiLogo = aiLogoFor(name.toLowerCase());
+				if (aiLogo)
+					return (
+						<img
+							src={aiLogo.src}
+							alt={`${name} logo`}
+							className={`${className} ${aiLogo.mono ? 'dark:invert' : ''}`}
+						/>
+					);
 				return <Globe className={`${className} text-zinc-400`} />;
+			}
 		}
 	};
 	return getIcon();

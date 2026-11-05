@@ -16,6 +16,7 @@ import WorkspaceStep from '../steps/WorkspaceStep.partial';
 import InviteTeamStep from '../steps/InviteTeamStep.partial';
 import RoleSelectionStep from '../steps/RoleSelectionStep.partial';
 import PlanSelectionStep from '../steps/PlanSelectionStep.partial';
+import ConnectAiStep from '../steps/ConnectAiStep.partial';
 import ConnectAppsStep from '../steps/ConnectAppsStep.partial';
 import DiscoveryStep from '../steps/DiscoveryStep.partial';
 
@@ -108,13 +109,14 @@ const OnboardingShellInner = () => {
 			return ROLES[selectedRoleIndex].apps;
 		}
 		if (step === 4) return ['slack', 'github', 'notion', 'google drive', 'figma'];
+		if (step === 5) return ['openai', 'anthropic', 'google', 'meta', 'mistral'];
 		// Nothing connected yet just means the user has not got there: keep the
 		// panel populated with the apps they are about to see rather than empty.
-		if (step === 5)
+		if (step === 6)
 			return connectedApps.length > 0
 				? connectedApps.map((a) => a.toLowerCase())
 				: ['slack', 'github', 'gmail', 'google drive'];
-		if (step === 6)
+		if (step === 7)
 			return connectedApps.length > 0
 				? connectedApps.map((a) => a.toLowerCase())
 				: ['slack', 'github', 'gmail', 'notion'];
@@ -225,8 +227,9 @@ const OnboardingShellInner = () => {
 										{step === 2 && <InviteTeamStep />}
 										{step === 3 && <RoleSelectionStep />}
 										{step === 4 && <PlanSelectionStep />}
-										{step === 5 && <ConnectAppsStep />}
-										{step === 6 && <DiscoveryStep />}
+										{step === 5 && <ConnectAiStep />}
+										{step === 6 && <ConnectAppsStep />}
+										{step === 7 && <DiscoveryStep />}
 									</motion.div>
 								</AnimatePresence>
 							</div>

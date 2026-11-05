@@ -14,6 +14,7 @@ export type TOnboardingStepKey =
 	| 'invite_team'
 	| 'role_selection'
 	| 'choose_plan'
+	| 'connect_ai'
 	| 'connect_apps'
 	| 'discovery_survey';
 

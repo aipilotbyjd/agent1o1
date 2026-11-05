@@ -182,6 +182,13 @@ const KeyRow = ({
 								Not used: personal keys are off
 							</span>
 						)}
+						{credential.auth_method === 'oauth' && (
+							<span
+								title='Connected with one click. The connection renews itself.'
+								className='rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-bold text-sky-700 dark:bg-sky-950/40 dark:text-sky-400'>
+								One-click · auto-renews
+							</span>
+						)}
 						{showDefault && credential.is_default && (
 							<span className='bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-400 rounded-full px-2 py-0.5 text-[11px] font-bold'>
 								Default
