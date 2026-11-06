@@ -1,17 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
-import { apiConfig } from '@/api/core';
+import { ApiError } from '@/api/core';
 import pages from '@/Routes/pages';
+import { ConnectorService } from '@/api/modules/connectors';
 import type { TOAuthCompleteMessage } from '@/api/modules/connectors';
+import type { TConnectorCredential } from '@/types/connector.type';
 
 /**
  * Where an app-integration OAuth redirect lands.
  *
- * The backend's own callback (`GET /api/oauth/connectors/callback`) answers with
- * JSON instead of redirecting, so the browser has to make that call itself. This
- * page is the `redirect_uri` we hand the provider: it takes the `code` and
- * `state` off the query string, exchanges them, and reports the outcome back to
- * whoever started the flow.
+ * This page is the `redirect_uri` we hand the provider: it takes the `code` and
+ * `state` off the query string, finishes the connection with the backend signed
+ * in (`ConnectorService.completeOAuth`: only the member who started the flow can
+ * finish it, so a sign-in link sent to someone else can't connect their account
+ * to another workspace), and reports the outcome back to whoever started it.
  *
  * Usually that is the popup opened by `connectOAuthConnector`, in which case the
  * result goes back over `postMessage` and the window closes itself. If there is
@@ -22,21 +24,14 @@ import type { TOAuthCompleteMessage } from '@/api/modules/connectors';
  * Not to be confused with `identity/OAuthCallback`: that one is social sign-in.
  */
 
-/**
- * The connector callback sits outside the versioned API (`/api/oauth/...`, not
- * `/api/v1/oauth/...`), so trim the version segment off the configured base.
- */
-const callbackUrl = (state: string, code: string) => {
-	const root = apiConfig.baseUrl.replace(/\/v\d+\/?$/, '');
-	const params = new URLSearchParams({ state, code });
-	return `${root}/oauth/connectors/callback?${params.toString()}`;
-};
-
 const OAuthCompletePage = () => {
 	const [searchParams] = useSearchParams();
 	const navigate = useNavigate();
 	const [failure, setFailure] = useState<string | null>(null);
-	const pendingExchange = useRef<{ url: string; response: Promise<Response> } | null>(null);
+	const pendingExchange = useRef<{
+		key: string;
+		result: Promise<TConnectorCredential>;
+	} | null>(null);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -100,43 +95,32 @@ const OAuthCompletePage = () => {
 			}
 
 			try {
-				// Deliberately plain `fetch`: this route is public and sits outside
-				// the axios client's versioned base URL.
-				const url = callbackUrl(state, code);
 				// Reuse the exchange during effect replay: OAuth codes are single-use.
-				if (pendingExchange.current?.url !== url) {
+				const key = `${state}:${code}`;
+				if (pendingExchange.current?.key !== key) {
 					pendingExchange.current = {
-						url,
-						response: fetch(url, { headers: { Accept: 'application/json' } }),
+						key,
+						result: ConnectorService.completeOAuth(state, code),
 					};
 				}
-				const response = await pendingExchange.current.response;
-				const body = await response
-					.clone()
-					.json()
-					.catch(() => null);
+				const credential = await pendingExchange.current.result;
 
-				if (!response.ok) {
-					finish({
-						type: 'OAUTH_COMPLETE',
-						success: false,
-						error: body?.message ?? 'Could not complete the connection.',
-					});
-					return;
-				}
-
-				const credential = body?.data?.connector_credential;
 				finish({
 					type: 'OAUTH_COMPLETE',
 					success: true,
-					credentialId: credential?.id,
-					connectorKey: credential?.connector?.key,
+					credentialId: credential.id,
+					connectorKey: credential.connector?.key,
 				});
-			} catch {
+			} catch (error) {
 				finish({
 					type: 'OAUTH_COMPLETE',
 					success: false,
-					error: 'Could not reach the server to complete the connection.',
+					error:
+						error instanceof ApiError
+							? error.isAuth
+								? 'Sign in to finish connecting, then start the connection again.'
+								: error.message
+							: 'Could not reach the server to complete the connection.',
 				});
 			}
 		};

@@ -5,6 +5,7 @@ import type {
 	TAiProviderCredential,
 	TAiProviderCredentialCheck,
 	TAiKeyPolicy,
+	TAiProviderConnectResult,
 	TAiProviderConnectStart,
 	TAiKeyPolicyImpact,
 	TAiProvidersResult,
@@ -24,6 +25,17 @@ export const AiProviderService = {
 		axiosClient
 			.post<TApiResponse<TAiProviderConnectStart>>(E.connect(ws, provider))
 			.then((r) => r.data.data),
+
+	/**
+	 * Finishes a one-click connection with what the provider sent back.
+	 * Signed in: only the member who started it can finish it.
+	 */
+	completeConnect: (state: string, code: string) =>
+		axiosClient
+			.post<
+				TApiResponse<{ ai_provider_credential: TAiProviderConnectResult }>
+			>(E.completeConnect, { state, code })
+			.then(unwrapKey<TAiProviderConnectResult>('ai_provider_credential')),
 
 	credentials: (ws: string, signal?: AbortSignal) =>
 		axiosClient
@@ -88,8 +100,8 @@ export const AiProviderService = {
 // One-click connect
 // ------------------------------------------------------------
 // The member signs in at the provider in a popup, which lands on our own
-// `AI_PROVIDER_CONNECT_PATH` page. That page finishes the connection with
-// the backend's public callback and posts the outcome back here. See
+// `AI_PROVIDER_CONNECT_PATH` page. That page finishes the connection, signed
+// in as the same member (`completeConnect`), and posts the outcome back here. See
 // `pages/settings/AiProviders/ConnectComplete.page.tsx` for the other half.
 // ============================================================
 

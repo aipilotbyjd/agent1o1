@@ -94,15 +94,26 @@ export const ConnectorService = {
 		axiosClient
 			.post<TApiResponse<TInitiateOAuthConnectorResult>>(E.initiateOAuth(ws), payload)
 			.then((r) => r.data.data),
+
+	/**
+	 * Finishes the OAuth flow with what the provider sent back. Signed in:
+	 * only the member who started it can finish it.
+	 */
+	completeOAuth: (state: string, code: string) =>
+		axiosClient
+			.post<
+				TApiResponse<{ connector_credential: TConnectorCredential }>
+			>(E.completeOAuth, { state, code })
+			.then(unwrapKey<TConnectorCredential>('connector_credential')),
 };
 
 // ============================================================
 // OAuth popup driver
 // ------------------------------------------------------------
-// The backend's callback (`GET /api/oauth/connectors/callback`) answers with
-// JSON rather than redirecting, so the browser has to finish the round trip
-// itself. We open the consent screen in a popup pointed at our own
-// `/oauth/connector-complete`, which calls that callback and posts the result
+// The provider redirects the browser to our own page, which finishes the
+// round trip itself with `completeOAuth`, signed in as the member who
+// started it. We open the consent screen in a popup pointed at our own
+// `/oauth/connector-complete`, which finishes the connection and posts the result
 // back here. See `pages/coreapp/Apps/OAuthComplete.page.tsx` for the other half,
 // and `runOAuthPopup` for the popup itself.
 // ============================================================
