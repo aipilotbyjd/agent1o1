@@ -11,6 +11,7 @@ import type {
 	TUpdateAiKeyPolicyDto,
 } from '@/types/ai-provider.type';
 import Checkbox from '@/components/form/Checkbox';
+import { useConfirm } from '@/context/confirm';
 import Spinner from '@/components/ui/Spinner';
 import { hasImpact, isStricter } from '../_helper/policyImpact.helper';
 import PolicyImpactModal from './PolicyImpactModal.partial';
@@ -38,6 +39,7 @@ const KeyPolicyCard = ({ ws }: { ws: string }) => {
 	const { data: policy, isLoading } = useAiKeyPolicy(ws);
 	const updatePolicy = useUpdateAiKeyPolicy(ws);
 	const previewPolicy = usePreviewAiKeyPolicy(ws);
+	const { confirm } = useConfirm();
 	const [pending, setPending] = useState<{
 		change: TUpdateAiKeyPolicyDto;
 		impact: TAiKeyPolicyImpact;
@@ -65,6 +67,25 @@ const KeyPolicyCard = ({ ws }: { ws: string }) => {
 		} catch {
 			// Toast is handled by the API hook.
 		}
+	};
+
+	/**
+	 * A member's assistant reads their own mail, inbox and calendar. Whoever owns a
+	 * team key's provider account may be able to see what is sent on it, so turning
+	 * this on is confirmed first.
+	 */
+	const changeTeamKeysCoverAssistants = async (enabled: boolean) => {
+		if (enabled) {
+			const confirmed = await confirm({
+				title: 'Let team keys cover personal assistants?',
+				message:
+					"Members' personal assistants will run on the team's keys when they have no key of their own. Assistants read members' own email, inbox and calendar. Whoever owns a team key's provider account may be able to see those requests in that provider's logs. Only turn this on if every member is fine with that.",
+				confirmText: 'Turn on',
+				tone: 'primary',
+			});
+			if (!confirmed) return;
+		}
+		updatePolicy.mutate({ team_keys_cover_personal_assistants: enabled });
 	};
 
 	const confirmPending = async () => {
@@ -153,6 +174,20 @@ const KeyPolicyCard = ({ ws }: { ws: string }) => {
 					onChange={(e) => requestChange({ allow_personal_keys: e.target.checked })}
 					label='Allow personal keys'
 					description='Members can add keys only they use. When off, existing personal keys are kept but not used.'
+				/>
+			</div>
+
+			<div className='mt-4'>
+				<Checkbox
+					variant='switch'
+					dimension='sm'
+					id='team-keys-cover-personal-assistants'
+					name='team_keys_cover_personal_assistants'
+					checked={policy.team_keys_cover_personal_assistants}
+					disabled={!canEdit}
+					onChange={(e) => changeTeamKeysCoverAssistants(e.target.checked)}
+					label='Team keys cover personal assistants'
+					description="When off, a member's assistant uses only their personal key or our key, so their email and calendar never go through a team key someone else owns."
 				/>
 			</div>
 
