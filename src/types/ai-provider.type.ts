@@ -113,6 +113,8 @@ export type TPlatformKeyUsage = 'fallback' | 'when_no_key' | 'never';
 export type TAiKeyPolicy = {
 	platform_usage: TPlatformKeyUsage;
 	allow_personal_keys: boolean;
+	/** Whether members' personal assistants may run on the team's keys. Off by default. */
+	team_keys_cover_personal_assistants: boolean;
 	can_manage: boolean;
 	updated_at: string | null;
 };
@@ -120,6 +122,7 @@ export type TAiKeyPolicy = {
 export type TUpdateAiKeyPolicyDto = {
 	platform_usage?: TPlatformKeyUsage;
 	allow_personal_keys?: boolean;
+	team_keys_cover_personal_assistants?: boolean;
 };
 
 type TCatalogModelSummary = { id: string; display_name: string };
