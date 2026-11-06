@@ -3,6 +3,7 @@ import {
 	AlertTriangle,
 	BookOpen,
 	CheckCircle2,
+	PauseCircle,
 	Pencil,
 	Plus,
 	RefreshCw,
@@ -67,7 +68,12 @@ const ProviderCard = ({
 	onRemove,
 }: IProviderCardProps) => {
 	const extraModels = provider.models.length - MAX_MODEL_CHIPS;
-	const working = keys.some((k) => k.validation_status === 'valid' && !k.ignored_by_policy);
+	// Turned off by us for now: its keys are kept but not used.
+	const disabledMessage =
+		keys.find((k) => k.provider_disabled)?.provider_disabled_message ?? null;
+	const working =
+		!disabledMessage &&
+		keys.some((k) => k.validation_status === 'valid' && !k.ignored_by_policy);
 
 	return (
 		<section className='rounded-2xl border border-zinc-100 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-950/40'>
@@ -110,7 +116,7 @@ const ProviderCard = ({
 						</div>
 					</div>
 				</div>
-				{canAdd && (
+				{canAdd && !disabledMessage && (
 					<button
 						type='button'
 						onClick={onAdd}
@@ -120,6 +126,13 @@ const ProviderCard = ({
 					</button>
 				)}
 			</div>
+
+			{disabledMessage && (
+				<p className='mt-4 flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-xs font-medium text-amber-800 dark:bg-amber-950/40 dark:text-amber-300'>
+					<PauseCircle size={14} className='mt-px shrink-0' />
+					{disabledMessage}
+				</p>
+			)}
 
 			<ul className='mt-4 divide-y divide-zinc-100 rounded-xl border border-zinc-100 dark:divide-zinc-800 dark:border-zinc-800'>
 				{keys.map((credential) => (
@@ -177,9 +190,21 @@ const KeyRow = ({
 						<span className='rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'>
 							{credential.scope === 'personal' ? 'Only you' : 'Team'}
 						</span>
+						{credential.provider_disabled && (
+							<span className='rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'>
+								Not in use: provider turned off
+							</span>
+						)}
 						{credential.ignored_by_policy && (
 							<span className='rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-bold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'>
 								Not used: personal keys are off
+							</span>
+						)}
+						{credential.auth_method === 'oauth' && (
+							<span
+								title='Connected with one click. The connection renews itself.'
+								className='rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-bold text-sky-700 dark:bg-sky-950/40 dark:text-sky-400'>
+								One-click · auto-renews
 							</span>
 						)}
 						{showDefault && credential.is_default && (

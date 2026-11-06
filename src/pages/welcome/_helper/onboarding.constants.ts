@@ -118,6 +118,7 @@ export const STEP_LABELS = [
 	'Invite Team',
 	'Role Selection',
 	'Choose Plan',
+	'Connect AI',
 	'Connect Apps',
 	'Discovery Survey',
 ];
@@ -131,6 +132,7 @@ export const ONBOARDING_STEP_KEYS: TOnboardingStepKey[] = [
 	'invite_team',
 	'role_selection',
 	'choose_plan',
+	'connect_ai',
 	'connect_apps',
 	'discovery_survey',
 ];

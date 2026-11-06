@@ -16,3 +16,4 @@ export {
 	isTokenExpired,
 	TOKEN_CHANGE_EVENT,
 } from './token-manager';
+export * from './oauth-popup';

@@ -41,3 +41,20 @@ export const keyFormatHint = (
 
 	return null;
 };
+
+/**
+ * "Paste any key": which providers a key could belong to, judged by its
+ * prefix alone. Only the providers sharing the longest matching prefix are
+ * returned (an `sk-ant-` key is Anthropic's, not OpenAI's), so the result is
+ * one provider when the key says whose it is, several when the prefix is
+ * shared (`sk-`: OpenAI or DeepSeek), and none when it has no known shape.
+ */
+export const detectKeyProviders = (apiKey: string, providers: TAiProvider[]): TAiProvider[] => {
+	const key = apiKey.trim();
+	if (key.length < 6) return [];
+
+	const matches = providers.filter((p) => p.key_prefix && key.startsWith(p.key_prefix));
+	const longest = Math.max(0, ...matches.map((p) => p.key_prefix!.length));
+
+	return matches.filter((p) => p.key_prefix!.length === longest);
+};

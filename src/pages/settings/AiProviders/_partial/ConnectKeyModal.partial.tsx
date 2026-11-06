@@ -9,9 +9,12 @@ import {
 	ExternalLink,
 	Eye,
 	EyeOff,
+	Gift,
 	Loader2,
+	MousePointerClick,
 	User,
 	Users,
+	Wand2,
 } from 'lucide-react';
 import { ApiError } from '@/api/core';
 import { useCreateAiProviderCredential } from '@/api/modules/ai-providers';
@@ -30,7 +33,7 @@ import Modal, {
 } from '@/components/ui/Modal';
 import Input from '@/components/form/Input';
 import Validation from '@/components/form/Validation';
-import { keyFormatHint } from '../_helper/keyFormat.helper';
+import { detectKeyProviders, keyFormatHint } from '../_helper/keyFormat.helper';
 import ProviderLogo from '@/components/ai/ProviderLogo';
 
 type TStep = 'provider' | 'details' | 'checking' | 'done';
@@ -66,9 +69,17 @@ interface IConnectKeyModalProps {
 	providers: TAiProvidersResult;
 	initialProvider: string | null;
 	onClose: () => void;
+	/** One-click connect for a provider that offers it; the modal closes first. */
+	onOneClick?: (provider: string) => void;
 }
 
-const ConnectKeyModal = ({ ws, providers, initialProvider, onClose }: IConnectKeyModalProps) => {
+const ConnectKeyModal = ({
+	ws,
+	providers,
+	initialProvider,
+	onClose,
+	onOneClick,
+}: IConnectKeyModalProps) => {
 	const createKey = useCreateAiProviderCredential(ws);
 
 	const [step, setStep] = useState<TStep>(initialProvider ? 'details' : 'provider');
@@ -81,6 +92,8 @@ const ConnectKeyModal = ({ ws, providers, initialProvider, onClose }: IConnectKe
 	);
 	const [keyError, setKeyError] = useState<string | undefined>();
 	const [saved, setSaved] = useState<TAiProviderCredential | null>(null);
+	const [pasted, setPasted] = useState('');
+	const detected = detectKeyProviders(pasted, providers.providers);
 
 	const provider = providers.providers.find((p) => p.key === providerKey);
 	const hint = keyFormatHint(apiKey, provider, providers.providers);
@@ -88,10 +101,16 @@ const ConnectKeyModal = ({ ws, providers, initialProvider, onClose }: IConnectKe
 		value === 'team' ? providers.can_add_team : providers.can_add_personal;
 	const activeIndex = steps.findIndex((s) => s.id === (step === 'checking' ? 'done' : step));
 
-	const chooseProvider = (p: TAiProvider) => {
+	const chooseProvider = (p: TAiProvider, withKey?: string) => {
 		setProviderKey(p.key);
+		if (withKey !== undefined) setApiKey(withKey.trim());
 		setKeyError(undefined);
 		setStep('details');
+	};
+
+	const oneClick = (p: TAiProvider) => {
+		onClose();
+		onOneClick?.(p.key);
 	};
 
 	const handleSubmit = async (e: FormEvent) => {
@@ -171,6 +190,58 @@ const ConnectKeyModal = ({ ws, providers, initialProvider, onClose }: IConnectKe
 				</ol>
 
 				{step === 'provider' && (
+					<div className='mb-4 rounded-xl border border-zinc-200 bg-zinc-50/60 p-3 dark:border-zinc-700 dark:bg-zinc-800/40'>
+						<label
+							htmlFor='paste-any-key'
+							className='flex items-center gap-1.5 text-xs font-black text-zinc-700 dark:text-zinc-200'>
+							<Wand2 size={13} />
+							Paste any key, we'll work out the provider
+						</label>
+						<input
+							id='paste-any-key'
+							type='password'
+							autoComplete='off'
+							spellCheck={false}
+							value={pasted}
+							onChange={(e) => setPasted(e.target.value)}
+							placeholder='sk-..., sk-ant-..., AIza..., gsk_..., hf_...'
+							className='focus:border-primary-400 mt-2 h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 font-mono text-xs outline-none dark:border-zinc-700 dark:bg-zinc-900'
+						/>
+						{pasted.trim().length >= 6 && (
+							<div className='mt-2 flex flex-wrap items-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-300'>
+								{detected.length === 0 ? (
+									<span>
+										We can't tell whose key this is. Pick the provider below.
+									</span>
+								) : (
+									<>
+										<span>
+											{detected.length === 1
+												? 'Looks like a key for'
+												: 'Could be a key for'}
+										</span>
+										{detected.map((p) => (
+											<button
+												key={p.key}
+												type='button'
+												onClick={() => chooseProvider(p, pasted)}
+												className='bg-primary-400 text-primary-950 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-bold'>
+												<ProviderLogo
+													provider={p.key}
+													label={p.label}
+													size='xxs'
+												/>
+												{p.label}
+											</button>
+										))}
+									</>
+								)}
+							</div>
+						)}
+					</div>
+				)}
+
+				{step === 'provider' && (
 					<div className='grid grid-cols-2 gap-2 sm:grid-cols-3'>
 						{providers.providers.map((p) => (
 							<button
@@ -189,6 +260,20 @@ const ConnectKeyModal = ({ ws, providers, initialProvider, onClose }: IConnectKe
 											? 'Knowledge base'
 											: 'No models yet'}
 								</span>
+								{(p.connect || p.free_tier) && (
+									<span className='flex flex-wrap gap-1'>
+										{p.connect && (
+											<span className='bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-400 rounded-full px-1.5 py-0.5 text-[10px] font-bold'>
+												One-click
+											</span>
+										)}
+										{p.free_tier && (
+											<span className='rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'>
+												Free tier
+											</span>
+										)}
+									</span>
+								)}
 							</button>
 						))}
 					</div>
@@ -205,6 +290,36 @@ const ConnectKeyModal = ({ ws, providers, initialProvider, onClose }: IConnectKe
 								<ArrowLeft size={12} />
 								Choose a different provider
 							</button>
+						)}
+
+						{provider.connect && onOneClick && (
+							<div className='border-primary-200 bg-primary-50/60 dark:border-primary-500/30 dark:bg-primary-950/20 flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between'>
+								<div>
+									<p className='flex items-center gap-1.5 text-sm font-black text-zinc-900 dark:text-zinc-100'>
+										<MousePointerClick size={14} />
+										Skip the copy and paste
+									</p>
+									<p className='mt-0.5 text-xs font-medium text-zinc-600 dark:text-zinc-300'>
+										Sign in to {provider.label} and approve. We add the key for
+										you.
+									</p>
+								</div>
+								<Button
+									variant='solid'
+									color='primary'
+									onClick={() => oneClick(provider)}
+									isDisable={step === 'checking'}
+									className='h-10 shrink-0 font-bold text-zinc-950'>
+									{provider.connect.label}
+								</Button>
+							</div>
+						)}
+
+						{provider.free_tier && (
+							<p className='flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'>
+								<Gift size={13} className='shrink-0' />
+								{provider.free_tier}
+							</p>
 						)}
 
 						{provider.key_guide.length > 0 && (

@@ -1,5 +1,6 @@
 export const AiProviderEndpoints = {
 	providers: (ws: string) => `/workspaces/${ws}/ai-providers`,
+	connect: (ws: string, provider: string) => `/workspaces/${ws}/ai-providers/${provider}/connect`,
 	policy: (ws: string) => `/workspaces/${ws}/ai-key-policy`,
 	policyPreview: (ws: string) => `/workspaces/${ws}/ai-key-policy/preview`,
 	credentials: (ws: string) => `/workspaces/${ws}/ai-provider-credentials`,

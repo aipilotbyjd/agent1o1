@@ -12,6 +12,9 @@ export type TAiProviderCredentialScope = 'team' | 'personal';
 
 export type TAiProviderCredentialStatus = 'unvalidated' | 'valid' | 'invalid';
 
+/** `oauth`: a one-click connection whose access token renews itself. */
+export type TAiProviderAuthMethod = 'api_key' | 'oauth';
+
 export type TAiProvider = {
 	key: string;
 	label: string;
@@ -25,6 +28,12 @@ export type TAiProvider = {
 	models: string[];
 	/** A key for this provider also embeds knowledge-base documents and searches. */
 	covers_knowledge_base: boolean;
+	/** A one-line note when the provider can be used without paying. */
+	free_tier: string | null;
+	/** Listed first (set by us in the admin panel). */
+	featured: boolean;
+	/** One-click connect (sign in at the provider, nothing to copy), when it's switched on. */
+	connect: { label: string } | null;
 };
 
 export type TAiProvidersResult = {
@@ -41,10 +50,15 @@ export type TAiProviderCredential = {
 	is_default: boolean;
 	name: string | null;
 	key_hint: string | null;
+	auth_method: TAiProviderAuthMethod;
+	token_expires_at: string | null;
 	validation_status: TAiProviderCredentialStatus;
 	validation_message: string | null;
 	last_validated_at: string | null;
 	last_used_at: string | null;
+	/** We've turned this provider off for now: the key is kept but not used until it's back. */
+	provider_disabled: boolean;
+	provider_disabled_message: string | null;
 	/** A personal key kept while the workspace has personal keys turned off, never used. */
 	ignored_by_policy: boolean;
 	can_manage: boolean;
@@ -59,6 +73,12 @@ export type TCreateAiProviderCredentialDto = {
 	name?: string | null;
 	scope?: TAiProviderCredentialScope;
 	is_default?: boolean;
+};
+
+/** Where to send the member to sign in, and whose key it will be. */
+export type TAiProviderConnectStart = {
+	authorize_url: string;
+	scope: TAiProviderCredentialScope;
 };
 
 export type TUpdateAiProviderCredentialDto = {

@@ -5,7 +5,7 @@ import type {
 	TUpdateAiProviderCredentialDto,
 } from '@/types/ai-provider.type';
 import { catalogKeys } from '@/api/modules/catalog';
-import { AiProviderService } from './ai-providers.service';
+import { AiProviderService, connectAiProvider } from './ai-providers.service';
 import { aiProviderKeys } from './ai-providers.keys';
 
 // ============================================================
@@ -47,6 +47,20 @@ export const useCreateAiProviderCredential = (ws: string) => {
 			AiProviderService.create(ws, payload),
 		onSuccess: invalidate,
 		meta: { errorMessage: 'Failed to add key', silentStatuses: [422] },
+	});
+};
+
+/**
+ * One-click connect: opens the provider's sign-in in a popup and adds the key
+ * it hands back. Must be called straight from a click, so the popup isn't
+ * blocked. Failures are left to the caller to show.
+ */
+export const useConnectAiProvider = (ws: string) => {
+	const invalidate = useInvalidateKeys(ws);
+	return useMutation({
+		mutationFn: (provider: string) => connectAiProvider(ws, provider),
+		onSuccess: invalidate,
+		meta: { silent: true },
 	});
 };
 
