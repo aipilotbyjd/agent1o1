@@ -1,26 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
-import { apiConfig } from '@/api/core';
+import { ApiError } from '@/api/core';
 import pages from '@/Routes/pages';
+import { AiProviderService } from '@/api/modules/ai-providers';
 import type { TAiProviderConnectMessage } from '@/api/modules/ai-providers';
+import type { TAiProviderConnectResult } from '@/types/ai-provider.type';
 
 /**
  * Where a one-click AI provider sign-in lands (`AI_PROVIDER_CONNECT_PATH`).
  *
- * The backend's public callback (`GET /api/oauth/ai-providers/callback`)
- * answers with JSON, so this page takes the `code` and `state` off the query
- * string, makes that call, and reports the outcome to the popup's opener over
- * `postMessage`, then closes. With no opener (popup blocked, or finished in a
- * new tab) it goes to the workspace's AI Providers settings with
- * `?ai_connected=` or `?ai_error=`, which that page turns into a toast.
+ * This page takes the `code` and `state` off the query string and finishes the
+ * connection with the backend, signed in (`AiProviderService.completeConnect`):
+ * only the member who started it can finish it, so a sign-in link sent to
+ * someone else can't put a key on their account into another workspace. It
+ * reports the outcome to the popup's opener over `postMessage`, then closes.
+ * With no opener (popup blocked, or finished in a new tab) it goes to the
+ * workspace's AI Providers settings with `?ai_connected=` or `?ai_error=`,
+ * which that page turns into a toast.
  */
-
-/** The callback sits outside the versioned API (`/api/oauth/...`). */
-const callbackUrl = (state: string, code: string) => {
-	const root = apiConfig.baseUrl.replace(/\/v\d+\/?$/, '');
-	const params = new URLSearchParams({ state, code });
-	return `${root}/oauth/ai-providers/callback?${params.toString()}`;
-};
 
 type TOutcome = TAiProviderConnectMessage & { workspaceId?: string };
 
@@ -28,7 +25,10 @@ const AiProviderConnectCompletePage = () => {
 	const [searchParams] = useSearchParams();
 	const navigate = useNavigate();
 	const [failure, setFailure] = useState<string | null>(null);
-	const pendingExchange = useRef<{ url: string; response: Promise<Response> } | null>(null);
+	const pendingExchange = useRef<{
+		key: string;
+		result: Promise<TAiProviderConnectResult>;
+	} | null>(null);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -86,44 +86,34 @@ const AiProviderConnectCompletePage = () => {
 			}
 
 			try {
-				// Plain `fetch`: this route is public and outside the axios client's base URL.
-				const url = callbackUrl(state, code);
 				// Reuse the exchange if the effect runs twice: codes are single-use.
-				if (pendingExchange.current?.url !== url) {
+				const key = `${state}:${code}`;
+				if (pendingExchange.current?.key !== key) {
 					pendingExchange.current = {
-						url,
-						response: fetch(url, { headers: { Accept: 'application/json' } }),
+						key,
+						result: AiProviderService.completeConnect(state, code),
 					};
 				}
-				const response = await pendingExchange.current.response;
-				const body = await response
-					.clone()
-					.json()
-					.catch(() => null);
+				const credential = await pendingExchange.current.result;
 
-				if (!response.ok) {
-					finish({
-						type: 'AI_PROVIDER_CONNECT_COMPLETE',
-						success: false,
-						error: body?.message ?? 'Could not complete the connection.',
-					});
-					return;
-				}
-
-				const credential = body?.data?.ai_provider_credential;
 				finish({
 					type: 'AI_PROVIDER_CONNECT_COMPLETE',
 					success: true,
-					provider: credential?.execution_provider,
-					providerLabel: credential?.provider_label,
-					scope: credential?.scope,
-					workspaceId: credential?.workspace_id,
+					provider: credential.execution_provider,
+					providerLabel: credential.provider_label,
+					scope: credential.scope,
+					workspaceId: credential.workspace_id,
 				});
-			} catch {
+			} catch (error) {
 				finish({
 					type: 'AI_PROVIDER_CONNECT_COMPLETE',
 					success: false,
-					error: 'Could not reach the server to complete the connection.',
+					error:
+						error instanceof ApiError
+							? error.isAuth
+								? 'Sign in to finish connecting, then start the connection again.'
+								: error.message
+							: 'Could not reach the server to complete the connection.',
 				});
 			}
 		};

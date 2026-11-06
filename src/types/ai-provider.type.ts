@@ -81,6 +81,17 @@ export type TAiProviderConnectStart = {
 	scope: TAiProviderCredentialScope;
 };
 
+/** The key a finished one-click connection stored. */
+export type TAiProviderConnectResult = {
+	id: string;
+	workspace_id: string;
+	execution_provider: string;
+	provider_label: string;
+	scope: TAiProviderCredentialScope;
+	auth_method: string;
+	validation_status: string;
+};
+
 export type TUpdateAiProviderCredentialDto = {
 	name?: string | null;
 	api_key?: string;
