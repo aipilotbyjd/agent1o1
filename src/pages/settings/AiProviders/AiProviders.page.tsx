@@ -13,7 +13,7 @@ import {
 } from '@/api/modules/ai-providers';
 import { ApiError, notify } from '@/api/core';
 import { useWorkspaceContext } from '@/context/workspace';
-import type { TAiProviderCredential } from '@/types/ai-provider.type';
+import type { TAiProvider, TAiProviderCredential } from '@/types/ai-provider.type';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Spinner from '@/components/ui/Spinner';
 import { primaryBtn } from '../_shared/buttons';
@@ -95,8 +95,26 @@ const AiProvidersPage = () => {
 	const { connected, unconnected } = useMemo(() => {
 		const list = providers?.providers ?? [];
 		const withKeys = new Set(credentials.map((c) => c.execution_provider));
+		const listed = new Set(list.map((p) => p.key));
+		// A provider we've turned off is left out of the list, but the keys
+		// members added for it are kept: still show them, marked not in use.
+		const turnedOff: TAiProvider[] = [...withKeys]
+			.filter((key) => !listed.has(key))
+			.map((key) => ({
+				key,
+				label: credentials.find((c) => c.execution_provider === key)?.provider_label ?? key,
+				key_url: '',
+				key_placeholder: null,
+				key_prefix: null,
+				key_guide: [],
+				models: [],
+				covers_knowledge_base: false,
+				free_tier: null,
+				featured: false,
+				connect: null,
+			}));
 		return {
-			connected: list.filter((p) => withKeys.has(p.key)),
+			connected: [...list.filter((p) => withKeys.has(p.key)), ...turnedOff],
 			unconnected: list.filter((p) => !withKeys.has(p.key)),
 		};
 	}, [providers, credentials]);

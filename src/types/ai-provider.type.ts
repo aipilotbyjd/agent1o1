@@ -30,6 +30,8 @@ export type TAiProvider = {
 	covers_knowledge_base: boolean;
 	/** A one-line note when the provider can be used without paying. */
 	free_tier: string | null;
+	/** Listed first (set by us in the admin panel). */
+	featured: boolean;
 	/** One-click connect (sign in at the provider, nothing to copy), when it's switched on. */
 	connect: { label: string } | null;
 };
@@ -54,6 +56,9 @@ export type TAiProviderCredential = {
 	validation_message: string | null;
 	last_validated_at: string | null;
 	last_used_at: string | null;
+	/** We've turned this provider off for now: the key is kept but not used until it's back. */
+	provider_disabled: boolean;
+	provider_disabled_message: string | null;
 	/** A personal key kept while the workspace has personal keys turned off, never used. */
 	ignored_by_policy: boolean;
 	can_manage: boolean;
