@@ -62,7 +62,9 @@ const prettify = (raw: string) =>
 
 const escapeHtml = (s: string) =>
 	s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const escapeAttr = (s: string) => s.replace(/"/g, '&quot;');
+// `&` first (inside escapeHtml): otherwise a literal `&amp;` in a value would be
+// decoded back to `&` when the browser reads the attribute.
+const escapeAttr = (s: string) => escapeHtml(s).replace(/"/g, '&quot;');
 
 /** Split a value into literal-text and {{token}} segments, preserving order. */
 const splitSegments = (text: string): TSegment[] => {
