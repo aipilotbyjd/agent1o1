@@ -1,3 +1,4 @@
+import type { TPaginationMeta } from '@/types/api.type';
 import type { TWorkflowInterfaceField } from '@/types/workflow-extras.type';
 
 // ─── Content ─────────────────────────────────────────────────
@@ -399,7 +400,7 @@ export type TPageSubmissionFilters = {
 
 export type TPageSubmissionPage = {
 	submissions: TPageSubmissionRecord[];
-	meta: { total: number; page: number; per_page: number; last_page: number };
+	meta: TPaginationMeta;
 };
 
 // ─── Insights ────────────────────────────────────────────────

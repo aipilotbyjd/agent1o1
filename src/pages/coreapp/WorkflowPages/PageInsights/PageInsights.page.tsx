@@ -637,11 +637,11 @@ const SubmissionsTable = ({
 
 			{data && data.meta.last_page > 1 && (
 				<div className='flex items-center justify-end gap-2 border-t border-zinc-100 px-4 py-3 text-xs text-zinc-500 dark:border-white/[0.06]'>
-					Page {data.meta.page} of {data.meta.last_page}
+					Page {data.meta.current_page} of {data.meta.last_page}
 					<button
 						type='button'
 						aria-label='Previous page'
-						disabled={data.meta.page <= 1}
+						disabled={data.meta.current_page <= 1}
 						onClick={() =>
 							setFilters((current) => ({ ...current, page: (current.page ?? 1) - 1 }))
 						}
@@ -651,7 +651,7 @@ const SubmissionsTable = ({
 					<button
 						type='button'
 						aria-label='Next page'
-						disabled={data.meta.page >= data.meta.last_page}
+						disabled={data.meta.current_page >= data.meta.last_page}
 						onClick={() =>
 							setFilters((current) => ({ ...current, page: (current.page ?? 1) + 1 }))
 						}
