@@ -14,6 +14,9 @@ import NodeLibrary from '../_partial/library/NodeLibrary.partial';
 import LinkCredentialsDialog from '../_partial/dialogs/LinkCredentialsDialog.partial';
 import WorkflowGovernanceModal from '../_partial/dialogs/WorkflowGovernanceModal.partial';
 import RunPanel from '../_partial/run/RunPanel.partial';
+import VersionHistoryPanel from '../_partial/versions/VersionHistoryPanel.partial';
+import VersionPreview from '../_partial/versions/VersionPreview.partial';
+import PublishReviewPreview from '../_partial/versions/PublishReviewPreview.partial';
 import ActionBar from '../_partial/shell/ActionBar.partial';
 import AgentBuilderPage from '@/pages/coreapp/Agents/AgentBuilder/AgentBuilder.page';
 import WorkspaceSettingsPage from '@/pages/UnderConstruction.page';
@@ -25,11 +28,12 @@ import WorkflowsPage from '@/pages/coreapp/Playbooks/WorkflowsList.page';
 import AgentAsideTemplate from '@/templates/asides/AgentAside.template';
 import useDeviceScreen from '@/hooks/useDeviceScreen';
 import { useAiBuilderBridge } from '../_hooks/useAiBuilderBridge.hook';
+import { useAiPanelAvailability } from '../_hooks/useAiPanelAvailability.hook';
 import { useAutosave } from '../_hooks/useAutosave.hook';
 import { useEditorHotkeys } from '../_hooks/useEditorHotkeys.hook';
 import { useWorkflowApiLoader } from '../_hooks/useWorkflowApiLoader.hook';
 import { useWorkflowRouteParams } from '../_hooks/useWorkflowRouteParams.hook';
-import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../_hooks/useWorkflowEditor.hook';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import { Boxes, Maximize2, PlaySquare, Sparkles } from 'lucide-react';
 
@@ -44,12 +48,15 @@ const BuildPage = () => {
 		: activeWorkspaceView;
 	const setActiveWorkspaceView = useWorkflowShellStore((store) => store.setActiveWorkspaceView);
 	const mobileSidebarOpen = useWorkflowShellStore((store) => store.mobileSidebarOpen);
+	const isVersionPanelOpen = useWorkflowShellStore((store) => store.isVersionPanelOpen);
+	const closeVersionPanel = useWorkflowShellStore((store) => store.closeVersionPanel);
 	const closeAside = useWorkflowShellStore((store) => store.closeMobileSidebar);
 	const { workspaceId, workflowId } = useWorkflowRouteParams();
 	const apiState = useWorkflowApiLoader(workspaceId, workflowId);
 	const [leftPanelWidth, setLeftPanelWidth] = useState(320);
-	const [aiPanelWidth, setAiPanelWidth] = useState(400);
-	const [runPanelHeight, setRunPanelHeight] = useState(300);
+	const [aiPanelWidth, setAiPanelWidth] = useState(460);
+	const { isAiPanelAvailable, isAiPanelShown } = useAiPanelAvailability();
+	const [runPanelWidth, setRunPanelWidth] = useState(440);
 
 	const openMobileNodes = () => {
 		if (state.ui.runPanelOpen) dispatch({ type: 'TOGGLE_RUN_PANEL' });
@@ -68,6 +75,15 @@ const BuildPage = () => {
 		if (state.ui.aiPanelOpen) dispatch({ type: 'TOGGLE_AI_PANEL' });
 		dispatch({ type: 'TOGGLE_RUN_PANEL' });
 	};
+
+	// Runs and version history share the right side; opening runs closes history.
+	const isRunPanelOpen = state.ui.runPanelOpen;
+	useEffect(() => {
+		if (isRunPanelOpen) closeVersionPanel();
+	}, [isRunPanelOpen, closeVersionPanel]);
+
+	// History and its canvas preview belong to the workflow they were opened on.
+	useEffect(() => closeVersionPanel, [workflowId, closeVersionPanel]);
 
 	useAutosave();
 	useEditorHotkeys();
@@ -147,14 +163,14 @@ const BuildPage = () => {
 			) : (
 				<>
 					{/* Hide the editor top header on mobile while the AI builder panel is
-					    open — the panel has its own header (history/new chat/exit).
+					    open: the panel has its own header (history/new chat/exit).
 					    Keep it visible on desktop (md and up). */}
-					<div className={state.ui.aiPanelOpen ? 'hidden md:contents' : 'contents'}>
+					<div className={isAiPanelShown ? 'hidden md:contents' : 'contents'}>
 						<Topbar />
 					</div>
 					<div className='relative flex min-h-0 flex-1'>
 						<AnimatePresence initial={false}>
-							{state.ui.aiPanelOpen && (
+							{isAiPanelShown && (
 								<motion.div
 									initial={
 										isMobile
@@ -184,7 +200,7 @@ const BuildPage = () => {
 									) : (
 										<Resizable
 											size={{ width: aiPanelWidth, height: '100%' }}
-											minWidth={360}
+											minWidth={400}
 											maxWidth='45vw'
 											enable={{ right: true }}
 											onResize={(_e, _direction, ref) => {
@@ -260,72 +276,84 @@ const BuildPage = () => {
 									)}
 									<Canvas />
 									<ActionBar />
+									<VersionPreview />
+									<PublishReviewPreview />
 								</div>
+								{isVersionPanelOpen && !state.ui.runPanelOpen && (
+									<div
+										className={
+											isMobile
+												? 'absolute inset-x-0 top-[18%] bottom-0 z-50 overflow-hidden rounded-t-3xl border-t border-zinc-200 shadow-2xl dark:border-white/10'
+												: 'min-h-0 w-[340px] shrink-0 border-l border-zinc-200 dark:border-white/10'
+										}>
+										<VersionHistoryPanel />
+									</div>
+								)}
+								{state.ui.runPanelOpen &&
+									(isMobile ? (
+										<motion.div
+											initial={{ y: '100%', opacity: 0 }}
+											animate={{ y: 0, opacity: 1 }}
+											exit={{ y: '100%', opacity: 0 }}
+											transition={{ duration: 0.2 }}
+											className='absolute inset-x-0 top-[18%] bottom-0 z-50 overflow-hidden rounded-t-3xl border-t border-white/10 bg-zinc-950 shadow-2xl'>
+											<RunPanel />
+										</motion.div>
+									) : (
+										<Resizable
+											size={{ width: runPanelWidth, height: '100%' }}
+											minWidth={320}
+											maxWidth='45vw'
+											enable={{ left: true }}
+											onResize={(_e, _direction, ref) => {
+												setRunPanelWidth(ref.offsetWidth);
+											}}
+											onResizeStop={(_, __, ref) =>
+												setRunPanelWidth(ref.offsetWidth)
+											}
+											className='min-h-0 shrink-0 border-l border-zinc-200 dark:border-white/10'>
+											<RunPanel />
+										</Resizable>
+									))}
 							</div>
-							{state.ui.runPanelOpen &&
-								(isMobile ? (
-									<motion.div
-										initial={{ y: '100%', opacity: 0 }}
-										animate={{ y: 0, opacity: 1 }}
-										exit={{ y: '100%', opacity: 0 }}
-										transition={{ duration: 0.2 }}
-										className='absolute inset-x-0 top-[18%] bottom-0 z-50 overflow-hidden rounded-t-3xl border-t border-white/10 bg-zinc-950 shadow-2xl'>
-										<RunPanel />
-									</motion.div>
-								) : (
-									<Resizable
-										size={{ width: '100%', height: runPanelHeight }}
-										minHeight={180}
-										maxHeight='58vh'
-										enable={{ top: true }}
-										onResize={(_e, _direction, ref) => {
-											setRunPanelHeight(ref.offsetHeight);
-										}}
-										onResizeStop={(_, __, ref) =>
-											setRunPanelHeight(ref.offsetHeight)
-										}
-										className='shrink-0'>
-										<RunPanel />
-									</Resizable>
-								))}
 						</div>
 
 						{/* Mobile editor dock: the four most-used canvas actions stay reachable
 					    without competing with the workflow title and Run button above. */}
-						{!state.ui.aiPanelOpen &&
-							!state.ui.leftPanelOpen &&
-							!state.ui.runPanelOpen && (
-								<nav
-									aria-label='Editor tools'
-									className='absolute right-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-3 z-30 flex h-14 items-center justify-around rounded-2xl border border-zinc-200 bg-white/95 px-2 shadow-2xl backdrop-blur-xl md:hidden dark:border-white/10 dark:bg-zinc-950/95'>
-									<button
-										type='button'
-										onClick={openMobileNodes}
-										className='flex min-w-16 flex-col items-center gap-0.5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400'>
-										<Boxes size={18} /> Nodes
-									</button>
+						{!isAiPanelShown && !state.ui.leftPanelOpen && !state.ui.runPanelOpen && (
+							<nav
+								aria-label='Editor tools'
+								className='absolute right-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-3 z-30 flex h-14 items-center justify-around rounded-2xl border border-zinc-200 bg-white/95 px-2 shadow-2xl backdrop-blur-xl md:hidden dark:border-white/10 dark:bg-zinc-950/95'>
+								<button
+									type='button'
+									onClick={openMobileNodes}
+									className='flex min-w-16 flex-col items-center gap-0.5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400'>
+									<Boxes size={18} /> Nodes
+								</button>
+								{isAiPanelAvailable && (
 									<button
 										type='button'
 										onClick={openMobileAi}
 										className='text-primary-700 dark:text-primary-400 flex min-w-16 flex-col items-center gap-0.5 text-[10px] font-bold'>
 										<Sparkles size={18} /> Ask AI
 									</button>
-									<button
-										type='button'
-										onClick={openMobileRuns}
-										className='flex min-w-16 flex-col items-center gap-0.5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400'>
-										<PlaySquare size={18} /> Runs
-									</button>
-									<button
-										type='button'
-										onClick={() =>
-											reactFlow.fitView({ padding: 0.2, duration: 240 })
-										}
-										className='flex min-w-16 flex-col items-center gap-0.5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400'>
-										<Maximize2 size={18} /> Fit view
-									</button>
-								</nav>
-							)}
+								)}
+								<button
+									type='button'
+									onClick={openMobileRuns}
+									className='flex min-w-16 flex-col items-center gap-0.5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400'>
+									<PlaySquare size={18} /> Runs
+								</button>
+								<button
+									type='button'
+									onClick={() =>
+										reactFlow.fitView({ padding: 0.2, duration: 240 })
+									}
+									className='flex min-w-16 flex-col items-center gap-0.5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400'>
+									<Maximize2 size={18} /> Fit view
+								</button>
+							</nav>
+						)}
 					</div>
 				</>
 			)}

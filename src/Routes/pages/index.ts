@@ -5,7 +5,7 @@ export { editorRedirects } from './workspace.pages';
 export { billingCallbacks } from './welcome.pages';
 export { accountCallbacks } from './settings.pages';
 
-import { workspace, playbookEditor, agentEditor } from './workspace.pages';
+import { workspace, playbookEditor, agentEditor, pageEditor, publicPage } from './workspace.pages';
 import { settings } from './settings.pages';
 import { identity } from './identity.pages';
 import { welcome, choose } from './welcome.pages';
@@ -18,6 +18,8 @@ const pages = {
 	workspace,
 	playbookEditor,
 	agentEditor,
+	pageEditor,
+	publicPage,
 	settings,
 	identity,
 	welcome,

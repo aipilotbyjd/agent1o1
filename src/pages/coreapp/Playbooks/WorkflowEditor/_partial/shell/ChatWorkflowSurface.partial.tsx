@@ -96,7 +96,7 @@ const ChatWorkflowSurface = () => {
 								<button
 									type='button'
 									aria-label='Send prompt'
-									className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#60a5fa,#f472b6)] text-white shadow-lg ring-4 shadow-primary-300/40 ring-zinc-100 transition hover:-translate-y-0.5 hover:shadow-xl'>
+									className='shadow-primary-300/40 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#60a5fa,#f472b6)] text-white shadow-lg ring-4 ring-zinc-100 transition hover:-translate-y-0.5 hover:shadow-xl'>
 									<ArrowUp size={19} />
 								</button>
 							</div>

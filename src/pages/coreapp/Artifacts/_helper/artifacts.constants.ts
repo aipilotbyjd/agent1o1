@@ -1,4 +1,11 @@
-import { FileText, FileImage, FileSpreadsheet, FileCode, File as FileIcon, type LucideIcon } from 'lucide-react';
+import {
+	FileText,
+	FileImage,
+	FileSpreadsheet,
+	FileCode,
+	File as FileIcon,
+	type LucideIcon,
+} from 'lucide-react';
 import type { TArtifactMimeCategory } from '@/types/artifact.type';
 
 export const ARTIFACT_CATEGORIES: { value: TArtifactMimeCategory; label: string }[] = [
@@ -9,20 +16,36 @@ export const ARTIFACT_CATEGORIES: { value: TArtifactMimeCategory; label: string 
 
 export const getArtifactIcon = (mimeType: string): LucideIcon => {
 	if (mimeType.startsWith('image/')) return FileImage;
-	if (mimeType.startsWith('text/csv') || mimeType.includes('spreadsheet') || mimeType.includes('excel'))
+	if (
+		mimeType.startsWith('text/csv') ||
+		mimeType.includes('spreadsheet') ||
+		mimeType.includes('excel')
+	)
 		return FileSpreadsheet;
 	if (mimeType === 'text/html' || mimeType === 'application/pdf') return FileText;
-	if (mimeType.startsWith('text/') || mimeType.includes('json') || mimeType.includes('javascript'))
+	if (
+		mimeType.startsWith('text/') ||
+		mimeType.includes('json') ||
+		mimeType.includes('javascript')
+	)
 		return FileCode;
 	return FileIcon;
 };
 
 export const getArtifactColor = (mimeType: string): string => {
 	if (mimeType.startsWith('image/')) return '#EC4899';
-	if (mimeType.startsWith('text/csv') || mimeType.includes('spreadsheet') || mimeType.includes('excel'))
+	if (
+		mimeType.startsWith('text/csv') ||
+		mimeType.includes('spreadsheet') ||
+		mimeType.includes('excel')
+	)
 		return '#10A37F';
 	if (mimeType === 'text/html' || mimeType === 'application/pdf') return '#6366F1';
-	if (mimeType.startsWith('text/') || mimeType.includes('json') || mimeType.includes('javascript'))
+	if (
+		mimeType.startsWith('text/') ||
+		mimeType.includes('json') ||
+		mimeType.includes('javascript')
+	)
 		return '#D97706';
 	return '#64748B';
 };

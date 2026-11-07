@@ -1,15 +1,24 @@
 import { axiosClient } from '@/api/client';
 import { unwrapKey } from '@/api/core';
 import type { TApiResponse, TListParams } from '@/api/core';
-import type { TTrigger, TTriggerEvent, TCreateTriggerDto, TUpdateTriggerDto } from '@/types/trigger.type';
+import type {
+	TTrigger,
+	TTriggerEvent,
+	TTriggerSampleItem,
+	TCreateTriggerDto,
+	TUpdateTriggerDto,
+	TTriggerEventPage,
+	TTriggerEventParams,
+} from '@/types/trigger.type';
+import type { TPaginationMeta } from '@/types/api.type';
 import { TriggerEndpoints as E } from './triggers.endpoints';
 
 export const TriggerService = {
-	// The backend takes no list filters — `params` is accepted only to
-	// match `createResource()`'s service contract.
-	list: (ws: string, _params?: TListParams, signal?: AbortSignal) =>
+	// `target_type` + `target_id` narrow the list to one workflow's or
+	// agent's triggers; without them it's the whole workspace.
+	list: (ws: string, params?: TListParams, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ triggers: TTrigger[] }>>(E.list(ws), { signal })
+			.get<TApiResponse<{ triggers: TTrigger[] }>>(E.list(ws), { params, signal })
 			.then(unwrapKey<TTrigger[]>('triggers')),
 
 	create: (ws: string, payload: TCreateTriggerDto) =>
@@ -34,10 +43,23 @@ export const TriggerService = {
 			.post<TApiResponse<{ trigger: TTrigger }>>(E.rotateToken(ws, id))
 			.then(unwrapKey<TTrigger>('trigger')),
 
-	// Backend paginates internally but returns the page as a flat array —
-	// no `meta`/`links` reach the client from this endpoint.
-	events: (ws: string, id: string, signal?: AbortSignal) =>
+	events: (ws: string, id: string, params?: TTriggerEventParams, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<TTriggerEvent[]>>(E.events(ws, id), { signal })
-			.then((r) => r.data.data),
+			.get<TApiResponse<TTriggerEvent[]> & { meta: TPaginationMeta }>(E.events(ws, id), {
+				params,
+				signal,
+			})
+			.then((r): TTriggerEventPage => ({ events: r.data.data, meta: r.data.meta })),
+
+	// What the trigger sees right now, without running anything.
+	sample: (ws: string, id: string) =>
+		axiosClient
+			.get<TApiResponse<{ items: TTriggerSampleItem[] }>>(E.sample(ws, id))
+			.then(unwrapKey<TTriggerSampleItem[]>('items')),
+
+	// Runs a past event's payload again as a new event.
+	replay: (ws: string, id: string, eventId: string) =>
+		axiosClient
+			.post<TApiResponse<{ event: TTriggerEvent }>>(E.replay(ws, id, eventId))
+			.then(unwrapKey<TTriggerEvent>('event')),
 };

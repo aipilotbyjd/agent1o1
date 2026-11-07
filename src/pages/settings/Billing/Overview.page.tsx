@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams } from 'react-router';
 import { Link } from 'react-router';
 import {
@@ -8,6 +9,7 @@ import {
 	Coins,
 	Crown,
 	ExternalLink,
+	Gift,
 	GitBranch,
 	RotateCcw,
 	ShieldCheck,
@@ -29,6 +31,7 @@ import { withWorkspace } from '@/Routes/paths';
 import type { TSubscription } from '@/types/billing.type';
 import OverageCard from './_partial/OverageCard.partial';
 import CreditAlertsCard from './_partial/CreditAlertsCard.partial';
+import CreditBreakdown from './_partial/CreditBreakdown.partial';
 
 const billingPages = pages.settings.subPages!.billing.subPages!;
 
@@ -114,6 +117,7 @@ const BillingOverviewPage = () => {
 	const cancelSubscription = useCancelSubscription(workspaceId!);
 	const resumeSubscription = useResumeSubscription(workspaceId!);
 	const { confirm } = useConfirm();
+	const [now] = useState(Date.now);
 
 	const toWorkspacePath = (to: string) => withWorkspace(to, workspaceId!);
 
@@ -157,12 +161,16 @@ const BillingOverviewPage = () => {
 		usage_period: usage,
 		dunning,
 	} = overview;
-	const isLifetime = !!grant;
+	// A grant with an end date is time-limited (earned through referrals, or a
+	// comp), only an open-ended grant is a lifetime purchase.
+	const isLifetime = !!grant && grant.expires_at === null;
+	const freeUntil = grant && grant.expires_at !== null ? grant.expires_at : null;
+	const isReferralTime = !!freeUntil && grant?.source === 'referral';
 	const status = subscription?.stripe_status;
 	const statusCfg = status ? statusConfig[status] : null;
 
 	const cancelsAt = subscription?.ends_at;
-	const cancelsAtInFuture = cancelsAt ? new Date(cancelsAt).getTime() > Date.now() : false;
+	const cancelsAtInFuture = cancelsAt ? new Date(cancelsAt).getTime() > now : false;
 	const canCancel =
 		!!subscription &&
 		!isLifetime &&
@@ -295,6 +303,15 @@ const BillingOverviewPage = () => {
 										One-time purchase · Never expires
 									</p>
 								)}
+								{freeUntil && (
+									<p className='mt-1 inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400'>
+										<Gift size={12} />
+										{isReferralTime
+											? 'Earned through referrals'
+											: 'Complimentary'}{' '}
+										· Free until {fmtDate(freeUntil)}
+									</p>
+								)}
 							</div>
 						</div>
 						{statusCfg && (
@@ -352,6 +369,11 @@ const BillingOverviewPage = () => {
 							/>
 						</div>
 					)}
+					<CreditBreakdown
+						grants={overview.credit_grants ?? []}
+						debt={overview.credit_debt ?? 0}
+						freeCredits={overview.free_credits ?? null}
+					/>
 					<Link
 						to={toWorkspacePath(billingPages.credits.to)}
 						className='text-primary-600 dark:text-primary-400 mt-3 inline-flex items-center gap-1 text-xs font-bold'>

@@ -1,23 +1,25 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { AUTOSAVE_DEBOUNCE_MS } from '../_helper/builder.constants';
 import { exportWorkflow } from '../_helper/importExport.helper';
-import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
-import { useQueryClient } from '@tanstack/react-query';
-import { workflowKeys } from '@/api/modules/workflows';
-import { persistWorkflowDraft } from '../_helper/persistDraft.helper';
+import { serverValidationIssues } from '../_helper/validation.helper';
+import { useWorkflowEditor } from './useWorkflowEditor.hook';
+import { usePersistWorkflowDraft } from './usePersistWorkflowDraft.hook';
+import { messageFromError, notify } from '@/api/core/notify';
 
 export const useAutosave = () => {
 	const { state, dispatch } = useWorkflowEditor();
-	const queryClient = useQueryClient();
+	const persistWorkflowDraft = usePersistWorkflowDraft();
 	const timer = useRef<number | null>(null);
 
 	// The save reads the latest state through a ref, so the debounce effect below
 	// only has to depend on the things that actually get persisted. It used to
-	// depend on the whole state object, which meant any UI-only change — selecting
-	// a node, toggling a panel, a run status tick — restarted the 700ms timer and
+	// depend on the whole state object, which meant any UI-only change (selecting
+	// a node, toggling a panel, a run status tick) restarted the 700ms timer and
 	// could starve autosave for as long as the user kept interacting.
 	const stateRef = useRef(state);
-	stateRef.current = state;
+	useLayoutEffect(() => {
+		stateRef.current = state;
+	});
 
 	const isMounted = useRef(true);
 	useEffect(() => {
@@ -39,7 +41,7 @@ export const useAutosave = () => {
 			const { workspaceId, apiId } = current.workflow;
 			// What this save covers. If either changes while the request is in flight
 			// the user edited during the save, so it stays dirty instead of being
-			// marked saved — otherwise that edit would never be persisted.
+			// marked saved, otherwise that edit would never be persisted.
 			const savedNodes = current.nodes;
 			const savedEdges = current.edges;
 			const savedName = current.workflow.name;
@@ -51,7 +53,7 @@ export const useAutosave = () => {
 				try {
 					// Name/description and the graph are separate resources on this
 					// backend: PATCH ignores nodes/edges, the draft lives behind PUT /graph.
-					const saved = await persistWorkflowDraft({
+					await persistWorkflowDraft({
 						workspaceId,
 						workflowId: apiId,
 						name: savedName,
@@ -59,8 +61,6 @@ export const useAutosave = () => {
 						nodes: savedNodes,
 						edges: savedEdges,
 					});
-					// Reopening the editor reads the cached detail — keep it on the saved draft.
-					queryClient.setQueryData(workflowKeys.detail(workspaceId, apiId), saved);
 					const stale =
 						stateRef.current.nodes !== savedNodes ||
 						stateRef.current.edges !== savedEdges ||
@@ -68,7 +68,12 @@ export const useAutosave = () => {
 						stateRef.current.workflow.description !== savedDescription;
 					setState(stale ? 'dirty' : 'saved');
 				} catch (err) {
-					console.error('Failed to autosave workflow to API:', err);
+					const issues = serverValidationIssues(err);
+					if (!silent && issues.length) {
+						dispatch({ type: 'SET_ISSUES_PANEL', open: true, serverIssues: issues });
+					} else if (!silent) {
+						notify.error(messageFromError(err, 'Could not save the workflow'));
+					}
 					setState('error');
 				}
 			} else {
@@ -83,11 +88,13 @@ export const useAutosave = () => {
 				}
 			}
 		},
-		[dispatch, queryClient],
+		[dispatch, persistWorkflowDraft],
 	);
 
 	const saveRef = useRef(save);
-	saveRef.current = save;
+	useLayoutEffect(() => {
+		saveRef.current = save;
+	});
 
 	const { savingState, workspaceId, apiId, name, description } = state.workflow;
 
@@ -106,7 +113,7 @@ export const useAutosave = () => {
 
 	// Leaving the editor in-app unmounts it and the cleanup above clears the pending
 	// timer with it, which silently dropped anything edited in the last 700ms. Flush
-	// the save instead — the request outlives the unmount, so there is nothing to
+	// the save instead: the request outlives the unmount, so there is nothing to
 	// prompt about.
 	useEffect(
 		() => () => {
@@ -118,8 +125,8 @@ export const useAutosave = () => {
 		[],
 	);
 
-	// A tab close or reload cannot be flushed the same way — the request is not
-	// guaranteed to finish — so warn while there is anything unsaved or in flight.
+	// A tab close or reload cannot be flushed the same way (the request is not
+	// guaranteed to finish) so warn while there is anything unsaved or in flight.
 	useEffect(() => {
 		if (savingState !== 'dirty' && savingState !== 'saving') return;
 		const onBeforeUnload = (event: BeforeUnloadEvent) => {

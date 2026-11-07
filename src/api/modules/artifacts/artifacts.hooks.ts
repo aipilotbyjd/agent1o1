@@ -27,7 +27,7 @@ export const useUploadArtifact = (ws: string) => {
 	return useMutation({
 		mutationFn: (payload: TUploadArtifactDto) => ArtifactService.upload(ws, payload),
 		// An upload can land as a new version of an existing group, so any open
-		// version history is stale too — not just the list.
+		// version history is stale too, not just the list.
 		onSuccess: () => qc.invalidateQueries({ queryKey: artifactKeys.all(ws) }),
 		meta: { errorMessage: 'Failed to upload artifact' },
 	});
@@ -58,7 +58,8 @@ export const useAddArtifactShare = (ws: string) => {
 	return useMutation({
 		mutationFn: ({ id, body }: { id: string; body: TShareArtifactDto }) =>
 			ArtifactService.addShare(ws, id, body),
-		onSuccess: (_artifact, { id }) => qc.invalidateQueries({ queryKey: artifactKeys.detail(ws, id) }),
+		onSuccess: (_artifact, { id }) =>
+			qc.invalidateQueries({ queryKey: artifactKeys.detail(ws, id) }),
 		meta: { errorMessage: 'Failed to share artifact' },
 	});
 };
@@ -68,7 +69,8 @@ export const useRemoveArtifactShare = (ws: string) => {
 	return useMutation({
 		mutationFn: ({ id, userId }: { id: string; userId: string }) =>
 			ArtifactService.removeShare(ws, id, userId),
-		onSuccess: (_void, { id }) => qc.invalidateQueries({ queryKey: artifactKeys.detail(ws, id) }),
+		onSuccess: (_void, { id }) =>
+			qc.invalidateQueries({ queryKey: artifactKeys.detail(ws, id) }),
 		meta: { errorMessage: 'Failed to remove share' },
 	});
 };

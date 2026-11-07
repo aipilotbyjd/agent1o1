@@ -78,7 +78,11 @@ const ArtifactUploadButton = ({
 				disabled={uploading > 0}
 				onClick={() => inputRef.current?.click()}
 				className={className}>
-				{uploading > 0 ? <Loader2 size={13} className='animate-spin' /> : <Upload size={13} />}
+				{uploading > 0 ? (
+					<Loader2 size={13} className='animate-spin' />
+				) : (
+					<Upload size={13} />
+				)}
 				{uploading > 0 ? `Uploading${uploading > 1 ? ` ${uploading}…` : '…'}` : label}
 			</button>
 		</>

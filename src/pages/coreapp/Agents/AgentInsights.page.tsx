@@ -19,7 +19,7 @@ import AgentEvalsPanel from './AgentBuilder/Build/_partial/AgentEvalsPanel.parti
 import AgentEvaluationsPanel from './AgentBuilder/Build/_partial/AgentEvaluationsPanel.partial';
 import AgentReflectionsPanel from './AgentBuilder/Build/_partial/AgentReflectionsPanel.partial';
 
-export const INSIGHT_TABS = [
+const INSIGHT_TABS = [
 	{ id: 'runs', label: 'Runs', icon: History },
 	{ id: 'analytics', label: 'Analytics', icon: BarChart2 },
 	{ id: 'evals', label: 'Evals', icon: FlaskConical },
@@ -99,14 +99,22 @@ const AgentInsightsPage = () => {
 				</nav>
 			</header>
 
-			<main className='min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-8'>
+			<main className='no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-8'>
 				<section className='mx-auto w-full max-w-6xl rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-6 dark:border-white/10 dark:bg-zinc-900/70'>
 					{tab === 'runs' && <AgentRunsPanel ws={workspaceId} agentId={agentId} />}
-					{tab === 'analytics' && <AgentAnalyticsPanel ws={workspaceId} agentId={agentId} />}
+					{tab === 'analytics' && (
+						<AgentAnalyticsPanel ws={workspaceId} agentId={agentId} />
+					)}
 					{tab === 'evals' && <AgentEvalsPanel ws={workspaceId} agentId={agentId} />}
-					{tab === 'grading' && <AgentEvaluationsPanel ws={workspaceId} agentId={agentId} />}
+					{tab === 'grading' && (
+						<AgentEvaluationsPanel ws={workspaceId} agentId={agentId} />
+					)}
 					{tab === 'reflections' && (
-						<AgentReflectionsPanel ws={workspaceId} agentId={agentId} displayMode='page' />
+						<AgentReflectionsPanel
+							ws={workspaceId}
+							agentId={agentId}
+							displayMode='page'
+						/>
 					)}
 				</section>
 			</main>

@@ -1,3 +1,8 @@
+import {
+	readNodeConfig,
+	serializeNodeConfig,
+	restoreInputConnections,
+} from './dynamicInputs.helper';
 import type {
 	TBuilderGraph,
 	TBuilderGraphEdge,
@@ -7,8 +12,8 @@ import { getNodeDefinition } from './nodeCatalog.constants';
 import type { TCanvasEdge, TCanvasNode, TCanvasPosition } from '../_types/canvas.type';
 
 /**
- * Converts between the backend's graph shape — nodes `{ key, type, config,
- * position }`, edges `{ from, to, condition }` — and React Flow canvas
+ * Converts between the backend's graph shape: nodes `{ key, type, config,
+ * position }`, edges `{ from, to, condition }`, and React Flow canvas
  * nodes/edges. Used for a saved workflow's draft (`workflowApiTransform`) and
  * for an AI builder session's `draft_graph`, which share that shape.
  *
@@ -46,7 +51,7 @@ export const graphNodeToCanvas = (
 			defKey: node.type,
 			label: label || def?.label || node.type,
 			definition: def,
-			values: node.config ?? {},
+			...readNodeConfig(node.config ?? {}),
 			status: 'idle',
 		},
 	} as TCanvasNode;
@@ -72,7 +77,7 @@ export const graphEdgeToCanvas = (edge: TBuilderGraphEdge, index: number): TCanv
 		...(edge.condition === 'error' ? { style: { stroke: '#f43f5e' } } : {}),
 	}) as TCanvasEdge;
 
-/** A canvas edge's branch condition — `null` for an ordinary connection. */
+/** A canvas edge's branch condition: `null` for an ordinary connection. */
 export const edgeCondition = (edge: TCanvasEdge): string | null => {
 	const condition = edge.data?.condition;
 	return typeof condition === 'string' && condition !== '' ? condition : null;
@@ -97,7 +102,9 @@ const positionNodes = (
 
 	const occupied = (candidate: TCanvasPosition) =>
 		[...positions.values()].some(
-			(p) => Math.abs(p.x - candidate.x) < COLUMN_GAP / 2 && Math.abs(p.y - candidate.y) < ROW_GAP / 2,
+			(p) =>
+				Math.abs(p.x - candidate.x) < COLUMN_GAP / 2 &&
+				Math.abs(p.y - candidate.y) < ROW_GAP / 2,
 		);
 
 	const freeSlotBelow = (start: TCanvasPosition) => {
@@ -111,7 +118,9 @@ const positionNodes = (
 	for (let pass = 0; pass < graph.nodes.length && positions.size < graph.nodes.length; pass++) {
 		graph.nodes.forEach((node) => {
 			if (positions.has(node.key)) return;
-			const feeder = graph.edges.find((edge) => edge.to === node.key && positions.has(edge.from));
+			const feeder = graph.edges.find(
+				(edge) => edge.to === node.key && positions.has(edge.from),
+			);
 			if (!feeder) return;
 			const from = positions.get(feeder.from)!;
 			positions.set(node.key, freeSlotBelow({ x: from.x + COLUMN_GAP, y: from.y }));
@@ -124,7 +133,10 @@ const positionNodes = (
 			DEFAULT_POSITION.x - COLUMN_GAP,
 			...[...positions.values()].map((p) => p.x),
 		);
-		positions.set(node.key, freeSlotBelow({ x: rightmost + COLUMN_GAP, y: DEFAULT_POSITION.y }));
+		positions.set(
+			node.key,
+			freeSlotBelow({ x: rightmost + COLUMN_GAP, y: DEFAULT_POSITION.y }),
+		);
 	});
 
 	return positions;
@@ -133,13 +145,13 @@ const positionNodes = (
 /**
  * A builder session's draft as canvas nodes/edges. Nodes already on the
  * canvas keep their position, label and canvas-only state (pins, colour);
- * sticky notes — which the backend has no node type for, so never reach the
- * draft — are carried over untouched.
+ * sticky notes (which the backend has no node type for, so never reach the
+ * draft) are carried over untouched.
  */
 export const builderGraphToCanvas = (
 	graph: TBuilderGraph,
 	currentNodes: TCanvasNode[] = [],
-): { nodes: TCanvasNode[]; edges: TCanvasEdge[] } => {
+): { nodes: TCanvasNode[]; edges: TCanvasEdge[]; placed: boolean } => {
 	const currentById = new Map(currentNodes.map((node) => [node.id, node]));
 	const positions = positionNodes(
 		graph,
@@ -151,19 +163,24 @@ export const builderGraphToCanvas = (
 		const position = positions.get(node.key);
 
 		return existing && existing.data.defKey === node.type
-			? { ...existing, position: position ?? existing.position, data: { ...existing.data, values: node.config ?? {} } }
+			? {
+					...existing,
+					position: position ?? existing.position,
+					data: { ...existing.data, ...readNodeConfig(node.config ?? {}) },
+				}
 			: graphNodeToCanvas(node, position);
 	});
 
 	return {
 		nodes: [...nodes, ...currentNodes.filter(isNoteNode)],
-		edges: graph.edges.map(graphEdgeToCanvas),
+		edges: restoreInputConnections(graph.edges.map(graphEdgeToCanvas), graph.nodes),
+		placed: graph.nodes.some((node) => !currentById.has(node.key) && !node.position),
 	};
 };
 
 /**
  * The canvas as a builder session's `draft_graph`. Sticky notes are left
- * out — the backend has no node type for them and would reject the sync.
+ * out: the backend has no node type for them and would reject the sync.
  */
 export const canvasToBuilderGraph = (nodes: TCanvasNode[], edges: TCanvasEdge[]): TBuilderGraph => {
 	const realNodes = nodes.filter((node) => !isNoteNode(node));
@@ -173,11 +190,15 @@ export const canvasToBuilderGraph = (nodes: TCanvasNode[], edges: TCanvasEdge[])
 		nodes: realNodes.map((node) => ({
 			key: node.id,
 			type: node.data.defKey,
-			config: node.data.values ?? {},
+			config: serializeNodeConfig(node, edges),
 			position: { x: Math.round(node.position.x), y: Math.round(node.position.y) },
 		})),
 		edges: edges
 			.filter((edge) => realIds.has(edge.source) && realIds.has(edge.target))
-			.map((edge) => ({ from: edge.source, to: edge.target, condition: edgeCondition(edge) })),
+			.map((edge) => ({
+				from: edge.source,
+				to: edge.target,
+				condition: edgeCondition(edge),
+			})),
 	};
 };

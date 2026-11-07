@@ -12,7 +12,7 @@ import type {
 import { FolderEndpoints as E } from './folders.endpoints';
 
 export const FolderService = {
-	// Root folders only, with one level of `children` eager-loaded — not a
+	// Root folders only, with one level of `children` eager-loaded, not a
 	// flat list. The backend defaults `type` to workflow, so agent folders
 	// must ask for them.
 	list: (ws: string, type: TFolderType = 'workflow', signal?: AbortSignal) =>

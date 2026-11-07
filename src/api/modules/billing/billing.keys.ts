@@ -6,6 +6,7 @@ export const billingKeys = {
 		['billing', ws, 'subscription', 'preview', planId, interval] as const,
 	creditPacks: (ws: string) => ['billing', ws, 'credit-packs'] as const,
 	creditPacksPurchased: (ws: string) => ['billing', ws, 'credit-packs', 'purchased'] as const,
+	usageInsights: (ws: string, days: number) => ['billing', ws, 'usage-insights', days] as const,
 	credits: (ws: string, params?: { page?: number; per_page?: number }) =>
 		['billing', ws, 'credits', params ?? {}] as const,
 	overage: (ws: string) => ['billing', ws, 'overage'] as const,

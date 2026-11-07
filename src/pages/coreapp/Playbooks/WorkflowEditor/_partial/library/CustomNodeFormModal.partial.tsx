@@ -199,7 +199,8 @@ const CustomNodeFormModal = ({ workspaceId, node, onClose }: Props) => {
 		() =>
 			[...categories].sort(
 				(a, b) =>
-					Number(a.kind !== 'core') - Number(b.kind !== 'core') || a.sort_order - b.sort_order,
+					Number(a.kind !== 'core') - Number(b.kind !== 'core') ||
+					a.sort_order - b.sort_order,
 			),
 		[categories],
 	);
@@ -240,7 +241,8 @@ const CustomNodeFormModal = ({ workspaceId, node, onClose }: Props) => {
 		}
 		if (new Set(keys).size !== keys.length) return setError('Field keys must be unique.');
 		const emptySelect = rows.find(
-			(row) => row.type === 'select' && !row.options.split(',').some((option) => option.trim()),
+			(row) =>
+				row.type === 'select' && !row.options.split(',').some((option) => option.trim()),
 		);
 		if (emptySelect) return setError(`"${emptySelect.key}" needs at least one option.`);
 
@@ -291,6 +293,7 @@ const CustomNodeFormModal = ({ workspaceId, node, onClose }: Props) => {
 								Name
 							</label>
 							<input
+								aria-label='e.g. Enrich Lead'
 								id='custom-node-name'
 								type='text'
 								value={name}
@@ -305,6 +308,7 @@ const CustomNodeFormModal = ({ workspaceId, node, onClose }: Props) => {
 								Description
 							</label>
 							<textarea
+								aria-label='What this step does'
 								id='custom-node-description'
 								value={description}
 								rows={2}
@@ -349,9 +353,9 @@ const CustomNodeFormModal = ({ workspaceId, node, onClose }: Props) => {
 								</option>
 							))}
 							{credentialType &&
-								!connectors.some((connector) => connector.key === credentialType) && (
-									<option value={credentialType}>{credentialType}</option>
-								)}
+								!connectors.some(
+									(connector) => connector.key === credentialType,
+								) && <option value={credentialType}>{credentialType}</option>}
 						</select>
 					</div>
 				</div>
@@ -434,13 +438,16 @@ const CustomNodeFormModal = ({ workspaceId, node, onClose }: Props) => {
 										Label
 									</label>
 									<input
+										aria-label='e.g. Email address'
 										id={`${row.uid}-label`}
 										type='text'
 										value={row.label}
 										onChange={(event) =>
 											updateRow(row.uid, {
 												label: event.target.value,
-												...(row.keyEdited ? {} : { key: toKey(event.target.value) }),
+												...(row.keyEdited
+													? {}
+													: { key: toKey(event.target.value) }),
 											})
 										}
 										className={inputClass}
@@ -452,11 +459,15 @@ const CustomNodeFormModal = ({ workspaceId, node, onClose }: Props) => {
 										Key
 									</label>
 									<input
+										aria-label='email_address'
 										id={`${row.uid}-key`}
 										type='text'
 										value={row.key}
 										onChange={(event) =>
-											updateRow(row.uid, { key: event.target.value, keyEdited: true })
+											updateRow(row.uid, {
+												key: event.target.value,
+												keyEdited: true,
+											})
 										}
 										className={`${inputClass} font-mono`}
 										placeholder='email_address'
@@ -470,7 +481,9 @@ const CustomNodeFormModal = ({ workspaceId, node, onClose }: Props) => {
 										id={`${row.uid}-type`}
 										value={row.type}
 										onChange={(event) =>
-											updateRow(row.uid, { type: event.target.value as TFieldType })
+											updateRow(row.uid, {
+												type: event.target.value as TFieldType,
+											})
 										}
 										className={inputClass}>
 										<option value='string'>Text</option>
@@ -483,7 +496,11 @@ const CustomNodeFormModal = ({ workspaceId, node, onClose }: Props) => {
 								<button
 									type='button'
 									aria-label={`Remove ${row.label || row.key || 'field'}`}
-									onClick={() => setRows((prev) => prev.filter((item) => item.uid !== row.uid))}
+									onClick={() =>
+										setRows((prev) =>
+											prev.filter((item) => item.uid !== row.uid),
+										)
+									}
 									className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-zinc-200 text-rose-500 hover:bg-rose-50 dark:border-zinc-800 dark:hover:bg-rose-950/20'>
 									<Trash2 size={14} />
 								</button>
@@ -493,7 +510,9 @@ const CustomNodeFormModal = ({ workspaceId, node, onClose }: Props) => {
 									type='text'
 									aria-label='Help text'
 									value={row.description}
-									onChange={(event) => updateRow(row.uid, { description: event.target.value })}
+									onChange={(event) =>
+										updateRow(row.uid, { description: event.target.value })
+									}
 									className={`${inputClass} sm:flex-1`}
 									placeholder='Help text (optional)'
 								/>
@@ -502,7 +521,9 @@ const CustomNodeFormModal = ({ workspaceId, node, onClose }: Props) => {
 										type='text'
 										aria-label='Options'
 										value={row.options}
-										onChange={(event) => updateRow(row.uid, { options: event.target.value })}
+										onChange={(event) =>
+											updateRow(row.uid, { options: event.target.value })
+										}
 										className={`${inputClass} sm:flex-1`}
 										placeholder='Options, comma separated'
 									/>
@@ -511,7 +532,9 @@ const CustomNodeFormModal = ({ workspaceId, node, onClose }: Props) => {
 									<input
 										type='checkbox'
 										checked={row.required}
-										onChange={(event) => updateRow(row.uid, { required: event.target.checked })}
+										onChange={(event) =>
+											updateRow(row.uid, { required: event.target.checked })
+										}
 										className='accent-primary-500'
 									/>
 									Required
@@ -562,8 +585,8 @@ const CustomNodeFormModal = ({ workspaceId, node, onClose }: Props) => {
 								/>
 							</div>
 							<p className='text-[11px] text-zinc-400 sm:col-span-2 dark:text-zinc-500'>
-								Each property becomes a port on the canvas. Leave a box empty and the node
-								gets no ports on that side.
+								Each property becomes a port on the canvas. Leave a box empty and
+								the node gets no ports on that side.
 							</p>
 						</div>
 					)}
@@ -586,7 +609,7 @@ const CustomNodeFormModal = ({ workspaceId, node, onClose }: Props) => {
 						type='button'
 						onClick={handleSave}
 						disabled={isSaving}
-						className='rounded-lg bg-primary-400 px-5 py-2 text-xs font-bold text-primary-950 shadow-md transition hover:bg-primary-500 active:scale-97 disabled:cursor-not-allowed disabled:opacity-60'>
+						className='bg-primary-400 text-primary-950 hover:bg-primary-500 rounded-lg px-5 py-2 text-xs font-bold shadow-md transition active:scale-97 disabled:cursor-not-allowed disabled:opacity-60'>
 						{isSaving ? 'Saving…' : isEdit ? 'Save changes' : 'Create node'}
 					</button>
 				</div>

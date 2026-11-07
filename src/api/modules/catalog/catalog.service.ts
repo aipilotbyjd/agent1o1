@@ -21,11 +21,18 @@ export const CatalogService = {
 
 	nodeCategory: (id: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ category: TNodeCategory; nodes: TBuiltinNode[]; nodes_count: number }>>(
-				E.nodeCategory(id),
-				{ signal },
-			)
+			.get<
+				TApiResponse<{
+					category: TNodeCategory;
+					nodes: TBuiltinNode[];
+					nodes_count: number;
+				}>
+			>(E.nodeCategory(id), { signal })
 			.then((r) => r.data.data),
+
+	/** Pins or unpins an app for the signed-in user, so "Your apps" follows their account. */
+	pinNodeCategory: (id: string, isPinned: boolean) =>
+		axiosClient.patch(E.nodeCategoryPin(id), { is_pinned: isPinned }).then(() => undefined),
 
 	/** Grouped by preset category, e.g. `{ github: [...], stripe: [...] }`. */
 	triggerPresets: (signal?: AbortSignal) =>
@@ -35,8 +42,12 @@ export const CatalogService = {
 			})
 			.then(unwrapKey<Record<string, TTriggerPreset[]>>('presets')),
 
-	modelCatalog: (signal?: AbortSignal) =>
+	/** With `ws`, `is_available` also counts that workspace's own provider keys. */
+	modelCatalog: (ws?: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ model_catalog: TModelCatalogEntry[] }>>(E.modelCatalog, { signal })
+			.get<TApiResponse<{ model_catalog: TModelCatalogEntry[] }>>(E.modelCatalog, {
+				params: ws ? { workspace_id: ws } : undefined,
+				signal,
+			})
 			.then(unwrapKey<TModelCatalogEntry[]>('model_catalog')),
 };

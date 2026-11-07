@@ -6,3 +6,6 @@ export * from './workflow-versions.service';
 export * from './workflow-versions.hooks';
 export * from './workflow-interface.service';
 export * from './workflow-interface.hooks';
+export * from './publish-requests.service';
+export * from './publish-requests.hooks';
+export * from './workflows.realtime';

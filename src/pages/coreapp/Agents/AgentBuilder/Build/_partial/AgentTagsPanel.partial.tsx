@@ -27,7 +27,7 @@ const AgentTagsPanel = ({ ws, agentId }: TProps) => {
 	if (!agentId) return null;
 
 	const attached = agent?.tags ?? [];
-	// Ids arrive as numbers from Laravel but are typed string — compare as strings.
+	// Ids arrive as numbers from Laravel but are typed string: compare as strings.
 	const attachedIds = attached.map((tag) => String(tag.id));
 	const query = searchQuery.trim().toLowerCase();
 	const matchingTags = (workspaceTags ?? []).filter((tag) =>
@@ -110,6 +110,7 @@ const AgentTagsPanel = ({ ws, agentId }: TProps) => {
 				footer={
 					<div className='flex items-center gap-2'>
 						<input
+							aria-label='New tag name'
 							type='text'
 							value={newTagName}
 							onChange={(e) => setNewTagName(e.target.value)}

@@ -5,7 +5,7 @@ import type { TSecret, TCreateSecretDto, TUpdateSecretDto } from '@/types/secret
 import { SecretEndpoints as E } from './secrets.endpoints';
 
 export const SecretService = {
-	// The backend takes no list filters — `params` is accepted only to
+	// The backend takes no list filters: `params` is accepted only to
 	// match `createResource()`'s service contract.
 	list: (ws: string, _params?: TListParams, signal?: AbortSignal) =>
 		axiosClient

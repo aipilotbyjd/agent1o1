@@ -7,11 +7,15 @@ export const WorkflowEndpoints = {
 	detail: workflow,
 	update: workflow,
 	delete: workflow,
+	trash: (ws: string) => `${base(ws)}/trash`,
+	restore: (ws: string, id: string) => `${workflow(ws, id)}/restore`,
+	forceDelete: (ws: string, id: string) => `${workflow(ws, id)}/force`,
 	duplicate: (ws: string, id: string) => `${workflow(ws, id)}/duplicate`,
 	syncTags: (ws: string, id: string) => `${workflow(ws, id)}/tags`,
 
 	pinNode: (ws: string, id: string, nodeId: string) => `${workflow(ws, id)}/nodes/${nodeId}/pin`,
-	unpinNode: (ws: string, id: string, nodeId: string) => `${workflow(ws, id)}/nodes/${nodeId}/pin`,
+	unpinNode: (ws: string, id: string, nodeId: string) =>
+		`${workflow(ws, id)}/nodes/${nodeId}/pin`,
 
 	favorite: (ws: string, id: string) => `${workflow(ws, id)}/favorite`,
 } as const;
@@ -21,10 +25,27 @@ export const WorkflowVersionEndpoints = {
 	publish: (ws: string, workflowId: string) => `${workflow(ws, workflowId)}/versions`,
 	detail: (ws: string, workflowId: string, version: string) =>
 		`${workflow(ws, workflowId)}/versions/${version}`,
+	restore: (ws: string, workflowId: string, version: string) =>
+		`${workflow(ws, workflowId)}/versions/${version}/restore`,
 } as const;
 
 export const WorkflowInterfaceEndpoints = {
 	show: (ws: string, workflowId: string) => `${workflow(ws, workflowId)}/interface`,
 	update: (ws: string, workflowId: string) => `${workflow(ws, workflowId)}/interface`,
 	submit: (ws: string, workflowId: string) => `${workflow(ws, workflowId)}/interface/runs`,
+} as const;
+
+export const PublishRequestEndpoints = {
+	list: (ws: string, workflowId: string) => `${workflow(ws, workflowId)}/publish-requests`,
+	create: (ws: string, workflowId: string) => `${workflow(ws, workflowId)}/publish-requests`,
+	detail: (ws: string, workflowId: string, id: string) =>
+		`${workflow(ws, workflowId)}/publish-requests/${id}`,
+	approve: (ws: string, workflowId: string, id: string) =>
+		`${workflow(ws, workflowId)}/publish-requests/${id}/approve`,
+	reject: (ws: string, workflowId: string, id: string) =>
+		`${workflow(ws, workflowId)}/publish-requests/${id}/reject`,
+	withdraw: (ws: string, workflowId: string, id: string) =>
+		`${workflow(ws, workflowId)}/publish-requests/${id}/withdraw`,
+	policy: (ws: string) => `/workspaces/${ws}/publish-approval-policy`,
+	workspacePending: (ws: string) => `/workspaces/${ws}/publish-requests`,
 } as const;

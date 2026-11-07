@@ -16,7 +16,13 @@ import type { TTemplatableType, TTemplateCollection } from '@/types/template.typ
  * back with gaps or duplicates (items added with an explicit position) is
  * normalised the first time it is reordered.
  */
-const CollectionItemsEditor = ({ ws, collection }: { ws: string; collection: TTemplateCollection }) => {
+const CollectionItemsEditor = ({
+	ws,
+	collection,
+}: {
+	ws: string;
+	collection: TTemplateCollection;
+}) => {
 	const items = useMemo(
 		() => (collection.items ?? []).slice().sort((a, b) => a.position - b.position),
 		[collection.items],
@@ -37,8 +43,12 @@ const CollectionItemsEditor = ({ ws, collection }: { ws: string; collection: TTe
 	);
 	const available = useMemo(
 		() => ({
-			workflows: (workflowTemplates ?? []).filter((t) => !inCollection.has(`workflow_template:${t.id}`)),
-			agents: (agentTemplates ?? []).filter((t) => !inCollection.has(`agent_template:${t.id}`)),
+			workflows: (workflowTemplates ?? []).filter(
+				(t) => !inCollection.has(`workflow_template:${t.id}`),
+			),
+			agents: (agentTemplates ?? []).filter(
+				(t) => !inCollection.has(`agent_template:${t.id}`),
+			),
 		}),
 		[workflowTemplates, agentTemplates, inCollection],
 	);
@@ -99,12 +109,16 @@ const CollectionItemsEditor = ({ ws, collection }: { ws: string; collection: TTe
 							</div>
 							<div className='min-w-0 flex-1'>
 								<div className='flex items-center gap-2.5'>
-									<h4 className='truncate text-xs font-bold text-zinc-800 dark:text-zinc-200'>{name}</h4>
+									<h4 className='truncate text-xs font-bold text-zinc-800 dark:text-zinc-200'>
+										{name}
+									</h4>
 									<span className='rounded border border-zinc-200/40 bg-zinc-50 px-1.5 py-0.5 text-[9px] font-bold text-zinc-400 uppercase dark:border-zinc-800 dark:bg-zinc-950'>
 										{isAgent ? 'agent' : 'workflow'}
 									</span>
 								</div>
-								<p className='mt-1 text-[10px] leading-relaxed text-zinc-500 dark:text-zinc-400'>{desc}</p>
+								<p className='mt-1 text-[10px] leading-relaxed text-zinc-500 dark:text-zinc-400'>
+									{desc}
+								</p>
 							</div>
 							<div className='flex shrink-0 items-start gap-0.5'>
 								<button
@@ -149,7 +163,7 @@ const CollectionItemsEditor = ({ ws, collection }: { ws: string; collection: TTe
 					aria-label='Template to add'
 					value={pick}
 					onChange={(e) => setPick(e.target.value)}
-					className='h-9 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-700 outline-none focus:ring-1 focus:ring-primary-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300'>
+					className='focus:ring-primary-500 h-9 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-700 outline-none focus:ring-1 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300'>
 					<option value=''>Add a template…</option>
 					{available.workflows.length > 0 && (
 						<optgroup label='Workflow templates'>
@@ -175,7 +189,11 @@ const CollectionItemsEditor = ({ ws, collection }: { ws: string; collection: TTe
 					onClick={handleAdd}
 					disabled={!pick || addItem.isPending}
 					className='flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-amber-400 px-3.5 text-xs font-black text-amber-950 transition hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-50'>
-					{addItem.isPending ? <Loader2 size={12} className='animate-spin' /> : <Plus size={12} />}
+					{addItem.isPending ? (
+						<Loader2 size={12} className='animate-spin' />
+					) : (
+						<Plus size={12} />
+					)}
 					Add
 				</button>
 			</div>

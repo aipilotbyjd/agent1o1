@@ -1,12 +1,33 @@
 import { getNodeDefinition } from './nodeCatalog.constants';
 import type { TCanvasEdge, TCanvasNode } from '../_types/canvas.type';
+import type { TNodeField } from '../_types/node.type';
+import { ApiError, type TApiIssue } from '@/api/core';
+import { referencedSecretKeys } from './secretTokens.helper';
 
 export type TValidationIssue = {
 	id: string;
 	nodeId?: string;
+	/** The config field it's about, so the checklist can jump to it. */
+	fieldKey?: string;
 	message: string;
 	severity: 'error' | 'warning';
+	/** Publishing is refused until it's fixed; otherwise it's only a suggestion. */
+	blocksPublish?: boolean;
 };
+
+/**
+ * A required field the author still has to fill in: nothing, or blank text,
+ * and not fed by a connection from another step (a dynamic input): the same
+ * rule the server applies when publishing. Drafts save without it.
+ */
+export const isMissingRequiredValue = (
+	field: TNodeField,
+	value: unknown,
+	dynamicInputKeys: string[] = [],
+) =>
+	!!field.required &&
+	!dynamicInputKeys.includes(field.key) &&
+	(value === undefined || value === null || (typeof value === 'string' && value.trim() === ''));
 
 export const validateWorkflow = (
 	nodes: TCanvasNode[],
@@ -37,17 +58,22 @@ export const validateWorkflow = (
 			return;
 		}
 		def.fields
-			.filter((field) => field.required)
+			.filter((field) =>
+				isMissingRequiredValue(
+					field,
+					node.data.values[field.key],
+					node.data.dynamicInputKeys,
+				),
+			)
 			.forEach((field) => {
-				const value = node.data.values[field.key];
-				if (value === undefined || value === null || value === '') {
-					issues.push({
-						id: `node:${node.id}:${field.key}`,
-						nodeId: node.id,
-						message: `${def.label} requires ${field.label}.`,
-						severity: 'warning',
-					});
-				}
+				issues.push({
+					id: `node:${node.id}:${field.key}`,
+					nodeId: node.id,
+					fieldKey: field.key,
+					message: `${field.label} is required.`,
+					severity: 'warning',
+					blocksPublish: true,
+				});
 			});
 	});
 
@@ -66,3 +92,90 @@ export const validateWorkflow = (
 
 	return issues;
 };
+
+/**
+ * Everything to fix before publishing: what the editor can see for itself,
+ * plus what the server refused the last publish for (some rules (a
+ * subflow's target, a missing account) only it can check). One entry per
+ * step and field, live checks first. References that won't resolve come last,
+ * as suggestions: publishing allows them, but a run reaching one fails.
+ */
+/**
+ * A `{{ secrets.X }}` the workspace has no secret for: publishing refuses it
+ * and a run would fail the step, so it's flagged as soon as it's typed.
+ * `secretKeys` is null until the workspace's secrets have loaded.
+ */
+export const unknownSecretIssues = (
+	nodes: TCanvasNode[],
+	secretKeys: Set<string> | null,
+): TValidationIssue[] => {
+	if (!secretKeys) return [];
+	return nodes.flatMap((node) =>
+		Object.entries(node.data.values ?? {}).flatMap(([fieldKey, value]) => {
+			const missing = referencedSecretKeys(value).filter((key) => !secretKeys.has(key));
+			if (missing.length === 0) return [];
+			const names = missing.join(', ');
+			return [
+				{
+					id: `secret:${node.id}:${fieldKey}`,
+					nodeId: node.id,
+					fieldKey,
+					message:
+						missing.length === 1
+							? `No secret named ${names}. Add it or pick another.`
+							: `No secrets named ${names}. Add them or pick others.`,
+					severity: 'error' as const,
+					blocksPublish: true,
+				},
+			];
+		}),
+	);
+};
+
+export const issuesToFix = (
+	nodes: TCanvasNode[],
+	edges: TCanvasEdge[],
+	serverIssues: TApiIssue[],
+	referenceIssues: TApiIssue[] = [],
+	secretKeys: Set<string> | null = null,
+): TValidationIssue[] => {
+	const live = [...validateWorkflow(nodes, edges), ...unknownSecretIssues(nodes, secretKeys)];
+	const nodeIds = new Set(nodes.map((node) => node.id));
+	const seen = new Set(live.map((issue) => `${issue.nodeId ?? ''}:${issue.fieldKey ?? ''}`));
+
+	const fromServer = serverIssues
+		.filter((issue) => issue.node_key === null || nodeIds.has(issue.node_key))
+		.filter((issue) => !seen.has(`${issue.node_key ?? ''}:${issue.field ?? ''}`))
+		.map(
+			(issue, index): TValidationIssue => ({
+				id: `server:${index}:${issue.node_key ?? ''}:${issue.field ?? ''}`,
+				nodeId: issue.node_key ?? undefined,
+				fieldKey: issue.field ?? undefined,
+				message: issue.message,
+				severity: 'error',
+				blocksPublish: true,
+			}),
+		);
+
+	const fromReferences = referenceIssues
+		.filter((issue) => issue.node_key === null || nodeIds.has(issue.node_key))
+		.map(
+			(issue, index): TValidationIssue => ({
+				id: `reference:${index}:${issue.node_key ?? ''}:${issue.message}`,
+				nodeId: issue.node_key ?? undefined,
+				fieldKey: issue.field ?? undefined,
+				message: issue.message,
+				severity: 'warning',
+				blocksPublish: false,
+			}),
+		);
+
+	return [...live, ...fromServer, ...fromReferences];
+};
+
+/**
+ * What the server said needs fixing, when it refused a workflow as invalid:
+ * shown in the checklist by step and field rather than as a toast.
+ */
+export const serverValidationIssues = (error: unknown): TApiIssue[] =>
+	ApiError.is(error) && error.status === 422 ? error.issues : [];

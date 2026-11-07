@@ -6,7 +6,6 @@ import { useWorkspaceContext } from '@/context/workspace';
 import pages from '@/Routes/pages';
 import { withWorkspace } from '@/Routes/paths';
 
-
 const settingsPages = pages.settings.subPages!;
 const billingPages = settingsPages.billing.subPages!;
 const playbooksPath = pages.workspace.subPages!.playbooks.to;
@@ -51,7 +50,7 @@ const BillingSuccessPage = () => {
 	const [searchParams] = useSearchParams();
 	const queryClient = useQueryClient();
 	const { activeWorkspaceId } = useWorkspaceContext();
-	// `ws` is set by BillingReturn.page — the workspace that was actually paid for,
+	// `ws` is set by BillingReturn.page: the workspace that was actually paid for,
 	// which need not be the active one. Fall back for direct visits.
 	const workspaceId = searchParams.get('ws') || activeWorkspaceId;
 	const toWorkspacePath = (to: string) => withWorkspace(to, workspaceId);

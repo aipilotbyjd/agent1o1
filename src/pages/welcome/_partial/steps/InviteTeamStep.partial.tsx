@@ -1,5 +1,5 @@
 import { Send } from 'lucide-react';
-import { useOnboardingStore } from '../../_context/OnboardingStore.context';
+import { useOnboardingStore } from '../../_hooks/useOnboardingStore.hook';
 import { ROLE_OPTIONS } from '../../_helper/onboarding.constants';
 import { parseEmails, isValidEmail } from '../../_helper/onboarding.helper';
 import type { TWorkspaceRole } from '@/types/workspace.type';
@@ -55,6 +55,7 @@ const InviteTeamStep = () => {
 							)}
 						</div>
 						<textarea
+							aria-label='maria@acme.com, jordan@acme.com'
 							id='invite-emails'
 							rows={3}
 							placeholder='maria@acme.com, jordan@acme.com'
@@ -74,9 +75,9 @@ const InviteTeamStep = () => {
 
 					{/* Role selector */}
 					<div className='space-y-2'>
-						<label className='block text-[11px] font-black tracking-wider text-slate-500 uppercase dark:text-zinc-400'>
+						<span className='block text-[11px] font-black tracking-wider text-slate-500 uppercase dark:text-zinc-400'>
 							Default access level
-						</label>
+						</span>
 						<div className='grid grid-cols-2 gap-2.5'>
 							{ROLE_OPTIONS.map((r) => {
 								const isSelected = inviteRole === r.value;

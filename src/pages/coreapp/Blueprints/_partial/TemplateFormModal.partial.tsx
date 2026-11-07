@@ -1,23 +1,37 @@
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Cpu, Layers, Workflow } from 'lucide-react';
+import { AppWindow, Cpu, Layers, Workflow } from 'lucide-react';
 import { ApiError, notify } from '@/api/core';
 import {
 	useAgentTemplates,
 	useCreateAgentTemplate,
 	useCreateTemplateCollection,
 	useCreateWorkflowTemplate,
+	usePageTemplates,
+	useSavePageAsTemplate,
 	useSaveWorkflowAsTemplate,
 	useTemplateCollections,
 	useUpdateAgentTemplate,
+	useUpdatePageTemplate,
 	useUpdateTemplateCollection,
 	useUpdateWorkflowTemplate,
 	useWorkflowTemplates,
 } from '@/api/modules/templates';
 import { useWorkflows } from '@/api/modules/workflows';
-import type { TAgentTemplate, TTemplateCollection, TWorkflowTemplate } from '@/types/template.type';
+import { useWorkflowPages } from '@/api/modules/workflow-pages';
+import type {
+	TAgentTemplate,
+	TPageTemplate,
+	TTemplateCollection,
+	TWorkflowTemplate,
+} from '@/types/template.type';
 import Button from '@/components/ui/Button';
-import Modal, { ModalHeader, ModalBody, ModalFooter, ModalFooterChild } from '@/components/ui/Modal';
+import Modal, {
+	ModalHeader,
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+} from '@/components/ui/Modal';
 import { TEMPLATE_COLOR_OPTIONS } from '../_helper/blueprints.constants';
 
 const inputClass =
@@ -26,11 +40,12 @@ const labelClass = 'mb-1.5 block text-sm font-bold text-zinc-700 dark:text-zinc-
 const optionalClass = 'font-semibold text-zinc-400';
 const errorClass = 'mt-1.5 text-xs font-semibold text-red-500';
 
-export type TTemplateFormKind = 'workflow' | 'agent' | 'collection';
+export type TTemplateFormKind = 'workflow' | 'agent' | 'page' | 'collection';
 
 export type TTemplateFormTarget =
 	| { kind: 'workflow'; item?: TWorkflowTemplate }
 	| { kind: 'agent'; item?: TAgentTemplate }
+	| { kind: 'page'; item?: TPageTemplate }
 	| { kind: 'collection'; item?: TTemplateCollection };
 
 interface ITemplateFormModalProps {
@@ -43,6 +58,7 @@ interface ITemplateFormModalProps {
 const KIND_META: Record<TTemplateFormKind, { noun: string; icon: typeof Workflow }> = {
 	workflow: { noun: 'workflow template', icon: Workflow },
 	agent: { noun: 'agent template', icon: Cpu },
+	page: { noun: 'page template', icon: AppWindow },
 	collection: { noun: 'collection', icon: Layers },
 };
 
@@ -55,7 +71,8 @@ const KIND_META: Record<TTemplateFormKind, { noun: string; icon: typeof Workflow
  *
  * Create from scratch: a workflow template either snapshots an existing
  * workflow (the save-as-template route) or starts from an empty graph; an
- * agent template needs its instructions (`config.instructions` is required).
+ * agent template needs its instructions (`config.instructions` is required);
+ * a page template always snapshots an existing page.
  */
 const TemplateFormModal = ({ ws, target, onClose }: ITemplateFormModalProps) =>
 	target ? (
@@ -89,6 +106,7 @@ const TemplateForm = ({
 	const [color, setColor] = useState(item?.color ?? '');
 	// Create-only fields.
 	const [sourceWorkflowId, setSourceWorkflowId] = useState('');
+	const [sourcePageId, setSourcePageId] = useState('');
 	const [instructions, setInstructions] = useState('');
 	const [temperature, setTemperature] = useState('');
 	const [errors, setErrors] = useState<Record<string, string | null>>({});
@@ -98,6 +116,8 @@ const TemplateForm = ({
 	const updateWorkflow = useUpdateWorkflowTemplate(ws);
 	const createAgent = useCreateAgentTemplate(ws);
 	const updateAgent = useUpdateAgentTemplate(ws);
+	const savePageAs = useSavePageAsTemplate(ws);
+	const updatePage = useUpdatePageTemplate(ws);
 	const createCollection = useCreateTemplateCollection(ws);
 	const updateCollection = useUpdateTemplateCollection(ws);
 	const isPending = [
@@ -106,24 +126,33 @@ const TemplateForm = ({
 		updateWorkflow,
 		createAgent,
 		updateAgent,
+		savePageAs,
+		updatePage,
 		createCollection,
 		updateCollection,
 	].some((m) => m.isPending);
 
 	const { data: workflows } = useWorkflows(kind === 'workflow' && !isEdit ? ws : '');
+	const { data: pages } = useWorkflowPages(kind === 'page' && !isEdit ? ws : '');
 
 	// Suggest the categories already in use for this kind, so they stay consistent.
 	const { data: workflowTemplates } = useWorkflowTemplates(kind === 'workflow' ? ws : '');
 	const { data: agentTemplates } = useAgentTemplates(kind === 'agent' ? ws : '');
+	const { data: pageTemplates } = usePageTemplates(kind === 'page' ? ws : '');
 	const { data: collections } = useTemplateCollections(kind === 'collection' ? ws : '');
 	const categories = useMemo(() => {
 		const list: { category: string | null }[] =
-			(kind === 'workflow' ? workflowTemplates : kind === 'agent' ? agentTemplates : collections) ??
-			[];
+			(kind === 'workflow'
+				? workflowTemplates
+				: kind === 'agent'
+					? agentTemplates
+					: kind === 'page'
+						? pageTemplates
+						: collections) ?? [];
 		return Array.from(
 			new Set(list.map((t) => t.category).filter((c): c is string => !!c)),
 		).sort();
-	}, [kind, workflowTemplates, agentTemplates, collections]);
+	}, [kind, workflowTemplates, agentTemplates, pageTemplates, collections]);
 
 	const handleSubmit = async (e: FormEvent) => {
 		e.preventDefault();
@@ -132,6 +161,8 @@ const TemplateForm = ({
 		if (!trimmed) nextErrors.name = 'Give it a name';
 		if (kind === 'agent' && !isEdit && !instructions.trim())
 			nextErrors.instructions = 'An agent template needs instructions';
+		if (kind === 'page' && !isEdit && !sourcePageId)
+			nextErrors.source = 'Pick the page whose layout to save';
 		const temp = temperature.trim() === '' ? null : Number(temperature);
 		if (temp !== null && (Number.isNaN(temp) || temp < 0 || temp > 1))
 			nextErrors.temperature = 'Use a number between 0 and 1';
@@ -151,8 +182,15 @@ const TemplateForm = ({
 			if (kind === 'workflow') {
 				if (isEdit) await updateWorkflow.mutateAsync({ id: item.id, body: fields });
 				else if (sourceWorkflowId)
-					await saveWorkflowAs.mutateAsync({ workflowId: sourceWorkflowId, body: fields });
-				else await createWorkflow.mutateAsync({ ...fields, graph: { nodes: [], edges: [] } });
+					await saveWorkflowAs.mutateAsync({
+						workflowId: sourceWorkflowId,
+						body: fields,
+					});
+				else
+					await createWorkflow.mutateAsync({
+						...fields,
+						graph: { nodes: [], edges: [] },
+					});
 			} else if (kind === 'agent') {
 				if (isEdit) await updateAgent.mutateAsync({ id: item.id, body: fields });
 				else
@@ -160,6 +198,9 @@ const TemplateForm = ({
 						...fields,
 						config: { instructions: instructions.trim(), temperature: temp },
 					});
+			} else if (kind === 'page') {
+				if (isEdit) await updatePage.mutateAsync({ id: item.id, body: fields });
+				else await savePageAs.mutateAsync({ pageId: sourcePageId, body: fields });
 			} else if (isEdit) {
 				await updateCollection.mutateAsync({ id: item.id, body: fields });
 			} else {
@@ -198,7 +239,9 @@ const TemplateForm = ({
 							<p className='text-sm font-semibold text-zinc-500 dark:text-zinc-400'>
 								{kind === 'workflow'
 									? 'The graph is fixed once a template exists. To change it, edit a workflow and save it as a new template.'
-									: 'The instructions and model are fixed once a template exists. To change them, edit an agent and save it as a new template.'}
+									: kind === 'agent'
+										? 'The instructions and model are fixed once a template exists. To change them, edit an agent and save it as a new template.'
+										: 'The layout is fixed once a template exists. To change it, edit a page and save it as a new template.'}
 							</p>
 						)}
 
@@ -245,6 +288,37 @@ const TemplateForm = ({
 							</div>
 						)}
 
+						{kind === 'page' && !isEdit && (
+							<div>
+								<label htmlFor='tpl-source-page' className={labelClass}>
+									Page
+								</label>
+								<select
+									id='tpl-source-page'
+									className={inputClass}
+									value={sourcePageId}
+									onChange={(e) => {
+										setSourcePageId(e.target.value);
+										setErrors((prev) => ({ ...prev, source: null }));
+									}}>
+									<option value=''>Choose a page…</option>
+									{(pages ?? []).map((p) => (
+										<option key={p.id} value={p.id}>
+											{p.name}
+										</option>
+									))}
+								</select>
+								{errors.source ? (
+									<p className={errorClass}>{errors.source}</p>
+								) : (
+									<p className='mt-1.5 text-xs font-semibold text-zinc-400'>
+										Snapshots that page’s draft layout and theme. Its sharing
+										settings are left out.
+									</p>
+								)}
+							</div>
+						)}
+
 						{kind === 'agent' && !isEdit && (
 							<>
 								<div>
@@ -269,7 +343,8 @@ const TemplateForm = ({
 								</div>
 								<div>
 									<label htmlFor='tpl-temperature' className={labelClass}>
-										Temperature <span className={optionalClass}>(optional, 0 to 1)</span>
+										Temperature{' '}
+										<span className={optionalClass}>(optional, 0 to 1)</span>
 									</label>
 									<input
 										id='tpl-temperature'

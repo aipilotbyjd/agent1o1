@@ -308,7 +308,7 @@ const CreateWorkspacePage = () => {
 								</label>
 								<div className='focus-within:border-primary-500/80 focus-within:ring-primary-500/10 focus-within:dark:border-primary-500/80 focus-within:dark:ring-primary-500/15 flex h-12 items-center overflow-hidden rounded-2xl border border-slate-200 bg-white/55 shadow-xs transition-all duration-200 focus-within:bg-white focus-within:ring-4 dark:border-zinc-800 dark:bg-zinc-950/40 focus-within:dark:bg-zinc-950/60'>
 									<span className='flex h-full items-center border-r border-slate-100 bg-slate-50/50 px-4 text-xs font-black text-slate-400 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-500'>
-										agent1o1.app/
+										agent1o1.com/
 									</span>
 									<input
 										id='slug'

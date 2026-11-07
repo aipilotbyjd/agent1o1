@@ -1,3 +1,4 @@
+import type { TApiIssue } from '@/api/core';
 import type { TCanvasEdge, TCanvasNode, TCanvasSnapshot } from './canvas.type';
 import type { TRunRecord, TRunState } from './run.type';
 
@@ -25,7 +26,7 @@ export type TEditorUiState = {
 	quickAddOpen: boolean;
 	importExportOpen: boolean;
 	selectedNodeId: string | null;
-	/** Full multi-select set for box-select/Cmd+click/Select All — includes selectedNodeId when non-empty. */
+	/** Full multi-select set for box-select/Cmd+click/Select All: includes selectedNodeId when non-empty. */
 	selectedNodeIds: string[];
 	emptyCanvasView?: 'ai' | 'templates' | 'chat-started';
 	// New UI state
@@ -41,10 +42,17 @@ export type TEditorUiState = {
 	nodeDocNodeId: string | null;
 	nodeExpandedOpen: boolean;
 	nodeExpandedId: string | null;
-	stepMode: boolean;
-	waitingForStep: boolean;
 	linkCredentialsOpen: boolean;
-	runPanelTab: 'console' | 'history';
+	linkCredentialsNodeId?: string | null;
+	runPanelTab: 'console' | 'results' | 'history';
+	runPanelResultKey: string | null;
+	runPanelResultRequestId: number;
+	/** The "Fix before publishing" checklist. */
+	issuesPanelOpen: boolean;
+	/** What the server refused the last publish for, until the step is edited. */
+	serverIssues: TApiIssue[];
+	/** Asks a step's field to scroll into view and glow: bumped per request. */
+	fieldFocus: { nodeId: string; fieldKey: string | null; requestId: number } | null;
 };
 
 export type THistoryState = {

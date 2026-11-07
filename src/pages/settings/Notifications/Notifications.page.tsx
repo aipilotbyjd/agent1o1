@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react';
 import { Link } from 'react-router';
-import { AlertTriangle, ArrowRight, Bot, CreditCard, Play, Plug, Users } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Bot, CreditCard, Gift, Play, Plug, Users } from 'lucide-react';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useNotificationEvents } from '@/api/modules/notifications';
 import { useNotificationChannels } from '@/api/modules/notification-channels';
@@ -11,9 +11,10 @@ import {
 import Checkbox from '@/components/form/Checkbox';
 import Spinner from '@/components/ui/Spinner';
 import pages from '@/Routes/pages';
+import MarketingEmailPreference from './_partial/MarketingEmailPreference';
 import type { TNotificationEventKey } from '@/types/notification.type';
 
-type TCategory = 'workspace' | 'run' | 'connector' | 'billing' | 'agent';
+type TCategory = 'workspace' | 'run' | 'connector' | 'billing' | 'agent' | 'referral';
 
 const categoryConfig: Record<
 	TCategory,
@@ -24,6 +25,7 @@ const categoryConfig: Record<
 	connector: { title: 'Connectors', icon: Plug },
 	billing: { title: 'Billing', icon: CreditCard },
 	agent: { title: 'Agents', icon: Bot },
+	referral: { title: 'Referrals', icon: Gift },
 };
 
 const categoryFromKey = (key: TNotificationEventKey): TCategory => key.split('.')[0] as TCategory;
@@ -218,6 +220,8 @@ const NotificationsPage = () => {
 					);
 				})}
 			</div>
+
+			<MarketingEmailPreference />
 
 			<div className='mt-8 flex items-center gap-3 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 dark:border-amber-950/20 dark:bg-amber-950/10'>
 				<AlertTriangle size={16} className='shrink-0 text-amber-500' />

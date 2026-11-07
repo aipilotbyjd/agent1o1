@@ -6,6 +6,12 @@ export const workspace: TPage = {
 	text: 'Workspace',
 	icon: 'Home09',
 	subPages: {
+		assistant: {
+			id: 'assistant',
+			to: ws('assistant'),
+			text: 'Assistant',
+			icon: 'AiMagic',
+		},
 		dashboard: {
 			id: 'dashboard',
 			to: ws('dashboard'),
@@ -17,6 +23,12 @@ export const workspace: TPage = {
 			to: ws('playbooks'),
 			text: 'Playbooks',
 			icon: 'GitMerge',
+		},
+		pages: {
+			id: 'pages',
+			to: ws('pages'),
+			text: 'Pages',
+			icon: 'Browser',
 		},
 		agents: {
 			id: 'agents',
@@ -54,6 +66,12 @@ export const workspace: TPage = {
 			text: 'Vault',
 			icon: 'Lock',
 		},
+		approvals: {
+			id: 'approvals',
+			to: ws('approvals'),
+			text: 'Approvals',
+			icon: 'CheckmarkCircle02',
+		},
 		trail: {
 			id: 'trail',
 			to: ws('trail'),
@@ -65,6 +83,12 @@ export const workspace: TPage = {
 			to: ws('artifacts'),
 			text: 'Artifacts',
 			icon: 'FileDownload',
+		},
+		trash: {
+			id: 'trash',
+			to: ws('trash'),
+			text: 'Trash',
+			icon: 'Delete02',
 		},
 	},
 };
@@ -138,5 +162,50 @@ export const agentEditor: TPage = {
 			text: 'Agent Insights',
 			icon: 'Sparkles',
 		},
+		library: {
+			id: 'library',
+			to: ws('library'),
+			text: 'Library',
+			icon: 'Image01',
+		},
 	},
+};
+
+/**
+ * A workflow page: `use` is the page as a member runs it inside the app,
+ * `edit` the full-screen builder, outside the core-app shell like the editors
+ * above. `publicPage` is the link anyone can open, outside the workspace.
+ */
+export const pageEditor: TPage = {
+	id: 'pageEditor',
+	to: ws('pages'),
+	text: 'Page Builder',
+	icon: 'Browser',
+	subPages: {
+		use: {
+			id: 'usePage',
+			to: ws('pages/:pageId'),
+			text: 'Page',
+			icon: 'Browser',
+		},
+		edit: {
+			id: 'editPage',
+			to: ws('pages/:pageId/edit'),
+			text: 'Edit Page',
+			icon: 'Browser',
+		},
+		insights: {
+			id: 'pageInsights',
+			to: ws('pages/:pageId/insights'),
+			text: 'Insights',
+			icon: 'Browser',
+		},
+	},
+};
+
+export const publicPage: TPage = {
+	id: 'publicPage',
+	to: '/p/:token',
+	text: 'Page',
+	icon: 'Browser',
 };

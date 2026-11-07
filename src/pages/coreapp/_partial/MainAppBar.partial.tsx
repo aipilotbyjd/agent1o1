@@ -30,7 +30,9 @@ export const MainAppBarIconButton = ({
 				? 'border-emerald-300/40 bg-emerald-50 text-emerald-700 dark:border-emerald-300/30 dark:bg-emerald-400/15 dark:text-emerald-200'
 				: 'border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-400 dark:hover:bg-white/[0.07] dark:hover:text-white',
 			className,
-		].filter(Boolean).join(' ')}>
+		]
+			.filter(Boolean)
+			.join(' ')}>
 		{children}
 	</button>
 );
@@ -57,7 +59,9 @@ export const MainAppBarPillButton = ({
 					? 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-300/20 dark:bg-emerald-400/15 dark:text-emerald-100 dark:hover:bg-emerald-400/20'
 					: 'border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950 dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-300 dark:hover:bg-white/[0.07] dark:hover:text-white',
 			className,
-		].filter(Boolean).join(' ')}>
+		]
+			.filter(Boolean)
+			.join(' ')}>
 		{children}
 	</button>
 );
@@ -94,7 +98,10 @@ const MainAppBar = ({
 
 	return (
 		<header className='flex h-14 shrink-0 items-center gap-3 border-b border-zinc-200 bg-white/95 px-4 backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/92'>
-			<MainAppBarIconButton title='Open workspace sidebar' onClick={toggleAside} className={toggleClassName}>
+			<MainAppBarIconButton
+				title='Open workspace sidebar'
+				onClick={toggleAside}
+				className={toggleClassName}>
 				<Menu size={16} />
 			</MainAppBarIconButton>
 
@@ -141,10 +148,13 @@ const MainAppBar = ({
 					onClick={onPrimaryAction}
 					className={
 						primaryActionColor === 'purple'
-							? 'flex h-9 items-center gap-2 rounded-lg bg-primary-400 px-4 text-xs font-semibold text-primary-950 shadow-lg shadow-primary-500/20 transition hover:bg-primary-500 active:scale-95'
+							? 'bg-primary-400 text-primary-950 shadow-primary-500/20 hover:bg-primary-500 flex h-9 items-center gap-2 rounded-lg px-4 text-xs font-semibold shadow-lg transition active:scale-95'
 							: 'flex h-9 items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 text-xs font-semibold text-emerald-700 shadow-lg shadow-emerald-100/50 transition hover:bg-emerald-100 dark:border-emerald-300/25 dark:bg-emerald-400/15 dark:text-emerald-100 dark:shadow-emerald-950/20 dark:hover:bg-emerald-400/20'
 					}>
-					<PrimaryActionIcon size={14} fill={primaryActionColor === 'purple' ? 'none' : 'currentColor'} />
+					<PrimaryActionIcon
+						size={14}
+						fill={primaryActionColor === 'purple' ? 'none' : 'currentColor'}
+					/>
 					{primaryActionLabel}
 				</motion.button>
 			</div>

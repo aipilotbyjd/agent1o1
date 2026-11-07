@@ -1,3 +1,5 @@
 export { RealtimeProvider } from './RealtimeProvider';
+export { RunsRealtimeSync } from './RunsRealtimeSync';
 export { useRealtime } from './useRealtime';
-export type { IRealtimeContextProps } from './realtime.types';
+export { useRealtimePollInterval } from './useRealtimePollInterval';
+export type { IRealtimeContextProps, TRealtimeStatus } from './realtime.types';

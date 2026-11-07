@@ -37,9 +37,9 @@ export const AsideBody: FC<IAsideBodyProps> = (props) => {
 			data-component-name='Aside/AsideBody'
 			className={classNames('h-full overflow-x-scroll px-4', 'no-scrollbar', className)}
 			{...rest}>
-			<div className='bg-linear-to-b from-bg-sidebar sticky top-0 h-4 to-transparent'></div>
+			<div className='from-bg-sidebar sticky top-0 h-4 bg-linear-to-b to-transparent'></div>
 			{children}
-			<div className='bg-linear-to-t from-bg-sidebar sticky bottom-0 h-4 to-transparent'></div>
+			<div className='from-bg-sidebar sticky bottom-0 h-4 bg-linear-to-t to-transparent'></div>
 		</div>
 	);
 };
@@ -92,7 +92,7 @@ export const AsideQuickNav: FC<IAsideQuickNavProps> = (props) => {
 						isActive,
 				},
 				{
-					'bg-bg-card border-border-main text-zinc-500 hover:bg-zinc-100/50 dark:bg-bg-card border dark:hover:bg-zinc-800/50':
+					'bg-bg-card border-border-main dark:bg-bg-card border text-zinc-500 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50':
 						!isActive,
 				},
 				{ 'p-4': asideStatus, 'p-2.5': !asideStatus },
@@ -154,7 +154,7 @@ const Aside: FC<IAsideProps> = (props) => {
 					'bg-bg-sidebar',
 					'py-2',
 					'z-[100]',
-					'border-e border-border-main',
+					'border-border-main border-e',
 					'dark:bg-bg-sidebar dark:text-white',
 					'transition-all duration-300 ease-in-out',
 					className,

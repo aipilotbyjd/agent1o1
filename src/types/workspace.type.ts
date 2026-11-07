@@ -1,7 +1,7 @@
 // ============================================================
 // Workspace Types
 // ------------------------------------------------------------
-// `role` is the viewer's own role on this workspace — set from the
+// `role` is the viewer's own role on this workspace: set from the
 // membership pivot (or `owner` on the workspace the caller just
 // created), not a fixed workspace attribute.
 // ============================================================
@@ -18,6 +18,8 @@ export type TWorkspace = {
 	name: string;
 	slug: string;
 	avatar: string | null;
+	/** IANA name. Schedules with no timezone of their own run in it. */
+	timezone: string;
 	owner_id: string;
 	owner: TUser | null;
 	role: TWorkspaceRole | null;
@@ -33,8 +35,10 @@ export type TWorkspace = {
 
 export type TCreateWorkspaceDto = {
 	name: string;
+	timezone?: string;
 };
 
 export type TUpdateWorkspaceDto = {
 	name?: string;
+	timezone?: string;
 };

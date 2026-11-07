@@ -16,7 +16,7 @@ import type {
  * The old dashboard called a single `useDashboard(ws, period)` that returned one
  * `IDashboardData` blob. This backend splits the same ground across
  * `dashboard/overview` and `dashboard/run-stats`, under different field names, so
- * this composes both and reshapes them into the old contract — keeping the ported
+ * this composes both and reshapes them into the old contract: keeping the ported
  * page itself unchanged, the same way the agent-builder adapters in
  * `agents.hooks.ts` do.
  *
@@ -43,7 +43,7 @@ export const useDashboard = (ws: string, period: TDashboardPeriod = '7d') => {
 		const recentExecutions: IExecutionSummary[] = recent_runs.map((run) => ({
 			id: run.id,
 			workflow_id: run.workflow_id ?? '',
-			// `recent_runs` carries no workflow name — only the id.
+			// `recent_runs` carries no workflow name, only the id.
 			workflow_name: '',
 			status: run.status as TExecutionStatus,
 			trigger_type: run.trigger_type as TTriggerType,

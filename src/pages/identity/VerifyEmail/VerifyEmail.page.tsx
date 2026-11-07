@@ -48,7 +48,9 @@ const EmailVerifiedPage = () => {
 					setIsLoading(false);
 				},
 				onError: (err) => {
-					setError(messageFromError(err, 'Email verification link is invalid or expired.'));
+					setError(
+						messageFromError(err, 'Email verification link is invalid or expired.'),
+					);
 					setIsLoading(false);
 				},
 			},
@@ -83,7 +85,11 @@ const EmailVerifiedPage = () => {
 									</p>
 								</div>
 
-								<Alert color='red' variant='soft' icon='Alert02' className='text-left'>
+								<Alert
+									color='red'
+									variant='soft'
+									icon='Alert02'
+									className='text-left'>
 									{error}
 								</Alert>
 
@@ -103,8 +109,8 @@ const EmailVerifiedPage = () => {
 										Email verified!
 									</h1>
 									<p className='mt-2 text-sm text-zinc-600 dark:text-zinc-400'>
-										Your email address has been successfully verified. You now have
-										full access to your account and workspaces.
+										Your email address has been successfully verified. You now
+										have full access to your account and workspaces.
 									</p>
 								</div>
 

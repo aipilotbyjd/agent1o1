@@ -1,3 +1,4 @@
+import { useEditorWorkspaceId } from '../../_hooks/useEditorWorkspaceId.hook';
 import { useState } from 'react';
 import {
 	AlertCircle,
@@ -9,7 +10,6 @@ import {
 	Play,
 	Terminal,
 } from 'lucide-react';
-import { useWorkspaceContext } from '@/context/workspace';
 import { useNodeSandbox } from '@/api/modules/node-sandbox';
 
 const MAX_CODE_CHARS = 50_000;
@@ -33,7 +33,7 @@ interface NodeSandboxProps {
 }
 
 const NodeSandbox = ({ code }: NodeSandboxProps) => {
-	const { activeWorkspaceId } = useWorkspaceContext();
+	const activeWorkspaceId = useEditorWorkspaceId();
 	const sandbox = useNodeSandbox(activeWorkspaceId);
 
 	const [inputJson, setInputJson] = useState('{}');
@@ -79,6 +79,7 @@ const NodeSandbox = ({ code }: NodeSandboxProps) => {
 					)}
 				</div>
 				<textarea
+					aria-label='{"key": "value"}'
 					className={`${areaCls} ${jsonError ? 'border-red-400 focus:border-red-400 focus:ring-red-100' : ''}`}
 					rows={4}
 					value={inputJson}
@@ -108,7 +109,7 @@ const NodeSandbox = ({ code }: NodeSandboxProps) => {
 				type='button'
 				disabled={isRunning || !!jsonError || overLimit}
 				onClick={handleRun}
-				className='flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-primary-400 text-[12px] font-bold text-primary-950 shadow-sm shadow-primary-500/20 transition hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-60'>
+				className='bg-primary-400 text-primary-950 shadow-primary-500/20 hover:bg-primary-500 flex h-9 w-full items-center justify-center gap-2 rounded-xl text-[12px] font-bold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60'>
 				{isRunning ? (
 					<>
 						<Loader2 size={13} className='animate-spin' />

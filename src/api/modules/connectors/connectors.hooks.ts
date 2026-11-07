@@ -36,6 +36,26 @@ export const useConnectorCredential = (ws: string, id: string) =>
 		enabled: !!ws && !!id,
 	});
 
+export const useConnectorCredentialUsage = (ws: string, id: string | null) =>
+	useQuery({
+		queryKey: connectorCredentialKeys.usage(ws, id ?? ''),
+		queryFn: ({ signal }) => ConnectorService.credentialUsage(ws, id!, signal),
+		enabled: !!ws && !!id,
+	});
+
+/** A check can refresh the token, so the credential itself is refetched after. */
+export const useTestConnectorCredential = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => ConnectorService.testCredential(ws, id),
+		onSuccess: (_result, id) => {
+			qc.invalidateQueries({ queryKey: connectorCredentialKeys.lists(ws) });
+			qc.invalidateQueries({ queryKey: connectorCredentialKeys.detail(ws, id) });
+		},
+		meta: { errorMessage: 'Failed to test connection' },
+	});
+};
+
 export const useCreateConnectorCredential = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
@@ -62,8 +82,9 @@ export const useUpdateConnectorCredential = (ws: string) => {
 export const useDeleteConnectorCredential = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (id: string) => ConnectorService.deleteCredential(ws, id),
-		onSuccess: () => qc.invalidateQueries({ queryKey: connectorCredentialKeys.lists(ws) }),
+		mutationFn: ({ id, replaceWith }: { id: string; replaceWith?: string }) =>
+			ConnectorService.deleteCredential(ws, id, replaceWith),
+		onSuccess: () => qc.invalidateQueries({ queryKey: connectorCredentialKeys.all(ws) }),
 		meta: { errorMessage: 'Failed to delete connector credential' },
 	});
 };
@@ -79,7 +100,8 @@ export const useSetDefaultConnectorCredential = (ws: string) => {
 
 export const useInitiateOAuthConnector = (ws: string) =>
 	useMutation({
-		mutationFn: (payload: TInitiateOAuthConnectorDto) => ConnectorService.initiateOAuth(ws, payload),
+		mutationFn: (payload: TInitiateOAuthConnectorDto) =>
+			ConnectorService.initiateOAuth(ws, payload),
 		meta: { errorMessage: 'Failed to start connector authorization' },
 	});
 

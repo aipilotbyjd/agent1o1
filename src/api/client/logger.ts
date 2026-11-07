@@ -6,14 +6,13 @@ import safeStorage from '@/utils/safeStorage.util';
 // Logger
 // ------------------------------------------------------------
 // Method/URL/status/duration always log when enabled; request and
-// response bodies only in dev — never unconditionally, and never
+// response bodies only in dev, never unconditionally, and never
 // in production, where that would leak customer data to the console.
 // ============================================================
 
 const DEBUG_FLAG = 'a1o1_debug_api';
 
-const isEnabled = () =>
-	apiConfig.debug || safeStorage.get(DEBUG_FLAG) === '1';
+const isEnabled = () => apiConfig.debug || safeStorage.get(DEBUG_FLAG) === '1';
 
 const logBodies = () => apiConfig.debug;
 

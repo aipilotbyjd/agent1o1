@@ -1,14 +1,21 @@
 import { axiosClient } from '@/api/client';
 import { unwrapKey } from '@/api/core';
 import type { TApiResponse } from '@/api/core';
-import type { TNode, TCustomNode, TCreateCustomNodeDto, TUpdateCustomNodeDto } from '@/types/node.type';
+import type {
+	TNode,
+	TCustomNode,
+	TCreateCustomNodeDto,
+	TUpdateCustomNodeDto,
+	TNodeOptionsPage,
+	TNodeOptionsParams,
+} from '@/types/node.type';
 import { NodeEndpoints as E } from './nodes.endpoints';
 
 type TNodeListParams = { category?: string; search?: string };
 type TRecentlyUsedResult = { nodes: TNode[]; is_default: boolean };
 
 export const NodeService = {
-	/** The global built-in catalog only — no workspace, no custom nodes. */
+	/** The global built-in catalog only: no workspace, no custom nodes. */
 	globalCatalog: (params?: TNodeListParams, signal?: AbortSignal) =>
 		axiosClient
 			.get<TApiResponse<{ nodes: TNode[] }>>(E.globalCatalog, { params, signal })
@@ -28,6 +35,12 @@ export const NodeService = {
 	recentlyUsed: (ws: string, signal?: AbortSignal) =>
 		axiosClient
 			.get<TApiResponse<TRecentlyUsedResult>>(E.recentlyUsed(ws), { signal })
+			.then((r) => r.data.data),
+
+	/** Live dropdown choices for one node field (spreadsheets, channels, repos…). */
+	options: (ws: string, params: TNodeOptionsParams, signal?: AbortSignal) =>
+		axiosClient
+			.post<TApiResponse<TNodeOptionsPage>>(E.options(ws), params, { signal })
 			.then((r) => r.data.data),
 
 	detail: (ws: string, id: string, signal?: AbortSignal) =>

@@ -6,7 +6,7 @@ import type { TListParams } from '@/types/api.type';
 // ------------------------------------------------------------
 // Generates the 5 standard CRUD hooks for a workspace-scoped
 // resource. Use it for every module that doesn't need custom hook
-// behavior — write a custom hook only for the genuinely non-CRUD
+// behavior: write a custom hook only for the genuinely non-CRUD
 // case, alongside the factory output, not instead of it.
 //
 // Error display is centralized in `query-client.ts`; pass

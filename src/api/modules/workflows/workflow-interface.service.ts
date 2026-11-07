@@ -12,7 +12,9 @@ import { WorkflowInterfaceEndpoints as E } from './workflows.endpoints';
 export const WorkflowInterfaceService = {
 	show: (ws: string, workflowId: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ interface: TWorkflowInterface }>>(E.show(ws, workflowId), { signal })
+			.get<
+				TApiResponse<{ interface: TWorkflowInterface }>
+			>(E.show(ws, workflowId), { signal })
 			.then(unwrapKey<TWorkflowInterface>('interface')),
 
 	update: (ws: string, workflowId: string, payload: TUpdateWorkflowInterfaceDto) =>

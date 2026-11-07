@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import OnboardingProvider from '../../_context/OnboardingProvider.context';
-import { useOnboardingStore } from '../../_context/OnboardingStore.context';
-import { TOTAL_STEPS, ROLES } from '../../_helper/onboarding.constants';
-import { parseEmails, isValidEmail } from '../../_helper/onboarding.helper';
+import { useOnboardingStore } from '../../_hooks/useOnboardingStore.hook';
+import { ROLES } from '../../_helper/onboarding.constants';
+import { parseEmails, isValidEmail, resolveStartStep } from '../../_helper/onboarding.helper';
 import { useOnboardingNavigation } from '../../_hooks/useOnboardingNavigation.hook';
 import { useOnboardingSubmit } from '../../_hooks/useOnboardingSubmit.hook';
 import StepIndicator from './StepIndicator.partial';
@@ -15,47 +16,31 @@ import WorkspaceStep from '../steps/WorkspaceStep.partial';
 import InviteTeamStep from '../steps/InviteTeamStep.partial';
 import RoleSelectionStep from '../steps/RoleSelectionStep.partial';
 import PlanSelectionStep from '../steps/PlanSelectionStep.partial';
+import ConnectAiStep from '../steps/ConnectAiStep.partial';
 import ConnectAppsStep from '../steps/ConnectAppsStep.partial';
 import DiscoveryStep from '../steps/DiscoveryStep.partial';
 
 import { useOnboardingState } from '@/api/modules/onboarding';
-import { useEffect } from 'react';
-import type { TOnboardingStep } from '../../_types/onboarding.type';
-import { LogoDark, LogoLight } from '@/assets/images';
-import useDarkMode from '@/hooks/useDarkMode';
+import AppLogo from '@/components/AppLogo';
 import { useAuth } from '@/context/auth';
 
-const mapStepKeyToIndex = (key: string): TOnboardingStep => {
-	switch (key) {
-		case 'profile_picture':
-			return 0;
-		case 'create_workspace':
-			return 1;
-		case 'invite_team':
-			return 2;
-		case 'role_selection':
-			return 3;
-		case 'choose_plan':
-			return 4;
-		case 'connect_apps':
-			return 5;
-		case 'discovery_survey':
-			return 6;
-		default:
-			return 0;
-	}
-};
-
 const OnboardingShellInner = () => {
-	const { isDarkTheme } = useDarkMode();
 	const { userData } = useAuth();
 	const { state, dispatch } = useOnboardingStore();
 	const { data: onboardingData, isLoading } = useOnboardingState();
-	const [initialized, setInitialized] = useState(false);
+	const initialized = useRef(false);
+	const [searchParams] = useSearchParams();
+	// `?step=<key>` (from the dashboard checklist) wins over the saved step,
+	// unless that step is already completed.
+	const requestedStep = searchParams.get('step');
 
 	useEffect(() => {
-		if (onboardingData && !initialized) {
-			const stepIndex = mapStepKeyToIndex(onboardingData.current_step);
+		if (onboardingData && !initialized.current) {
+			const stepIndex = resolveStartStep(
+				onboardingData.steps,
+				requestedStep,
+				onboardingData.current_step,
+			);
 			const workspace = userData?.current_workspace;
 
 			dispatch({ type: 'SET_STEP', payload: stepIndex });
@@ -77,9 +62,9 @@ const OnboardingShellInner = () => {
 						: null),
 				},
 			});
-			setInitialized(true);
+			initialized.current = true;
 		}
-	}, [onboardingData, initialized, dispatch, userData]);
+	}, [onboardingData, dispatch, userData, requestedStep]);
 
 	const {
 		currentStep: step,
@@ -95,11 +80,19 @@ const OnboardingShellInner = () => {
 	// Local UI state that isn't part of the global onboarding data
 	const [workspaceError, setWorkspaceError] = useState('');
 
-	const { handlePrevStep, handleSkip, handleDismissAll } = useOnboardingNavigation();
+	const {
+		handlePrevStep,
+		handleSkip,
+		handleDismissAll,
+		canGoBack,
+		canSkipStep,
+		canLeaveOnboarding,
+		isLastPendingStep,
+	} = useOnboardingNavigation();
 	const { handleNextStep, isWorkspaceLoading, sendInvitationPending } = useOnboardingSubmit();
 
 	const isDualColumn = step >= 1;
-	const isLastStep = step === TOTAL_STEPS - 1;
+	const isLastStep = isLastPendingStep;
 
 	const parsedInviteEmails = parseEmails(inviteEmails);
 	const validInviteEmails = parsedInviteEmails.filter(isValidEmail);
@@ -116,13 +109,14 @@ const OnboardingShellInner = () => {
 			return ROLES[selectedRoleIndex].apps;
 		}
 		if (step === 4) return ['slack', 'github', 'notion', 'google drive', 'figma'];
-		// Nothing connected yet just means the user has not got there — keep the
+		if (step === 5) return ['openai', 'anthropic', 'google', 'meta', 'mistral'];
+		// Nothing connected yet just means the user has not got there: keep the
 		// panel populated with the apps they are about to see rather than empty.
-		if (step === 5)
+		if (step === 6)
 			return connectedApps.length > 0
 				? connectedApps.map((a) => a.toLowerCase())
 				: ['slack', 'github', 'gmail', 'google drive'];
-		if (step === 6)
+		if (step === 7)
 			return connectedApps.length > 0
 				? connectedApps.map((a) => a.toLowerCase())
 				: ['slack', 'github', 'gmail', 'notion'];
@@ -165,12 +159,13 @@ const OnboardingShellInner = () => {
 
 			<header className='relative z-10 hidden w-full px-6 py-5 sm:block'>
 				<div className='mx-auto flex max-w-7xl items-center justify-between'>
-					<img
-						src={isDarkTheme ? LogoDark : LogoLight}
-						alt='agent1o1'
-						className='h-10 transition-all duration-300 ease-in-out'
-					/>
-					{step > 1 && (
+					<span className='flex items-center gap-2.5'>
+						<AppLogo className='size-10' rounded='rounded-xl' alt='' />
+						<span className='text-lg font-black tracking-tight text-zinc-950 dark:text-white'>
+							agent1o1
+						</span>
+					</span>
+					{canLeaveOnboarding && (
 						<button
 							type='button'
 							onClick={handleDismissAll}
@@ -195,12 +190,13 @@ const OnboardingShellInner = () => {
 							<div>
 								{/* Mobile Header (only visible on mobile) */}
 								<div className='mb-6 flex items-center justify-between sm:hidden'>
-									<img
-										src={isDarkTheme ? LogoDark : LogoLight}
-										alt='agent1o1'
-										className='h-9 transition-all duration-300 ease-in-out'
-									/>
-									{step > 1 && (
+									<span className='flex items-center gap-2'>
+										<AppLogo className='size-9' rounded='rounded-xl' alt='' />
+										<span className='text-base font-black tracking-tight text-zinc-950 dark:text-white'>
+											agent1o1
+										</span>
+									</span>
+									{canLeaveOnboarding && (
 										<button
 											type='button'
 											onClick={handleDismissAll}
@@ -231,8 +227,9 @@ const OnboardingShellInner = () => {
 										{step === 2 && <InviteTeamStep />}
 										{step === 3 && <RoleSelectionStep />}
 										{step === 4 && <PlanSelectionStep />}
-										{step === 5 && <ConnectAppsStep />}
-										{step === 6 && <DiscoveryStep />}
+										{step === 5 && <ConnectAiStep />}
+										{step === 6 && <ConnectAppsStep />}
+										{step === 7 && <DiscoveryStep />}
 									</motion.div>
 								</AnimatePresence>
 							</div>
@@ -241,6 +238,8 @@ const OnboardingShellInner = () => {
 							<NavigationBar
 								step={step}
 								isLastStep={isLastStep}
+								canGoBack={canGoBack}
+								canSkip={step > 1 && canSkipStep}
 								isContinueDisabled={isContinueDisabled}
 								isWorkspaceLoading={isWorkspaceLoading}
 								sendInvitationPending={sendInvitationPending}

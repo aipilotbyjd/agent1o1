@@ -26,7 +26,7 @@ export const DashboardService = {
 			.get<TApiResponse<TCreditUsage>>(E.creditUsage(ws), { params, signal })
 			.then((r) => r.data.data),
 
-	// Paginated — `data` sits flat in the envelope, `meta` alongside it.
+	// Paginated: `data` sits flat in the envelope, `meta` alongside it.
 	pendingApprovals: (
 		ws: string,
 		params?: { page?: number; per_page?: number },

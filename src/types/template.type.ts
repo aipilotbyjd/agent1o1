@@ -1,3 +1,5 @@
+import type { TPageContent } from '@/types/workflow-page.type';
+
 // ============================================================
 // Template Types
 // ------------------------------------------------------------
@@ -102,6 +104,44 @@ export type TUseAgentTemplateDto = {
 
 export type TSaveAgentAsTemplateDto = {
 	name?: string;
+	description?: string | null;
+	category?: string | null;
+	icon?: string | null;
+	color?: string | null;
+	visibility?: TTemplateVisibility;
+};
+
+/** A page layout. Used by creating a page with its `template_id`: the
+ *  server binds its field and output blocks to the chosen workflow. */
+export type TPageTemplate = {
+	id: string;
+	workspace_id: string | null;
+	source_page_id: string | null;
+	name: string;
+	slug: string;
+	description: string | null;
+	category: string | null;
+	icon: string | null;
+	color: string | null;
+	visibility: TTemplateVisibility;
+	usage_count: number;
+	content: TPageContent;
+	created_by: string | null;
+	created_at: string;
+	updated_at: string;
+};
+
+export type TUpdatePageTemplateDto = Partial<{
+	name: string;
+	description: string | null;
+	category: string | null;
+	icon: string | null;
+	color: string | null;
+	visibility: TTemplateVisibility;
+}>;
+
+export type TSavePageAsTemplateDto = {
+	name: string;
 	description?: string | null;
 	category?: string | null;
 	icon?: string | null;

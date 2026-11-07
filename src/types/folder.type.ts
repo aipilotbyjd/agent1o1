@@ -1,7 +1,7 @@
 // ============================================================
 // Folder Types
 // ------------------------------------------------------------
-// One folder tree per `type` — a workflow folder and an agent
+// One folder tree per `type`: a workflow folder and an agent
 // folder are distinct trees even if named alike. The list endpoint
 // eager-loads `children` one level deep.
 // ============================================================

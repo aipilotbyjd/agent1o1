@@ -18,10 +18,17 @@ import type {
 	TUpdateCreditOverageDto,
 	TCreditNotifications,
 	TUpdateCreditNotificationsDto,
+	TUsageInsights,
 } from '@/types/billing.type';
 import { BillingEndpoints as E } from './billing.endpoints';
 
 export const BillingService = {
+	// Where the workspace's credits went over the last `days` days.
+	usageInsights: (ws: string, days = 30, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<TUsageInsights>>(E.usageInsights(ws), { params: { days }, signal })
+			.then((r) => r.data.data),
+
 	overview: (ws: string, signal?: AbortSignal) =>
 		axiosClient
 			.get<TApiResponse<TBillingOverview>>(E.overview(ws), { signal })
@@ -87,7 +94,7 @@ export const BillingService = {
 			.post<TApiResponse<TCheckoutCreditPackResult>>(E.creditPacksCheckout(ws), payload)
 			.then((r) => r.data.data),
 
-	// The workspace's credit ledger — paginates internally.
+	// The workspace's credit ledger: paginates internally.
 	credits: (ws: string, params?: { page?: number; per_page?: number }, signal?: AbortSignal) =>
 		axiosClient
 			.get<TApiResponse<TCreditTransaction[]> & { meta: TPaginationMeta }>(E.credits(ws), {
@@ -123,7 +130,7 @@ export const BillingService = {
 			>(E.creditNotifications(ws), payload)
 			.then(unwrapKey<TCreditNotifications>('credit_notifications')),
 
-	// Cursor-paginated — Stripe's list API has no total count or offset.
+	// Cursor-paginated: Stripe's list API has no total count or offset.
 	invoices: (ws: string, params?: { per_page?: number; cursor?: string }, signal?: AbortSignal) =>
 		axiosClient
 			.get<TApiResponse<TInvoice[]> & { meta: TCursorPaginationMeta }>(E.invoices(ws), {

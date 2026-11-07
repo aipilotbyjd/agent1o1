@@ -8,6 +8,7 @@ import UnderConstructionPage from '@/pages/UnderConstruction.page';
 import IdentityPages from '@/Routes/appPages/identityPages';
 import WelcomePages from '@/Routes/appPages/welcomePages';
 import CoreAppPages from '@/Routes/appPages/coreappPages';
+import WorkspaceGuardLayout from '@/layouts/WorkspaceGuard.layout';
 import pages, { accountCallbacks, billingCallbacks } from '@/Routes/pages';
 
 const WorkspaceListPage = lazy(() => import('@/pages/choose/WorkspaceList.page'));
@@ -16,6 +17,7 @@ const BillingCancelPage = lazy(() => import('@/pages/settings/Billing/BillingCan
 const BillingReturnPage = lazy(() => import('@/pages/settings/Billing/BillingReturn.page'));
 const PricingPage = lazy(() => import('@/pages/welcome/Pricing.page'));
 const AccountReturnPage = lazy(() => import('@/pages/settings/Profile/AccountReturn.page'));
+const PublicPagePage = lazy(() => import('@/pages/public/PublicPage.page'));
 
 const router = createBrowserRouter([
 	{
@@ -32,16 +34,22 @@ const router = createBrowserRouter([
 						element: <Navigate to={pages.identity.login.to} replace />,
 					},
 					...IdentityPages,
-					// Marketing pricing — public on purpose. It renders from static copy
+					// Marketing pricing: public on purpose. It renders from static copy
 					// and pulls nothing workspace-scoped, so it must stay outside the
 					// onboarding auth boundary or prospects get bounced to /login.
 					{
 						path: pages.welcome.subPages!.pricing.to,
 						element: <PricingPage />,
 					},
+					// A workflow page at its public link: no sign-in, and registered
+					// before `/:workspaceId` so `p` is never read as a workspace id.
 					{
-						path: pages.choose.to,
-						element: <WorkspaceListPage />,
+						path: pages.publicPage.to,
+						element: <PublicPagePage />,
+					},
+					{
+						element: <WorkspaceGuardLayout />,
+						children: [{ path: pages.choose.to, element: <WorkspaceListPage /> }],
 					},
 					// Stripe returns here (see BillingReturn.page.tsx); must be registered
 					// before the `/:workspaceId` core-app routes or it falls through.
@@ -55,7 +63,7 @@ const router = createBrowserRouter([
 						path: accountCallbacks.emailChange,
 						element: <AccountReturnPage />,
 					},
-					// Welcome / onboarding routes — must come before the workspace routes
+					// Welcome / onboarding routes: must come before the workspace routes
 					// below, or static paths like `/onboarding` fall through to
 					// `/:workspaceId` and the core app shell renders with "onboarding"
 					// as the workspace id. Auth-gated inside OnboardingLayout.
