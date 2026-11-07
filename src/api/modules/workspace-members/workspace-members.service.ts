@@ -40,6 +40,6 @@ export const WorkspaceMemberService = {
 	 *  from the emailed invitation URL. */
 	acceptInvitation: (invitationId: string, query?: string) =>
 		axiosClient
-			.get<TMessageResponse>(E.acceptInvitation(invitationId, query))
+			.post<TMessageResponse>(E.acceptInvitation(invitationId, query))
 			.then((r) => r.data),
 };
