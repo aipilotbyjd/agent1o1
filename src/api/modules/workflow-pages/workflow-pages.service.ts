@@ -1,6 +1,6 @@
 import { axiosClient } from '@/api/client';
-import { unwrapKey } from '@/api/core';
-import type { TApiResponse } from '@/api/core';
+import { unwrap, unwrapKey } from '@/api/core';
+import type { TApiResponse, TPaginationMeta } from '@/api/core';
 import type {
 	TClonePageDto,
 	TCreateWorkflowPageDto,
@@ -92,17 +92,22 @@ export const WorkflowPageService = {
 
 	submissions: (ws: string, id: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ submissions: TPageSubmissionRecord[] }>>(E.submissions(ws, id), { signal })
-			.then(unwrapKey<TPageSubmissionRecord[]>('submissions')),
+			.get<TApiResponse<TPageSubmissionRecord[]>>(E.submissions(ws, id), { signal })
+			.then(unwrap<TPageSubmissionRecord[]>),
 
 	/** One page of submissions matching the filters, with how many there are. */
 	submissionsPage: (ws: string, id: string, filters: TPageSubmissionFilters, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<TPageSubmissionPage>>(E.submissions(ws, id), {
-				params: submissionParams(filters),
-				signal,
-			})
-			.then((res) => res.data.data),
+			.get<TApiResponse<TPageSubmissionRecord[]> & { meta: TPaginationMeta }>(
+				E.submissions(ws, id),
+				{
+					params: submissionParams(filters),
+					signal,
+				},
+			)
+			.then(
+				(res): TPageSubmissionPage => ({ submissions: res.data.data, meta: res.data.meta }),
+			),
 
 	/** Every submission matching the filters, as a CSV file for the browser to save. */
 	exportSubmissions: (ws: string, id: string, filters: TPageSubmissionFilters) =>
