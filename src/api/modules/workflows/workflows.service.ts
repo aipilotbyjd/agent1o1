@@ -1,6 +1,6 @@
 import { axiosClient } from '@/api/client';
-import { unwrapKey } from '@/api/core';
-import type { TApiResponse, TListParams } from '@/api/core';
+import { fetchAllPages, unwrapCursorPage, unwrapKey } from '@/api/core';
+import type { TApiResponse, TCursorPaginationMeta, TCursorParams, TListParams } from '@/api/core';
 import type {
 	TWorkflow,
 	TWorkflowNode,
@@ -14,10 +14,18 @@ import { WorkflowEndpoints as E } from './workflows.endpoints';
 export const WorkflowService = {
 	// List omits `nodes`/`edges`, only detail and duplicate load them. `tags`
 	// is the reverse: the list eager-loads it, `show` doesn't.
-	list: (ws: string, _params?: TListParams, signal?: AbortSignal) =>
+	// The API pages by cursor, so this walks every page. Use `listPage` for a
+	// list that loads more on demand.
+	list: (ws: string, params?: TListParams, signal?: AbortSignal) =>
+		fetchAllPages((page) => WorkflowService.listPage(ws, { ...params, ...page }, signal)),
+
+	listPage: (ws: string, params?: TListParams & TCursorParams, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ workflows: TWorkflow[] }>>(E.list(ws), { signal })
-			.then(unwrapKey<TWorkflow[]>('workflows')),
+			.get<TApiResponse<TWorkflow[]> & { meta: TCursorPaginationMeta }>(E.list(ws), {
+				params,
+				signal,
+			})
+			.then(unwrapCursorPage<TWorkflow>),
 
 	detail: (ws: string, id: string, signal?: AbortSignal) =>
 		axiosClient
@@ -38,9 +46,14 @@ export const WorkflowService = {
 	remove: (ws: string, id: string) => axiosClient.delete(E.delete(ws, id)).then(() => undefined),
 
 	trash: (ws: string, signal?: AbortSignal) =>
-		axiosClient
-			.get<TApiResponse<{ workflows: TWorkflow[] }>>(E.trash(ws), { signal })
-			.then(unwrapKey<TWorkflow[]>('workflows')),
+		fetchAllPages((page) =>
+			axiosClient
+				.get<TApiResponse<TWorkflow[]> & { meta: TCursorPaginationMeta }>(E.trash(ws), {
+					params: page,
+					signal,
+				})
+				.then(unwrapCursorPage<TWorkflow>),
+		),
 
 	restore: (ws: string, id: string) =>
 		axiosClient

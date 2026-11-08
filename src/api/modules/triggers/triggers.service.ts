@@ -1,6 +1,6 @@
 import { axiosClient } from '@/api/client';
-import { unwrapKey } from '@/api/core';
-import type { TApiResponse, TListParams } from '@/api/core';
+import { fetchAllPages, unwrapCursorPage, unwrapKey } from '@/api/core';
+import type { TApiResponse, TCursorPaginationMeta, TListParams } from '@/api/core';
 import type {
 	TTrigger,
 	TTriggerEvent,
@@ -16,10 +16,16 @@ import { TriggerEndpoints as E } from './triggers.endpoints';
 export const TriggerService = {
 	// `target_type` + `target_id` narrow the list to one workflow's or
 	// agent's triggers; without them it's the whole workspace.
+	// The API pages by cursor, so this walks every page.
 	list: (ws: string, params?: TListParams, signal?: AbortSignal) =>
-		axiosClient
-			.get<TApiResponse<{ triggers: TTrigger[] }>>(E.list(ws), { params, signal })
-			.then(unwrapKey<TTrigger[]>('triggers')),
+		fetchAllPages((page) =>
+			axiosClient
+				.get<TApiResponse<TTrigger[]> & { meta: TCursorPaginationMeta }>(E.list(ws), {
+					params: { ...params, ...page },
+					signal,
+				})
+				.then(unwrapCursorPage<TTrigger>),
+		),
 
 	create: (ws: string, payload: TCreateTriggerDto) =>
 		axiosClient

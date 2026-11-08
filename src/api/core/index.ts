@@ -7,6 +7,7 @@ export * from './auth-events';
 export * from './query-client';
 export * from './keys';
 export * from './resource';
+export * from './pagination';
 export {
 	getAccessToken,
 	getTokenExpiry,
