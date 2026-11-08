@@ -1,5 +1,5 @@
 import type { AxiosResponse } from 'axios';
-import type { TApiResponse, TCursorPaginationMeta } from '@/types/api.type';
+import type { TApiResponse, TCursorPaginationMeta, TPaginationMeta } from '@/types/api.type';
 
 // ============================================================
 // Cursor pagination
@@ -69,6 +69,50 @@ export async function fetchAllPages<T>(
 
 	if (import.meta.env.DEV) {
 		console.warn(`fetchAllPages stopped after ${maxPages} pages; the list was truncated.`);
+	}
+	return rows;
+}
+
+// ------------------------------------------------------------
+// Numbered pages
+// ------------------------------------------------------------
+// `ApiResponse::paginated()` returns `{ data: T[], meta }` with a `total`.
+// Used where the list sorts by something a cursor can't follow and the UI
+// shows how many rows match (the workflows page).
+// ------------------------------------------------------------
+
+export type TNumberedPage<T> = {
+	items: T[];
+	meta: TPaginationMeta;
+};
+
+/** Peels one numbered-page envelope into `{ items, meta }`. */
+export const unwrapNumberedPage = <T>(
+	res: AxiosResponse<TApiResponse<T[]> & { meta: TPaginationMeta }>,
+): TNumberedPage<T> => ({ items: res.data.data, meta: res.data.meta });
+
+/** Pass to `useInfiniteQuery({ getNextPageParam })`. */
+export const getNextPageNumber = <T>(page: TNumberedPage<T>): number | undefined =>
+	page.meta.current_page < page.meta.last_page ? page.meta.current_page + 1 : undefined;
+
+/** Every row of a numbered-page list, one capped request per page. */
+export async function fetchAllNumberedPages<T>(
+	fetchPage: (params: { page: number; per_page: number }) => Promise<TNumberedPage<T>>,
+	maxPages: number = MAX_WALKED_PAGES,
+): Promise<T[]> {
+	const rows: T[] = [];
+
+	for (let page = 1; page <= maxPages; page += 1) {
+		const result = await fetchPage({ page, per_page: MAX_PAGE_SIZE });
+		rows.push(...result.items);
+
+		if (getNextPageNumber(result) === undefined) return rows;
+	}
+
+	if (import.meta.env.DEV) {
+		console.warn(
+			`fetchAllNumberedPages stopped after ${maxPages} pages; the list was truncated.`,
+		);
 	}
 	return rows;
 }

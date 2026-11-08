@@ -1,6 +1,12 @@
 import { axiosClient } from '@/api/client';
-import { fetchAllPages, unwrapCursorPage, unwrapKey } from '@/api/core';
-import type { TApiResponse, TCursorPaginationMeta, TCursorParams, TListParams } from '@/api/core';
+import {
+	fetchAllNumberedPages,
+	fetchAllPages,
+	unwrapCursorPage,
+	unwrapKey,
+	unwrapNumberedPage,
+} from '@/api/core';
+import type { TApiResponse, TCursorPaginationMeta, TListParams, TPaginationMeta } from '@/api/core';
 import type {
 	TWorkflow,
 	TWorkflowNode,
@@ -11,21 +17,42 @@ import type {
 } from '@/types/workflow.type';
 import { WorkflowEndpoints as E } from './workflows.endpoints';
 
+export type TWorkflowSort = 'updated' | 'name' | 'last_run' | 'nodes';
+
+export type TWorkflowListParams = TListParams & {
+	search?: string;
+	status?: 'published' | 'draft';
+	favorites?: boolean;
+	tag_id?: string;
+	sort?: TWorkflowSort;
+};
+
+export type TWorkflowSummary = { total: number; published: number; favorites: number };
+
 export const WorkflowService = {
 	// List omits `nodes`/`edges`, only detail and duplicate load them. `tags`
 	// is the reverse: the list eager-loads it, `show` doesn't.
-	// The API pages by cursor, so this walks every page. Use `listPage` for a
-	// list that loads more on demand.
+	// For pickers and anything else that needs every workflow: walks the
+	// numbered pages. A list the user scrolls should use `listPage` instead.
 	list: (ws: string, params?: TListParams, signal?: AbortSignal) =>
-		fetchAllPages((page) => WorkflowService.listPage(ws, { ...params, ...page }, signal)),
+		fetchAllNumberedPages((page) =>
+			WorkflowService.listPage(ws, { ...params, ...page }, signal),
+		),
 
-	listPage: (ws: string, params?: TListParams & TCursorParams, signal?: AbortSignal) =>
+	// One page, filtered and sorted by the server.
+	listPage: (ws: string, params?: TWorkflowListParams, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<TWorkflow[]> & { meta: TCursorPaginationMeta }>(E.list(ws), {
+			.get<TApiResponse<TWorkflow[]> & { meta: TPaginationMeta }>(E.list(ws), {
 				params,
 				signal,
 			})
-			.then(unwrapCursorPage<TWorkflow>),
+			.then(unwrapNumberedPage<TWorkflow>),
+
+	// What the stat cards show, without loading the list.
+	summary: (ws: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<TWorkflowSummary>>(E.summary(ws), { signal })
+			.then((res) => res.data.data),
 
 	detail: (ws: string, id: string, signal?: AbortSignal) =>
 		axiosClient
