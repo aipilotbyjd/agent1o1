@@ -1,6 +1,6 @@
 import { axiosClient } from '@/api/client';
-import { unwrapKey } from '@/api/core';
-import type { TApiResponse } from '@/api/core';
+import { unwrapKey, fetchAllPages, unwrapCursorPage } from '@/api/core';
+import type { TApiResponse, TCursorPaginationMeta } from '@/api/core';
 import type {
 	TAgentEvalSuite,
 	TCreateAgentEvalSuiteDto,
@@ -75,9 +75,13 @@ export const AgentEvalCaseService = {
 
 export const AgentEvalRunService = {
 	list: (ws: string, agentId: string, suiteId: string, signal?: AbortSignal) =>
-		axiosClient
-			.get<TApiResponse<{ runs: TAgentEvalRun[] }>>(E.runs(ws, agentId, suiteId), { signal })
-			.then(unwrapKey<TAgentEvalRun[]>('runs')),
+		fetchAllPages((page) =>
+			axiosClient
+				.get<
+					TApiResponse<TAgentEvalRun[]> & { meta: TCursorPaginationMeta }
+				>(E.runs(ws, agentId, suiteId), { params: page, signal })
+				.then(unwrapCursorPage<TAgentEvalRun>),
+		),
 
 	detail: (ws: string, agentId: string, suiteId: string, runId: string, signal?: AbortSignal) =>
 		axiosClient

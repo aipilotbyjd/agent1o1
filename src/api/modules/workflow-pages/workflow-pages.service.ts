@@ -54,9 +54,13 @@ export const PageSectionService = {
 
 export const WorkflowPageService = {
 	list: (ws: string, params?: { workflow_id?: string }, signal?: AbortSignal) =>
-		axiosClient
-			.get<TApiResponse<{ pages: TWorkflowPage[] }>>(E.list(ws), { params, signal })
-			.then(unwrapKey<TWorkflowPage[]>('pages')),
+		fetchAllPages((page) =>
+			axiosClient
+				.get<
+					TApiResponse<TWorkflowPage[]> & { meta: TCursorPaginationMeta }
+				>(E.list(ws), { params: { ...params, ...page }, signal })
+				.then(unwrapCursorPage<TWorkflowPage>),
+		),
 
 	detail: (ws: string, id: string, signal?: AbortSignal) =>
 		axiosClient
@@ -166,9 +170,13 @@ export const WorkflowPageService = {
 		axiosClient.post(E.events(ws, id), { type: 'start' }).then(() => undefined),
 
 	versions: (ws: string, id: string, signal?: AbortSignal) =>
-		axiosClient
-			.get<TApiResponse<{ versions: TPageVersion[] }>>(E.versions(ws, id), { signal })
-			.then(unwrapKey<TPageVersion[]>('versions')),
+		fetchAllPages((page) =>
+			axiosClient
+				.get<
+					TApiResponse<TPageVersion[]> & { meta: TCursorPaginationMeta }
+				>(E.versions(ws, id), { params: page, signal })
+				.then(unwrapCursorPage<TPageVersion>),
+		),
 
 	version: (ws: string, id: string, versionId: string, signal?: AbortSignal) =>
 		axiosClient

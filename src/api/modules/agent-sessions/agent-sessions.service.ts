@@ -1,6 +1,6 @@
 import { axiosClient } from '@/api/client';
-import { unwrapKey } from '@/api/core';
-import type { TApiResponse, TPaginationMeta } from '@/api/core';
+import { unwrapKey, fetchAllPages, unwrapCursorPage } from '@/api/core';
+import type { TApiResponse, TPaginationMeta, TCursorPaginationMeta } from '@/api/core';
 import type {
 	TAgentSession,
 	TCreateAgentSessionDto,
@@ -36,9 +36,13 @@ const messageBody = (payload: TSendAgentMessageDto): TSendAgentMessageDto | Form
 
 export const AgentSessionService = {
 	list: (ws: string, agentId: string, signal?: AbortSignal) =>
-		axiosClient
-			.get<TApiResponse<{ sessions: TAgentSession[] }>>(E.list(ws, agentId), { signal })
-			.then(unwrapKey<TAgentSession[]>('sessions')),
+		fetchAllPages((page) =>
+			axiosClient
+				.get<
+					TApiResponse<TAgentSession[]> & { meta: TCursorPaginationMeta }
+				>(E.list(ws, agentId), { params: page, signal })
+				.then(unwrapCursorPage<TAgentSession>),
+		),
 
 	// Eager-loads the message transcript: the paginated `messages()` action
 	// is for paging back through a long-running session instead.

@@ -1,6 +1,6 @@
 import { axiosClient } from '@/api/client';
-import { unwrapKey } from '@/api/core';
-import type { TApiResponse, TListParams } from '@/api/core';
+import { unwrapKey, fetchAllPages, unwrapCursorPage } from '@/api/core';
+import type { TApiResponse, TListParams, TCursorPaginationMeta } from '@/api/core';
 import type {
 	TAgentSkill,
 	TCreateAgentSkillDto,
@@ -41,9 +41,13 @@ export const AgentSkillService = {
 			.post<TApiResponse<{ skill: TAgentSkill }>>(E.publish(ws, id), body)
 			.then(unwrapKey<TAgentSkill>('skill')),
 	list: (ws: string, _params?: TListParams, signal?: AbortSignal) =>
-		axiosClient
-			.get<TApiResponse<{ skills: TAgentSkill[] }>>(E.list(ws), { signal })
-			.then(unwrapKey<TAgentSkill[]>('skills')),
+		fetchAllPages((page) =>
+			axiosClient
+				.get<
+					TApiResponse<TAgentSkill[]> & { meta: TCursorPaginationMeta }
+				>(E.list(ws), { params: page, signal })
+				.then(unwrapCursorPage<TAgentSkill>),
+		),
 
 	detail: (ws: string, id: string, signal?: AbortSignal) =>
 		axiosClient
