@@ -1,6 +1,12 @@
 import { useMemo } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createResource } from '@/api/core';
+import {
+	keepPreviousData,
+	useInfiniteQuery,
+	useMutation,
+	useQuery,
+	useQueryClient,
+} from '@tanstack/react-query';
+import { createResource, getNextPageNumber } from '@/api/core';
 import type {
 	TSyncWorkflowTagsDto,
 	TPinWorkflowNodeDto,
@@ -16,6 +22,7 @@ import {
 import type { TTriggerMechanism } from '@/types/catalog.type';
 import type { TTriggerTargetType } from '@/types/trigger.type';
 import { WorkflowService } from './workflows.service';
+import type { TWorkflowListParams } from './workflows.service';
 import { WorkflowVersionService } from './workflow-versions.service';
 import { workflowKeys, workflowTrashKey } from './workflows.keys';
 
@@ -27,6 +34,35 @@ const Workflows = createResource({
 
 export const useWorkflows = Workflows.useList;
 export const useWorkflow = Workflows.useDetail;
+
+const WORKFLOW_FEED_PAGE_SIZE = 24;
+
+/**
+ * The workflows page: filtered and sorted by the server, a page at a time.
+ * Sits under the list key prefix, so any workflow change refreshes it.
+ */
+export const useWorkflowFeed = (ws: string, filters: TWorkflowListParams = {}) =>
+	useInfiniteQuery({
+		queryKey: [...workflowKeys.lists(ws), 'feed', filters] as const,
+		queryFn: ({ pageParam, signal }) =>
+			WorkflowService.listPage(
+				ws,
+				{ ...filters, page: pageParam, per_page: WORKFLOW_FEED_PAGE_SIZE },
+				signal,
+			),
+		initialPageParam: 1,
+		getNextPageParam: getNextPageNumber,
+		placeholderData: keepPreviousData,
+		enabled: !!ws,
+	});
+
+/** Totals for the stat cards; refreshed with every workflow change. */
+export const useWorkflowSummary = (ws: string) =>
+	useQuery({
+		queryKey: [...workflowKeys.lists(ws), 'summary'] as const,
+		queryFn: ({ signal }) => WorkflowService.summary(ws, signal),
+		enabled: !!ws,
+	});
 export const useCreateWorkflow = Workflows.useCreate;
 export const useUpdateWorkflow = Workflows.useUpdate;
 

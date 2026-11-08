@@ -1,6 +1,6 @@
 import { axiosClient } from '@/api/client';
-import { unwrapKey } from '@/api/core';
-import type { TApiResponse } from '@/api/core';
+import { unwrapKey, fetchAllPages, unwrapCursorPage } from '@/api/core';
+import type { TApiResponse, TCursorPaginationMeta } from '@/api/core';
 import type {
 	TReflectionSettings,
 	TUpdateReflectionSettingsDto,
@@ -27,9 +27,13 @@ export const AgentReflectionSettingsService = {
 
 export const AgentReflectionRunService = {
 	list: (ws: string, agentId: string, signal?: AbortSignal) =>
-		axiosClient
-			.get<TApiResponse<{ runs: TReflectionRun[] }>>(E.runs(ws, agentId), { signal })
-			.then(unwrapKey<TReflectionRun[]>('runs')),
+		fetchAllPages((page) =>
+			axiosClient
+				.get<
+					TApiResponse<TReflectionRun[]> & { meta: TCursorPaginationMeta }
+				>(E.runs(ws, agentId), { params: page, signal })
+				.then(unwrapCursorPage<TReflectionRun>),
+		),
 
 	detail: (ws: string, agentId: string, runId: string, signal?: AbortSignal) =>
 		axiosClient

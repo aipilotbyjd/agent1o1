@@ -1,6 +1,6 @@
 import { axiosClient } from '@/api/client';
-import { unwrapKey } from '@/api/core';
-import type { TApiResponse } from '@/api/core';
+import { fetchAllPages, unwrapCursorPage, unwrapKey } from '@/api/core';
+import type { TApiResponse, TCursorPaginationMeta } from '@/api/core';
 import type {
 	TFolder,
 	TFolderType,
@@ -16,9 +16,14 @@ export const FolderService = {
 	// flat list. The backend defaults `type` to workflow, so agent folders
 	// must ask for them.
 	list: (ws: string, type: TFolderType = 'workflow', signal?: AbortSignal) =>
-		axiosClient
-			.get<TApiResponse<{ folders: TFolder[] }>>(E.list(ws), { params: { type }, signal })
-			.then(unwrapKey<TFolder[]>('folders')),
+		fetchAllPages((page) =>
+			axiosClient
+				.get<TApiResponse<TFolder[]> & { meta: TCursorPaginationMeta }>(E.list(ws), {
+					params: { type, ...page },
+					signal,
+				})
+				.then(unwrapCursorPage<TFolder>),
+		),
 
 	create: (ws: string, payload: TCreateFolderDto) =>
 		axiosClient

@@ -1,6 +1,6 @@
 import { axiosClient } from '@/api/client';
-import { unwrapKey } from '@/api/core';
-import type { TApiResponse } from '@/api/core';
+import { fetchAllPages, unwrapCursorPage, unwrapKey } from '@/api/core';
+import type { TApiResponse, TCursorPaginationMeta } from '@/api/core';
 import type {
 	TPublishApprovalPolicy,
 	TPublishRequest,
@@ -50,9 +50,13 @@ export const PublishRequestService = {
 
 	/** Every request waiting for review in the workspace, oldest first. */
 	workspacePending: (ws: string, signal?: AbortSignal) =>
-		axiosClient
-			.get<TApiResponse<{ requests: TPublishRequest[] }>>(E.workspacePending(ws), { signal })
-			.then(unwrapKey<TPublishRequest[]>('requests')),
+		fetchAllPages((page) =>
+			axiosClient
+				.get<
+					TApiResponse<TPublishRequest[]> & { meta: TCursorPaginationMeta }
+				>(E.workspacePending(ws), { params: page, signal })
+				.then(unwrapCursorPage<TPublishRequest>),
+		),
 
 	policy: (ws: string, signal?: AbortSignal) =>
 		axiosClient

@@ -1,6 +1,6 @@
 import { axiosClient } from '@/api/client';
-import { unwrapKey } from '@/api/core';
-import type { TApiResponse } from '@/api/core';
+import { unwrapKey, fetchAllPages, unwrapCursorPage } from '@/api/core';
+import type { TApiResponse, TCursorPaginationMeta } from '@/api/core';
 import type {
 	TAgentMemory,
 	TCreateAgentMemoryDto,
@@ -10,9 +10,13 @@ import { AgentMemoryEndpoints as E } from './agent-memory.endpoints';
 
 export const AgentMemoryService = {
 	list: (ws: string, agentId: string, signal?: AbortSignal) =>
-		axiosClient
-			.get<TApiResponse<{ memories: TAgentMemory[] }>>(E.list(ws, agentId), { signal })
-			.then(unwrapKey<TAgentMemory[]>('memories')),
+		fetchAllPages((page) =>
+			axiosClient
+				.get<
+					TApiResponse<TAgentMemory[]> & { meta: TCursorPaginationMeta }
+				>(E.list(ws, agentId), { params: page, signal })
+				.then(unwrapCursorPage<TAgentMemory>),
+		),
 
 	create: (ws: string, agentId: string, payload: TCreateAgentMemoryDto) =>
 		axiosClient

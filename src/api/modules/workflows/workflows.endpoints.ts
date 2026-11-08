@@ -8,6 +8,7 @@ export const WorkflowEndpoints = {
 	update: workflow,
 	delete: workflow,
 	trash: (ws: string) => `${base(ws)}/trash`,
+	summary: (ws: string) => `${base(ws)}/summary`,
 	restore: (ws: string, id: string) => `${workflow(ws, id)}/restore`,
 	forceDelete: (ws: string, id: string) => `${workflow(ws, id)}/force`,
 	duplicate: (ws: string, id: string) => `${workflow(ws, id)}/duplicate`,

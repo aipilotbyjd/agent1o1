@@ -1,15 +1,19 @@
 import { axiosClient } from '@/api/client';
-import { unwrapKey } from '@/api/core';
-import type { TApiResponse } from '@/api/core';
+import { unwrapKey, fetchAllPages, unwrapCursorPage } from '@/api/core';
+import type { TApiResponse, TCursorPaginationMeta } from '@/api/core';
 import type { TAgentVersion } from '@/types/agent.type';
 import type { TAgent } from '@/types/agent.type';
 import { AgentVersionEndpoints as E } from './agent-versions.endpoints';
 
 export const AgentVersionService = {
 	list: (ws: string, agentId: string, signal?: AbortSignal) =>
-		axiosClient
-			.get<TApiResponse<{ versions: TAgentVersion[] }>>(E.list(ws, agentId), { signal })
-			.then(unwrapKey<TAgentVersion[]>('versions')),
+		fetchAllPages((page) =>
+			axiosClient
+				.get<
+					TApiResponse<TAgentVersion[]> & { meta: TCursorPaginationMeta }
+				>(E.list(ws, agentId), { params: page, signal })
+				.then(unwrapCursorPage<TAgentVersion>),
+		),
 
 	detail: (ws: string, agentId: string, version: number, signal?: AbortSignal) =>
 		axiosClient
