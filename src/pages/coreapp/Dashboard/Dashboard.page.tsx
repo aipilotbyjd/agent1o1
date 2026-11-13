@@ -1,3 +1,4 @@
+import { activateOnKey } from '@/utils/activateOnKey.util';
 import { useEffect, useState } from 'react';
 import { useOutletContext, useNavigate, useParams } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,6 +24,7 @@ import {
 	History,
 	Inbox,
 	ShieldCheck,
+	KeyRound,
 } from 'lucide-react';
 import { OutletContextType } from '@/pages/coreapp/Dashboard/_layouts/Dashboard.layout';
 import Breadcrumb from '@/components/layout/Breadcrumb';
@@ -31,16 +33,16 @@ import pages from '@/Routes/pages';
 import paths, { withWorkspace } from '@/Routes/paths';
 import { useAuth } from '@/context/auth';
 import { useOnboardingState, useDismissOnboarding } from '@/api/modules/onboarding';
+import { useBillingOverview } from '@/api/modules/billing';
 import { useCreateWorkflow } from '@/api/modules/workflows';
 import type { TOnboardingStepKey } from '@/types/onboarding.type';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useDashboard } from './_helper/dashboard.adapter';
 import PendingApprovalsCard from './_partial/PendingApprovalsCard.partial';
+import PendingAgentActionsCard from './_partial/PendingAgentActionsCard.partial';
 import { STATUS_BADGE_COLORS, type TExecutionStatus } from './_types/dashboard.type';
 
 const workspacePages = pages.workspace.subPages!;
-const settingsPages = pages.settings.subPages!;
-const welcomePages = pages.welcome.subPages!;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const formatRelativeTime = (value?: number) => {
@@ -89,6 +91,7 @@ const onboardingIcons: Record<TOnboardingStepKey, React.ComponentType<{ size?: n
 	invite_team: Mail,
 	role_selection: ShieldCheck,
 	choose_plan: Crown,
+	connect_ai: KeyRound,
 	connect_apps: GitMerge,
 	discovery_survey: FileText,
 };
@@ -130,11 +133,13 @@ const DashboardPage = () => {
 
 	const { data: dashboard, isLoading } = useDashboard(currentWorkspaceId);
 	const summary = dashboard?.summary;
+	const planName = useBillingOverview(currentWorkspaceId).data?.current_plan?.name;
 
 	// ─── Monitoring data ──────────────────────────────────────────────────────
 	const runsToday = summary?.total_executions_today ?? 0;
 	const runningNow = summary?.running_executions ?? 0;
 	const successRate = summary?.success_rate ?? 0;
+	const hasRuns = runsToday > 0 || (dashboard?.recent_executions?.length ?? 0) > 0;
 	const avgMs = summary?.avg_duration_ms ?? 0;
 	const failures = dashboard?.recent_failures ?? [];
 	const failedCount =
@@ -155,8 +160,8 @@ const DashboardPage = () => {
 		},
 		{
 			label: 'Success rate',
-			value: `${successRate.toFixed(successRate % 1 === 0 ? 0 : 1)}%`,
-			sub: 'Across recent runs',
+			value: hasRuns ? `${successRate.toFixed(successRate % 1 === 0 ? 0 : 1)}%` : '-',
+			sub: hasRuns ? 'Across recent runs' : 'No runs yet',
 			icon: CheckCircle2,
 			tone: TONES.emerald,
 		},
@@ -186,34 +191,11 @@ const DashboardPage = () => {
 	const nextOnboardingStep = onboarding?.steps.find((item) => !item.completed);
 
 	/**
-	 * The onboarding wizard is one route driven by its own step store, so only
-	 * the steps with a destination of their own get a direct link; the rest drop
-	 * the user back into the wizard.
+	 * Every checklist item reopens the one onboarding wizard on its own step,
+	 * so the dashboard never lands on a different page than the wizard shows.
 	 */
 	const handleOnboardingAction = (key: TOnboardingStepKey) => {
-		switch (key) {
-			case 'profile_picture':
-				navigate(toWorkspacePath(settingsPages.profile.to));
-				break;
-			case 'create_workspace':
-				navigate(welcomePages.createWorkspace.to);
-				break;
-			case 'invite_team':
-				navigate(welcomePages.inviteTeam.to);
-				break;
-			case 'connect_apps':
-				// Apps reads `connect` on mount to open the connect modal, then
-				// clears the flag - the step should land with it already open.
-				navigate(`${toWorkspacePath(workspacePages.apps.to)}?connect=true`);
-				break;
-			case 'choose_plan':
-				navigate(paths.billingPlans(currentWorkspaceId));
-				break;
-			case 'role_selection':
-			case 'discovery_survey':
-				navigate(pages.welcome.to);
-				break;
-		}
+		navigate(`${pages.welcome.to}?step=${key}`);
 	};
 
 	const handleDismissOnboarding = () => {
@@ -302,10 +284,17 @@ const DashboardPage = () => {
 								<span className='font-bold text-[#101828] dark:text-white'>
 									{runsToday.toLocaleString()} run{runsToday === 1 ? '' : 's'}
 								</span>{' '}
-								today at{' '}
-								<span className='font-bold text-[#101828] dark:text-white'>
-									{successRate.toFixed(successRate % 1 === 0 ? 0 : 1)}% success
-								</span>
+								today
+								{hasRuns && (
+									<>
+										{' '}
+										at{' '}
+										<span className='font-bold text-[#101828] dark:text-white'>
+											{successRate.toFixed(successRate % 1 === 0 ? 0 : 1)}%
+											success
+										</span>
+									</>
+								)}
 								{failedCount > 0 ? (
 									<>
 										{' '}
@@ -344,13 +333,15 @@ const DashboardPage = () => {
 								</div>
 
 								{/* Plan Badge */}
-								<div className='flex items-center gap-1 rounded-full border border-purple-100 bg-white px-3 py-1 text-[11px] font-bold text-purple-700 shadow-xs dark:border-purple-500/30 dark:bg-purple-950/45 dark:text-purple-300'>
-									<Crown
-										size={11}
-										className='text-purple-600 dark:text-purple-400'
-									/>
-									<span>Pro Account</span>
-								</div>
+								{planName && (
+									<div className='flex items-center gap-1 rounded-full border border-purple-100 bg-white px-3 py-1 text-[11px] font-bold text-purple-700 shadow-xs dark:border-purple-500/30 dark:bg-purple-950/45 dark:text-purple-300'>
+										<Crown
+											size={11}
+											className='text-purple-600 dark:text-purple-400'
+										/>
+										<span>{planName} Account</span>
+									</div>
+								)}
 
 								{/* Status Badge */}
 								<div
@@ -602,6 +593,7 @@ const DashboardPage = () => {
 					{/* Left: needs attention + recent runs */}
 					<div className='space-y-6 lg:col-span-2'>
 						<PendingApprovalsCard ws={currentWorkspaceId} />
+						<PendingAgentActionsCard ws={currentWorkspaceId} />
 
 						{/* Needs attention */}
 						<div className='border-border-main bg-bg-card overflow-hidden rounded-3xl border shadow-sm'>
@@ -705,7 +697,12 @@ const DashboardPage = () => {
 										return (
 											<div
 												key={run.id}
+												role='button'
+												tabIndex={0}
 												onClick={() => openRun(run.id, run.workflow_id)}
+												onKeyDown={activateOnKey(() =>
+													openRun(run.id, run.workflow_id),
+												)}
 												className='group flex cursor-pointer items-center justify-between gap-3 px-5 py-3.5 transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-800/15'>
 												<div className='flex min-w-0 items-center gap-3'>
 													<div className='border-primary-500/15 bg-primary-400/10 text-primary-500 dark:text-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border'>

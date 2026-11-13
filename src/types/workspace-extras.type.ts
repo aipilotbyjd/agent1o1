@@ -1,7 +1,7 @@
 // ============================================================
 // Workspace Extras
 // ------------------------------------------------------------
-// Membership and invitations — the only workspace-scoped
+// Membership and invitations: the only workspace-scoped
 // sub-resources besides the workspace record itself, notification
 // channels/preferences (notification.type.ts), and billing.
 // ============================================================

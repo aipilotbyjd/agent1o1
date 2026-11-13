@@ -1,6 +1,0 @@
-import NotificationSystemsTableFormatListOfCheckboxExample from '@/examples/pageSections/notificationSystems/NotificationSystemsTableFormatListOfCheckbox.example';
-
-const EX_NotificationSystems = {
-	TableFormatListOfCheckbox: NotificationSystemsTableFormatListOfCheckboxExample,
-};
-export default EX_NotificationSystems;

@@ -3,8 +3,8 @@ import useDarkMode from '@/hooks/useDarkMode';
 /**
  * The product mark.
  *
- * The two source PNGs have their background baked in — the light art sits on white,
- * the dark art on near-black — so each one is only correct on its own theme, and the
+ * The two source PNGs have their background baked in (the light art sits on white,
+ * the dark art on near-black) so each one is only correct on its own theme, and the
  * mark is always clipped to a rounded tile rather than drawn onto a bare surface.
  * The `-256` files are the trimmed, normalised versions of the originals in /public:
  * cropped to the mark and padded so it fills the same fraction of the frame in both

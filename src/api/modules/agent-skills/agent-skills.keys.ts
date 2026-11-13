@@ -10,3 +10,8 @@ export const skillReferenceKeys = {
 export const skillScriptKeys = {
 	list: (ws: string, skillId: string) => ['agent-skills', ws, skillId, 'scripts'] as const,
 };
+
+// Under the skills root, so invalidating `agentSkillKeys.all(ws)` refreshes both.
+export const skillSourceKeys = {
+	list: (ws: string) => ['agent-skills', ws, 'sources'] as const,
+};

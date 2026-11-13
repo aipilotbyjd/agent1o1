@@ -106,7 +106,7 @@ const TwoFactorCard = () => {
 									: `${remaining} recovery ${remaining === 1 ? 'code' : 'codes'} left`}
 								{remaining === 0 && (
 									<span className='ml-1.5 text-red-500'>
-										— regenerate them so you are not locked out.
+										(regenerate them so you are not locked out)
 									</span>
 								)}
 							</p>

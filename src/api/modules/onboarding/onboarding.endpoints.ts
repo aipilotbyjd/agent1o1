@@ -5,5 +5,7 @@ export const OnboardingEndpoints = {
 	selectRole: '/onboarding/role',
 	selectPlan: '/onboarding/plan',
 	submitDiscovery: '/onboarding/discovery',
+	skip: '/onboarding/skip',
+	continueStep: '/onboarding/continue',
 	complete: '/onboarding/complete',
 } as const;

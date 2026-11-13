@@ -4,6 +4,7 @@ import { createQueryClient } from '@/api/core';
 import { ThemeContextProvider } from '@/context/theme';
 import { ConfirmProvider } from '@/context/confirm';
 import { AuthProvider } from '@/context/auth';
+import { BrandProvider } from '@/context/brand';
 
 const Providers = () => {
 	const [queryClient] = useState(() => createQueryClient());
@@ -12,8 +13,10 @@ const Providers = () => {
 		<QueryClientProvider client={queryClient}>
 			<ThemeContextProvider>
 				<ConfirmProvider>
-					{/* <Outlet /> must be used in the innermost provider. */}
-					<AuthProvider />
+					<BrandProvider>
+						{/* <Outlet /> must be used in the innermost provider. */}
+						<AuthProvider />
+					</BrandProvider>
 				</ConfirmProvider>
 			</ThemeContextProvider>
 		</QueryClientProvider>

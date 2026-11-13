@@ -1,13 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type {
 	TConfigureBuilderNodeDto,
 	TCreateBuilderSessionDto,
-	TDryRunWorkflowDto,
 	TPromoteBuilderSessionDto,
 	TSendBuilderMessageDto,
 	TTestWorkflowNodeDto,
 	TUpdateBuilderSessionDto,
-	TValidateWorkflowDto,
 	TBuilderSessionStatus,
 } from '@/types/workflow-builder.type';
 import type { TReplaceGraphDto } from '@/types/workflow.type';
@@ -24,7 +22,8 @@ import { workflowKeys } from '../workflows/workflows.keys';
 export const useWorkflowBuilderSessions = (ws: string, status?: TBuilderSessionStatus) =>
 	useQuery({
 		queryKey: builderSessionKeys.list(ws, status),
-		queryFn: ({ signal }) => WorkflowBuilderSessionService.list(ws, status ? { status } : undefined, signal),
+		queryFn: ({ signal }) =>
+			WorkflowBuilderSessionService.list(ws, status ? { status } : undefined, signal),
 		enabled: !!ws,
 	});
 
@@ -38,7 +37,8 @@ export const useWorkflowBuilderSession = (ws: string, id: string) =>
 export const useCreateWorkflowBuilderSession = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (payload: TCreateBuilderSessionDto) => WorkflowBuilderSessionService.create(ws, payload),
+		mutationFn: (payload: TCreateBuilderSessionDto) =>
+			WorkflowBuilderSessionService.create(ws, payload),
 		onSuccess: () => qc.invalidateQueries({ queryKey: builderSessionKeys.lists(ws) }),
 		meta: { errorMessage: 'Failed to create session' },
 	});
@@ -76,7 +76,8 @@ export const usePromoteWorkflowBuilderSession = (ws: string) => {
 			qc.invalidateQueries({ queryKey: workflowKeys.lists(ws) });
 			qc.setQueryData(workflowKeys.detail(ws, String(workflow.id)), workflow);
 		},
-		meta: { errorMessage: 'Failed to publish workflow' },
+		// A 409 (workflow edited elsewhere) is handled by the caller.
+		meta: { errorMessage: 'Failed to apply the chat draft', silentStatuses: [409] },
 	});
 };
 
@@ -85,7 +86,8 @@ export const useSendWorkflowBuilderMessage = (ws: string, sessionId: string) => 
 	return useMutation({
 		mutationFn: (payload: TSendBuilderMessageDto) =>
 			WorkflowBuilderMessageService.send(ws, sessionId, payload),
-		onSuccess: () => qc.invalidateQueries({ queryKey: builderSessionKeys.detail(ws, sessionId) }),
+		onSuccess: () =>
+			qc.invalidateQueries({ queryKey: builderSessionKeys.detail(ws, sessionId) }),
 		meta: { errorMessage: 'Failed to send message' },
 	});
 };
@@ -102,12 +104,22 @@ export const useWorkflowBuilderVersions = (ws: string, sessionId: string, enable
 export const useRestoreWorkflowBuilderVersion = (ws: string, sessionId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (versionId: string) => WorkflowBuilderVersionService.restore(ws, sessionId, versionId),
+		mutationFn: ({
+			versionId,
+			draftLockVersion,
+		}: {
+			versionId: string;
+			draftLockVersion?: number | null;
+		}) =>
+			WorkflowBuilderVersionService.restore(ws, sessionId, versionId, {
+				draft_lock_version: draftLockVersion ?? undefined,
+			}),
 		onSuccess: (session) => {
 			qc.setQueryData(builderSessionKeys.detail(ws, sessionId), session);
 			qc.invalidateQueries({ queryKey: builderSessionKeys.versions(ws, sessionId) });
 		},
-		meta: { errorMessage: 'Failed to restore that version' },
+		// A 409 (draft moved on since) is handled by the caller.
+		meta: { errorMessage: 'Failed to restore that version', silentStatuses: [409] },
 	});
 };
 
@@ -115,7 +127,8 @@ export const useRestoreWorkflowBuilderVersion = (ws: string, sessionId: string) 
 
 export const useSuggestBuilderNodes = (ws: string, sessionId: string) =>
 	useMutation({
-		mutationFn: (note?: string) => WorkflowBuilderAssistService.suggestNodes(ws, sessionId, note),
+		mutationFn: (note?: string) =>
+			WorkflowBuilderAssistService.suggestNodes(ws, sessionId, note),
 		meta: { errorMessage: 'Could not get suggestions' },
 	});
 
@@ -140,18 +153,19 @@ export const useSuggestBuilderImprovements = (ws: string, sessionId: string) =>
 
 // ─── Diagnostics ───────────────────────────────────────────────
 
-export const useValidateWorkflow = (ws: string, workflowId: string) =>
-	useMutation({
-		mutationFn: (payload?: TValidateWorkflowDto) =>
-			WorkflowDiagnosticsService.validate(ws, workflowId, payload),
-		meta: { errorMessage: 'Failed to validate workflow' },
-	});
-
-export const useDryRunWorkflow = (ws: string, workflowId: string) =>
-	useMutation({
-		mutationFn: (payload?: TDryRunWorkflowDto) =>
-			WorkflowDiagnosticsService.dryRun(ws, workflowId, payload),
-		meta: { errorMessage: 'Dry run failed' },
+/**
+ * A dry run of the saved draft, keyed by `revision` so it re-checks only when
+ * the draft changes. Holds the last result while the next one loads, and stays
+ * quiet on failure: it's a background check, not something the person asked for.
+ */
+export const useDraftDryRun = (ws: string, workflowId: string, revision: string, enabled = true) =>
+	useQuery({
+		queryKey: [...workflowKeys.detail(ws, workflowId), 'dry-run', revision],
+		queryFn: ({ signal }) => WorkflowDiagnosticsService.dryRun(ws, workflowId, signal),
+		enabled: enabled && !!ws && !!workflowId,
+		placeholderData: keepPreviousData,
+		staleTime: Infinity,
+		meta: { silent: true },
 	});
 
 export const useTestWorkflowNode = (ws: string, workflowId: string) =>

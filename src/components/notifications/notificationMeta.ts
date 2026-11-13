@@ -2,10 +2,13 @@ import {
 	Bell,
 	Coins,
 	CreditCard,
+	FileCheck2,
 	Gauge,
+	Gift,
 	Hand,
 	PlugZap,
 	Sparkles,
+	TrendingDown,
 	Users,
 	XCircle,
 	type LucideIcon,
@@ -35,6 +38,14 @@ type TNotificationMeta = {
 const idFrom = (data: Record<string, unknown>, key: string): string | null =>
 	typeof data[key] === 'string' ? (data[key] as string) : null;
 
+const publishRequestHref = (ws: string, data: Record<string, unknown>) => {
+	const workflowId = idFrom(data, 'workflow_id');
+	const requestId = idFrom(data, 'publish_request_id');
+	if (!workflowId) return null;
+	const editor = paths.editPlaybook(ws, workflowId);
+	return requestId ? `${editor}?publish_request=${requestId}` : editor;
+};
+
 const BY_TYPE: Record<string, TNotificationMeta> = {
 	'run.failed': {
 		icon: XCircle,
@@ -48,6 +59,18 @@ const BY_TYPE: Record<string, TNotificationMeta> = {
 		action: 'Review approval',
 		href: (ws, data) => paths.trail(ws, idFrom(data, 'run_id') ?? undefined),
 	},
+	'workflow.publish_review_requested': {
+		icon: FileCheck2,
+		tone: 'warning',
+		action: 'Review changes',
+		href: publishRequestHref,
+	},
+	'workflow.publish_request_decided': {
+		icon: FileCheck2,
+		tone: 'info',
+		action: 'Open workflow',
+		href: publishRequestHref,
+	},
 	'agent.reflection_run_completed': {
 		icon: Sparkles,
 		tone: 'agent',
@@ -55,6 +78,15 @@ const BY_TYPE: Record<string, TNotificationMeta> = {
 		href: (ws, data) => {
 			const agentId = idFrom(data, 'agent_id');
 			return agentId ? paths.agentInsights(ws, agentId, 'reflections') : null;
+		},
+	},
+	'agent.eval_regressed': {
+		icon: TrendingDown,
+		tone: 'danger',
+		action: 'Open evals',
+		href: (ws, data) => {
+			const agentId = idFrom(data, 'agent_id');
+			return agentId ? paths.agentInsights(ws, agentId, 'evals') : null;
 		},
 	},
 	'agent.session_evaluation_notify': {
@@ -114,11 +146,38 @@ const BY_TYPE: Record<string, TNotificationMeta> = {
 		action: 'View plans',
 		href: (ws) => paths.billingPlans(ws),
 	},
+	'referral.signed_up': {
+		icon: Gift,
+		tone: 'info',
+		action: 'View referrals',
+		href: (ws) => paths.referrals(ws),
+	},
+	'referral.reward_granted': {
+		icon: Gift,
+		tone: 'success',
+		action: 'View rewards',
+		href: (ws) => paths.referrals(ws),
+	},
+	'referral.milestone_reached': {
+		icon: Gift,
+		tone: 'success',
+		action: 'View referrals',
+		href: (ws) => paths.referrals(ws),
+	},
+	'referral.plan_time_ending': {
+		icon: Gift,
+		tone: 'warning',
+		action: 'View plans',
+		href: (ws) => paths.billingPlans(ws),
+	},
 	'connector.credential_expired': {
 		icon: PlugZap,
 		tone: 'warning',
 		action: 'Reconnect app',
-		href: (ws) => paths.apps(ws),
+		href: (ws, data) => {
+			const credentialId = idFrom(data, 'connector_credential_id');
+			return credentialId ? `${paths.apps(ws)}?account=${credentialId}` : paths.apps(ws);
+		},
 	},
 };
 

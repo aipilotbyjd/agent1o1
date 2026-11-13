@@ -11,7 +11,7 @@ export const Wordmark: FC<IProps> = ({ className = '', size = 'md' }) => {
 		<div
 			className={`inline-flex items-center justify-center gap-0.5 font-bold tracking-tight select-none ${textSize} ${className}`}>
 			<span className='text-zinc-400'>agent</span>
-			<span className='text-zinc-800 font-extrabold'>1o1</span>
+			<span className='font-extrabold text-zinc-800'>1o1</span>
 		</div>
 	);
 };

@@ -1,5 +1,5 @@
 import { Check, Zap, Sparkles, Crown } from 'lucide-react';
-import { useOnboardingStore } from '../../_context/OnboardingStore.context';
+import { useOnboardingStore } from '../../_hooks/useOnboardingStore.hook';
 import { PLANS } from '../../_helper/onboarding.constants';
 import { useOnboardingState } from '@/api/modules/onboarding';
 
@@ -41,7 +41,7 @@ const PlanSelectionStep = () => {
 					const badge = localPlan?.badge;
 					const highlighted = localPlan?.highlighted;
 					const priceDisplay =
-						plan.price_monthly === 0 ? '$0' : `$${plan.price_monthly / 100}`;
+						plan.price_monthly === 0 ? '$0' : `$${(plan.price_monthly / 100).toFixed(plan.price_monthly % 100 === 0 ? 0 : 2)}`;
 					const periodDisplay = plan.price_monthly === 0 ? 'forever' : '/ month';
 
 					return (

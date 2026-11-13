@@ -4,7 +4,7 @@ const MIN_FONT_SIZE = 12;
 const MAX_FONT_SIZE = 18;
 
 /** Text-size stepper. It used to live behind the aside footer's gear icon, which
- *  read as a link to Settings and was not one — the gear now goes to Settings and
+ *  read as a link to Settings and was not one: the gear now goes to Settings and
  *  this sits in the user menu, beside the theme switcher. */
 const FontSizeSwitcherPart = () => {
 	const { fontSize, setFontSize } = useFontSize();

@@ -76,7 +76,9 @@ const User: FC<IUserProps> = (props) => {
 					<div className='flex basis-full flex-wrap items-center truncate'>
 						<div className='flex basis-full items-center gap-2 truncate'>
 							{namePrefix && <span>{namePrefix}</span>}
-							<span className='truncate font-bold text-slate-800 dark:text-white'>{name}</span>
+							<span className='truncate font-bold text-slate-800 dark:text-white'>
+								{name}
+							</span>
 							{nameSuffix && <span>{nameSuffix}</span>}
 						</div>
 						{position && (

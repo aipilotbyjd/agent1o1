@@ -4,6 +4,7 @@ export const NodeEndpoints = {
 	list: (ws: string) => `/workspaces/${ws}/nodes`,
 	custom: (ws: string) => `/workspaces/${ws}/nodes/custom`,
 	recentlyUsed: (ws: string) => `/workspaces/${ws}/nodes/recently-used`,
+	options: (ws: string) => `/workspaces/${ws}/nodes/options`,
 	create: (ws: string) => `/workspaces/${ws}/nodes`,
 	detail: (ws: string, id: string) => `/workspaces/${ws}/nodes/${id}`,
 	update: (ws: string, id: string) => `/workspaces/${ws}/nodes/${id}`,

@@ -48,7 +48,8 @@ export const useInviteWorkspaceMember = (ws: string) => {
 export const useRevokeWorkspaceInvitation = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (invitationId: string) => WorkspaceMemberService.revokeInvitation(ws, invitationId),
+		mutationFn: (invitationId: string) =>
+			WorkspaceMemberService.revokeInvitation(ws, invitationId),
 		onSuccess: () => qc.invalidateQueries({ queryKey: workspaceMemberKeys.invitations(ws) }),
 		meta: { errorMessage: 'Failed to revoke invitation' },
 	});

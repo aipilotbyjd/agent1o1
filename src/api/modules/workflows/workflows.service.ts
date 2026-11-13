@@ -1,6 +1,12 @@
 import { axiosClient } from '@/api/client';
-import { unwrapKey } from '@/api/core';
-import type { TApiResponse, TListParams } from '@/api/core';
+import {
+	fetchAllNumberedPages,
+	fetchAllPages,
+	unwrapCursorPage,
+	unwrapKey,
+	unwrapNumberedPage,
+} from '@/api/core';
+import type { TApiResponse, TCursorPaginationMeta, TListParams, TPaginationMeta } from '@/api/core';
 import type {
 	TWorkflow,
 	TWorkflowNode,
@@ -11,13 +17,42 @@ import type {
 } from '@/types/workflow.type';
 import { WorkflowEndpoints as E } from './workflows.endpoints';
 
+export type TWorkflowSort = 'updated' | 'name' | 'last_run' | 'nodes';
+
+export type TWorkflowListParams = TListParams & {
+	search?: string;
+	status?: 'published' | 'draft';
+	favorites?: boolean;
+	tag_id?: string;
+	sort?: TWorkflowSort;
+};
+
+export type TWorkflowSummary = { total: number; published: number; favorites: number };
+
 export const WorkflowService = {
-	// List omits `nodes`/`edges` — only detail and duplicate load them. `tags`
+	// List omits `nodes`/`edges`, only detail and duplicate load them. `tags`
 	// is the reverse: the list eager-loads it, `show` doesn't.
-	list: (ws: string, _params?: TListParams, signal?: AbortSignal) =>
+	// For pickers and anything else that needs every workflow: walks the
+	// numbered pages. A list the user scrolls should use `listPage` instead.
+	list: (ws: string, params?: TListParams, signal?: AbortSignal) =>
+		fetchAllNumberedPages((page) =>
+			WorkflowService.listPage(ws, { ...params, ...page }, signal),
+		),
+
+	// One page, filtered and sorted by the server.
+	listPage: (ws: string, params?: TWorkflowListParams, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ workflows: TWorkflow[] }>>(E.list(ws), { signal })
-			.then(unwrapKey<TWorkflow[]>('workflows')),
+			.get<TApiResponse<TWorkflow[]> & { meta: TPaginationMeta }>(E.list(ws), {
+				params,
+				signal,
+			})
+			.then(unwrapNumberedPage<TWorkflow>),
+
+	// What the stat cards show, without loading the list.
+	summary: (ws: string, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<TWorkflowSummary>>(E.summary(ws), { signal })
+			.then((res) => res.data.data),
 
 	detail: (ws: string, id: string, signal?: AbortSignal) =>
 		axiosClient
@@ -34,7 +69,27 @@ export const WorkflowService = {
 			.patch<TApiResponse<{ workflow: TWorkflow }>>(E.update(ws, id), payload)
 			.then(unwrapKey<TWorkflow>('workflow')),
 
+	// Soft delete: the workflow moves to the trash, where it can be restored.
 	remove: (ws: string, id: string) => axiosClient.delete(E.delete(ws, id)).then(() => undefined),
+
+	trash: (ws: string, signal?: AbortSignal) =>
+		fetchAllPages((page) =>
+			axiosClient
+				.get<TApiResponse<TWorkflow[]> & { meta: TCursorPaginationMeta }>(E.trash(ws), {
+					params: page,
+					signal,
+				})
+				.then(unwrapCursorPage<TWorkflow>),
+		),
+
+	restore: (ws: string, id: string) =>
+		axiosClient
+			.post<TApiResponse<{ workflow: TWorkflow }>>(E.restore(ws, id))
+			.then(unwrapKey<TWorkflow>('workflow')),
+
+	// Only accepted for a workflow already in the trash.
+	forceDelete: (ws: string, id: string) =>
+		axiosClient.delete(E.forceDelete(ws, id)).then(() => undefined),
 
 	duplicate: (ws: string, id: string) =>
 		axiosClient

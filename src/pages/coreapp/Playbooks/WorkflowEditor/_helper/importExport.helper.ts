@@ -1,3 +1,4 @@
+import { upgradeLegacyTokens } from './tokenDrag.helper';
 import type { TExportedWorkflow, TWorkflowEditorState } from '../_types/workflow-editor.type';
 
 export const exportWorkflow = (state: TWorkflowEditorState): string =>
@@ -48,5 +49,23 @@ export const parseWorkflowImport = (raw: string): TExportedWorkflow => {
 	if (!validNodes || !validEdges) {
 		throw new Error('Invalid workflow JSON.');
 	}
-	return parsed as TExportedWorkflow;
+	const workflow = parsed as TExportedWorkflow;
+	const nodeIds = new Set(workflow.nodes.map((node) => node.id));
+	return {
+		...workflow,
+		nodes: workflow.nodes.map((node) => ({
+			...node,
+			data: {
+				...node.data,
+				values: upgradeLegacyTokens(node.data.values ?? {}, nodeIds) as Record<
+					string,
+					unknown
+				>,
+				fixedInputValues: upgradeLegacyTokens(
+					node.data.fixedInputValues ?? {},
+					nodeIds,
+				) as Record<string, unknown>,
+			},
+		})),
+	};
 };

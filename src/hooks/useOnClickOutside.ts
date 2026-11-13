@@ -2,7 +2,7 @@ import { RefObject } from 'react';
 import useEventListener from './useEventListener';
 
 function useOnClickOutside<T extends HTMLElement = HTMLElement>(
-	ref: RefObject<T>,
+	ref: RefObject<T | null>,
 	handler: (event: MouseEvent) => void,
 	mouseEvent: 'mousedown' | 'mouseup' = 'mousedown',
 ): void {

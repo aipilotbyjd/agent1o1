@@ -7,7 +7,7 @@ import WorkspaceContext from './WorkspaceContext';
 import type { IWorkspaceContextProps } from './workspace.types';
 
 export const WorkspaceProvider = ({ children }: { children?: ReactNode }) => {
-	const { isAuthenticated } = useAuth();
+	const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
 	const { data: user, isLoading: isUserLoading } = useCurrentUser(isAuthenticated);
 
 	const { data: workspaces, isLoading: isListLoading } = useWorkspaces({
@@ -17,11 +17,13 @@ export const WorkspaceProvider = ({ children }: { children?: ReactNode }) => {
 
 	const activeWorkspaceId = user?.current_workspace_id ?? '';
 	const activeWorkspace =
-		user?.current_workspace ?? workspaces?.find((item) => item.id === activeWorkspaceId) ?? null;
+		user?.current_workspace ??
+		workspaces?.find((item) => item.id === activeWorkspaceId) ??
+		null;
 
 	const switchWorkspace = useCallback(
 		async (id: string) => {
-			if (!id || id === activeWorkspaceId) return;
+			if (!id || String(id) === String(activeWorkspaceId)) return;
 			await switchMutation.mutateAsync({ workspace_id: id });
 		},
 		[switchMutation, activeWorkspaceId],
@@ -32,7 +34,7 @@ export const WorkspaceProvider = ({ children }: { children?: ReactNode }) => {
 			activeWorkspaceId,
 			activeWorkspace,
 			workspaces: workspaces ?? [],
-			isLoading: isAuthenticated && (isUserLoading || isListLoading),
+			isLoading: isAuthLoading || (isAuthenticated && (isUserLoading || isListLoading)),
 			isSwitching: switchMutation.isPending,
 			hasWorkspace: !!activeWorkspaceId,
 			switchWorkspace,
@@ -42,6 +44,7 @@ export const WorkspaceProvider = ({ children }: { children?: ReactNode }) => {
 			activeWorkspace,
 			workspaces,
 			isAuthenticated,
+			isAuthLoading,
 			isUserLoading,
 			isListLoading,
 			switchMutation.isPending,
@@ -50,6 +53,8 @@ export const WorkspaceProvider = ({ children }: { children?: ReactNode }) => {
 	);
 
 	return (
-		<WorkspaceContext.Provider value={value}>{children ?? <Outlet />}</WorkspaceContext.Provider>
+		<WorkspaceContext.Provider value={value}>
+			{children ?? <Outlet />}
+		</WorkspaceContext.Provider>
 	);
 };

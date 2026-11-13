@@ -1,7 +1,10 @@
 import { useEffect } from 'react';
 import { useReactFlow } from '@xyflow/react';
-import { useWorkflowEditor } from '../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from './useWorkflowEditor.hook';
 import { useRunWorkflow } from '../_hooks/useRunWorkflow.hook';
+import { useAutoLayout } from './useAutoLayout.hook';
+import { useAiPanelAvailability } from './useAiPanelAvailability.hook';
+import { useWorkflowShellStore } from '@/store/workflowShell.store';
 
 export const isTypingTarget = (target: EventTarget | null) => {
 	if (!(target instanceof HTMLElement)) return false;
@@ -10,16 +13,21 @@ export const isTypingTarget = (target: EventTarget | null) => {
 
 export const useEditorHotkeys = () => {
 	const { dispatch, state } = useWorkflowEditor();
-	const { runWorkflow, stopRun, stepNext } = useRunWorkflow();
+	const { runWorkflow, stopRun } = useRunWorkflow();
 	// Safe here: WorkflowEditorLayout mounts ReactFlowProvider above this page.
 	const reactFlow = useReactFlow();
+	const autoLayout = useAutoLayout();
+	const { isAiPanelAvailable } = useAiPanelAvailability();
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			const mod = event.metaKey || event.ctrlKey;
 
+			// A version preview covers the canvas; edits would land on the hidden draft.
+			if (useWorkflowShellStore.getState().previewVersionId) return;
+
 			// While the user is typing, the field owns the keyboard. Only Escape (close
-			// floating UI) and Cmd/Ctrl+Enter (run — an explicit gesture no input here
+			// floating UI) and Cmd/Ctrl+Enter (run: an explicit gesture no input here
 			// binds) still reach the canvas. Everything else belongs to the input:
 			// ⌘Z has to undo the text rather than the graph, and ⌘⇧V is "paste without
 			// formatting" inside a field, not the version diff viewer.
@@ -74,19 +82,28 @@ export const useEditorHotkeys = () => {
 			// AI Builder
 			if (mod && event.key.toLowerCase() === 'j' && !event.shiftKey) {
 				event.preventDefault();
-				dispatch({ type: 'TOGGLE_AI_PANEL' });
+				if (isAiPanelAvailable) dispatch({ type: 'TOGGLE_AI_PANEL' });
 				return;
+			}
+
+			if (event.altKey && !mod && !event.shiftKey) {
+				// Template library
+				if (event.code === 'KeyT') {
+					event.preventDefault();
+					dispatch({ type: 'SET_TEMPLATE_LIBRARY', open: true });
+					return;
+				}
+				if (event.code === 'KeyR') {
+					event.preventDefault();
+					dispatch({ type: 'TOGGLE_RUN_PANEL' });
+					return;
+				}
 			}
 
 			// Toggle panels
 			if (mod && event.shiftKey && event.key.toLowerCase() === 'l') {
 				event.preventDefault();
 				dispatch({ type: 'TOGGLE_LEFT_PANEL' });
-				return;
-			}
-			if (mod && event.shiftKey && event.key.toLowerCase() === 'r') {
-				event.preventDefault();
-				dispatch({ type: 'TOGGLE_RUN_PANEL' });
 				return;
 			}
 			if (mod && event.shiftKey && event.key.toLowerCase() === 'e') {
@@ -96,7 +113,7 @@ export const useEditorHotkeys = () => {
 			}
 
 			// Canvas search
-			if (mod && event.key.toLowerCase() === 'f') {
+			if (mod && !event.shiftKey && event.key.toLowerCase() === 'f') {
 				event.preventDefault();
 				dispatch({ type: 'SET_CANVAS_SEARCH', open: true });
 				return;
@@ -106,13 +123,6 @@ export const useEditorHotkeys = () => {
 			if (!isTypingTarget(event.target) && event.key === '?') {
 				event.preventDefault();
 				dispatch({ type: 'SET_SHORTCUTS_OPEN', open: true });
-				return;
-			}
-
-			// Template library
-			if (mod && event.shiftKey && event.key.toLowerCase() === 't') {
-				event.preventDefault();
-				dispatch({ type: 'SET_TEMPLATE_LIBRARY', open: true });
 				return;
 			}
 
@@ -130,37 +140,7 @@ export const useEditorHotkeys = () => {
 				return;
 			}
 
-			// Toggle step-through debug mode (Cmd+Shift+D)
-			if (mod && event.shiftKey && event.key.toLowerCase() === 'd') {
-				event.preventDefault();
-				dispatch({ type: 'SET_STEP_MODE', enabled: !state.ui.stepMode });
-				return;
-			}
-
-			// Step next (Space — when in step mode and waiting)
-			if (
-				!isTypingTarget(event.target) &&
-				event.key === ' ' &&
-				state.ui.stepMode &&
-				state.ui.waitingForStep
-			) {
-				event.preventDefault();
-				stepNext();
-				return;
-			}
-
-			// Breakpoint toggle (B key)
-			if (
-				!isTypingTarget(event.target) &&
-				event.key.toLowerCase() === 'b' &&
-				state.ui.selectedNodeId
-			) {
-				event.preventDefault();
-				dispatch({ type: 'TOGGLE_NODE_BREAKPOINT', id: state.ui.selectedNodeId });
-				return;
-			}
-
-			// Fit view (Cmd+Shift+F) — was advertised in the cheat sheet but never bound.
+			// Fit view (Cmd+Shift+F): was advertised in the cheat sheet but never bound.
 			if (mod && event.shiftKey && event.key.toLowerCase() === 'f') {
 				event.preventDefault();
 				reactFlow.fitView({ padding: 0.18, duration: 240 });
@@ -182,9 +162,14 @@ export const useEditorHotkeys = () => {
 			}
 
 			// Auto-layout
-			if (!isTypingTarget(event.target) && event.key.toLowerCase() === 'l') {
+			if (
+				!isTypingTarget(event.target) &&
+				!mod &&
+				!event.altKey &&
+				event.key.toLowerCase() === 'l'
+			) {
 				event.preventDefault();
-				dispatch({ type: 'AUTO_LAYOUT' });
+				autoLayout();
 				return;
 			}
 
@@ -211,7 +196,7 @@ export const useEditorHotkeys = () => {
 				return;
 			}
 
-			// Escape — close any open floating UI
+			// Escape: close any open floating UI
 			if (event.key === 'Escape') {
 				if (state.ui.canvasSearchOpen) {
 					dispatch({ type: 'SET_CANVAS_SEARCH', open: false, query: '' });
@@ -228,10 +213,10 @@ export const useEditorHotkeys = () => {
 		state.ui.selectedNodeIds,
 		state.ui.canvasSearchOpen,
 		state.ui.nodeDocOpen,
-		state.ui.stepMode,
-		state.ui.waitingForStep,
 		reactFlow,
+		autoLayout,
 		runWorkflow,
 		stopRun,
+		isAiPanelAvailable,
 	]);
 };

@@ -1,8 +1,8 @@
 // ============================================================
 // Workspace Endpoints
 // ------------------------------------------------------------
-// There is no workspace-avatar upload endpoint on the real backend
-// — `avatar` is a plain column with no dedicated route. `leave` is
+// There is no workspace-avatar upload endpoint on the real backend:
+// `avatar` is a plain column with no dedicated route. `leave` is
 // nested under the workspace root, not under `members`.
 // ============================================================
 export const WorkspaceEndpoints = {

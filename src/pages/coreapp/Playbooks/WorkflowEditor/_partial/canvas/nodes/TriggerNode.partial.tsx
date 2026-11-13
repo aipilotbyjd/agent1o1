@@ -1,3 +1,4 @@
+import { getOutputPorts } from '../../../_helper/outputPorts.helper';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import {
 	Folder,
@@ -19,17 +20,9 @@ import { motion } from 'framer-motion';
 import type { TCanvasNode } from '../../../_types/canvas.type';
 import { getNodeDefinition } from '../../../_helper/nodeCatalog.constants';
 import { getNodeCreditCost } from '../../../_helper/builder.constants';
-import {
-	useWorkflowTrigger,
-	useCreateWorkflowWebhook,
-	useCreateWorkflowPollingTrigger,
-	usePauseWorkflowTrigger,
-	useDeleteWorkflowTrigger,
-	useWorkflowTriggerDetail,
-	useResumeWorkflowTrigger,
-} from '@/api/modules/workflows/workflows.hooks';
+import { useWorkflowTrigger } from '@/api/modules/workflows/workflows.hooks';
 import { useWorkflowRouteParams } from '../../../_hooks/useWorkflowRouteParams.hook';
-import { useWorkflowEditor } from '../../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 import { useMemo } from 'react';
 import NodeFields from './NodeFields.partial';
 import { PortHandles } from './BaseNode.partial';
@@ -40,7 +33,10 @@ import NodeLoopToggle from './NodeLoopToggle.partial';
 import NodeAuthWarning from './NodeAuthWarning.partial';
 import NodeCredentialBadge from './NodeCredentialBadge.partial';
 import NodeHelpTip from './NodeHelpTip.partial';
+import NodeFlowTriggerToggle from './NodeFlowTriggerToggle.partial';
+import { useCredentialResolver } from '../../../_hooks/useCredentialResolver.hook';
 import TriggerDetails from './TriggerDetails.partial';
+import ApiNodeIcon from '../../library/NodeIcon.partial';
 import { tintStyle, getNodeAccentColor } from '../../library/library.util';
 
 const iconMap: Record<
@@ -90,6 +86,10 @@ const colorMap: Record<string, string> = {
 const DEFAULT_TRIGGER_COLOR = '#8b5cf6';
 
 const brandNameMap: Record<string, string> = {
+	manual_trigger: 'Manual',
+	schedule_trigger: 'Schedule',
+	webhook_trigger: 'Webhook',
+	polling_trigger: 'Polling',
 	'trigger.google_drive': 'Google Drive',
 	'trigger.google_sheets': 'Google Sheets',
 	'trigger.google_calendar': 'Google Calendar',
@@ -107,33 +107,36 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 	const { state, dispatch } = useWorkflowEditor();
 	const def = getNodeDefinition(data.defKey, data.definition);
 
-	/** Every output of each upstream node wired into this one — all become available inputs. */
+	/** Every output of each upstream node wired into this one: all become available inputs. */
 	// Memoized so React Flow's per-frame drag re-renders don't re-scan every edge/node.
 	const incoming = useMemo(
 		() =>
-			Array.from(new Set(state.edges.filter((edge) => edge.target === id).map((edge) => edge.source)))
-				.flatMap((sourceId) => {
-					const sourceNode = state.nodes.find((node) => node.id === sourceId);
-					if (!sourceNode) return [];
-					const sourceDef = getNodeDefinition(sourceNode.data.defKey, sourceNode.data.definition);
-					const sourceOutputs =
-						sourceDef?.outputs && sourceDef.outputs.length > 0
-							? sourceDef.outputs
-							: [{ id: 'out', name: 'output', type: 'any' as const }];
-					const sourceLabel = sourceNode.data.label || sourceDef?.label || 'Node';
-					const sourceColor = getNodeAccentColor(
-						sourceId,
-						sourceNode.data.color as string | undefined,
-						sourceDef?.colorHex,
-					);
-					return sourceOutputs.map((port) => ({
-						id: `${sourceId}:${port.id}`,
-						sourceId,
-						port,
-						sourceLabel,
-						sourceColor,
-					}));
-				}),
+			Array.from(
+				new Set(
+					state.edges.filter((edge) => edge.target === id).map((edge) => edge.source),
+				),
+			).flatMap((sourceId) => {
+				const sourceNode = state.nodes.find((node) => node.id === sourceId);
+				if (!sourceNode) return [];
+				const sourceDef = getNodeDefinition(
+					sourceNode.data.defKey,
+					sourceNode.data.definition,
+				);
+				const sourceOutputs = getOutputPorts(sourceDef, sourceNode.data);
+				const sourceLabel = sourceNode.data.label || sourceDef?.label || 'Node';
+				const sourceColor = getNodeAccentColor(
+					sourceId,
+					sourceNode.data.color as string | undefined,
+					sourceDef?.colorHex,
+				);
+				return sourceOutputs.map((port) => ({
+					id: `${sourceId}:${port.id}`,
+					sourceId,
+					port,
+					sourceLabel,
+					sourceColor,
+				}));
+			}),
 		[state.edges, state.nodes, id],
 	);
 	const nodeIndex = state.nodes.findIndex((node) => node.id === id) + 1;
@@ -142,105 +145,68 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 	const credentialId = credentialField
 		? (data.values[credentialField.key] as string | undefined)
 		: undefined;
-	const hasError = Boolean(def?.requiresCredential) && !credentialId;
+	const { isMissing: isCredentialMissing } = useCredentialResolver();
+	const hasError = isCredentialMissing(def, data.values);
 	const brand = brandNameMap[data.defKey] || 'Trigger';
-	const color = colorMap[data.defKey] || DEFAULT_TRIGGER_COLOR;
+	// Catalog trigger nodes (manual/schedule/webhook/polling) take their colour
+	// and icon from the API like every other node, so the card matches the
+	// Triggers & Events panel; a colour picked on the node still wins. The
+	// maps above only cover the old static `trigger.*` demo definitions.
+	const color =
+		colorMap[data.defKey] ??
+		getNodeAccentColor(
+			id,
+			data.color as string | undefined,
+			def?.colorHex ?? DEFAULT_TRIGGER_COLOR,
+		);
 	const creditCost = getNodeCreditCost(def);
-	const NodeIcon = iconMap[data.defKey] || Webhook;
+	const NodeIcon = iconMap[data.defKey];
 
 	const { workspaceId, workflowId } = useWorkflowRouteParams();
-	const { data: triggerData } = useWorkflowTrigger(workspaceId, workflowId);
+	const { data: workflowTriggers } = useWorkflowTrigger(workspaceId, workflowId);
 
-	const createWebhook = useCreateWorkflowWebhook(workspaceId);
-	const createPolling = useCreateWorkflowPollingTrigger(workspaceId);
-	const pauseTrigger = usePauseWorkflowTrigger(workspaceId);
-	const deleteTrigger = useDeleteWorkflowTrigger(workspaceId);
-	const resumeTrigger = useResumeWorkflowTrigger(workspaceId);
-
-	// useWorkflowTrigger always yields an array: this workflow's triggers, possibly none.
-	const isTriggerActive = useMemo(
-		() => triggerData.length > 0 && triggerData[0]?.is_active !== false,
-		[triggerData],
+	// A trigger node owns the `triggers` row the backend creates for it on
+	// publish (`TriggerNodeSync`): the canvas node id is that row's node key.
+	// A manual trigger has no row: it only marks where a manual run starts.
+	const isManualTrigger = data.defKey === 'manual_trigger';
+	const triggerDetail = useMemo(
+		() => workflowTriggers.find((trigger) => trigger.trigger_node_key === id),
+		[workflowTriggers, id],
 	);
-
-	const triggerId = useMemo(() => String(triggerData[0]?.id ?? ''), [triggerData]);
-
-	const { data: triggerDetail } = useWorkflowTriggerDetail(workspaceId, workflowId, triggerId);
+	const isTriggerActive = triggerDetail?.is_active === true;
 
 	const baseShadow = '0 1px 2px rgba(24,24,27,0.04), 0 12px 28px -8px rgba(24,24,27,0.14)';
 	const hoverShadow = '0 2px 4px rgba(24,24,27,0.05), 0 22px 44px -10px rgba(24,24,27,0.22)';
 
 	return (
 		<motion.div
-			// Pinned flat while dragging — see BaseNode for why the hover lift has to go.
+			// Pinned flat while dragging: see BaseNode for why the hover lift has to go.
 			animate={dragging ? { boxShadow: baseShadow, y: 0 } : { boxShadow: baseShadow }}
 			whileHover={dragging ? undefined : { y: -2, boxShadow: hoverShadow }}
 			transition={{ duration: dragging ? 0 : 0.18 }}
 			className={[
-				'group relative w-[320px] rounded-[26px] border p-1.5 text-left ring-1 ring-inset ring-white/60 dark:ring-white/[0.03]',
+				'group relative w-[320px] rounded-[26px] border p-1.5 text-left ring-1 ring-white/60 ring-inset dark:ring-white/[0.03]',
 				'bg-white text-zinc-950 dark:bg-zinc-950 dark:text-zinc-100',
 				selected
-					? 'border-primary-500 ring-2 ring-primary-500/15 dark:border-primary-500'
+					? 'border-primary-500 ring-primary-500/15 dark:border-primary-500 ring-2'
 					: 'border-zinc-200 dark:border-zinc-800',
 			].join(' ')}>
-			{/* Top Bar */}
-			<div className='flex items-center justify-between px-3 py-2'>
-				<div className='flex items-center gap-1 text-[10px] font-semibold text-zinc-500'>
-					Activate as flow trigger{' '}
+			{/* Top Bar: Gumloop's "Activate as flow trigger". A manual trigger has no
+			    switch: it is simply where a manual run starts. */}
+			{isManualTrigger ? (
+				<div className='flex items-center gap-1 px-3 py-2 text-[10px] font-semibold text-zinc-500'>
+					Starts on Run{' '}
 					<NodeHelpTip
 						size={11}
-						text='When on, this node starts the workflow automatically on incoming events instead of waiting for a manual run.'
+						text='This workflow starts here when someone clicks Run or calls the run API.'
 					/>
 				</div>
-				<div className='flex items-center gap-2'>
-					<span className='text-[10px] font-semibold text-zinc-400'>
-						{isTriggerActive ? 'Yes' : 'No'}
-					</span>
-					<button
-						type='button'
-						aria-label='Toggle flow trigger'
-						onClick={() => {
-							if (!workspaceId || !workflowId) return;
-							if (isTriggerActive) {
-								const triggerId = triggerData[0]?.id ?? null;
-								if (triggerId) {
-									pauseTrigger.mutate(triggerId);
-								}
-							} else {
-								const triggerId = triggerData[0]?.id ?? null;
-								if (triggerId) {
-									resumeTrigger.mutate(triggerId);
-								} else {
-									if (
-										data.defKey.includes('time') ||
-										data.defKey.includes('schedule')
-									) {
-										createPolling.mutate({ workflowId });
-									} else {
-										createWebhook.mutate({ workflowId });
-									}
-								}
-							}
-						}}
-						disabled={
-							createWebhook.isPending ||
-							createPolling.isPending ||
-							pauseTrigger.isPending ||
-							resumeTrigger.isPending ||
-							deleteTrigger.isPending
-						}
-						className={[
-							'flex h-4 w-7 cursor-pointer items-center rounded-full p-0.5 transition-all duration-200',
-							isTriggerActive
-								? 'justify-end bg-primary-400'
-								: 'justify-start bg-zinc-200 dark:bg-zinc-700',
-						].join(' ')}>
-						<div className='h-3 w-3 animate-none rounded-full bg-white shadow-xs' />
-					</button>
-				</div>
-			</div>
+			) : (
+				// Dedicated trigger nodes are on unless switched off (`activate: false`).
+				<NodeFlowTriggerToggle nodeId={id} active={data.values.activate !== false} />
+			)}
 
-			{hasError && <NodeAuthWarning />}
+			{hasError && <NodeAuthWarning nodeId={id} />}
 
 			{/* Main Content Area */}
 			<div
@@ -252,7 +218,11 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 					<div
 						className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-sm'
 						style={tintStyle(color)}>
-						<NodeIcon size={17} strokeWidth={2.25} />
+						{NodeIcon ? (
+							<NodeIcon size={17} strokeWidth={2.25} />
+						) : (
+							<ApiNodeIcon icon={def?.icon} size={17} />
+						)}
 					</div>
 
 					<div className='min-w-0 flex-1'>
@@ -262,12 +232,12 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 									{brand}
 								</span>
 								{def?.description && (
-								<NodeHelpTip
-									size={10}
-									text={def.description}
-									className='text-primary-500'
-								/>
-							)}
+									<NodeHelpTip
+										size={10}
+										text={def.description}
+										className='text-primary-500'
+									/>
+								)}
 								{creditCost > 0 && (
 									<span
 										title={`Estimated ${creditCost} credit${creditCost === 1 ? '' : 's'} per run`}
@@ -289,7 +259,7 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 										event.stopPropagation();
 										dispatch({ type: 'TOGGLE_NODE_COLLAPSED', id });
 									}}
-									className='nodrag flex h-5 w-5 items-center justify-center rounded text-zinc-400 transition hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/40 dark:hover:text-primary-400'>
+									className='nodrag hover:bg-primary-100 hover:text-primary-900 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-5 w-5 items-center justify-center rounded text-zinc-400 transition'>
 									{collapsed ? (
 										<ChevronsUpDown size={12} />
 									) : (
@@ -312,7 +282,7 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 
 				{!collapsed && credentialId && (
 					<div className='mt-2'>
-						<NodeCredentialBadge credentialId={credentialId} />
+						<NodeCredentialBadge nodeId={id} credentialId={credentialId} />
 					</div>
 				)}
 
@@ -321,39 +291,30 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 						<NodeFields nodeId={id} fields={def.fields} values={data.values} />
 					</div>
 				)}
-					{!!triggerDetail && (
-						<div className='mt-3 flex flex-col gap-2 border-t border-zinc-100 pt-2.5 dark:border-zinc-800'>
-							<TriggerDetails workspaceId={workspaceId} trigger={triggerDetail} />
-							<div className='mt-1 flex items-center justify-between'>
-								<div
-									className={`flex items-center gap-1.5 text-[10px] font-semibold ${isTriggerActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400 dark:text-zinc-500'}`}>
-									<span
-										className={`h-1.5 w-1.5 rounded-full ${isTriggerActive ? 'animate-pulse bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-600'}`}
-									/>
-									<span>
-										{isTriggerActive
-											? 'Listening for events...'
+				{!!triggerDetail && (
+					<div className='mt-3 flex flex-col gap-2 border-t border-zinc-100 pt-2.5 dark:border-zinc-800'>
+						<TriggerDetails workspaceId={workspaceId} trigger={triggerDetail} />
+						<div className='mt-1 flex items-center justify-between'>
+							<div
+								className={`flex items-center gap-1.5 text-[10px] font-semibold ${isTriggerActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400 dark:text-zinc-500'}`}>
+								<span
+									className={`h-1.5 w-1.5 rounded-full ${isTriggerActive ? 'animate-pulse bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-600'}`}
+								/>
+								<span>
+									{isTriggerActive
+										? 'Listening for events...'
+										: triggerDetail.consecutive_failure_count > 0
+											? 'Switched off after repeated failures'
 											: 'Trigger paused'}
-									</span>
-								</div>
-								<button
-									type='button'
-									onClick={() => {
-										if (triggerId) {
-											deleteTrigger.mutate(triggerId);
-										}
-									}}
-									disabled={deleteTrigger.isPending}
-									className='cursor-pointer text-[9px] font-semibold text-rose-500 hover:text-rose-600 dark:hover:text-rose-400'>
-									Delete Configuration
-								</button>
+								</span>
 							</div>
 						</div>
-					)}
-				</div>
+					</div>
+				)}
+			</div>
 
-			{/* Input Handle */}
-			{def && (
+			{/* Input Handle: a trigger node starts the flow, so API trigger nodes have none */}
+			{def && def.inputs.length > 0 && (
 				<Handle
 					id={def.inputs && def.inputs.length > 0 ? def.inputs[0].id : 'in'}
 					type='target'
@@ -368,14 +329,12 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 						width: 12,
 						zIndex: 10,
 					}}
-					className='transition-transform duration-150 hover:scale-125 shadow-sm rounded-full cursor-crosshair dark:bg-zinc-900 dark:border-zinc-800'
+					className='cursor-crosshair rounded-full shadow-sm transition-transform duration-150 hover:scale-125 dark:border-zinc-800 dark:bg-zinc-900'
 				/>
 			)}
 
 			{/* Output Handles */}
-			{def && (
-				<PortHandles ports={def.outputs ?? []} type='source' color={color} />
-			)}
+			{def && <PortHandles ports={getOutputPorts(def, data)} type='source' color={color} />}
 
 			{/* Node index badge */}
 			<div className='absolute -bottom-2.5 left-1/2 z-10 flex h-5 w-5 -translate-x-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white text-[9px] font-semibold text-zinc-500 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'>
@@ -392,7 +351,12 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 			)}
 
 			{selected && def && (
-				<NodeIOPanel nodeId={id} nodeColor={color} incoming={incoming} outputs={def.outputs ?? []} />
+				<NodeIOPanel
+					nodeId={id}
+					nodeColor={color}
+					incoming={incoming}
+					outputs={getOutputPorts(def, data)}
+				/>
 			)}
 
 			{selected && (
@@ -403,7 +367,6 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 					credentialId={credentialId ? String(credentialId) : undefined}
 				/>
 			)}
-
 		</motion.div>
 	);
 };

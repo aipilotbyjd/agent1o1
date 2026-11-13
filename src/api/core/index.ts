@@ -7,6 +7,7 @@ export * from './auth-events';
 export * from './query-client';
 export * from './keys';
 export * from './resource';
+export * from './pagination';
 export {
 	getAccessToken,
 	getTokenExpiry,
@@ -14,6 +15,6 @@ export {
 	clearTokens,
 	isRememberMe,
 	isTokenExpired,
-	hasValidToken,
 	TOKEN_CHANGE_EVENT,
 } from './token-manager';
+export * from './oauth-popup';

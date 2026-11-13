@@ -6,9 +6,18 @@ import { useCreateFolder, useDeleteFolder, useUpdateFolder } from '@/api/modules
 import { useConfirm } from '@/context/confirm';
 import type { TFolder } from '@/types/folder.type';
 import Button from '@/components/ui/Button';
-import Modal, { ModalHeader, ModalBody, ModalFooter, ModalFooterChild } from '@/components/ui/Modal';
+import Modal, {
+	ModalHeader,
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+} from '@/components/ui/Modal';
 import Input from '@/components/form/Input';
-import { FOLDER_COLORS, type TAgentFolderFilter, type TFlatFolder } from '../_helper/agentFolders.helper';
+import {
+	FOLDER_COLORS,
+	type TAgentFolderFilter,
+	type TFlatFolder,
+} from '../_helper/agentFolders.helper';
 
 const chipBase =
 	'flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-3.5 text-xs font-bold transition-all';
@@ -71,7 +80,11 @@ const AgentFolderBar = ({
 		}
 		try {
 			if (editing === 'new') {
-				const created = await createFolder.mutateAsync({ type: 'agent', name: trimmed, color });
+				const created = await createFolder.mutateAsync({
+					type: 'agent',
+					name: trimmed,
+					color,
+				});
 				notify.success(`Folder "${created.name}" created.`);
 				onSelect(created.id);
 			} else if (editing) {
@@ -140,7 +153,11 @@ const AgentFolderBar = ({
 								className='flex cursor-pointer items-center gap-1.5'>
 								<Folder
 									size={13}
-									style={isActive ? undefined : { color: folder.color || FOLDER_COLORS[0] }}
+									style={
+										isActive
+											? undefined
+											: { color: folder.color || FOLDER_COLORS[0] }
+									}
 								/>
 								<span>{folder.label}</span>
 								<span className='opacity-60'>{counts[folder.id] ?? 0}</span>
@@ -165,13 +182,16 @@ const AgentFolderBar = ({
 				<button
 					type='button'
 					onClick={openCreate}
-					className={`${chipBase} border border-dashed border-zinc-300 text-slate-500 hover:border-primary-400 hover:text-primary-600 dark:border-zinc-700 dark:text-zinc-400`}>
+					className={`${chipBase} hover:border-primary-400 hover:text-primary-600 border border-dashed border-zinc-300 text-slate-500 dark:border-zinc-700 dark:text-zinc-400`}>
 					<FolderPlus size={13} />
 					New folder
 				</button>
 			</div>
 
-			<Modal isOpen={editing !== null} setIsOpen={(open) => !open && setEditing(null)} size='sm'>
+			<Modal
+				isOpen={editing !== null}
+				setIsOpen={(open) => !open && setEditing(null)}
+				size='sm'>
 				<ModalHeader setIsOpen={() => setEditing(null)}>
 					<div className='flex items-center gap-3'>
 						<div className='bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400 flex h-9 w-9 items-center justify-center rounded-xl'>
@@ -201,7 +221,9 @@ const AgentFolderBar = ({
 									dimension='default'
 								/>
 								{nameError && (
-									<p className='mt-1.5 text-xs font-semibold text-red-500'>{nameError}</p>
+									<p className='mt-1.5 text-xs font-semibold text-red-500'>
+										{nameError}
+									</p>
 								)}
 							</div>
 							<div>

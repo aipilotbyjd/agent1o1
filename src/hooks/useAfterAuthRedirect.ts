@@ -12,7 +12,7 @@ export const AFTER_AUTH_PATH = pages.choose.to;
 
 const DASHBOARD_PATH = (pages.workspace.subPages as TPages).dashboard.to;
 
-/** Onboarding state is advisory — a lookup failure here must never strand a
+/** Onboarding state is advisory: a lookup failure here must never strand a
  *  user who just authenticated successfully, so it resolves to `null`
  *  (nothing to redirect for) rather than throwing. */
 const resolveWelcomePath = async (queryClient: QueryClient): Promise<string | null> => {
@@ -28,7 +28,7 @@ const resolveWelcomePath = async (queryClient: QueryClient): Promise<string | nu
 };
 
 /** Resolves the current user's workspace dashboard, or `null` if they don't
- *  have one yet (or the lookup fails) — either case falls through to the
+ *  have one yet (or the lookup fails), either case falls through to the
  *  caller's own fallback. */
 const resolveWorkspacePath = async (queryClient: QueryClient): Promise<string | null> => {
 	try {

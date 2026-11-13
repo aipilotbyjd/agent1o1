@@ -1,3 +1,5 @@
+import { getOutputPorts } from '../../_helper/outputPorts.helper';
+import { dynamicInputPorts } from '../../_helper/dynamicInputs.helper';
 import {
 	applyNodeChanges,
 	Background,
@@ -14,7 +16,7 @@ import {
 	type OnConnectEnd,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
 	Bot,
@@ -31,7 +33,7 @@ import {
 } from 'lucide-react';
 import { useCanvasDrop } from '../../_hooks/useCanvasDrop.hook';
 import { isTypingTarget } from '../../_hooks/useEditorHotkeys.hook';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import BaseNode from './nodes/BaseNode.partial';
 import InputNode from './nodes/InputNode.partial';
 import OutputNode from './nodes/OutputNode.partial';
@@ -74,9 +76,11 @@ const quickAddNodes = [
 
 const getPortType = (node: TCanvasNode | undefined, portId?: string | null): TPortType => {
 	const def = node ? getNodeDefinition(node.data.defKey, node.data.definition) : undefined;
-	const port = [...(def?.inputs ?? []), ...(def?.outputs ?? [])].find(
-		(item) => item.id === portId,
-	);
+	const port = [
+		...(def?.inputs ?? []),
+		...dynamicInputPorts(def, node?.data.dynamicInputKeys),
+		...(node ? getOutputPorts(def, node.data) : []),
+	].find((item) => item.id === portId);
 	return port?.type ?? 'any';
 };
 
@@ -92,6 +96,21 @@ const getEdgeLabel = (
 	const targetType = getPortType(byId.get(target), targetHandle);
 	const type = sourceType === 'any' ? targetType : sourceType;
 	return type === 'any' ? 'flow' : type;
+};
+
+/**
+ * A node the store rebuilt (its data changed, e.g. a keystroke in one of its
+ * fields) arrives without React Flow's measurement, so React Flow would hide
+ * it with `visibility: hidden` until it re-measures, which also takes focus
+ * out of whatever field the user is typing in. Its size hasn't changed, so the
+ * last measurement is carried over; React Flow still re-measures if it has.
+ */
+const keepMeasurements = (next: TCanvasNode[], previous: TCanvasNode[]): TCanvasNode[] => {
+	const measuredById = new Map(previous.map((node) => [node.id, node.measured]));
+	return next.map((node) => {
+		const measured = measuredById.get(node.id);
+		return measured && !node.measured ? { ...node, measured } : node;
+	});
 };
 
 const Canvas = () => {
@@ -114,7 +133,6 @@ const Canvas = () => {
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (event.code !== 'Space' || isTypingTarget(event.target) || event.repeat) return;
-			if (state.ui.stepMode && state.ui.waitingForStep) return;
 			event.preventDefault();
 			setSpacePressed(true);
 		};
@@ -127,7 +145,7 @@ const Canvas = () => {
 			window.removeEventListener('keydown', onKeyDown);
 			window.removeEventListener('keyup', onKeyUp);
 		};
-	}, [state.ui.stepMode, state.ui.waitingForStep]);
+	}, []);
 
 	const { onDragOver, onDragLeave, onDrop } = useCanvasDrop((event) =>
 		reactFlow.screenToFlowPosition({ x: event.clientX, y: event.clientY }),
@@ -152,10 +170,10 @@ const Canvas = () => {
 	// the ResizeObserver reports back. Rebuilding every node object on each selection
 	// change or drag frame therefore made the whole canvas blink out for ~120ms.
 	// Each node keeps its previous object unless one of its own inputs changed.
-	const nodeIdentityCache = useRef(new Map<string, TCanvasNode>());
-	const nodeSourceCache = useRef(new Map<string, TCanvasNode>());
+	const [nodeIdentityCache] = useState(() => new Map<string, TCanvasNode>());
+	const [nodeSourceCache] = useState(() => new Map<string, TCanvasNode>());
 	const storeNodes = useMemo(() => {
-		const cache = nodeIdentityCache.current;
+		const cache = nodeIdentityCache;
 		const seen = new Set<string>();
 		const result = state.nodes.map((node) => {
 			seen.add(node.id);
@@ -171,7 +189,7 @@ const Canvas = () => {
 				cached.position === node.position &&
 				cached.data.isActiveRunNode === isActiveRunNode &&
 				cached.data.validationIssues === validationIssues &&
-				nodeSourceCache.current.get(node.id) === node
+				nodeSourceCache.get(node.id) === node
 			) {
 				return cached;
 			}
@@ -186,17 +204,24 @@ const Canvas = () => {
 				},
 			} as TCanvasNode;
 			cache.set(node.id, next);
-			nodeSourceCache.current.set(node.id, node);
+			nodeSourceCache.set(node.id, node);
 			return next;
 		});
 		cache.forEach((_, id) => {
 			if (!seen.has(id)) {
 				cache.delete(id);
-				nodeSourceCache.current.delete(id);
+				nodeSourceCache.delete(id);
 			}
 		});
 		return result;
-	}, [issuesByNode, state.nodes, state.run.currentNodeId, state.ui.selectedNodeIds]);
+	}, [
+		issuesByNode,
+		nodeIdentityCache,
+		nodeSourceCache,
+		state.nodes,
+		state.run.currentNodeId,
+		state.ui.selectedNodeIds,
+	]);
 
 	// React Flow owns node positions while the user is interacting; the reducer store
 	// stays the source of truth and receives the move once the drag ends. Feeding
@@ -204,7 +229,9 @@ const Canvas = () => {
 	// what stops the canvas from blinking.
 	const [flowNodes, setFlowNodes] = useState<TCanvasNode[]>(() => storeNodes);
 	const flowNodesRef = useRef(flowNodes);
-	flowNodesRef.current = flowNodes;
+	useLayoutEffect(() => {
+		flowNodesRef.current = flowNodes;
+	});
 	const isDraggingRef = useRef(false);
 
 	// Re-seed from the store whenever it changes for a reason other than an in-flight
@@ -212,7 +239,9 @@ const Canvas = () => {
 	// that lands mid-drag is remembered and applied once the drag finishes, so an AI
 	// builder edit during a drag is not silently dropped.
 	const storeNodesRef = useRef(storeNodes);
-	storeNodesRef.current = storeNodes;
+	useLayoutEffect(() => {
+		storeNodesRef.current = storeNodes;
+	});
 	const pendingReseedRef = useRef(false);
 	useEffect(() => {
 		if (isDraggingRef.current) {
@@ -220,19 +249,21 @@ const Canvas = () => {
 			return;
 		}
 		pendingReseedRef.current = false;
-		setFlowNodes(storeNodes);
+		setFlowNodes((previous) => keepMeasurements(storeNodes, previous));
 	}, [storeNodes]);
 
 	// Mirrors the current selection so onNodesChange can apply select-diffs without
 	// depending on (and re-creating the callback on) selection state itself.
 	const selectionRef = useRef<string[]>([]);
-	selectionRef.current = state.ui.selectedNodeIds;
+	useLayoutEffect(() => {
+		selectionRef.current = state.ui.selectedNodeIds;
+	});
 
 	const onNodesChange = useCallback(
 		(changes: NodeChange<TCanvasNode>[]) => {
 			// Hand React Flow's own changes straight back. applyNodeChanges mutates only
-			// the nodes a change names, so every other node keeps its object — and its
-			// measurement — instead of being rebuilt and hidden while it is re-measured.
+			// the nodes a change names, so every other node keeps its object (and its
+			// measurement) instead of being rebuilt and hidden while it is re-measured.
 			setFlowNodes((previous) => applyNodeChanges(changes, previous));
 
 			const selectChanges: { id: string; selected: boolean }[] = [];
@@ -355,7 +386,7 @@ const Canvas = () => {
 	);
 
 	// Clear drag positions when drag ends and sync every moved node back to the
-	// store — when multiple nodes are selected, React Flow moves the whole group
+	// store, when multiple nodes are selected, React Flow moves the whole group
 	// together and each one needs its own MOVE_NODE, not just the node the mouse
 	// grabbed.
 	const handleDragStop = useCallback(() => {
@@ -363,7 +394,7 @@ const Canvas = () => {
 		didDragNodeRef.current = false;
 
 		// Write the moved nodes back to the store. Reading from a ref keeps these
-		// dispatches out of a state updater — doing it inside one fired every move
+		// dispatches out of a state updater: doing it inside one fired every move
 		// twice under StrictMode, which React double-invokes.
 		const storePositions = new Map(state.nodes.map((node) => [node.id, node.position]));
 		let movedAny = false;
@@ -378,7 +409,7 @@ const Canvas = () => {
 		// A move re-seeds via the storeNodes effect. If nothing moved, that effect will
 		// not fire, so apply any store change that arrived during the drag by hand.
 		if (!movedAny && pendingReseedRef.current) {
-			setFlowNodes(storeNodesRef.current);
+			setFlowNodes((previous) => keepMeasurements(storeNodesRef.current, previous));
 		}
 		pendingReseedRef.current = false;
 	}, [dispatch, state.nodes]);
@@ -412,7 +443,7 @@ const Canvas = () => {
 					didDragNodeRef.current = true;
 					isDraggingRef.current = true;
 					// Dragging a node already inside a multi-selection moves the whole
-					// group — only collapse to a single selection when grabbing a node
+					// group, only collapse to a single selection when grabbing a node
 					// that isn't part of the current selection.
 					if (!state.ui.selectedNodeIds.includes(node.id)) {
 						dispatch({ type: 'SELECT_NODE', id: node.id });
@@ -439,7 +470,7 @@ const Canvas = () => {
 					if (didDragNodeRef.current) {
 						didDragNodeRef.current = false;
 					}
-					// Selection itself is handled by onNodesChange's 'select' diffs —
+					// Selection itself is handled by onNodesChange's 'select' diffs:
 					// React Flow already respects multiSelectionKeyCode there.
 				}}
 				onEdgesDelete={(deletedEdges) =>
@@ -509,7 +540,7 @@ const Canvas = () => {
 								dispatch({ type: 'SET_COMMAND_PALETTE', open: true });
 								setContextMenu(null);
 							}}
-							className='border-primary-100 bg-primary-50 text-primary-700 hover:bg-primary-100 dark:border-primary-500/20 dark:bg-primary-400/10 dark:text-primary-100 dark:hover:bg-primary-500/15 mt-1 flex w-full items-center gap-3 rounded-lg border px-2.5 py-2 text-left text-sm font-semibold transition'>
+							className='border-primary-100 bg-primary-50 text-primary-700 hover:bg-primary-100 dark:border-primary-500/20 dark:bg-primary-400/10 dark:text-primary-200 dark:hover:bg-primary-500/15 mt-1 flex w-full items-center gap-3 rounded-lg border px-2.5 py-2 text-left text-sm font-semibold transition'>
 							<span className='bg-primary-200/50 dark:bg-primary-400/15 flex h-8 w-8 items-center justify-center rounded-lg'>
 								<Zap size={15} className='text-primary-600 dark:text-primary-400' />
 							</span>

@@ -7,9 +7,11 @@ export const RunEndpoints = {
 	detail: run,
 	cancel: (ws: string, id: string) => `${run(ws, id)}/cancel`,
 	retry: (ws: string, id: string) => `${run(ws, id)}/retry`,
+	cost: (ws: string, id: string) => `${run(ws, id)}/cost`,
 
 	nodeRuns: (ws: string, runId: string) => `${run(ws, runId)}/node-runs`,
-	nodeRun: (ws: string, runId: string, nodeRunId: string) => `${run(ws, runId)}/node-runs/${nodeRunId}`,
+	nodeRun: (ws: string, runId: string, nodeRunId: string) =>
+		`${run(ws, runId)}/node-runs/${nodeRunId}`,
 
 	decideApproval: (ws: string, runId: string, approvalId: string) =>
 		`${run(ws, runId)}/approvals/${approvalId}/decide`,

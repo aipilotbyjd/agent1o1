@@ -10,7 +10,7 @@ import { create } from 'zustand';
  * session it created so the aside's list picks it up.
  */
 type TAgentChatState = {
-	/** Agent open in the builder — whose sessions the aside lists. */
+	/** Agent open in the builder, whose sessions the aside lists. */
 	agentId: string | null;
 	/** Session on screen. Null for a chat whose first message hasn't been sent. */
 	sessionId: string | null;
@@ -21,7 +21,7 @@ type TAgentChatState = {
 	setAgentId: (id: string | null) => void;
 	/** Open an existing session; the builder replaces the transcript with it. */
 	openSession: (id: string) => void;
-	/** Start a fresh chat — the session itself is created by the next message. */
+	/** Start a fresh chat: the session itself is created by the next message. */
 	newSession: () => void;
 };
 
@@ -30,7 +30,7 @@ export const useAgentChatStore = create<TAgentChatState>((set) => ({
 	sessionId: null,
 	isSending: false,
 	setIsSending: (isSending) => set({ isSending }),
-	// Switching agents abandons the open session — a session belongs to one agent.
+	// Switching agents abandons the open session: a session belongs to one agent.
 	setAgentId: (agentId) =>
 		set((state) => (state.agentId === agentId ? state : { agentId, sessionId: null })),
 	openSession: (sessionId) => set({ sessionId }),

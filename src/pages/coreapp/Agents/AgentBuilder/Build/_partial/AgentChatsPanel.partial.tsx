@@ -1,5 +1,5 @@
 import { Loader2, MessageSquare } from 'lucide-react';
-import { useAgentSessions } from '@/api/modules/agents';
+import { useAgentSessions } from '@/api/modules/agent-sessions';
 
 type TProps = {
 	ws: string;

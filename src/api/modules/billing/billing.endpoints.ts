@@ -15,6 +15,7 @@ export const BillingEndpoints = {
 	creditPacksCheckout: (ws: string) => `${base(ws)}/credit-packs/checkout`,
 
 	credits: (ws: string) => `${base(ws)}/credits`,
+	usageInsights: (ws: string) => `${base(ws)}/usage-insights`,
 
 	overage: (ws: string) => `${base(ws)}/overage`,
 	creditNotifications: (ws: string) => `${base(ws)}/credit-notifications`,

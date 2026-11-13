@@ -9,6 +9,7 @@ import {
 	type TResetPasswordDto,
 	type TChangePasswordDto,
 	type TVerifyTwoFactorDto,
+	type TEnableTwoFactorDto,
 	type TConfirmTwoFactorDto,
 	type TDisableTwoFactorDto,
 	type TRegenerateRecoveryCodesDto,
@@ -20,7 +21,7 @@ import { AuthService } from './auth.service';
 // ============================================================
 // Auth Hooks
 // ------------------------------------------------------------
-// Auth owns no query cache of its own — every mutation here either
+// Auth owns no query cache of its own: every mutation here either
 // writes the access token or updates the `user` module's cache
 // directly. These stay hand-written rather than going through the
 // CRUD resource factory, which targets workspace-scoped
@@ -30,9 +31,11 @@ import { AuthService } from './auth.service';
 const applySuccessfulLogin = (
 	qc: ReturnType<typeof useQueryClient>,
 	data: { user: unknown; tokens: { access_token: string; expires_in: number } },
-	rememberMe?: boolean,
+	// Sign-up and social sign-in have no checkbox: they keep the user signed in, as login's
+	// default-ticked "remember me" does.
+	rememberMe: boolean = true,
 ) => {
-	setToken(data.tokens.access_token, data.tokens.expires_in, !!rememberMe);
+	setToken(data.tokens.access_token, data.tokens.expires_in, rememberMe);
 	qc.setQueryData(userKeys.current(), data.user);
 };
 
@@ -182,7 +185,7 @@ export const useAuthEvents = (params?: { page?: number; per_page?: number }) =>
 
 export const useEnableTwoFactor = () =>
 	useMutation({
-		mutationFn: () => AuthService.twoFactorEnable(),
+		mutationFn: (payload: TEnableTwoFactorDto) => AuthService.twoFactorEnable(payload),
 		meta: { errorMessage: 'Failed to start two-factor setup' },
 	});
 

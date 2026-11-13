@@ -1,6 +1,6 @@
 import { axiosClient } from '@/api/client';
-import { unwrapKey } from '@/api/core';
-import type { TApiResponse, TListParams } from '@/api/core';
+import { unwrapKey, fetchAllPages, unwrapCursorPage } from '@/api/core';
+import type { TApiResponse, TListParams, TCursorPaginationMeta } from '@/api/core';
 import type {
 	TAgent,
 	TAgentDraft,
@@ -14,9 +14,13 @@ import { AgentEndpoints as E } from './agents.endpoints';
 
 export const AgentService = {
 	list: (ws: string, _params?: TListParams, signal?: AbortSignal) =>
-		axiosClient
-			.get<TApiResponse<{ agents: TAgent[] }>>(E.list(ws), { signal })
-			.then(unwrapKey<TAgent[]>('agents')),
+		fetchAllPages((page) =>
+			axiosClient
+				.get<
+					TApiResponse<TAgent[]> & { meta: TCursorPaginationMeta }
+				>(E.list(ws), { params: page, signal })
+				.then(unwrapCursorPage<TAgent>),
+		),
 
 	detail: (ws: string, id: string, signal?: AbortSignal) =>
 		axiosClient
@@ -43,7 +47,26 @@ export const AgentService = {
 			.patch<TApiResponse<{ agent: TAgent }>>(E.update(ws, id), payload)
 			.then(unwrapKey<TAgent>('agent')),
 
+	// Soft delete: the agent moves to the trash, where it can be restored.
 	remove: (ws: string, id: string) => axiosClient.delete(E.delete(ws, id)).then(() => undefined),
+
+	trash: (ws: string, signal?: AbortSignal) =>
+		fetchAllPages((page) =>
+			axiosClient
+				.get<
+					TApiResponse<TAgent[]> & { meta: TCursorPaginationMeta }
+				>(E.trash(ws), { params: page, signal })
+				.then(unwrapCursorPage<TAgent>),
+		),
+
+	restore: (ws: string, id: string) =>
+		axiosClient
+			.post<TApiResponse<{ agent: TAgent }>>(E.restore(ws, id))
+			.then(unwrapKey<TAgent>('agent')),
+
+	// Only accepted for an agent already in the trash.
+	forceDelete: (ws: string, id: string) =>
+		axiosClient.delete(E.forceDelete(ws, id)).then(() => undefined),
 
 	duplicate: (ws: string, id: string) =>
 		axiosClient

@@ -61,6 +61,13 @@ export const identity: TPages = {
 		text: 'Completing connection',
 		icon: 'Plug01',
 	},
+	// One-click AI provider connect lands here (`AI_PROVIDER_CONNECT_PATH`).
+	aiProviderConnectComplete: {
+		id: 'aiProviderConnectComplete',
+		to: '/oauth/ai-provider-complete',
+		text: 'Connecting AI provider',
+		icon: 'AiChip',
+	},
 	// The emailed invitation link. The backend signs its own accept URL; this
 	// page carries that signature (`expires` + `signature`) through unchanged.
 	acceptInvitation: {

@@ -32,7 +32,8 @@ export const useCreateTag = (ws: string) => {
 export const useUpdateTag = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: ({ id, body }: { id: string; body: TUpdateTagDto }) => TagService.update(ws, id, body),
+		mutationFn: ({ id, body }: { id: string; body: TUpdateTagDto }) =>
+			TagService.update(ws, id, body),
 		onSuccess: () => invalidateTagged(qc, ws),
 		meta: { errorMessage: 'Failed to update tag' },
 	});

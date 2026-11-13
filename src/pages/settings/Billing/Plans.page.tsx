@@ -25,6 +25,12 @@ const INTERVAL_LABELS: Record<TBillingInterval, string> = {
 const fmtLimit = (val: number | null | undefined) =>
 	val === null || val === undefined || val < 0 ? '∞' : val.toLocaleString();
 
+const formatPlanPrice = (cents: number) =>
+	(cents / 100).toLocaleString('en-US', {
+		minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
+		maximumFractionDigits: 2,
+	});
+
 const priceForInterval = (
 	plan: {
 		price_monthly: number;
@@ -56,7 +62,7 @@ const BillingPlansPage = () => {
 		try {
 			const result = await checkout.mutateAsync({ plan_id: planId, interval });
 			if ('checkout_url' in result) {
-				window.location.href = result.checkout_url;
+				window.location.assign(result.checkout_url);
 				return;
 			}
 			setSwapTarget(null);
@@ -147,12 +153,14 @@ const BillingPlansPage = () => {
 								)}
 							</div>
 							<div className='mt-3'>
-								{price === 0 ? (
+								{price === 0 && !soldOnInterval && plan.price_monthly > 0 ? (
+									<span className='text-3xl font-black'>-</span>
+								) : price === 0 ? (
 									<span className='text-3xl font-black'>Free</span>
 								) : (
 									<>
 										<span className='text-3xl font-black'>
-											${(price / 100).toFixed(0)}
+											${formatPlanPrice(price)}
 										</span>
 										<span
 											className={`ml-1 text-sm ${isCurrent ? 'text-white/60 dark:text-black/60' : 'text-zinc-400'}`}>

@@ -36,7 +36,7 @@ const RunActions = ({ ws, run, onRetried }: IRunActionsProps) => {
 	const { data: pending } = usePendingApprovals(isAwaitingApproval ? ws : '');
 	const approval = pending?.approvals.find((a) => String(a.run_id) === String(run.id));
 
-	const isWorkflowRun = !run.runnable_type.toLowerCase().includes('agent');
+	const isWorkflowRun = run.runnable_type === 'workflow';
 	const canCancel = IN_FLIGHT.includes(run.status);
 	const canRetry = isWorkflowRun && TERMINAL.includes(run.status) && !!run.workflow_version_id;
 

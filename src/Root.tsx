@@ -6,6 +6,7 @@ import { ToastContainer } from 'react-toastify';
 import useDarkMode from './hooks/useDarkMode';
 import AppLogo from './components/AppLogo';
 import colors from './tailwindcss/colors.tailwind';
+import useReferralCapture from './hooks/useReferralCapture';
 
 const RootWrapper = ({ children }: { children: ReactNode }) => {
 	const { fontSize } = useFontSize();
@@ -34,7 +35,7 @@ const RootWrapper = ({ children }: { children: ReactNode }) => {
 const Root = () => {
 	const { isLoading } = useAuth();
 	const location = useLocation();
-
+	useReferralCapture();
 
 	useEffect(() => {
 		window.scrollTo(0, 0);

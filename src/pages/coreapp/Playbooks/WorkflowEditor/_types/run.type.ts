@@ -13,6 +13,10 @@ export type TRunState = {
 	finishedAt: number | null;
 	currentNodeId: string | null;
 	logs: TRunLog[];
+	/** What the run form sent; absent for a run that took no input. */
+	input?: Record<string, unknown>;
+	/** The finished run's output from the server. */
+	output?: unknown;
 };
 
 export type TNodeRunRecord = {
@@ -21,6 +25,7 @@ export type TNodeRunRecord = {
 	status: 'success' | 'error' | 'skipped';
 	durationMs?: number;
 	output?: unknown;
+	input?: unknown;
 	error?: string;
 };
 
@@ -29,7 +34,10 @@ export type TRunRecord = {
 	startedAt: number;
 	finishedAt: number;
 	status: 'success' | 'error' | 'stopped';
-	trigger: 'manual';
+	/** `manual` for editor runs; server runs carry their `trigger_type` (webhook, schedule...). */
+	trigger: string;
+	/** The published version a real run ran on; practice runs have none. */
+	versionId?: string;
 	nodeRuns: TNodeRunRecord[];
 	logs: TRunLog[];
 };

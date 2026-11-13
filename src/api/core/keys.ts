@@ -9,7 +9,7 @@ import type { TListParams } from '@/types/api.type';
 // refreshes list views and leaves open detail panes untouched,
 // instead of nuking the whole resource on every mutation.
 //
-// Root is always kebab-case — keep it that way as modules are added.
+// Root is always kebab-case: keep it that way as modules are added.
 // ============================================================
 export const createKeys = (root: string) => ({
 	root: [root] as const,

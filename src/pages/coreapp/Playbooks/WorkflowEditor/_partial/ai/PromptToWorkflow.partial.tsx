@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useWorkflowEditor } from '../../_context/WorkflowEditorProvider.context';
+import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { getAiWorkflowDraft } from '../../_helper/aiWorkflowDraft.helper';
 import Icon from '@/components/icon/Icon';
 

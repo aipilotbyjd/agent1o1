@@ -1,6 +1,9 @@
 export const AgentSkillEndpoints = {
+	copy: (ws: string, id: string) => `/workspaces/${ws}/skills/${id}/copy`,
+	publish: (ws: string, id: string) => `/workspaces/${ws}/skills/${id}/publish`,
 	list: (ws: string) => `/workspaces/${ws}/skills`,
 	create: (ws: string) => `/workspaces/${ws}/skills`,
+	draft: (ws: string) => `/workspaces/${ws}/skills/draft`,
 	detail: (ws: string, id: string) => `/workspaces/${ws}/skills/${id}`,
 	update: (ws: string, id: string) => `/workspaces/${ws}/skills/${id}`,
 	delete: (ws: string, id: string) => `/workspaces/${ws}/skills/${id}`,
@@ -22,4 +25,19 @@ export const SkillScriptEndpoints = {
 		`/workspaces/${ws}/skills/${skillId}/scripts/${id}`,
 	delete: (ws: string, skillId: string, id: string) =>
 		`/workspaces/${ws}/skills/${skillId}/scripts/${id}`,
+} as const;
+
+export const SkillSourceEndpoints = {
+	access: (ws: string) => `/workspaces/${ws}/skill-sources/access`,
+	fork: (ws: string, id: string) => `/workspaces/${ws}/skill-sources/${id}/fork`,
+	completeFork: (ws: string, id: string) => `/workspaces/${ws}/skill-sources/${id}/fork/complete`,
+	upstream: (ws: string, id: string) => `/workspaces/${ws}/skill-sources/${id}/upstream`,
+	update: (ws: string, id: string) => `/workspaces/${ws}/skill-sources/${id}`,
+	export: (ws: string, id: string) => `/workspaces/${ws}/skill-sources/${id}/export`,
+	resolve: (ws: string, id: string) => `/workspaces/${ws}/skill-sources/${id}/resolve`,
+	list: (ws: string) => `/workspaces/${ws}/skill-sources`,
+	create: (ws: string) => `/workspaces/${ws}/skill-sources`,
+	preview: (ws: string) => `/workspaces/${ws}/skill-sources/preview`,
+	sync: (ws: string, id: string) => `/workspaces/${ws}/skill-sources/${id}/sync`,
+	delete: (ws: string, id: string) => `/workspaces/${ws}/skill-sources/${id}`,
 } as const;

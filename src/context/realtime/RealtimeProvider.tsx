@@ -1,12 +1,20 @@
 import { useEffect, useState } from 'react';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
-import { useWorkspaceContext } from '@/context/workspace';
+import { useAuth } from '@/context/auth';
 import { getAccessToken, TOKEN_CHANGE_EVENT } from '@/api/core/token-manager';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationKeys } from '@/api/modules/notifications/notifications.keys';
+import { announcementKeys } from '@/api/modules/announcements/announcements.keys';
 import { notify } from '@/api/core';
 import RealtimeContext from './RealtimeContext';
+import type { TRealtimeStatus } from './realtime.types';
+
+const statusFor = (connectionState: string, hasConnected: boolean): TRealtimeStatus => {
+	if (connectionState === 'connected') return 'connected';
+	if (connectionState === 'failed' || connectionState === 'disconnected') return 'offline';
+	return hasConnected ? 'reconnecting' : 'connecting';
+};
 
 // Ensure Pusher is on window for Laravel Echo
 if (typeof window !== 'undefined') {
@@ -14,8 +22,9 @@ if (typeof window !== 'undefined') {
 }
 
 export const RealtimeProvider = ({ children }: { children: React.ReactNode }) => {
-	const { activeWorkspaceId } = useWorkspaceContext();
+	const userId = useAuth().userData?.id;
 	const [echo, setEcho] = useState<Echo<'reverb'> | null>(null);
+	const [status, setStatus] = useState<TRealtimeStatus>('connecting');
 	const qc = useQueryClient();
 
 	// Track the token in state so we re-subscribe on login/logout/refresh instead
@@ -33,13 +42,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
 	}, []);
 
 	useEffect(() => {
-		if (!token || !activeWorkspaceId) {
-			if (echo) {
-				echo.disconnect();
-				setEcho(null);
-			}
-			return;
-		}
+		if (!token || !userId) return;
 
 		const apiUrl = import.meta.env.VITE_API_URL || 'https://agent1o1.test/api/v1';
 		const apiBase = apiUrl.replace('/api/v1', '');
@@ -60,12 +63,12 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
 			: 443;
 		const reverbScheme = import.meta.env.VITE_REVERB_SCHEME || 'https';
 
-		// Without a real app key the connection can never authenticate — skip it so
+		// Without a real app key the connection can never authenticate: skip it so
 		// we don't spam failed WebSocket attempts. Notifications still refresh via
 		// polling + query invalidation until Reverb is configured.
 		if (!reverbAppKey) {
 			console.warn(
-				'[realtime] VITE_REVERB_APP_KEY is not set — skipping WebSocket connection.',
+				'[realtime] VITE_REVERB_APP_KEY is not set: skipping WebSocket connection.',
 			);
 			return;
 		}
@@ -86,22 +89,51 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
 			},
 		});
 
+		// eslint-disable-next-line react-hooks/set-state-in-effect
 		setEcho(newEcho);
 
-		const channel = newEcho.private(`workspace.${activeWorkspaceId}`);
+		// Laravel broadcasts a notification to its notifiable's own channel.
+		newEcho
+			.private(`App.Models.User.${userId}`)
+			.notification((notification: { title?: string }) => {
+				notify.success(notification.title || 'New notification received');
+				qc.invalidateQueries({ queryKey: ['notifications'] });
+				qc.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
+			});
 
-		channel.listen('.notification.created', (notification: { title?: string }) => {
-			// Display a toast/notification
-			notify.success(notification.title || 'New notification received');
-			// Invalidate every notification query (lists across filters + unread count)
-			qc.invalidateQueries({ queryKey: ['notifications'] });
-			qc.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
-		});
+		let hasConnected = false;
+		let lastStatus: TRealtimeStatus = 'connecting';
+		const onStateChange = ({ current }: { current: string }) => {
+			const next = statusFor(current, hasConnected);
+			if (lastStatus === 'connected' && next !== 'connected') {
+				notify.warn('Live updates paused. Reconnecting…');
+			}
+			lastStatus = next;
+			setStatus(next);
+			if (next !== 'connected') return;
+			// Events are not replayed, so what arrived while the socket was down is
+			// read again once it is back.
+			if (hasConnected) qc.invalidateQueries();
+			hasConnected = true;
+		};
+		const { connection } = newEcho.connector.pusher;
+		connection.bind('state_change', onStateChange);
+
+		// Platform banners and maintenance notices. The event carries no content
+		// (who sees what is decided per member), it only says to refetch.
+		newEcho
+			.private('announcements')
+			.listen('.announcements.changed', () =>
+				qc.invalidateQueries({ queryKey: announcementKeys.all }),
+			);
 
 		return () => {
+			connection.unbind('state_change', onStateChange);
 			newEcho.disconnect();
+			setEcho(null);
+			setStatus('offline');
 		};
-	}, [activeWorkspaceId, token]);
+	}, [userId, token, qc]);
 
-	return <RealtimeContext.Provider value={{ echo }}>{children}</RealtimeContext.Provider>;
+	return <RealtimeContext.Provider value={{ echo, status }}>{children}</RealtimeContext.Provider>;
 };

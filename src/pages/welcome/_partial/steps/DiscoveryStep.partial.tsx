@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useOnboardingStore } from '../../_context/OnboardingStore.context';
+import { useOnboardingStore } from '../../_hooks/useOnboardingStore.hook';
 import { SURVEY_OPTIONS } from '../../_helper/onboarding.constants';
 import { useOnboardingState } from '@/api/modules/onboarding';
 

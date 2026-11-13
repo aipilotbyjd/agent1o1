@@ -6,6 +6,7 @@ const NodeLibrarySearch = ({
 	onChange: (value: string) => void;
 }) => (
 	<input
+		data-library-search
 		aria-label='Search nodes'
 		value={value}
 		onChange={(event) => onChange(event.target.value)}
