@@ -5,11 +5,22 @@ import { serverValidationIssues } from '../_helper/validation.helper';
 import { useWorkflowEditor } from './useWorkflowEditor.hook';
 import { usePersistWorkflowDraft } from './usePersistWorkflowDraft.hook';
 import { messageFromError, notify } from '@/api/core/notify';
+import { ApiError } from '@/api/core';
+import { announcementKeys, useMaintenance } from '@/api/modules/announcements';
+import { useQueryClient } from '@tanstack/react-query';
+
+/** How long to hold off after a maintenance refusal when the server gave no `Retry-After`. */
+const MAINTENANCE_RETRY_MS = 30_000;
 
 export const useAutosave = () => {
 	const { state, dispatch } = useWorkflowEditor();
 	const persistWorkflowDraft = usePersistWorkflowDraft();
 	const timer = useRef<number | null>(null);
+	const queryClient = useQueryClient();
+	// While the app is read-only a save would only be refused, so edits stay
+	// 'dirty' and are saved the moment the window ends.
+	const { isReadOnly } = useMaintenance();
+	const blockedUntil = useRef(0);
 
 	// The save reads the latest state through a ref, so the debounce effect below
 	// only has to depend on the things that actually get persisted. It used to
@@ -68,6 +79,15 @@ export const useAutosave = () => {
 						stateRef.current.workflow.description !== savedDescription;
 					setState(stale ? 'dirty' : 'saved');
 				} catch (err) {
+					if (ApiError.is(err) && err.isMaintenance) {
+						// Not a failure: keep the edit and try again after the window.
+						blockedUntil.current =
+							Date.now() +
+							(err.retryAfter ? err.retryAfter * 1000 : MAINTENANCE_RETRY_MS);
+						void queryClient.invalidateQueries({ queryKey: announcementKeys.all });
+						setState('dirty');
+						return;
+					}
 					const issues = serverValidationIssues(err);
 					if (!silent && issues.length) {
 						dispatch({ type: 'SET_ISSUES_PANEL', open: true, serverIssues: issues });
@@ -88,7 +108,7 @@ export const useAutosave = () => {
 				}
 			}
 		},
-		[dispatch, persistWorkflowDraft],
+		[dispatch, persistWorkflowDraft, queryClient],
 	);
 
 	const saveRef = useRef(save);
@@ -99,17 +119,18 @@ export const useAutosave = () => {
 	const { savingState, workspaceId, apiId, name, description } = state.workflow;
 
 	useEffect(() => {
-		if (savingState !== 'dirty') return;
+		if (savingState !== 'dirty' || isReadOnly) return;
 		if (timer.current) window.clearTimeout(timer.current);
 
+		const delay = Math.max(AUTOSAVE_DEBOUNCE_MS, blockedUntil.current - Date.now());
 		timer.current = window.setTimeout(() => {
 			void saveRef.current();
-		}, AUTOSAVE_DEBOUNCE_MS);
+		}, delay);
 
 		return () => {
 			if (timer.current) window.clearTimeout(timer.current);
 		};
-	}, [savingState, workspaceId, apiId, name, description, state.nodes, state.edges]);
+	}, [savingState, isReadOnly, workspaceId, apiId, name, description, state.nodes, state.edges]);
 
 	// Leaving the editor in-app unmounts it and the cleanup above clears the pending
 	// timer with it, which silently dropped anything edited in the last 700ms. Flush

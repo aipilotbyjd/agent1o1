@@ -38,6 +38,11 @@ export const normalizeError = (client: AxiosInstance) => {
 				error.response?.data?.message || error.message || 'Something went wrong';
 			const errors = error.response?.data?.errors;
 			const issues = error.response?.data?.issues ?? [];
+			const retryAfterHeader = Number(error.response?.headers?.['retry-after']);
+			const retryAfter =
+				Number.isFinite(retryAfterHeader) && retryAfterHeader > 0
+					? retryAfterHeader
+					: undefined;
 
 			return Promise.reject(
 				Array.isArray(errors)
@@ -46,8 +51,9 @@ export const normalizeError = (client: AxiosInstance) => {
 							issues.length > 0 ? message : withListedErrors(message, errors),
 							undefined,
 							issues,
+							retryAfter,
 						)
-					: new ApiError(status, message, errors, issues),
+					: new ApiError(status, message, errors, issues, retryAfter),
 			);
 		},
 	);

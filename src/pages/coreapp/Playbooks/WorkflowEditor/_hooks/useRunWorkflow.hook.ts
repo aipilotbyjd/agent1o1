@@ -25,6 +25,7 @@ import {
 	type IRunStateChangedEvent,
 } from '@/api/modules/runs';
 import { ApiError } from '@/api/core';
+import { useMaintenance } from '@/api/modules/announcements';
 import { useRealtime } from '@/context/realtime';
 import type { TWorkflowInterfaceField } from '@/types/workflow-extras.type';
 import { useConfirm } from '@/context/confirm';
@@ -114,6 +115,7 @@ const useRunWorkflowController = () => {
 	const lastInputValues = useRef<TRunFormValues>({});
 	const [inputRequest, setInputRequest] = useState<TInputRequest | null>(null);
 	const { confirm } = useConfirm();
+	const { isReadOnly, message: maintenanceMessage } = useMaintenance();
 	const { isMissing: isCredentialMissing } = useCredentialResolver();
 	const persistWorkflowDraft = usePersistWorkflowDraft();
 	const queryClient = useQueryClient();
@@ -387,6 +389,11 @@ const useRunWorkflowController = () => {
 	const runWorkflow = async () => {
 		if (state.nodes.length === 0) return;
 		if (state.run.status === 'running' || starting.current || inputRequest) return;
+		// The shortcut and the command palette reach here too, not only the button.
+		if (isReadOnly) {
+			notify.warn(maintenanceMessage ?? 'Running is paused while the app is in maintenance.');
+			return;
+		}
 
 		// Check for missing credentials.
 		const missingCredentialNode = state.nodes.find((node) =>

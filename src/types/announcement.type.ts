@@ -21,6 +21,8 @@ export type TAnnouncement = {
 	dismissible: boolean;
 	/** The notice stops writes while its window is open. */
 	blocks_writes: boolean;
+	/** The operator's own wording for "changes are paused", when they wrote one. */
+	read_only_message: string | null;
 	/** `now` is inside the notice's own window (maintenance can be shown ahead of it). */
 	window_open: boolean;
 	starts_at: string | null;

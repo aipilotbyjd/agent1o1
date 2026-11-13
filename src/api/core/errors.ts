@@ -22,6 +22,8 @@ export class ApiError extends Error {
 		message: string,
 		public readonly fields?: Record<string, string[]>,
 		public readonly issues: TApiIssue[] = [],
+		/** Seconds the server asked us to wait (`Retry-After`), when it sent one. */
+		public readonly retryAfter?: number,
 	) {
 		super(message);
 		this.name = 'ApiError';
@@ -52,6 +54,11 @@ export class ApiError extends Error {
 	/** The resource's current state refuses the request (e.g. a stale version). */
 	get isConflict(): boolean {
 		return this.status === 409;
+	}
+
+	/** The app is read-only for a maintenance window; nothing is wrong with the request. */
+	get isMaintenance(): boolean {
+		return this.status === 503 && String(this.fields?.reason) === 'maintenance';
 	}
 
 	get isServer(): boolean {

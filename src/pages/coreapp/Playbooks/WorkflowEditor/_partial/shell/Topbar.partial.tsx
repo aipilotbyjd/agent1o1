@@ -53,6 +53,7 @@ import SaveAsTemplateModal from '@/parts/SaveAsTemplateModal.part';
 import DraftStatusPill from '../versions/DraftStatusPill.partial';
 import { useDraftStatus } from '../../_hooks/useDraftStatus.hook';
 import PublishPopover from '../versions/PublishPopover.partial';
+import { useMaintenance } from '@/api/modules/announcements';
 import WorkflowPresence from './WorkflowPresence.partial';
 import { usePublishReview } from '../../_hooks/usePublishReview.hook';
 import { useAiPanelAvailability } from '../../_hooks/useAiPanelAvailability.hook';
@@ -405,7 +406,9 @@ const Topbar = () => {
 	const [runSeconds, setRunSeconds] = useState(0);
 
 	const isRunning = state.run.status === 'running';
-	const isRunDisabled = state.nodes.length === 0;
+	const { isReadOnly } = useMaintenance();
+	// Stopping a run that is going stays possible; starting one is refused during maintenance.
+	const isRunDisabled = state.nodes.length === 0 || (isReadOnly && !isRunning);
 
 	// Live Run Timer
 	const [timedRun, setTimedRun] = useState(isRunning);
@@ -471,13 +474,15 @@ const Topbar = () => {
 		: requiresApproval
 			? 'Request review'
 			: 'Publish';
-	const publishTooltip = pendingReview
-		? 'See the changes waiting for review'
-		: requiresApproval
-			? 'Send your changes for review'
-			: hasUnpublishedWork
-				? 'Publish your changes'
-				: 'Publish';
+	const publishTooltip = isReadOnly
+		? 'Publishing is paused during maintenance'
+		: pendingReview
+			? 'See the changes waiting for review'
+			: requiresApproval
+				? 'Send your changes for review'
+				: hasUnpublishedWork
+					? 'Publish your changes'
+					: 'Publish';
 
 	return (
 		<header className='relative z-40 flex h-14 shrink-0 items-center justify-between border-b border-zinc-200/80 bg-white/90 px-3 backdrop-blur-md select-none sm:px-4 dark:border-white/[0.08] dark:bg-[#07080b]/90'>
@@ -819,6 +824,7 @@ const Topbar = () => {
 							type='button'
 							aria-haspopup='dialog'
 							aria-expanded={isPublishOpen}
+							disabled={isReadOnly && !pendingReview}
 							onClick={() => {
 								if (pendingReview) {
 									closeMenu();
@@ -978,9 +984,11 @@ const Topbar = () => {
 					label={
 						isRunning
 							? 'Stop Execution'
-							: isRunDisabled
-								? 'Add nodes to run'
-								: 'Run Workflow'
+							: isReadOnly
+								? 'Running is paused during maintenance'
+								: isRunDisabled
+									? 'Add nodes to run'
+									: 'Run Workflow'
 					}
 					shortcut='⌘↵'
 					align='right'>
