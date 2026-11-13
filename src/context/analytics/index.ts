@@ -1,0 +1,1 @@
+export { PostHogSync } from './PostHogSync';
