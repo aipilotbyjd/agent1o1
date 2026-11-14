@@ -13,6 +13,7 @@ import useDarkMode from '@/hooks/useDarkMode';
 import useResolvePath from '@/hooks/useResolvePath';
 import { useNavigate, useParams } from 'react-router';
 import { useWorkspaceContext } from '@/context/workspace';
+import { FEATUREBASE_URL, openFeatureBoard } from '@/utils/featurebase.util';
 
 const AsideFooterPart = () => {
 	const { asideStatus } = useAsideStatus();
@@ -47,6 +48,16 @@ const AsideFooterPart = () => {
 						}
 						className='!p-0'
 					/>
+					{FEATUREBASE_URL && (
+						<Button
+							icon='Idea01'
+							variant='link'
+							aria-label='Suggest a feature'
+							title='Suggest a feature'
+							onClick={openFeatureBoard}
+							className='!p-0'
+						/>
+					)}
 					<Button
 						icon={pages.settings.icon}
 						variant='link'
@@ -90,6 +101,9 @@ const AsideFooterPart = () => {
 				)}
 				{tokenStorage && (
 					<NavItem text='Logout' icon='Logout03' onClick={() => onLogout(true)} />
+				)}
+				{FEATUREBASE_URL && (
+					<NavItem text='Suggest a feature' icon='Idea01' onClick={openFeatureBoard} />
 				)}
 				{!tokenStorage && (
 					<NavItem
