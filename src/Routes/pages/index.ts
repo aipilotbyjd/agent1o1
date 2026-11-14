@@ -9,6 +9,7 @@ import { workspace, playbookEditor, agentEditor, pageEditor, publicPage } from '
 import { settings } from './settings.pages';
 import { identity } from './identity.pages';
 import { welcome, choose } from './welcome.pages';
+import { changelog } from './changelog.pages';
 
 /**
  * Single source of truth for URLs. What the sidebars show, and in what order,
@@ -24,6 +25,7 @@ const pages = {
 	identity,
 	welcome,
 	choose,
+	changelog,
 };
 
 export default pages;
