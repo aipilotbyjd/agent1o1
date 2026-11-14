@@ -92,7 +92,9 @@ const ChangelogEntryPage = () => {
 								<Badge color={categoryMeta(entry.category).color} variant='soft'>
 									{entry.category_label}
 								</Badge>
-								{entry.version && <span className='font-mono'>v{entry.version}</span>}
+								{entry.version && (
+									<span className='font-mono'>v{entry.version}</span>
+								)}
 								<time dateTime={entry.published_at}>
 									{dayjs(entry.published_at).format('MMMM D, YYYY')}
 								</time>
@@ -104,7 +106,9 @@ const ChangelogEntryPage = () => {
 									{copied ? 'Link copied' : 'Copy link'}
 								</button>
 							</div>
-							<h1 className='text-4xl font-semibold tracking-tight md:text-5xl'>{entry.title}</h1>
+							<h1 className='text-4xl font-semibold tracking-tight md:text-5xl'>
+								{entry.title}
+							</h1>
 							<p className='mt-4 text-xl text-slate-600'>{entry.summary}</p>
 						</header>
 

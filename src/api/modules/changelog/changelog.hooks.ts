@@ -5,8 +5,7 @@ import { changelogKeys } from './changelog.keys';
 import { ChangelogService, type TChangelogScope } from './changelog.service';
 
 /** Signed-in readers get the member door (members-only entries, read state). */
-export const useChangelogScope = (): TChangelogScope =>
-	getAccessToken() ? 'member' : 'public';
+export const useChangelogScope = (): TChangelogScope => (getAccessToken() ? 'member' : 'public');
 
 /** The timeline, one page at a time, for a "load more" button. */
 export const useChangelogList = (params: Omit<TChangelogParams, 'page'>) => {
@@ -32,6 +31,19 @@ export const usePinnedChangelog = () => {
 		queryKey: changelogKeys.list(scope, params),
 		queryFn: ({ signal }) => ChangelogService.list(scope, params, signal),
 		select: (page) => page.items,
+		meta: { silent: true },
+	});
+};
+
+/** Every area used in the latest entries, so the filter chips stay put while one is applied. */
+export const useChangelogAreas = () => {
+	const scope = useChangelogScope();
+	const params: TChangelogParams = { per_page: 50 };
+
+	return useQuery({
+		queryKey: changelogKeys.list(scope, params),
+		queryFn: ({ signal }) => ChangelogService.list(scope, params, signal),
+		select: (page) => [...new Set(page.items.flatMap((entry) => entry.areas))].sort(),
 		meta: { silent: true },
 	});
 };

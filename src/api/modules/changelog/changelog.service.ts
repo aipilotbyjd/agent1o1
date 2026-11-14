@@ -14,7 +14,9 @@ export type TChangelogPage = {
 /** Empty filters are left out so they never reach the query string. */
 const cleanParams = (params: TChangelogParams) =>
 	Object.fromEntries(
-		Object.entries(params).filter(([, value]) => value !== '' && value !== undefined && value !== false),
+		Object.entries(params).filter(
+			([, value]) => value !== '' && value !== undefined && value !== false,
+		),
 	);
 
 export const ChangelogService = {

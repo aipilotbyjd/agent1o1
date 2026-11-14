@@ -6,7 +6,12 @@ import { useLatestMajorChangelog, useMarkChangelogRead } from '@/api/modules/cha
 import { categoryMeta } from '@/components/changelog/changelogCategory';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
-import Modal, { ModalBody, ModalFooter, ModalFooterChild, ModalHeader } from '@/components/ui/Modal';
+import Modal, {
+	ModalBody,
+	ModalFooter,
+	ModalFooterChild,
+	ModalHeader,
+} from '@/components/ui/Modal';
 import pages from '@/Routes/pages';
 import safeStorage from '@/utils/safeStorage.util';
 

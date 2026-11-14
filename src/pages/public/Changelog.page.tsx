@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 import { Loader2, Rss, Search } from 'lucide-react';
 import { getAccessToken } from '@/api/core';
 import {
+	useChangelogAreas,
 	useChangelogList,
 	useChangelogScope,
 	useMarkAllChangelogRead,
@@ -62,15 +63,14 @@ const ChangelogPage = () => {
 	const unread = useUnreadChangelogCount();
 	const markAll = useMarkAllChangelogRead();
 
-	const entries = useMemo(() => list.data?.pages.flatMap((page) => page.items) ?? [], [list.data]);
+	const entries = useMemo(
+		() => list.data?.pages.flatMap((page) => page.items) ?? [],
+		[list.data],
+	);
 	const unpinnedEntries = filtering ? entries : entries.filter((entry) => !entry.is_pinned);
 	const months = useMemo(() => groupByMonth(unpinnedEntries), [unpinnedEntries]);
 
-	// Areas the reader can filter by are the ones seen so far, so the list never offers a dead end.
-	const [knownAreas, setKnownAreas] = useState<string[]>([]);
-	useEffect(() => {
-		setKnownAreas((known) => [...new Set([...known, ...entries.flatMap((entry) => entry.areas)])].sort());
-	}, [entries]);
+	const knownAreas = useChangelogAreas().data ?? [];
 
 	const feedUrl = `${apiConfig.baseUrl.replace(/\/$/, '')}${ChangelogEndpoints.public.rss}`;
 	const pinnedEntries = filtering ? [] : (pinned.data ?? []);
@@ -82,7 +82,9 @@ const ChangelogPage = () => {
 
 			<section className='relative mx-auto max-w-3xl px-6 pt-14 pb-24'>
 				<div className='mb-10'>
-					<h1 className='text-5xl font-semibold tracking-tight md:text-6xl'>What&apos;s new</h1>
+					<h1 className='text-5xl font-semibold tracking-tight md:text-6xl'>
+						What&apos;s new
+					</h1>
 					<p className='mt-4 max-w-xl text-lg font-medium text-slate-600'>
 						New features, improvements and fixes, as they ship.
 					</p>
@@ -125,8 +127,14 @@ const ChangelogPage = () => {
 						/>
 					</label>
 
-					<div className='flex flex-wrap gap-2' role='group' aria-label='Filter by category'>
-						<button type='button' className={chipClass(category === '')} onClick={() => setCategory('')}>
+					<div
+						className='flex flex-wrap gap-2'
+						role='group'
+						aria-label='Filter by category'>
+						<button
+							type='button'
+							className={chipClass(category === '')}
+							onClick={() => setCategory('')}>
 							All
 						</button>
 						{CHANGELOG_CATEGORIES.map((item) => (
@@ -135,20 +143,28 @@ const ChangelogPage = () => {
 								type='button'
 								aria-pressed={category === item.value}
 								className={chipClass(category === item.value)}
-								onClick={() => setCategory(category === item.value ? '' : item.value)}>
+								onClick={() =>
+									setCategory(category === item.value ? '' : item.value)
+								}>
 								{item.label}
 							</button>
 						))}
 					</div>
 
 					{knownAreas.length > 0 && (
-						<div className='flex flex-wrap gap-2' role='group' aria-label='Filter by area'>
+						<div
+							className='flex flex-wrap gap-2'
+							role='group'
+							aria-label='Filter by area'>
 							{knownAreas.map((name) => (
 								<button
 									key={name}
 									type='button'
 									aria-pressed={area === name}
-									className={classNames(chipClass(area === name), '!py-1 !text-xs')}
+									className={classNames(
+										chipClass(area === name),
+										'!py-1 !text-xs',
+									)}
 									onClick={() => setArea(area === name ? '' : name)}>
 									#{name}
 								</button>
@@ -190,7 +206,9 @@ const ChangelogPage = () => {
 
 				{list.isSuccess && months.length === 0 && pinnedEntries.length === 0 && (
 					<div className='rounded-2xl border border-dashed border-slate-300 p-10 text-center text-slate-500'>
-						{filtering ? 'Nothing matches those filters.' : 'No updates have been published yet.'}
+						{filtering
+							? 'Nothing matches those filters.'
+							: 'No updates have been published yet.'}
 					</div>
 				)}
 
@@ -216,7 +234,9 @@ const ChangelogPage = () => {
 							onClick={() => list.fetchNextPage()}
 							disabled={list.isFetchingNextPage}
 							className='inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3 text-sm font-bold shadow-sm transition hover:border-slate-300 disabled:opacity-60'>
-							{list.isFetchingNextPage && <Loader2 size={16} className='animate-spin' />}
+							{list.isFetchingNextPage && (
+								<Loader2 size={16} className='animate-spin' />
+							)}
 							Load older updates
 						</button>
 					</div>
