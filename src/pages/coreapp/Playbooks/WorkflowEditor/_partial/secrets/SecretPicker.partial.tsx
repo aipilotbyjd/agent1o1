@@ -6,8 +6,8 @@ import { useEditorSecrets } from '../../_hooks/useEditorSecrets.hook';
 
 type Props = {
 	onPick: (key: string) => void;
-	/** "+ New secret", with whatever was typed in the search as the name. */
-	onCreate: (name: string) => void;
+	/** "+ New secret", with whatever was typed in the search as the name. Omit for someone who may not add secrets. */
+	onCreate?: (name: string) => void;
 	onClose: () => void;
 	/** Open above the field: there's no room below it. */
 	dropUp?: boolean;
@@ -38,20 +38,20 @@ const SecretPicker = ({ onPick, onCreate, onClose, dropUp = false }: Props) => {
 		);
 	}, [secrets, query]);
 
-	// The last row is "+ New secret".
-	const rows = shown.length + 1;
+	// The last row is "+ New secret", for those who may add one.
+	const rows = shown.length + (onCreate ? 1 : 0);
 	const choose = (index: number) =>
-		index < shown.length ? onPick(shown[index].key) : onCreate(query.trim());
+		index < shown.length ? onPick(shown[index].key) : onCreate?.(query.trim());
 
 	const onKeyDown = (event: KeyboardEvent) => {
 		// Keep typing here from reaching the canvas's keyboard shortcuts.
 		event.stopPropagation();
 		if (event.key === 'ArrowDown') {
 			event.preventDefault();
-			setActive((index) => (index + 1) % rows);
+			setActive((index) => (rows ? (index + 1) % rows : 0));
 		} else if (event.key === 'ArrowUp') {
 			event.preventDefault();
-			setActive((index) => (index - 1 + rows) % rows);
+			setActive((index) => (rows ? (index - 1 + rows) % rows : 0));
 		} else if (event.key === 'Enter') {
 			event.preventDefault();
 			choose(active);
@@ -135,17 +135,19 @@ const SecretPicker = ({ onPick, onCreate, onClose, dropUp = false }: Props) => {
 				))}
 			</ul>
 
-			<button
-				type='button'
-				onMouseEnter={() => setActive(shown.length)}
-				onClick={() => onCreate(query.trim())}
-				className={`text-primary-700 dark:text-primary-300 flex w-full items-center gap-2 border-t border-zinc-100 px-3 py-2 text-left text-[11px] font-bold dark:border-zinc-800 ${
-					active === shown.length ? 'bg-zinc-100 dark:bg-zinc-800' : ''
-				}`}>
-				<Plus size={13} />
-				{query.trim() ? `New secret “${query.trim()}”` : 'New secret'}
-				<KeyRound size={12} className='ml-auto opacity-50' />
-			</button>
+			{onCreate && (
+				<button
+					type='button'
+					onMouseEnter={() => setActive(shown.length)}
+					onClick={() => onCreate(query.trim())}
+					className={`text-primary-700 dark:text-primary-300 flex w-full items-center gap-2 border-t border-zinc-100 px-3 py-2 text-left text-[11px] font-bold dark:border-zinc-800 ${
+						active === shown.length ? 'bg-zinc-100 dark:bg-zinc-800' : ''
+					}`}>
+					<Plus size={13} />
+					{query.trim() ? `New secret “${query.trim()}”` : 'New secret'}
+					<KeyRound size={12} className='ml-auto opacity-50' />
+				</button>
+			)}
 		</div>
 	);
 };

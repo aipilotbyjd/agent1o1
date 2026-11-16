@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Images, Loader2, Search } from 'lucide-react';
 import { useAgents } from '@/api/modules/agents';
 import { useDownloadLibraryItem, useLibrary } from '@/api/modules/library';
+import usePermission from '@/hooks/usePermission';
 import paths from '@/Routes/paths';
 import { useAgentChatStore } from '@/store/agentChat.store';
 import type { TLibraryItem, TLibraryItemKind } from '@/types/library.type';
@@ -110,9 +111,15 @@ const LibraryPage = () => {
 		return () => observer.disconnect();
 	}, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+	const { can } = usePermission();
+	const canCreateAgents = can('agent.manage');
 	const backToChat = () =>
 		navigate(
-			chatAgentId ? paths.editAgent(workspaceId, chatAgentId) : paths.newAgent(workspaceId),
+			chatAgentId
+				? paths.editAgent(workspaceId, chatAgentId)
+				: canCreateAgents
+					? paths.newAgent(workspaceId)
+					: paths.agents(workspaceId),
 		);
 
 	return (

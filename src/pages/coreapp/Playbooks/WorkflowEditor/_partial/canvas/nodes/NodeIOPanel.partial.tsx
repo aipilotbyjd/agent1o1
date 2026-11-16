@@ -18,6 +18,7 @@ import type { TNodePort } from '../../../_types/node.type';
 import { buildSecretToken } from '../../../_helper/secretTokens.helper';
 import { useEditorSecrets } from '../../../_hooks/useEditorSecrets.hook';
 import NewSecretDialog from '../../secrets/NewSecretDialog.partial';
+import usePermission from '@/hooks/usePermission';
 
 /** One value flowing into this node: an upstream node's output port. */
 export type TIncomingInput = {
@@ -398,6 +399,8 @@ const SecretsSection = () => {
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState('');
 	const [creating, setCreating] = useState(false);
+	const { can } = usePermission();
+	const canCreateSecrets = can('secret.manage');
 
 	const shown = useMemo(() => {
 		const q = query.trim().toLowerCase();
@@ -424,13 +427,15 @@ const SecretsSection = () => {
 						className={`text-zinc-400 transition-transform ${open ? 'rotate-90' : ''}`}
 					/>
 				</button>
-				<button
-					type='button'
-					onClick={() => setCreating(true)}
-					className='nodrag flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-bold text-amber-600 transition hover:bg-amber-500/10 dark:text-amber-400'>
-					<Plus size={11} />
-					New
-				</button>
+				{canCreateSecrets && (
+					<button
+						type='button'
+						onClick={() => setCreating(true)}
+						className='nodrag flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-bold text-amber-600 transition hover:bg-amber-500/10 dark:text-amber-400'>
+						<Plus size={11} />
+						New
+					</button>
+				)}
 			</div>
 
 			{open &&

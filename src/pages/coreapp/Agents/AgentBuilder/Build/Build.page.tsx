@@ -1434,6 +1434,12 @@ const BuildPage = () => {
 	} = useAgentToolBindings(workspaceId, currentAgentId ?? '');
 	const { data: connectorCredentials } = useConnectorCredentials(workspaceId);
 	const { data: currentUser } = useCurrentUser();
+	// Someone else's plan needs `agent.approve`, as the backend enforces.
+	const canDecidePlan =
+		canChat &&
+		(!openedSession ||
+			String(openedSession.user_id) === String(currentUser?.id) ||
+			can('agent.approve'));
 	const {
 		data: workflowTools,
 		isPending: isWorkflowToolsPending,
@@ -3849,20 +3855,22 @@ const BuildPage = () => {
 											canRemember={canManageAgents}
 											onDecide={(decisions) => void decideActions(decisions)}
 										/>
-										{proposedPlan && pendingActions.length === 0 && canChat && (
-											<AgentPlanCard
-												key={proposedPlan.id}
-												plan={proposedPlan}
-												busy={
-													approvePlanMutation.isPending ||
-													rejectPlanMutation.isPending
-												}
-												onApprove={(skipIds, note) =>
-													void approvePlan(skipIds, note)
-												}
-												onReject={(note) => void rejectPlan(note)}
-											/>
-										)}
+										{proposedPlan &&
+											pendingActions.length === 0 &&
+											canDecidePlan && (
+												<AgentPlanCard
+													key={proposedPlan.id}
+													plan={proposedPlan}
+													busy={
+														approvePlanMutation.isPending ||
+														rejectPlanMutation.isPending
+													}
+													onApprove={(skipIds, note) =>
+														void approvePlan(skipIds, note)
+													}
+													onReject={(note) => void rejectPlan(note)}
+												/>
+											)}
 									</>
 								)}
 							</div>

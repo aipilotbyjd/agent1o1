@@ -77,6 +77,8 @@ export type TAgentAction = {
 	review_reason: string | null;
 	result: string | null;
 	approvers: string[] | null;
+	/** Whether the viewer may approve or reject it. Absent on actions pushed over a chat's own stream. */
+	can_decide?: boolean;
 	requested_at: string | null;
 	expires_at: string | null;
 	decided_by: string | null;

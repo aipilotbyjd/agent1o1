@@ -1,4 +1,5 @@
 import type { TPermissionCheck, TPermissionMode } from '@/types/permission.type';
+import type { TAgentAction } from '@/types/agent-action.type';
 import type { TWorkspace } from '@/types/workspace.type';
 
 /**
@@ -23,3 +24,11 @@ export const whenAllowed = <T extends (...args: never[]) => unknown>(
 	allowed: boolean,
 	handler: T,
 ): T | undefined => (allowed ? handler : undefined);
+
+/**
+ * Whether the viewer may decide an agent action. `agent.chat` is the floor;
+ * past it the backend says per action, since it depends on whose conversation
+ * it is and who the tool names as approvers.
+ */
+export const canDecideAction = (canChat: boolean, action: Pick<TAgentAction, 'can_decide'>) =>
+	canChat && action.can_decide !== false;
