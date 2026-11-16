@@ -26,6 +26,9 @@ export const DashboardService = {
 			.get<TApiResponse<TCreditUsage>>(E.creditUsage(ws), { params, signal })
 			.then((r) => r.data.data),
 
+	dismissGettingStarted: (ws: string) =>
+		axiosClient.post<void>(E.dismissGettingStarted(ws)).then(() => undefined),
+
 	// Paginated: `data` sits flat in the envelope, `meta` alongside it.
 	pendingApprovals: (
 		ws: string,

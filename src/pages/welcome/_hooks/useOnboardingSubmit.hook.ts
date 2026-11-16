@@ -12,6 +12,7 @@ import {
 	useOnboardingState,
 } from '@/api/modules/onboarding';
 import { useOnboardingStore } from './useOnboardingStore.hook';
+import { ONBOARDING_STEP_KEYS } from '../_helper/onboarding.constants';
 import { parseEmails, isValidEmail } from '../_helper/onboarding.helper';
 import { useOnboardingNavigation } from './useOnboardingNavigation.hook';
 
@@ -28,7 +29,7 @@ export const useOnboardingSubmit = () => {
 	const { data: onboardingData } = useOnboardingState();
 
 	const { state, dispatch } = useOnboardingStore();
-	const { advanceStep, goToApp } = useOnboardingNavigation();
+	const { advanceStep, goToApp, isLastPendingStep } = useOnboardingNavigation();
 
 	const {
 		currentStep,
@@ -70,8 +71,9 @@ export const useOnboardingSubmit = () => {
 	};
 
 	const handleNextStep = async () => {
-		// Step 2: Create workspace
-		if (currentStep === 1) {
+		const stepKey = ONBOARDING_STEP_KEYS[currentStep];
+
+		if (stepKey === 'create_workspace') {
 			if (workspaceCreated) {
 				advanceStep();
 				return;
@@ -93,8 +95,7 @@ export const useOnboardingSubmit = () => {
 			}
 		}
 
-		// Step 3: Invite team
-		if (currentStep === 2 && hasValidEmails && !invitesSent) {
+		if (stepKey === 'invite_team' && hasValidEmails && !invitesSent) {
 			try {
 				await inviteTeamMutation.mutateAsync({
 					emails: validInviteEmails,
@@ -108,8 +109,7 @@ export const useOnboardingSubmit = () => {
 			}
 		}
 
-		// Step 4: Role selection
-		if (currentStep === 3) {
+		if (stepKey === 'role_selection') {
 			try {
 				if (selectedJobRole) {
 					await selectRoleMutation.mutateAsync({ job_role: selectedJobRole });
@@ -119,8 +119,7 @@ export const useOnboardingSubmit = () => {
 			}
 		}
 
-		// Step 5: Choose plan
-		if (currentStep === 4) {
+		if (stepKey === 'choose_plan') {
 			if (selectedPlan === 'free') {
 				try {
 					await selectPlanMutation.mutateAsync({ plan_slug: 'free' });
@@ -153,21 +152,19 @@ export const useOnboardingSubmit = () => {
 			}
 		}
 
-		// Step 8: Discovery survey & complete
-		if (currentStep === 7) {
-			// The survey is optional, so a rejected answer must not stop the
-			// `complete` call below, otherwise onboarding never gets marked
-			// done and the user is sent back here on their next sign-in.
-			if (selectedSurvey) {
-				try {
-					await submitDiscoveryMutation.mutateAsync({
-						discovery_source: selectedSurvey,
-					});
-				} catch {
-					// Non-blocking
-				}
+		// The survey is optional, so a rejected answer must not stop the wizard.
+		if (stepKey === 'discovery_survey' && selectedSurvey) {
+			try {
+				await submitDiscoveryMutation.mutateAsync({ discovery_source: selectedSurvey });
+			} catch {
+				// Non-blocking
 			}
+		}
 
+		// Whichever step is the last one left finishes onboarding: without the
+		// `complete` call it never gets marked done and the user is sent back
+		// here on their next sign-in.
+		if (isLastPendingStep) {
 			try {
 				await completeMutation.mutateAsync();
 				await refreshCurrentUser();

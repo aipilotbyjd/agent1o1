@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import OnboardingProvider from '../../_context/OnboardingProvider.context';
 import { useOnboardingStore } from '../../_hooks/useOnboardingStore.hook';
-import { ROLES } from '../../_helper/onboarding.constants';
+import { ONBOARDING_STEP_KEYS, ROLES } from '../../_helper/onboarding.constants';
 import { parseEmails, isValidEmail, resolveStartStep } from '../../_helper/onboarding.helper';
 import { useOnboardingNavigation } from '../../_hooks/useOnboardingNavigation.hook';
 import { useOnboardingSubmit } from '../../_hooks/useOnboardingSubmit.hook';
@@ -91,7 +91,13 @@ const OnboardingShellInner = () => {
 	} = useOnboardingNavigation();
 	const { handleNextStep, isWorkspaceLoading, sendInvitationPending } = useOnboardingSubmit();
 
-	const isDualColumn = step >= 1;
+	const stepKey = ONBOARDING_STEP_KEYS[step];
+	const selectedPlanName = onboardingData?.meta?.plans?.find(
+		(plan) => plan.slug === selectedPlan,
+	)?.name;
+
+	// The profile picture is a single centred card; every other step has the preview panel.
+	const isDualColumn = stepKey !== 'profile_picture';
 	const isLastStep = isLastPendingStep;
 
 	const parsedInviteEmails = parseEmails(inviteEmails);
@@ -99,29 +105,33 @@ const OnboardingShellInner = () => {
 	const hasValidEmails = validInviteEmails.length > 0;
 
 	const isContinueDisabled =
-		step === 1 && !workspaceCreated && (!workspaceName.trim() || isWorkspaceLoading);
+		stepKey === 'create_workspace' &&
+		!workspaceCreated &&
+		(!workspaceName.trim() || isWorkspaceLoading);
 
 	const currentOrbitIcons = useMemo(() => {
-		if (step === 1) return ['slack', 'notion', 'github', 'google drive', 'gmail'];
-		if (step === 2) return ['slack', 'gmail', 'notion', 'github'];
-		if (step === 3) {
+		if (stepKey === 'create_workspace')
+			return ['slack', 'notion', 'github', 'google drive', 'gmail'];
+		if (stepKey === 'invite_team') return ['slack', 'gmail', 'notion', 'github'];
+		if (stepKey === 'role_selection') {
 			if (selectedRoleIndex === null) return ['slack', 'github', 'gmail'];
 			return ROLES[selectedRoleIndex].apps;
 		}
-		if (step === 4) return ['slack', 'github', 'notion', 'google drive', 'figma'];
-		if (step === 5) return ['openai', 'anthropic', 'google', 'meta', 'mistral'];
+		if (stepKey === 'choose_plan')
+			return ['slack', 'github', 'notion', 'google drive', 'figma'];
+		if (stepKey === 'connect_ai') return ['openai', 'anthropic', 'google', 'meta', 'mistral'];
 		// Nothing connected yet just means the user has not got there: keep the
 		// panel populated with the apps they are about to see rather than empty.
-		if (step === 6)
+		if (stepKey === 'connect_apps')
 			return connectedApps.length > 0
 				? connectedApps.map((a) => a.toLowerCase())
 				: ['slack', 'github', 'gmail', 'google drive'];
-		if (step === 7)
+		if (stepKey === 'discovery_survey')
 			return connectedApps.length > 0
 				? connectedApps.map((a) => a.toLowerCase())
 				: ['slack', 'github', 'gmail', 'notion'];
 		return ['slack', 'github', 'gmail'];
-	}, [step, selectedRoleIndex, connectedApps]);
+	}, [stepKey, selectedRoleIndex, connectedApps]);
 
 	if (isLoading) {
 		return (
@@ -217,19 +227,19 @@ const OnboardingShellInner = () => {
 										exit={{ opacity: 0, x: 15 }}
 										transition={{ duration: 0.25 }}
 										className='space-y-6'>
-										{step === 0 && <ProfileStep />}
-										{step === 1 && (
+										{stepKey === 'profile_picture' && <ProfileStep />}
+										{stepKey === 'create_workspace' && (
 											<WorkspaceStep
 												workspaceError={workspaceError}
 												setWorkspaceError={setWorkspaceError}
 											/>
 										)}
-										{step === 2 && <InviteTeamStep />}
-										{step === 3 && <RoleSelectionStep />}
-										{step === 4 && <PlanSelectionStep />}
-										{step === 5 && <ConnectAiStep />}
-										{step === 6 && <ConnectAppsStep />}
-										{step === 7 && <DiscoveryStep />}
+										{stepKey === 'invite_team' && <InviteTeamStep />}
+										{stepKey === 'role_selection' && <RoleSelectionStep />}
+										{stepKey === 'choose_plan' && <PlanSelectionStep />}
+										{stepKey === 'connect_ai' && <ConnectAiStep />}
+										{stepKey === 'connect_apps' && <ConnectAppsStep />}
+										{stepKey === 'discovery_survey' && <DiscoveryStep />}
 									</motion.div>
 								</AnimatePresence>
 							</div>
@@ -237,15 +247,17 @@ const OnboardingShellInner = () => {
 							{/* Footer navigation */}
 							<NavigationBar
 								step={step}
+								stepKey={stepKey}
 								isLastStep={isLastStep}
 								canGoBack={canGoBack}
-								canSkip={step > 1 && canSkipStep}
+								canSkip={canSkipStep}
 								isContinueDisabled={isContinueDisabled}
 								isWorkspaceLoading={isWorkspaceLoading}
 								sendInvitationPending={sendInvitationPending}
 								hasValidEmails={hasValidEmails}
 								invitesSent={invitesSent}
 								selectedPlan={selectedPlan}
+								selectedPlanName={selectedPlanName}
 								onPrev={handlePrevStep}
 								onSkip={handleSkip}
 								onNext={handleNextStep}
@@ -255,10 +267,11 @@ const OnboardingShellInner = () => {
 						{/* Right: Animated Orbit Panel */}
 						{isDualColumn && (
 							<OrbitAnimation
-								step={step}
+								stepKey={stepKey}
 								currentOrbitIcons={currentOrbitIcons}
 								selectedRoleIndex={selectedRoleIndex}
 								selectedPlan={selectedPlan}
+								selectedPlanName={selectedPlanName}
 								connectedApps={connectedApps}
 							/>
 						)}

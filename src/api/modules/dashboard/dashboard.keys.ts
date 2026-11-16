@@ -1,6 +1,7 @@
 import type { TDashboardWindowParams, TRunStatsParams } from '@/types/dashboard.type';
 
 export const dashboardKeys = {
+	overviews: (ws: string) => ['dashboard', ws, 'overview'] as const,
 	overview: (ws: string, params?: TDashboardWindowParams) =>
 		['dashboard', ws, 'overview', params ?? {}] as const,
 	runStats: (ws: string, params?: TRunStatsParams) =>

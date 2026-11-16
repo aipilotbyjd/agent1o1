@@ -1,21 +1,27 @@
 import { Check, Zap, Sparkles, Crown } from 'lucide-react';
 import { useOnboardingStore } from '../../_hooks/useOnboardingStore.hook';
-import { PLANS } from '../../_helper/onboarding.constants';
 import { useOnboardingState } from '@/api/modules/onboarding';
+import type { TPlan } from '@/types/billing.type';
+
+const formatLimit = (value: number | null | undefined, singular: string, plural: string) =>
+	value === null || value === undefined || value < 0
+		? `Unlimited ${plural}`
+		: `${value.toLocaleString()} ${value === 1 ? singular : plural}`;
+
+/** What the plan actually includes, read off the plan the API serves and enforces. */
+const planFeatures = (plan: TPlan) => [
+	`${plan.credits_monthly.toLocaleString()} credits / month`,
+	formatLimit(plan.limits?.workflows, 'workflow', 'workflows'),
+	formatLimit(plan.limits?.agents, 'agent', 'agents'),
+	formatLimit(plan.limits?.members, 'team member', 'team members'),
+];
 
 const PlanSelectionStep = () => {
 	const { state, dispatch } = useOnboardingStore();
 	const { selectedPlan } = state;
 	const { data: onboardingData } = useOnboardingState(); // fetch from react-query cache
 
-	const backendPlans =
-		onboardingData?.meta?.plans ||
-		PLANS.map((p) => ({
-			id: p.id,
-			name: p.name,
-			slug: p.id,
-			price_monthly: p.id === 'free' ? 0 : p.id === 'pro' ? 2900 : 7900,
-		}));
+	const plans = onboardingData?.meta?.plans ?? [];
 
 	return (
 		<>
@@ -30,18 +36,16 @@ const PlanSelectionStep = () => {
 			</div>
 
 			<div className='space-y-3'>
-				{backendPlans.map((plan) => {
+				{plans.map((plan) => {
 					const isSelected = selectedPlan === plan.slug;
 					const PlanIcon =
 						plan.slug === 'free' ? Zap : plan.slug === 'pro' ? Sparkles : Crown;
 
-					// Match with local PLANS to get rich descriptions/features
-					const localPlan = PLANS.find((p) => p.id === plan.slug);
-					const features = localPlan?.features || [];
-					const badge = localPlan?.badge;
-					const highlighted = localPlan?.highlighted;
+					const features = planFeatures(plan);
 					const priceDisplay =
-						plan.price_monthly === 0 ? '$0' : `$${(plan.price_monthly / 100).toFixed(plan.price_monthly % 100 === 0 ? 0 : 2)}`;
+						plan.price_monthly === 0
+							? '$0'
+							: `$${(plan.price_monthly / 100).toFixed(plan.price_monthly % 100 === 0 ? 0 : 2)}`;
 					const periodDisplay = plan.price_monthly === 0 ? 'forever' : '/ month';
 
 					return (
@@ -57,16 +61,8 @@ const PlanSelectionStep = () => {
 							className={`relative flex w-full items-start gap-3.5 rounded-2xl border p-4 text-left transition-all ${
 								isSelected
 									? 'border-primary-500 bg-primary-400/5 ring-primary-500/20 ring-1'
-									: highlighted
-										? 'border-primary-200 dark:border-primary-900/50 bg-white/40 hover:bg-slate-50 dark:bg-zinc-950/20 dark:hover:bg-zinc-800/30'
-										: 'border-slate-200 bg-white/40 hover:bg-slate-50 dark:border-zinc-800/80 dark:bg-zinc-950/20 dark:hover:bg-zinc-800/30'
+									: 'border-slate-200 bg-white/40 hover:bg-slate-50 dark:border-zinc-800/80 dark:bg-zinc-950/20 dark:hover:bg-zinc-800/30'
 							}`}>
-							{badge && (
-								<span className='bg-primary-400 text-primary-950 absolute -top-2.5 left-4 rounded-full px-2.5 py-0.5 text-[10px] font-black'>
-									{badge}
-								</span>
-							)}
-
 							{/* Radio */}
 							<div
 								className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${isSelected ? 'border-primary-500 bg-primary-400' : 'border-slate-300 dark:border-zinc-600'}`}>

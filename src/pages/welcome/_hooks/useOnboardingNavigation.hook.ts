@@ -31,8 +31,7 @@ export const useOnboardingNavigation = () => {
 
 	/**
 	 * Leaving onboarding lands on the workspace dashboard, which is scoped
-	 * (`/:workspaceId/dashboard`). A user who never got a workspace - skipped
-	 * step 2, or dismissed before it - goes to the workspace picker instead.
+	 * (`/:workspaceId/dashboard`). A user who never got a workspace goes to the workspace picker instead.
 	 */
 	const goToApp = () => {
 		const workspaceId = createdWorkspaceId || userData?.current_workspace_id;
@@ -46,7 +45,9 @@ export const useOnboardingNavigation = () => {
 	// The workspace and plan steps are required: until both are done the wizard
 	// cannot be skipped past or closed (the backend refuses it too).
 	const isStepDone = (key: string) => steps.find((step) => step.key === key)?.completed === true;
-	const canSkipStep = ONBOARDING_STEP_KEYS[currentStep] !== 'choose_plan';
+	const canSkipStep = !['create_workspace', 'choose_plan'].includes(
+		ONBOARDING_STEP_KEYS[currentStep],
+	);
 	const canLeaveOnboarding = isStepDone('create_workspace') && isStepDone('choose_plan');
 
 	// Completed steps are never shown again, in either direction.

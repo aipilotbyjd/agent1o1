@@ -1,4 +1,4 @@
-import { STEP_LABELS, TOTAL_STEPS } from '../../_helper/onboarding.constants';
+import { ONBOARDING_STEP_KEYS, STEP_LABELS, TOTAL_STEPS } from '../../_helper/onboarding.constants';
 
 interface IStepIndicatorProps {
 	step: number;
@@ -10,7 +10,7 @@ const StepIndicator = ({ step }: IStepIndicatorProps) => (
 			Step {step + 1} of {TOTAL_STEPS}
 		</span>
 		<span className='h-1 w-1 rounded-full bg-slate-300 dark:bg-zinc-700' />
-		<span>{STEP_LABELS[step]}</span>
+		<span>{STEP_LABELS[ONBOARDING_STEP_KEYS[step]]}</span>
 	</div>
 );
 

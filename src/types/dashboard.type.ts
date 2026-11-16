@@ -56,6 +56,41 @@ export type TDashboardCounts = {
 	members: number;
 };
 
+export type TGettingStartedMilestoneKey =
+	| 'run_workflow'
+	| 'connect_app'
+	| 'activate_trigger'
+	| 'create_agent'
+	| 'invite_teammate';
+
+export type TGettingStartedMilestone = {
+	key: TGettingStartedMilestoneKey;
+	label: string;
+	description: string;
+	completed: boolean;
+};
+
+export type TRecommendedTemplate = {
+	id: string;
+	name: string;
+	description: string | null;
+	category: string | null;
+	icon: string | null;
+	color: string | null;
+};
+
+/**
+ * The dashboard checklist. Milestones are read off what the workspace has
+ * done (so they are shared by its members); `dismissed` is the viewer's own.
+ * `recommended_templates` is empty once the workspace has a workflow.
+ */
+export type TGettingStarted = {
+	dismissed: boolean;
+	completed: boolean;
+	milestones: TGettingStartedMilestone[];
+	recommended_templates: TRecommendedTemplate[];
+};
+
 export type TDashboardOverview = {
 	window: TDashboardWindow;
 	runs: TRunTotals;
@@ -65,6 +100,7 @@ export type TDashboardOverview = {
 	pending_agent_actions?: number;
 	credits: TDashboardCredits;
 	counts: TDashboardCounts;
+	getting_started?: TGettingStarted;
 	recent_runs: TRun[];
 };
 

@@ -1,7 +1,7 @@
 import { activateOnKey } from '@/utils/activateOnKey.util';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useOutletContext, useNavigate, useParams } from 'react-router';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
 	GitMerge,
 	Bot,
@@ -13,18 +13,12 @@ import {
 	Zap,
 	ArrowRight,
 	ArrowUpRight,
-	Check,
-	Circle,
-	X,
-	Mail,
-	User,
 	Crown,
 	Plus,
 	FileText,
 	History,
 	Inbox,
 	ShieldCheck,
-	KeyRound,
 } from 'lucide-react';
 import { OutletContextType } from '@/pages/coreapp/Dashboard/_layouts/Dashboard.layout';
 import Breadcrumb from '@/components/layout/Breadcrumb';
@@ -32,15 +26,14 @@ import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
 import paths, { withWorkspace } from '@/Routes/paths';
 import { useAuth } from '@/context/auth';
-import { useOnboardingState, useDismissOnboarding } from '@/api/modules/onboarding';
 import { useBillingOverview } from '@/api/modules/billing';
 import { useCreateWorkflow } from '@/api/modules/workflows';
-import type { TOnboardingStepKey } from '@/types/onboarding.type';
 import { useWorkspaceContext } from '@/context/workspace';
 import usePermission from '@/hooks/usePermission';
 import { useDashboard } from './_helper/dashboard.adapter';
 import PendingApprovalsCard from './_partial/PendingApprovalsCard.partial';
 import PendingAgentActionsCard from './_partial/PendingAgentActionsCard.partial';
+import GettingStartedCard from './_partial/GettingStartedCard.partial';
 import { STATUS_BADGE_COLORS, type TExecutionStatus } from './_types/dashboard.type';
 
 const workspacePages = pages.workspace.subPages!;
@@ -84,17 +77,6 @@ const buildSpark = (values: number[], w = 100, h = 30) => {
 	const line = pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'} ${x} ${y}`).join(' ');
 	const area = `${line} L ${pts[pts.length - 1][0]} ${h} L ${pts[0][0]} ${h} Z`;
 	return { line, area };
-};
-
-const onboardingIcons: Record<TOnboardingStepKey, React.ComponentType<{ size?: number }>> = {
-	profile_picture: User,
-	create_workspace: Plus,
-	invite_team: Mail,
-	role_selection: ShieldCheck,
-	choose_plan: Crown,
-	connect_ai: KeyRound,
-	connect_apps: GitMerge,
-	discovery_survey: FileText,
 };
 
 // KPI tile tones
@@ -183,28 +165,6 @@ const DashboardPage = () => {
 			tone: TONES.blue,
 		},
 	];
-
-	// ─── Onboarding (GET /user/onboarding) ─────────────────────────────────────
-	const { data: onboarding } = useOnboardingState();
-	const dismissOnboarding = useDismissOnboarding();
-	const [isOnboardingDismissed, setIsOnboardingDismissed] = useState(false);
-	const showOnboarding =
-		!!onboarding && !onboarding.completed && !onboarding.dismissed && !isOnboardingDismissed;
-	const completedStepCount = onboarding?.steps.filter((item) => item.completed).length ?? 0;
-	const nextOnboardingStep = onboarding?.steps.find((item) => !item.completed);
-
-	/**
-	 * Every checklist item reopens the one onboarding wizard on its own step,
-	 * so the dashboard never lands on a different page than the wizard shows.
-	 */
-	const handleOnboardingAction = (key: TOnboardingStepKey) => {
-		navigate(`${pages.welcome.to}?step=${key}`);
-	};
-
-	const handleDismissOnboarding = () => {
-		setIsOnboardingDismissed(true);
-		dismissOnboarding.mutate();
-	};
 
 	// ─── Banner identity ───────────────────────────────────────────────────────
 	const colorList = [
@@ -474,95 +434,7 @@ const DashboardPage = () => {
 					</div>
 				</motion.div>
 
-				{/* ─── Onboarding checklist ───────────────────────────────────── */}
-				<AnimatePresence>
-					{showOnboarding && onboarding && (
-						<motion.div
-							initial={{ opacity: 0, y: -10 }}
-							animate={{ opacity: 1, y: 0 }}
-							exit={{ opacity: 0, y: -10, height: 0 }}
-							transition={{ duration: 0.3 }}
-							className='border-border-main bg-bg-card overflow-hidden rounded-3xl border p-5 shadow-sm'>
-							<div className='flex flex-wrap items-start justify-between gap-4'>
-								<div>
-									<p className='text-primary-600 dark:text-primary-400 text-[10px] font-black tracking-[0.18em] uppercase'>
-										Account setup
-									</p>
-									<h2 className='mt-1 text-sm font-black text-slate-950 dark:text-white'>
-										{completedStepCount} of {onboarding.steps.length} milestones
-										complete
-									</h2>
-								</div>
-								<button
-									type='button'
-									onClick={handleDismissOnboarding}
-									className='flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
-									<X className='h-3.5 w-3.5' />
-									Dismiss
-								</button>
-							</div>
-
-							<div className='bg-primary-100/50 dark:bg-primary-900/20 mt-3 h-1.5 overflow-hidden rounded-full'>
-								<div
-									className='from-primary-400 to-primary-400 h-full rounded-full bg-gradient-to-r transition-all duration-500'
-									style={{
-										width: `${(completedStepCount / Math.max(onboarding.steps.length, 1)) * 100}%`,
-									}}
-								/>
-							</div>
-
-							<div className='mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3'>
-								{onboarding.steps.map((item) => {
-									const isNext = nextOnboardingStep?.key === item.key;
-									const IconComp = onboardingIcons[item.key] || Circle;
-									const cardBorder =
-										isNext && !item.completed
-											? 'border-primary-400 shadow-sm'
-											: 'border-border-main';
-									const iconStyle = item.completed
-										? 'bg-primary-100/50 text-primary-600 dark:bg-primary-950/20 dark:text-primary-400'
-										: isNext
-											? 'bg-primary-100/60 text-primary-600 dark:bg-primary-950/40 dark:text-primary-400'
-											: 'bg-slate-50 text-slate-400 dark:bg-zinc-900 dark:text-zinc-600';
-									return (
-										<button
-											key={item.key}
-											type='button'
-											onClick={() => handleOnboardingAction(item.key)}
-											className={`bg-bg-card hover:border-primary-400 flex items-center justify-between gap-3 rounded-2xl border p-4 text-left transition-all duration-200 hover:shadow-md ${cardBorder}`}>
-											<div className='flex min-w-0 flex-1 items-center gap-3.5'>
-												<div
-													className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${iconStyle}`}>
-													<IconComp size={16} />
-												</div>
-												<div className='min-w-0 flex-1'>
-													<span
-														className={`block truncate text-xs font-black ${item.completed ? 'text-slate-500 dark:text-zinc-400' : 'text-slate-800 dark:text-zinc-100'}`}>
-														{item.label}
-													</span>
-													<span className='mt-0.5 block truncate text-[10px] leading-relaxed font-semibold text-slate-400 dark:text-zinc-500'>
-														{item.description}
-													</span>
-												</div>
-											</div>
-											<div className='shrink-0 pl-1'>
-												{item.completed ? (
-													<div className='bg-primary-400 text-primary-950 flex h-4.5 w-4.5 items-center justify-center rounded-full'>
-														<Check className='h-3 w-3 stroke-[3]' />
-													</div>
-												) : (
-													<Circle
-														className={`h-4.5 w-4.5 shrink-0 ${isNext ? 'text-primary-500' : 'text-slate-300 dark:text-zinc-600'}`}
-													/>
-												)}
-											</div>
-										</button>
-									);
-								})}
-							</div>
-						</motion.div>
-					)}
-				</AnimatePresence>
+				<GettingStartedCard ws={currentWorkspaceId} />
 
 				{/* ─── KPI row ─────────────────────────────────────────────────── */}
 				<section className='grid grid-cols-2 gap-4 lg:grid-cols-4'>
