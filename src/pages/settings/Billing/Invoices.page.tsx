@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router';
 import { CalendarClock, Download, ExternalLink, FileText, ShieldCheck } from 'lucide-react';
-import { useWorkspace } from '@/api/modules/workspaces';
+import { useCan } from '@/hooks/usePermission';
 import { useInvoices, useUpcomingInvoice } from '@/api/modules/billing';
 import type { TInvoice } from '@/types/billing.type';
 import { INVOICE_STATUS_STYLES, fmtInvoiceDate } from './_helper/invoices.helper';
@@ -43,22 +43,21 @@ const InvoiceLinks = ({ invoice }: { invoice: TInvoice }) => (
  */
 const BillingInvoicesPage = () => {
 	const { workspaceId } = useParams<{ workspaceId: string }>();
-	const { data: workspace } = useWorkspace(workspaceId!);
-	const canManage = workspace?.role === 'admin' || workspace?.role === 'owner';
+	const canView = useCan('billing.view');
 
 	const [cursors, setCursors] = useState<(string | undefined)[]>([undefined]);
 	const [openInvoiceId, setOpenInvoiceId] = useState<string | null>(null);
 	const cursor = cursors[cursors.length - 1];
 
-	const { data: upcoming } = useUpcomingInvoice(canManage ? workspaceId! : '');
+	const { data: upcoming } = useUpcomingInvoice(canView ? workspaceId! : '');
 	const { data, isLoading, isError, isFetching, refetch } = useInvoices(
-		canManage ? workspaceId! : '',
+		canView ? workspaceId! : '',
 		{ per_page: PER_PAGE, cursor },
 	);
 	const invoices = data?.invoices ?? [];
 	const nextCursor = data?.meta?.next_cursor ?? null;
 
-	if (workspace && !canManage) {
+	if (!canView) {
 		return (
 			<div className='flex min-h-[50vh] flex-col items-center justify-center gap-4 text-center'>
 				<ShieldCheck size={40} className='text-zinc-300 dark:text-zinc-600' />
@@ -66,7 +65,7 @@ const BillingInvoicesPage = () => {
 					Access Restricted
 				</h2>
 				<p className='max-w-sm text-sm text-zinc-500 dark:text-zinc-400'>
-					Only workspace admins and owners can view invoices.
+					Your role in this workspace does not include billing.
 				</p>
 			</div>
 		);
@@ -196,7 +195,7 @@ const BillingInvoicesPage = () => {
 			</div>
 
 			<InvoiceDetailModal
-				ws={canManage ? workspaceId! : ''}
+				ws={canView ? workspaceId! : ''}
 				invoiceId={openInvoiceId}
 				onClose={() => setOpenInvoiceId(null)}
 			/>

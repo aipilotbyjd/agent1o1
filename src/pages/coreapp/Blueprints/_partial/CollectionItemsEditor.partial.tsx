@@ -8,6 +8,7 @@ import {
 	useWorkflowTemplates,
 } from '@/api/modules/templates';
 import type { TTemplatableType, TTemplateCollection } from '@/types/template.type';
+import { useCan } from '@/hooks/usePermission';
 
 /**
  * The "Included Assets" list of a collection, editable in place: add any
@@ -33,6 +34,7 @@ const CollectionItemsEditor = ({
 	const addItem = useAddTemplateCollectionItem(ws, collection.id);
 	const removeItem = useRemoveTemplateCollectionItem(ws, collection.id);
 	const reorderItems = useReorderTemplateCollectionItems(ws, collection.id);
+	const canEdit = useCan('template.manage');
 
 	const [pick, setPick] = useState('');
 	const [removingId, setRemovingId] = useState<string | null>(null);
@@ -84,7 +86,9 @@ const CollectionItemsEditor = ({
 			<div className='flex flex-col gap-3'>
 				{items.length === 0 && (
 					<p className='rounded-xl border border-dashed border-zinc-200 px-4 py-6 text-center text-xs font-semibold text-zinc-400 dark:border-zinc-800'>
-						Nothing in this collection yet. Add a template below.
+						{canEdit
+							? 'Nothing in this collection yet. Add a template below.'
+							: 'Nothing in this collection yet.'}
 					</p>
 				)}
 				{items.map((item, idx) => {
@@ -120,83 +124,89 @@ const CollectionItemsEditor = ({
 									{desc}
 								</p>
 							</div>
-							<div className='flex shrink-0 items-start gap-0.5'>
-								<button
-									type='button'
-									aria-label={`Move ${name} up`}
-									title='Move up'
-									disabled={idx === 0 || reorderItems.isPending}
-									onClick={() => move(idx, -1)}
-									className='rounded-lg p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
-									<ArrowUp size={13} />
-								</button>
-								<button
-									type='button'
-									aria-label={`Move ${name} down`}
-									title='Move down'
-									disabled={idx === items.length - 1 || reorderItems.isPending}
-									onClick={() => move(idx, 1)}
-									className='rounded-lg p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
-									<ArrowDown size={13} />
-								</button>
-								<button
-									type='button'
-									aria-label={`Remove ${name} from collection`}
-									title='Remove from collection'
-									disabled={removingId === item.id}
-									onClick={() => handleRemove(item.id)}
-									className='rounded-lg p-1.5 text-zinc-400 transition hover:bg-rose-50 hover:text-rose-500 disabled:opacity-40 dark:hover:bg-rose-950/20'>
-									{removingId === item.id ? (
-										<Loader2 size={13} className='animate-spin' />
-									) : (
-										<Trash2 size={13} />
-									)}
-								</button>
-							</div>
+							{canEdit && (
+								<div className='flex shrink-0 items-start gap-0.5'>
+									<button
+										type='button'
+										aria-label={`Move ${name} up`}
+										title='Move up'
+										disabled={idx === 0 || reorderItems.isPending}
+										onClick={() => move(idx, -1)}
+										className='rounded-lg p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
+										<ArrowUp size={13} />
+									</button>
+									<button
+										type='button'
+										aria-label={`Move ${name} down`}
+										title='Move down'
+										disabled={
+											idx === items.length - 1 || reorderItems.isPending
+										}
+										onClick={() => move(idx, 1)}
+										className='rounded-lg p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
+										<ArrowDown size={13} />
+									</button>
+									<button
+										type='button'
+										aria-label={`Remove ${name} from collection`}
+										title='Remove from collection'
+										disabled={removingId === item.id}
+										onClick={() => handleRemove(item.id)}
+										className='rounded-lg p-1.5 text-zinc-400 transition hover:bg-rose-50 hover:text-rose-500 disabled:opacity-40 dark:hover:bg-rose-950/20'>
+										{removingId === item.id ? (
+											<Loader2 size={13} className='animate-spin' />
+										) : (
+											<Trash2 size={13} />
+										)}
+									</button>
+								</div>
+							)}
 						</div>
 					);
 				})}
 			</div>
 
-			<div className='mt-3 flex gap-2'>
-				<select
-					aria-label='Template to add'
-					value={pick}
-					onChange={(e) => setPick(e.target.value)}
-					className='focus:ring-primary-500 h-9 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-700 outline-none focus:ring-1 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300'>
-					<option value=''>Add a template…</option>
-					{available.workflows.length > 0 && (
-						<optgroup label='Workflow templates'>
-							{available.workflows.map((t) => (
-								<option key={t.id} value={`workflow_template:${t.id}`}>
-									{t.name}
-								</option>
-							))}
-						</optgroup>
-					)}
-					{available.agents.length > 0 && (
-						<optgroup label='Agent templates'>
-							{available.agents.map((t) => (
-								<option key={t.id} value={`agent_template:${t.id}`}>
-									{t.name}
-								</option>
-							))}
-						</optgroup>
-					)}
-				</select>
-				<button
-					type='button'
-					onClick={handleAdd}
-					disabled={!pick || addItem.isPending}
-					className='flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-amber-400 px-3.5 text-xs font-black text-amber-950 transition hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-50'>
-					{addItem.isPending ? (
-						<Loader2 size={12} className='animate-spin' />
-					) : (
-						<Plus size={12} />
-					)}
-					Add
-				</button>
-			</div>
+			{canEdit && (
+				<div className='mt-3 flex gap-2'>
+					<select
+						aria-label='Template to add'
+						value={pick}
+						onChange={(e) => setPick(e.target.value)}
+						className='focus:ring-primary-500 h-9 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-700 outline-none focus:ring-1 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300'>
+						<option value=''>Add a template…</option>
+						{available.workflows.length > 0 && (
+							<optgroup label='Workflow templates'>
+								{available.workflows.map((t) => (
+									<option key={t.id} value={`workflow_template:${t.id}`}>
+										{t.name}
+									</option>
+								))}
+							</optgroup>
+						)}
+						{available.agents.length > 0 && (
+							<optgroup label='Agent templates'>
+								{available.agents.map((t) => (
+									<option key={t.id} value={`agent_template:${t.id}`}>
+										{t.name}
+									</option>
+								))}
+							</optgroup>
+						)}
+					</select>
+					<button
+						type='button'
+						onClick={handleAdd}
+						disabled={!pick || addItem.isPending}
+						className='flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-amber-400 px-3.5 text-xs font-black text-amber-950 transition hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-50'>
+						{addItem.isPending ? (
+							<Loader2 size={12} className='animate-spin' />
+						) : (
+							<Plus size={12} />
+						)}
+						Add
+					</button>
+				</div>
+			)}
 		</div>
 	);
 };

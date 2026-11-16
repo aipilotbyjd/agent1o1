@@ -114,7 +114,7 @@ const keepMeasurements = (next: TCanvasNode[], previous: TCanvasNode[]): TCanvas
 };
 
 const Canvas = () => {
-	const { state, dispatch } = useWorkflowEditor();
+	const { state, dispatch, canEdit } = useWorkflowEditor();
 	const { isDarkTheme } = useDarkMode();
 	const reactFlow = useReactFlow<TCanvasNode>();
 	const isChatActive = useAiChatStore((store) => store.isChatActive);
@@ -435,6 +435,9 @@ const Canvas = () => {
 				edges={edges}
 				nodeTypes={nodeTypes}
 				edgeTypes={edgeTypes}
+				nodesDraggable={canEdit}
+				nodesConnectable={canEdit}
+				edgesReconnectable={canEdit}
 				onNodesChange={onNodesChange}
 				onConnect={onConnect}
 				onConnectEnd={onConnectEnd}
@@ -456,6 +459,8 @@ const Canvas = () => {
 				}}
 				onPaneContextMenu={(event) => {
 					event.preventDefault();
+					// The menu only adds nodes.
+					if (!canEdit) return;
 					setContextMenu({
 						x: event.clientX,
 						y: event.clientY,
@@ -550,7 +555,13 @@ const Canvas = () => {
 				)}
 			</AnimatePresence>
 			{state.nodes.length === 0 ? (
-				<CanvasEmptyState />
+				canEdit ? (
+					<CanvasEmptyState />
+				) : (
+					<div className='pointer-events-none absolute inset-0 flex items-center justify-center text-sm font-semibold text-zinc-400 dark:text-zinc-500'>
+						This workflow has no steps yet.
+					</div>
+				)
 			) : (
 				<CanvasStats nodes={state.nodes.length} edges={state.edges.length} />
 			)}

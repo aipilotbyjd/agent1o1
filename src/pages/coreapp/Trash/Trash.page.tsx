@@ -19,6 +19,7 @@ import { useAgentTrash, useForceDeleteAgent, useRestoreAgent } from '@/api/modul
 import { agentColorTileClass, agentIconFor } from '@/pages/coreapp/Agents/_helper/agentAppearance';
 import Icon from '@/components/icon/Icon';
 import ListSkeletonPart from '@/parts/ListSkeleton.part';
+import { usePermission } from '@/hooks/usePermission';
 import TrashOutcomeModal, { type TTrashOutcome } from './_partial/TrashOutcomeModal.partial';
 
 type TTrashTab = 'workflows' | 'agents';
@@ -81,6 +82,7 @@ const TrashPage = () => {
 	const restoreAgent = useRestoreAgent(ws);
 	const forceDeleteWorkflow = useForceDeleteWorkflow(ws);
 	const forceDeleteAgent = useForceDeleteAgent(ws);
+	const { can } = usePermission();
 
 	const items = useMemo<Record<TTrashTab, TTrashItem[]>>(
 		() => ({
@@ -118,6 +120,8 @@ const TrashPage = () => {
 	const singular = tab === 'workflows' ? 'workflow' : 'agent';
 	const restoreMutation = tab === 'workflows' ? restoreWorkflow : restoreAgent;
 	const forceDeleteMutation = tab === 'workflows' ? forceDeleteWorkflow : forceDeleteAgent;
+	// Restoring and deleting forever both need the type's manage permission.
+	const canManageTab = can(tab === 'workflows' ? 'workflow.manage' : 'agent.manage');
 
 	const [outcome, setOutcome] = useState<(TTrashOutcome & { id: string; tab: TTrashTab }) | null>(
 		null,
@@ -312,27 +316,31 @@ const TrashPage = () => {
 											</div>
 										</div>
 
-										<div className='grid grid-cols-2 gap-2 @xl:flex @xl:shrink-0 @xl:items-center'>
-											<button
-												type='button'
-												onClick={() => handleRestore(item)}
-												disabled={isRestoring || isDeleting}
-												className='border-border-main bg-bg-card flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-xl border px-3.5 text-[11px] font-bold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 @xl:h-9 dark:text-zinc-300 dark:hover:bg-zinc-900'>
-												<RotateCcw
-													size={12}
-													className={isRestoring ? 'animate-spin' : ''}
-												/>
-												Restore
-											</button>
-											<button
-												type='button'
-												onClick={() => handleForceDelete(item)}
-												disabled={isRestoring || isDeleting}
-												className='flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-3.5 text-[11px] font-bold text-slate-500 transition-all hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 @xl:h-9 dark:border-zinc-800 dark:text-zinc-400 dark:hover:border-rose-900/30 dark:hover:bg-rose-950/20'>
-												<Trash2 size={12} />
-												Delete forever
-											</button>
-										</div>
+										{canManageTab && (
+											<div className='grid grid-cols-2 gap-2 @xl:flex @xl:shrink-0 @xl:items-center'>
+												<button
+													type='button'
+													onClick={() => handleRestore(item)}
+													disabled={isRestoring || isDeleting}
+													className='border-border-main bg-bg-card flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-xl border px-3.5 text-[11px] font-bold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 @xl:h-9 dark:text-zinc-300 dark:hover:bg-zinc-900'>
+													<RotateCcw
+														size={12}
+														className={
+															isRestoring ? 'animate-spin' : ''
+														}
+													/>
+													Restore
+												</button>
+												<button
+													type='button'
+													onClick={() => handleForceDelete(item)}
+													disabled={isRestoring || isDeleting}
+													className='flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-3.5 text-[11px] font-bold text-slate-500 transition-all hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 @xl:h-9 dark:border-zinc-800 dark:text-zinc-400 dark:hover:border-rose-900/30 dark:hover:bg-rose-950/20'>
+													<Trash2 size={12} />
+													Delete forever
+												</button>
+											</div>
+										)}
 									</motion.li>
 								);
 							})}

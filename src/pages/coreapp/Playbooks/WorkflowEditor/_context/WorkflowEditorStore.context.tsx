@@ -148,7 +148,39 @@ export type TWorkflowEditorAction =
 export type TWorkflowEditorContextValue = {
 	state: TWorkflowEditorState;
 	dispatch: React.Dispatch<TWorkflowEditorAction>;
+	/** The viewer may change this workflow (`workflow.manage`); otherwise the editor is read-only. */
+	canEdit: boolean;
 };
+
+/** Actions that change the graph or its saved settings, dropped while the editor is read-only. */
+export const EDIT_ACTION_TYPES: ReadonlySet<TWorkflowEditorAction['type']> = new Set([
+	'ADD_NODE',
+	'ADD_TEMPLATE',
+	'APPLY_TEMPLATE',
+	'MOVE_NODE',
+	'UPDATE_NODE_VALUE',
+	'RENAME_NODE',
+	'CONFIGURE_NODE_INPUTS',
+	'DELETE_SELECTED',
+	'DUPLICATE_SELECTED',
+	'ADD_EDGE',
+	'REMOVE_EDGE',
+	'AUTO_LAYOUT',
+	'UNDO',
+	'REDO',
+	'APPLY_BUILDER_DRAFT',
+	'RESTORE_DRAFT',
+	'BUILDER_ADD_NODE',
+	'BUILDER_UPDATE_NODE',
+	'BUILDER_REMOVE_NODE',
+	'BUILDER_REMOVE_EDGE',
+	'SET_NODE_COLOR',
+	'TOGGLE_NODE_LOOP_MODE',
+	'ADD_NODE_COMMENT',
+	'REMOVE_NODE_COMMENT',
+	'PIN_NODE_OUTPUT',
+	'UNPIN_NODE',
+]);
 
 export const WorkflowEditorContext = createContext<TWorkflowEditorContextValue | null>(null);
 

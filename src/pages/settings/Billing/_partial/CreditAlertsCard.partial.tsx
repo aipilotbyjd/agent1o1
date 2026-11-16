@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { BellRing, X } from 'lucide-react';
 import { notify } from '@/api/core';
 import { useCreditNotifications, useUpdateCreditNotifications } from '@/api/modules/billing';
+import { useCan } from '@/hooks/usePermission';
 
 const cardClass =
 	'rounded-2xl border border-zinc-100 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-950/60';
@@ -15,6 +16,7 @@ const cardClass =
 const CreditAlertsCard = ({ ws }: { ws: string }) => {
 	const { data: settings, isLoading, isError } = useCreditNotifications(ws);
 	const update = useUpdateCreditNotifications(ws);
+	const canManage = useCan('billing.manage');
 	const [draft, setDraft] = useState('');
 
 	const thresholds = settings?.thresholds ?? [];
@@ -86,7 +88,8 @@ const CreditAlertsCard = ({ ws }: { ws: string }) => {
 							role='switch'
 							aria-checked={settings.out_of_credits_enabled}
 							aria-label='Email when credits run out'
-							disabled={update.isPending}
+							title={canManage ? undefined : 'Only admins can change usage alerts'}
+							disabled={!canManage || update.isPending}
 							onClick={toggleOutOfCredits}
 							className={`relative h-6 w-11 shrink-0 rounded-full transition disabled:opacity-60 ${
 								settings.out_of_credits_enabled
@@ -106,7 +109,7 @@ const CreditAlertsCard = ({ ws }: { ws: string }) => {
 							<span className='text-xs font-bold text-zinc-600 dark:text-zinc-300'>
 								Email at usage
 							</span>
-							{!settings.is_default && (
+							{canManage && !settings.is_default && (
 								<button
 									type='button'
 									disabled={update.isPending}
@@ -129,43 +132,51 @@ const CreditAlertsCard = ({ ws }: { ws: string }) => {
 									key={value}
 									className='inline-flex items-center gap-1 rounded-full bg-sky-50 py-1 pr-1.5 pl-3 text-xs font-bold text-sky-700 dark:bg-sky-950/40 dark:text-sky-300'>
 									{value}%
-									<button
-										type='button'
-										aria-label={`Remove ${value}% alert`}
-										disabled={update.isPending}
-										onClick={() =>
-											saveThresholds(
-												thresholds.filter((t) => t !== value),
-												`Removed the ${value}% alert.`,
-											)
-										}
-										className='rounded-full p-0.5 hover:bg-sky-100 disabled:opacity-60 dark:hover:bg-sky-900/40'>
-										<X size={12} />
-									</button>
+									{canManage && (
+										<button
+											type='button'
+											aria-label={`Remove ${value}% alert`}
+											disabled={update.isPending}
+											onClick={() =>
+												saveThresholds(
+													thresholds.filter((t) => t !== value),
+													`Removed the ${value}% alert.`,
+												)
+											}
+											className='rounded-full p-0.5 hover:bg-sky-100 disabled:opacity-60 dark:hover:bg-sky-900/40'>
+											<X size={12} />
+										</button>
+									)}
 								</span>
 							))}
 						</div>
-						<form onSubmit={handleAdd} className='mt-3 flex gap-2'>
-							<input
-								inputMode='numeric'
-								aria-label='New alert percentage'
-								value={draft}
-								disabled={isFull}
-								onChange={(e) => setDraft(e.target.value.replace(/[^\d]/g, ''))}
-								placeholder={
-									isFull
-										? `Up to ${settings.maximum_thresholds} alerts`
-										: 'Add a percentage, e.g. 90'
-								}
-								className='focus:border-primary-400 focus:ring-primary-200 dark:focus:ring-primary-500/20 h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-800 outline-none focus:ring-4 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100'
-							/>
-							<button
-								type='submit'
-								disabled={!isValid || isFull || update.isPending}
-								className='h-10 shrink-0 rounded-xl border border-zinc-200 bg-white px-4 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700'>
-								Add
-							</button>
-						</form>
+						{!canManage ? (
+							<p className='mt-3 text-xs font-semibold text-zinc-400'>
+								Only workspace admins can change usage alerts.
+							</p>
+						) : (
+							<form onSubmit={handleAdd} className='mt-3 flex gap-2'>
+								<input
+									inputMode='numeric'
+									aria-label='New alert percentage'
+									value={draft}
+									disabled={isFull}
+									onChange={(e) => setDraft(e.target.value.replace(/[^\d]/g, ''))}
+									placeholder={
+										isFull
+											? `Up to ${settings.maximum_thresholds} alerts`
+											: 'Add a percentage, e.g. 90'
+									}
+									className='focus:border-primary-400 focus:ring-primary-200 dark:focus:ring-primary-500/20 h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-800 outline-none focus:ring-4 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100'
+								/>
+								<button
+									type='submit'
+									disabled={!isValid || isFull || update.isPending}
+									className='h-10 shrink-0 rounded-xl border border-zinc-200 bg-white px-4 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700'>
+									Add
+								</button>
+							</form>
+						)}
 					</div>
 				</>
 			)}

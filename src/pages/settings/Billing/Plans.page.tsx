@@ -4,6 +4,7 @@ import { Check, ChevronDown, X, Zap } from 'lucide-react';
 import { notify } from '@/api/core';
 import { useBillingOverview, useCheckoutSubscription, usePlans } from '@/api/modules/billing';
 import type { TBillingInterval } from '@/types/billing.type';
+import { useCan } from '@/hooks/usePermission';
 import SwapPlanModal from './_partial/SwapPlanModal.partial';
 
 const FEATURE_LABELS: Record<string, string> = {
@@ -52,6 +53,7 @@ const BillingPlansPage = () => {
 	const { data: plans, isLoading } = usePlans(workspaceId!);
 	const { data: overview } = useBillingOverview(workspaceId!);
 	const checkout = useCheckoutSubscription(workspaceId!);
+	const canManage = useCan('billing.manage');
 	const [interval, setInterval] = useState<TBillingInterval>('monthly');
 	const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
 	const [swapTarget, setSwapTarget] = useState<{ id: string; name: string } | null>(null);
@@ -233,7 +235,12 @@ const BillingPlansPage = () => {
 									<button
 										type='button'
 										onClick={() => handleCheckout(plan.id)}
-										disabled={checkout.isPending}
+										title={
+											canManage
+												? undefined
+												: 'Only workspace admins can change the plan'
+										}
+										disabled={!canManage || checkout.isPending}
 										className='flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-950 py-2.5 text-sm font-black text-white transition hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200'>
 										<Zap size={14} />
 										{checkout.isPending &&

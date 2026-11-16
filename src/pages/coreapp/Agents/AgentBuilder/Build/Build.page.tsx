@@ -205,7 +205,7 @@ import {
 	useRejectAgentPlan,
 	useSessionAgentActions,
 } from '@/api/modules/agent-actions';
-import { useWorkspace } from '@/api/modules/workspaces';
+import { usePermission } from '@/hooks/usePermission';
 import { useRealtime } from '@/context/realtime';
 import type { IEchoLike } from '@/api/modules/workflow-builder/workflow-builder.realtime';
 import type { TAgentSessionStreamEvent } from '@/types/agent.type';
@@ -1257,9 +1257,11 @@ const BuildPage = () => {
 		currentAgentId ?? '',
 		conversationId ?? '',
 	);
-	// "Always allow" needs agent.manage: editors and up.
-	const { data: activeWorkspace } = useWorkspace(workspaceId);
-	const canManageAgents = ['owner', 'admin', 'editor'].includes(activeWorkspace?.role ?? '');
+	// Without agent.manage the builder is read-only; chatting needs agent.chat.
+	const { can } = usePermission();
+	const canManageAgents = can('agent.manage');
+	const canChat = can('agent.chat');
+	const canManageTemplates = can('template.manage');
 
 	// A chat another conversation started as a subagent task. The parent is only
 	// linkable when it belongs to this agent (a "Me" clone): the aside already
@@ -1556,6 +1558,8 @@ const BuildPage = () => {
 		};
 
 		if (currentAgentId) {
+			// Chatting must not try to save the agent for someone who can't edit it.
+			if (!canManageAgents) return currentAgentId;
 			await updateAgentMutation.mutateAsync({ id: currentAgentId, body: payload });
 			return currentAgentId;
 		}
@@ -2002,7 +2006,12 @@ const BuildPage = () => {
 		const files = resendFiles ?? [...chatAttachments];
 		// Starting a chat gives it an id, which moves the draft key mid-send.
 		const sentFromKey = chatDraftKey;
-		if ((!trimmed && files.length === 0 && !skill) || !workspaceId || streamAbortRef.current)
+		if (
+			!canChat ||
+			(!trimmed && files.length === 0 && !skill) ||
+			!workspaceId ||
+			streamAbortRef.current
+		)
 			return;
 		const edited = editedMessageRef.current;
 		editedMessageRef.current = null;
@@ -2951,16 +2960,18 @@ const BuildPage = () => {
 									<span className='truncate text-[14px] font-black tracking-tight text-zinc-900 dark:text-white'>
 										{agentName}
 									</span>
-									<button
-										type='button'
-										title='Rename agent'
-										onClick={() => {
-											setActiveSidebarTab('agent');
-											setIsSettingsOpen(true);
-										}}
-										className='text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300'>
-										<SquarePen size={12} />
-									</button>
+									{canManageAgents && (
+										<button
+											type='button'
+											title='Rename agent'
+											onClick={() => {
+												setActiveSidebarTab('agent');
+												setIsSettingsOpen(true);
+											}}
+											className='text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300'>
+											<SquarePen size={12} />
+										</button>
+									)}
 								</div>
 								<div className='flex items-center gap-1.5'>
 									<span className={`h-2 w-2 rounded-full ${chatStatusDot}`} />
@@ -3067,55 +3078,63 @@ const BuildPage = () => {
 													Export Agent JSON
 												</button>
 
-												<button
-													disabled={
-														!currentAgentId ||
-														duplicateAgentMutation.isPending
-													}
-													onClick={() => {
-														setIsMoreDropdownOpen(false);
-														if (!currentAgentId) return;
-														duplicateAgentMutation.mutate(
-															currentAgentId,
-															{
-																onSuccess: (copy) => {
-																	notify.success(
-																		`"${copy.name}" created.`,
-																	);
-																	navigate(
-																		paths.editAgent(
-																			workspaceId,
-																			copy.id,
-																		),
-																	);
+												{canManageAgents && (
+													<button
+														disabled={
+															!currentAgentId ||
+															duplicateAgentMutation.isPending
+														}
+														onClick={() => {
+															setIsMoreDropdownOpen(false);
+															if (!currentAgentId) return;
+															duplicateAgentMutation.mutate(
+																currentAgentId,
+																{
+																	onSuccess: (copy) => {
+																		notify.success(
+																			`"${copy.name}" created.`,
+																		);
+																		navigate(
+																			paths.editAgent(
+																				workspaceId,
+																				copy.id,
+																			),
+																		);
+																	},
 																},
-															},
-														);
-													}}
-													className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-white/[0.04]'>
-													<Copy size={13} />
-													Duplicate Agent
-												</button>
+															);
+														}}
+														className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-white/[0.04]'>
+														<Copy size={13} />
+														Duplicate Agent
+													</button>
+												)}
 
-												<button
-													disabled={!currentAgentId}
-													onClick={() => {
-														setIsMoreDropdownOpen(false);
-														setIsSaveAsTemplateOpen(true);
-													}}
-													className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-white/[0.04]'>
-													<LayoutTemplate size={13} />
-													Save as Template
-												</button>
+												{canManageTemplates && (
+													<button
+														disabled={!currentAgentId}
+														onClick={() => {
+															setIsMoreDropdownOpen(false);
+															setIsSaveAsTemplateOpen(true);
+														}}
+														className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-white/[0.04]'>
+														<LayoutTemplate size={13} />
+														Save as Template
+													</button>
+												)}
 
-												<div className='my-1 border-t border-zinc-100 dark:border-white/5' />
+												{canManageAgents && (
+													<>
+														<div className='my-1 border-t border-zinc-100 dark:border-white/5' />
 
-												<button
-													onClick={handleDeleteAgent}
-													className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/20'>
-													<Trash2 size={13} />
-													Move to Trash
-												</button>
+														<button
+															onClick={handleDeleteAgent}
+															className='flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/20'>
+															<Trash2 size={13} />
+															Move to Trash
+														</button>
+													</>
+												)}
 											</motion.div>
 										</>
 									)}
@@ -3208,7 +3227,8 @@ const BuildPage = () => {
 										</h2>
 
 										{/* Row of circular buttons */}
-										<div className='flex w-full max-w-sm flex-wrap items-center justify-center gap-3.5 px-4'>
+										<div
+											className={`flex w-full max-w-sm flex-wrap items-center justify-center gap-3.5 px-4 ${canChat ? '' : 'hidden'}`}>
 											<button
 												aria-label='Draft a research question'
 												title='Research question'
@@ -3284,7 +3304,7 @@ const BuildPage = () => {
 										</div>
 
 										{/* Get started section */}
-										{showGetStarted && (
+										{showGetStarted && canManageAgents && (
 											<div className='mt-12 w-full px-4'>
 												<div className='mb-4 flex items-center justify-between'>
 													<span className='text-[15px] font-black text-zinc-800 dark:text-zinc-100'>
@@ -3560,7 +3580,7 @@ const BuildPage = () => {
 															)}
 														</div>
 
-														{message.failed && (
+														{message.failed && canChat && (
 															<button
 																type='button'
 																aria-label={`Actions for message at ${message.timestamp}`}
@@ -3575,7 +3595,8 @@ const BuildPage = () => {
 														{/* Action Buttons for agent messages */}
 														{!isUser &&
 															message.actions &&
-															message.actions.length > 0 && (
+															message.actions.length > 0 &&
+															canChat && (
 																<div className='mt-3.5 flex flex-wrap gap-2.5'>
 																	{message.actions.map((act) => {
 																		let IconComp = Sparkles;
@@ -3650,20 +3671,22 @@ const BuildPage = () => {
 																</span>
 															)}
 
-															{message.stepLimit && isLastMessage && (
-																<button
-																	type='button'
-																	onClick={() =>
-																		void sendChatMessage(
-																			CONTINUE_PROMPT,
-																			[],
-																		)
-																	}
-																	disabled={isTyping}
-																	className='flex min-h-10 items-center gap-1 rounded-md border border-zinc-200 px-2 text-[11px] font-bold text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 md:min-h-0 md:py-0.5 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800'>
-																	Continue
-																</button>
-															)}
+															{message.stepLimit &&
+																isLastMessage &&
+																canChat && (
+																	<button
+																		type='button'
+																		onClick={() =>
+																			void sendChatMessage(
+																				CONTINUE_PROMPT,
+																				[],
+																			)
+																		}
+																		disabled={isTyping}
+																		className='flex min-h-10 items-center gap-1 rounded-md border border-zinc-200 px-2 text-[11px] font-bold text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 md:min-h-0 md:py-0.5 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800'>
+																		Continue
+																	</button>
+																)}
 
 															<div
 																className={`flex items-center gap-0.5 transition ${
@@ -3681,7 +3704,7 @@ const BuildPage = () => {
 																	<Copy size={11} />
 																</button>
 
-																{isUser && (
+																{isUser && canChat && (
 																	<button
 																		aria-label='Edit and resend message'
 																		type='button'
@@ -3697,7 +3720,8 @@ const BuildPage = () => {
 
 																{!isUser &&
 																	currentAgentId &&
-																	messageIdx > 0 && (
+																	messageIdx > 0 &&
+																	canManageAgents && (
 																		<button
 																			type='button'
 																			aria-label='Save as eval case'
@@ -3714,18 +3738,20 @@ const BuildPage = () => {
 																		</button>
 																	)}
 
-																{!isUser && isLastMessage && (
-																	<button
-																		type='button'
-																		onClick={
-																			regenerateLastReply
-																		}
-																		disabled={isTyping}
-																		title='Regenerate reply'
-																		className='flex h-10 w-10 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 md:h-auto md:w-auto md:p-1 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
-																		<RefreshCw size={11} />
-																	</button>
-																)}
+																{!isUser &&
+																	isLastMessage &&
+																	canChat && (
+																		<button
+																			type='button'
+																			onClick={
+																				regenerateLastReply
+																			}
+																			disabled={isTyping}
+																			title='Regenerate reply'
+																			className='flex h-10 w-10 items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 md:h-auto md:w-auto md:p-1 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
+																			<RefreshCw size={11} />
+																		</button>
+																	)}
 															</div>
 														</div>
 													</div>
@@ -3824,7 +3850,7 @@ const BuildPage = () => {
 											canRemember={canManageAgents}
 											onDecide={(decisions) => void decideActions(decisions)}
 										/>
-										{proposedPlan && pendingActions.length === 0 && (
+										{proposedPlan && pendingActions.length === 0 && canChat && (
 											<AgentPlanCard
 												key={proposedPlan.id}
 												plan={proposedPlan}
@@ -3863,7 +3889,13 @@ const BuildPage = () => {
 						className='hidden'
 						aria-label='Choose files to attach'
 					/>
-					{isMobile ? (
+					{!canChat ? (
+						<footer className='shrink-0 border-t border-zinc-200 bg-white px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] dark:border-white/10 dark:bg-zinc-950/90'>
+							<p className='mx-auto max-w-4xl text-center text-xs font-semibold text-zinc-500 dark:text-zinc-400'>
+								Your role can view this agent but not chat with it.
+							</p>
+						</footer>
+					) : isMobile ? (
 						<footer className='border-zinc-150 dark:border-zinc-850 shrink-0 border-t bg-zinc-50/95 px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl dark:bg-zinc-950/95'>
 							<div className='relative mx-auto flex w-full max-w-4xl flex-col gap-3'>
 								<SkillSlashMenu picker={skillPicker} />
@@ -4303,677 +4335,382 @@ const BuildPage = () => {
 										className='flex h-11 w-11 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 md:h-8 md:w-8 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white'>
 										<Undo2 size={14} />
 									</button>
-									<button
-										onClick={async () => {
-											if (await handleSaveAgent()) closeSettingsDrawer();
-										}}
-										className='bg-primary-400 text-primary-950 shadow-primary-500/20 hover:bg-primary-500 flex h-11 items-center gap-1 rounded-lg px-3 text-[11px] font-bold shadow-md transition active:scale-95 md:h-8 dark:shadow-none'>
-										<CheckCircle2 size={13} />
-										<span>Save</span>
-									</button>
+									{canManageAgents && (
+										<button
+											onClick={async () => {
+												if (await handleSaveAgent()) closeSettingsDrawer();
+											}}
+											className='bg-primary-400 text-primary-950 shadow-primary-500/20 hover:bg-primary-500 flex h-11 items-center gap-1 rounded-lg px-3 text-[11px] font-bold shadow-md transition active:scale-95 md:h-8 dark:shadow-none'>
+											<CheckCircle2 size={13} />
+											<span>Save</span>
+										</button>
+									)}
 								</div>
 							</div>
 
 							{/* Settings Body - Render conditionally based on activeSidebarTab */}
 							{activeSidebarTab === 'agent' && (
 								<div className='no-scrollbar flex-1 space-y-4 overflow-y-auto bg-zinc-50/40 p-4 dark:bg-zinc-950/20'>
-									{/* Personalization Section */}
-									<div className='space-y-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900/40'>
-										{/* Section Header */}
-										<div className='flex items-center gap-2.5 border-b border-zinc-100 pb-2 dark:border-zinc-800/80'>
-											<ChevronDown
-												size={18}
-												className='cursor-pointer text-zinc-500'
-											/>
-											<div className='bg-primary-100 text-primary-600 dark:bg-primary-400/10 dark:text-primary-400 flex h-8 w-8 items-center justify-center rounded-xl'>
-												<Users size={16} />
+									{!canManageAgents && (
+										<p className='rounded-xl border border-zinc-200 bg-white p-3 text-[11px] font-semibold text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400'>
+											Only editors and admins can change this agent. You can
+											view its setup here.
+										</p>
+									)}
+									{/* Disables every control below for read-only roles. */}
+									<fieldset
+										disabled={!canManageAgents}
+										className='min-w-0 space-y-4'>
+										{/* Personalization Section */}
+										<div className='space-y-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xs dark:border-zinc-800 dark:bg-zinc-900/40'>
+											{/* Section Header */}
+											<div className='flex items-center gap-2.5 border-b border-zinc-100 pb-2 dark:border-zinc-800/80'>
+												<ChevronDown
+													size={18}
+													className='cursor-pointer text-zinc-500'
+												/>
+												<div className='bg-primary-100 text-primary-600 dark:bg-primary-400/10 dark:text-primary-400 flex h-8 w-8 items-center justify-center rounded-xl'>
+													<Users size={16} />
+												</div>
+												<h3 className='text-sm font-black text-zinc-950 dark:text-white'>
+													Personalization
+												</h3>
 											</div>
-											<h3 className='text-sm font-black text-zinc-950 dark:text-white'>
-												Personalization
-											</h3>
-										</div>
 
-										{/* Content Layout */}
-										<div className='grid grid-cols-1 items-start gap-6 md:grid-cols-12'>
-											{/* Left side: Avatar and Popover Icon Selector Grid */}
-											<div className='relative flex flex-col items-start space-y-3 md:col-span-5'>
-												{/* Subheader Title */}
-												<div className='space-y-0.5'>
-													<h4 className='text-xs font-black text-zinc-950 dark:text-white'>
-														Icon & Name
-													</h4>
-													<p className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-														Choose an icon and give your agent a name.
-													</p>
-												</div>
-
-												{/* Large Chosen Icon Avatar Box */}
-												<div
-													role='button'
-													tabIndex={0}
-													aria-label='Choose an icon'
-													aria-expanded={isIconPickerOpen}
-													onClick={() =>
-														setIsIconPickerOpen(!isIconPickerOpen)
-													}
-													onKeyDown={activateOnKey(() =>
-														setIsIconPickerOpen(!isIconPickerOpen),
-													)}
-													className='relative flex h-24 w-24 cursor-pointer items-center justify-center rounded-2xl border border-zinc-200 bg-white p-2.5 shadow-2xs select-none dark:border-zinc-700 dark:bg-zinc-950/45'>
-													{createElement(AgentIconComponent, {
-														size: 44,
-														className:
-															agentColorTextClass(agentIconColor),
-													})}
-													{/* Pencil edit badge overlay */}
-													<div className='bg-primary-400 text-primary-950 shadow-primary-500/10 absolute -right-1 -bottom-1 flex h-6.5 w-6.5 cursor-pointer items-center justify-center rounded-full border border-white shadow-md dark:border-zinc-900'>
-														<SquarePen size={11} />
+											{/* Content Layout */}
+											<div className='grid grid-cols-1 items-start gap-6 md:grid-cols-12'>
+												{/* Left side: Avatar and Popover Icon Selector Grid */}
+												<div className='relative flex flex-col items-start space-y-3 md:col-span-5'>
+													{/* Subheader Title */}
+													<div className='space-y-0.5'>
+														<h4 className='text-xs font-black text-zinc-950 dark:text-white'>
+															Icon & Name
+														</h4>
+														<p className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+															Choose an icon and give your agent a
+															name.
+														</p>
 													</div>
-												</div>
 
-												{/* Icon Picker Popover Container (Dropdown) */}
-												<AnimatePresence>
-													{isIconPickerOpen && (
-														<motion.div
-															initial={{ opacity: 0, y: -10 }}
-															animate={{ opacity: 1, y: 0 }}
-															exit={{ opacity: 0, y: -10 }}
-															transition={{ duration: 0.15 }}
-															className='relative mt-1.5 w-full max-w-[280px] space-y-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60'>
-															{/* Top pointer speech-bubble triangle */}
-															<div className='absolute -top-1.5 left-9 h-3 w-3 rotate-45 border-t border-l border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900' />
+													{/* Large Chosen Icon Avatar Box */}
+													<div
+														role='button'
+														tabIndex={0}
+														aria-label='Choose an icon'
+														aria-expanded={isIconPickerOpen}
+														onClick={() =>
+															canManageAgents &&
+															setIsIconPickerOpen(!isIconPickerOpen)
+														}
+														onKeyDown={activateOnKey(
+															() =>
+																canManageAgents &&
+																setIsIconPickerOpen(
+																	!isIconPickerOpen,
+																),
+														)}
+														className='relative flex h-24 w-24 cursor-pointer items-center justify-center rounded-2xl border border-zinc-200 bg-white p-2.5 shadow-2xs select-none dark:border-zinc-700 dark:bg-zinc-950/45'>
+														{createElement(AgentIconComponent, {
+															size: 44,
+															className:
+																agentColorTextClass(agentIconColor),
+														})}
+														{/* Pencil edit badge overlay */}
+														<div className='bg-primary-400 text-primary-950 shadow-primary-500/10 absolute -right-1 -bottom-1 flex h-6.5 w-6.5 cursor-pointer items-center justify-center rounded-full border border-white shadow-md dark:border-zinc-900'>
+															<SquarePen size={11} />
+														</div>
+													</div>
 
-															{/* Icons Grid (10 icons) */}
-															<div className='relative z-10 grid grid-cols-5 gap-2'>
-																{AGENT_ICONS.map((iconName) => {
-																	const Icon =
-																		AGENT_ICON_COMPONENTS[
-																			iconName
-																		];
-																	const isSelected =
-																		agentIcon === iconName;
-																	return (
-																		<button
-																			key={iconName}
-																			type='button'
-																			title={iconName}
-																			onClick={() =>
-																				setAgentIcon(
-																					iconName,
-																				)
-																			}
-																			className={`flex h-9 w-9 items-center justify-center rounded-xl border transition active:scale-95 ${
-																				isSelected
-																					? 'border-primary-600 bg-primary-50 text-primary-600 dark:border-primary-400 dark:bg-primary-400/10 dark:text-primary-400'
-																					: 'border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'
-																			}`}>
-																			{createElement(Icon, {
-																				size: 16,
-																			})}
-																		</button>
-																	);
-																})}
-															</div>
+													{/* Icon Picker Popover Container (Dropdown) */}
+													<AnimatePresence>
+														{isIconPickerOpen && (
+															<motion.div
+																initial={{ opacity: 0, y: -10 }}
+																animate={{ opacity: 1, y: 0 }}
+																exit={{ opacity: 0, y: -10 }}
+																transition={{ duration: 0.15 }}
+																className='relative mt-1.5 w-full max-w-[280px] space-y-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60'>
+																{/* Top pointer speech-bubble triangle */}
+																<div className='absolute -top-1.5 left-9 h-3 w-3 rotate-45 border-t border-l border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900' />
 
-															{/* Colors Selector */}
-															<div className='relative z-10 space-y-1.5'>
-																<span className='text-[10px] font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
-																	Color
-																</span>
-																<div className='flex items-center gap-2.5'>
-																	{AGENT_COLORS.map((color) => {
+																{/* Icons Grid (10 icons) */}
+																<div className='relative z-10 grid grid-cols-5 gap-2'>
+																	{AGENT_ICONS.map((iconName) => {
+																		const Icon =
+																			AGENT_ICON_COMPONENTS[
+																				iconName
+																			];
 																		const isSelected =
-																			agentIconColor ===
-																			color;
+																			agentIcon === iconName;
 																		return (
 																			<button
-																				key={color}
+																				key={iconName}
 																				type='button'
+																				title={iconName}
 																				onClick={() =>
-																					setAgentIconColor(
-																						color,
+																					setAgentIcon(
+																						iconName,
 																					)
 																				}
-																				className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${AGENT_COLOR_SWATCHES[color]} ${
+																				className={`flex h-9 w-9 items-center justify-center rounded-xl border transition active:scale-95 ${
 																					isSelected
-																						? 'ring-primary-500 bg-clip-content p-[1px] ring-2 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900'
-																						: 'border-zinc-200 dark:border-zinc-700'
-																				}`}
-																				title={color}>
-																				{color ===
-																					'rainbow' && (
-																					<div className='from-primary-400 h-full w-full rounded-full bg-gradient-to-tr via-emerald-500 to-rose-500' />
+																						? 'border-primary-600 bg-primary-50 text-primary-600 dark:border-primary-400 dark:bg-primary-400/10 dark:text-primary-400'
+																						: 'border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'
+																				}`}>
+																				{createElement(
+																					Icon,
+																					{
+																						size: 16,
+																					},
 																				)}
 																			</button>
 																		);
 																	})}
 																</div>
-															</div>
-														</motion.div>
-													)}
-												</AnimatePresence>
-											</div>
 
-											{/* Right side: Input text name & description */}
-											<div className='w-full space-y-4 pt-12 md:col-span-7 md:pt-0'>
-												{/* Agent Name input field */}
-												<div className='w-full space-y-1.5'>
-													<label
-														htmlFor='build-agent-name'
-														className='text-[11px] font-black text-zinc-500 dark:text-zinc-400'>
-														Agent Name
-													</label>
-													<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 relative flex items-center rounded-xl border border-zinc-200 bg-white px-3.5 py-3 shadow-2xs focus-within:ring-4 dark:border-zinc-800 dark:bg-zinc-950/20'>
-														<input
-															id='build-agent-name'
-															aria-label='Name your agent...'
-															type='text'
-															value={agentName}
-															onChange={(e) =>
-																setAgentName(
-																	e.target.value.substring(0, 50),
-																)
-															}
-															className='flex-1 border-none bg-transparent p-0 text-xs font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-0 dark:text-zinc-100'
-															placeholder='Name your agent...'
-														/>
-														<span className='shrink-0 text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
-															{agentName.length} / 50
-														</span>
-													</div>
+																{/* Colors Selector */}
+																<div className='relative z-10 space-y-1.5'>
+																	<span className='text-[10px] font-black tracking-wider text-zinc-400 uppercase dark:text-zinc-500'>
+																		Color
+																	</span>
+																	<div className='flex items-center gap-2.5'>
+																		{AGENT_COLORS.map(
+																			(color) => {
+																				const isSelected =
+																					agentIconColor ===
+																					color;
+																				return (
+																					<button
+																						key={color}
+																						type='button'
+																						onClick={() =>
+																							setAgentIconColor(
+																								color,
+																							)
+																						}
+																						className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${AGENT_COLOR_SWATCHES[color]} ${
+																							isSelected
+																								? 'ring-primary-500 bg-clip-content p-[1px] ring-2 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900'
+																								: 'border-zinc-200 dark:border-zinc-700'
+																						}`}
+																						title={
+																							color
+																						}>
+																						{color ===
+																							'rainbow' && (
+																							<div className='from-primary-400 h-full w-full rounded-full bg-gradient-to-tr via-emerald-500 to-rose-500' />
+																						)}
+																					</button>
+																				);
+																			},
+																		)}
+																	</div>
+																</div>
+															</motion.div>
+														)}
+													</AnimatePresence>
 												</div>
 
-												{/* Description textarea box */}
-												<div className='w-full space-y-1.5'>
-													<div className='flex flex-col'>
+												{/* Right side: Input text name & description */}
+												<div className='w-full space-y-4 pt-12 md:col-span-7 md:pt-0'>
+													{/* Agent Name input field */}
+													<div className='w-full space-y-1.5'>
 														<label
-															htmlFor='build-description'
-															className='text-[11px] font-black text-zinc-600 dark:text-zinc-300'>
-															Description
+															htmlFor='build-agent-name'
+															className='text-[11px] font-black text-zinc-500 dark:text-zinc-400'>
+															Agent Name
 														</label>
-														<span className='mt-0.5 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-															Describe what your agent does and how it
-															helps you.
-														</span>
+														<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 relative flex items-center rounded-xl border border-zinc-200 bg-white px-3.5 py-3 shadow-2xs focus-within:ring-4 dark:border-zinc-800 dark:bg-zinc-950/20'>
+															<input
+																id='build-agent-name'
+																aria-label='Name your agent...'
+																type='text'
+																value={agentName}
+																onChange={(e) =>
+																	setAgentName(
+																		e.target.value.substring(
+																			0,
+																			50,
+																		),
+																	)
+																}
+																className='flex-1 border-none bg-transparent p-0 text-xs font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-0 dark:text-zinc-100'
+																placeholder='Name your agent...'
+															/>
+															<span className='shrink-0 text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
+																{agentName.length} / 50
+															</span>
+														</div>
 													</div>
-													{/* Border wrapping both textarea and character count at bottom right */}
-													<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 relative flex flex-col rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs focus-within:ring-4 dark:border-zinc-800 dark:bg-zinc-950/20'>
-														<textarea
-															id='build-description'
-															aria-label='Describe agent capability...'
-															rows={4}
-															value={agentDescription}
-															onChange={(e) =>
-																setAgentDescription(
-																	e.target.value.substring(
-																		0,
-																		500,
-																	),
-																)
-															}
-															className='w-full resize-none border-none bg-transparent p-0 text-xs font-semibold text-zinc-800 outline-none focus:ring-0 focus:outline-none dark:text-zinc-200 dark:placeholder:text-zinc-500'
-															placeholder='Describe agent capability...'
-														/>
-														<span className='mt-2 self-end text-right text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
-															{agentDescription.length} / 500
-														</span>
+
+													{/* Description textarea box */}
+													<div className='w-full space-y-1.5'>
+														<div className='flex flex-col'>
+															<label
+																htmlFor='build-description'
+																className='text-[11px] font-black text-zinc-600 dark:text-zinc-300'>
+																Description
+															</label>
+															<span className='mt-0.5 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+																Describe what your agent does and
+																how it helps you.
+															</span>
+														</div>
+														{/* Border wrapping both textarea and character count at bottom right */}
+														<div className='focus-within:border-primary-500/50 focus-within:ring-primary-500/5 relative flex flex-col rounded-xl border border-zinc-200 bg-white p-3.5 shadow-2xs focus-within:ring-4 dark:border-zinc-800 dark:bg-zinc-950/20'>
+															<textarea
+																id='build-description'
+																aria-label='Describe agent capability...'
+																rows={4}
+																value={agentDescription}
+																onChange={(e) =>
+																	setAgentDescription(
+																		e.target.value.substring(
+																			0,
+																			500,
+																		),
+																	)
+																}
+																className='w-full resize-none border-none bg-transparent p-0 text-xs font-semibold text-zinc-800 outline-none focus:ring-0 focus:outline-none dark:text-zinc-200 dark:placeholder:text-zinc-500'
+																placeholder='Describe agent capability...'
+															/>
+															<span className='mt-2 self-end text-right text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
+																{agentDescription.length} / 500
+															</span>
+														</div>
 													</div>
 												</div>
 											</div>
 										</div>
-									</div>
 
-									{/* Agent Preferences Section */}
-									<div className='space-y-4 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
-										{/* Preferences Header */}
-										<div className='flex items-center justify-between'>
-											<div className='flex cursor-pointer items-center gap-1.5'>
-												<ChevronDown size={16} className='text-zinc-500' />
-												<h3 className='text-sm font-black text-zinc-900 dark:text-white'>
-													Agent Preferences
-												</h3>
-											</div>
-											<button
-												type='button'
-												disabled
-												title='Advanced preferences are not available yet'
-												className='inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-bold text-zinc-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
-												<span>Advanced</span>
-												<SlidersHorizontal size={10} />
-											</button>
-										</div>
-
-										<ModelPicker
-											ws={workspaceId}
-											value={agentModel || null}
-											onChange={(id) => setAgentModel(id ?? '')}
-											requirements={{ tools: (toolBindings ?? []).length }}
-										/>
-
-										{/* Instructions */}
-										<div className='flex flex-col gap-1.5'>
-											<label
-												htmlFor='agent-instructions'
-												className='text-[11px] font-black text-zinc-600 dark:text-zinc-300'>
-												Instructions
-											</label>
-											<span className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-												The agent's system prompt: its role, how it works,
-												and what it must never do.
-											</span>
-											<div className='flex items-center gap-2'>
-												<input
-													aria-label='What should change? (optional)'
-													type='text'
-													value={instructionsChange}
-													onChange={(e) =>
-														setInstructionsChange(e.target.value)
-													}
-													onKeyDown={(e) => {
-														if (e.key === 'Enter') {
-															e.preventDefault();
-															void handleImproveInstructions();
-														}
-													}}
-													placeholder='What should change? (optional)'
-													disabled={improveInstructionsMutation.isPending}
-													className='focus:border-primary-500/50 focus:ring-primary-500/5 h-8 min-w-0 flex-1 rounded-lg border border-zinc-200 bg-white px-2.5 text-xs text-zinc-800 outline-none placeholder:text-zinc-400 focus:ring-4 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950/25 dark:text-zinc-200 dark:placeholder:text-zinc-500'
-												/>
+										{/* Agent Preferences Section */}
+										<div className='space-y-4 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
+											{/* Preferences Header */}
+											<div className='flex items-center justify-between'>
+												<div className='flex cursor-pointer items-center gap-1.5'>
+													<ChevronDown
+														size={16}
+														className='text-zinc-500'
+													/>
+													<h3 className='text-sm font-black text-zinc-900 dark:text-white'>
+														Agent Preferences
+													</h3>
+												</div>
 												<button
 													type='button'
-													onClick={() => void handleImproveInstructions()}
-													disabled={improveInstructionsMutation.isPending}
-													className='bg-primary-500/10 text-primary-600 hover:bg-primary-500/15 dark:text-primary-400 flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-black transition-colors disabled:opacity-60'>
-													<Sparkles size={13} />
-													{improveInstructionsMutation.isPending
-														? 'Rewriting…'
-														: 'Improve with AI'}
+													disabled
+													title='Advanced preferences are not available yet'
+													className='inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-bold text-zinc-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'>
+													<span>Advanced</span>
+													<SlidersHorizontal size={10} />
 												</button>
 											</div>
-											<textarea
-												aria-label='You are an agent that...'
-												id='agent-instructions'
-												rows={14}
-												value={agentInstructions}
-												onChange={(e) =>
-													setAgentInstructions(e.target.value)
-												}
-												placeholder='You are an agent that...'
-												className='focus:border-primary-500/50 focus:ring-primary-500/5 min-h-[240px] w-full resize-y rounded-xl border border-zinc-200 bg-white p-3 font-mono text-xs leading-relaxed text-zinc-800 outline-none placeholder:text-zinc-400 focus:ring-4 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950/25 dark:text-zinc-200 dark:placeholder:text-zinc-500'
+
+											<ModelPicker
+												ws={workspaceId}
+												value={agentModel || null}
+												onChange={(id) => setAgentModel(id ?? '')}
+												requirements={{
+													tools: (toolBindings ?? []).length,
+												}}
 											/>
-											<span className='text-right text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
-												{agentInstructions.length.toLocaleString()}{' '}
-												characters
-											</span>
-										</div>
 
-										{/* Allow Self-Updates Row */}
-										<div className='flex items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
-											<div className='flex items-center gap-3'>
-												<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-9 w-9 items-center justify-center rounded-xl'>
-													<SquarePen size={16} />
-												</div>
-												<div className='flex flex-col pr-4'>
-													<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
-														Allow Self-Updates
-													</span>
-													<span className='mt-0.5 text-[10px] leading-normal font-semibold text-zinc-400 dark:text-zinc-400'>
-														Let the agent update its own instructions
-														when you correct it. Each change is a new
-														version.
-													</span>
-												</div>
-											</div>
-											<button
-												type='button'
-												role='switch'
-												aria-checked={allowSelfUpdates}
-												aria-label='Allow self updates'
-												onClick={() =>
-													setAllowSelfUpdates(!allowSelfUpdates)
-												}
-												className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-													allowSelfUpdates
-														? 'bg-primary-400 dark:bg-primary-400'
-														: 'bg-zinc-200 dark:bg-zinc-800'
-												}`}>
-												<span
-													className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-														allowSelfUpdates
-															? 'translate-x-4'
-															: 'translate-x-0'
-													}`}
-												/>
-											</button>
-										</div>
-
-										{/* Skill Editing & Creation Row */}
-										<div className='flex items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
-											<div className='flex items-center gap-3'>
-												<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-9 w-9 items-center justify-center rounded-xl'>
-													<Sparkles size={16} />
-												</div>
-												<div className='flex flex-col pr-4'>
-													<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
-														Skill Editing & Creation
-													</span>
-													<span className='mt-0.5 text-[10px] leading-normal font-semibold text-zinc-400 dark:text-zinc-400'>
-														Let the agent save new skills and improve
-														its skills when you correct it.
-													</span>
-												</div>
-											</div>
-											<button
-												type='button'
-												role='switch'
-												aria-checked={allowSkillEditing}
-												aria-label='Allow skill editing and creation'
-												onClick={() =>
-													setAllowSkillEditing(!allowSkillEditing)
-												}
-												className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-													allowSkillEditing
-														? 'bg-primary-400 dark:bg-primary-400'
-														: 'bg-zinc-200 dark:bg-zinc-800'
-												}`}>
-												<span
-													className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-														allowSkillEditing
-															? 'translate-x-4'
-															: 'translate-x-0'
-													}`}
-												/>
-											</button>
-										</div>
-									</div>
-
-									{/* Autonomy & approvals */}
-									<AgentAutonomyPanel
-										ws={workspaceId}
-										agentId={currentAgentId}
-										nodeName={(nodeType) => nodeFor(nodeType)?.name}
-									/>
-
-									{/* Tags Section */}
-									<AgentTagsPanel ws={workspaceId} agentId={currentAgentId} />
-
-									<AgentTriggersPanel
-										ws={workspaceId}
-										agentId={currentAgentId}
-										drawerTarget={triggerDrawer}
-										onOpenDrawer={(target) =>
-											void openTriggerDrawer(target).catch(() => {})
-										}
-										onCloseDrawer={() => setTriggerDrawer(null)}
-									/>
-
-									{/* Apps Section */}
-									<div className='space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
-										<div className='flex items-center justify-between'>
-											<div className='flex items-center gap-2'>
-												<div className='flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:bg-blue-500/5 dark:text-blue-400'>
-													<Layers size={14} />
-												</div>
+											{/* Instructions */}
+											<div className='flex flex-col gap-1.5'>
+												<label
+													htmlFor='agent-instructions'
+													className='text-[11px] font-black text-zinc-600 dark:text-zinc-300'>
+													Instructions
+												</label>
+												<span className='text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+													The agent's system prompt: its role, how it
+													works, and what it must never do.
+												</span>
 												<div className='flex items-center gap-2'>
-													<h4 className='text-xs font-black text-zinc-900 dark:text-white'>
-														Tools
-													</h4>
-													<span className='inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-0.5 text-[9px] font-bold text-zinc-500 dark:bg-zinc-800/60 dark:text-zinc-400'>
-														<span>
-															{(toolBindings ?? []).length +
-																(workflowTools ?? []).length}{' '}
-															attached
-														</span>
-													</span>
-												</div>
-											</div>
-											<button
-												onClick={openToolDrawer}
-												className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
-												<Plus size={10} />
-												<span>Tool</span>
-											</button>
-										</div>
-
-										{/* Attached tools: node bindings first, then whole workflows */}
-										{(toolBindings ?? []).length === 0 &&
-											(workflowTools ?? []).length === 0 && (
-												<p className='pl-9 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-													Attach nodes or workflows to let this agent act
-													outside the chat.
-												</p>
-											)}
-
-										<div className='space-y-2 pl-9'>
-											{(toolBindings ?? []).map((binding) => {
-												const node = nodeFor(binding.node_type);
-												return (
-													<div
-														key={binding.id}
-														className='flex items-center justify-between border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-800/80'>
-														<div className='flex items-center gap-3'>
-															<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500 text-white'>
-																<Wrench size={15} />
-															</div>
-															<div className='flex flex-col'>
-																<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
-																	{node?.name ??
-																		binding.node_type}
-																</span>
-																<span className='mt-0.5 text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
-																	{node?.description ??
-																		binding.node_type}
-																</span>
-																{/* A node that talks to a third party is inert until the
-																    workspace has credentials for it. */}
-																{node &&
-																	'requires_connector' in node &&
-																	node.requires_connector &&
-																	connectorCredentials &&
-																	!hasUsableCredential(
-																		binding,
-																		node.category,
-																	) && (
-																		<span className='mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-bold text-amber-600 dark:bg-amber-500/5 dark:text-amber-400'>
-																			Needs a connector
-																			credential
-																		</span>
-																	)}
-															</div>
-														</div>
-														<button
-															onClick={() =>
-																deleteToolBindingMutation.mutate(
-																	String(binding.id),
-																)
-															}
-															title='Remove tool'
-															className='cursor-pointer p-1 text-zinc-400 hover:text-red-500 dark:hover:text-red-400'>
-															<Trash2 size={14} />
-														</button>
-													</div>
-												);
-											})}
-
-											{(workflowTools ?? []).map((workflow) => (
-												<div
-													key={workflow.id}
-													className='flex items-center justify-between border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-800/80'>
-													<div className='flex items-center gap-3'>
-														<div className='bg-primary-500 flex h-8 w-8 items-center justify-center rounded-lg text-white'>
-															<GitMerge size={15} />
-														</div>
-														<div className='flex flex-col'>
-															<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
-																{workflow.name}
-															</span>
-															<span className='mt-0.5 text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
-																{workflow.description ||
-																	'Workflow, callable as one tool.'}
-															</span>
-														</div>
-													</div>
-													<button
-														onClick={() =>
-															detachWorkflowMutation.mutate(
-																String(workflow.id),
-															)
+													<input
+														aria-label='What should change? (optional)'
+														type='text'
+														value={instructionsChange}
+														onChange={(e) =>
+															setInstructionsChange(e.target.value)
 														}
-														title='Remove tool'
-														className='cursor-pointer p-1 text-zinc-400 hover:text-red-500 dark:hover:text-red-400'>
-														<Trash2 size={14} />
+														onKeyDown={(e) => {
+															if (e.key === 'Enter') {
+																e.preventDefault();
+																void handleImproveInstructions();
+															}
+														}}
+														placeholder='What should change? (optional)'
+														disabled={
+															improveInstructionsMutation.isPending
+														}
+														className='focus:border-primary-500/50 focus:ring-primary-500/5 h-8 min-w-0 flex-1 rounded-lg border border-zinc-200 bg-white px-2.5 text-xs text-zinc-800 outline-none placeholder:text-zinc-400 focus:ring-4 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950/25 dark:text-zinc-200 dark:placeholder:text-zinc-500'
+													/>
+													<button
+														type='button'
+														onClick={() =>
+															void handleImproveInstructions()
+														}
+														disabled={
+															improveInstructionsMutation.isPending
+														}
+														className='bg-primary-500/10 text-primary-600 hover:bg-primary-500/15 dark:text-primary-400 flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-black transition-colors disabled:opacity-60'>
+														<Sparkles size={13} />
+														{improveInstructionsMutation.isPending
+															? 'Rewriting…'
+															: 'Improve with AI'}
 													</button>
 												</div>
-											))}
-										</div>
-									</div>
-
-									{/* Skills Section */}
-									<div className='space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
-										<div className='flex items-center justify-between'>
-											<div className='flex items-center gap-2'>
-												<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-7 w-7 items-center justify-center rounded-lg'>
-													<Cpu size={14} />
-												</div>
-												<h4 className='text-xs font-black text-zinc-900 dark:text-white'>
-													Skills
-												</h4>
+												<textarea
+													aria-label='You are an agent that...'
+													id='agent-instructions'
+													rows={14}
+													value={agentInstructions}
+													onChange={(e) =>
+														setAgentInstructions(e.target.value)
+													}
+													placeholder='You are an agent that...'
+													className='focus:border-primary-500/50 focus:ring-primary-500/5 min-h-[240px] w-full resize-y rounded-xl border border-zinc-200 bg-white p-3 font-mono text-xs leading-relaxed text-zinc-800 outline-none placeholder:text-zinc-400 focus:ring-4 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950/25 dark:text-zinc-200 dark:placeholder:text-zinc-500'
+												/>
+												<span className='text-right text-[10px] font-bold text-zinc-400 dark:text-zinc-500'>
+													{agentInstructions.length.toLocaleString()}{' '}
+													characters
+												</span>
 											</div>
-											<button
-												onClick={openSkillPanel}
-												className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
-												<Plus size={10} />
-												<span>Skill</span>
-											</button>
-										</div>
 
-										{(attachedSkills ?? []).length === 0 && (
-											<p className='pl-9 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
-												Add custom skills to extend your agent's abilities.
-											</p>
-										)}
-
-										{(attachedSkills ?? []).length > 0 && (
-											<div className='space-y-2 pl-9'>
-												{(attachedSkills ?? []).map((skill) => {
-													const SkillIcon = getSkillIconComponent(
-														skill.icon,
-													);
-													return (
-														<div
-															key={skill.id}
-															className='flex items-center justify-between border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-800/80'>
-															<div className='flex min-w-0 items-center gap-3'>
-																<div
-																	style={{
-																		backgroundColor:
-																			skill.color ||
-																			getSkillCategoryColor(
-																				skill.category,
-																			),
-																	}}
-																	className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white'>
-																	<SkillIcon size={15} />
-																</div>
-																<div className='flex min-w-0 flex-col'>
-																	<span className='truncate text-xs font-black text-zinc-800 dark:text-zinc-200'>
-																		{skill.name}
-																	</span>
-																	{skill.description && (
-																		<span className='mt-0.5 truncate text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
-																			{skill.description}
-																		</span>
-																	)}
-																</div>
-															</div>
-															<button
-																onClick={() =>
-																	handleDetachSkill(skill.id)
-																}
-																title='Remove skill'
-																className='cursor-pointer p-1 text-zinc-400 hover:text-red-500 dark:hover:text-red-400'>
-																<Trash2 size={14} />
-															</button>
-														</div>
-													);
-												})}
-											</div>
-										)}
-									</div>
-
-									{/* Knowledge Section */}
-									<AgentKnowledgePanel
-										ws={workspaceId}
-										agentId={currentAgentId}
-										agentName={agentName}
-									/>
-
-									{/* Subagents Section */}
-									<div className='space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
-										<div className='flex items-center justify-between'>
-											<div className='flex items-center gap-2'>
-												<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-7 w-7 items-center justify-center rounded-lg'>
-													<Users size={14} />
-												</div>
-												<h4 className='text-xs font-black text-zinc-900 dark:text-white'>
-													Subagents
-												</h4>
-											</div>
-											<button
-												onClick={async () => {
-													await ensureAgentPersisted();
-													setSubagentSearchQuery('');
-													setIsSubagentPickerOpen(true);
-												}}
-												className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
-												<Plus size={10} />
-												<span>Subagent</span>
-											</button>
-										</div>
-
-										<div className='space-y-2 pl-9'>
-											{/* The agent's own clone, for splitting work into parallel subtasks */}
-											<div className='flex items-center justify-between border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-800/80'>
-												<div className='flex min-w-0 items-center gap-3'>
-													<div
-														className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${agentColorTileClass(agentIconColor)}`}>
-														{createElement(AgentIconComponent, {
-															size: 15,
-														})}
+											{/* Allow Self-Updates Row */}
+											<div className='flex items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
+												<div className='flex items-center gap-3'>
+													<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-9 w-9 items-center justify-center rounded-xl'>
+														<SquarePen size={16} />
 													</div>
-													<div className='flex min-w-0 flex-col'>
-														<span className='truncate text-xs font-black text-zinc-800 dark:text-zinc-200'>
-															{agentName || 'This agent'} (Me)
+													<div className='flex flex-col pr-4'>
+														<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
+															Allow Self-Updates
 														</span>
-														<span className='mt-0.5 text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
-															Clones itself to work on subtasks in
-															parallel.
+														<span className='mt-0.5 text-[10px] leading-normal font-semibold text-zinc-400 dark:text-zinc-400'>
+															Let the agent update its own
+															instructions when you correct it. Each
+															change is a new version.
 														</span>
 													</div>
 												</div>
 												<button
 													type='button'
 													role='switch'
-													aria-checked={allowSelfClone}
-													aria-label='Allow self-cloning'
-													onClick={() => {
-														const next = !allowSelfClone;
-														setAllowSelfClone(next);
-														if (currentAgentId) {
-															updateAgentMutation.mutate({
-																id: currentAgentId,
-																body: { allow_self_clone: next },
-															});
-														}
-													}}
+													aria-checked={allowSelfUpdates}
+													aria-label='Allow self updates'
+													onClick={() =>
+														setAllowSelfUpdates(!allowSelfUpdates)
+													}
 													className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-														allowSelfClone
+														allowSelfUpdates
 															? 'bg-primary-400 dark:bg-primary-400'
 															: 'bg-zinc-200 dark:bg-zinc-800'
 													}`}>
 													<span
 														className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-															allowSelfClone
+															allowSelfUpdates
 																? 'translate-x-4'
 																: 'translate-x-0'
 														}`}
@@ -4981,60 +4718,404 @@ const BuildPage = () => {
 												</button>
 											</div>
 
-											{(subagents ?? []).map((subagent) => {
-												const SubagentIcon = agentIconFor(subagent.icon);
-												return (
-													<div
-														key={subagent.id}
-														className='flex items-center justify-between border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-800/80'>
-														<div className='flex min-w-0 items-center gap-3'>
-															<div
-																className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${agentColorTileClass(subagent.color)}`}>
-																<SubagentIcon size={15} />
-															</div>
-															<div className='flex min-w-0 flex-col'>
-																<span className='truncate text-xs font-black text-zinc-800 dark:text-zinc-200'>
-																	{subagent.name}
-																</span>
-																{subagent.description && (
-																	<span className='mt-0.5 truncate text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
-																		{subagent.description}
+											{/* Skill Editing & Creation Row */}
+											<div className='flex items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50/20 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
+												<div className='flex items-center gap-3'>
+													<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-9 w-9 items-center justify-center rounded-xl'>
+														<Sparkles size={16} />
+													</div>
+													<div className='flex flex-col pr-4'>
+														<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
+															Skill Editing & Creation
+														</span>
+														<span className='mt-0.5 text-[10px] leading-normal font-semibold text-zinc-400 dark:text-zinc-400'>
+															Let the agent save new skills and
+															improve its skills when you correct it.
+														</span>
+													</div>
+												</div>
+												<button
+													type='button'
+													role='switch'
+													aria-checked={allowSkillEditing}
+													aria-label='Allow skill editing and creation'
+													onClick={() =>
+														setAllowSkillEditing(!allowSkillEditing)
+													}
+													className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+														allowSkillEditing
+															? 'bg-primary-400 dark:bg-primary-400'
+															: 'bg-zinc-200 dark:bg-zinc-800'
+													}`}>
+													<span
+														className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+															allowSkillEditing
+																? 'translate-x-4'
+																: 'translate-x-0'
+														}`}
+													/>
+												</button>
+											</div>
+										</div>
+
+										{/* Autonomy & approvals */}
+										<AgentAutonomyPanel
+											ws={workspaceId}
+											agentId={currentAgentId}
+											nodeName={(nodeType) => nodeFor(nodeType)?.name}
+										/>
+
+										{/* Tags Section */}
+										<AgentTagsPanel ws={workspaceId} agentId={currentAgentId} />
+
+										<AgentTriggersPanel
+											ws={workspaceId}
+											agentId={currentAgentId}
+											drawerTarget={triggerDrawer}
+											onOpenDrawer={(target) =>
+												void openTriggerDrawer(target).catch(() => {})
+											}
+											onCloseDrawer={() => setTriggerDrawer(null)}
+										/>
+
+										{/* Apps Section */}
+										<div className='space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
+											<div className='flex items-center justify-between'>
+												<div className='flex items-center gap-2'>
+													<div className='flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:bg-blue-500/5 dark:text-blue-400'>
+														<Layers size={14} />
+													</div>
+													<div className='flex items-center gap-2'>
+														<h4 className='text-xs font-black text-zinc-900 dark:text-white'>
+															Tools
+														</h4>
+														<span className='inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-0.5 text-[9px] font-bold text-zinc-500 dark:bg-zinc-800/60 dark:text-zinc-400'>
+															<span>
+																{(toolBindings ?? []).length +
+																	(workflowTools ?? [])
+																		.length}{' '}
+																attached
+															</span>
+														</span>
+													</div>
+												</div>
+												<button
+													onClick={openToolDrawer}
+													className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
+													<Plus size={10} />
+													<span>Tool</span>
+												</button>
+											</div>
+
+											{/* Attached tools: node bindings first, then whole workflows */}
+											{(toolBindings ?? []).length === 0 &&
+												(workflowTools ?? []).length === 0 && (
+													<p className='pl-9 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+														Attach nodes or workflows to let this agent
+														act outside the chat.
+													</p>
+												)}
+
+											<div className='space-y-2 pl-9'>
+												{(toolBindings ?? []).map((binding) => {
+													const node = nodeFor(binding.node_type);
+													return (
+														<div
+															key={binding.id}
+															className='flex items-center justify-between border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-800/80'>
+															<div className='flex items-center gap-3'>
+																<div className='flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500 text-white'>
+																	<Wrench size={15} />
+																</div>
+																<div className='flex flex-col'>
+																	<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
+																		{node?.name ??
+																			binding.node_type}
 																	</span>
-																)}
+																	<span className='mt-0.5 text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
+																		{node?.description ??
+																			binding.node_type}
+																	</span>
+																	{/* A node that talks to a third party is inert until the
+																    workspace has credentials for it. */}
+																	{node &&
+																		'requires_connector' in
+																			node &&
+																		node.requires_connector &&
+																		connectorCredentials &&
+																		!hasUsableCredential(
+																			binding,
+																			node.category,
+																		) && (
+																			<span className='mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-bold text-amber-600 dark:bg-amber-500/5 dark:text-amber-400'>
+																				Needs a connector
+																				credential
+																			</span>
+																		)}
+																</div>
+															</div>
+															<button
+																onClick={() =>
+																	deleteToolBindingMutation.mutate(
+																		String(binding.id),
+																	)
+																}
+																title='Remove tool'
+																className='cursor-pointer p-1 text-zinc-400 hover:text-red-500 dark:hover:text-red-400'>
+																<Trash2 size={14} />
+															</button>
+														</div>
+													);
+												})}
+
+												{(workflowTools ?? []).map((workflow) => (
+													<div
+														key={workflow.id}
+														className='flex items-center justify-between border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-800/80'>
+														<div className='flex items-center gap-3'>
+															<div className='bg-primary-500 flex h-8 w-8 items-center justify-center rounded-lg text-white'>
+																<GitMerge size={15} />
+															</div>
+															<div className='flex flex-col'>
+																<span className='text-xs font-black text-zinc-800 dark:text-zinc-200'>
+																	{workflow.name}
+																</span>
+																<span className='mt-0.5 text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
+																	{workflow.description ||
+																		'Workflow, callable as one tool.'}
+																</span>
 															</div>
 														</div>
 														<button
 															onClick={() =>
-																detachSubagentMutation.mutate(
-																	String(subagent.id),
+																detachWorkflowMutation.mutate(
+																	String(workflow.id),
 																)
 															}
-															title='Remove subagent'
+															title='Remove tool'
 															className='cursor-pointer p-1 text-zinc-400 hover:text-red-500 dark:hover:text-red-400'>
 															<Trash2 size={14} />
 														</button>
 													</div>
-												);
-											})}
+												))}
+											</div>
 										</div>
-									</div>
 
-									{/* Bottom Autosave footer banner */}
-									<div className='bg-primary-400/5 border-primary-500/10 dark:bg-primary-400/5 dark:border-primary-500/10 flex gap-3 rounded-xl border p-3.5'>
-										<Sparkles
-											size={16}
-											className='text-primary-500 mt-0.5 shrink-0'
-										/>
-										<div className='flex flex-col'>
-											<span className='text-primary-700 dark:text-primary-400 text-xs font-bold'>
-												Changes are saved automatically
-											</span>
-											<span className='mt-1 text-[10px] leading-normal font-semibold text-zinc-500 dark:text-zinc-400'>
-												Your agent will use the latest configuration for all
-												new conversations.
-											</span>
+										{/* Skills Section */}
+										<div className='space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
+											<div className='flex items-center justify-between'>
+												<div className='flex items-center gap-2'>
+													<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-7 w-7 items-center justify-center rounded-lg'>
+														<Cpu size={14} />
+													</div>
+													<h4 className='text-xs font-black text-zinc-900 dark:text-white'>
+														Skills
+													</h4>
+												</div>
+												<button
+													onClick={openSkillPanel}
+													className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
+													<Plus size={10} />
+													<span>Skill</span>
+												</button>
+											</div>
+
+											{(attachedSkills ?? []).length === 0 && (
+												<p className='pl-9 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500'>
+													Add custom skills to extend your agent's
+													abilities.
+												</p>
+											)}
+
+											{(attachedSkills ?? []).length > 0 && (
+												<div className='space-y-2 pl-9'>
+													{(attachedSkills ?? []).map((skill) => {
+														const SkillIcon = getSkillIconComponent(
+															skill.icon,
+														);
+														return (
+															<div
+																key={skill.id}
+																className='flex items-center justify-between border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-800/80'>
+																<div className='flex min-w-0 items-center gap-3'>
+																	<div
+																		style={{
+																			backgroundColor:
+																				skill.color ||
+																				getSkillCategoryColor(
+																					skill.category,
+																				),
+																		}}
+																		className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white'>
+																		<SkillIcon size={15} />
+																	</div>
+																	<div className='flex min-w-0 flex-col'>
+																		<span className='truncate text-xs font-black text-zinc-800 dark:text-zinc-200'>
+																			{skill.name}
+																		</span>
+																		{skill.description && (
+																			<span className='mt-0.5 truncate text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
+																				{skill.description}
+																			</span>
+																		)}
+																	</div>
+																</div>
+																<button
+																	onClick={() =>
+																		handleDetachSkill(skill.id)
+																	}
+																	title='Remove skill'
+																	className='cursor-pointer p-1 text-zinc-400 hover:text-red-500 dark:hover:text-red-400'>
+																	<Trash2 size={14} />
+																</button>
+															</div>
+														);
+													})}
+												</div>
+											)}
 										</div>
-									</div>
+
+										{/* Knowledge Section */}
+										<AgentKnowledgePanel
+											ws={workspaceId}
+											agentId={currentAgentId}
+											agentName={agentName}
+										/>
+
+										{/* Subagents Section */}
+										<div className='space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/40'>
+											<div className='flex items-center justify-between'>
+												<div className='flex items-center gap-2'>
+													<div className='bg-primary-400/10 text-primary-600 dark:bg-primary-400/5 dark:text-primary-400 flex h-7 w-7 items-center justify-center rounded-lg'>
+														<Users size={14} />
+													</div>
+													<h4 className='text-xs font-black text-zinc-900 dark:text-white'>
+														Subagents
+													</h4>
+												</div>
+												<button
+													onClick={async () => {
+														await ensureAgentPersisted();
+														setSubagentSearchQuery('');
+														setIsSubagentPickerOpen(true);
+													}}
+													className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
+													<Plus size={10} />
+													<span>Subagent</span>
+												</button>
+											</div>
+
+											<div className='space-y-2 pl-9'>
+												{/* The agent's own clone, for splitting work into parallel subtasks */}
+												<div className='flex items-center justify-between border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-800/80'>
+													<div className='flex min-w-0 items-center gap-3'>
+														<div
+															className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${agentColorTileClass(agentIconColor)}`}>
+															{createElement(AgentIconComponent, {
+																size: 15,
+															})}
+														</div>
+														<div className='flex min-w-0 flex-col'>
+															<span className='truncate text-xs font-black text-zinc-800 dark:text-zinc-200'>
+																{agentName || 'This agent'} (Me)
+															</span>
+															<span className='mt-0.5 text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
+																Clones itself to work on subtasks in
+																parallel.
+															</span>
+														</div>
+													</div>
+													<button
+														type='button'
+														role='switch'
+														aria-checked={allowSelfClone}
+														aria-label='Allow self-cloning'
+														onClick={() => {
+															const next = !allowSelfClone;
+															setAllowSelfClone(next);
+															if (currentAgentId) {
+																updateAgentMutation.mutate({
+																	id: currentAgentId,
+																	body: {
+																		allow_self_clone: next,
+																	},
+																});
+															}
+														}}
+														className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+															allowSelfClone
+																? 'bg-primary-400 dark:bg-primary-400'
+																: 'bg-zinc-200 dark:bg-zinc-800'
+														}`}>
+														<span
+															className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+																allowSelfClone
+																	? 'translate-x-4'
+																	: 'translate-x-0'
+															}`}
+														/>
+													</button>
+												</div>
+
+												{(subagents ?? []).map((subagent) => {
+													const SubagentIcon = agentIconFor(
+														subagent.icon,
+													);
+													return (
+														<div
+															key={subagent.id}
+															className='flex items-center justify-between border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-800/80'>
+															<div className='flex min-w-0 items-center gap-3'>
+																<div
+																	className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${agentColorTileClass(subagent.color)}`}>
+																	<SubagentIcon size={15} />
+																</div>
+																<div className='flex min-w-0 flex-col'>
+																	<span className='truncate text-xs font-black text-zinc-800 dark:text-zinc-200'>
+																		{subagent.name}
+																	</span>
+																	{subagent.description && (
+																		<span className='mt-0.5 truncate text-[10px] leading-tight font-semibold text-zinc-400 dark:text-zinc-500'>
+																			{subagent.description}
+																		</span>
+																	)}
+																</div>
+															</div>
+															<button
+																onClick={() =>
+																	detachSubagentMutation.mutate(
+																		String(subagent.id),
+																	)
+																}
+																title='Remove subagent'
+																className='cursor-pointer p-1 text-zinc-400 hover:text-red-500 dark:hover:text-red-400'>
+																<Trash2 size={14} />
+															</button>
+														</div>
+													);
+												})}
+											</div>
+										</div>
+
+										{/* Bottom Autosave footer banner */}
+										{canManageAgents && (
+											<div className='bg-primary-400/5 border-primary-500/10 dark:bg-primary-400/5 dark:border-primary-500/10 flex gap-3 rounded-xl border p-3.5'>
+												<Sparkles
+													size={16}
+													className='text-primary-500 mt-0.5 shrink-0'
+												/>
+												<div className='flex flex-col'>
+													<span className='text-primary-700 dark:text-primary-400 text-xs font-bold'>
+														Changes are saved automatically
+													</span>
+													<span className='mt-1 text-[10px] leading-normal font-semibold text-zinc-500 dark:text-zinc-400'>
+														Your agent will use the latest configuration
+														for all new conversations.
+													</span>
+												</div>
+											</div>
+										)}
+									</fieldset>
 								</div>
 							)}
 

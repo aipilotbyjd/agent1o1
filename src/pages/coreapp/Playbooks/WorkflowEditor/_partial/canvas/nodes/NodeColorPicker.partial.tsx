@@ -18,8 +18,10 @@ const PRESET_COLORS = [
 ];
 
 const NodeColorPicker = ({ nodeId, currentColor }: { nodeId: string; currentColor?: string }) => {
-	const { dispatch } = useWorkflowEditor();
+	const { dispatch, canEdit } = useWorkflowEditor();
 	const [open, setOpen] = useState(false);
+
+	if (!canEdit) return null;
 
 	return (
 		<div className='relative'>

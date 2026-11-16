@@ -7,6 +7,7 @@ import { useWorkspaces } from '@/api/modules/workspaces';
 import { useCloneWorkflowPage } from '@/api/modules/workflow-pages';
 import type { TWorkflowPage } from '@/types/workflow-page.type';
 import paths from '@/Routes/paths';
+import { workspaceAllows } from '@/hooks/usePermission';
 
 type Props = {
 	ws: string;
@@ -14,9 +15,6 @@ type Props = {
 	isOpen: boolean;
 	onClose: () => void;
 };
-
-/** Roles that can build pages (`page.manage` on the server). */
-const CAN_BUILD = new Set(['owner', 'admin', 'editor']);
 
 const field =
 	'h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm outline-none focus:border-primary-500 dark:border-white/10 dark:bg-zinc-900 dark:text-white';
@@ -29,16 +27,21 @@ const field =
 const ClonePageModal = ({ ws, page, isOpen, onClose }: Props) => {
 	const navigate = useNavigate();
 	const { data: workspaces } = useWorkspaces({ enabled: isOpen });
-	const [targetId, setTargetId] = useState(ws);
+	const [selectedTargetId, setTargetId] = useState(ws);
 	const [workflowId, setWorkflowId] = useState('');
 	const [name, setName] = useState('');
-	const { data: workflows, isLoading } = useWorkflows(isOpen ? targetId : '');
 	const clone = useCloneWorkflowPage(ws);
 
+	// Only workspaces where the viewer can build pages take a copy.
 	const targets = useMemo(
-		() => (workspaces ?? []).filter((workspace) => workspace.role && CAN_BUILD.has(workspace.role)),
+		() => (workspaces ?? []).filter((workspace) => workspaceAllows(workspace, 'page.manage')),
 		[workspaces],
 	);
+	// This workspace is the default only when the viewer can build here too.
+	const targetId = targets.some((workspace) => String(workspace.id) === String(selectedTargetId))
+		? selectedTargetId
+		: String(targets[0]?.id ?? '');
+	const { data: workflows, isLoading } = useWorkflows(isOpen ? targetId : '');
 	const chosenWorkflow = workflowId || (workflows ?? [])[0]?.id || '';
 
 	const submit = () =>
@@ -82,6 +85,11 @@ const ClonePageModal = ({ ws, page, isOpen, onClose }: Props) => {
 								</option>
 							))}
 						</select>
+						{workspaces && targets.length === 0 && (
+							<span className='block text-[11px] text-amber-600 dark:text-amber-400'>
+								Your role doesn’t let you build pages in any of your workspaces.
+							</span>
+						)}
 					</label>
 					<label className='block space-y-1.5'>
 						<span className='text-xs font-bold text-zinc-700 dark:text-zinc-300'>Workflow it runs there</span>
@@ -125,7 +133,7 @@ const ClonePageModal = ({ ws, page, isOpen, onClose }: Props) => {
 					<button
 						type='button'
 						onClick={submit}
-						disabled={!chosenWorkflow || clone.isPending}
+						disabled={!targetId || !chosenWorkflow || clone.isPending}
 						className='bg-primary-400 text-primary-950 flex h-10 items-center gap-2 rounded-xl px-5 text-xs font-bold shadow-md transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50'>
 						{clone.isPending && <Loader2 size={14} className='animate-spin' />}
 						Copy and open

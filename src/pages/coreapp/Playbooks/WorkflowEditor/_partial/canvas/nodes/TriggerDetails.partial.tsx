@@ -20,6 +20,7 @@ import {
 	useUpdateTrigger,
 } from '@/api/modules/triggers';
 import { useConfirm } from '@/context/confirm';
+import { usePermission } from '@/hooks/usePermission';
 import paths from '@/Routes/paths';
 import TriggerListen from '@/parts/TriggerListen.part';
 import TriggerSample from '@/parts/TriggerSample.part';
@@ -48,7 +49,15 @@ const generateToken = () =>
  * needs a secret rejects every request until one is added, so that's
  * flagged. A legacy webhook with a provider source keeps its old secret field.
  */
-const WebhookSecret = ({ workspaceId, trigger }: { workspaceId: string; trigger: TTrigger }) => {
+const WebhookSecret = ({
+	workspaceId,
+	trigger,
+	canManage,
+}: {
+	workspaceId: string;
+	trigger: TTrigger;
+	canManage: boolean;
+}) => {
 	const updateTrigger = useUpdateTrigger(workspaceId);
 	const [isEditing, setIsEditing] = useState(false);
 	const [secret, setSecret] = useState('');
@@ -128,23 +137,25 @@ const WebhookSecret = ({ workspaceId, trigger }: { workspaceId: string; trigger:
 						? `${noun} set`
 						: `No ${noun.toLowerCase()}: every request is rejected`}
 				</span>
-				<div className='flex items-center gap-2'>
-					{trigger.has_signing_secret && (
+				{canManage && (
+					<div className='flex items-center gap-2'>
+						{trigger.has_signing_secret && (
+							<button
+								type='button'
+								disabled={updateTrigger.isPending}
+								onClick={() => save(null)}
+								className='cursor-pointer text-[9px] font-semibold text-rose-500 hover:text-rose-600'>
+								Remove
+							</button>
+						)}
 						<button
 							type='button'
-							disabled={updateTrigger.isPending}
-							onClick={() => save(null)}
-							className='cursor-pointer text-[9px] font-semibold text-rose-500 hover:text-rose-600'>
-							Remove
+							onClick={() => setIsEditing(true)}
+							className='hover:text-primary-900 dark:hover:text-primary-400 cursor-pointer text-[9px] font-semibold text-zinc-500'>
+							{trigger.has_signing_secret ? 'Replace' : 'Add'}
 						</button>
-					)}
-					<button
-						type='button'
-						onClick={() => setIsEditing(true)}
-						className='hover:text-primary-900 dark:hover:text-primary-400 cursor-pointer text-[9px] font-semibold text-zinc-500'>
-						{trigger.has_signing_secret ? 'Replace' : 'Add'}
-					</button>
-				</div>
+					</div>
+				)}
 			</div>
 			<span className='text-[9px] text-zinc-400'>
 				{isToken ? (
@@ -179,6 +190,9 @@ type Props = {
 
 const TriggerDetails = ({ workspaceId, trigger, showEvents = true }: Props) => {
 	const { confirm } = useConfirm();
+	const { can } = usePermission();
+	const canManageTrigger = can('trigger.manage');
+	const canRunTrigger = can('run.trigger');
 	const runTrigger = useRunTrigger(workspaceId);
 	const replayEvent = useReplayTriggerEvent(workspaceId);
 	const updateTrigger = useUpdateTrigger(workspaceId);
@@ -255,7 +269,7 @@ const TriggerDetails = ({ workspaceId, trigger, showEvents = true }: Props) => {
 					<span className='text-[9px] font-semibold text-amber-800 dark:text-amber-300'>
 						{trigger.status.hint ?? trigger.status.label}
 					</span>
-					{trigger.status.action === 'resume' && (
+					{trigger.status.action === 'resume' && canManageTrigger && (
 						<button
 							type='button'
 							disabled={updateTrigger.isPending}
@@ -277,7 +291,7 @@ const TriggerDetails = ({ workspaceId, trigger, showEvents = true }: Props) => {
 					)}
 				</div>
 			)}
-			{trigger.type !== 'manual' && (
+			{trigger.type !== 'manual' && canRunTrigger && (
 				<>
 					<TriggerSample ws={workspaceId} triggerId={trigger.id} />
 					<TriggerListen ws={workspaceId} triggerId={trigger.id} />
@@ -311,26 +325,32 @@ const TriggerDetails = ({ workspaceId, trigger, showEvents = true }: Props) => {
 								<Terminal size={10} />
 								curl
 							</button>
-							<button
-								type='button'
-								title='Rotate webhook URL'
-								disabled={rotateToken.isPending}
-								onClick={(event) => {
-									stop(event);
-									handleRotate();
-								}}
-								className='hover:bg-primary-100 hover:text-primary-900 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-5 w-5 cursor-pointer items-center justify-center rounded text-zinc-400 transition disabled:cursor-not-allowed disabled:opacity-50'>
-								<RefreshCw
-									size={11}
-									className={rotateToken.isPending ? 'animate-spin' : ''}
-								/>
-							</button>
+							{canManageTrigger && (
+								<button
+									type='button'
+									title='Rotate webhook URL'
+									disabled={rotateToken.isPending}
+									onClick={(event) => {
+										stop(event);
+										handleRotate();
+									}}
+									className='hover:bg-primary-100 hover:text-primary-900 dark:hover:bg-primary-900/40 dark:hover:text-primary-400 flex h-5 w-5 cursor-pointer items-center justify-center rounded text-zinc-400 transition disabled:cursor-not-allowed disabled:opacity-50'>
+									<RefreshCw
+										size={11}
+										className={rotateToken.isPending ? 'animate-spin' : ''}
+									/>
+								</button>
+							)}
 						</div>
 					</div>
 					<span className='cursor-text rounded-lg border border-zinc-200 bg-white p-1.5 font-mono text-[9px] font-semibold break-all text-zinc-700 select-all select-text dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300'>
 						{webhookUrl}
 					</span>
-					<WebhookSecret workspaceId={workspaceId} trigger={trigger} />
+					<WebhookSecret
+						workspaceId={workspaceId}
+						trigger={trigger}
+						canManage={canManageTrigger}
+					/>
 				</div>
 			)}
 
@@ -350,18 +370,20 @@ const TriggerDetails = ({ workspaceId, trigger, showEvents = true }: Props) => {
 						Recent events
 					</button>
 				)}
-				<button
-					type='button'
-					title='Fire this trigger now, as if an event had arrived'
-					disabled={runTrigger.isPending}
-					onClick={(event) => {
-						stop(event);
-						handleRun();
-					}}
-					className='hover:border-primary-300 hover:text-primary-900 dark:hover:text-primary-400 flex cursor-pointer items-center gap-1 rounded-md border border-zinc-200 bg-white px-1.5 py-0.5 text-[9px] font-semibold text-zinc-600 transition disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300'>
-					<Play size={9} />
-					{runTrigger.isPending ? 'Queuing…' : 'Run now'}
-				</button>
+				{canRunTrigger && (
+					<button
+						type='button'
+						title='Fire this trigger now, as if an event had arrived'
+						disabled={runTrigger.isPending}
+						onClick={(event) => {
+							stop(event);
+							handleRun();
+						}}
+						className='hover:border-primary-300 hover:text-primary-900 dark:hover:text-primary-400 flex cursor-pointer items-center gap-1 rounded-md border border-zinc-200 bg-white px-1.5 py-0.5 text-[9px] font-semibold text-zinc-600 transition disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300'>
+						<Play size={9} />
+						{runTrigger.isPending ? 'Queuing…' : 'Run now'}
+					</button>
+				)}
 			</div>
 
 			{showEvents && eventsOpen && (
@@ -392,22 +414,27 @@ const TriggerDetails = ({ workspaceId, trigger, showEvents = true }: Props) => {
 									addSuffix: true,
 								})}
 							</span>
-							{event.payload !== null && event.payload !== undefined && (
-								<button
-									type='button'
-									title='Run this event again'
-									disabled={replayEvent.isPending}
-									onClick={(click) => {
-										stop(click);
-										replayEvent.mutate(
-											{ id: trigger.id, eventId: event.id },
-											{ onSuccess: () => notify.success('Replay queued') },
-										);
-									}}
-									className='hover:text-primary-900 dark:hover:text-primary-400 shrink-0 cursor-pointer text-zinc-400 disabled:opacity-50'>
-									<RotateCcw size={9} />
-								</button>
-							)}
+							{canRunTrigger &&
+								event.payload !== null &&
+								event.payload !== undefined && (
+									<button
+										type='button'
+										title='Run this event again'
+										disabled={replayEvent.isPending}
+										onClick={(click) => {
+											stop(click);
+											replayEvent.mutate(
+												{ id: trigger.id, eventId: event.id },
+												{
+													onSuccess: () =>
+														notify.success('Replay queued'),
+												},
+											);
+										}}
+										className='hover:text-primary-900 dark:hover:text-primary-400 shrink-0 cursor-pointer text-zinc-400 disabled:opacity-50'>
+										<RotateCcw size={9} />
+									</button>
+								)}
 							{event.run_id && (
 								<Link
 									to={paths.trail(workspaceId, event.run_id)}

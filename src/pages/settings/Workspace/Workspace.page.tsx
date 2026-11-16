@@ -9,6 +9,8 @@ import { notify } from '@/api/core';
 import formatDate from '@/utils/formatDate.util';
 import PublishApprovalSetting from '@/parts/PublishApprovalSetting.part';
 import TimezoneSelect from '@/parts/TimezoneSelect.part';
+import { useCan } from '@/hooks/usePermission';
+import { formatWorkspaceRole } from '@/constants/workspaceRole.constant';
 
 const inputClass =
 	'h-12 w-full rounded-xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-800 shadow-xs outline-none placeholder:text-zinc-400 focus:border-primary-300 focus:ring-4 focus:ring-primary-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-primary-500 dark:focus:ring-primary-500/20';
@@ -23,11 +25,6 @@ const getInitials = (name: string) => {
 		.slice(0, 2)
 		.map((part) => part[0]?.toUpperCase())
 		.join('');
-};
-
-const formatRole = (role?: string | null) => {
-	if (!role) return 'Member';
-	return `${role.charAt(0).toUpperCase()}${role.slice(1)}`;
 };
 
 const SettingsFieldRow = ({
@@ -87,12 +84,13 @@ const WorkspacePage = () => {
 
 	const displayName = workspaceName || activeWorkspace?.name || 'Workspace';
 	const createdAt = formatDate(activeWorkspace?.created_at) ?? 'Not available';
-	const workspaceRole = formatRole(role);
-	const isOwner = role === 'owner';
+	const workspaceRole = formatWorkspaceRole(role);
+	const canUpdate = useCan('workspace.update');
+	const canDelete = useCan('workspace.delete');
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!workspaceName.trim() || !activeWorkspaceId) return;
+		if (!canUpdate || !workspaceName.trim() || !activeWorkspaceId) return;
 
 		try {
 			await updateWorkspace.mutateAsync({
@@ -148,7 +146,9 @@ const WorkspacePage = () => {
 						Workspace
 					</h1>
 					<p className='mt-1 text-sm font-medium text-zinc-500 dark:text-zinc-400'>
-						Manage your workspace configuration and preferences
+						{canUpdate
+							? 'Manage your workspace configuration and preferences'
+							: 'Only workspace admins can change these settings.'}
 					</p>
 				</div>
 			</div>
@@ -184,11 +184,12 @@ const WorkspacePage = () => {
 						description='Visible to members inside this environment.'>
 						<div className='w-full'>
 							<input
-								className={inputClass}
+								className={`${inputClass} disabled:cursor-not-allowed disabled:opacity-60`}
 								value={workspaceName}
 								onChange={(e) => setWorkspaceName(e.target.value)}
 								placeholder='Workspace name'
 								aria-label='Workspace name'
+								disabled={!canUpdate}
 							/>
 						</div>
 					</SettingsFieldRow>
@@ -208,7 +209,7 @@ const WorkspacePage = () => {
 						icon={ShieldCheck}
 						title='Your Access Role'
 						description='Your permissions within this workspace.'>
-						<div className={`${readOnlyClass} capitalize`}>{role || 'member'}</div>
+						<div className={readOnlyClass}>{workspaceRole || 'Not available'}</div>
 					</SettingsFieldRow>
 
 					{/* Timezone */}
@@ -221,7 +222,8 @@ const WorkspacePage = () => {
 								aria-label='Timezone'
 								value={timezone}
 								onChange={setTimezone}
-								className={`${inputClass} appearance-none bg-none pr-11`}
+								disabled={!canUpdate}
+								className={`${inputClass} appearance-none bg-none pr-11 disabled:cursor-not-allowed disabled:opacity-60`}
 							/>
 							<ChevronDown
 								size={18}
@@ -232,21 +234,23 @@ const WorkspacePage = () => {
 				</div>
 
 				{/* Save / Reset Actions */}
-				<div className='mt-5 flex items-center justify-end gap-3'>
-					<button
-						type='button'
-						disabled={!isDirty || updateWorkspace.isPending}
-						onClick={handleReset}
-						className={secondaryBtn}>
-						Reset
-					</button>
-					<button
-						type='submit'
-						disabled={!isDirty || updateWorkspace.isPending}
-						className={primaryBtn}>
-						{updateWorkspace.isPending ? 'Saving...' : 'Save changes'}
-					</button>
-				</div>
+				{canUpdate && (
+					<div className='mt-5 flex items-center justify-end gap-3'>
+						<button
+							type='button'
+							disabled={!isDirty || updateWorkspace.isPending}
+							onClick={handleReset}
+							className={secondaryBtn}>
+							Reset
+						</button>
+						<button
+							type='submit'
+							disabled={!isDirty || updateWorkspace.isPending}
+							className={primaryBtn}>
+							{updateWorkspace.isPending ? 'Saving...' : 'Save changes'}
+						</button>
+					</div>
+				)}
 			</form>
 
 			<section className='mt-8 rounded-2xl border border-zinc-100 bg-white px-6 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950'>
@@ -257,7 +261,7 @@ const WorkspacePage = () => {
 			</section>
 
 			{/* Collapsible Danger Zone */}
-			{isOwner && (
+			{canDelete && (
 				<div className='mt-8 rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950'>
 					<button
 						type='button'

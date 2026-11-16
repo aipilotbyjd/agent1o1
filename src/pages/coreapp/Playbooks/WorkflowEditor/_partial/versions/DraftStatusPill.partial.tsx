@@ -23,9 +23,12 @@ const pillStyles: Record<TDraftStatus, { dot: string; ring: string }> = {
 const DraftStatusPill = ({
 	onClick,
 	className = '',
+	disabled = false,
 }: {
 	onClick: () => void;
 	className?: string;
+	/** Without version access the pill only shows the status. */
+	disabled?: boolean;
 }) => {
 	const { status, label } = useDraftStatus();
 	const style = pillStyles[status];
@@ -34,8 +37,9 @@ const DraftStatusPill = ({
 		<button
 			type='button'
 			onClick={onClick}
-			aria-label={`${label}. Open version history`}
-			className={`h-7 w-7 items-center justify-center rounded-lg transition hover:bg-zinc-100 dark:hover:bg-white/[0.06] ${className}`}>
+			disabled={disabled}
+			aria-label={disabled ? label : `${label}. Open version history`}
+			className={`h-7 w-7 items-center justify-center rounded-lg transition enabled:hover:bg-zinc-100 disabled:cursor-default dark:enabled:hover:bg-white/[0.06] ${className}`}>
 			<span className={`h-2.5 w-2.5 rounded-full ring-4 ${style.dot} ${style.ring}`} />
 		</button>
 	);

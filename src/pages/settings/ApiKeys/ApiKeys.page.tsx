@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useApiKeys, useCreateApiKey, useDeleteApiKey } from '@/api/modules/user';
 import { useWorkspaceContext } from '@/context/workspace';
+import { useCan } from '@/hooks/usePermission';
 import { notify } from '@/api/core';
 import formatDate from '@/utils/formatDate.util';
 import type { TApiKey, TApiKeyAbility, TCreateApiKeyDto } from '@/types/auth.type';
@@ -83,6 +84,7 @@ const abilityLabel = (value: TApiKeyAbility) =>
 
 const ApiKeysPage = () => {
 	const { activeWorkspaceId } = useWorkspaceContext();
+	const canManageKeys = useCan('api-key.manage');
 	const { data: apiKeys = [], isLoading, error } = useApiKeys(activeWorkspaceId);
 	const createApiKey = useCreateApiKey(activeWorkspaceId);
 	const deleteApiKey = useDeleteApiKey(activeWorkspaceId);
@@ -160,17 +162,21 @@ const ApiKeysPage = () => {
 						API Keys
 					</h1>
 					<p className='mt-1 text-sm font-medium text-zinc-500 dark:text-zinc-400'>
-						Manage keys used to access the API on behalf of this workspace.
+						{canManageKeys
+							? 'Manage keys used to access the API on behalf of this workspace.'
+							: 'Keys used to access the API on behalf of this workspace. Only admins can create or revoke them.'}
 					</p>
 				</div>
-				<Button
-					variant='solid'
-					color='primary'
-					icon='Add01'
-					onClick={() => setIsCreateModalOpen(true)}
-					className='shadow-primary-500/10 h-12 font-bold text-zinc-950 shadow-md'>
-					Create API key
-				</Button>
+				{canManageKeys && (
+					<Button
+						variant='solid'
+						color='primary'
+						icon='Add01'
+						onClick={() => setIsCreateModalOpen(true)}
+						className='shadow-primary-500/10 h-12 font-bold text-zinc-950 shadow-md'>
+						Create API key
+					</Button>
+				)}
 			</div>
 
 			{isLoading ? (
@@ -201,15 +207,19 @@ const ApiKeysPage = () => {
 						No API keys yet
 					</h3>
 					<p className='mt-1 text-sm text-zinc-500 dark:text-zinc-400'>
-						Create a key to start calling the API from your own code.
+						{canManageKeys
+							? 'Create a key to start calling the API from your own code.'
+							: 'Only admins can create API keys for this workspace.'}
 					</p>
-					<button
-						type='button'
-						onClick={() => setIsCreateModalOpen(true)}
-						className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 mt-5 inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-xs font-bold shadow-md transition active:scale-95'>
-						<Plus size={14} />
-						<span>Create your first key</span>
-					</button>
+					{canManageKeys && (
+						<button
+							type='button'
+							onClick={() => setIsCreateModalOpen(true)}
+							className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 mt-5 inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-xs font-bold shadow-md transition active:scale-95'>
+							<Plus size={14} />
+							<span>Create your first key</span>
+						</button>
+					)}
 				</div>
 			) : (
 				<div className='space-y-3'>
@@ -257,13 +267,15 @@ const ApiKeysPage = () => {
 										{formatDate(key.expires_at) ?? 'Never'}
 									</p>
 								</div>
-								<button
-									type='button'
-									aria-label={`Revoke ${key.name}`}
-									onClick={() => setKeyToRevoke(key)}
-									className='rounded-lg p-2 text-zinc-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10'>
-									<Trash2 size={16} />
-								</button>
+								{canManageKeys && (
+									<button
+										type='button'
+										aria-label={`Revoke ${key.name}`}
+										onClick={() => setKeyToRevoke(key)}
+										className='rounded-lg p-2 text-zinc-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10'>
+										<Trash2 size={16} />
+									</button>
+								)}
 							</div>
 						</div>
 					))}

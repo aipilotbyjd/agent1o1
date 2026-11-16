@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, Shield, Trash2 } from 'lucide-react';
 import { useWorkspaceContext } from '@/context/workspace';
-import { useWorkspace } from '@/api/modules/workspaces';
+import { useCan } from '@/hooks/usePermission';
 import {
 	useUpdateWorkspaceAgentPolicy,
 	useWorkspaceAgentPolicy,
@@ -97,8 +97,7 @@ const Toggle = ({
  */
 const AgentPolicyPage = () => {
 	const { activeWorkspaceId: ws } = useWorkspaceContext();
-	const { data: workspace } = useWorkspace(ws);
-	const canEdit = workspace?.role === 'owner' || workspace?.role === 'admin';
+	const canEdit = useCan('agent.policy.manage');
 	const { data: policy, isLoading, isError } = useWorkspaceAgentPolicy(ws);
 	const update = useUpdateWorkspaceAgentPolicy(ws);
 	// Unsaved edits; null means "showing what's saved". Derived rather than

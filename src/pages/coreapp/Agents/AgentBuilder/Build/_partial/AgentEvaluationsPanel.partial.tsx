@@ -27,6 +27,7 @@ import {
 } from '@/api/modules/agent-session-evaluations';
 import { useAgentSessions } from '@/api/modules/agent-sessions';
 import { notify } from '@/api/core';
+import { useCan } from '@/hooks/usePermission';
 import type {
 	TAgentEvaluationSettings,
 	TAgentSessionEvaluation,
@@ -134,6 +135,7 @@ const EvaluationSettingsForm = ({
 	settings: TAgentEvaluationSettings;
 }) => {
 	const updateMutation = useUpdateAgentEvaluationSettings(ws, agentId);
+	const canManage = useCan('agent.manage');
 	const [form, setForm] = useState({
 		is_enabled: settings.is_enabled,
 		model: settings.model ?? '',
@@ -152,7 +154,9 @@ const EvaluationSettingsForm = ({
 	};
 
 	return (
-		<div className='space-y-3 rounded-xl border border-zinc-100 bg-zinc-50/40 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
+		<fieldset
+			disabled={!canManage}
+			className='min-w-0 space-y-3 rounded-xl border border-zinc-100 bg-zinc-50/40 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
 			<ToggleRow
 				label='Enable grading'
 				hint='Score every finished chat against the criteria below.'
@@ -500,7 +504,7 @@ const EvaluationSettingsForm = ({
 					Save
 				</button>
 			</div>
-		</div>
+		</fieldset>
 	);
 };
 
@@ -613,7 +617,8 @@ const EvaluationCard = ({
 	ws: string;
 	agentId: string;
 	evaluation: TAgentSessionEvaluation;
-	onRegrade: (sessionId: string) => void;
+	/** Left out when the viewer may not grade chats. */
+	onRegrade?: (sessionId: string) => void;
 	isRegrading: boolean;
 }) => {
 	const [isOpen, setIsOpen] = useState(false);
@@ -650,14 +655,16 @@ const EvaluationCard = ({
 							: new Date(evaluation.created_at).toLocaleString()}
 					</span>
 				</div>
-				<button
-					type='button'
-					onClick={() => onRegrade(String(evaluation.agent_session_id))}
-					disabled={isRegrading}
-					title='Grade this chat again'
-					className='shrink-0 rounded-lg border border-zinc-200 bg-white p-1 text-zinc-400 transition hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:text-zinc-200'>
-					<RotateCw size={10} className={isRegrading ? 'animate-spin' : undefined} />
-				</button>
+				{onRegrade && (
+					<button
+						type='button'
+						onClick={() => onRegrade(String(evaluation.agent_session_id))}
+						disabled={isRegrading}
+						title='Grade this chat again'
+						className='shrink-0 rounded-lg border border-zinc-200 bg-white p-1 text-zinc-400 transition hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:text-zinc-200'>
+						<RotateCw size={10} className={isRegrading ? 'animate-spin' : undefined} />
+					</button>
+				)}
 			</div>
 
 			<div className='flex items-start gap-3'>
@@ -726,6 +733,7 @@ const AgentEvaluationsPanel = ({ ws, agentId }: TProps) => {
 	const { data: settings } = useAgentEvaluationSettings(ws, agentId ?? '');
 	const { data: sessions } = useAgentSessions(ws, agentId ?? '');
 	const runEvaluation = useRunAgentSessionEvaluation(ws, agentId ?? '');
+	const canManage = useCan('agent.manage');
 
 	/** Grades one chat on demand, instead of waiting for the automatic pass. */
 	const gradeSession = (sessionId: string) => {
@@ -790,7 +798,7 @@ const AgentEvaluationsPanel = ({ ws, agentId }: TProps) => {
 
 			{/* Grade a chat on demand: the settings above only schedule the
 			    automatic pass, so without this the panel can just read results. */}
-			<div className='flex items-center gap-1.5'>
+			<div className={`flex items-center gap-1.5 ${canManage ? '' : 'hidden'}`}>
 				<select
 					value={sessionToGrade}
 					onChange={(e) => setSessionToGrade(e.target.value)}
@@ -853,7 +861,7 @@ const AgentEvaluationsPanel = ({ ws, agentId }: TProps) => {
 							ws={ws}
 							agentId={agentId}
 							evaluation={evaluation}
-							onRegrade={gradeSession}
+							onRegrade={canManage ? gradeSession : undefined}
 							isRegrading={
 								runEvaluation.isPending &&
 								String(runEvaluation.variables) ===

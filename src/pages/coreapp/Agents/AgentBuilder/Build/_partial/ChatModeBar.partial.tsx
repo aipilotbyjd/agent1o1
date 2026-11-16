@@ -12,6 +12,7 @@ import {
 	type LucideIcon,
 } from 'lucide-react';
 import { useUpdateAgentSession } from '@/api/modules/agent-sessions';
+import { usePermission } from '@/hooks/usePermission';
 import { AUTONOMY_MODES, AUTONOMY_MODE_META, type TAutonomyMode } from '@/types/agent-action.type';
 import type { TAgent, TAgentSession } from '@/types/agent.type';
 
@@ -113,6 +114,13 @@ const ChatModeBar = ({
 	const mode: TAutonomyMode = override ?? agentMode;
 	const testRun = session.test_mode ?? agent.test_mode;
 	const isLocked = disabled || updateSession.isPending;
+	const { can } = usePermission();
+	// Loosening past the agent's own mode needs agent.manage, mirroring the backend.
+	const modeOptions = can('agent.manage')
+		? AUTONOMY_MODES
+		: AUTONOMY_MODES.filter(
+				(option) => AUTONOMY_MODES.indexOf(option) <= AUTONOMY_MODES.indexOf(agentMode),
+			);
 
 	useEffect(() => {
 		if (!isMenuOpen) return;
@@ -156,25 +164,27 @@ const ChatModeBar = ({
 				</p>
 			</div>
 
-			<button
-				type='button'
-				aria-haspopup='menu'
-				aria-expanded={isMenuOpen}
-				disabled={isLocked}
-				onClick={() => setIsMenuOpen((open) => !open)}
-				className='flex h-8 shrink-0 items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900'>
-				{updateSession.isPending ? (
-					<Loader2 size={12} className='animate-spin' />
-				) : (
-					<>
-						Change
-						<ChevronDown
-							size={12}
-							className={`transition-transform ${isMenuOpen ? 'rotate-180' : ''}`}
-						/>
-					</>
-				)}
-			</button>
+			{can('agent.chat') && (
+				<button
+					type='button'
+					aria-haspopup='menu'
+					aria-expanded={isMenuOpen}
+					disabled={isLocked}
+					onClick={() => setIsMenuOpen((open) => !open)}
+					className='flex h-8 shrink-0 items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-900'>
+					{updateSession.isPending ? (
+						<Loader2 size={12} className='animate-spin' />
+					) : (
+						<>
+							Change
+							<ChevronDown
+								size={12}
+								className={`transition-transform ${isMenuOpen ? 'rotate-180' : ''}`}
+							/>
+						</>
+					)}
+				</button>
+			)}
 
 			{isMenuOpen && (
 				<>
@@ -198,7 +208,7 @@ const ChatModeBar = ({
 						<p className='px-2.5 pt-0.5 pb-1 text-[9px] font-black tracking-wider text-zinc-400 uppercase'>
 							Only for this chat
 						</p>
-						{AUTONOMY_MODES.map((option) => (
+						{modeOptions.map((option) => (
 							<MenuOption
 								key={option}
 								mode={option}

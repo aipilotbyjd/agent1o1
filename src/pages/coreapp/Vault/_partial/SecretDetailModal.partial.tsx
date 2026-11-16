@@ -45,7 +45,8 @@ const SecretDetailModal = ({
 	/** `null` closes the modal. */
 	secretId: string | null;
 	onClose: () => void;
-	onEdit: (secret: TSecret) => void;
+	/** Left out when the viewer cannot manage secrets, which hides the Edit button. */
+	onEdit?: (secret: TSecret) => void;
 }) => {
 	const { data: secret, isLoading } = useSecret(ws, secretId ?? '');
 
@@ -150,14 +151,16 @@ const SecretDetailModal = ({
 					<button type='button' onClick={onClose} className={secondaryBtn}>
 						Close
 					</button>
-					<button
-						type='button'
-						disabled={!secret}
-						onClick={() => secret && onEdit(secret)}
-						className={primaryBtn}>
-						<Pencil size={14} />
-						Edit
-					</button>
+					{onEdit && (
+						<button
+							type='button'
+							disabled={!secret}
+							onClick={() => secret && onEdit(secret)}
+							className={primaryBtn}>
+							<Pencil size={14} />
+							Edit
+						</button>
+					)}
 				</ModalFooterChild>
 			</ModalFooter>
 		</Modal>

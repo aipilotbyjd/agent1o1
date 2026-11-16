@@ -22,6 +22,7 @@ import {
 } from '@/api/modules/triggers';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useConfirm } from '@/context/confirm';
+import { useCan } from '@/hooks/usePermission';
 import { useRealtimePollInterval } from '@/context/realtime';
 import paths from '@/Routes/paths';
 import Spinner from '@/components/ui/Spinner';
@@ -63,6 +64,8 @@ const TriggersPage = () => {
 	const updateTrigger = useUpdateTrigger(activeWorkspaceId);
 	const runTrigger = useRunTrigger(activeWorkspaceId);
 	const deleteTrigger = useDeleteTrigger(activeWorkspaceId);
+	const canManageTriggers = useCan('trigger.manage');
+	const canRunTriggers = useCan('run.trigger');
 	const [filter, setFilter] = useState<TFilter>('all');
 	const [eventsFor, setEventsFor] = useState<string | null>(null);
 
@@ -285,28 +288,34 @@ const TriggersPage = () => {
 											<History size={13} />
 											Events
 										</button>
-										<button
-											type='button'
-											title='Fire it now, as if an event had arrived'
-											disabled={!trigger.is_active || runTrigger.isPending}
-											onClick={() =>
-												runTrigger.mutate(trigger.id, {
-													onSuccess: () => notify.success('Run queued'),
-												})
-											}
-											className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-white/[0.06]'>
-											<Play size={14} />
-										</button>
-										{(isLegacy || trigger.target_type === 'agent') && (
+										{canRunTriggers && (
 											<button
 												type='button'
-												title='Delete trigger'
-												disabled={deleteTrigger.isPending}
-												onClick={() => handleDelete(trigger)}
-												className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-950/30'>
-												<Trash2 size={14} />
+												title='Fire it now, as if an event had arrived'
+												disabled={
+													!trigger.is_active || runTrigger.isPending
+												}
+												onClick={() =>
+													runTrigger.mutate(trigger.id, {
+														onSuccess: () =>
+															notify.success('Run queued'),
+													})
+												}
+												className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-white/[0.06]'>
+												<Play size={14} />
 											</button>
 										)}
+										{canManageTriggers &&
+											(isLegacy || trigger.target_type === 'agent') && (
+												<button
+													type='button'
+													title='Delete trigger'
+													disabled={deleteTrigger.isPending}
+													onClick={() => handleDelete(trigger)}
+													className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-950/30'>
+													<Trash2 size={14} />
+												</button>
+											)}
 										<button
 											type='button'
 											role='switch'
@@ -316,7 +325,12 @@ const TriggersPage = () => {
 													? 'Switch trigger off'
 													: 'Switch trigger on'
 											}
-											disabled={updateTrigger.isPending}
+											title={
+												canManageTriggers
+													? undefined
+													: 'Only editors and admins can switch triggers on or off'
+											}
+											disabled={!canManageTriggers || updateTrigger.isPending}
 											onClick={() =>
 												updateTrigger.mutate({
 													id: trigger.id,

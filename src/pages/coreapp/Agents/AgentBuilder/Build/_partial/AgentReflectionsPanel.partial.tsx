@@ -25,6 +25,7 @@ import {
 	useApplyAgentReflection,
 	useDismissAgentReflection,
 } from '@/api/modules/agent-reflections';
+import { useCan } from '@/hooks/usePermission';
 import type {
 	TReflection,
 	TReflectionRun,
@@ -120,6 +121,7 @@ const ReflectionSettingsForm = ({
 	settings: TReflectionSettings;
 }) => {
 	const updateMutation = useUpdateAgentReflectionSettings(ws, agentId);
+	const canManage = useCan('agent.manage');
 	const [form, setForm] = useState({
 		is_enabled: settings.is_enabled,
 		apply_behavior: settings.apply_behavior,
@@ -135,7 +137,9 @@ const ReflectionSettingsForm = ({
 	};
 
 	return (
-		<div className='space-y-3 rounded-xl border border-zinc-100 bg-zinc-50/40 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
+		<fieldset
+			disabled={!canManage}
+			className='min-w-0 space-y-3 rounded-xl border border-zinc-100 bg-zinc-50/40 p-3 dark:border-zinc-800 dark:bg-zinc-950/20'>
 			<ToggleRow
 				label='Enable reflections'
 				hint='Let the agent review past chats and propose improvements.'
@@ -244,7 +248,7 @@ const ReflectionSettingsForm = ({
 					Save
 				</button>
 			</div>
-		</div>
+		</fieldset>
 	);
 };
 
@@ -260,6 +264,7 @@ const ReflectionCard = ({
 }) => {
 	const applyMutation = useApplyAgentReflection(ws, agentId);
 	const dismissMutation = useDismissAgentReflection(ws, agentId);
+	const canManage = useCan('agent.manage');
 
 	const type = TYPE_STYLE[reflection.type] ?? TYPE_STYLE.instruction_update;
 	const TypeIcon = type.icon;
@@ -307,7 +312,7 @@ const ReflectionCard = ({
 				</div>
 			)}
 
-			{reflection.status === 'pending' && (
+			{reflection.status === 'pending' && canManage && (
 				<div className='flex justify-end gap-2'>
 					<button
 						onClick={() => dismissMutation.mutate(reflection.id)}
@@ -455,6 +460,7 @@ const AgentReflectionsPanel = ({ ws, agentId, displayMode = 'panel' }: TProps) =
 	);
 	const { data: runs, isLoading: isRunsLoading } = useAgentReflectionRuns(ws, agentId ?? '');
 	const runMutation = useCreateAgentReflectionRun(ws, agentId ?? '');
+	const canManage = useCan('agent.manage');
 
 	if (!agentId) {
 		return (
@@ -491,17 +497,19 @@ const AgentReflectionsPanel = ({ ws, agentId, displayMode = 'panel' }: TProps) =
 						}`}>
 						<Settings2 size={12} />
 					</button>
-					<button
-						onClick={() => runMutation.mutate()}
-						disabled={runMutation.isPending}
-						className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-black disabled:opacity-50'>
-						{runMutation.isPending ? (
-							<Loader2 size={10} className='animate-spin' />
-						) : (
-							<Play size={10} />
-						)}
-						<span>Run now</span>
-					</button>
+					{canManage && (
+						<button
+							onClick={() => runMutation.mutate()}
+							disabled={runMutation.isPending}
+							className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-black disabled:opacity-50'>
+							{runMutation.isPending ? (
+								<Loader2 size={10} className='animate-spin' />
+							) : (
+								<Play size={10} />
+							)}
+							<span>Run now</span>
+						</button>
+					)}
 				</div>
 			</div>
 

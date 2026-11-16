@@ -62,6 +62,7 @@ import CreatePageModal from '../WorkflowPages/_partial/CreatePageModal.partial';
 import { formatUsageCount } from './_helper/blueprints.constants';
 import TemplateFormModal, { type TTemplateFormTarget } from './_partial/TemplateFormModal.partial';
 import CollectionItemsEditor from './_partial/CollectionItemsEditor.partial';
+import { usePermission } from '@/hooks/usePermission';
 
 type TTab = 'workflows' | 'agents' | 'pages' | 'collections';
 
@@ -196,6 +197,14 @@ const BlueprintsListPage = () => {
 	const { workspaceId } = useParams<{ workspaceId: string }>();
 	const { activeWorkspaceId } = useWorkspaceContext();
 	const ws = workspaceId || activeWorkspaceId;
+	const { can } = usePermission();
+	const canManageTemplates = can('template.manage');
+	// Using a template creates the thing it describes, so it needs that thing's manage permission.
+	const canManageWorkflows = can('workflow.manage');
+	const canManageAgents = can('agent.manage');
+	const canManagePages = can('page.manage');
+	// A collection creates workflows and agents, and its endpoint itself needs `template.manage`.
+	const canUseCollections = canManageTemplates && canManageWorkflows && canManageAgents;
 
 	const [activeTab, setActiveTab] = useState<TTab>('workflows');
 	const [searchQuery, setSearchQuery] = useState('');
@@ -636,24 +645,28 @@ const BlueprintsListPage = () => {
 						</div>
 
 						<div className='flex items-center gap-3'>
-							<button
-								type='button'
-								onClick={() =>
-									setFormTarget({
-										kind:
-											activeTab === 'workflows'
-												? 'workflow'
-												: activeTab === 'agents'
-													? 'agent'
-													: activeTab === 'pages'
-														? 'page'
-														: 'collection',
-									})
-								}
-								className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex h-[30px] shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-3.5 text-xs font-black shadow-xs transition-all active:scale-95'>
-								<Plus size={13} />
-								{activeTab === 'collections' ? 'New collection' : 'New template'}
-							</button>
+							{canManageTemplates && (
+								<button
+									type='button'
+									onClick={() =>
+										setFormTarget({
+											kind:
+												activeTab === 'workflows'
+													? 'workflow'
+													: activeTab === 'agents'
+														? 'agent'
+														: activeTab === 'pages'
+															? 'page'
+															: 'collection',
+										})
+									}
+									className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex h-[30px] shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-3.5 text-xs font-black shadow-xs transition-all active:scale-95'>
+									<Plus size={13} />
+									{activeTab === 'collections'
+										? 'New collection'
+										: 'New template'}
+								</button>
+							)}
 
 							{/* Sort Dropdown */}
 							<div className='relative'>
@@ -733,11 +746,25 @@ const BlueprintsListPage = () => {
 											usageCount={wf.usage_count}
 											isUsePending={useWorkflowTemplateMutation.isPending}
 											onPreview={() => setPreviewId(wf.id)}
-											onUse={() => handleUseWorkflow(wf)}
-											onEdit={() =>
-												setFormTarget({ kind: 'workflow', item: wf })
+											onUse={
+												canManageWorkflows
+													? () => handleUseWorkflow(wf)
+													: undefined
 											}
-											onDelete={() => handleDeleteWorkflow(wf)}
+											onEdit={
+												canManageTemplates
+													? () =>
+															setFormTarget({
+																kind: 'workflow',
+																item: wf,
+															})
+													: undefined
+											}
+											onDelete={
+												canManageTemplates
+													? () => handleDeleteWorkflow(wf)
+													: undefined
+											}
 										/>
 									))}
 
@@ -755,11 +782,25 @@ const BlueprintsListPage = () => {
 											usageCount={agent.usage_count}
 											isUsePending={useAgentTemplateMutation.isPending}
 											onPreview={() => setPreviewId(agent.id)}
-											onUse={() => handleUseAgent(agent)}
-											onEdit={() =>
-												setFormTarget({ kind: 'agent', item: agent })
+											onUse={
+												canManageAgents
+													? () => handleUseAgent(agent)
+													: undefined
 											}
-											onDelete={() => handleDeleteAgent(agent)}
+											onEdit={
+												canManageTemplates
+													? () =>
+															setFormTarget({
+																kind: 'agent',
+																item: agent,
+															})
+													: undefined
+											}
+											onDelete={
+												canManageTemplates
+													? () => handleDeleteAgent(agent)
+													: undefined
+											}
 										/>
 									))}
 
@@ -767,6 +808,7 @@ const BlueprintsListPage = () => {
 									filteredPages.map((tpl) => {
 										// Built-in layouts belong to no workspace and can't be changed here.
 										const own = tpl.workspace_id !== null;
+										const canChange = own && canManageTemplates;
 										return (
 											<CatalogCard
 												key={tpl.id}
@@ -786,9 +828,13 @@ const BlueprintsListPage = () => {
 												usageCount={tpl.usage_count}
 												isUsePending={false}
 												onPreview={() => setPreviewId(tpl.id)}
-												onUse={() => setUsePageTemplateId(tpl.id)}
+												onUse={
+													canManagePages
+														? () => setUsePageTemplateId(tpl.id)
+														: undefined
+												}
 												onEdit={
-													own
+													canChange
 														? () =>
 																setFormTarget({
 																	kind: 'page',
@@ -797,7 +843,9 @@ const BlueprintsListPage = () => {
 														: undefined
 												}
 												onDelete={
-													own ? () => handleDeletePage(tpl) : undefined
+													canChange
+														? () => handleDeletePage(tpl)
+														: undefined
 												}
 											/>
 										);
@@ -817,11 +865,25 @@ const BlueprintsListPage = () => {
 											usageCount={0}
 											isUsePending={useCollectionMutation.isPending}
 											onPreview={() => setPreviewId(coll.id)}
-											onUse={() => handleUseCollection(coll)}
-											onEdit={() =>
-												setFormTarget({ kind: 'collection', item: coll })
+											onUse={
+												canUseCollections
+													? () => handleUseCollection(coll)
+													: undefined
 											}
-											onDelete={() => handleDeleteCollection(coll)}
+											onEdit={
+												canManageTemplates
+													? () =>
+															setFormTarget({
+																kind: 'collection',
+																item: coll,
+															})
+													: undefined
+											}
+											onDelete={
+												canManageTemplates
+													? () => handleDeleteCollection(coll)
+													: undefined
+											}
 										/>
 									))}
 							</AnimatePresence>
@@ -855,35 +917,36 @@ const BlueprintsListPage = () => {
 								className='absolute top-4 right-4 rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-900'>
 								<X className='h-5 w-5' />
 							</button>
-							{(activeTab === 'workflows'
-								? wfDetail
-								: activeTab === 'agents'
-									? agentDetail
-									: activeTab === 'pages'
-										? pageDetail?.workspace_id
-											? pageDetail
-											: null
-										: collectionDetail) && (
-								<button
-									aria-label='Edit details'
-									title='Edit details'
-									onClick={() => {
-										if (activeTab === 'workflows' && wfDetail)
-											setFormTarget({ kind: 'workflow', item: wfDetail });
-										else if (activeTab === 'agents' && agentDetail)
-											setFormTarget({ kind: 'agent', item: agentDetail });
-										else if (activeTab === 'pages' && pageDetail)
-											setFormTarget({ kind: 'page', item: pageDetail });
-										else if (collectionDetail)
-											setFormTarget({
-												kind: 'collection',
-												item: collectionDetail,
-											});
-									}}
-									className='absolute top-4 right-14 rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-900'>
-									<Pencil className='h-4.5 w-4.5' />
-								</button>
-							)}
+							{canManageTemplates &&
+								(activeTab === 'workflows'
+									? wfDetail
+									: activeTab === 'agents'
+										? agentDetail
+										: activeTab === 'pages'
+											? pageDetail?.workspace_id
+												? pageDetail
+												: null
+											: collectionDetail) && (
+									<button
+										aria-label='Edit details'
+										title='Edit details'
+										onClick={() => {
+											if (activeTab === 'workflows' && wfDetail)
+												setFormTarget({ kind: 'workflow', item: wfDetail });
+											else if (activeTab === 'agents' && agentDetail)
+												setFormTarget({ kind: 'agent', item: agentDetail });
+											else if (activeTab === 'pages' && pageDetail)
+												setFormTarget({ kind: 'page', item: pageDetail });
+											else if (collectionDetail)
+												setFormTarget({
+													kind: 'collection',
+													item: collectionDetail,
+												});
+										}}
+										className='absolute top-4 right-14 rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-900'>
+										<Pencil className='h-4.5 w-4.5' />
+									</button>
+								)}
 
 							{/* Active tab details content */}
 							<div className='flex-1 overflow-y-auto p-6 md:p-8'>
@@ -962,25 +1025,27 @@ const BlueprintsListPage = () => {
 												</div>
 
 												{/* Use Template Action */}
-												<div className='mt-4 border-t border-zinc-200 pt-6 dark:border-zinc-800'>
-													<Button
-														color='violet'
-														variant='solid'
-														dimension='lg'
-														className='flex w-full cursor-pointer items-center justify-center gap-2 py-3 text-sm font-bold shadow-lg transition-all hover:shadow-xl'
-														isLoading={
-															useWorkflowTemplateMutation.isPending
-														}
-														onClick={() => {
-															setPreviewId(null);
-															handleUseWorkflow(wfDetail);
-														}}>
-														{!useWorkflowTemplateMutation.isPending && (
-															<Play className='h-4 w-4 fill-current' />
-														)}
-														Use Template
-													</Button>
-												</div>
+												{canManageWorkflows && (
+													<div className='mt-4 border-t border-zinc-200 pt-6 dark:border-zinc-800'>
+														<Button
+															color='violet'
+															variant='solid'
+															dimension='lg'
+															className='flex w-full cursor-pointer items-center justify-center gap-2 py-3 text-sm font-bold shadow-lg transition-all hover:shadow-xl'
+															isLoading={
+																useWorkflowTemplateMutation.isPending
+															}
+															onClick={() => {
+																setPreviewId(null);
+																handleUseWorkflow(wfDetail);
+															}}>
+															{!useWorkflowTemplateMutation.isPending && (
+																<Play className='h-4 w-4 fill-current' />
+															)}
+															Use Template
+														</Button>
+													</div>
+												)}
 											</div>
 										)}
 									</>
@@ -1148,25 +1213,27 @@ const BlueprintsListPage = () => {
 												)}
 
 												{/* Deploy Agent action */}
-												<div className='mt-4 border-t border-zinc-200 pt-6 dark:border-zinc-800'>
-													<Button
-														color='primary'
-														variant='solid'
-														dimension='lg'
-														className='flex w-full cursor-pointer items-center justify-center gap-2 py-3 text-sm font-bold shadow-lg transition-all hover:shadow-xl'
-														isLoading={
-															useAgentTemplateMutation.isPending
-														}
-														onClick={() => {
-															setPreviewId(null);
-															handleUseAgent(agentDetail);
-														}}>
-														{!useAgentTemplateMutation.isPending && (
-															<Play className='h-4 w-4 fill-current' />
-														)}
-														Deploy Agent
-													</Button>
-												</div>
+												{canManageAgents && (
+													<div className='mt-4 border-t border-zinc-200 pt-6 dark:border-zinc-800'>
+														<Button
+															color='primary'
+															variant='solid'
+															dimension='lg'
+															className='flex w-full cursor-pointer items-center justify-center gap-2 py-3 text-sm font-bold shadow-lg transition-all hover:shadow-xl'
+															isLoading={
+																useAgentTemplateMutation.isPending
+															}
+															onClick={() => {
+																setPreviewId(null);
+																handleUseAgent(agentDetail);
+															}}>
+															{!useAgentTemplateMutation.isPending && (
+																<Play className='h-4 w-4 fill-current' />
+															)}
+															Deploy Agent
+														</Button>
+													</div>
+												)}
 											</div>
 										)}
 									</>
@@ -1246,20 +1313,22 @@ const BlueprintsListPage = () => {
 													</p>
 												</div>
 
-												<div className='mt-4 border-t border-zinc-200 pt-6 dark:border-zinc-800'>
-													<Button
-														color='violet'
-														variant='solid'
-														dimension='lg'
-														className='flex w-full cursor-pointer items-center justify-center gap-2 py-3 text-sm font-bold shadow-lg transition-all hover:shadow-xl'
-														onClick={() => {
-															setPreviewId(null);
-															setUsePageTemplateId(pageDetail.id);
-														}}>
-														<Play className='h-4 w-4 fill-current' />
-														Use Template
-													</Button>
-												</div>
+												{canManagePages && (
+													<div className='mt-4 border-t border-zinc-200 pt-6 dark:border-zinc-800'>
+														<Button
+															color='violet'
+															variant='solid'
+															dimension='lg'
+															className='flex w-full cursor-pointer items-center justify-center gap-2 py-3 text-sm font-bold shadow-lg transition-all hover:shadow-xl'
+															onClick={() => {
+																setPreviewId(null);
+																setUsePageTemplateId(pageDetail.id);
+															}}>
+															<Play className='h-4 w-4 fill-current' />
+															Use Template
+														</Button>
+													</div>
+												)}
 											</div>
 										)}
 									</>
@@ -1331,23 +1400,29 @@ const BlueprintsListPage = () => {
 												/>
 
 												{/* Deploy Collection action */}
-												<div className='mt-4 border-t border-zinc-200 pt-6 dark:border-zinc-800'>
-													<Button
-														color='amber'
-														variant='solid'
-														dimension='lg'
-														className='flex w-full cursor-pointer items-center justify-center gap-2 py-3 text-sm font-bold shadow-lg transition-all hover:shadow-xl'
-														isLoading={useCollectionMutation.isPending}
-														onClick={() => {
-															setPreviewId(null);
-															handleUseCollection(collectionDetail);
-														}}>
-														{!useCollectionMutation.isPending && (
-															<Play className='h-4 w-4 fill-current' />
-														)}
-														Deploy Collection
-													</Button>
-												</div>
+												{canUseCollections && (
+													<div className='mt-4 border-t border-zinc-200 pt-6 dark:border-zinc-800'>
+														<Button
+															color='amber'
+															variant='solid'
+															dimension='lg'
+															className='flex w-full cursor-pointer items-center justify-center gap-2 py-3 text-sm font-bold shadow-lg transition-all hover:shadow-xl'
+															isLoading={
+																useCollectionMutation.isPending
+															}
+															onClick={() => {
+																setPreviewId(null);
+																handleUseCollection(
+																	collectionDetail,
+																);
+															}}>
+															{!useCollectionMutation.isPending && (
+																<Play className='h-4 w-4 fill-current' />
+															)}
+															Deploy Collection
+														</Button>
+													</div>
+												)}
 											</div>
 										)}
 									</>
@@ -1432,7 +1507,8 @@ const CatalogCard = ({
 	usageCount: number;
 	isUsePending: boolean;
 	onPreview: () => void;
-	onUse: () => void;
+	/** Left out when the viewer's role can't create from this template. */
+	onUse?: () => void;
 	onEdit?: () => void;
 	onDelete?: () => void;
 	/** Shown across the top of the card, e.g. a layout preview. */
@@ -1536,16 +1612,18 @@ const CatalogCard = ({
 				</div>
 			</div>
 
-			<button
-				onClick={(e) => {
-					e.stopPropagation();
-					onUse();
-				}}
-				disabled={isUsePending}
-				className='bg-primary-400 text-primary-950 hover:bg-primary-500 mt-3 flex h-8 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl text-[11px] font-black transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'>
-				<Play size={12} />
-				Use
-			</button>
+			{onUse && (
+				<button
+					onClick={(e) => {
+						e.stopPropagation();
+						onUse();
+					}}
+					disabled={isUsePending}
+					className='bg-primary-400 text-primary-950 hover:bg-primary-500 mt-3 flex h-8 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl text-[11px] font-black transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'>
+					<Play size={12} />
+					Use
+				</button>
+			)}
 		</motion.div>
 	);
 };

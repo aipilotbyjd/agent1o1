@@ -2,6 +2,7 @@ import { prettifyActionTool } from '../_helper/actionTool.helper';
 import AgentQuestionCard from './AgentQuestionCard.partial';
 import { useState } from 'react';
 import { AlertTriangle, Check, Clock, PencilLine, ShieldAlert, ShieldCheck, X } from 'lucide-react';
+import { useCan } from '@/hooks/usePermission';
 import type {
 	TActionEffect,
 	TActionRisk,
@@ -75,6 +76,7 @@ export const ApprovalCard = ({
 	const expires = expiresLabel(action.expires_at);
 	const rememberable = canRemember && action.tool_kind !== 'builtin';
 	const namedApprovers = (action.approvers ?? []).length > 0;
+	const canDecide = useCan('agent.chat');
 
 	const approve = () => {
 		if (mode === 'edit') {
@@ -199,89 +201,96 @@ export const ApprovalCard = ({
 				/>
 			)}
 
-			{namedApprovers && (
+			{namedApprovers && canDecide && (
 				<p className='mt-2 flex items-center gap-1 text-[11px] font-semibold text-zinc-400'>
 					<AlertTriangle size={11} /> Only the approvers named for this tool (and admins)
 					can decide it.
 				</p>
 			)}
 
-			<div className='mt-3 flex flex-wrap items-center gap-2'>
-				{mode === 'reject' ? (
-					<>
-						<button
-							type='button'
-							disabled={busy}
-							onClick={reject}
-							className='flex min-h-9 items-center gap-1.5 rounded-lg bg-rose-600 px-3 text-[12.5px] font-bold text-white hover:bg-rose-700 disabled:opacity-50'>
-							<X size={13} /> Reject
-						</button>
-						<label className='flex items-center gap-1.5 text-[12px] font-semibold text-zinc-600 dark:text-zinc-300'>
-							<input
-								type='checkbox'
-								checked={stop}
-								onChange={(event) => setStop(event.target.checked)}
-							/>
-							Stop the agent here
-						</label>
-						<button
-							type='button'
-							disabled={busy}
-							onClick={() => setMode('view')}
-							className='ml-auto min-h-9 rounded-lg px-3 text-[12.5px] font-bold text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'>
-							Back
-						</button>
-					</>
-				) : (
-					<>
-						<button
-							type='button'
-							disabled={busy}
-							onClick={approve}
-							className='flex min-h-9 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-[12.5px] font-bold text-white hover:bg-emerald-700 disabled:opacity-50'>
-							<Check size={13} /> {mode === 'edit' ? 'Run with changes' : 'Approve'}
-						</button>
-						<button
-							type='button'
-							disabled={busy}
-							onClick={() => setMode('reject')}
-							className='flex min-h-9 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[12.5px] font-bold text-rose-600 hover:bg-rose-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-rose-950/40'>
-							<X size={13} /> Reject
-						</button>
-						{mode === 'view' ? (
+			{!canDecide ? (
+				<p className='mt-3 flex items-center gap-1 text-[11px] font-semibold text-zinc-400'>
+					<AlertTriangle size={11} /> Your role can view this request but not decide it.
+				</p>
+			) : (
+				<div className='mt-3 flex flex-wrap items-center gap-2'>
+					{mode === 'reject' ? (
+						<>
 							<button
 								type='button'
 								disabled={busy}
-								onClick={() => setMode('edit')}
-								className='flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-[12.5px] font-bold text-zinc-500 hover:bg-zinc-100 disabled:opacity-50 dark:hover:bg-zinc-800'>
-								<PencilLine size={13} /> Edit
+								onClick={reject}
+								className='flex min-h-9 items-center gap-1.5 rounded-lg bg-rose-600 px-3 text-[12.5px] font-bold text-white hover:bg-rose-700 disabled:opacity-50'>
+								<X size={13} /> Reject
 							</button>
-						) : (
-							<button
-								type='button'
-								disabled={busy}
-								onClick={() => {
-									setMode('view');
-									setArgsText(JSON.stringify(args, null, 2));
-									setArgsError(null);
-								}}
-								className='min-h-9 rounded-lg px-3 text-[12.5px] font-bold text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'>
-								Cancel edit
-							</button>
-						)}
-						{rememberable && mode === 'view' && (
-							<label className='ml-auto flex items-center gap-1.5 text-[12px] font-semibold text-zinc-600 dark:text-zinc-300'>
+							<label className='flex items-center gap-1.5 text-[12px] font-semibold text-zinc-600 dark:text-zinc-300'>
 								<input
 									type='checkbox'
-									checked={remember}
-									onChange={(event) => setRemember(event.target.checked)}
+									checked={stop}
+									onChange={(event) => setStop(event.target.checked)}
 								/>
-								Always allow this tool
+								Stop the agent here
 							</label>
-						)}
-					</>
-				)}
-			</div>
+							<button
+								type='button'
+								disabled={busy}
+								onClick={() => setMode('view')}
+								className='ml-auto min-h-9 rounded-lg px-3 text-[12.5px] font-bold text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'>
+								Back
+							</button>
+						</>
+					) : (
+						<>
+							<button
+								type='button'
+								disabled={busy}
+								onClick={approve}
+								className='flex min-h-9 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-[12.5px] font-bold text-white hover:bg-emerald-700 disabled:opacity-50'>
+								<Check size={13} />{' '}
+								{mode === 'edit' ? 'Run with changes' : 'Approve'}
+							</button>
+							<button
+								type='button'
+								disabled={busy}
+								onClick={() => setMode('reject')}
+								className='flex min-h-9 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[12.5px] font-bold text-rose-600 hover:bg-rose-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-rose-950/40'>
+								<X size={13} /> Reject
+							</button>
+							{mode === 'view' ? (
+								<button
+									type='button'
+									disabled={busy}
+									onClick={() => setMode('edit')}
+									className='flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-[12.5px] font-bold text-zinc-500 hover:bg-zinc-100 disabled:opacity-50 dark:hover:bg-zinc-800'>
+									<PencilLine size={13} /> Edit
+								</button>
+							) : (
+								<button
+									type='button'
+									disabled={busy}
+									onClick={() => {
+										setMode('view');
+										setArgsText(JSON.stringify(args, null, 2));
+										setArgsError(null);
+									}}
+									className='min-h-9 rounded-lg px-3 text-[12.5px] font-bold text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'>
+									Cancel edit
+								</button>
+							)}
+							{rememberable && mode === 'view' && (
+								<label className='ml-auto flex items-center gap-1.5 text-[12px] font-semibold text-zinc-600 dark:text-zinc-300'>
+									<input
+										type='checkbox'
+										checked={remember}
+										onChange={(event) => setRemember(event.target.checked)}
+									/>
+									Always allow this tool
+								</label>
+							)}
+						</>
+					)}
+				</div>
+			)}
 		</div>
 	);
 };
@@ -342,42 +351,45 @@ const ApprovalList = ({
 	busy: boolean;
 	canRemember: boolean;
 	onDecide: (decisions: TAgentActionDecision[]) => void;
-}) => (
-	<>
-		<div className='flex items-center gap-2'>
-			<ShieldCheck size={14} className='text-amber-600 dark:text-amber-400' />
-			<span className='text-[12.5px] font-bold text-zinc-700 dark:text-zinc-200'>
-				{actions.length === 1
-					? 'The agent is waiting for your approval'
-					: `The agent is waiting for approval on ${actions.length} actions`}
-			</span>
-			{actions.length > 1 && (
-				<button
-					type='button'
-					disabled={busy}
-					onClick={() =>
-						onDecide(
-							actions.map((action) => ({
-								action_id: action.id,
-								decision: 'approve' as const,
-							})),
-						)
-					}
-					className='ml-auto min-h-8 rounded-lg px-2.5 text-[12px] font-bold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40'>
-					Approve all
-				</button>
-			)}
-		</div>
-		{actions.map((action) => (
-			<ApprovalCard
-				key={action.id}
-				action={action}
-				busy={busy}
-				canRemember={canRemember}
-				onDecide={(decision) => onDecide([decision])}
-			/>
-		))}
-	</>
-);
+}) => {
+	const canDecide = useCan('agent.chat');
+	return (
+		<>
+			<div className='flex items-center gap-2'>
+				<ShieldCheck size={14} className='text-amber-600 dark:text-amber-400' />
+				<span className='text-[12.5px] font-bold text-zinc-700 dark:text-zinc-200'>
+					{actions.length === 1
+						? 'The agent is waiting for your approval'
+						: `The agent is waiting for approval on ${actions.length} actions`}
+				</span>
+				{actions.length > 1 && canDecide && (
+					<button
+						type='button'
+						disabled={busy}
+						onClick={() =>
+							onDecide(
+								actions.map((action) => ({
+									action_id: action.id,
+									decision: 'approve' as const,
+								})),
+							)
+						}
+						className='ml-auto min-h-8 rounded-lg px-2.5 text-[12px] font-bold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40'>
+						Approve all
+					</button>
+				)}
+			</div>
+			{actions.map((action) => (
+				<ApprovalCard
+					key={action.id}
+					action={action}
+					busy={busy}
+					canRemember={canRemember}
+					onDecide={(decision) => onDecide([decision])}
+				/>
+			))}
+		</>
+	);
+};
 
 export default AgentApprovalCards;

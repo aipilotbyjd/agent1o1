@@ -8,6 +8,7 @@ import {
 	useClearAgentMemories,
 } from '@/api/modules/agent-memory';
 import paths from '@/Routes/paths';
+import { useCan } from '@/hooks/usePermission';
 import type { TAgentMemory } from '@/types/agent.type';
 
 type TProps = {
@@ -36,6 +37,7 @@ const AgentMemoryPanel = ({ ws, agentId }: TProps) => {
 	const updateMutation = useUpdateAgentMemory(ws, agentId ?? '');
 	const deleteMutation = useDeleteAgentMemory(ws, agentId ?? '');
 	const clearMutation = useClearAgentMemories(ws, agentId ?? '');
+	const canManage = useCan('agent.manage');
 
 	const items = memories ?? [];
 
@@ -83,20 +85,22 @@ const AgentMemoryPanel = ({ ws, agentId }: TProps) => {
 						Facts the agent recalls across conversations.
 					</p>
 				</div>
-				<button
-					onClick={() => {
-						resetForm();
-						setIsFormOpen(true);
-					}}
-					className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
-					<Plus size={10} />
-					<span>Add</span>
-				</button>
+				{canManage && (
+					<button
+						onClick={() => {
+							resetForm();
+							setIsFormOpen(true);
+						}}
+						className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
+						<Plus size={10} />
+						<span>Add</span>
+					</button>
+				)}
 			</div>
 
 			{/* No scope filter: this backend's memories carry no scope. */}
 			<div className='flex items-center justify-end'>
-				{items.length > 0 && (
+				{canManage && items.length > 0 && (
 					<button
 						onClick={() => clearMutation.mutate()}
 						className='text-[10px] font-bold text-zinc-400 hover:text-rose-500'>
@@ -196,7 +200,8 @@ const AgentMemoryPanel = ({ ws, agentId }: TProps) => {
 									{new Date(memory.updated_at).toLocaleDateString()}
 								</p>
 							</div>
-							<div className='flex shrink-0 items-center gap-2'>
+							<div
+								className={`flex shrink-0 items-center gap-2 ${canManage ? '' : 'hidden'}`}>
 								<button
 									onClick={() => startEdit(memory)}
 									title='Edit'

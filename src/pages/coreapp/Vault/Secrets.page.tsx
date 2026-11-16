@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Copy, Eye, EyeOff, Key, Lock, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { useWorkspaceContext } from '@/context/workspace';
+import { useCan } from '@/hooks/usePermission';
 import {
 	useSecrets,
 	useCreateSecret,
@@ -224,6 +225,7 @@ const SecretModal = ({ open, target, isPending, onClose, onSubmit }: SecretModal
 // ── Page ──────────────────────────────────────────────────────
 const SecretsPage = () => {
 	const { activeWorkspaceId } = useWorkspaceContext();
+	const canManageSecrets = useCan('secret.manage');
 	const [searchQuery, setSearchQuery] = useState('');
 
 	/** `GET .../secrets` takes no query params, so the search box filters the
@@ -339,13 +341,15 @@ const SecretsPage = () => {
 				<h1 className='text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-50'>
 					Your Secrets
 				</h1>
-				<button
-					type='button'
-					onClick={openAdd}
-					className={`${primaryBtn} w-full justify-center sm:w-auto`}>
-					<Plus size={15} />
-					Add Secret
-				</button>
+				{canManageSecrets && (
+					<button
+						type='button'
+						onClick={openAdd}
+						className={`${primaryBtn} w-full justify-center sm:w-auto`}>
+						<Plus size={15} />
+						Add Secret
+					</button>
+				)}
 			</div>
 
 			{/* Search */}
@@ -398,12 +402,16 @@ const SecretsPage = () => {
 							No secrets yet
 						</h3>
 						<p className='mb-6 text-sm leading-relaxed font-medium text-zinc-500 dark:text-zinc-400'>
-							Create your first secret to get started
+							{canManageSecrets
+								? 'Create your first secret to get started'
+								: 'Only admins can add secrets to this workspace'}
 						</p>
-						<button type='button' onClick={openAdd} className={primaryBtn}>
-							<Plus size={16} />
-							Add Secret
-						</button>
+						{canManageSecrets && (
+							<button type='button' onClick={openAdd} className={primaryBtn}>
+								<Plus size={16} />
+								Add Secret
+							</button>
+						)}
 					</div>
 				</div>
 			)}
@@ -503,21 +511,23 @@ const SecretsPage = () => {
 												{formatDate(secret.created_at)}
 											</p>
 										</div>
-										<div className='flex items-center gap-2'>
-											<button
-												type='button'
-												onClick={() => openEdit(secret)}
-												className='flex h-10 items-center gap-2 rounded-xl border border-zinc-200 px-3 text-xs font-bold text-zinc-600 transition active:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:active:bg-zinc-800'>
-												<Pencil size={14} /> Edit
-											</button>
-											<button
-												type='button'
-												onClick={() => setDeleteTarget(secret)}
-												aria-label={`Delete ${secret.key}`}
-												className='flex h-10 w-10 items-center justify-center rounded-xl border border-red-100 text-red-500 transition active:bg-red-50 dark:border-red-500/20 dark:active:bg-red-950/30'>
-												<Trash2 size={15} />
-											</button>
-										</div>
+										{canManageSecrets && (
+											<div className='flex items-center gap-2'>
+												<button
+													type='button'
+													onClick={() => openEdit(secret)}
+													className='flex h-10 items-center gap-2 rounded-xl border border-zinc-200 px-3 text-xs font-bold text-zinc-600 transition active:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:active:bg-zinc-800'>
+													<Pencil size={14} /> Edit
+												</button>
+												<button
+													type='button'
+													onClick={() => setDeleteTarget(secret)}
+													aria-label={`Delete ${secret.key}`}
+													className='flex h-10 w-10 items-center justify-center rounded-xl border border-red-100 text-red-500 transition active:bg-red-50 dark:border-red-500/20 dark:active:bg-red-950/30'>
+													<Trash2 size={15} />
+												</button>
+											</div>
+										)}
 									</div>
 								</article>
 							);
@@ -626,20 +636,26 @@ const SecretsPage = () => {
 															<Copy size={14} />
 														</button>
 													)}
-													<button
-														type='button'
-														onClick={() => openEdit(secret)}
-														className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-700 dark:hover:text-zinc-200'
-														title='Edit'>
-														<Pencil size={13} />
-													</button>
-													<button
-														type='button'
-														onClick={() => setDeleteTarget(secret)}
-														className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400'
-														title='Delete'>
-														<Trash2 size={14} />
-													</button>
+													{canManageSecrets && (
+														<>
+															<button
+																type='button'
+																onClick={() => openEdit(secret)}
+																className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-700 dark:hover:text-zinc-200'
+																title='Edit'>
+																<Pencil size={13} />
+															</button>
+															<button
+																type='button'
+																onClick={() =>
+																	setDeleteTarget(secret)
+																}
+																className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400'
+																title='Delete'>
+																<Trash2 size={14} />
+															</button>
+														</>
+													)}
 												</div>
 											</Td>
 										</Tr>
@@ -656,10 +672,14 @@ const SecretsPage = () => {
 				ws={activeWorkspaceId}
 				secretId={detailId}
 				onClose={() => setDetailId(null)}
-				onEdit={(secret) => {
-					setDetailId(null);
-					openEdit(secret);
-				}}
+				onEdit={
+					canManageSecrets
+						? (secret) => {
+								setDetailId(null);
+								openEdit(secret);
+							}
+						: undefined
+				}
 			/>
 
 			{/* Add / Edit modal */}

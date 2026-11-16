@@ -30,7 +30,7 @@ const groupVersions = (versions: TWorkflowVersion[]) =>
 const DraftCard = ({ isSelected, onSelect }: { isSelected: boolean; onSelect: () => void }) => {
 	const { status, diff, liveGraph, draftGraph, liveVersionId, liveVersionNumber } =
 		useDraftStatus();
-	const { restore, isRestoring } = useVersionRestore();
+	const { restore, canRestore, isRestoring } = useVersionRestore();
 
 	const meta = {
 		unpublished: {
@@ -86,7 +86,7 @@ const DraftCard = ({ isSelected, onSelect }: { isSelected: boolean; onSelect: ()
 					{meta.body}
 				</p>
 			</button>
-			{status === 'changed' && liveVersionId && (
+			{canRestore && status === 'changed' && liveVersionId && (
 				<button
 					type='button'
 					disabled={isRestoring}

@@ -5,6 +5,7 @@ import { placeUnpositioned } from '../_helper/layout.helper';
 import { queueDraftWrite } from '../_helper/persistDraft.helper';
 import { workflowDraftToCanvas } from '../_helper/workflowApiTransform.helper';
 import { useWorkflowEditor } from './useWorkflowEditor.hook';
+import { useCan } from '@/hooks/usePermission';
 
 type TRestoreOptions = {
 	/** The draft has edits the live version doesn't, so restoring loses them. */
@@ -18,7 +19,9 @@ type TRestoreOptions = {
  * reviews it and publishes. The replaced draft stays one undo away.
  */
 export const useVersionRestore = () => {
-	const { state, dispatch } = useWorkflowEditor();
+	const { state, dispatch, canEdit } = useWorkflowEditor();
+	// The restore endpoint is part of the builder, so it needs builder access on top of edit rights.
+	const canRestore = useCan('workflow.builder.use') && canEdit;
 	const { confirm } = useConfirm();
 	const workspaceId = state.workflow.workspaceId ?? '';
 	const workflowId = state.workflow.apiId ?? '';
@@ -28,7 +31,7 @@ export const useVersionRestore = () => {
 		version: { id: string; version: number },
 		{ draftHasChanges, isDiscard = false }: TRestoreOptions,
 	) => {
-		if (!workspaceId || !workflowId) return false;
+		if (!canRestore || !workspaceId || !workflowId) return false;
 
 		if (isDiscard) {
 			const confirmed = await confirm({
@@ -86,5 +89,5 @@ export const useVersionRestore = () => {
 		}
 	};
 
-	return { restore, isRestoring: restoreMutation.isPending };
+	return { restore, canRestore, isRestoring: restoreMutation.isPending };
 };

@@ -41,7 +41,7 @@ const ToolButton = ({
 );
 
 const ActionBar = () => {
-	const { state, dispatch } = useWorkflowEditor();
+	const { state, dispatch, canEdit } = useWorkflowEditor();
 	const reactFlow = useReactFlow();
 	const autoLayout = useAutoLayout();
 
@@ -71,9 +71,11 @@ const ActionBar = () => {
 				onClick={() => dispatch({ type: 'TOGGLE_MINIMAP' })}>
 				<Grid2X2 size={13} />
 			</ToolButton>
-			<ToolButton title='Auto-layout (L)' onClick={autoLayout} className='hidden sm:flex'>
-				<LayoutGrid size={13} />
-			</ToolButton>
+			{canEdit && (
+				<ToolButton title='Auto-layout (L)' onClick={autoLayout} className='hidden sm:flex'>
+					<LayoutGrid size={13} />
+				</ToolButton>
+			)}
 			<div className='mx-1 hidden h-4 w-px bg-zinc-200 sm:block dark:bg-zinc-800' />
 			<ToolButton
 				title='Search canvas (⌘F)'

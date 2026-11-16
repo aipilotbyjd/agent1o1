@@ -4,6 +4,7 @@ import { notify } from '@/api/core';
 import { usePendingApprovals } from '@/api/modules/dashboard';
 import { useDecideRunApproval } from '@/api/modules/runs';
 import { useConfirm } from '@/context/confirm';
+import { useCan } from '@/hooks/usePermission';
 import pages from '@/Routes/pages';
 import { withWorkspace } from '@/Routes/paths';
 import type { TPendingApproval } from '@/types/dashboard.type';
@@ -23,6 +24,7 @@ const ApprovalRow = ({ ws, approval }: { ws: string; approval: TPendingApproval 
 	const navigate = useNavigate();
 	const { confirm } = useConfirm();
 	const decide = useDecideRunApproval(ws, approval.run_id);
+	const canDecide = useCan('run.trigger');
 	const workflowName = approval.run?.workflow?.name ?? 'Workflow run';
 	const waiting = formatWaiting(approval.waiting_seconds);
 
@@ -69,24 +71,26 @@ const ApprovalRow = ({ ws, approval }: { ws: string; approval: TPendingApproval 
 					</p>
 				</div>
 			</button>
-			<div className='flex shrink-0 items-center gap-2'>
-				<button
-					type='button'
-					disabled={decide.isPending}
-					onClick={() => handleDecision('reject')}
-					aria-label={`Reject ${workflowName}`}
-					className='flex h-7.5 items-center gap-1 rounded-lg border border-rose-500/25 bg-rose-500/5 px-2.5 text-[10px] font-black text-rose-600 transition hover:bg-rose-500 hover:text-white disabled:opacity-50 dark:text-rose-400'>
-					<X size={11} /> Reject
-				</button>
-				<button
-					type='button'
-					disabled={decide.isPending}
-					onClick={() => handleDecision('approve')}
-					aria-label={`Approve ${workflowName}`}
-					className='flex h-7.5 items-center gap-1 rounded-lg bg-emerald-600 px-2.5 text-[10px] font-black text-white transition hover:bg-emerald-700 disabled:opacity-50'>
-					<Check size={11} /> Approve
-				</button>
-			</div>
+			{canDecide && (
+				<div className='flex shrink-0 items-center gap-2'>
+					<button
+						type='button'
+						disabled={decide.isPending}
+						onClick={() => handleDecision('reject')}
+						aria-label={`Reject ${workflowName}`}
+						className='flex h-7.5 items-center gap-1 rounded-lg border border-rose-500/25 bg-rose-500/5 px-2.5 text-[10px] font-black text-rose-600 transition hover:bg-rose-500 hover:text-white disabled:opacity-50 dark:text-rose-400'>
+						<X size={11} /> Reject
+					</button>
+					<button
+						type='button'
+						disabled={decide.isPending}
+						onClick={() => handleDecision('approve')}
+						aria-label={`Approve ${workflowName}`}
+						className='flex h-7.5 items-center gap-1 rounded-lg bg-emerald-600 px-2.5 text-[10px] font-black text-white transition hover:bg-emerald-700 disabled:opacity-50'>
+						<Check size={11} /> Approve
+					</button>
+				</div>
+			)}
 		</div>
 	);
 };

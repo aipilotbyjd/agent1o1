@@ -21,7 +21,7 @@ type Props = {
 };
 
 const NodeFields = ({ nodeId, fields, values, forceExpanded }: Props) => {
-	const { state, dispatch } = useWorkflowEditor();
+	const { state, dispatch, canEdit } = useWorkflowEditor();
 	const dynamicKeys =
 		state.nodes.find((node) => node.id === nodeId)?.data.dynamicInputKeys ?? NO_DYNAMIC_INPUTS;
 	const updateNodeInternals = useUpdateNodeInternals();
@@ -114,20 +114,23 @@ const NodeFields = ({ nodeId, fields, values, forceExpanded }: Props) => {
 						)}
 						{field.help && <NodeHelpTip text={field.help} />}
 					</div>
-					<FieldInput
-						compact
-						nodeId={nodeId}
-						field={field}
-						value={values[field.key]}
-						onChange={(value) =>
-							dispatch({
-								type: 'UPDATE_NODE_VALUE',
-								id: nodeId,
-								fieldKey: field.key,
-								value,
-							})
-						}
-					/>
+					{/* Read-only: the value stays visible, but no control in it takes input. */}
+					<div inert={!canEdit}>
+						<FieldInput
+							compact
+							nodeId={nodeId}
+							field={field}
+							value={values[field.key]}
+							onChange={(value) =>
+								dispatch({
+									type: 'UPDATE_NODE_VALUE',
+									id: nodeId,
+									fieldKey: field.key,
+									value,
+								})
+							}
+						/>
+					</div>
 				</div>
 			))}
 

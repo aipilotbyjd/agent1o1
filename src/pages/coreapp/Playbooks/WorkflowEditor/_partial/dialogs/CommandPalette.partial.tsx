@@ -7,9 +7,11 @@ import { useAutoLayout } from '../../_hooks/useAutoLayout.hook';
 import { useAiPanelAvailability } from '../../_hooks/useAiPanelAvailability.hook';
 import { useRunWorkflow } from '../../_hooks/useRunWorkflow.hook';
 import Modal from './Modal.partial';
+import { useCan } from '@/hooks/usePermission';
 
 const CommandPalette = () => {
-	const { state, dispatch } = useWorkflowEditor();
+	const { state, dispatch, canEdit } = useWorkflowEditor();
+	const canRun = useCan('run.trigger');
 	const autoLayout = useAutoLayout();
 	const { runWorkflow, stopRun } = useRunWorkflow();
 	const { isAiPanelAvailable } = useAiPanelAvailability();
@@ -28,6 +30,8 @@ const CommandPalette = () => {
 	);
 
 	const filteredNodeGroups = useMemo(() => {
+		// Picking a node adds it, so a read-only editor lists none.
+		if (!canEdit) return [];
 		if (!needle) return nodeGroups;
 		return nodeGroups
 			.map((group) => ({
@@ -39,7 +43,7 @@ const CommandPalette = () => {
 				),
 			}))
 			.filter((group) => group.nodes.length);
-	}, [nodeGroups, needle]);
+	}, [nodeGroups, needle, canEdit]);
 
 	const addNode = (node: TNodeDefinition) => {
 		dispatch({
@@ -61,6 +65,7 @@ const CommandPalette = () => {
 			shortcut: '⌘↵',
 			action: state.run.status === 'running' ? stopRun : runWorkflow,
 			category: 'Workflow',
+			hidden: !canRun,
 		},
 		{
 			label: 'Auto-layout canvas',
@@ -68,6 +73,7 @@ const CommandPalette = () => {
 			shortcut: 'L',
 			action: autoLayout,
 			category: 'Workflow',
+			hidden: !canEdit,
 		},
 		...(isAiPanelAvailable
 			? [
@@ -86,6 +92,7 @@ const CommandPalette = () => {
 			shortcut: '⌘K',
 			action: () => dispatch({ type: 'SET_QUICK_ADD', open: true }),
 			category: 'Workflow',
+			hidden: !canEdit,
 		},
 		{
 			label: 'Toggle left panel',
@@ -93,6 +100,7 @@ const CommandPalette = () => {
 			shortcut: '⌘⇧L',
 			action: () => dispatch({ type: 'TOGGLE_LEFT_PANEL' }),
 			category: 'Panels',
+			hidden: !canEdit,
 		},
 		{
 			label: 'Open import / export',
@@ -121,6 +129,7 @@ const CommandPalette = () => {
 			shortcut: '⌥T',
 			action: () => dispatch({ type: 'SET_TEMPLATE_LIBRARY', open: true }),
 			category: 'File',
+			hidden: !canEdit,
 		},
 		{
 			label: 'Node documentation',
@@ -151,6 +160,7 @@ const CommandPalette = () => {
 			action: () => dispatch({ type: 'UNDO' }),
 			category: 'Edit',
 			disabled: !state.history.past.length,
+			hidden: !canEdit,
 		},
 		{
 			label: 'Redo',
@@ -159,6 +169,7 @@ const CommandPalette = () => {
 			action: () => dispatch({ type: 'REDO' }),
 			category: 'Edit',
 			disabled: !state.history.future.length,
+			hidden: !canEdit,
 		},
 		{
 			label: 'Duplicate selected node',
@@ -167,6 +178,7 @@ const CommandPalette = () => {
 			action: () => dispatch({ type: 'DUPLICATE_SELECTED' }),
 			category: 'Edit',
 			disabled: !state.ui.selectedNodeId,
+			hidden: !canEdit,
 		},
 		{
 			label: 'Delete selected node',
@@ -175,13 +187,17 @@ const CommandPalette = () => {
 			action: () => dispatch({ type: 'DELETE_SELECTED' }),
 			category: 'Edit',
 			disabled: !state.ui.selectedNodeId,
+			hidden: !canEdit,
 		},
-	].filter((command) =>
-		needle
-			? [command.label, command.description, command.category].some(
-					(value) => typeof value === 'string' && value.toLowerCase().includes(needle),
-				)
-			: true,
+	].filter(
+		(command) =>
+			!command.hidden &&
+			(needle
+				? [command.label, command.description, command.category].some(
+						(value) =>
+							typeof value === 'string' && value.toLowerCase().includes(needle),
+					)
+				: true),
 	);
 
 	// Group commands by category

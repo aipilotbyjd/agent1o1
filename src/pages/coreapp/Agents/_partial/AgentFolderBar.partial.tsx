@@ -4,6 +4,7 @@ import { Folder, FolderPlus, Inbox, Layers, Pencil, Trash2 } from 'lucide-react'
 import { ApiError, notify } from '@/api/core';
 import { useCreateFolder, useDeleteFolder, useUpdateFolder } from '@/api/modules/folders';
 import { useConfirm } from '@/context/confirm';
+import { useCan } from '@/hooks/usePermission';
 import type { TFolder } from '@/types/folder.type';
 import Button from '@/components/ui/Button';
 import Modal, {
@@ -47,6 +48,7 @@ const AgentFolderBar = ({
 	onSelect: (filter: TAgentFolderFilter) => void;
 }) => {
 	const { confirm } = useConfirm();
+	const canManageFolders = useCan('agent.manage');
 	const createFolder = useCreateFolder(ws);
 	const updateFolder = useUpdateFolder(ws);
 	const deleteFolder = useDeleteFolder(ws);
@@ -162,30 +164,36 @@ const AgentFolderBar = ({
 								<span>{folder.label}</span>
 								<span className='opacity-60'>{counts[folder.id] ?? 0}</span>
 							</button>
-							<button
-								type='button'
-								aria-label={`Rename folder ${folder.name}`}
-								onClick={() => openRename(folder)}
-								className='rounded-lg p-1 opacity-100 transition-opacity hover:bg-black/10 sm:opacity-0 sm:group-hover:opacity-100'>
-								<Pencil size={11} />
-							</button>
-							<button
-								type='button'
-								aria-label={`Delete folder ${folder.name}`}
-								onClick={() => handleDelete(folder)}
-								className='rounded-lg p-1 opacity-100 transition-opacity hover:bg-black/10 sm:opacity-0 sm:group-hover:opacity-100'>
-								<Trash2 size={11} />
-							</button>
+							{canManageFolders && (
+								<>
+									<button
+										type='button'
+										aria-label={`Rename folder ${folder.name}`}
+										onClick={() => openRename(folder)}
+										className='rounded-lg p-1 opacity-100 transition-opacity hover:bg-black/10 sm:opacity-0 sm:group-hover:opacity-100'>
+										<Pencil size={11} />
+									</button>
+									<button
+										type='button'
+										aria-label={`Delete folder ${folder.name}`}
+										onClick={() => handleDelete(folder)}
+										className='rounded-lg p-1 opacity-100 transition-opacity hover:bg-black/10 sm:opacity-0 sm:group-hover:opacity-100'>
+										<Trash2 size={11} />
+									</button>
+								</>
+							)}
 						</div>
 					);
 				})}
-				<button
-					type='button'
-					onClick={openCreate}
-					className={`${chipBase} hover:border-primary-400 hover:text-primary-600 border border-dashed border-zinc-300 text-slate-500 dark:border-zinc-700 dark:text-zinc-400`}>
-					<FolderPlus size={13} />
-					New folder
-				</button>
+				{canManageFolders && (
+					<button
+						type='button'
+						onClick={openCreate}
+						className={`${chipBase} hover:border-primary-400 hover:text-primary-600 border border-dashed border-zinc-300 text-slate-500 dark:border-zinc-700 dark:text-zinc-400`}>
+						<FolderPlus size={13} />
+						New folder
+					</button>
+				)}
 			</div>
 
 			<Modal

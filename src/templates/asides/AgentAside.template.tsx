@@ -22,6 +22,7 @@ import AppLogo from '@/components/AppLogo';
 import Icon from '@/components/icon/Icon';
 import Aside, { AsideBody, AsideFooter } from '@/components/layout/Aside';
 import useAsideStatus from '@/hooks/useAsideStatus';
+import { useCan } from '@/hooks/usePermission';
 import { useAuth } from '@/context/auth';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useBillingOverview, usePlans } from '@/api/modules/billing';
@@ -97,7 +98,7 @@ const AgentAsideTemplate = () => {
 			? 100
 			: Math.max(0, Math.min(100, (creditsRemaining / creditsTotal) * 100));
 	const topPlanCredits = Math.max(0, ...(plans ?? []).map((plan) => plan.credits_monthly));
-	const canManageBilling = workspaceRole === 'owner' || workspaceRole === 'admin';
+	const canManageBilling = useCan('billing.manage');
 	const canUpgrade =
 		canManageBilling &&
 		!!billing?.current_plan &&

@@ -37,6 +37,7 @@ import { useBillingOverview } from '@/api/modules/billing';
 import { useCreateWorkflow } from '@/api/modules/workflows';
 import type { TOnboardingStepKey } from '@/types/onboarding.type';
 import { useWorkspaceContext } from '@/context/workspace';
+import { useCan } from '@/hooks/usePermission';
 import { useDashboard } from './_helper/dashboard.adapter';
 import PendingApprovalsCard from './_partial/PendingApprovalsCard.partial';
 import PendingAgentActionsCard from './_partial/PendingAgentActionsCard.partial';
@@ -114,6 +115,7 @@ const DashboardPage = () => {
 
 	const toWorkspacePath = (to: string) => withWorkspace(to, currentWorkspaceId);
 
+	const canCreateWorkflow = useCan('workflow.manage');
 	const createWorkflowMutation = useCreateWorkflow(currentWorkspaceId);
 
 	const handleQuickCreateWorkflow = () => {
@@ -227,12 +229,16 @@ const DashboardPage = () => {
 	}, []);
 
 	const shortcuts = [
-		{
-			label: 'New Workflow',
-			description: 'Build a new automation',
-			icon: Plus,
-			onClick: handleQuickCreateWorkflow,
-		},
+		...(canCreateWorkflow
+			? [
+					{
+						label: 'New Workflow',
+						description: 'Build a new automation',
+						icon: Plus,
+						onClick: handleQuickCreateWorkflow,
+					},
+				]
+			: []),
 		{
 			label: 'Browse Templates',
 			description: 'Start from a pre-built flow',
@@ -449,19 +455,21 @@ const DashboardPage = () => {
 							</motion.div>
 						</div>
 
-						<div className='z-10 shrink-0 self-start md:self-center'>
-							<motion.button
-								whileHover={{
-									scale: 1.02,
-									boxShadow: '0 0 20px rgba(15, 23, 42, 0.15)',
-								}}
-								whileTap={{ scale: 0.98 }}
-								onClick={handleQuickCreateWorkflow}
-								className='dark:from-primary-400 dark:to-primary-400 dark:text-primary-950 dark:shadow-primary-500/10 flex h-10.5 cursor-pointer items-center gap-2 rounded-xl bg-[#101828] px-6 text-xs font-bold text-white shadow-md shadow-slate-950/15 transition-all hover:bg-[#1e293b] active:scale-95 dark:bg-gradient-to-r dark:hover:brightness-110'>
-								<Plus size={14} strokeWidth={3} />
-								<span>New Workflow</span>
-							</motion.button>
-						</div>
+						{canCreateWorkflow && (
+							<div className='z-10 shrink-0 self-start md:self-center'>
+								<motion.button
+									whileHover={{
+										scale: 1.02,
+										boxShadow: '0 0 20px rgba(15, 23, 42, 0.15)',
+									}}
+									whileTap={{ scale: 0.98 }}
+									onClick={handleQuickCreateWorkflow}
+									className='dark:from-primary-400 dark:to-primary-400 dark:text-primary-950 dark:shadow-primary-500/10 flex h-10.5 cursor-pointer items-center gap-2 rounded-xl bg-[#101828] px-6 text-xs font-bold text-white shadow-md shadow-slate-950/15 transition-all hover:bg-[#1e293b] active:scale-95 dark:bg-gradient-to-r dark:hover:brightness-110'>
+									<Plus size={14} strokeWidth={3} />
+									<span>New Workflow</span>
+								</motion.button>
+							</div>
+						)}
 					</div>
 				</motion.div>
 
@@ -682,11 +690,13 @@ const DashboardPage = () => {
 										<Inbox size={20} />
 									</div>
 									<p className='text-text-main text-xs font-bold'>No runs yet</p>
-									<button
-										onClick={handleQuickCreateWorkflow}
-										className='bg-primary-400 text-primary-950 mt-1 flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-[11px] font-black transition hover:brightness-110'>
-										<Plus size={12} strokeWidth={3} /> Create Workflow
-									</button>
+									{canCreateWorkflow && (
+										<button
+											onClick={handleQuickCreateWorkflow}
+											className='bg-primary-400 text-primary-950 mt-1 flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-[11px] font-black transition hover:brightness-110'>
+											<Plus size={12} strokeWidth={3} /> Create Workflow
+										</button>
+									)}
 								</div>
 							) : (
 								<div className='divide-border-main divide-y'>

@@ -5,6 +5,7 @@ import { useRunWorkflow } from '../_hooks/useRunWorkflow.hook';
 import { useAutoLayout } from './useAutoLayout.hook';
 import { useAiPanelAvailability } from './useAiPanelAvailability.hook';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
+import { useCan } from '@/hooks/usePermission';
 
 export const isTypingTarget = (target: EventTarget | null) => {
 	if (!(target instanceof HTMLElement)) return false;
@@ -12,7 +13,8 @@ export const isTypingTarget = (target: EventTarget | null) => {
 };
 
 export const useEditorHotkeys = () => {
-	const { dispatch, state } = useWorkflowEditor();
+	const { dispatch, state, canEdit } = useWorkflowEditor();
+	const canRun = useCan('run.trigger');
 	const { runWorkflow, stopRun } = useRunWorkflow();
 	// Safe here: WorkflowEditorLayout mounts ReactFlowProvider above this page.
 	const reactFlow = useReactFlow();
@@ -57,6 +59,7 @@ export const useEditorHotkeys = () => {
 			// Run/Stop workflow
 			if (mod && event.key === 'Enter') {
 				event.preventDefault();
+				if (!canRun) return;
 				if (state.run.status === 'running') {
 					stopRun();
 				} else {
@@ -68,7 +71,7 @@ export const useEditorHotkeys = () => {
 			// Quick add node
 			if (mod && event.key.toLowerCase() === 'k') {
 				event.preventDefault();
-				dispatch({ type: 'SET_QUICK_ADD', open: true });
+				if (canEdit) dispatch({ type: 'SET_QUICK_ADD', open: true });
 				return;
 			}
 
@@ -90,7 +93,7 @@ export const useEditorHotkeys = () => {
 				// Template library
 				if (event.code === 'KeyT') {
 					event.preventDefault();
-					dispatch({ type: 'SET_TEMPLATE_LIBRARY', open: true });
+					if (canEdit) dispatch({ type: 'SET_TEMPLATE_LIBRARY', open: true });
 					return;
 				}
 				if (event.code === 'KeyR') {
@@ -218,5 +221,7 @@ export const useEditorHotkeys = () => {
 		runWorkflow,
 		stopRun,
 		isAiPanelAvailable,
+		canEdit,
+		canRun,
 	]);
 };

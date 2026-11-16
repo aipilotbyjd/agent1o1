@@ -8,7 +8,7 @@ import type { TNodeDefinition } from '../../_types/node.type';
 import Modal from './Modal.partial';
 
 const QuickAddNodeDialog = () => {
-	const { state, dispatch } = useWorkflowEditor();
+	const { state, dispatch, canEdit } = useWorkflowEditor();
 	const reactFlow = useReactFlow();
 	const [query, setQuery] = useState('');
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -63,7 +63,7 @@ const QuickAddNodeDialog = () => {
 		return () => window.clearTimeout(timeout);
 	}, [state.ui.quickAddOpen]);
 
-	if (!state.ui.quickAddOpen) return null;
+	if (!canEdit || !state.ui.quickAddOpen) return null;
 
 	return (
 		<Modal

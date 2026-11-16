@@ -13,6 +13,7 @@ import type {
 	TWorkflowInterfaceFieldType,
 } from '@/types/workflow-extras.type';
 import paths from '@/Routes/paths';
+import { usePermission } from '@/hooks/usePermission';
 import RunFormFields from '../run/RunFormFields.partial';
 import {
 	initialRunFormValues,
@@ -106,6 +107,9 @@ const InterfaceEditor = ({
 }) => {
 	const updateInterface = useUpdateWorkflowInterface(workspaceId, workflowId);
 	const submitInterface = useSubmitWorkflowInterface(workspaceId, workflowId);
+	const { can } = usePermission();
+	const canEditForm = can('workflow.manage');
+	const canRun = can('run.trigger');
 
 	const [fields, setFields] = useState<TDraftField[]>(() => iface.fields.map(toDraft));
 	const [values, setValues] = useState<TRunFormValues>(() => initialRunFormValues(iface.fields));
@@ -183,7 +187,9 @@ const InterfaceEditor = ({
 
 			{/* Field editor */}
 			{!fromInputSteps && (
-				<div className='space-y-3 rounded-xl border border-zinc-200 bg-zinc-50/20 p-4 dark:border-zinc-800 dark:bg-zinc-900/20'>
+				<div
+					inert={!canEditForm}
+					className='space-y-3 rounded-xl border border-zinc-200 bg-zinc-50/20 p-4 dark:border-zinc-800 dark:bg-zinc-900/20'>
 					<div className='flex items-center justify-between gap-3'>
 						<div className='flex items-center gap-2'>
 							<h4 className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
@@ -203,7 +209,7 @@ const InterfaceEditor = ({
 								{iface.source === 'declared' ? 'Custom' : 'Auto-detected'}
 							</span>
 						</div>
-						{iface.source === 'declared' && (
+						{canEditForm && iface.source === 'declared' && (
 							<button
 								type='button'
 								onClick={handleReset}
@@ -267,18 +273,20 @@ const InterfaceEditor = ({
 												</option>
 											))}
 										</select>
-										<button
-											type='button'
-											title='Remove field'
-											aria-label='Remove field'
-											onClick={() =>
-												setFields((current) =>
-													current.filter((_, i) => i !== index),
-												)
-											}
-											className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-950/30'>
-											<Trash2 size={13} />
-										</button>
+										{canEditForm && (
+											<button
+												type='button'
+												title='Remove field'
+												aria-label='Remove field'
+												onClick={() =>
+													setFields((current) =>
+														current.filter((_, i) => i !== index),
+													)
+												}
+												className='flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-950/30'>
+												<Trash2 size={13} />
+											</button>
+										)}
 									</div>
 									<div className='grid grid-cols-1 items-center gap-2 sm:grid-cols-[1fr_auto]'>
 										<input
@@ -319,92 +327,96 @@ const InterfaceEditor = ({
 						</div>
 					)}
 
-					<div className='flex items-center justify-between gap-2'>
-						<button
-							type='button'
-							onClick={() =>
-								setFields((current) => [
-									...current,
-									{
-										key: '',
-										label: '',
-										type: 'string',
-										required: false,
-										help: '',
-										optionsText: '',
-									},
-								])
-							}
-							className='flex items-center gap-1 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-white/[0.04]'>
-							<Plus size={12} />
-							Add field
-						</button>
-						<button
-							type='button'
-							onClick={handleSave}
-							disabled={!isDirty || hasErrors || updateInterface.isPending}
-							className='flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200'>
-							{updateInterface.isPending ? (
-								<Loader2 size={13} className='animate-spin' />
-							) : (
-								<Save size={13} />
-							)}
-							Save form
-						</button>
-					</div>
+					{canEditForm && (
+						<div className='flex items-center justify-between gap-2'>
+							<button
+								type='button'
+								onClick={() =>
+									setFields((current) => [
+										...current,
+										{
+											key: '',
+											label: '',
+											type: 'string',
+											required: false,
+											help: '',
+											optionsText: '',
+										},
+									])
+								}
+								className='flex items-center gap-1 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-white/[0.04]'>
+								<Plus size={12} />
+								Add field
+							</button>
+							<button
+								type='button'
+								onClick={handleSave}
+								disabled={!isDirty || hasErrors || updateInterface.isPending}
+								className='flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200'>
+								{updateInterface.isPending ? (
+									<Loader2 size={13} className='animate-spin' />
+								) : (
+									<Save size={13} />
+								)}
+								Save form
+							</button>
+						</div>
+					)}
 				</div>
 			)}
 
 			{/* Run from the saved form */}
-			<form
-				onSubmit={handleRun}
-				className='space-y-3 rounded-xl border border-zinc-200 bg-zinc-50/20 p-4 dark:border-zinc-800 dark:bg-zinc-900/20'>
-				<div>
-					<h4 className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
-						Run with this form
-					</h4>
-					<p className='text-[11px] text-zinc-500'>
-						{iface.published
-							? 'Runs the published version with the values below.'
-							: 'Publish a version first; runs always use the published version.'}
-						{isDirty && ' Save the form to use your latest field changes.'}
-					</p>
-				</div>
+			{canRun && (
+				<form
+					onSubmit={handleRun}
+					className='space-y-3 rounded-xl border border-zinc-200 bg-zinc-50/20 p-4 dark:border-zinc-800 dark:bg-zinc-900/20'>
+					<div>
+						<h4 className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
+							Run with this form
+						</h4>
+						<p className='text-[11px] text-zinc-500'>
+							{iface.published
+								? 'Runs the published version with the values below.'
+								: 'Publish a version first; runs always use the published version.'}
+							{isDirty && ' Save the form to use your latest field changes.'}
+						</p>
+					</div>
 
-				<RunFormFields
-					fields={iface.fields}
-					values={values}
-					errors={valueErrors}
-					idPrefix='iface'
-					onChange={(key, value) =>
-						setValues((current) => ({ ...current, [key]: value }))
-					}
-				/>
+					<RunFormFields
+						fields={iface.fields}
+						values={values}
+						errors={valueErrors}
+						idPrefix='iface'
+						onChange={(key, value) =>
+							setValues((current) => ({ ...current, [key]: value }))
+						}
+					/>
 
-				<div className='flex items-center justify-between gap-2'>
-					{lastRunId ? (
-						<Link
-							to={paths.trail(workspaceId, lastRunId)}
-							className='text-primary-700 dark:text-primary-400 flex items-center gap-1 text-[11px] font-semibold hover:underline'>
-							<ExternalLink size={11} />
-							View run in Trail
-						</Link>
-					) : (
-						<span />
-					)}
-					<button
-						type='submit'
-						disabled={!iface.published || submitInterface.isPending}
-						className='from-primary-400 to-primary-500 text-primary-foreground flex items-center gap-1.5 rounded-lg bg-gradient-to-r px-3.5 py-2 text-xs font-bold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-40'>
-						{submitInterface.isPending ? (
-							<Loader2 size={13} className='animate-spin' />
+					<div className='flex items-center justify-between gap-2'>
+						{lastRunId ? (
+							<Link
+								to={paths.trail(workspaceId, lastRunId)}
+								className='text-primary-700 dark:text-primary-400 flex items-center gap-1 text-[11px] font-semibold hover:underline'>
+								<ExternalLink size={11} />
+								View run in Trail
+							</Link>
 						) : (
-							<Play size={11} fill='currentColor' />
+							<span />
 						)}
-						Run
-					</button>
-				</div>
-			</form>
+						<button
+							type='submit'
+							disabled={!iface.published || submitInterface.isPending}
+							className='from-primary-400 to-primary-500 text-primary-foreground flex items-center gap-1.5 rounded-lg bg-gradient-to-r px-3.5 py-2 text-xs font-bold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-40'>
+							{submitInterface.isPending ? (
+								<Loader2 size={13} className='animate-spin' />
+							) : (
+								<Play size={11} fill='currentColor' />
+							)}
+							Run
+						</button>
+					</div>
+				</form>
+			)}
 		</div>
 	);
 };

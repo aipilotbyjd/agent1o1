@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { AlertTriangle, CreditCard, Package, Sparkles } from 'lucide-react';
 import { useWorkspaceContext } from '@/context/workspace';
+import { useCan } from '@/hooks/usePermission';
 import {
 	useBillingOverview,
 	useCreditPacks as useCreditPackCatalog,
@@ -47,6 +48,7 @@ const CreditsPage = () => {
 	const { data: activePacks, isLoading: packsLoading } = usePurchasedCreditPacks(ws);
 	const { data: catalog, isLoading: catalogLoading } = useCreditPackCatalog(ws);
 	const buyCredits = useCheckoutCreditPack(ws);
+	const canManage = useCan('billing.manage');
 
 	const [selected, setSelected] = useState<string | null>(null);
 
@@ -179,7 +181,9 @@ const CreditsPage = () => {
 							</div>
 							<button
 								type='button'
-								disabled={buyCredits.isPending || !selectedPack.available}
+								disabled={
+									!canManage || buyCredits.isPending || !selectedPack.available
+								}
 								onClick={handleBuy}
 								className={`${primaryBtn} mt-4 w-full`}>
 								<CreditCard size={16} />
@@ -188,7 +192,9 @@ const CreditsPage = () => {
 									: `Buy ${selectedPack.credits.toLocaleString()} credits`}
 							</button>
 							<p className='mt-2 text-center text-xs text-zinc-400 dark:text-zinc-500'>
-								Secure payment via Stripe. Credits activate instantly after payment.
+								{canManage
+									? 'Secure payment via Stripe. Credits activate instantly after payment.'
+									: 'Only workspace admins can buy credits.'}
 							</p>
 						</div>
 					)}

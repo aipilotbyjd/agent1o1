@@ -26,6 +26,7 @@ import paths from '@/Routes/paths';
 import { notify } from '@/api/core';
 import { useConfirm } from '@/context/confirm';
 import { useWorkspaceContext } from '@/context/workspace';
+import { useCan } from '@/hooks/usePermission';
 import { useDeleteWorkflowPage, useDuplicateWorkflowPage, useWorkflowPages } from '@/api/modules/workflow-pages';
 import type { TWorkflowPage } from '@/types/workflow-page.type';
 import relativeTime from '@/utils/relativeTime.util';
@@ -65,6 +66,9 @@ const PageCard = ({ ws, page }: { ws: string; page: TWorkflowPage }) => {
 	const { confirm } = useConfirm();
 	const duplicate = useDuplicateWorkflowPage(ws);
 	const remove = useDeleteWorkflowPage(ws);
+	const canManage = useCan('page.manage');
+	// Without edit rights a page opens the way members use it, not in the builder.
+	const openTo = canManage ? paths.editPage(ws, page.id) : paths.usePage(ws, page.id);
 	const [menuOpen, setMenuOpen] = useState(false);
 	const [cloneOpen, setCloneOpen] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
@@ -102,7 +106,7 @@ const PageCard = ({ ws, page }: { ws: string; page: TWorkflowPage }) => {
 		<>
 		<article className='group hover:border-primary-400/50 relative flex flex-col rounded-3xl border border-zinc-200 bg-white shadow-xs transition hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
 			<Link
-				to={paths.editPage(ws, page.id)}
+				to={openTo}
 				className='relative flex h-28 items-center justify-center overflow-hidden rounded-t-3xl border-b border-zinc-100 bg-gradient-to-br from-zinc-50 to-zinc-100 dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950'>
 				<div className='w-[62%] space-y-1.5 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm transition group-hover:-translate-y-0.5 dark:border-zinc-700 dark:bg-zinc-800'>
 					<div className='h-2 w-1/2 rounded-full bg-zinc-800/80 dark:bg-zinc-200/80' />
@@ -116,7 +120,7 @@ const PageCard = ({ ws, page }: { ws: string; page: TWorkflowPage }) => {
 				<div className='flex items-start justify-between gap-2'>
 					<div className='min-w-0'>
 						<Link
-							to={paths.editPage(ws, page.id)}
+							to={openTo}
 							className='hover:text-primary-700 block truncate text-sm font-extrabold text-zinc-900 dark:text-white'>
 							{page.name}
 						</Link>
@@ -140,9 +144,11 @@ const PageCard = ({ ws, page }: { ws: string; page: TWorkflowPage }) => {
 						</button>
 						{menuOpen && (
 							<div role='menu' className='absolute top-8 right-0 z-30 w-48 rounded-xl border border-zinc-200 bg-white p-1 shadow-xl dark:border-white/10 dark:bg-zinc-950'>
-								<button role='menuitem' type='button' onClick={() => navigate(paths.editPage(ws, page.id))} className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
-									<PencilRuler size={13} /> Open builder
-								</button>
+								{canManage && (
+									<button role='menuitem' type='button' onClick={() => navigate(paths.editPage(ws, page.id))} className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
+										<PencilRuler size={13} /> Open builder
+									</button>
+								)}
 								<button role='menuitem' type='button' onClick={() => navigate(paths.pageInsights(ws, page.id))} className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
 									<ChartColumn size={13} /> Insights
 								</button>
@@ -163,16 +169,18 @@ const PageCard = ({ ws, page }: { ws: string; page: TWorkflowPage }) => {
 										</button>
 									</>
 								)}
-								<button
-									role='menuitem'
-									type='button'
-									onClick={() => {
-										setMenuOpen(false);
-										duplicate.mutate(page.id, { onSuccess: () => notify.success('Page duplicated.') });
-									}}
-									className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
-									<Copy size={13} /> Duplicate
-								</button>
+								{canManage && (
+									<button
+										role='menuitem'
+										type='button'
+										onClick={() => {
+											setMenuOpen(false);
+											duplicate.mutate(page.id, { onSuccess: () => notify.success('Page duplicated.') });
+										}}
+										className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
+										<Copy size={13} /> Duplicate
+									</button>
+								)}
 								<button
 									role='menuitem'
 									type='button'
@@ -183,9 +191,11 @@ const PageCard = ({ ws, page }: { ws: string; page: TWorkflowPage }) => {
 									className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
 									<CopyPlus size={13} /> Copy to workspace…
 								</button>
-								<button role='menuitem' type='button' onClick={() => void onDelete()} className={`${menuItem} text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10`}>
-									<Trash2 size={13} /> Delete
-								</button>
+								{canManage && (
+									<button role='menuitem' type='button' onClick={() => void onDelete()} className={`${menuItem} text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10`}>
+										<Trash2 size={13} /> Delete
+									</button>
+								)}
 							</div>
 						)}
 					</div>
@@ -231,6 +241,7 @@ const PagesListPage = () => {
 	const [creating, setCreating] = useState(false);
 	const [query, setQuery] = useState('');
 	const [filter, setFilter] = useState<TFilter>('all');
+	const canCreate = useCan('page.manage');
 
 	useEffect(() => {
 		setHeaderLeft(<Breadcrumb list={[{ ...pages.workspace.subPages!.pages }]} />);
@@ -264,12 +275,14 @@ const PagesListPage = () => {
 							Turn a workflow into a page anyone can use: a form for its inputs and a place for its result.
 						</p>
 					</div>
-					<button
-						type='button'
-						onClick={() => setCreating(true)}
-						className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl px-5 text-xs font-bold shadow-md transition-all hover:shadow-lg active:scale-95'>
-						<Plus size={15} /> New page
-					</button>
+					{canCreate && (
+						<button
+							type='button'
+							onClick={() => setCreating(true)}
+							className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl px-5 text-xs font-bold shadow-md transition-all hover:shadow-lg active:scale-95'>
+							<Plus size={15} /> New page
+						</button>
+					)}
 				</div>
 
 				<div className='mb-6 flex flex-col gap-3 md:flex-row md:items-center'>
@@ -323,9 +336,11 @@ const PagesListPage = () => {
 						<p className='mt-1 max-w-sm text-sm text-zinc-500 dark:text-zinc-400'>
 							{data?.length
 								? 'Try another search or filter.'
-								: 'Pick a workflow and get a ready-made page from its inputs and outputs, then make it yours in the builder.'}
+								: canCreate
+									? 'Pick a workflow and get a ready-made page from its inputs and outputs, then make it yours in the builder.'
+									: 'Pages your team builds will show up here.'}
 						</p>
-						{!data?.length && (
+						{canCreate && !data?.length && (
 							<button
 								type='button'
 								onClick={() => setCreating(true)}

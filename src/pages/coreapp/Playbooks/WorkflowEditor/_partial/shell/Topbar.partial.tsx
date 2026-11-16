@@ -32,6 +32,7 @@ import {
 	Folder,
 	Layers,
 	Square,
+	Eye,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
@@ -57,6 +58,7 @@ import { useMaintenance } from '@/api/modules/announcements';
 import WorkflowPresence from './WorkflowPresence.partial';
 import { usePublishReview } from '../../_hooks/usePublishReview.hook';
 import { useAiPanelAvailability } from '../../_hooks/useAiPanelAvailability.hook';
+import { usePermission } from '@/hooks/usePermission';
 import WorkflowPagesMenu from '@/pages/coreapp/WorkflowPages/_partial/WorkflowPagesMenu.partial';
 
 /** Which topbar menu is open. Only one may be open at a time. */
@@ -158,11 +160,13 @@ export const EditableWorkflowName = ({
 	onSave,
 	className,
 	inputClassName,
+	isReadOnly = false,
 }: {
 	name: string;
 	onSave: (name: string) => void;
 	className?: string;
 	inputClassName?: string;
+	isReadOnly?: boolean;
 }) => {
 	const [isEditing, setIsEditing] = useState(false);
 	const [draft, setDraft] = useState(name);
@@ -191,6 +195,14 @@ export const EditableWorkflowName = ({
 		setIsEditing(false);
 		onSave(trimmed);
 	};
+
+	if (isReadOnly) {
+		return (
+			<span className='max-w-[170px] truncate px-2 py-1 text-xs font-bold text-zinc-900 sm:max-w-[220px] dark:text-zinc-100'>
+				{name}
+			</span>
+		);
+	}
 
 	if (isEditing) {
 		return (
@@ -378,7 +390,12 @@ const SaveStatusBadge = ({
 
 const Topbar = () => {
 	const persistWorkflowDraft = usePersistWorkflowDraft();
-	const { state, dispatch } = useWorkflowEditor();
+	const { state, dispatch, canEdit } = useWorkflowEditor();
+	const { can } = usePermission();
+	const canPublish = can('workflow.publish');
+	const canViewVersions = can('workflow.version');
+	const canRun = can('run.trigger');
+	const canSaveAsTemplate = canEdit && can('template.manage');
 	const autoLayout = useAutoLayout();
 	const { isDarkTheme, setDarkModeStatus } = useDarkMode();
 	const { runWorkflow, stopRun } = useRunWorkflow();
@@ -408,7 +425,7 @@ const Topbar = () => {
 	const isRunning = state.run.status === 'running';
 	const { isReadOnly } = useMaintenance();
 	// Stopping a run that is going stays possible; starting one is refused during maintenance.
-	const isRunDisabled = state.nodes.length === 0 || (isReadOnly && !isRunning);
+	const isRunDisabled = !canRun || state.nodes.length === 0 || (isReadOnly && !isRunning);
 
 	// Live Run Timer
 	const [timedRun, setTimedRun] = useState(isRunning);
@@ -450,15 +467,16 @@ const Topbar = () => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
 				event.preventDefault();
-				setOpenMenu('publish');
+				if (canPublish) setOpenMenu('publish');
 			}
 		};
 		window.addEventListener('keydown', onKeyDown);
 		return () => window.removeEventListener('keydown', onKeyDown);
-	}, []);
+	}, [canPublish]);
 
 	const openVersionHistory = () => {
 		closeMenu();
+		if (!canViewVersions) return;
 		if (state.ui.runPanelOpen) dispatch({ type: 'TOGGLE_RUN_PANEL' });
 		openVersionPanel();
 	};
@@ -531,12 +549,29 @@ const Topbar = () => {
 				)}
 
 				{/* Editable Workflow Title */}
-				<EditableWorkflowName name={state.workflow.name} onSave={handleRenameWorkflow} />
+				<EditableWorkflowName
+					name={state.workflow.name}
+					onSave={handleRenameWorkflow}
+					isReadOnly={!canEdit}
+				/>
+
+				{!canEdit && (
+					<EditorTooltip label='Only editors and admins can change this workflow'>
+						<span className='hidden h-6 items-center gap-1 rounded-md bg-zinc-100 px-2 text-[10px] font-bold tracking-wide text-zinc-500 uppercase sm:inline-flex dark:bg-white/[0.06] dark:text-zinc-400'>
+							<Eye size={11} />
+							View only
+						</span>
+					</EditorTooltip>
+				)}
 
 				{/* Draft vs. live */}
-				<EditorTooltip label={`${draftStatusLabel} · Version history`}>
+				<EditorTooltip
+					label={
+						canViewVersions ? `${draftStatusLabel} · Version history` : draftStatusLabel
+					}>
 					<DraftStatusPill
 						onClick={openVersionHistory}
+						disabled={!canViewVersions}
 						className={`hidden sm:inline-flex ${FOCUS_RING}`}
 					/>
 				</EditorTooltip>
@@ -560,109 +595,123 @@ const Topbar = () => {
 				/>
 			</div>
 
-			{/* Center Section: Smooth Segmented Studio Control (Apps, Triggers, AI Chat) */}
-			<div
-				role='group'
-				aria-label='Editor panels'
-				className='border-primary-500/15 dark:border-primary-400/15 hidden items-center rounded-xl border bg-zinc-100/80 p-0.5 shadow-xs md:flex dark:bg-zinc-900/80'>
-				<button
-					type='button'
-					aria-pressed={state.ui.leftPanelOpen && state.ui.leftPanelIntent === 'home'}
-					onClick={() => dispatch({ type: 'TOGGLE_LEFT_PANEL', intent: 'home' })}
-					className={[
-						'relative flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition duration-150',
-						FOCUS_RING,
-						state.ui.leftPanelOpen && state.ui.leftPanelIntent === 'home'
-							? 'text-primary-800 ring-primary-500/25 dark:text-primary-300 dark:ring-primary-400/25 bg-white shadow-xs ring-1 dark:bg-zinc-800'
-							: 'hover:bg-primary-100/60 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 text-zinc-600 dark:text-zinc-400',
-					].join(' ')}>
-					<Boxes size={13} />
-					<span>Apps</span>
-				</button>
+			{/* Center Section: Smooth Segmented Studio Control (Apps, Triggers, AI Chat).
+			    All three add to the graph, so a read-only editor shows none of them. */}
+			{canEdit && (
+				<div
+					role='group'
+					aria-label='Editor panels'
+					className='border-primary-500/15 dark:border-primary-400/15 hidden items-center rounded-xl border bg-zinc-100/80 p-0.5 shadow-xs md:flex dark:bg-zinc-900/80'>
+					<button
+						type='button'
+						aria-pressed={state.ui.leftPanelOpen && state.ui.leftPanelIntent === 'home'}
+						onClick={() => dispatch({ type: 'TOGGLE_LEFT_PANEL', intent: 'home' })}
+						className={[
+							'relative flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition duration-150',
+							FOCUS_RING,
+							state.ui.leftPanelOpen && state.ui.leftPanelIntent === 'home'
+								? 'text-primary-800 ring-primary-500/25 dark:text-primary-300 dark:ring-primary-400/25 bg-white shadow-xs ring-1 dark:bg-zinc-800'
+								: 'hover:bg-primary-100/60 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 text-zinc-600 dark:text-zinc-400',
+						].join(' ')}>
+						<Boxes size={13} />
+						<span>Apps</span>
+					</button>
 
-				<button
-					type='button'
-					aria-pressed={state.ui.leftPanelOpen && state.ui.leftPanelIntent === 'trigger'}
-					onClick={() => dispatch({ type: 'TOGGLE_LEFT_PANEL', intent: 'trigger' })}
-					className={[
-						'relative flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition duration-150',
-						FOCUS_RING,
-						state.ui.leftPanelOpen && state.ui.leftPanelIntent === 'trigger'
-							? 'text-primary-800 ring-primary-500/25 dark:text-primary-300 dark:ring-primary-400/25 bg-white shadow-xs ring-1 dark:bg-zinc-800'
-							: 'hover:bg-primary-100/60 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 text-zinc-600 dark:text-zinc-400',
-					].join(' ')}>
-					<Rocket size={13} />
-					<span>Triggers</span>
-				</button>
+					<button
+						type='button'
+						aria-pressed={
+							state.ui.leftPanelOpen && state.ui.leftPanelIntent === 'trigger'
+						}
+						onClick={() => dispatch({ type: 'TOGGLE_LEFT_PANEL', intent: 'trigger' })}
+						className={[
+							'relative flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition duration-150',
+							FOCUS_RING,
+							state.ui.leftPanelOpen && state.ui.leftPanelIntent === 'trigger'
+								? 'text-primary-800 ring-primary-500/25 dark:text-primary-300 dark:ring-primary-400/25 bg-white shadow-xs ring-1 dark:bg-zinc-800'
+								: 'hover:bg-primary-100/60 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 text-zinc-600 dark:text-zinc-400',
+						].join(' ')}>
+						<Rocket size={13} />
+						<span>Triggers</span>
+					</button>
 
-				{isAiPanelAvailable && (
-					<>
-						<div className='bg-primary-500/20 dark:bg-primary-400/20 mx-0.5 h-3.5 w-px' />
+					{isAiPanelAvailable && (
+						<>
+							<div className='bg-primary-500/20 dark:bg-primary-400/20 mx-0.5 h-3.5 w-px' />
 
-						<button
-							type='button'
-							aria-pressed={isAiPanelShown}
-							onClick={() => dispatch({ type: 'TOGGLE_AI_PANEL' })}
-							className={[
-								'relative flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition duration-150',
-								FOCUS_RING,
-								isAiPanelShown
-									? 'bg-primary-500/15 text-primary-800 ring-primary-500/35 dark:bg-primary-400/15 dark:text-primary-300 dark:ring-primary-400/40 shadow-xs ring-1'
-									: 'hover:bg-primary-100/60 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 text-zinc-600 dark:text-zinc-400',
-							].join(' ')}>
-							<Sparkles
-								size={13}
-								className='text-primary-700 dark:text-primary-400'
-							/>
-							<span>AI Chat</span>
-						</button>
-					</>
-				)}
-			</div>
+							<button
+								type='button'
+								aria-pressed={isAiPanelShown}
+								onClick={() => dispatch({ type: 'TOGGLE_AI_PANEL' })}
+								className={[
+									'relative flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition duration-150',
+									FOCUS_RING,
+									isAiPanelShown
+										? 'bg-primary-500/15 text-primary-800 ring-primary-500/35 dark:bg-primary-400/15 dark:text-primary-300 dark:ring-primary-400/40 shadow-xs ring-1'
+										: 'hover:bg-primary-100/60 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 text-zinc-600 dark:text-zinc-400',
+								].join(' ')}>
+								<Sparkles
+									size={13}
+									className='text-primary-700 dark:text-primary-400'
+								/>
+								<span>AI Chat</span>
+							</button>
+						</>
+					)}
+				</div>
+			)}
 
 			{/* Right Section: Canvas Controls & Actions */}
 			<div className='flex items-center gap-1.5 sm:gap-2'>
 				{/* Desktop History & Tools Group */}
 				<div className='hidden items-center gap-1 xl:flex'>
 					{/* Undo / Redo / Diff Group */}
-					<div className='flex items-center rounded-lg border border-zinc-200/80 bg-zinc-50/50 p-0.5 dark:border-white/10 dark:bg-zinc-900/50'>
-						<EditorTooltip label='Undo' shortcut='⌘Z'>
-							<button
-								type='button'
-								aria-label='Undo'
-								disabled={!state.history.past.length}
-								onClick={() => dispatch({ type: 'UNDO' })}
-								className={`text-primary-700 hover:bg-primary-100/70 hover:text-primary-900 dark:text-primary-400/85 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 flex h-7 w-7 items-center justify-center rounded-md transition disabled:cursor-not-allowed disabled:text-zinc-400 disabled:opacity-30 disabled:hover:bg-transparent dark:disabled:text-zinc-500 ${FOCUS_RING}`}>
-								<RotateCcw size={13} />
-							</button>
-						</EditorTooltip>
-						<EditorTooltip label='Redo' shortcut='⌘⇧Z'>
-							<button
-								type='button'
-								aria-label='Redo'
-								disabled={!state.history.future.length}
-								onClick={() => dispatch({ type: 'REDO' })}
-								className={`text-primary-700 hover:bg-primary-100/70 hover:text-primary-900 dark:text-primary-400/85 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 flex h-7 w-7 items-center justify-center rounded-md transition disabled:cursor-not-allowed disabled:text-zinc-400 disabled:opacity-30 disabled:hover:bg-transparent dark:disabled:text-zinc-500 ${FOCUS_RING}`}>
-								<RotateCw size={13} />
-							</button>
-						</EditorTooltip>
-						<div className='bg-primary-500/20 dark:bg-primary-400/20 mx-0.5 h-3.5 w-px' />
-						<EditorTooltip label='Version Diff' shortcut='⌘⇧V'>
-							<button
-								type='button'
-								aria-label='Version diff'
-								disabled={!state.history.past.length}
-								onClick={() => dispatch({ type: 'SET_DIFF_VIEWER', open: true })}
-								className={`text-primary-700 hover:bg-primary-100/70 hover:text-primary-900 dark:text-primary-400/85 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 flex h-7 w-7 items-center justify-center rounded-md transition disabled:cursor-not-allowed disabled:text-zinc-400 disabled:opacity-30 disabled:hover:bg-transparent dark:disabled:text-zinc-500 ${FOCUS_RING}`}>
-								<GitCompare size={13} />
-							</button>
-						</EditorTooltip>
-					</div>
+					{canEdit && (
+						<div className='flex items-center rounded-lg border border-zinc-200/80 bg-zinc-50/50 p-0.5 dark:border-white/10 dark:bg-zinc-900/50'>
+							<EditorTooltip label='Undo' shortcut='⌘Z'>
+								<button
+									type='button'
+									aria-label='Undo'
+									disabled={!state.history.past.length}
+									onClick={() => dispatch({ type: 'UNDO' })}
+									className={`text-primary-700 hover:bg-primary-100/70 hover:text-primary-900 dark:text-primary-400/85 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 flex h-7 w-7 items-center justify-center rounded-md transition disabled:cursor-not-allowed disabled:text-zinc-400 disabled:opacity-30 disabled:hover:bg-transparent dark:disabled:text-zinc-500 ${FOCUS_RING}`}>
+									<RotateCcw size={13} />
+								</button>
+							</EditorTooltip>
+							<EditorTooltip label='Redo' shortcut='⌘⇧Z'>
+								<button
+									type='button'
+									aria-label='Redo'
+									disabled={!state.history.future.length}
+									onClick={() => dispatch({ type: 'REDO' })}
+									className={`text-primary-700 hover:bg-primary-100/70 hover:text-primary-900 dark:text-primary-400/85 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 flex h-7 w-7 items-center justify-center rounded-md transition disabled:cursor-not-allowed disabled:text-zinc-400 disabled:opacity-30 disabled:hover:bg-transparent dark:disabled:text-zinc-500 ${FOCUS_RING}`}>
+									<RotateCw size={13} />
+								</button>
+							</EditorTooltip>
+							<div className='bg-primary-500/20 dark:bg-primary-400/20 mx-0.5 h-3.5 w-px' />
+							<EditorTooltip label='Version Diff' shortcut='⌘⇧V'>
+								<button
+									type='button'
+									aria-label='Version diff'
+									disabled={!state.history.past.length}
+									onClick={() =>
+										dispatch({ type: 'SET_DIFF_VIEWER', open: true })
+									}
+									className={`text-primary-700 hover:bg-primary-100/70 hover:text-primary-900 dark:text-primary-400/85 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 flex h-7 w-7 items-center justify-center rounded-md transition disabled:cursor-not-allowed disabled:text-zinc-400 disabled:opacity-30 disabled:hover:bg-transparent dark:disabled:text-zinc-500 ${FOCUS_RING}`}>
+									<GitCompare size={13} />
+								</button>
+							</EditorTooltip>
+						</div>
+					)}
 
 					{/* Auto-layout */}
-					<TopbarIconButton label='Auto-layout canvas' shortcut='L' onClick={autoLayout}>
-						<LayoutGrid size={13} />
-					</TopbarIconButton>
+					{canEdit && (
+						<TopbarIconButton
+							label='Auto-layout canvas'
+							shortcut='L'
+							onClick={autoLayout}>
+							<LayoutGrid size={13} />
+						</TopbarIconButton>
+					)}
 
 					{/* Dark mode */}
 					<TopbarIconButton
@@ -683,15 +732,17 @@ const Topbar = () => {
 				</div>
 
 				{/* Templates Modal Trigger */}
-				<EditorTooltip label='Browse templates library'>
-					<button
-						type='button'
-						onClick={() => dispatch({ type: 'SET_TEMPLATE_LIBRARY', open: true })}
-						className={`hover:border-primary-400/60 hover:bg-primary-100/60 hover:text-primary-900 dark:hover:border-primary-400/30 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 hidden h-8 items-center gap-1.5 rounded-lg border border-zinc-200/80 bg-white px-2.5 text-xs font-semibold text-zinc-700 shadow-xs transition md:flex dark:border-white/10 dark:bg-zinc-900/60 dark:text-zinc-300 ${FOCUS_RING}`}>
-						<Library size={13} className='text-primary-700 dark:text-primary-400' />
-						<span>Templates</span>
-					</button>
-				</EditorTooltip>
+				{canEdit && (
+					<EditorTooltip label='Browse templates library'>
+						<button
+							type='button'
+							onClick={() => dispatch({ type: 'SET_TEMPLATE_LIBRARY', open: true })}
+							className={`hover:border-primary-400/60 hover:bg-primary-100/60 hover:text-primary-900 dark:hover:border-primary-400/30 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 hidden h-8 items-center gap-1.5 rounded-lg border border-zinc-200/80 bg-white px-2.5 text-xs font-semibold text-zinc-700 shadow-xs transition md:flex dark:border-white/10 dark:bg-zinc-900/60 dark:text-zinc-300 ${FOCUS_RING}`}>
+							<Library size={13} className='text-primary-700 dark:text-primary-400' />
+							<span>Templates</span>
+						</button>
+					</EditorTooltip>
+				)}
 
 				<WorkflowPresence />
 
@@ -816,52 +867,54 @@ const Topbar = () => {
 							? 'border-primary-400/70 bg-primary-100/60 dark:border-primary-400/40 dark:bg-primary-400/10'
 							: 'border-zinc-200/80 bg-white dark:border-white/10 dark:bg-zinc-900/80',
 					].join(' ')}>
-					<EditorTooltip
-						label={publishTooltip}
-						shortcut={pendingReview ? undefined : '⌘S'}
-						disabled={isSaveDropdownOpen || isPublishOpen}>
-						<button
-							type='button'
-							aria-haspopup='dialog'
-							aria-expanded={isPublishOpen}
-							disabled={isReadOnly && !pendingReview}
-							onClick={() => {
-								if (pendingReview) {
-									closeMenu();
-									setReviewRequestId(pendingReview.id);
-								} else {
-									toggleMenu('publish');
-								}
-							}}
-							className={[
-								'hover:bg-primary-100/70 dark:hover:bg-primary-400/10 flex h-8 items-center gap-1.5 rounded-l-lg px-2.5 text-xs font-bold transition sm:px-3',
-								FOCUS_RING,
-								hasUnpublishedWork
-									? 'text-primary-900 dark:text-primary-300'
-									: 'hover:text-primary-900 dark:hover:text-primary-300 text-zinc-700 dark:text-zinc-200',
-							].join(' ')}>
-							{pendingReview ? (
-								<FileCheck2
-									size={13}
-									className='text-amber-600 dark:text-amber-400'
-								/>
-							) : requiresApproval ? (
-								<Send
-									size={13}
-									className='text-primary-700 dark:text-primary-400'
-								/>
-							) : (
-								<Rocket
-									size={13}
-									className='text-primary-700 dark:text-primary-400'
-								/>
-							)}
-							<span>{publishLabel}</span>
-						</button>
-					</EditorTooltip>
+					{(canPublish || pendingReview) && (
+						<EditorTooltip
+							label={publishTooltip}
+							shortcut={pendingReview ? undefined : '⌘S'}
+							disabled={isSaveDropdownOpen || isPublishOpen}>
+							<button
+								type='button'
+								aria-haspopup='dialog'
+								aria-expanded={isPublishOpen}
+								disabled={isReadOnly && !pendingReview}
+								onClick={() => {
+									if (pendingReview) {
+										closeMenu();
+										setReviewRequestId(pendingReview.id);
+									} else {
+										toggleMenu('publish');
+									}
+								}}
+								className={[
+									'hover:bg-primary-100/70 dark:hover:bg-primary-400/10 flex h-8 items-center gap-1.5 rounded-l-lg px-2.5 text-xs font-bold transition sm:px-3',
+									FOCUS_RING,
+									hasUnpublishedWork
+										? 'text-primary-900 dark:text-primary-300'
+										: 'hover:text-primary-900 dark:hover:text-primary-300 text-zinc-700 dark:text-zinc-200',
+								].join(' ')}>
+								{pendingReview ? (
+									<FileCheck2
+										size={13}
+										className='text-amber-600 dark:text-amber-400'
+									/>
+								) : requiresApproval ? (
+									<Send
+										size={13}
+										className='text-primary-700 dark:text-primary-400'
+									/>
+								) : (
+									<Rocket
+										size={13}
+										className='text-primary-700 dark:text-primary-400'
+									/>
+								)}
+								<span>{publishLabel}</span>
+							</button>
+						</EditorTooltip>
+					)}
 
 					<AnimatePresence>
-						{isPublishOpen && <PublishPopover onClose={closeMenu} />}
+						{canPublish && isPublishOpen && <PublishPopover onClose={closeMenu} />}
 					</AnimatePresence>
 
 					<button
@@ -870,7 +923,7 @@ const Topbar = () => {
 						aria-haspopup='menu'
 						aria-expanded={isSaveDropdownOpen}
 						onClick={() => toggleMenu('save')}
-						className={`text-primary-700 hover:bg-primary-100/70 hover:text-primary-900 dark:text-primary-400 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 flex h-8 items-center justify-center rounded-r-lg border-l border-zinc-200/80 px-1.5 transition dark:border-white/10 ${FOCUS_RING}`}>
+						className={`text-primary-700 hover:bg-primary-100/70 hover:text-primary-900 dark:text-primary-400 dark:hover:bg-primary-400/10 dark:hover:text-primary-300 flex h-8 items-center justify-center px-1.5 transition dark:border-white/10 ${canPublish || pendingReview ? 'rounded-r-lg border-l border-zinc-200/80' : 'rounded-lg'} ${FOCUS_RING}`}>
 						<ChevronDown
 							size={13}
 							className={`transition-transform duration-150 ${isSaveDropdownOpen ? 'rotate-180' : ''}`}
@@ -895,16 +948,18 @@ const Topbar = () => {
 									<div className='text-primary-800/70 dark:text-primary-400/70 px-2 py-1 text-[10px] font-bold tracking-wider uppercase'>
 										Governance & Versions
 									</div>
-									<button
-										type='button'
-										onClick={openVersionHistory}
-										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
-										<GitCompare
-											size={14}
-											className='text-primary-700 dark:text-primary-400'
-										/>
-										<span>Version History</span>
-									</button>
+									{canViewVersions && (
+										<button
+											type='button'
+											onClick={openVersionHistory}
+											className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition dark:text-zinc-300'>
+											<GitCompare
+												size={14}
+												className='text-primary-700 dark:text-primary-400'
+											/>
+											<span>Version History</span>
+										</button>
+									)}
 									<button
 										type='button'
 										onClick={() => {
@@ -949,20 +1004,22 @@ const Topbar = () => {
 										/>
 										<span>Export Workflow JSON</span>
 									</button>
-									<button
-										type='button'
-										disabled={!state.workflow.apiId}
-										onClick={() => {
-											closeMenu();
-											setIsSaveAsTemplateOpen(true);
-										}}
-										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition disabled:opacity-50 dark:text-zinc-300'>
-										<LayoutTemplate
-											size={14}
-											className='text-primary-700 dark:text-primary-400'
-										/>
-										<span>Save as Template</span>
-									</button>
+									{canSaveAsTemplate && (
+										<button
+											type='button'
+											disabled={!state.workflow.apiId}
+											onClick={() => {
+												closeMenu();
+												setIsSaveAsTemplateOpen(true);
+											}}
+											className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 transition disabled:opacity-50 dark:text-zinc-300'>
+											<LayoutTemplate
+												size={14}
+												className='text-primary-700 dark:text-primary-400'
+											/>
+											<span>Save as Template</span>
+										</button>
+									)}
 								</motion.div>
 							</>
 						)}
@@ -982,13 +1039,15 @@ const Topbar = () => {
 				{/* Primary Run Action */}
 				<EditorTooltip
 					label={
-						isRunning
-							? 'Stop Execution'
-							: isReadOnly
-								? 'Running is paused during maintenance'
-								: isRunDisabled
-									? 'Add nodes to run'
-									: 'Run Workflow'
+						!canRun
+							? 'Your role can view this workflow but not run it'
+							: isRunning
+								? 'Stop Execution'
+								: isReadOnly
+									? 'Running is paused during maintenance'
+									: isRunDisabled
+										? 'Add nodes to run'
+										: 'Run Workflow'
 					}
 					shortcut='⌘↵'
 					align='right'>
@@ -1043,38 +1102,42 @@ const Topbar = () => {
 									exit={{ opacity: 0, y: 4, scale: 0.96 }}
 									role='menu'
 									className='border-primary-500/20 dark:border-primary-400/20 absolute top-10 right-0 z-50 w-56 origin-top-right rounded-xl border bg-white p-1.5 shadow-xl ring-1 ring-black/5 dark:bg-zinc-950 dark:ring-white/5'>
-									<button
-										type='button'
-										onClick={() => {
-											closeMenu();
-											dispatch({
-												type: 'TOGGLE_LEFT_PANEL',
-												intent: 'home',
-											});
-										}}
-										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
-										<Boxes
-											size={14}
-											className='text-primary-700 dark:text-primary-400'
-										/>
-										<span>Apps & Nodes</span>
-									</button>
-									<button
-										type='button'
-										onClick={() => {
-											closeMenu();
-											dispatch({
-												type: 'TOGGLE_LEFT_PANEL',
-												intent: 'trigger',
-											});
-										}}
-										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
-										<Rocket
-											size={14}
-											className='text-primary-700 dark:text-primary-400'
-										/>
-										<span>Triggers</span>
-									</button>
+									{canEdit && (
+										<>
+											<button
+												type='button'
+												onClick={() => {
+													closeMenu();
+													dispatch({
+														type: 'TOGGLE_LEFT_PANEL',
+														intent: 'home',
+													});
+												}}
+												className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
+												<Boxes
+													size={14}
+													className='text-primary-700 dark:text-primary-400'
+												/>
+												<span>Apps & Nodes</span>
+											</button>
+											<button
+												type='button'
+												onClick={() => {
+													closeMenu();
+													dispatch({
+														type: 'TOGGLE_LEFT_PANEL',
+														intent: 'trigger',
+													});
+												}}
+												className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
+												<Rocket
+													size={14}
+													className='text-primary-700 dark:text-primary-400'
+												/>
+												<span>Triggers</span>
+											</button>
+										</>
+									)}
 									{isAiPanelAvailable && (
 										<button
 											type='button'
@@ -1093,19 +1156,24 @@ const Topbar = () => {
 
 									<div className='bg-primary-500/15 dark:bg-primary-400/15 my-1 h-px' />
 
-									<button
-										type='button'
-										onClick={() => {
-											closeMenu();
-											dispatch({ type: 'SET_TEMPLATE_LIBRARY', open: true });
-										}}
-										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
-										<Library
-											size={14}
-											className='text-primary-700 dark:text-primary-400'
-										/>
-										<span>Templates</span>
-									</button>
+									{canEdit && (
+										<button
+											type='button'
+											onClick={() => {
+												closeMenu();
+												dispatch({
+													type: 'SET_TEMPLATE_LIBRARY',
+													open: true,
+												});
+											}}
+											className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
+											<Library
+												size={14}
+												className='text-primary-700 dark:text-primary-400'
+											/>
+											<span>Templates</span>
+										</button>
+									)}
 									<button
 										type='button'
 										onClick={() => {
@@ -1119,16 +1187,18 @@ const Topbar = () => {
 										/>
 										<span>Share Workflow</span>
 									</button>
-									<button
-										type='button'
-										onClick={openVersionHistory}
-										className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
-										<GitCompare
-											size={14}
-											className='text-primary-700 dark:text-primary-400'
-										/>
-										<span>Version History</span>
-									</button>
+									{canViewVersions && (
+										<button
+											type='button'
+											onClick={openVersionHistory}
+											className='hover:bg-primary-100/70 hover:text-primary-900 dark:hover:bg-primary-400/10 dark:hover:text-primary-200 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300'>
+											<GitCompare
+												size={14}
+												className='text-primary-700 dark:text-primary-400'
+											/>
+											<span>Version History</span>
+										</button>
+									)}
 
 									<div className='bg-primary-500/15 dark:bg-primary-400/15 my-1 h-px' />
 

@@ -36,6 +36,7 @@ const RetestButton = ({ node }: { node: TCanvasNode }) => {
 
 const ResultBody = ({ entry }: { entry: ResultEntry }) => {
 	const { pin, unpin } = useNodePin();
+	const { canEdit } = useWorkflowEditor();
 	const [pane, setPane] = useState<'output' | 'input'>('output');
 	const { node, pinned, source, status } = entry;
 	const isError = status === 'error';
@@ -99,7 +100,7 @@ const ResultBody = ({ entry }: { entry: ResultEntry }) => {
 
 			<div className='mt-3 flex items-center justify-end gap-1'>
 				{source === 'test' && <RetestButton node={node} />}
-				{source === 'run' && !isError && entry.output !== undefined && (
+				{canEdit && source === 'run' && !isError && entry.output !== undefined && (
 					<button
 						type='button'
 						aria-pressed={pinned}
