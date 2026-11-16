@@ -13,6 +13,8 @@ import useDarkMode from '@/hooks/useDarkMode';
 import useResolvePath from '@/hooks/useResolvePath';
 import { useNavigate, useParams } from 'react-router';
 import { useWorkspaceContext } from '@/context/workspace';
+import ChangelogBadgePart from '@/templates/asides/_parts/ChangelogBadge.part';
+import { useUnreadChangelogCount } from '@/api/modules/changelog';
 import { FEATUREBASE_URL, openFeatureBoard } from '@/utils/featurebase.util';
 
 const AsideFooterPart = () => {
@@ -21,6 +23,7 @@ const AsideFooterPart = () => {
 	const { setDarkModeStatus, darkModeStatus } = useDarkMode();
 
 	const navigate = useNavigate();
+	const { data: unreadChangelog } = useUnreadChangelogCount();
 
 	const { onLogout } = useAuth();
 
@@ -58,6 +61,22 @@ const AsideFooterPart = () => {
 							className='!p-0'
 						/>
 					)}
+					<span className='relative'>
+						<Button
+							icon={pages.changelog.icon}
+							variant='link'
+							aria-label={pages.changelog.text}
+							title={pages.changelog.text}
+							onClick={() => navigate(pages.changelog.to)}
+							className='!p-0'
+						/>
+						{!!unreadChangelog && (
+							<span
+								aria-hidden
+								className='bg-primary-400 absolute -end-0.5 -top-0.5 size-2 rounded-full'
+							/>
+						)}
+					</span>
 					<Button
 						icon={pages.settings.icon}
 						variant='link'
@@ -98,6 +117,11 @@ const AsideFooterPart = () => {
 
 				{tokenStorage && (
 					<NavItem {...pages.settings} to={resolvePath(pages.settings.to)} end={false} />
+				)}
+				{tokenStorage && (
+					<NavItem {...pages.changelog} subPages={undefined} end={false}>
+						<ChangelogBadgePart />
+					</NavItem>
 				)}
 				{tokenStorage && (
 					<NavItem text='Logout' icon='Logout03' onClick={() => onLogout(true)} />

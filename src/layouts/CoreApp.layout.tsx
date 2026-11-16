@@ -2,6 +2,7 @@ import { Outlet } from 'react-router';
 import { Suspense } from 'react';
 import Wrapper from '@/components/layout/Wrapper';
 import AnnouncementBannersTemplate from '@/templates/announcements/AnnouncementBanners.template';
+import WhatsNewDialogTemplate from '@/templates/changelog/WhatsNewDialog.template';
 import CoreAppAsideTemplate from '@/templates/asides/CoreAppAside.template';
 import Container from '@/components/layout/Container';
 import Skeleton from '@/components/ui/Skeleton';
@@ -13,6 +14,7 @@ const CoreAppLayout = () => {
 	return (
 		<>
 			<CoreAppAsideTemplate />
+			<WhatsNewDialogTemplate />
 			<Wrapper>
 				<AnnouncementBannersTemplate />
 				<Suspense

@@ -18,6 +18,8 @@ const BillingReturnPage = lazy(() => import('@/pages/settings/Billing/BillingRet
 const PricingPage = lazy(() => import('@/pages/welcome/Pricing.page'));
 const AccountReturnPage = lazy(() => import('@/pages/settings/Profile/AccountReturn.page'));
 const PublicPagePage = lazy(() => import('@/pages/public/PublicPage.page'));
+const ChangelogPage = lazy(() => import('@/pages/public/Changelog.page'));
+const ChangelogEntryPage = lazy(() => import('@/pages/public/ChangelogEntry.page'));
 
 const router = createBrowserRouter([
 	{
@@ -40,6 +42,16 @@ const router = createBrowserRouter([
 					{
 						path: pages.welcome.subPages!.pricing.to,
 						element: <PricingPage />,
+					},
+					// The changelog: readable signed out, so it stays outside the auth
+					// boundary (and before `/:workspaceId`, or `changelog` reads as a workspace id).
+					{
+						path: pages.changelog.to,
+						element: <ChangelogPage />,
+					},
+					{
+						path: pages.changelog.subPages!.entry.to,
+						element: <ChangelogEntryPage />,
 					},
 					// A workflow page at its public link: no sign-in, and registered
 					// before `/:workspaceId` so `p` is never read as a workspace id.
