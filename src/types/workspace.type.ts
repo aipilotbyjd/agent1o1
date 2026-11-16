@@ -6,6 +6,7 @@
 // created), not a fixed workspace attribute.
 // ============================================================
 import type { TUser } from './auth.type';
+import type { TPermission } from './permission.type';
 
 export type TWorkspaceRole = 'owner' | 'admin' | 'editor' | 'member' | 'viewer';
 
@@ -23,6 +24,8 @@ export type TWorkspace = {
 	owner_id: string;
 	owner: TUser | null;
 	role: TWorkspaceRole | null;
+	/** What the viewer may do here, derived from `role` server-side. */
+	permissions: TPermission[];
 	workflows_count?: number;
 	agents_count?: number;
 	/** Not sent by the backend yet, so the workspace card's live-runs dot stays off until it is. */

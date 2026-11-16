@@ -39,6 +39,8 @@ import type { TAgent } from '@/types/agent.type';
 import type { TWorkflowTemplate } from '@/types/template.type';
 import type { TArtifact } from '@/types/artifact.type';
 import useResolvePath from '@/hooks/useResolvePath';
+import { usePermission } from '@/hooks/usePermission';
+import type { TPermission } from '@/types/permission.type';
 import { useGlobalSearchStore } from '@/store/globalSearch.store';
 import { useBrand } from '@/context/brand';
 import safeStorage from '@/utils/safeStorage.util';
@@ -65,6 +67,8 @@ interface TSearchItem {
 	action?: () => void;
 	badge?: string;
 	keywords?: string[];
+	/** Left out of the results when the workspace role does not grant it. */
+	permission?: TPermission;
 }
 
 // ─── Recent Searches Helper ──────────────────────────────────────────────────
@@ -145,6 +149,7 @@ const getFlattenedPageItems = (workspaceId: string, assistantName: string): TSea
 		),
 		to: item.to,
 		keywords: [item.to, item.text],
+		permission: item.permission,
 	}));
 };
 
@@ -221,6 +226,7 @@ const getQuickActions = (workspaceId: string): TSearchItem[] => [
 		iconBg: 'bg-emerald-500/10',
 		to: paths.newPlaybook(workspaceId),
 		keywords: ['create', 'new', 'workflow', 'playbook', 'automation'],
+		permission: 'workflow.manage',
 	},
 	{
 		id: 'qa-create-agent',
@@ -231,6 +237,7 @@ const getQuickActions = (workspaceId: string): TSearchItem[] => [
 		iconBg: 'bg-primary-500/10',
 		to: paths.newAgent(workspaceId),
 		keywords: ['create', 'new', 'agent', 'ai', 'bot'],
+		permission: 'agent.manage',
 	},
 	{
 		id: 'qa-invite-team',
@@ -241,6 +248,7 @@ const getQuickActions = (workspaceId: string): TSearchItem[] => [
 		iconBg: 'bg-amber-500/10',
 		to: buildPath(settingsPages.members.to, { workspaceId }),
 		keywords: ['invite', 'team', 'members', 'collaborators', 'add'],
+		permission: 'member.invite',
 	},
 	{
 		id: 'qa-upload-file',
@@ -374,6 +382,7 @@ const GlobalSearch = () => {
 	const { isOpen, close } = useGlobalSearchStore();
 	const navigate = useNavigate();
 	const { workspaceId } = useResolvePath();
+	const { can } = usePermission();
 	const brand = useBrand();
 
 	// Page results are URL templates until the workspace id is substituted, so
@@ -395,8 +404,8 @@ const GlobalSearch = () => {
 				agents,
 				templates,
 				artifacts: artifactPage?.artifacts,
-			}),
-		[workspaceId, brand.name, workflows, agents, templates, artifactPage],
+			}).filter((item) => !item.permission || can(item.permission)),
+		[workspaceId, brand.name, workflows, agents, templates, artifactPage, can],
 	);
 	const fuse = useMemo(() => new Fuse(allSearchItems, FUSE_OPTIONS), [allSearchItems]);
 	const [query, setQuery] = useState('');

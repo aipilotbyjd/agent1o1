@@ -11,6 +11,7 @@ export const workspace: TPage = {
 			to: ws('assistant'),
 			text: 'Assistant',
 			icon: 'AiMagic',
+			permission: 'assistant.use',
 		},
 		dashboard: {
 			id: 'dashboard',

@@ -2,6 +2,7 @@ import { QueryClient, QueryCache, MutationCache } from '@tanstack/react-query';
 import { ApiError } from './errors';
 import { notify } from './notify';
 import { announcementKeys } from '@/api/modules/announcements/announcements.keys';
+import { workspaceKeys } from '@/api/modules/workspaces/workspaces.keys';
 import type { TAnnouncementsPayload } from '@/types/announcement.type';
 
 // ============================================================
@@ -25,6 +26,9 @@ const shouldRetry = (failureCount: number, error: unknown) => {
 	}
 	return failureCount < 2;
 };
+
+const LARAVEL_FORBIDDEN_MESSAGE = 'This action is unauthorized.';
+const FORBIDDEN_MESSAGE = "You don't have permission to do that in this workspace.";
 
 const MAINTENANCE_TOAST_GAP_MS = 15_000;
 const MAINTENANCE_MESSAGE =
@@ -52,23 +56,41 @@ export const createQueryClient = () => {
 		return true;
 	};
 
+	/**
+	 * A 403 usually means the viewer's role changed (or they were removed)
+	 * since the workspace list loaded. Refetch it so the UI catches up; the
+	 * error itself is still shown by the caller's normal path.
+	 */
+	const handleForbidden = (error: unknown) => {
+		if (!ApiError.is(error) || !error.isForbidden) return;
+		client.invalidateQueries({ queryKey: workspaceKeys.all() });
+	};
+
+	/** Laravel's stock refusal text reads poorly in a toast; specific messages are kept. */
+	const messageFor = (error: ApiError) =>
+		error.isForbidden && error.message === LARAVEL_FORBIDDEN_MESSAGE
+			? FORBIDDEN_MESSAGE
+			: error.message;
+
 	const client = new QueryClient({
 		queryCache: new QueryCache({
 			onError: (error, query) => {
+				handleForbidden(error);
 				if (query.meta?.silent) return;
 				if (handleMaintenance(error)) return;
-				notify.error(ApiError.is(error) ? error.message : 'Could not load data');
+				notify.error(ApiError.is(error) ? messageFor(error) : 'Could not load data');
 			},
 		}),
 		mutationCache: new MutationCache({
 			onError: (error, _vars, _ctx, mutation) => {
+				handleForbidden(error);
 				if (mutation.meta?.silent) return;
 				if (handleMaintenance(error)) return;
 				const silentStatuses = mutation.meta?.silentStatuses as number[] | undefined;
 				if (ApiError.is(error) && error.status && silentStatuses?.includes(error.status))
 					return;
 				const fallback = (mutation.meta?.errorMessage as string) ?? 'Something went wrong';
-				notify.error(ApiError.is(error) ? error.message : fallback);
+				notify.error(ApiError.is(error) ? messageFor(error) : fallback);
 			},
 		}),
 		defaultOptions: {

@@ -1,4 +1,5 @@
 import { TIcons } from '@/types/icons.type';
+import type { TPermission } from '@/types/permission.type';
 
 export type TPage = {
 	id: string;
@@ -7,6 +8,8 @@ export type TPage = {
 	icon: TIcons;
 	subPages?: Record<string, TPage>;
 	parentId?: string;
+	/** Workspace permission needed to see the page in a sidebar. */
+	permission?: TPermission;
 };
 export type TPages = Record<string, TPage>;
 

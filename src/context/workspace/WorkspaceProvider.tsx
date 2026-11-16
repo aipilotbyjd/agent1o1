@@ -16,9 +16,10 @@ export const WorkspaceProvider = ({ children }: { children?: ReactNode }) => {
 	const switchMutation = useSwitchWorkspace();
 
 	const activeWorkspaceId = user?.current_workspace_id ?? '';
+	// The list entry first: it carries the viewer's role and permissions from their membership.
 	const activeWorkspace =
+		workspaces?.find((item) => String(item.id) === String(activeWorkspaceId)) ??
 		user?.current_workspace ??
-		workspaces?.find((item) => item.id === activeWorkspaceId) ??
 		null;
 
 	const switchWorkspace = useCallback(

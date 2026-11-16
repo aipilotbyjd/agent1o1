@@ -2,6 +2,7 @@ import { FC, Fragment } from 'react';
 import { NavCollapse, NavItem, NavSeparator, NavTitle } from '@/components/layout/Navigation/Nav';
 import { TNavEntry, TNavSection } from '@/Routes/navigation';
 import useResolvePath from '@/hooks/useResolvePath';
+import { usePermission } from '@/hooks/usePermission';
 import { useBrand } from '@/context/brand';
 import pages from '@/Routes/pages';
 import ApprovalsBadgePart from '@/templates/asides/_parts/ApprovalsBadge.part';
@@ -11,7 +12,7 @@ const NavEntry: FC<{ entry: TNavEntry; resolvePath: (to: string) => string }> = 
 	resolvePath,
 }) => {
 	const brand = useBrand();
-	const { collapsible, subPages, end, defaultOpen, ...page } = entry;
+	const { collapsible, subPages, end, defaultOpen, permission, ...page } = entry;
 	const text = page.id === pages.workspace.subPages!.assistant.id ? brand.name : page.text;
 
 	if (collapsible && subPages) {
@@ -37,10 +38,19 @@ const NavEntry: FC<{ entry: TNavEntry; resolvePath: (to: string) => string }> = 
  */
 const NavSectionsPart: FC<{ sections: TNavSection[] }> = ({ sections }) => {
 	const { resolvePath } = useResolvePath();
+	const { can } = usePermission();
+
+	// Pages the workspace role does not grant are left out, and so is a section left empty.
+	const visibleSections = sections
+		.map((section) => ({
+			...section,
+			items: section.items.filter((entry) => !entry.permission || can(entry.permission)),
+		}))
+		.filter((section) => section.items.length > 0);
 
 	return (
 		<>
-			{sections.map((section, index) => (
+			{visibleSections.map((section, index) => (
 				<Fragment key={section.title ?? `section-${index}`}>
 					{section.divider && <NavSeparator />}
 					{section.title && (

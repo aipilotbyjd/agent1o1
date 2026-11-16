@@ -81,7 +81,6 @@ export const AuthProvider = () => {
 			...userData,
 			firstName,
 			lastName,
-			role: userData.current_workspace?.role ?? 'Member',
 			isVerified: !!userData.email_verified_at,
 			image: { org: userData.avatar ?? undefined },
 		};

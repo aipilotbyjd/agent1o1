@@ -3,6 +3,7 @@ import { Navigate, RouteObject } from 'react-router';
 import WorkspaceGuardLayout from '@/layouts/WorkspaceGuard.layout';
 import CoreAppLayout from '@/layouts/CoreApp.layout';
 import AgentLayout from '@/layouts/Agent.layout';
+import RequirePermissionLayout from '@/layouts/RequirePermission.layout';
 import pages, { editorRedirects, relativeToWorkspace } from '@/Routes/pages';
 import WorkspaceRedirect from '@/Routes/redirects';
 import SettingsPages from '@/Routes/appPages/settingsPages';
@@ -126,25 +127,50 @@ const listRoutes: RouteObject[] = (
 		],
 		[workspacePages.trash.to, <TrashLayout key='layout' />, <TrashPage key='page' />],
 	] as const
-).map(([to, layout, page]) => ({
-	path: rel(to),
-	element: layout,
-	children: [{ index: true, element: page }],
-}));
+)
+	.map(([to, layout, page]) => ({
+		path: rel(to),
+		element: layout,
+		children: [{ index: true, element: page }],
+	}))
+	// Every role can read the other list pages; the assistant needs `assistant.use`.
+	.map((route) =>
+		route.path === rel(workspacePages.assistant.to)
+			? { element: <RequirePermissionLayout permission='assistant.use' />, children: [route] }
+			: route,
+	);
 
 /**
  * Full-screen editors. They share the `/:workspaceId` guard but deliberately sit
  * outside CoreAppLayout so the sidebar and header do not render around them.
  */
 const editorRoutes: RouteObject[] = [
-	{ path: rel(playbookEditorPages.add.to), element: <WorkflowEditorPage /> },
-	{ path: rel(playbookEditorPages.edit.to), element: <WorkflowEditorPage /> },
+	{
+		element: <RequirePermissionLayout permission='workflow.manage' />,
+		children: [{ path: rel(playbookEditorPages.add.to), element: <WorkflowEditorPage /> }],
+	},
+	{
+		// Without edit rights the playbook opens read-only instead.
+		element: (
+			<RequirePermissionLayout
+				permission='workflow.manage'
+				redirectTo={playbookEditorPages.view.to}
+			/>
+		),
+		children: [{ path: rel(playbookEditorPages.edit.to), element: <WorkflowEditorPage /> }],
+	},
 	{ path: rel(playbookEditorPages.view.to), element: <WorkflowEditorPage /> },
-	{ path: rel(pageEditorPages.edit.to), element: <PageBuilderPage /> },
+	{
+		element: <RequirePermissionLayout permission='page.manage' />,
+		children: [{ path: rel(pageEditorPages.edit.to), element: <PageBuilderPage /> }],
+	},
 	{
 		element: <AgentLayout />,
 		children: [
-			{ path: rel(agentEditorPages.add.to), element: <AgentBuilderPage /> },
+			{
+				element: <RequirePermissionLayout permission='agent.manage' />,
+				children: [{ path: rel(agentEditorPages.add.to), element: <AgentBuilderPage /> }],
+			},
 			{ path: rel(agentEditorPages.edit.to), element: <AgentBuilderPage /> },
 			{ path: rel(agentEditorPages.insights.to), element: <AgentInsightsPage /> },
 			{ path: rel(agentEditorPages.library.to), element: <LibraryPage /> },
