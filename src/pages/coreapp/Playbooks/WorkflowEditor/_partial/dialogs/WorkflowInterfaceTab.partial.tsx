@@ -13,7 +13,7 @@ import type {
 	TWorkflowInterfaceFieldType,
 } from '@/types/workflow-extras.type';
 import paths from '@/Routes/paths';
-import { usePermission } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import RunFormFields from '../run/RunFormFields.partial';
 import {
 	initialRunFormValues,

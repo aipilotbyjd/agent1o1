@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { AppWindow, Plus } from 'lucide-react';
 import { useWorkflowPages } from '@/api/modules/workflow-pages';
 import paths from '@/Routes/paths';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import CreatePageModal from './CreatePageModal.partial';
 
 const itemClass =
@@ -24,7 +24,8 @@ const WorkflowPagesMenu = ({
 }) => {
 	const { data: pages } = useWorkflowPages(ws, workflowId);
 	const [creating, setCreating] = useState(false);
-	const canManagePages = useCan('page.manage');
+	const { can } = usePermission();
+	const canManagePages = can('page.manage');
 
 	return (
 		<>

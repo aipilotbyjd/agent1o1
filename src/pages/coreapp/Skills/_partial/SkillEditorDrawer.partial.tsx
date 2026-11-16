@@ -20,7 +20,7 @@ import type {
 	TSkillDraftScript,
 } from '@/types/agent-skill.type';
 import { notify } from '@/api/core';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { useModelCatalog } from '@/api/modules/catalog';
 import ModelPicker from '@/components/ai/model-picker/ModelPicker';
 import {
@@ -43,6 +43,7 @@ import {
 	SKILL_ICON_OPTIONS,
 	SKILL_COLOR_OPTIONS,
 } from '../_helper/skills.constants';
+import { noPermissionTo } from '@/constants/permission.constant';
 
 interface ISkillEditorDrawerProps {
 	ws: string;
@@ -80,7 +81,8 @@ const SkillEditorDrawer = ({
 	const activeSkillId = skillId ?? createdSkillId;
 
 	// Without skill manage access the drawer only shows the skill; scripts are not readable at all.
-	const canManageSkills = useCan('agent.skill.manage');
+	const { can } = usePermission();
+	const canManageSkills = can('agent.skill.manage');
 	const { data: skillDetail } = useAgentSkill(ws, activeSkillId ?? '');
 	const { data: references } = useSkillReferences(ws, activeSkillId ?? '');
 	const { data: scripts } = useSkillScripts(ws, canManageSkills ? (activeSkillId ?? '') : '');
@@ -303,7 +305,7 @@ const SkillEditorDrawer = ({
 						</h2>
 						<p className='mt-0.5 text-xs font-semibold text-zinc-400 dark:text-zinc-500'>
 							{isViewOnly
-								? 'Only editors and admins can change skills.'
+								? noPermissionTo('change skills')
 								: isSynced
 									? 'Synced from GitHub. Edit it in the repository.'
 									: isEdit

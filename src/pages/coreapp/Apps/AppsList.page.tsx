@@ -8,7 +8,7 @@ import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
 import { notify } from '@/api/core';
 import { useWorkspaceContext } from '@/context/workspace';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import paths, { withWorkspace } from '@/Routes/paths';
 import type {
 	TConnectorCredential,
@@ -72,7 +72,8 @@ const AppsListPage = () => {
 	const { workspaceId } = useParams<{ workspaceId: string }>();
 	const { activeWorkspaceId } = useWorkspaceContext();
 	const currentWorkspaceId = workspaceId || activeWorkspaceId;
-	const canManageConnections = useCan('connector.manage');
+	const { can } = usePermission();
+	const canManageConnections = can('connector.manage');
 
 	const {
 		data: credentialsData,

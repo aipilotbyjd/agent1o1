@@ -39,7 +39,7 @@ import type { TAgent } from '@/types/agent.type';
 import type { TWorkflowTemplate } from '@/types/template.type';
 import type { TArtifact } from '@/types/artifact.type';
 import useResolvePath from '@/hooks/useResolvePath';
-import { usePermission } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import type { TPermission } from '@/types/permission.type';
 import { useGlobalSearchStore } from '@/store/globalSearch.store';
 import { useBrand } from '@/context/brand';

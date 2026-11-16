@@ -56,3 +56,8 @@ export type TPermission =
 	| 'notification-channel.view'
 	| 'notification-channel.manage'
 	| 'audit-log.view';
+
+/** One permission, or several of which any (or all, with `mode: 'all'`) must be granted. */
+export type TPermissionCheck = TPermission | TPermission[];
+
+export type TPermissionMode = 'any' | 'all';

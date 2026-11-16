@@ -36,7 +36,7 @@ import { useConfirm } from '@/context/confirm';
 import WorkspaceCard from './_partial/WorkspaceCard.partial';
 import { getInitials } from './_helper/workspace.helper';
 import type { ITeammate, IWorkspaceCard } from './_types/workspace.type';
-import { workspaceAllows } from '@/hooks/usePermission';
+import { workspaceAllows } from '@/utils/permission.util';
 import {
 	ASSIGNABLE_WORKSPACE_ROLES,
 	WORKSPACE_ROLE_DESCRIPTIONS,

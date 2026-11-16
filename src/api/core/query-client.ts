@@ -4,6 +4,7 @@ import { notify } from './notify';
 import { announcementKeys } from '@/api/modules/announcements/announcements.keys';
 import { workspaceKeys } from '@/api/modules/workspaces/workspaces.keys';
 import type { TAnnouncementsPayload } from '@/types/announcement.type';
+import { NO_PERMISSION_MESSAGE } from '@/constants/permission.constant';
 
 // ============================================================
 // Query Client
@@ -28,7 +29,6 @@ const shouldRetry = (failureCount: number, error: unknown) => {
 };
 
 const LARAVEL_FORBIDDEN_MESSAGE = 'This action is unauthorized.';
-const FORBIDDEN_MESSAGE = "You don't have permission to do that in this workspace.";
 
 const MAINTENANCE_TOAST_GAP_MS = 15_000;
 const MAINTENANCE_MESSAGE =
@@ -69,7 +69,7 @@ export const createQueryClient = () => {
 	/** Laravel's stock refusal text reads poorly in a toast; specific messages are kept. */
 	const messageFor = (error: ApiError) =>
 		error.isForbidden && error.message === LARAVEL_FORBIDDEN_MESSAGE
-			? FORBIDDEN_MESSAGE
+			? NO_PERMISSION_MESSAGE
 			: error.message;
 
 	const client = new QueryClient({

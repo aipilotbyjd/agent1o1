@@ -2,7 +2,7 @@ import { prettifyActionTool } from '../_helper/actionTool.helper';
 import AgentQuestionCard from './AgentQuestionCard.partial';
 import { useState } from 'react';
 import { AlertTriangle, Check, Clock, PencilLine, ShieldAlert, ShieldCheck, X } from 'lucide-react';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import type {
 	TActionEffect,
 	TActionRisk,
@@ -76,7 +76,8 @@ export const ApprovalCard = ({
 	const expires = expiresLabel(action.expires_at);
 	const rememberable = canRemember && action.tool_kind !== 'builtin';
 	const namedApprovers = (action.approvers ?? []).length > 0;
-	const canDecide = useCan('agent.chat');
+	const { can } = usePermission();
+	const canDecide = can('agent.chat');
 
 	const approve = () => {
 		if (mode === 'edit') {
@@ -352,7 +353,8 @@ const ApprovalList = ({
 	canRemember: boolean;
 	onDecide: (decisions: TAgentActionDecision[]) => void;
 }) => {
-	const canDecide = useCan('agent.chat');
+	const { can } = usePermission();
+	const canDecide = can('agent.chat');
 	return (
 		<>
 			<div className='flex items-center gap-2'>

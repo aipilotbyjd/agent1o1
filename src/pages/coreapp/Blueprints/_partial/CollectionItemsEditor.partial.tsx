@@ -8,7 +8,7 @@ import {
 	useWorkflowTemplates,
 } from '@/api/modules/templates';
 import type { TTemplatableType, TTemplateCollection } from '@/types/template.type';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 
 /**
  * The "Included Assets" list of a collection, editable in place: add any
@@ -34,7 +34,8 @@ const CollectionItemsEditor = ({
 	const addItem = useAddTemplateCollectionItem(ws, collection.id);
 	const removeItem = useRemoveTemplateCollectionItem(ws, collection.id);
 	const reorderItems = useReorderTemplateCollectionItems(ws, collection.id);
-	const canEdit = useCan('template.manage');
+	const { can } = usePermission();
+	const canEdit = can('template.manage');
 
 	const [pick, setPick] = useState('');
 	const [removingId, setRemovingId] = useState<string | null>(null);

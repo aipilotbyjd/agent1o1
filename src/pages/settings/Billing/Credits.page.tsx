@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { AlertTriangle, CreditCard, Package, Sparkles } from 'lucide-react';
 import { useWorkspaceContext } from '@/context/workspace';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import {
 	useBillingOverview,
 	useCreditPacks as useCreditPackCatalog,
@@ -48,7 +48,8 @@ const CreditsPage = () => {
 	const { data: activePacks, isLoading: packsLoading } = usePurchasedCreditPacks(ws);
 	const { data: catalog, isLoading: catalogLoading } = useCreditPackCatalog(ws);
 	const buyCredits = useCheckoutCreditPack(ws);
-	const canManage = useCan('billing.manage');
+	const { can } = usePermission();
+	const canManage = can('billing.manage');
 
 	const [selected, setSelected] = useState<string | null>(null);
 

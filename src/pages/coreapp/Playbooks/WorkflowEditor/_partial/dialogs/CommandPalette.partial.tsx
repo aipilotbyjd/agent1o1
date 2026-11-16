@@ -7,11 +7,12 @@ import { useAutoLayout } from '../../_hooks/useAutoLayout.hook';
 import { useAiPanelAvailability } from '../../_hooks/useAiPanelAvailability.hook';
 import { useRunWorkflow } from '../../_hooks/useRunWorkflow.hook';
 import Modal from './Modal.partial';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 
 const CommandPalette = () => {
 	const { state, dispatch, canEdit } = useWorkflowEditor();
-	const canRun = useCan('run.trigger');
+	const { can } = usePermission();
+	const canRun = can('run.trigger');
 	const autoLayout = useAutoLayout();
 	const { runWorkflow, stopRun } = useRunWorkflow();
 	const { isAiPanelAvailable } = useAiPanelAvailability();

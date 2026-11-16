@@ -12,7 +12,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { RunService, runKeys } from '@/api/modules/runs';
 import { useWorkflowVersions } from '@/api/modules/workflows';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import type { TRun, TRunListParams } from '@/types/run.type';
 import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
@@ -266,7 +266,8 @@ const RunHistory = () => {
 	const workspaceId = state.workflow.workspaceId ?? '';
 	const workflowId = state.workflow.apiId ?? '';
 	// Only labels runs with their version; skipped for roles without version access.
-	const canViewVersions = useCan('workflow.version');
+	const { can } = usePermission();
+	const canViewVersions = can('workflow.version');
 	const { data: versions } = useWorkflowVersions(workspaceId, canViewVersions ? workflowId : '');
 	// Local history only knows runs started from this editor; webhook, schedule and
 	// polling runs exist only on the server.

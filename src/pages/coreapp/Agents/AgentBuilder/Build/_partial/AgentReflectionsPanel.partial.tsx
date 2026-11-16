@@ -25,7 +25,7 @@ import {
 	useApplyAgentReflection,
 	useDismissAgentReflection,
 } from '@/api/modules/agent-reflections';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import type {
 	TReflection,
 	TReflectionRun,
@@ -121,7 +121,8 @@ const ReflectionSettingsForm = ({
 	settings: TReflectionSettings;
 }) => {
 	const updateMutation = useUpdateAgentReflectionSettings(ws, agentId);
-	const canManage = useCan('agent.manage');
+	const { can } = usePermission();
+	const canManage = can('agent.manage');
 	const [form, setForm] = useState({
 		is_enabled: settings.is_enabled,
 		apply_behavior: settings.apply_behavior,
@@ -264,7 +265,8 @@ const ReflectionCard = ({
 }) => {
 	const applyMutation = useApplyAgentReflection(ws, agentId);
 	const dismissMutation = useDismissAgentReflection(ws, agentId);
-	const canManage = useCan('agent.manage');
+	const { can } = usePermission();
+	const canManage = can('agent.manage');
 
 	const type = TYPE_STYLE[reflection.type] ?? TYPE_STYLE.instruction_update;
 	const TypeIcon = type.icon;
@@ -460,7 +462,8 @@ const AgentReflectionsPanel = ({ ws, agentId, displayMode = 'panel' }: TProps) =
 	);
 	const { data: runs, isLoading: isRunsLoading } = useAgentReflectionRuns(ws, agentId ?? '');
 	const runMutation = useCreateAgentReflectionRun(ws, agentId ?? '');
-	const canManage = useCan('agent.manage');
+	const { can } = usePermission();
+	const canManage = can('agent.manage');
 
 	if (!agentId) {
 		return (

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Copy, Eye, EyeOff, Key, Lock, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { useWorkspaceContext } from '@/context/workspace';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import {
 	useSecrets,
 	useCreateSecret,
@@ -225,7 +225,8 @@ const SecretModal = ({ open, target, isPending, onClose, onSubmit }: SecretModal
 // ── Page ──────────────────────────────────────────────────────
 const SecretsPage = () => {
 	const { activeWorkspaceId } = useWorkspaceContext();
-	const canManageSecrets = useCan('secret.manage');
+	const { can } = usePermission();
+	const canManageSecrets = can('secret.manage');
 	const [searchQuery, setSearchQuery] = useState('');
 
 	/** `GET .../secrets` takes no query params, so the search box filters the

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router';
 import { CalendarClock, Download, ExternalLink, FileText, ShieldCheck } from 'lucide-react';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { useInvoices, useUpcomingInvoice } from '@/api/modules/billing';
 import type { TInvoice } from '@/types/billing.type';
 import { INVOICE_STATUS_STYLES, fmtInvoiceDate } from './_helper/invoices.helper';
@@ -43,7 +43,8 @@ const InvoiceLinks = ({ invoice }: { invoice: TInvoice }) => (
  */
 const BillingInvoicesPage = () => {
 	const { workspaceId } = useParams<{ workspaceId: string }>();
-	const canView = useCan('billing.view');
+	const { can } = usePermission();
+	const canView = can('billing.view');
 
 	const [cursors, setCursors] = useState<(string | undefined)[]>([undefined]);
 	const [openInvoiceId, setOpenInvoiceId] = useState<string | null>(null);

@@ -62,7 +62,7 @@ import CreatePageModal from '../WorkflowPages/_partial/CreatePageModal.partial';
 import { formatUsageCount } from './_helper/blueprints.constants';
 import TemplateFormModal, { type TTemplateFormTarget } from './_partial/TemplateFormModal.partial';
 import CollectionItemsEditor from './_partial/CollectionItemsEditor.partial';
-import { usePermission } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 
 type TTab = 'workflows' | 'agents' | 'pages' | 'collections';
 

@@ -11,7 +11,7 @@ import paths from '@/Routes/paths';
 import { useWorkspaceContext } from '@/context/workspace';
 import { notify } from '@/api/core';
 import { useAgents } from '@/api/modules/agents';
-import { usePermission } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { useAgentActionInbox, useDecideAgentActions } from '@/api/modules/agent-actions';
 import { ApprovalCard } from '@/pages/coreapp/Agents/AgentBuilder/Build/_partial/AgentApprovalCards.partial';
 import { prettifyActionTool } from '@/pages/coreapp/Agents/AgentBuilder/Build/_helper/actionTool.helper';

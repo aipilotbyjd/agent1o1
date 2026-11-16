@@ -19,7 +19,7 @@ import Breadcrumb from '@/components/layout/Breadcrumb';
 import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
 import { useWorkspaceContext } from '@/context/workspace';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { useAgentSkills, useDeleteAgentSkill, useCopyAgentSkill } from '@/api/modules/agent-skills';
 import type { TAgentSkill } from '@/types/agent-skill.type';
 import ListSkeletonPart from '@/parts/ListSkeleton.part';
@@ -71,7 +71,8 @@ const SkillsListPage = () => {
 			},
 		});
 	const deleteSkillMutation = useDeleteAgentSkill(currentWorkspaceId);
-	const canManageSkills = useCan('agent.skill.manage');
+	const { can } = usePermission();
+	const canManageSkills = can('agent.skill.manage');
 
 	const [editorState, setEditorState] = useState<{ open: boolean; skillId: string | null }>({
 		open: false,

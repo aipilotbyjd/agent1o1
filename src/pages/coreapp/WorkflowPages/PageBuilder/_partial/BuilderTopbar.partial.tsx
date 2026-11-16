@@ -43,7 +43,7 @@ import PublishMenu from './PublishMenu.partial';
 import ShareMenu from './ShareMenu.partial';
 import VariantMenu from './VariantMenu.partial';
 import GenerateDialog from './GenerateDialog.partial';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 
 const FOCUS_RING =
 	'outline-none focus-visible:ring-2 focus-visible:ring-primary-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#07080b]';
@@ -226,7 +226,8 @@ const BuilderTopbar = ({ publishOpen, setPublishOpen }: { publishOpen: boolean; 
 	const { ws, page, flush } = usePageBuilder();
 	const { isDarkTheme, setDarkModeStatus } = useDarkMode();
 	const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false);
-	const canSaveAsTemplate = useCan('template.manage');
+	const { can } = usePermission();
+	const canSaveAsTemplate = can('template.manage');
 	const [generateOpen, setGenerateOpen] = useState(false);
 	const canUndo = usePageBuilderStore((store) => store.past.length > 0);
 	const canRedo = usePageBuilderStore((store) => store.future.length > 0);

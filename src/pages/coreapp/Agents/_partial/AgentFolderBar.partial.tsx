@@ -4,7 +4,7 @@ import { Folder, FolderPlus, Inbox, Layers, Pencil, Trash2 } from 'lucide-react'
 import { ApiError, notify } from '@/api/core';
 import { useCreateFolder, useDeleteFolder, useUpdateFolder } from '@/api/modules/folders';
 import { useConfirm } from '@/context/confirm';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import type { TFolder } from '@/types/folder.type';
 import Button from '@/components/ui/Button';
 import Modal, {
@@ -48,7 +48,8 @@ const AgentFolderBar = ({
 	onSelect: (filter: TAgentFolderFilter) => void;
 }) => {
 	const { confirm } = useConfirm();
-	const canManageFolders = useCan('agent.manage');
+	const { can } = usePermission();
+	const canManageFolders = can('agent.manage');
 	const createFolder = useCreateFolder(ws);
 	const updateFolder = useUpdateFolder(ws);
 	const deleteFolder = useDeleteFolder(ws);

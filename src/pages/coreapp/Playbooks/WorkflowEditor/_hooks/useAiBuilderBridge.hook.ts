@@ -3,7 +3,7 @@ import { useNodesInitialized } from '@xyflow/react';
 import { useRealtime } from '@/context/realtime';
 import { ApiError, notify } from '@/api/core';
 import { useAiChatStore } from '@/store/aiChat.store';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import {
 	WorkflowBuilderMessageService,
 	WorkflowBuilderSessionService,
@@ -68,7 +68,8 @@ export const useAiBuilderBridge = () => {
 	const { echo } = useRealtime();
 	const { state, dispatch, canEdit } = useWorkflowEditor();
 	const { workspaceId, workflowId } = useWorkflowRouteParams();
-	const canUseBuilder = useCan('workflow.builder.use') && canEdit;
+	const { can } = usePermission();
+	const canUseBuilder = can('workflow.builder.use') && canEdit;
 
 	// A session remembered from when the viewer could build is left alone: its endpoints would refuse them.
 	const storedSessionId = useAiChatStore((s) => s.builderSessionId);

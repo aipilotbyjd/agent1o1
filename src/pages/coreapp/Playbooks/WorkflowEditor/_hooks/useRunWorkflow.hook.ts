@@ -38,7 +38,7 @@ import { serverValidationIssues } from '../_helper/validation.helper';
 import type { TNodeRunStatus } from '../_types/node.type';
 import { messageFromError, notify } from '@/api/core/notify';
 import { useCredentialResolver } from './useCredentialResolver.hook';
-import { usePermission } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import {
 	initialRunFormValues,
 	RunFormJsonError,

@@ -30,7 +30,7 @@ import {
 	useAgentEvalRun,
 	useRunAgentEvalSuite,
 } from '@/api/modules/agent-eval-suites';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import type {
 	TAgentEvalCase,
 	TAgentEvalSuite,
@@ -273,7 +273,8 @@ const SuiteDetail = ({
 	const deleteMutation = useDeleteAgentEvalCase(ws, agentId, suite.id);
 	const updateSuiteMutation = useUpdateAgentEvalSuite(ws, agentId);
 	const runMutation = useRunAgentEvalSuite(ws, agentId, suite.id);
-	const canManage = useCan('agent.manage');
+	const { can } = usePermission();
+	const canManage = can('agent.manage');
 
 	const items = cases ?? [];
 	const isSaving = createMutation.isPending || updateMutation.isPending;
@@ -686,7 +687,8 @@ const AgentEvalsPanel = ({ ws, agentId }: TProps) => {
 	const { data: suites, isLoading } = useAgentEvalSuites(ws, agentId ?? '');
 	const createMutation = useCreateAgentEvalSuite(ws, agentId ?? '');
 	const deleteMutation = useDeleteAgentEvalSuite(ws, agentId ?? '');
-	const canManage = useCan('agent.manage');
+	const { can } = usePermission();
+	const canManage = can('agent.manage');
 
 	if (!agentId) {
 		return (

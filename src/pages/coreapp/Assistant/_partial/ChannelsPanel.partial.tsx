@@ -4,7 +4,7 @@ import { CheckCircle2, Copy, Mail, MessageSquare } from 'lucide-react';
 import { useBrand } from '@/context/brand';
 import { useAssistantChannels, useInstallAssistantSlack } from '@/api/modules/assistant';
 import { notify } from '@/api/core';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import SmsChannelPartial from './SmsChannel.partial';
 
 const SLACK_RESULT_PARAM = 'slack';
@@ -20,7 +20,8 @@ const ChannelsPanelPartial = ({ workspaceId }: IChannelsPanelProps) => {
 	const { data: channels } = useAssistantChannels(workspaceId);
 	const installSlack = useInstallAssistantSlack(workspaceId);
 	// Installing the Slack app connects it for the whole workspace.
-	const canInstallSlack = useCan('connector.manage');
+	const { can } = usePermission();
+	const canInstallSlack = can('connector.manage');
 
 	// Slack sends the admin back here with ?slack=connected|failed|cancelled.
 	const slackResult = searchParams.get(SLACK_RESULT_PARAM);

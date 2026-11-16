@@ -4,7 +4,7 @@ import { notify } from '@/api/core';
 import { usePendingApprovals } from '@/api/modules/dashboard';
 import { useDecideRunApproval } from '@/api/modules/runs';
 import { useConfirm } from '@/context/confirm';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import pages from '@/Routes/pages';
 import { withWorkspace } from '@/Routes/paths';
 import type { TPendingApproval } from '@/types/dashboard.type';
@@ -24,7 +24,8 @@ const ApprovalRow = ({ ws, approval }: { ws: string; approval: TPendingApproval 
 	const navigate = useNavigate();
 	const { confirm } = useConfirm();
 	const decide = useDecideRunApproval(ws, approval.run_id);
-	const canDecide = useCan('run.trigger');
+	const { can } = usePermission();
+	const canDecide = can('run.trigger');
 	const workflowName = approval.run?.workflow?.name ?? 'Workflow run';
 	const waiting = formatWaiting(approval.waiting_seconds);
 

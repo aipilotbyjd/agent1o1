@@ -9,7 +9,7 @@ import {
 	useTestNotificationChannel,
 } from '@/api/modules/notification-channels';
 import { useWorkspaceContext } from '@/context/workspace';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { notify } from '@/api/core';
 import formatDate from '@/utils/formatDate.util';
 import type { TNotificationChannel, TNotificationChannelType } from '@/types/notification.type';
@@ -41,7 +41,8 @@ const typeConfig = Object.fromEntries(typeOptions.map((o) => [o.value, o])) as R
 
 const NotificationChannelsPage = () => {
 	const { activeWorkspaceId } = useWorkspaceContext();
-	const canManageChannels = useCan('notification-channel.manage');
+	const { can } = usePermission();
+	const canManageChannels = can('notification-channel.manage');
 	const { data: channels = [], isLoading, error } = useNotificationChannels(activeWorkspaceId);
 	const createChannel = useCreateNotificationChannel(activeWorkspaceId);
 	const updateChannel = useUpdateNotificationChannel(activeWorkspaceId);

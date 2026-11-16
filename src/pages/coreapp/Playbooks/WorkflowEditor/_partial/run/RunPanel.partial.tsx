@@ -23,7 +23,7 @@ import RunCost from './RunCost.partial';
 import RunHistory from './RunHistory.partial';
 import RunValues from './RunValues.partial';
 import { WORKFLOW_OUTPUT_TYPE } from '../../_helper/variables.helper';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 
 const statusMeta = {
 	idle: {
@@ -63,7 +63,8 @@ const secondaryButton =
 const RunPanel = () => {
 	const { state, dispatch } = useWorkflowEditor();
 	const { runWorkflow, stopRun } = useRunWorkflow();
-	const canRun = useCan('run.trigger');
+	const { can } = usePermission();
+	const canRun = can('run.trigger');
 	const reactFlow = useReactFlow();
 	if (!state.ui.runPanelOpen) return null;
 	const run = state.run;

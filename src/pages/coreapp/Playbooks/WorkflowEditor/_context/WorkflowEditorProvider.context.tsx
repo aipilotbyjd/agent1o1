@@ -1,12 +1,12 @@
 import { ReactNode, useCallback, useEffect, useMemo, useReducer } from 'react';
 import {
-	EDIT_ACTION_TYPES,
+	EDIT_ACTIONS,
 	initialWorkflowEditorState,
 	WorkflowEditorContext,
 	workflowEditorReducer,
 } from './WorkflowEditorStore.context';
 import type { TWorkflowEditorAction } from './WorkflowEditorStore.context';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import type { TRunRecord } from '../_types/run.type';
 import { useWorkflowRouteParams } from '../_hooks/useWorkflowRouteParams.hook';
 import safeStorage from '@/utils/safeStorage.util';
@@ -91,10 +91,11 @@ export const WorkflowEditorProvider = ({ children }: { children: ReactNode }) =>
 	useEffect(() => safeStorage.remove(AI_PANEL_OPEN_KEY), []);
 
 	// Viewers and members get the same editor, read-only: graph edits never reach the store.
-	const canEdit = useCan('workflow.manage');
+	const { can } = usePermission();
+	const canEdit = can('workflow.manage');
 	const guardedDispatch = useCallback(
 		(action: TWorkflowEditorAction) => {
-			if (!canEdit && EDIT_ACTION_TYPES.has(action.type)) return;
+			if (!canEdit && EDIT_ACTIONS[action.type]) return;
 			dispatch(action);
 		},
 		[canEdit],

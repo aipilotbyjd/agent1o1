@@ -3,7 +3,7 @@ import type { FormEvent } from 'react';
 import { BellRing, X } from 'lucide-react';
 import { notify } from '@/api/core';
 import { useCreditNotifications, useUpdateCreditNotifications } from '@/api/modules/billing';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 
 const cardClass =
 	'rounded-2xl border border-zinc-100 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-950/60';
@@ -16,7 +16,8 @@ const cardClass =
 const CreditAlertsCard = ({ ws }: { ws: string }) => {
 	const { data: settings, isLoading, isError } = useCreditNotifications(ws);
 	const update = useUpdateCreditNotifications(ws);
-	const canManage = useCan('billing.manage');
+	const { can } = usePermission();
+	const canManage = can('billing.manage');
 	const [draft, setDraft] = useState('');
 
 	const thresholds = settings?.thresholds ?? [];

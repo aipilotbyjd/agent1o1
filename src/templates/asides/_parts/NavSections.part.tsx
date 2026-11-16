@@ -2,7 +2,7 @@ import { FC, Fragment } from 'react';
 import { NavCollapse, NavItem, NavSeparator, NavTitle } from '@/components/layout/Navigation/Nav';
 import { TNavEntry, TNavSection } from '@/Routes/navigation';
 import useResolvePath from '@/hooks/useResolvePath';
-import { usePermission } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { useBrand } from '@/context/brand';
 import pages from '@/Routes/pages';
 import ApprovalsBadgePart from '@/templates/asides/_parts/ApprovalsBadge.part';

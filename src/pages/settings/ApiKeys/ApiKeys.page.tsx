@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useApiKeys, useCreateApiKey, useDeleteApiKey } from '@/api/modules/user';
 import { useWorkspaceContext } from '@/context/workspace';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { notify } from '@/api/core';
 import formatDate from '@/utils/formatDate.util';
 import type { TApiKey, TApiKeyAbility, TCreateApiKeyDto } from '@/types/auth.type';
@@ -84,7 +84,8 @@ const abilityLabel = (value: TApiKeyAbility) =>
 
 const ApiKeysPage = () => {
 	const { activeWorkspaceId } = useWorkspaceContext();
-	const canManageKeys = useCan('api-key.manage');
+	const { can } = usePermission();
+	const canManageKeys = can('api-key.manage');
 	const { data: apiKeys = [], isLoading, error } = useApiKeys(activeWorkspaceId);
 	const createApiKey = useCreateApiKey(activeWorkspaceId);
 	const deleteApiKey = useDeleteApiKey(activeWorkspaceId);

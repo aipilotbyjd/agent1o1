@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Eye, Loader2, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { useWorkflowVersion, useWorkflowVersions } from '@/api/modules/workflows';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import type { TCanvasPosition } from '../../_types/canvas.type';
 import { diffGraphs } from '../../_helper/versionDiff.helper';
@@ -28,7 +28,8 @@ const VersionPreview = () => {
 	const workspaceId = state.workflow.workspaceId ?? '';
 	const workflowId = state.workflow.apiId ?? '';
 
-	const canViewVersions = useCan('workflow.version');
+	const { can } = usePermission();
+	const canViewVersions = can('workflow.version');
 	const { data: versions } = useWorkflowVersions(workspaceId, canViewVersions ? workflowId : '');
 	const index = versions?.findIndex((version) => version.id === previewVersionId) ?? -1;
 	const previousId = index >= 0 ? versions?.[index + 1]?.id : undefined;

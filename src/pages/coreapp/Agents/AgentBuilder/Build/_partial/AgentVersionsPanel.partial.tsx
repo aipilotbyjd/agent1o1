@@ -6,7 +6,7 @@ import {
 	useRestoreAgentVersion,
 } from '@/api/modules/agent-versions';
 import { notify } from '@/api/core';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import type { TAgentVersion } from '@/types/agent.type';
 
 type TProps = {
@@ -45,7 +45,8 @@ const VersionRow = ({
 	const [open, setOpen] = useState(false);
 	const [showFull, setShowFull] = useState(false);
 	const restoreMutation = useRestoreAgentVersion(ws, agentId);
-	const canRestore = useCan('agent.manage');
+	const { can } = usePermission();
+	const canRestore = can('agent.manage');
 	// The labelled rows above are a clamped summary; the full snapshot (settings,
 	// tools, skills…) comes from the version's own endpoint, on demand.
 	const { data: detail, isLoading: isDetailLoading } = useAgentVersion(

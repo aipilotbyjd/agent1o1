@@ -37,7 +37,7 @@ import pages from '@/Routes/pages';
 import paths from '@/Routes/paths';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import { useWorkspaceContext } from '@/context/workspace';
-import { usePermission } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { formatWorkspaceRole } from '@/constants/workspaceRole.constant';
 import {
 	useFolders,

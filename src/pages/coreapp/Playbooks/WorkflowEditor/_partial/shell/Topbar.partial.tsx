@@ -58,8 +58,9 @@ import { useMaintenance } from '@/api/modules/announcements';
 import WorkflowPresence from './WorkflowPresence.partial';
 import { usePublishReview } from '../../_hooks/usePublishReview.hook';
 import { useAiPanelAvailability } from '../../_hooks/useAiPanelAvailability.hook';
-import { usePermission } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import WorkflowPagesMenu from '@/pages/coreapp/WorkflowPages/_partial/WorkflowPagesMenu.partial';
+import { noPermissionTo } from '@/constants/permission.constant';
 
 /** Which topbar menu is open. Only one may be open at a time. */
 type TopbarMenu = 'publish' | 'save' | 'share' | 'mobile' | null;
@@ -160,13 +161,13 @@ export const EditableWorkflowName = ({
 	onSave,
 	className,
 	inputClassName,
-	isReadOnly = false,
+	canEdit = true,
 }: {
 	name: string;
 	onSave: (name: string) => void;
 	className?: string;
 	inputClassName?: string;
-	isReadOnly?: boolean;
+	canEdit?: boolean;
 }) => {
 	const [isEditing, setIsEditing] = useState(false);
 	const [draft, setDraft] = useState(name);
@@ -196,7 +197,7 @@ export const EditableWorkflowName = ({
 		onSave(trimmed);
 	};
 
-	if (isReadOnly) {
+	if (!canEdit) {
 		return (
 			<span className='max-w-[170px] truncate px-2 py-1 text-xs font-bold text-zinc-900 sm:max-w-[220px] dark:text-zinc-100'>
 				{name}
@@ -552,11 +553,11 @@ const Topbar = () => {
 				<EditableWorkflowName
 					name={state.workflow.name}
 					onSave={handleRenameWorkflow}
-					isReadOnly={!canEdit}
+					canEdit={canEdit}
 				/>
 
 				{!canEdit && (
-					<EditorTooltip label='Only editors and admins can change this workflow'>
+					<EditorTooltip label={noPermissionTo('change this workflow')}>
 						<span className='hidden h-6 items-center gap-1 rounded-md bg-zinc-100 px-2 text-[10px] font-bold tracking-wide text-zinc-500 uppercase sm:inline-flex dark:bg-white/[0.06] dark:text-zinc-400'>
 							<Eye size={11} />
 							View only

@@ -4,7 +4,7 @@ import { Pencil, Plus, Search, Tag, Trash2 } from 'lucide-react';
 import { useTags, useCreateTag, useUpdateTag, useDeleteTag } from '@/api/modules/tags';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useConfirm } from '@/context/confirm';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { ApiError, notify } from '@/api/core';
 import type { TTag } from '@/types/tag.type';
 import Button from '@/components/ui/Button';
@@ -16,6 +16,7 @@ import Modal, {
 } from '@/components/ui/Modal';
 import Input from '@/components/form/Input';
 import Spinner from '@/components/ui/Spinner';
+import { noPermissionTo } from '@/constants/permission.constant';
 
 const TAG_COLORS = [
 	'#6366F1',
@@ -41,7 +42,8 @@ const TagsPage = () => {
 	const { activeWorkspaceId } = useWorkspaceContext();
 	const { confirm } = useConfirm();
 	// The backend guards tag writes with the workflow edit permission.
-	const canManageTags = useCan('workflow.manage');
+	const { can } = usePermission();
+	const canManageTags = can('workflow.manage');
 	const { data: tags = [], isLoading, error } = useTags(activeWorkspaceId);
 	const createTag = useCreateTag(activeWorkspaceId);
 	const updateTag = useUpdateTag(activeWorkspaceId);
@@ -138,7 +140,7 @@ const TagsPage = () => {
 					<p className='mt-1 text-sm font-medium text-zinc-500 dark:text-zinc-400'>
 						{canManageTags
 							? 'Labels for organising workflows and agents. Changes apply everywhere a tag is used.'
-							: 'Labels for organising workflows and agents. Only editors and admins can change them.'}
+							: `Labels for organising workflows and agents. ${noPermissionTo('change them')}`}
 					</p>
 				</div>
 				{canManageTags && (

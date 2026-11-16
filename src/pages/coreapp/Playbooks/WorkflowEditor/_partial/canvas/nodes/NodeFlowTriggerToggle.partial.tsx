@@ -8,6 +8,7 @@ import {
 import TriggerStatusBadge from '@/parts/TriggerStatusBadge.part';
 import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 import { useWorkflowRouteParams } from '../../../_hooks/useWorkflowRouteParams.hook';
+import { noPermissionTo } from '@/constants/permission.constant';
 
 type Props = {
 	nodeId: string;
@@ -102,7 +103,7 @@ const NodeFlowTriggerToggle = ({ nodeId, active }: Props) => {
 					aria-checked={active}
 					aria-label='Activate as flow trigger'
 					disabled={!canEdit || pauseTrigger.isPending || resumeTrigger.isPending}
-					title={canEdit ? undefined : 'Only editors and admins can change triggers'}
+					title={canEdit ? undefined : noPermissionTo('change triggers')}
 					onClick={(event) => {
 						event.stopPropagation();
 						handleToggle();

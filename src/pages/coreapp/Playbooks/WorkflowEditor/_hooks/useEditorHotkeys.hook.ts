@@ -5,7 +5,7 @@ import { useRunWorkflow } from '../_hooks/useRunWorkflow.hook';
 import { useAutoLayout } from './useAutoLayout.hook';
 import { useAiPanelAvailability } from './useAiPanelAvailability.hook';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 
 export const isTypingTarget = (target: EventTarget | null) => {
 	if (!(target instanceof HTMLElement)) return false;
@@ -14,7 +14,8 @@ export const isTypingTarget = (target: EventTarget | null) => {
 
 export const useEditorHotkeys = () => {
 	const { dispatch, state, canEdit } = useWorkflowEditor();
-	const canRun = useCan('run.trigger');
+	const { can } = usePermission();
+	const canRun = can('run.trigger');
 	const { runWorkflow, stopRun } = useRunWorkflow();
 	// Safe here: WorkflowEditorLayout mounts ReactFlowProvider above this page.
 	const reactFlow = useReactFlow();

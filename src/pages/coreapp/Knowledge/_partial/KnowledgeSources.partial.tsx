@@ -1,6 +1,6 @@
 import { Lock, RefreshCw, Trash2, Globe, AlertTriangle, Pencil, Files } from 'lucide-react';
 import { useConfirm } from '@/context/confirm';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { ListSkeletonRows } from '@/parts/ListSkeleton.part';
 import {
 	useDeleteKnowledgeSource,
@@ -36,7 +36,8 @@ const KnowledgeSourcesPartial = ({
 	const syncSource = useSyncKnowledgeSource(ws);
 	const deleteSource = useDeleteKnowledgeSource(ws);
 	// Private sources are the viewer's own; shared ones need manage access.
-	const canManageShared = useCan('agent.manage');
+	const { can } = usePermission();
+	const canManageShared = can('agent.manage');
 
 	const handleDelete = async (source: TKnowledgeSource) => {
 		const confirmed = await confirm({

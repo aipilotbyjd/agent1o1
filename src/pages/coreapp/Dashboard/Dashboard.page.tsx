@@ -37,7 +37,7 @@ import { useBillingOverview } from '@/api/modules/billing';
 import { useCreateWorkflow } from '@/api/modules/workflows';
 import type { TOnboardingStepKey } from '@/types/onboarding.type';
 import { useWorkspaceContext } from '@/context/workspace';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { useDashboard } from './_helper/dashboard.adapter';
 import PendingApprovalsCard from './_partial/PendingApprovalsCard.partial';
 import PendingAgentActionsCard from './_partial/PendingAgentActionsCard.partial';
@@ -115,7 +115,8 @@ const DashboardPage = () => {
 
 	const toWorkspacePath = (to: string) => withWorkspace(to, currentWorkspaceId);
 
-	const canCreateWorkflow = useCan('workflow.manage');
+	const { can } = usePermission();
+	const canCreateWorkflow = can('workflow.manage');
 	const createWorkflowMutation = useCreateWorkflow(currentWorkspaceId);
 
 	const handleQuickCreateWorkflow = () => {

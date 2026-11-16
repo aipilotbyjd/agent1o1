@@ -27,7 +27,7 @@ import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
 import paths from '@/Routes/paths';
 import { useWorkspaceContext } from '@/context/workspace';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { agentKeys, useAgents, useDeleteAgent, useDuplicateAgent } from '@/api/modules/agents';
 import { useModelCatalog } from '@/api/modules/catalog';
 import { useFolders } from '@/api/modules/folders';
@@ -125,7 +125,8 @@ const AgentsListPage = () => {
 	const deleteAgentMutation = useDeleteAgent(currentWorkspaceId);
 	const duplicateAgentMutation = useDuplicateAgent(currentWorkspaceId);
 	const queryClient = useQueryClient();
-	const canManageAgents = useCan('agent.manage');
+	const { can } = usePermission();
+	const canManageAgents = can('agent.manage');
 
 	const agents = useMemo<IAgentItem[]>(() => {
 		if (!apiAgents || apiAgents.length === 0) return [];

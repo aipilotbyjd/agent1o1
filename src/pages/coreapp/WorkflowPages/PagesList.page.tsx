@@ -26,7 +26,7 @@ import paths from '@/Routes/paths';
 import { notify } from '@/api/core';
 import { useConfirm } from '@/context/confirm';
 import { useWorkspaceContext } from '@/context/workspace';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { useDeleteWorkflowPage, useDuplicateWorkflowPage, useWorkflowPages } from '@/api/modules/workflow-pages';
 import type { TWorkflowPage } from '@/types/workflow-page.type';
 import relativeTime from '@/utils/relativeTime.util';
@@ -66,7 +66,8 @@ const PageCard = ({ ws, page }: { ws: string; page: TWorkflowPage }) => {
 	const { confirm } = useConfirm();
 	const duplicate = useDuplicateWorkflowPage(ws);
 	const remove = useDeleteWorkflowPage(ws);
-	const canManage = useCan('page.manage');
+	const { can } = usePermission();
+	const canManage = can('page.manage');
 	// Without edit rights a page opens the way members use it, not in the builder.
 	const openTo = canManage ? paths.editPage(ws, page.id) : paths.usePage(ws, page.id);
 	const [menuOpen, setMenuOpen] = useState(false);
@@ -241,7 +242,8 @@ const PagesListPage = () => {
 	const [creating, setCreating] = useState(false);
 	const [query, setQuery] = useState('');
 	const [filter, setFilter] = useState<TFilter>('all');
-	const canCreate = useCan('page.manage');
+	const { can } = usePermission();
+	const canCreate = can('page.manage');
 
 	useEffect(() => {
 		setHeaderLeft(<Breadcrumb list={[{ ...pages.workspace.subPages!.pages }]} />);

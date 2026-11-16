@@ -22,7 +22,7 @@ import {
 } from '@/api/modules/triggers';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useConfirm } from '@/context/confirm';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { useRealtimePollInterval } from '@/context/realtime';
 import paths from '@/Routes/paths';
 import Spinner from '@/components/ui/Spinner';
@@ -34,6 +34,7 @@ import {
 	webhookCurlFor,
 	webhookUrlFor,
 } from '@/pages/coreapp/Playbooks/WorkflowEditor/_helper/trigger.helper';
+import { noPermissionTo } from '@/constants/permission.constant';
 
 const TRIGGERS_REFRESH_MS = 10_000;
 
@@ -64,8 +65,9 @@ const TriggersPage = () => {
 	const updateTrigger = useUpdateTrigger(activeWorkspaceId);
 	const runTrigger = useRunTrigger(activeWorkspaceId);
 	const deleteTrigger = useDeleteTrigger(activeWorkspaceId);
-	const canManageTriggers = useCan('trigger.manage');
-	const canRunTriggers = useCan('run.trigger');
+	const { can } = usePermission();
+	const canManageTriggers = can('trigger.manage');
+	const canRunTriggers = can('run.trigger');
 	const [filter, setFilter] = useState<TFilter>('all');
 	const [eventsFor, setEventsFor] = useState<string | null>(null);
 
@@ -328,7 +330,7 @@ const TriggersPage = () => {
 											title={
 												canManageTriggers
 													? undefined
-													: 'Only editors and admins can switch triggers on or off'
+													: noPermissionTo('switch triggers on or off')
 											}
 											disabled={!canManageTriggers || updateTrigger.isPending}
 											onClick={() =>

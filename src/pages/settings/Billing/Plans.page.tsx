@@ -4,7 +4,7 @@ import { Check, ChevronDown, X, Zap } from 'lucide-react';
 import { notify } from '@/api/core';
 import { useBillingOverview, useCheckoutSubscription, usePlans } from '@/api/modules/billing';
 import type { TBillingInterval } from '@/types/billing.type';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import SwapPlanModal from './_partial/SwapPlanModal.partial';
 
 const FEATURE_LABELS: Record<string, string> = {
@@ -53,7 +53,8 @@ const BillingPlansPage = () => {
 	const { data: plans, isLoading } = usePlans(workspaceId!);
 	const { data: overview } = useBillingOverview(workspaceId!);
 	const checkout = useCheckoutSubscription(workspaceId!);
-	const canManage = useCan('billing.manage');
+	const { can } = usePermission();
+	const canManage = can('billing.manage');
 	const [interval, setInterval] = useState<TBillingInterval>('monthly');
 	const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
 	const [swapTarget, setSwapTarget] = useState<{ id: string; name: string } | null>(null);

@@ -18,7 +18,7 @@ import {
 	XCircle,
 	Zap,
 } from 'lucide-react';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { useConfirm } from '@/context/confirm';
 import {
 	useBillingOverview,
@@ -111,8 +111,9 @@ const fmtDate = (value: string) =>
 
 const BillingOverviewPage = () => {
 	const { workspaceId } = useParams<{ workspaceId: string }>();
-	const canView = useCan('billing.view');
-	const canManage = useCan('billing.manage');
+	const { can } = usePermission();
+	const canView = can('billing.view');
+	const canManage = can('billing.manage');
 	const { data: overview, isLoading } = useBillingOverview(workspaceId!);
 	const portal = useCreateBillingPortalSession(workspaceId!);
 	const cancelSubscription = useCancelSubscription(workspaceId!);

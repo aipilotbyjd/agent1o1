@@ -19,7 +19,7 @@ import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
 import { useBrand } from '@/context/brand';
 import useResolvePath from '@/hooks/useResolvePath';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useArtifacts, useDeleteArtifact, useDownloadArtifact } from '@/api/modules/artifacts';
 import type { TArtifact, TArtifactMimeCategory } from '@/types/artifact.type';
@@ -69,7 +69,8 @@ const ArtifactsListPage = () => {
 	});
 	const deleteMutation = useDeleteArtifact(ws);
 	const downloadMutation = useDownloadArtifact(ws);
-	const canManageArtifacts = useCan('artifact.manage');
+	const { can } = usePermission();
+	const canManageArtifacts = can('artifact.manage');
 
 	const artifactList = data?.artifacts ?? [];
 	const meta = data?.meta;

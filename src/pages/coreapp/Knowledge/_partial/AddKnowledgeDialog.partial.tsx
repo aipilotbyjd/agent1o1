@@ -8,7 +8,7 @@ import {
 	useKnowledgeSourceApps,
 	useUpdateKnowledgeSource,
 } from '@/api/modules/knowledge-base';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import type { TKnowledgeSource, TKnowledgeSourceType } from '@/types/knowledge-base.type';
 import {
 	ALLOWED_EXTENSIONS,
@@ -72,7 +72,8 @@ const AddKnowledgeDialog = ({
 	const ingest = useIngestKnowledge(ws);
 	const createSource = useCreateKnowledgeSource(ws);
 	const updateSource = useUpdateKnowledgeSource(ws);
-	const canAddShared = useCan('agent.manage');
+	const { can } = usePermission();
+	const canAddShared = can('agent.manage');
 	const editing = source ?? null;
 
 	const [kind, setKind] = useState<TKnowledgeKind>(initialKind);

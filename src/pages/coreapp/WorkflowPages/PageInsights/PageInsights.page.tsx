@@ -31,7 +31,7 @@ import {
 import { notify } from '@/api/core';
 import { useConfirm } from '@/context/confirm';
 import useDarkMode from '@/hooks/useDarkMode';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import pages from '@/Routes/pages';
 import paths from '@/Routes/paths';
 import relativeTime from '@/utils/relativeTime.util';
@@ -191,7 +191,8 @@ const VariantComparison = ({
 }) => {
 	const { confirm } = useConfirm();
 	const variant = useWorkflowPageVariant(ws, pageId);
-	const canManage = useCan('page.manage');
+	const { can } = usePermission();
+	const canManage = can('page.manage');
 	const [a, b] = insights.variants;
 	const callable =
 		a.views >= MIN_VIEWS_TO_CALL &&
@@ -426,7 +427,8 @@ const SubmissionsTable = ({
 	});
 	const [open, setOpen] = useState<string | null>(null);
 	const [exporting, setExporting] = useState(false);
-	const canExport = useCan('page.manage');
+	const { can } = usePermission();
+	const canExport = can('page.manage');
 	const { data, isLoading, isFetching } = useWorkflowPageSubmissionsPage(ws, pageId, filters);
 	const set = (patch: Partial<TPageSubmissionFilters>) =>
 		setFilters((current) => ({ ...current, page: 1, ...patch }));
@@ -681,7 +683,8 @@ const PageInsightsPage = () => {
 	const { isDarkTheme: dark } = useDarkMode();
 	const [days, setDays] = useState<(typeof RANGES)[number]>(30);
 	const [includeTests, setIncludeTests] = useState(false);
-	const canEditPage = useCan('page.manage');
+	const { can } = usePermission();
+	const canEditPage = can('page.manage');
 	const { data: page } = useWorkflowPage(ws, pageId);
 	const {
 		data: insights,

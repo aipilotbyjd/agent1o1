@@ -27,7 +27,7 @@ import {
 } from '@/api/modules/agent-session-evaluations';
 import { useAgentSessions } from '@/api/modules/agent-sessions';
 import { notify } from '@/api/core';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import type {
 	TAgentEvaluationSettings,
 	TAgentSessionEvaluation,
@@ -135,7 +135,8 @@ const EvaluationSettingsForm = ({
 	settings: TAgentEvaluationSettings;
 }) => {
 	const updateMutation = useUpdateAgentEvaluationSettings(ws, agentId);
-	const canManage = useCan('agent.manage');
+	const { can } = usePermission();
+	const canManage = can('agent.manage');
 	const [form, setForm] = useState({
 		is_enabled: settings.is_enabled,
 		model: settings.model ?? '',
@@ -733,7 +734,8 @@ const AgentEvaluationsPanel = ({ ws, agentId }: TProps) => {
 	const { data: settings } = useAgentEvaluationSettings(ws, agentId ?? '');
 	const { data: sessions } = useAgentSessions(ws, agentId ?? '');
 	const runEvaluation = useRunAgentSessionEvaluation(ws, agentId ?? '');
-	const canManage = useCan('agent.manage');
+	const { can } = usePermission();
+	const canManage = can('agent.manage');
 
 	/** Grades one chat on demand, instead of waiting for the automatic pass. */
 	const gradeSession = (sessionId: string) => {

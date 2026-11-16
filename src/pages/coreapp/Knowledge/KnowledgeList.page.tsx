@@ -8,7 +8,7 @@ import Breadcrumb from '@/components/layout/Breadcrumb';
 import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
 import { useWorkspaceContext } from '@/context/workspace';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { ListSkeletonRows } from '@/parts/ListSkeleton.part';
 import { notify } from '@/api/core';
 import {
@@ -59,7 +59,8 @@ const KnowledgeListPage = () => {
 	const deleteChunkMutation = useDeleteKnowledgeChunk(ws);
 	const deleteCollectionMutation = useDeleteKnowledgeCollection(ws);
 	// Anyone may manage their own private knowledge; shared knowledge reaches every agent.
-	const canManageShared = useCan('agent.manage');
+	const { can } = usePermission();
+	const canManageShared = can('agent.manage');
 
 	const [searchQuery, setSearchQuery] = useState('');
 	const searchMutation = useSearchKnowledge(ws);

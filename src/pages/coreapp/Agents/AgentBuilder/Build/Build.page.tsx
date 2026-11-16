@@ -195,6 +195,7 @@ import {
 	SkillSlashMenu,
 } from './_partial/SkillSlashMenu.partial';
 import { useSkillPicker, type TSlashCommand } from './_hooks/useSkillPicker.hook';
+import { noPermissionTo } from '@/constants/permission.constant';
 import {
 	AgentActionService,
 	agentActionKeys,
@@ -205,7 +206,7 @@ import {
 	useRejectAgentPlan,
 	useSessionAgentActions,
 } from '@/api/modules/agent-actions';
-import { usePermission } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { useRealtime } from '@/context/realtime';
 import type { IEchoLike } from '@/api/modules/workflow-builder/workflow-builder.realtime';
 import type { TAgentSessionStreamEvent } from '@/types/agent.type';
@@ -4353,8 +4354,8 @@ const BuildPage = () => {
 								<div className='no-scrollbar flex-1 space-y-4 overflow-y-auto bg-zinc-50/40 p-4 dark:bg-zinc-950/20'>
 									{!canManageAgents && (
 										<p className='rounded-xl border border-zinc-200 bg-white p-3 text-[11px] font-semibold text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400'>
-											Only editors and admins can change this agent. You can
-											view its setup here.
+											{noPermissionTo('change this agent')} You can view its
+											setup here.
 										</p>
 									)}
 									{/* Disables every control below for read-only roles. */}

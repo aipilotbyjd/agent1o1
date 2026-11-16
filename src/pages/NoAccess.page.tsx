@@ -3,7 +3,7 @@ import { ShieldAlert } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import pages from '@/Routes/pages';
 import useResolvePath from '@/hooks/useResolvePath';
-import { usePermission } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { formatWorkspaceRole } from '@/constants/workspaceRole.constant';
 
 /** Shown in place of a page the viewer's workspace role does not grant. */

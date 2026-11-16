@@ -5,7 +5,7 @@ import { ChevronRight, ExternalLink, Loader2, RotateCcw } from 'lucide-react';
 import { notify } from '@/api/core';
 import { useReplayTriggerEvent, useTriggerEventFeed } from '@/api/modules/triggers';
 import paths from '@/Routes/paths';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import type { TTriggerEvent, TTriggerEventStatus } from '@/types/trigger.type';
 import { eventStatusDot } from '@/pages/coreapp/Playbooks/WorkflowEditor/_helper/trigger.helper';
 
@@ -54,7 +54,8 @@ const SOURCE_LABEL: Record<string, string> = {
 const EventRow = ({ ws, event }: { ws: string; event: TTriggerEvent }) => {
 	const [open, setOpen] = useState(false);
 	const replay = useReplayTriggerEvent(ws);
-	const canReplay = useCan('run.trigger');
+	const { can } = usePermission();
+	const canReplay = can('run.trigger');
 	const hasPayload =
 		event.payload !== null &&
 		event.payload !== undefined &&

@@ -9,7 +9,7 @@ import { notify } from '@/api/core';
 import formatDate from '@/utils/formatDate.util';
 import PublishApprovalSetting from '@/parts/PublishApprovalSetting.part';
 import TimezoneSelect from '@/parts/TimezoneSelect.part';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import { formatWorkspaceRole } from '@/constants/workspaceRole.constant';
 
 const inputClass =
@@ -85,8 +85,9 @@ const WorkspacePage = () => {
 	const displayName = workspaceName || activeWorkspace?.name || 'Workspace';
 	const createdAt = formatDate(activeWorkspace?.created_at) ?? 'Not available';
 	const workspaceRole = formatWorkspaceRole(role);
-	const canUpdate = useCan('workspace.update');
-	const canDelete = useCan('workspace.delete');
+	const { can } = usePermission();
+	const canUpdate = can('workspace.update');
+	const canDelete = can('workspace.delete');
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();

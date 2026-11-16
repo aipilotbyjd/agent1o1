@@ -8,7 +8,7 @@ import {
 	useClearAgentMemories,
 } from '@/api/modules/agent-memory';
 import paths from '@/Routes/paths';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import type { TAgentMemory } from '@/types/agent.type';
 
 type TProps = {
@@ -37,7 +37,8 @@ const AgentMemoryPanel = ({ ws, agentId }: TProps) => {
 	const updateMutation = useUpdateAgentMemory(ws, agentId ?? '');
 	const deleteMutation = useDeleteAgentMemory(ws, agentId ?? '');
 	const clearMutation = useClearAgentMemories(ws, agentId ?? '');
-	const canManage = useCan('agent.manage');
+	const { can } = usePermission();
+	const canManage = can('agent.manage');
 
 	const items = memories ?? [];
 

@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import Modal, { ModalHeader, ModalBody } from '@/components/ui/Modal';
 import { notify } from '@/api/core';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import {
 	agentSkillKeys,
 	isSkillSourceSyncing,
@@ -33,7 +33,8 @@ interface ISkillSourcesPanelProps {
 const SkillSourcesPanel = ({ ws }: ISkillSourcesPanelProps) => {
 	const { data: sources } = useSkillSources(ws);
 	const syncMutation = useSyncSkillSource(ws);
-	const canManageSkills = useCan('agent.skill.manage');
+	const { can } = usePermission();
+	const canManageSkills = can('agent.skill.manage');
 	const [forkId, setForkId] = useState<string | null>(null);
 	const [upstreamId, setUpstreamId] = useState<string | null>(null);
 	const forkSource = sources?.find((s) => s.id === forkId);

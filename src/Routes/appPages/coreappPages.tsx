@@ -3,9 +3,9 @@ import { Navigate, RouteObject } from 'react-router';
 import WorkspaceGuardLayout from '@/layouts/WorkspaceGuard.layout';
 import CoreAppLayout from '@/layouts/CoreApp.layout';
 import AgentLayout from '@/layouts/Agent.layout';
-import RequirePermissionLayout from '@/layouts/RequirePermission.layout';
 import pages, { editorRedirects, relativeToWorkspace } from '@/Routes/pages';
 import WorkspaceRedirect from '@/Routes/redirects';
+import guardRoute from '@/Routes/guardRoute';
 import SettingsPages from '@/Routes/appPages/settingsPages';
 
 const workspacePages = pages.workspace.subPages!;
@@ -28,7 +28,9 @@ const WorkflowPagesLayout = lazy(
 );
 const PagesListPage = lazy(() => import('@/pages/coreapp/WorkflowPages/PagesList.page'));
 const UsePagePage = lazy(() => import('@/pages/coreapp/WorkflowPages/UsePage.page'));
-const PageInsightsPage = lazy(() => import('@/pages/coreapp/WorkflowPages/PageInsights/PageInsights.page'));
+const PageInsightsPage = lazy(
+	() => import('@/pages/coreapp/WorkflowPages/PageInsights/PageInsights.page'),
+);
 const PageBuilderPage = lazy(
 	() => import('@/pages/coreapp/WorkflowPages/PageBuilder/PageBuilder.page'),
 );
@@ -133,10 +135,10 @@ const listRoutes: RouteObject[] = (
 		element: layout,
 		children: [{ index: true, element: page }],
 	}))
-	// Every role can read the other list pages; the assistant needs `assistant.use`.
+	// Every role can read the list pages; the assistant declares its own permission.
 	.map((route) =>
 		route.path === rel(workspacePages.assistant.to)
-			? { element: <RequirePermissionLayout permission='assistant.use' />, children: [route] }
+			? guardRoute(workspacePages.assistant, route)
 			: route,
 	);
 
@@ -145,32 +147,28 @@ const listRoutes: RouteObject[] = (
  * outside CoreAppLayout so the sidebar and header do not render around them.
  */
 const editorRoutes: RouteObject[] = [
-	{
-		element: <RequirePermissionLayout permission='workflow.manage' />,
-		children: [{ path: rel(playbookEditorPages.add.to), element: <WorkflowEditorPage /> }],
-	},
-	{
-		// Without edit rights the playbook opens read-only instead.
-		element: (
-			<RequirePermissionLayout
-				permission='workflow.manage'
-				redirectTo={playbookEditorPages.view.to}
-			/>
-		),
-		children: [{ path: rel(playbookEditorPages.edit.to), element: <WorkflowEditorPage /> }],
-	},
+	guardRoute(playbookEditorPages.add, {
+		path: rel(playbookEditorPages.add.to),
+		element: <WorkflowEditorPage />,
+	}),
+	// Without edit rights the playbook opens read-only instead.
+	guardRoute(
+		playbookEditorPages.edit,
+		{ path: rel(playbookEditorPages.edit.to), element: <WorkflowEditorPage /> },
+		playbookEditorPages.view.to,
+	),
 	{ path: rel(playbookEditorPages.view.to), element: <WorkflowEditorPage /> },
-	{
-		element: <RequirePermissionLayout permission='page.manage' />,
-		children: [{ path: rel(pageEditorPages.edit.to), element: <PageBuilderPage /> }],
-	},
+	guardRoute(pageEditorPages.edit, {
+		path: rel(pageEditorPages.edit.to),
+		element: <PageBuilderPage />,
+	}),
 	{
 		element: <AgentLayout />,
 		children: [
-			{
-				element: <RequirePermissionLayout permission='agent.manage' />,
-				children: [{ path: rel(agentEditorPages.add.to), element: <AgentBuilderPage /> }],
-			},
+			guardRoute(agentEditorPages.add, {
+				path: rel(agentEditorPages.add.to),
+				element: <AgentBuilderPage />,
+			}),
 			{ path: rel(agentEditorPages.edit.to), element: <AgentBuilderPage /> },
 			{ path: rel(agentEditorPages.insights.to), element: <AgentInsightsPage /> },
 			{ path: rel(agentEditorPages.library.to), element: <LibraryPage /> },

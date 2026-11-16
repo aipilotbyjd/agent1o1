@@ -10,7 +10,7 @@ import {
 import { useWorkspaceMembers } from '@/api/modules/workspace-members';
 import { useCurrentUser } from '@/api/modules/user';
 import type { TArtifact, TArtifactGeneralAccess, TArtifactShare } from '@/types/artifact.type';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 
 /**
  * The backend has three levels, but with no anonymous request path
@@ -85,7 +85,8 @@ const ShareBody = ({ ws, artifact }: { ws: string; artifact: TArtifact }) => {
 	const [selectedUserId, setSelectedUserId] = useState('');
 
 	const myId = me ? String(me.id) : '';
-	const canManageArtifacts = useCan('artifact.manage');
+	const { can } = usePermission();
+	const canManageArtifacts = can('artifact.manage');
 	const canShare = String(artifact.creator?.id ?? '') === myId || canManageArtifacts;
 
 	const candidates = useMemo(() => {

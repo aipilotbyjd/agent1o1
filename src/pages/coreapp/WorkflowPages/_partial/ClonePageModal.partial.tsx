@@ -7,7 +7,7 @@ import { useWorkspaces } from '@/api/modules/workspaces';
 import { useCloneWorkflowPage } from '@/api/modules/workflow-pages';
 import type { TWorkflowPage } from '@/types/workflow-page.type';
 import paths from '@/Routes/paths';
-import { workspaceAllows } from '@/hooks/usePermission';
+import { workspaceAllows } from '@/utils/permission.util';
 
 type Props = {
 	ws: string;

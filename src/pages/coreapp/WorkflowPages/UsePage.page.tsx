@@ -12,7 +12,7 @@ import pages from '@/Routes/pages';
 import paths from '@/Routes/paths';
 import type { TPageView } from '@/types/workflow-page.type';
 import type { OutletContextType } from './_layouts/WorkflowPages.layout';
-import { usePermission } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 
 
 const LivePage = ({ ws, pageId, view }: { ws: string; pageId: string; view: TPageView }) => {

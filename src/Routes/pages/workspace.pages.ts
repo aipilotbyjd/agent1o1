@@ -111,12 +111,14 @@ export const playbookEditor: TPage = {
 			to: ws('playbooks/new'),
 			text: 'New Playbook',
 			icon: 'PencilEdit01',
+			permission: 'workflow.manage',
 		},
 		edit: {
 			id: 'editPlaybook',
 			to: ws('playbooks/:workflowId/edit'),
 			text: 'Edit Playbook',
 			icon: 'PencilEdit01',
+			permission: 'workflow.manage',
 		},
 		view: {
 			id: 'viewPlaybook',
@@ -150,6 +152,7 @@ export const agentEditor: TPage = {
 			to: ws('agents/new'),
 			text: 'Add Agent',
 			icon: 'Robot01',
+			permission: 'agent.manage',
 		},
 		edit: {
 			id: 'editAgent',
@@ -194,6 +197,7 @@ export const pageEditor: TPage = {
 			to: ws('pages/:pageId/edit'),
 			text: 'Edit Page',
 			icon: 'Browser',
+			permission: 'page.manage',
 		},
 		insights: {
 			id: 'pageInsights',

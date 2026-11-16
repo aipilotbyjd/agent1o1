@@ -25,7 +25,7 @@ import Select from '@/components/form/Select';
 import Table, { TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
 import Badge from '@/components/ui/Badge';
 import Spinner from '@/components/ui/Spinner';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import {
 	ASSIGNABLE_WORKSPACE_ROLES,
 	WORKSPACE_ROLE_DESCRIPTIONS,
@@ -63,9 +63,10 @@ const MembersPage = () => {
 
 	const workspaceName = activeWorkspace?.name ?? 'this workspace';
 
-	const canInvite = useCan('member.invite');
-	const canUpdateRole = useCan('member.update-role');
-	const canRemove = useCan('member.remove');
+	const { can } = usePermission();
+	const canInvite = can('member.invite');
+	const canUpdateRole = can('member.update-role');
+	const canRemove = can('member.remove');
 
 	// Tabs state
 	const [activeTab, setActiveTab] = useState<'members' | 'invitations'>('members');

@@ -19,7 +19,7 @@ import { useAgentTrash, useForceDeleteAgent, useRestoreAgent } from '@/api/modul
 import { agentColorTileClass, agentIconFor } from '@/pages/coreapp/Agents/_helper/agentAppearance';
 import Icon from '@/components/icon/Icon';
 import ListSkeletonPart from '@/parts/ListSkeleton.part';
-import { usePermission } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import TrashOutcomeModal, { type TTrashOutcome } from './_partial/TrashOutcomeModal.partial';
 
 type TTrashTab = 'workflows' | 'agents';

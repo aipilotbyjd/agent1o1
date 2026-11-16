@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ShieldAlert } from 'lucide-react';
 import { notify } from '@/api/core';
 import { useCreditOverage, useUpdateCreditOverage } from '@/api/modules/billing';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import type { TCreditOverage } from '@/types/billing.type';
 
 const cardClass =
@@ -82,7 +82,8 @@ const LimitForm = ({ ws, overage }: { ws: string; overage: TCreditOverage }) => 
 const OverageCard = ({ ws }: { ws: string }) => {
 	const { data: overage, isLoading, isError } = useCreditOverage(ws);
 	const update = useUpdateCreditOverage(ws);
-	const canManage = useCan('billing.manage');
+	const { can } = usePermission();
+	const canManage = can('billing.manage');
 
 	const toggle = () => {
 		if (!overage) return;

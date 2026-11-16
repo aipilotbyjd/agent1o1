@@ -3,7 +3,7 @@ import { notify } from '@/api/core';
 import { useCancelRun, useDecideRunApproval, useRetryRun } from '@/api/modules/runs';
 import { usePendingApprovals } from '@/api/modules/dashboard';
 import { useConfirm } from '@/context/confirm';
-import { useCan } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import type { TRun, TRunStatus } from '@/types/run.type';
 
 const IN_FLIGHT: TRunStatus[] = ['pending', 'running', 'awaiting_approval', 'awaiting_callback'];
@@ -31,7 +31,8 @@ const RunActions = ({ ws, run, onRetried }: IRunActionsProps) => {
 	const retryRun = useRetryRun(ws);
 	const decide = useDecideRunApproval(ws, run.id);
 	// Cancelling, retrying and deciding approvals all need `run.trigger`.
-	const canAct = useCan('run.trigger');
+	const { can } = usePermission();
+	const canAct = can('run.trigger');
 
 	const isAwaitingApproval = run.status === 'awaiting_approval';
 	// The run resource carries no approvals, so the open one comes from the

@@ -1,13 +1,14 @@
 import { FC } from 'react';
 import { Navigate, Outlet, useParams } from 'react-router';
 import { useWorkspaceContext } from '@/context/workspace';
-import { useCan, TPermissionCheck } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
+import type { TPermissionCheck, TPermissionMode } from '@/types/permission.type';
 import { buildPath } from '@/Routes/paths';
 import NoAccessPage from '@/pages/NoAccess.page';
 
 interface IRequirePermissionLayoutProps {
 	permission: TPermissionCheck;
-	mode?: 'any' | 'all';
+	mode?: TPermissionMode;
 	/** Page template to send the viewer to instead, filled from the current route's params. */
 	redirectTo?: string;
 }
@@ -23,7 +24,8 @@ const RequirePermissionLayout: FC<IRequirePermissionLayoutProps> = ({
 }) => {
 	const params = useParams();
 	const { isLoading } = useWorkspaceContext();
-	const allowed = useCan(permission, mode);
+	const { can } = usePermission();
+	const allowed = can(permission, mode);
 
 	if (isLoading) return null;
 

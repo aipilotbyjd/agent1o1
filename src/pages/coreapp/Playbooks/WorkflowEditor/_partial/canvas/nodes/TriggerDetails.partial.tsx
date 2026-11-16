@@ -20,7 +20,7 @@ import {
 	useUpdateTrigger,
 } from '@/api/modules/triggers';
 import { useConfirm } from '@/context/confirm';
-import { usePermission } from '@/hooks/usePermission';
+import usePermission from '@/hooks/usePermission';
 import paths from '@/Routes/paths';
 import TriggerListen from '@/parts/TriggerListen.part';
 import TriggerSample from '@/parts/TriggerSample.part';
