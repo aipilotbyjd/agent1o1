@@ -3,6 +3,7 @@ import AgentQuestionCard from './AgentQuestionCard.partial';
 import { useState } from 'react';
 import { AlertTriangle, Check, Clock, PencilLine, ShieldAlert, ShieldCheck, X } from 'lucide-react';
 import usePermission from '@/hooks/usePermission';
+import { canDecideAction } from '@/utils/permission.util';
 import type {
 	TActionEffect,
 	TActionRisk,
@@ -77,7 +78,7 @@ export const ApprovalCard = ({
 	const rememberable = canRemember && action.tool_kind !== 'builtin';
 	const namedApprovers = (action.approvers ?? []).length > 0;
 	const { can } = usePermission();
-	const canDecide = can('agent.chat');
+	const canDecide = canDecideAction(can('agent.chat'), action);
 
 	const approve = () => {
 		if (mode === 'edit') {
@@ -211,7 +212,7 @@ export const ApprovalCard = ({
 
 			{!canDecide ? (
 				<p className='mt-3 flex items-center gap-1 text-[11px] font-semibold text-zinc-400'>
-					<AlertTriangle size={11} /> Your role can view this request but not decide it.
+					<AlertTriangle size={11} /> You can view this request but not decide it.
 				</p>
 			) : (
 				<div className='mt-3 flex flex-wrap items-center gap-2'>
@@ -354,7 +355,8 @@ const ApprovalList = ({
 	onDecide: (decisions: TAgentActionDecision[]) => void;
 }) => {
 	const { can } = usePermission();
-	const canDecide = can('agent.chat');
+	const canChat = can('agent.chat');
+	const decidable = actions.filter((action) => canDecideAction(canChat, action));
 	return (
 		<>
 			<div className='flex items-center gap-2'>
@@ -364,13 +366,13 @@ const ApprovalList = ({
 						? 'The agent is waiting for your approval'
 						: `The agent is waiting for approval on ${actions.length} actions`}
 				</span>
-				{actions.length > 1 && canDecide && (
+				{decidable.length > 1 && (
 					<button
 						type='button'
 						disabled={busy}
 						onClick={() =>
 							onDecide(
-								actions.map((action) => ({
+								decidable.map((action) => ({
 									action_id: action.id,
 									decision: 'approve' as const,
 								})),

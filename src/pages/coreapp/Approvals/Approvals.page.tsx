@@ -12,6 +12,7 @@ import { useWorkspaceContext } from '@/context/workspace';
 import { notify } from '@/api/core';
 import { useAgents } from '@/api/modules/agents';
 import usePermission from '@/hooks/usePermission';
+import { canDecideAction } from '@/utils/permission.util';
 import { useAgentActionInbox, useDecideAgentActions } from '@/api/modules/agent-actions';
 import { ApprovalCard } from '@/pages/coreapp/Agents/AgentBuilder/Build/_partial/AgentApprovalCards.partial';
 import { prettifyActionTool } from '@/pages/coreapp/Agents/AgentBuilder/Build/_helper/actionTool.helper';
@@ -99,13 +100,14 @@ const ApprovalsPage = () => {
 	});
 	const { data: agents } = useAgents(ws);
 	const { can } = usePermission();
-	const canDecide = can('agent.chat');
+	const canChat = can('agent.chat');
 	const canManageAgents = can('agent.manage');
 	const decide = useDecideAgentActions(ws);
 
 	const actions = data?.actions ?? [];
 	const meta = data?.meta;
 	const waiting = status === 'pending';
+	const decidable = actions.filter((action) => canDecideAction(canChat, action));
 
 	const submit = (decisions: TAgentActionDecision[]) =>
 		decide.mutate(
@@ -177,14 +179,14 @@ const ApprovalsPage = () => {
 					))}
 				</div>
 
-				{waiting && canDecide && actions.length > 1 && (
+				{waiting && decidable.length > 1 && (
 					<div className='mb-3 flex flex-wrap items-center gap-2'>
 						<button
 							type='button'
 							disabled={decide.isPending}
 							onClick={() =>
 								submit(
-									actions.map((action) => ({
+									decidable.map((action) => ({
 										action_id: action.id,
 										decision: 'approve',
 									})),
@@ -198,7 +200,7 @@ const ApprovalsPage = () => {
 							disabled={decide.isPending}
 							onClick={() =>
 								submit(
-									actions.map((action) => ({
+									decidable.map((action) => ({
 										action_id: action.id,
 										decision: 'reject',
 									})),

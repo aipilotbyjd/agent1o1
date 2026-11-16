@@ -21,6 +21,7 @@ import {
 } from '../../../_helper/secretTokens.helper';
 import SecretPicker from '../../secrets/SecretPicker.partial';
 import NewSecretDialog from '../../secrets/NewSecretDialog.partial';
+import usePermission from '@/hooks/usePermission';
 
 type Props = {
 	field: TNodeField;
@@ -112,6 +113,8 @@ const domToValue = (root: Node): string => {
  */
 const ExpressionInput = ({ field, value, onChange, compact, nodeId, className }: Props) => {
 	const { state } = useWorkflowEditor();
+	const { can } = usePermission();
+	const canCreateSecrets = can('secret.manage');
 	const editorRef = useRef<HTMLDivElement | null>(null);
 	const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	// Start offset (in the value string) of the fragment autocomplete replaces:
@@ -200,9 +203,10 @@ const ExpressionInput = ({ field, value, onChange, compact, nodeId, className }:
 				}),
 			);
 		const name = toSecretKey(keyQuery);
-		const create: TMatch[] = name && !secrets.keys.has(name) ? [{ kind: 'create', name }] : [];
+		const create: TMatch[] =
+			canCreateSecrets && name && !secrets.keys.has(name) ? [{ kind: 'create', name }] : [];
 		return [...nodeMatches, ...secretMatches, ...create];
-	}, [query, variables, secrets]);
+	}, [query, variables, secrets, canCreateSecrets]);
 
 	const hasTokens = text.includes('{{');
 	const preview = hasTokens ? String(resolveExpressions(text, runtimeCtx) ?? '') : '';
@@ -534,11 +538,15 @@ const ExpressionInput = ({ field, value, onChange, compact, nodeId, className }:
 						const at = pickerCaret.current;
 						insertAt([at, at], buildSecretToken(key));
 					}}
-					onCreate={(name) => {
-						setPickerOpen(false);
-						const at = pickerCaret.current;
-						setCreating({ name, range: [at, at] });
-					}}
+					onCreate={
+						canCreateSecrets
+							? (name) => {
+									setPickerOpen(false);
+									const at = pickerCaret.current;
+									setCreating({ name, range: [at, at] });
+								}
+							: undefined
+					}
 				/>
 			)}
 			{creating && (

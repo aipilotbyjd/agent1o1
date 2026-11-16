@@ -1,6 +1,7 @@
 import Modal, { ModalHeader, ModalBody } from '@/components/ui/Modal';
 import { Download, History } from 'lucide-react';
 import { useArtifact, useDownloadArtifact } from '@/api/modules/artifacts';
+import usePermission from '@/hooks/usePermission';
 import { formatBytes } from '../_helper/artifacts.constants';
 import ArtifactUploadButton from './ArtifactUploadButton.partial';
 
@@ -19,6 +20,8 @@ interface IArtifactVersionsModalProps {
 const ArtifactVersionsModal = ({ ws, artifactId, onClose }: IArtifactVersionsModalProps) => {
 	const { data: artifact } = useArtifact(ws, artifactId ?? '');
 	const downloadMutation = useDownloadArtifact(ws);
+	const { can } = usePermission();
+	const canManageArtifacts = can('artifact.manage');
 
 	return (
 		<Modal isOpen={!!artifactId} setIsOpen={(open) => !open && onClose()} size='sm'>
@@ -69,7 +72,7 @@ const ArtifactVersionsModal = ({ ws, artifactId, onClose }: IArtifactVersionsMod
 							</button>
 						</div>
 					))}
-					{artifact && (
+					{artifact && canManageArtifacts && (
 						<ArtifactUploadButton
 							ws={ws}
 							label='Upload new version'

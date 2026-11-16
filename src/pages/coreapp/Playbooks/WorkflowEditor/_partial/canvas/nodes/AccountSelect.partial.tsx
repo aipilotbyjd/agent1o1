@@ -22,6 +22,8 @@ import {
 	useRole,
 } from '@floating-ui/react';
 import { useConnectorCredentials, useConnectors } from '@/api/modules/connectors';
+import usePermission from '@/hooks/usePermission';
+import { noPermissionTo } from '@/constants/permission.constant';
 import type { TConnectorCredential } from '@/types/connector.type';
 import { isConnectorUnavailable } from '@/types/connector.type';
 import AccountConnectionSetup from './AccountConnectionSetup.partial';
@@ -197,6 +199,9 @@ const AccountSelect = ({ connectorKey, value, onChange, popupOnly = false, onClo
 			)
 			.map((account) => account.name),
 	);
+	const { can } = usePermission();
+	const canConnect = can('connector.manage');
+
 	const filteredAccounts = accounts
 		.filter((account) =>
 			`${account.name} ${accountScope(account)}`
@@ -228,6 +233,7 @@ const AccountSelect = ({ connectorKey, value, onChange, popupOnly = false, onClo
 	// An empty account list opens straight into "connect", once per change of
 	// what it depends on, so cancelling it sticks.
 	const shouldStartAdding = Boolean(
+		canConnect &&
 		popupOnly &&
 		open &&
 		!isLoading &&
@@ -236,7 +242,7 @@ const AccountSelect = ({ connectorKey, value, onChange, popupOnly = false, onClo
 		connector &&
 		!isUnavailable,
 	);
-	const addingKey = `${popupOnly}:${open}:${isLoading}:${isError}:${accounts.length}:${connector?.id ?? ''}:${isUnavailable}`;
+	const addingKey = `${canConnect}:${popupOnly}:${open}:${isLoading}:${isError}:${accounts.length}:${connector?.id ?? ''}:${isUnavailable}`;
 	const [syncedAddingKey, setSyncedAddingKey] = useState<string | null>(null);
 	if (syncedAddingKey !== addingKey) {
 		setSyncedAddingKey(addingKey);
@@ -245,6 +251,10 @@ const AccountSelect = ({ connectorKey, value, onChange, popupOnly = false, onClo
 
 	const connectNew = () => {
 		setError(undefined);
+		if (!canConnect) {
+			setError(`${noPermissionTo(`connect ${appName}`)} Ask a workspace admin.`);
+			return;
+		}
 		if (!connector || isUnavailable) {
 			setError(`${appName} connections aren't available yet. Please try again later.`);
 			return;
@@ -261,14 +271,18 @@ const AccountSelect = ({ connectorKey, value, onChange, popupOnly = false, onClo
 		: isError
 			? 'Couldn’t load accounts'
 			: empty
-				? `Connect ${appName}`
+				? canConnect
+					? `Connect ${appName}`
+					: `No ${appName} account`
 				: (selected?.name ?? (value ? 'Account unavailable' : 'Choose an account'));
 	const subtitle = isError
 		? 'Click to try again'
 		: empty
 			? isUnavailable
 				? 'Connections aren’t available yet'
-				: 'Add an account to use this step'
+				: canConnect
+					? 'Add an account to use this step'
+					: 'Ask a workspace admin to connect one'
 			: selected
 				? accountScope(selected)
 				: value
@@ -314,7 +328,7 @@ const AccountSelect = ({ connectorKey, value, onChange, popupOnly = false, onClo
 					{expired && <AlertCircle size={13} className='shrink-0 text-amber-500' />}
 					{!busy && (
 						<span className='ml-1 shrink-0 border-l border-zinc-200 pl-2 text-[10px] font-medium text-zinc-500 dark:border-zinc-700 dark:text-zinc-400'>
-							{empty ? <Plus size={13} /> : 'Change'}
+							{!empty ? 'Change' : canConnect ? <Plus size={13} /> : null}
 						</span>
 					)}
 				</button>
@@ -485,35 +499,38 @@ const AccountSelect = ({ connectorKey, value, onChange, popupOnly = false, onClo
 															No accounts found
 														</p>
 														<p className='mt-1 text-xs text-zinc-500'>
-															Try another name or connect a new
-															account.
+															{canConnect
+																? 'Try another name or connect a new account.'
+																: 'Ask a workspace admin to connect one in Apps.'}
 														</p>
 													</div>
 												)
 											)}
-											<button
-												type='button'
-												onClick={connectNew}
-												disabled={isUnavailable}
-												className='mt-1 flex w-full items-center gap-3 rounded-xl border border-zinc-200 px-4 py-3.5 text-left transition hover:border-zinc-300 hover:bg-zinc-50 focus-visible:outline-zinc-400 disabled:opacity-50 dark:border-zinc-800 dark:hover:bg-zinc-800'>
-												<span className='flex size-7 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'>
-													<Plus size={16} />
-												</span>
-												<span>
-													<span className='block text-sm font-medium'>
-														Connect another account
+											{canConnect && (
+												<button
+													type='button'
+													onClick={connectNew}
+													disabled={isUnavailable}
+													className='mt-1 flex w-full items-center gap-3 rounded-xl border border-zinc-200 px-4 py-3.5 text-left transition hover:border-zinc-300 hover:bg-zinc-50 focus-visible:outline-zinc-400 disabled:opacity-50 dark:border-zinc-800 dark:hover:bg-zinc-800'>
+													<span className='flex size-7 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'>
+														<Plus size={16} />
 													</span>
-													<span className='mt-1 block text-xs text-zinc-500 dark:text-zinc-400'>
-														{isUnavailable
-															? 'New connections aren’t available yet'
-															: `Sign in to a different ${appName} account`}
+													<span>
+														<span className='block text-sm font-medium'>
+															Connect another account
+														</span>
+														<span className='mt-1 block text-xs text-zinc-500 dark:text-zinc-400'>
+															{isUnavailable
+																? 'New connections aren’t available yet'
+																: `Sign in to a different ${appName} account`}
+														</span>
 													</span>
-												</span>
-												<ArrowUpRight
-													size={16}
-													className='ml-auto shrink-0 text-zinc-400'
-												/>
-											</button>
+													<ArrowUpRight
+														size={16}
+														className='ml-auto shrink-0 text-zinc-400'
+													/>
+												</button>
+											)}
 											{pendingAccount && isExpired(pendingAccount) && (
 												<p className='mt-4 flex items-start gap-2 text-xs leading-5 text-amber-700 dark:text-amber-400'>
 													<AlertCircle
