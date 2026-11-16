@@ -120,7 +120,6 @@ const TrashPage = () => {
 	const singular = tab === 'workflows' ? 'workflow' : 'agent';
 	const restoreMutation = tab === 'workflows' ? restoreWorkflow : restoreAgent;
 	const forceDeleteMutation = tab === 'workflows' ? forceDeleteWorkflow : forceDeleteAgent;
-	// Restoring and deleting forever both need the type's manage permission.
 	const canManageTab = can(tab === 'workflows' ? 'workflow.manage' : 'agent.manage');
 
 	const [outcome, setOutcome] = useState<(TTrashOutcome & { id: string; tab: TTrashTab }) | null>(

@@ -20,7 +20,6 @@ type TRestoreOptions = {
  */
 export const useVersionRestore = () => {
 	const { state, dispatch, canEdit } = useWorkflowEditor();
-	// The restore endpoint is part of the builder, so it needs builder access on top of edit rights.
 	const { can } = usePermission();
 	const canRestore = can('workflow.builder.use') && canEdit;
 	const { confirm } = useConfirm();

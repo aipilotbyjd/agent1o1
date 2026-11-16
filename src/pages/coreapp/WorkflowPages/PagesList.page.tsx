@@ -68,7 +68,6 @@ const PageCard = ({ ws, page }: { ws: string; page: TWorkflowPage }) => {
 	const remove = useDeleteWorkflowPage(ws);
 	const { can } = usePermission();
 	const canManage = can('page.manage');
-	// Without edit rights a page opens the way members use it, not in the builder.
 	const openTo = canManage ? paths.editPage(ws, page.id) : paths.usePage(ws, page.id);
 	const [menuOpen, setMenuOpen] = useState(false);
 	const [cloneOpen, setCloneOpen] = useState(false);

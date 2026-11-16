@@ -459,7 +459,6 @@ const Canvas = () => {
 				}}
 				onPaneContextMenu={(event) => {
 					event.preventDefault();
-					// The menu only adds nodes.
 					if (!canEdit) return;
 					setContextMenu({
 						x: event.clientX,

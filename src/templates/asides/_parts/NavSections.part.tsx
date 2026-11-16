@@ -40,7 +40,6 @@ const NavSectionsPart: FC<{ sections: TNavSection[] }> = ({ sections }) => {
 	const { resolvePath } = useResolvePath();
 	const { canOpen } = usePermission();
 
-	// Pages the workspace role does not grant are left out, and so is a section left empty.
 	const visibleSections = sections
 		.map((section) => ({
 			...section,

@@ -31,7 +31,6 @@ const CommandPalette = () => {
 	);
 
 	const filteredNodeGroups = useMemo(() => {
-		// Picking a node adds it, so a read-only editor lists none.
 		if (!canEdit) return [];
 		if (!needle) return nodeGroups;
 		return nodeGroups

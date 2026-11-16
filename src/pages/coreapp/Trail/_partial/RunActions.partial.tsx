@@ -30,7 +30,6 @@ const RunActions = ({ ws, run, onRetried }: IRunActionsProps) => {
 	const cancelRun = useCancelRun(ws);
 	const retryRun = useRetryRun(ws);
 	const decide = useDecideRunApproval(ws, run.id);
-	// Cancelling, retrying and deciding approvals all need `run.trigger`.
 	const { can } = usePermission();
 	const canAct = can('run.trigger');
 

@@ -265,7 +265,6 @@ const RunHistory = () => {
 	const { state, dispatch } = useWorkflowEditor();
 	const workspaceId = state.workflow.workspaceId ?? '';
 	const workflowId = state.workflow.apiId ?? '';
-	// Only labels runs with their version; skipped for roles without version access.
 	const { can } = usePermission();
 	const canViewVersions = can('workflow.version');
 	const { data: versions } = useWorkflowVersions(workspaceId, canViewVersions ? workflowId : '');

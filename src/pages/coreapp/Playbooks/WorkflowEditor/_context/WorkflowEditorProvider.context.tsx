@@ -90,7 +90,6 @@ export const WorkflowEditorProvider = ({ children }: { children: ReactNode }) =>
 	// Drop the old global flag that opened the panel on every workflow.
 	useEffect(() => safeStorage.remove(AI_PANEL_OPEN_KEY), []);
 
-	// Viewers and members get the same editor, read-only: graph edits never reach the store.
 	const { can } = usePermission();
 	const canEdit = can('workflow.manage');
 	const guardedDispatch = useCallback(

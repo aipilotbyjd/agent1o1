@@ -127,7 +127,6 @@ const AddKnowledgeDialog = ({
 	if (!isOpen) return null;
 
 	const definition = KNOWLEDGE_KINDS[kind];
-	// Without manage access only private knowledge can be added.
 	const mustBePrivate = !editing && !sharedOnly && !canAddShared;
 	const keepPrivate = isPrivate || mustBePrivate;
 	const isPending = ingest.isPending || createSource.isPending || updateSource.isPending;

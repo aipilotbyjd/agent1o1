@@ -19,7 +19,6 @@ const ChannelsPanelPartial = ({ workspaceId }: IChannelsPanelProps) => {
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { data: channels } = useAssistantChannels(workspaceId);
 	const installSlack = useInstallAssistantSlack(workspaceId);
-	// Installing the Slack app connects it for the whole workspace.
 	const { can } = usePermission();
 	const canInstallSlack = can('connector.manage');
 

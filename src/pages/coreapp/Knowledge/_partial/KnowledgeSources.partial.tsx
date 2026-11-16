@@ -35,7 +35,6 @@ const KnowledgeSourcesPartial = ({
 	const { data: sources = [], isLoading } = useKnowledgeSources(ws);
 	const syncSource = useSyncKnowledgeSource(ws);
 	const deleteSource = useDeleteKnowledgeSource(ws);
-	// Private sources are the viewer's own; shared ones need manage access.
 	const { can } = usePermission();
 	const canManageShared = can('agent.manage');
 

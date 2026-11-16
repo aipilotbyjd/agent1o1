@@ -32,12 +32,10 @@ const ClonePageModal = ({ ws, page, isOpen, onClose }: Props) => {
 	const [name, setName] = useState('');
 	const clone = useCloneWorkflowPage(ws);
 
-	// Only workspaces where the viewer can build pages take a copy.
 	const targets = useMemo(
 		() => (workspaces ?? []).filter((workspace) => workspaceAllows(workspace, 'page.manage')),
 		[workspaces],
 	);
-	// This workspace is the default only when the viewer can build here too.
 	const targetId = targets.some((workspace) => String(workspace.id) === String(selectedTargetId))
 		? selectedTargetId
 		: String(targets[0]?.id ?? '');

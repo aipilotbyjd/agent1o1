@@ -80,7 +80,6 @@ const SkillEditorDrawer = ({
 	const [createdSkillId, setCreatedSkillId] = useState<string | null>(null);
 	const activeSkillId = skillId ?? createdSkillId;
 
-	// Without skill manage access the drawer only shows the skill; scripts are not readable at all.
 	const { can } = usePermission();
 	const canManageSkills = can('agent.skill.manage');
 	const { data: skillDetail } = useAgentSkill(ws, activeSkillId ?? '');

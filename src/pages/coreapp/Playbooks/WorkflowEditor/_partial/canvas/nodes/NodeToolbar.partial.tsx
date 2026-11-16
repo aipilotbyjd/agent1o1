@@ -39,7 +39,6 @@ const NodeToolbar = ({ nodeId, defKey, label, fields }: Props) => {
 		runTest();
 	};
 
-	// Every action here changes or tests the step.
 	if (!canEdit) return null;
 
 	return (

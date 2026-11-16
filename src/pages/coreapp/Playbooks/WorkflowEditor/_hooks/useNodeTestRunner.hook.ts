@@ -87,6 +87,5 @@ export const useNodeTestRunner = (nodeId: string, defKey: string) => {
 		}
 	};
 
-	// Testing a step goes through an endpoint that needs edit rights.
 	return { runTest, testStatus, canRun: canEdit && Boolean(ws && workflowId && defKey) };
 };

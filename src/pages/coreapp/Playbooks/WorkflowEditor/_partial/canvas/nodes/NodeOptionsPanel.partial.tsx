@@ -21,7 +21,6 @@ const NodeOptionsPanel = ({ nodeId, fields, credentialField, credentialId }: Pro
 	const { dispatch, canEdit } = useWorkflowEditor();
 	const [configureOpen, setConfigureOpen] = useState(false);
 
-	// Both options change the step.
 	if (!canEdit) return null;
 
 	return (

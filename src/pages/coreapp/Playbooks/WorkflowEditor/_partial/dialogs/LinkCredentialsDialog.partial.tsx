@@ -95,7 +95,6 @@ const CredentialFlow = () => {
 
 const LinkCredentialsDialog = () => {
 	const { state, canEdit } = useWorkflowEditor();
-	// Linking an account edits the step.
 	return canEdit && state.ui.linkCredentialsOpen ? <CredentialFlow /> : null;
 };
 export default LinkCredentialsDialog;

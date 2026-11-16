@@ -409,7 +409,6 @@ const useRunWorkflowController = () => {
 		);
 
 		if (missingCredentialNode) {
-			// Linking an account edits the step, which only editors can do.
 			if (!canEdit) {
 				notify.error(
 					'A step in this workflow needs an account connected. Ask an editor to connect it.',

@@ -99,7 +99,6 @@ const ApprovalsPage = () => {
 	});
 	const { data: agents } = useAgents(ws);
 	const { can } = usePermission();
-	// Deciding is part of chatting with agents; "always allow" changes the agent itself.
 	const canDecide = can('agent.chat');
 	const canManageAgents = can('agent.manage');
 	const decide = useDecideAgentActions(ws);

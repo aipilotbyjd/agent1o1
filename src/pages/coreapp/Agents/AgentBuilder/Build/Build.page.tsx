@@ -1258,7 +1258,6 @@ const BuildPage = () => {
 		currentAgentId ?? '',
 		conversationId ?? '',
 	);
-	// Without agent.manage the builder is read-only; chatting needs agent.chat.
 	const { can } = usePermission();
 	const canManageAgents = can('agent.manage');
 	const canChat = can('agent.chat');
@@ -1559,7 +1558,6 @@ const BuildPage = () => {
 		};
 
 		if (currentAgentId) {
-			// Chatting must not try to save the agent for someone who can't edit it.
 			if (!canManageAgents) return currentAgentId;
 			await updateAgentMutation.mutateAsync({ id: currentAgentId, body: payload });
 			return currentAgentId;

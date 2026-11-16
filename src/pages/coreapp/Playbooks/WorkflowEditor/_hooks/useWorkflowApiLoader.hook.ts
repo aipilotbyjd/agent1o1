@@ -11,7 +11,6 @@ export const useWorkflowApiLoader = (workspaceId: string, workflowId: string) =>
 	const { state, dispatch } = useWorkflowEditor();
 	const loadedKey = useRef<string | null>(null);
 	const workflowQuery = useWorkflow(workspaceId, workflowId);
-	// Version history needs `workflow.version`; without it the canvas loads from the draft alone.
 	const { can } = usePermission();
 	const canViewVersions = can('workflow.version');
 	const versionsQuery = useWorkflowVersions(workspaceId, canViewVersions ? workflowId : '');

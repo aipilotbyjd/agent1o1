@@ -200,11 +200,9 @@ const BlueprintsListPage = () => {
 	const ws = workspaceId || activeWorkspaceId;
 	const { can } = usePermission();
 	const canManageTemplates = can('template.manage');
-	// Using a template creates the thing it describes, so it needs that thing's manage permission.
 	const canManageWorkflows = can('workflow.manage');
 	const canManageAgents = can('agent.manage');
 	const canManagePages = can('page.manage');
-	// A collection creates workflows and agents, and its endpoint itself needs `template.manage`.
 	const canUseCollections = canManageTemplates && canManageWorkflows && canManageAgents;
 
 	const [activeTab, setActiveTab] = useState<TTab>('workflows');

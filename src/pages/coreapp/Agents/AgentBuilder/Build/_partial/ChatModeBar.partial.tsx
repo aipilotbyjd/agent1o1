@@ -115,7 +115,6 @@ const ChatModeBar = ({
 	const testRun = session.test_mode ?? agent.test_mode;
 	const isLocked = disabled || updateSession.isPending;
 	const { can } = usePermission();
-	// Loosening past the agent's own mode needs agent.manage, mirroring the backend.
 	const modeOptions = can('agent.manage')
 		? AUTONOMY_MODES
 		: AUTONOMY_MODES.filter(

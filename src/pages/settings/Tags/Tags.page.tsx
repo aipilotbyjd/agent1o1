@@ -41,7 +41,6 @@ const plural = (count: number, noun: string) => `${count} ${noun}${count === 1 ?
 const TagsPage = () => {
 	const { activeWorkspaceId } = useWorkspaceContext();
 	const { confirm } = useConfirm();
-	// The backend guards tag writes with the workflow edit permission.
 	const { can } = usePermission();
 	const canManageTags = can('workflow.manage');
 	const { data: tags = [], isLoading, error } = useTags(activeWorkspaceId);

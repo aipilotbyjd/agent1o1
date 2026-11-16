@@ -58,7 +58,6 @@ const KnowledgeListPage = () => {
 	});
 	const deleteChunkMutation = useDeleteKnowledgeChunk(ws);
 	const deleteCollectionMutation = useDeleteKnowledgeCollection(ws);
-	// Anyone may manage their own private knowledge; shared knowledge reaches every agent.
 	const { can } = usePermission();
 	const canManageShared = can('agent.manage');
 

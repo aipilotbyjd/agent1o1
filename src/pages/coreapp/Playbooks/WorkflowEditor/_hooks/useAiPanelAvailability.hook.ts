@@ -10,7 +10,6 @@ import { useWorkflowEditor } from './useWorkflowEditor.hook';
 export const useAiPanelAvailability = () => {
 	const { state, canEdit } = useWorkflowEditor();
 	const isChatActive = useAiChatStore((store) => store.isChatActive);
-	// The builder edits the graph, and its endpoints refuse anyone below editor.
 	const { can } = usePermission();
 	const canUseBuilder = can('workflow.builder.use') && canEdit;
 
