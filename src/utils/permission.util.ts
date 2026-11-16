@@ -17,3 +17,9 @@ export const workspaceAllows = (
 		? required.every((item) => granted.includes(item))
 		: required.some((item) => granted.includes(item));
 };
+
+/** The handler when the viewer is allowed, otherwise `undefined` so the control stays hidden or inert. */
+export const whenAllowed = <T extends (...args: never[]) => unknown>(
+	allowed: boolean,
+	handler: T,
+): T | undefined => (allowed ? handler : undefined);

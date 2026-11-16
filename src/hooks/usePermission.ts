@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useWorkspaceContext } from '@/context/workspace';
-import type { TPermissionCheck, TPermissionMode } from '@/types/permission.type';
+import type { TPermission, TPermissionCheck, TPermissionMode } from '@/types/permission.type';
 import type { TWorkspaceRole } from '@/types/workspace.type';
 import { workspaceAllows } from '@/utils/permission.util';
 
@@ -17,9 +17,15 @@ const usePermission = () => {
 		[activeWorkspace],
 	);
 
+	/** Whether a page, nav entry or search result that may declare a `permission` is open to the viewer. */
+	const canOpen = useCallback(
+		(target: { permission?: TPermission }) => !target.permission || can(target.permission),
+		[can],
+	);
+
 	const role: TWorkspaceRole | null = activeWorkspace?.role ?? null;
 
-	return { can, role, isOwner: role === 'owner' };
+	return { can, canOpen, role, isOwner: role === 'owner' };
 };
 
 export default usePermission;

@@ -382,7 +382,7 @@ const GlobalSearch = () => {
 	const { isOpen, close } = useGlobalSearchStore();
 	const navigate = useNavigate();
 	const { workspaceId } = useResolvePath();
-	const { can } = usePermission();
+	const { canOpen } = usePermission();
 	const brand = useBrand();
 
 	// Page results are URL templates until the workspace id is substituted, so
@@ -404,8 +404,8 @@ const GlobalSearch = () => {
 				agents,
 				templates,
 				artifacts: artifactPage?.artifacts,
-			}).filter((item) => !item.permission || can(item.permission)),
-		[workspaceId, brand.name, workflows, agents, templates, artifactPage, can],
+			}).filter((item) => canOpen(item)),
+		[workspaceId, brand.name, workflows, agents, templates, artifactPage, canOpen],
 	);
 	const fuse = useMemo(() => new Fuse(allSearchItems, FUSE_OPTIONS), [allSearchItems]);
 	const [query, setQuery] = useState('');

@@ -63,6 +63,7 @@ import { formatUsageCount } from './_helper/blueprints.constants';
 import TemplateFormModal, { type TTemplateFormTarget } from './_partial/TemplateFormModal.partial';
 import CollectionItemsEditor from './_partial/CollectionItemsEditor.partial';
 import usePermission from '@/hooks/usePermission';
+import { whenAllowed } from '@/utils/permission.util';
 
 type TTab = 'workflows' | 'agents' | 'pages' | 'collections';
 
@@ -746,25 +747,18 @@ const BlueprintsListPage = () => {
 											usageCount={wf.usage_count}
 											isUsePending={useWorkflowTemplateMutation.isPending}
 											onPreview={() => setPreviewId(wf.id)}
-											onUse={
-												canManageWorkflows
-													? () => handleUseWorkflow(wf)
-													: undefined
-											}
-											onEdit={
-												canManageTemplates
-													? () =>
-															setFormTarget({
-																kind: 'workflow',
-																item: wf,
-															})
-													: undefined
-											}
-											onDelete={
-												canManageTemplates
-													? () => handleDeleteWorkflow(wf)
-													: undefined
-											}
+											onUse={whenAllowed(canManageWorkflows, () =>
+												handleUseWorkflow(wf),
+											)}
+											onEdit={whenAllowed(canManageTemplates, () =>
+												setFormTarget({
+													kind: 'workflow',
+													item: wf,
+												}),
+											)}
+											onDelete={whenAllowed(canManageTemplates, () =>
+												handleDeleteWorkflow(wf),
+											)}
 										/>
 									))}
 
@@ -782,25 +776,18 @@ const BlueprintsListPage = () => {
 											usageCount={agent.usage_count}
 											isUsePending={useAgentTemplateMutation.isPending}
 											onPreview={() => setPreviewId(agent.id)}
-											onUse={
-												canManageAgents
-													? () => handleUseAgent(agent)
-													: undefined
-											}
-											onEdit={
-												canManageTemplates
-													? () =>
-															setFormTarget({
-																kind: 'agent',
-																item: agent,
-															})
-													: undefined
-											}
-											onDelete={
-												canManageTemplates
-													? () => handleDeleteAgent(agent)
-													: undefined
-											}
+											onUse={whenAllowed(canManageAgents, () =>
+												handleUseAgent(agent),
+											)}
+											onEdit={whenAllowed(canManageTemplates, () =>
+												setFormTarget({
+													kind: 'agent',
+													item: agent,
+												}),
+											)}
+											onDelete={whenAllowed(canManageTemplates, () =>
+												handleDeleteAgent(agent),
+											)}
 										/>
 									))}
 
@@ -828,25 +815,18 @@ const BlueprintsListPage = () => {
 												usageCount={tpl.usage_count}
 												isUsePending={false}
 												onPreview={() => setPreviewId(tpl.id)}
-												onUse={
-													canManagePages
-														? () => setUsePageTemplateId(tpl.id)
-														: undefined
-												}
-												onEdit={
-													canChange
-														? () =>
-																setFormTarget({
-																	kind: 'page',
-																	item: tpl,
-																})
-														: undefined
-												}
-												onDelete={
-													canChange
-														? () => handleDeletePage(tpl)
-														: undefined
-												}
+												onUse={whenAllowed(canManagePages, () =>
+													setUsePageTemplateId(tpl.id),
+												)}
+												onEdit={whenAllowed(canChange, () =>
+													setFormTarget({
+														kind: 'page',
+														item: tpl,
+													}),
+												)}
+												onDelete={whenAllowed(canChange, () =>
+													handleDeletePage(tpl),
+												)}
 											/>
 										);
 									})}
@@ -865,25 +845,18 @@ const BlueprintsListPage = () => {
 											usageCount={0}
 											isUsePending={useCollectionMutation.isPending}
 											onPreview={() => setPreviewId(coll.id)}
-											onUse={
-												canUseCollections
-													? () => handleUseCollection(coll)
-													: undefined
-											}
-											onEdit={
-												canManageTemplates
-													? () =>
-															setFormTarget({
-																kind: 'collection',
-																item: coll,
-															})
-													: undefined
-											}
-											onDelete={
-												canManageTemplates
-													? () => handleDeleteCollection(coll)
-													: undefined
-											}
+											onUse={whenAllowed(canUseCollections, () =>
+												handleUseCollection(coll),
+											)}
+											onEdit={whenAllowed(canManageTemplates, () =>
+												setFormTarget({
+													kind: 'collection',
+													item: coll,
+												}),
+											)}
+											onDelete={whenAllowed(canManageTemplates, () =>
+												handleDeleteCollection(coll),
+											)}
 										/>
 									))}
 							</AnimatePresence>
