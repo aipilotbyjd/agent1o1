@@ -1,37 +1,24 @@
-import { FC } from 'react';
-import { Navigate, Outlet, useParams } from 'react-router';
-import { useWorkspaceContext } from '@/context/workspace';
+import { Navigate, Outlet, useLocation, useParams } from 'react-router';
 import usePermission from '@/hooks/usePermission';
-import type { TPermissionCheck, TPermissionMode } from '@/types/permission.type';
 import { buildPath } from '@/Routes/paths';
+import { findPageByPathname } from '@/Routes/pagePermission';
 import NoAccessPage from '@/pages/NoAccess.page';
 
-interface IRequirePermissionLayoutProps {
-	permission: TPermissionCheck;
-	mode?: TPermissionMode;
-	/** Page template to send the viewer to instead, filled from the current route's params. */
-	redirectTo?: string;
-}
-
 /**
- * Route gate for pages a workspace role does not grant. Sits under
- * WorkspaceGuardLayout, so the active workspace is already resolved.
+ * Gate for pages a workspace role does not grant. Rendered by
+ * WorkspaceGuardLayout once the active workspace is resolved, so no route
+ * needs wrapping: a page opts in by declaring `permission` on its definition,
+ * and `fallbackTo` sends the viewer somewhere they can go instead.
  */
-const RequirePermissionLayout: FC<IRequirePermissionLayoutProps> = ({
-	permission,
-	mode = 'any',
-	redirectTo,
-}) => {
+const RequirePermissionLayout = () => {
 	const params = useParams();
-	const { isLoading } = useWorkspaceContext();
-	const { can } = usePermission();
-	const allowed = can(permission, mode);
+	const { pathname } = useLocation();
+	const { canOpen } = usePermission();
+	const page = findPageByPathname(pathname);
 
-	if (isLoading) return null;
+	if (!page || canOpen(page)) return <Outlet />;
 
-	if (allowed) return <Outlet />;
-
-	if (redirectTo) return <Navigate to={buildPath(redirectTo, params)} replace />;
+	if (page.fallbackTo) return <Navigate to={buildPath(page.fallbackTo, params)} replace />;
 
 	return <NoAccessPage />;
 };

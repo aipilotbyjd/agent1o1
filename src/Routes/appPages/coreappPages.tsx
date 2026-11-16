@@ -5,7 +5,6 @@ import CoreAppLayout from '@/layouts/CoreApp.layout';
 import AgentLayout from '@/layouts/Agent.layout';
 import pages, { editorRedirects, relativeToWorkspace } from '@/Routes/pages';
 import WorkspaceRedirect from '@/Routes/redirects';
-import guardRoute from '@/Routes/guardRoute';
 import SettingsPages from '@/Routes/appPages/settingsPages';
 
 const workspacePages = pages.workspace.subPages!;
@@ -28,9 +27,7 @@ const WorkflowPagesLayout = lazy(
 );
 const PagesListPage = lazy(() => import('@/pages/coreapp/WorkflowPages/PagesList.page'));
 const UsePagePage = lazy(() => import('@/pages/coreapp/WorkflowPages/UsePage.page'));
-const PageInsightsPage = lazy(
-	() => import('@/pages/coreapp/WorkflowPages/PageInsights/PageInsights.page'),
-);
+const PageInsightsPage = lazy(() => import('@/pages/coreapp/WorkflowPages/PageInsights/PageInsights.page'));
 const PageBuilderPage = lazy(
 	() => import('@/pages/coreapp/WorkflowPages/PageBuilder/PageBuilder.page'),
 );
@@ -93,73 +90,61 @@ const workflowPagesRoute: RouteObject = {
 const listRoutes: RouteObject[] = (
 	[
 		[
-			workspacePages.assistant,
+			workspacePages.assistant.to,
 			<AssistantLayout key='layout' />,
 			<AssistantHomePage key='page' />,
 		],
 		[
-			workspacePages.playbooks,
+			workspacePages.playbooks.to,
 			<PlaybooksLayout key='layout' />,
 			<WorkflowsListPage key='page' />,
 		],
-		[workspacePages.agents, <AgentsLayout key='layout' />, <AgentsListPage key='page' />],
+		[workspacePages.agents.to, <AgentsLayout key='layout' />, <AgentsListPage key='page' />],
 		[
-			workspacePages.blueprints,
+			workspacePages.blueprints.to,
 			<BlueprintsLayout key='layout' />,
 			<BlueprintsListPage key='page' />,
 		],
-		[workspacePages.skills, <SkillsLayout key='layout' />, <SkillsListPage key='page' />],
-		[workspacePages.apps, <AppsLayout key='layout' />, <AppsListPage key='page' />],
+		[workspacePages.skills.to, <SkillsLayout key='layout' />, <SkillsListPage key='page' />],
+		[workspacePages.apps.to, <AppsLayout key='layout' />, <AppsListPage key='page' />],
 		[
-			workspacePages.knowledge,
+			workspacePages.knowledge.to,
 			<KnowledgeLayout key='layout' />,
 			<KnowledgeListPage key='page' />,
 		],
-		[workspacePages.vault, <VaultLayout key='layout' />, <SecretsPage key='page' />],
-		[workspacePages.approvals, <ApprovalsLayout key='layout' />, <ApprovalsPage key='page' />],
-		[workspacePages.trail, <TrailLayout key='layout' />, <TrailListPage key='page' />],
+		[workspacePages.vault.to, <VaultLayout key='layout' />, <SecretsPage key='page' />],
 		[
-			workspacePages.artifacts,
+			workspacePages.approvals.to,
+			<ApprovalsLayout key='layout' />,
+			<ApprovalsPage key='page' />,
+		],
+		[workspacePages.trail.to, <TrailLayout key='layout' />, <TrailListPage key='page' />],
+		[
+			workspacePages.artifacts.to,
 			<ArtifactsLayout key='layout' />,
 			<ArtifactsListPage key='page' />,
 		],
-		[workspacePages.trash, <TrashLayout key='layout' />, <TrashPage key='page' />],
+		[workspacePages.trash.to, <TrashLayout key='layout' />, <TrashPage key='page' />],
 	] as const
-).map(([page, layout, content]) =>
-	guardRoute(page, {
-		path: rel(page.to),
-		element: layout,
-		children: [{ index: true, element: content }],
-	}),
-);
+).map(([to, layout, page]) => ({
+	path: rel(to),
+	element: layout,
+	children: [{ index: true, element: page }],
+}));
 
 /**
  * Full-screen editors. They share the `/:workspaceId` guard but deliberately sit
  * outside CoreAppLayout so the sidebar and header do not render around them.
  */
 const editorRoutes: RouteObject[] = [
-	guardRoute(playbookEditorPages.add, {
-		path: rel(playbookEditorPages.add.to),
-		element: <WorkflowEditorPage />,
-	}),
-	// Without edit rights the playbook opens read-only instead.
-	guardRoute(
-		playbookEditorPages.edit,
-		{ path: rel(playbookEditorPages.edit.to), element: <WorkflowEditorPage /> },
-		playbookEditorPages.view.to,
-	),
+	{ path: rel(playbookEditorPages.add.to), element: <WorkflowEditorPage /> },
+	{ path: rel(playbookEditorPages.edit.to), element: <WorkflowEditorPage /> },
 	{ path: rel(playbookEditorPages.view.to), element: <WorkflowEditorPage /> },
-	guardRoute(pageEditorPages.edit, {
-		path: rel(pageEditorPages.edit.to),
-		element: <PageBuilderPage />,
-	}),
+	{ path: rel(pageEditorPages.edit.to), element: <PageBuilderPage /> },
 	{
 		element: <AgentLayout />,
 		children: [
-			guardRoute(agentEditorPages.add, {
-				path: rel(agentEditorPages.add.to),
-				element: <AgentBuilderPage />,
-			}),
+			{ path: rel(agentEditorPages.add.to), element: <AgentBuilderPage /> },
 			{ path: rel(agentEditorPages.edit.to), element: <AgentBuilderPage /> },
 			{ path: rel(agentEditorPages.insights.to), element: <AgentInsightsPage /> },
 			{ path: rel(agentEditorPages.library.to), element: <LibraryPage /> },

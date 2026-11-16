@@ -8,8 +8,10 @@ export type TPage = {
 	icon: TIcons;
 	subPages?: Record<string, TPage>;
 	parentId?: string;
-	/** Workspace permission needed to open the page. Sidebars hide it and `guardRoute` blocks the URL. */
+	/** Workspace permission needed to open the page. Sidebars and search hide it and the URL is blocked. */
 	permission?: TPermission;
+	/** Where a viewer without `permission` is sent instead of the no-access page. */
+	fallbackTo?: string;
 };
 export type TPages = Record<string, TPage>;
 

@@ -119,6 +119,7 @@ export const playbookEditor: TPage = {
 			text: 'Edit Playbook',
 			icon: 'PencilEdit01',
 			permission: 'workflow.manage',
+			fallbackTo: ws('playbooks/:workflowId'),
 		},
 		view: {
 			id: 'viewPlaybook',
