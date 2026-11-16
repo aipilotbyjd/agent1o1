@@ -93,54 +93,45 @@ const workflowPagesRoute: RouteObject = {
 const listRoutes: RouteObject[] = (
 	[
 		[
-			workspacePages.assistant.to,
+			workspacePages.assistant,
 			<AssistantLayout key='layout' />,
 			<AssistantHomePage key='page' />,
 		],
 		[
-			workspacePages.playbooks.to,
+			workspacePages.playbooks,
 			<PlaybooksLayout key='layout' />,
 			<WorkflowsListPage key='page' />,
 		],
-		[workspacePages.agents.to, <AgentsLayout key='layout' />, <AgentsListPage key='page' />],
+		[workspacePages.agents, <AgentsLayout key='layout' />, <AgentsListPage key='page' />],
 		[
-			workspacePages.blueprints.to,
+			workspacePages.blueprints,
 			<BlueprintsLayout key='layout' />,
 			<BlueprintsListPage key='page' />,
 		],
-		[workspacePages.skills.to, <SkillsLayout key='layout' />, <SkillsListPage key='page' />],
-		[workspacePages.apps.to, <AppsLayout key='layout' />, <AppsListPage key='page' />],
+		[workspacePages.skills, <SkillsLayout key='layout' />, <SkillsListPage key='page' />],
+		[workspacePages.apps, <AppsLayout key='layout' />, <AppsListPage key='page' />],
 		[
-			workspacePages.knowledge.to,
+			workspacePages.knowledge,
 			<KnowledgeLayout key='layout' />,
 			<KnowledgeListPage key='page' />,
 		],
-		[workspacePages.vault.to, <VaultLayout key='layout' />, <SecretsPage key='page' />],
+		[workspacePages.vault, <VaultLayout key='layout' />, <SecretsPage key='page' />],
+		[workspacePages.approvals, <ApprovalsLayout key='layout' />, <ApprovalsPage key='page' />],
+		[workspacePages.trail, <TrailLayout key='layout' />, <TrailListPage key='page' />],
 		[
-			workspacePages.approvals.to,
-			<ApprovalsLayout key='layout' />,
-			<ApprovalsPage key='page' />,
-		],
-		[workspacePages.trail.to, <TrailLayout key='layout' />, <TrailListPage key='page' />],
-		[
-			workspacePages.artifacts.to,
+			workspacePages.artifacts,
 			<ArtifactsLayout key='layout' />,
 			<ArtifactsListPage key='page' />,
 		],
-		[workspacePages.trash.to, <TrashLayout key='layout' />, <TrashPage key='page' />],
+		[workspacePages.trash, <TrashLayout key='layout' />, <TrashPage key='page' />],
 	] as const
-)
-	.map(([to, layout, page]) => ({
-		path: rel(to),
+).map(([page, layout, content]) =>
+	guardRoute(page, {
+		path: rel(page.to),
 		element: layout,
-		children: [{ index: true, element: page }],
-	}))
-	// Every role can read the list pages; the assistant declares its own permission.
-	.map((route) =>
-		route.path === rel(workspacePages.assistant.to)
-			? guardRoute(workspacePages.assistant, route)
-			: route,
-	);
+		children: [{ index: true, element: content }],
+	}),
+);
 
 /**
  * Full-screen editors. They share the `/:workspaceId` guard but deliberately sit
