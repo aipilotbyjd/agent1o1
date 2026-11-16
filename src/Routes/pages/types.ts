@@ -1,4 +1,5 @@
 import { TIcons } from '@/types/icons.type';
+import type { TPermission } from '@/types/permission.type';
 
 export type TPage = {
 	id: string;
@@ -7,6 +8,10 @@ export type TPage = {
 	icon: TIcons;
 	subPages?: Record<string, TPage>;
 	parentId?: string;
+	/** Workspace permission needed to open the page. Sidebars and search hide it and the URL is blocked. */
+	permission?: TPermission;
+	/** Where a viewer without `permission` is sent instead of the no-access page. */
+	fallbackTo?: string;
 };
 export type TPages = Record<string, TPage>;
 

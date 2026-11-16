@@ -27,6 +27,7 @@ import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
 import paths from '@/Routes/paths';
 import { useWorkspaceContext } from '@/context/workspace';
+import usePermission from '@/hooks/usePermission';
 import { agentKeys, useAgents, useDeleteAgent, useDuplicateAgent } from '@/api/modules/agents';
 import { useModelCatalog } from '@/api/modules/catalog';
 import { useFolders } from '@/api/modules/folders';
@@ -124,6 +125,8 @@ const AgentsListPage = () => {
 	const deleteAgentMutation = useDeleteAgent(currentWorkspaceId);
 	const duplicateAgentMutation = useDuplicateAgent(currentWorkspaceId);
 	const queryClient = useQueryClient();
+	const { can } = usePermission();
+	const canManageAgents = can('agent.manage');
 
 	const agents = useMemo<IAgentItem[]>(() => {
 		if (!apiAgents || apiAgents.length === 0) return [];
@@ -273,12 +276,14 @@ const AgentsListPage = () => {
 							</div>
 						</div>
 
-						<button
-							onClick={() => navigate(paths.newAgent(currentWorkspaceId))}
-							className='from-primary-400 to-primary-400 text-primary-950 shadow-primary-500/20 hover:from-primary-400 hover:to-primary-400 hover:shadow-primary-500/30 flex h-11 min-w-0 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r px-4 text-xs font-black shadow-lg transition-all hover:shadow-xl active:scale-95 sm:flex-none sm:px-5 dark:shadow-none'>
-							<Sparkles size={14} className='animate-pulse' />
-							<span>Build Agent</span>
-						</button>
+						{canManageAgents && (
+							<button
+								onClick={() => navigate(paths.newAgent(currentWorkspaceId))}
+								className='from-primary-400 to-primary-400 text-primary-950 shadow-primary-500/20 hover:from-primary-400 hover:to-primary-400 hover:shadow-primary-500/30 flex h-11 min-w-0 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r px-4 text-xs font-black shadow-lg transition-all hover:shadow-xl active:scale-95 sm:flex-none sm:px-5 dark:shadow-none'>
+								<Sparkles size={14} className='animate-pulse' />
+								<span>Build Agent</span>
+							</button>
+						)}
 					</div>
 				</div>
 
@@ -539,28 +544,36 @@ const AgentsListPage = () => {
 													title='Run agent'>
 													<Play size={12} className='fill-current' />
 												</button>
-												<button
-													onClick={() => setMovingAgent(agent)}
-													className='hover:border-primary-300 hover:bg-primary-50 hover:text-primary-600 dark:hover:border-primary-900/30 dark:hover:bg-primary-950/20 flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition-all active:scale-95 dark:border-zinc-800'
-													title='Move to folder'
-													aria-label={`Move ${agent.name} to a folder`}>
-													<FolderInput size={12} />
-												</button>
-												<button
-													onClick={() =>
-														duplicateAgentMutation.mutate(agent.id)
-													}
-													disabled={duplicateAgentMutation.isPending}
-													className='hover:border-primary-300 hover:bg-primary-50 hover:text-primary-600 dark:hover:border-primary-900/30 dark:hover:bg-primary-950/20 flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800'
-													title='Duplicate agent'>
-													<Copy size={12} />
-												</button>
-												<button
-													onClick={() => handleDelete(agent.id)}
-													className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition-all hover:border-rose-200 hover:bg-rose-50 hover:text-rose-500 active:scale-95 dark:border-zinc-800 dark:hover:border-rose-900/30 dark:hover:bg-rose-950/20'
-													title='Move to trash'>
-													<Trash2 size={12} />
-												</button>
+												{canManageAgents && (
+													<>
+														<button
+															onClick={() => setMovingAgent(agent)}
+															className='hover:border-primary-300 hover:bg-primary-50 hover:text-primary-600 dark:hover:border-primary-900/30 dark:hover:bg-primary-950/20 flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition-all active:scale-95 dark:border-zinc-800'
+															title='Move to folder'
+															aria-label={`Move ${agent.name} to a folder`}>
+															<FolderInput size={12} />
+														</button>
+														<button
+															onClick={() =>
+																duplicateAgentMutation.mutate(
+																	agent.id,
+																)
+															}
+															disabled={
+																duplicateAgentMutation.isPending
+															}
+															className='hover:border-primary-300 hover:bg-primary-50 hover:text-primary-600 dark:hover:border-primary-900/30 dark:hover:bg-primary-950/20 flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800'
+															title='Duplicate agent'>
+															<Copy size={12} />
+														</button>
+														<button
+															onClick={() => handleDelete(agent.id)}
+															className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition-all hover:border-rose-200 hover:bg-rose-50 hover:text-rose-500 active:scale-95 dark:border-zinc-800 dark:hover:border-rose-900/30 dark:hover:bg-rose-950/20'
+															title='Move to trash'>
+															<Trash2 size={12} />
+														</button>
+													</>
+												)}
 											</div>
 										</div>
 									</motion.article>
@@ -571,27 +584,30 @@ const AgentsListPage = () => {
 				)}
 
 				{/* Bottom Banner Section */}
-				<div className='border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card flex flex-col justify-between gap-4 rounded-3xl border p-6 shadow-sm backdrop-blur-md sm:flex-row sm:items-center'>
-					<div className='flex items-center gap-4'>
-						<div className='bg-primary-100 text-primary-600 dark:bg-primary-950/50 dark:text-primary-400 flex h-12 w-12 shrink-0 items-center justify-center rounded-full'>
-							<Sparkles size={20} />
+				{canManageAgents && (
+					<div className='border-border-main bg-bg-card dark:border-border-main dark:bg-bg-card flex flex-col justify-between gap-4 rounded-3xl border p-6 shadow-sm backdrop-blur-md sm:flex-row sm:items-center'>
+						<div className='flex items-center gap-4'>
+							<div className='bg-primary-100 text-primary-600 dark:bg-primary-950/50 dark:text-primary-400 flex h-12 w-12 shrink-0 items-center justify-center rounded-full'>
+								<Sparkles size={20} />
+							</div>
+							<div>
+								<h3 className='text-sm font-bold text-slate-900 dark:text-white'>
+									Want to build your own agent from scratch?
+								</h3>
+								<p className='text-slate-450 text-xs font-semibold dark:text-zinc-500'>
+									Create a custom AI agent tailored to your specific business
+									needs.
+								</p>
+							</div>
 						</div>
-						<div>
-							<h3 className='text-sm font-bold text-slate-900 dark:text-white'>
-								Want to build your own agent from scratch?
-							</h3>
-							<p className='text-slate-450 text-xs font-semibold dark:text-zinc-500'>
-								Create a custom AI agent tailored to your specific business needs.
-							</p>
-						</div>
+						<button
+							onClick={() => navigate(paths.newAgent(currentWorkspaceId))}
+							className='hover:text-primary-700 border-primary-200 text-primary-600 hover:border-primary-300 hover:bg-primary-50 dark:border-primary-900/50 dark:bg-bg-card dark:text-primary-400 flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border bg-white px-5 text-xs font-bold shadow-2xs transition-all dark:hover:bg-zinc-950/60'>
+							<span>Build Custom Agent</span>
+							<span className='text-sm font-semibold'>→</span>
+						</button>
 					</div>
-					<button
-						onClick={() => navigate(paths.newAgent(currentWorkspaceId))}
-						className='hover:text-primary-700 border-primary-200 text-primary-600 hover:border-primary-300 hover:bg-primary-50 dark:border-primary-900/50 dark:bg-bg-card dark:text-primary-400 flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border bg-white px-5 text-xs font-bold shadow-2xs transition-all dark:hover:bg-zinc-950/60'>
-						<span>Build Custom Agent</span>
-						<span className='text-sm font-semibold'>→</span>
-					</button>
-				</div>
+				)}
 			</div>
 
 			<MoveAgentModal

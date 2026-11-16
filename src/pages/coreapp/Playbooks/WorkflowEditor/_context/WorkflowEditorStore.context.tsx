@@ -148,6 +148,79 @@ export type TWorkflowEditorAction =
 export type TWorkflowEditorContextValue = {
 	state: TWorkflowEditorState;
 	dispatch: React.Dispatch<TWorkflowEditorAction>;
+	/** The viewer may change this workflow (`workflow.manage`); otherwise the editor is read-only. */
+	canEdit: boolean;
+};
+
+/**
+ * Whether each action changes the graph or its saved settings. Actions marked
+ * `true` are dropped while the editor is read-only. Typed as a full record so a
+ * new action type fails to compile until it is classified here.
+ */
+export const EDIT_ACTIONS: Record<TWorkflowEditorAction['type'], boolean> = {
+	ADD_NODE: true,
+	ADD_TEMPLATE: true,
+	APPLY_TEMPLATE: true,
+	MOVE_NODE: true,
+	REQUEST_NODE_TEST: false,
+	SELECT_NODE: false,
+	SELECT_NODES: false,
+	SELECT_ALL_NODES: false,
+	CLEAR_NODE_SELECTION: false,
+	UPDATE_NODE_VALUE: true,
+	RENAME_NODE: true,
+	CONFIGURE_NODE_INPUTS: true,
+	DELETE_SELECTED: true,
+	DUPLICATE_SELECTED: true,
+	ADD_EDGE: true,
+	REMOVE_EDGE: true,
+	AUTO_LAYOUT: true,
+	UNDO: true,
+	REDO: true,
+	SET_WORKFLOW_META: false,
+	SET_SAVE_STATE: false,
+	TOGGLE_LEFT_PANEL: false,
+	TOGGLE_RUN_PANEL: false,
+	TOGGLE_AI_PANEL: false,
+	TOGGLE_MINIMAP: false,
+	SET_EMPTY_CANVAS_VIEW: false,
+	SET_COMMAND_PALETTE: false,
+	SET_QUICK_ADD: false,
+	SET_IMPORT_EXPORT: false,
+	RUN_START: false,
+	RUN_FINISH: false,
+	RUN_CURRENT_NODE: false,
+	APPEND_LOG: false,
+	SET_LOGS: false,
+	SET_NODE_STATUS: false,
+	LOAD_WORKFLOW: false,
+	APPLY_BUILDER_DRAFT: true,
+	RESTORE_DRAFT: true,
+	BUILDER_ADD_NODE: true,
+	BUILDER_UPDATE_NODE: true,
+	BUILDER_REMOVE_NODE: true,
+	BUILDER_REMOVE_EDGE: true,
+	SET_NODE_COLOR: true,
+	TOGGLE_NODE_LOOP_MODE: true,
+	TOGGLE_NODE_COLLAPSED: false,
+	ADD_NODE_COMMENT: true,
+	REMOVE_NODE_COMMENT: true,
+	SET_NODE_TEST_STATUS: false,
+	SET_SHORTCUTS_OPEN: false,
+	SET_CANVAS_SEARCH: false,
+	SET_TEMPLATE_LIBRARY: false,
+	SET_NODE_DOC: false,
+	SET_NODE_EXPANDED: false,
+	SET_ISSUES_PANEL: false,
+	FOCUS_FIELD: false,
+	SET_DIFF_VIEWER: false,
+	SET_LINK_CREDENTIALS_OPEN: false,
+	PIN_NODE_OUTPUT: true,
+	UNPIN_NODE: true,
+	PUSH_RUN_HISTORY: false,
+	CLEAR_RUN_HISTORY: false,
+	SET_RUN_PANEL_TAB: false,
+	SHOW_RUN_RESULT: false,
 };
 
 export const WorkflowEditorContext = createContext<TWorkflowEditorContextValue | null>(null);

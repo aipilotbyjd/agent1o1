@@ -4,6 +4,7 @@ import { Pencil, Plus, Search, Tag, Trash2 } from 'lucide-react';
 import { useTags, useCreateTag, useUpdateTag, useDeleteTag } from '@/api/modules/tags';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useConfirm } from '@/context/confirm';
+import usePermission from '@/hooks/usePermission';
 import { ApiError, notify } from '@/api/core';
 import type { TTag } from '@/types/tag.type';
 import Button from '@/components/ui/Button';
@@ -15,6 +16,7 @@ import Modal, {
 } from '@/components/ui/Modal';
 import Input from '@/components/form/Input';
 import Spinner from '@/components/ui/Spinner';
+import { noPermissionTo } from '@/constants/permission.constant';
 
 const TAG_COLORS = [
 	'#6366F1',
@@ -39,6 +41,8 @@ const plural = (count: number, noun: string) => `${count} ${noun}${count === 1 ?
 const TagsPage = () => {
 	const { activeWorkspaceId } = useWorkspaceContext();
 	const { confirm } = useConfirm();
+	const { can } = usePermission();
+	const canManageTags = can('workflow.manage');
 	const { data: tags = [], isLoading, error } = useTags(activeWorkspaceId);
 	const createTag = useCreateTag(activeWorkspaceId);
 	const updateTag = useUpdateTag(activeWorkspaceId);
@@ -133,18 +137,21 @@ const TagsPage = () => {
 						Tags
 					</h1>
 					<p className='mt-1 text-sm font-medium text-zinc-500 dark:text-zinc-400'>
-						Labels for organising workflows and agents. Changes apply everywhere a tag
-						is used.
+						{canManageTags
+							? 'Labels for organising workflows and agents. Changes apply everywhere a tag is used.'
+							: `Labels for organising workflows and agents. ${noPermissionTo('change them')}`}
 					</p>
 				</div>
-				<Button
-					variant='solid'
-					color='primary'
-					icon='Add01'
-					onClick={openCreate}
-					className='shadow-primary-500/10 h-12 font-bold text-zinc-950 shadow-md'>
-					New tag
-				</Button>
+				{canManageTags && (
+					<Button
+						variant='solid'
+						color='primary'
+						icon='Add01'
+						onClick={openCreate}
+						className='shadow-primary-500/10 h-12 font-bold text-zinc-950 shadow-md'>
+						New tag
+					</Button>
+				)}
 			</div>
 
 			{tags.length > 6 && (
@@ -187,15 +194,19 @@ const TagsPage = () => {
 					</div>
 					<h3 className='text-lg font-bold text-zinc-900 dark:text-white'>No tags yet</h3>
 					<p className='mt-1 text-sm text-zinc-500 dark:text-zinc-400'>
-						Create one here, or add tags straight from a workflow or agent.
+						{canManageTags
+							? 'Create one here, or add tags straight from a workflow or agent.'
+							: 'Editors and admins can create tags for this workspace.'}
 					</p>
-					<button
-						type='button'
-						onClick={openCreate}
-						className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 mt-5 inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-xs font-bold shadow-md transition active:scale-95'>
-						<Plus size={14} />
-						<span>Create your first tag</span>
-					</button>
+					{canManageTags && (
+						<button
+							type='button'
+							onClick={openCreate}
+							className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 mt-5 inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-xs font-bold shadow-md transition active:scale-95'>
+							<Plus size={14} />
+							<span>Create your first tag</span>
+						</button>
+					)}
 				</div>
 			) : visibleTags.length === 0 ? (
 				<p className='rounded-2xl border border-dashed border-zinc-200 py-12 text-center text-sm font-semibold text-zinc-400 dark:border-zinc-800'>
@@ -229,22 +240,24 @@ const TagsPage = () => {
 									</div>
 								</div>
 
-								<div className='flex items-center gap-2 pl-15 sm:pl-0'>
-									<button
-										type='button'
-										onClick={() => openEdit(tag)}
-										className='flex h-9 items-center gap-1.5 rounded-lg border border-zinc-200 px-3 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800'>
-										<Pencil size={13} />
-										Edit
-									</button>
-									<button
-										type='button'
-										aria-label={`Delete ${tag.name}`}
-										onClick={() => handleDelete(tag)}
-										className='rounded-lg p-2 text-zinc-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10'>
-										<Trash2 size={16} />
-									</button>
-								</div>
+								{canManageTags && (
+									<div className='flex items-center gap-2 pl-15 sm:pl-0'>
+										<button
+											type='button'
+											onClick={() => openEdit(tag)}
+											className='flex h-9 items-center gap-1.5 rounded-lg border border-zinc-200 px-3 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800'>
+											<Pencil size={13} />
+											Edit
+										</button>
+										<button
+											type='button'
+											aria-label={`Delete ${tag.name}`}
+											onClick={() => handleDelete(tag)}
+											className='rounded-lg p-2 text-zinc-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10'>
+											<Trash2 size={16} />
+										</button>
+									</div>
+								)}
 							</div>
 						);
 					})}

@@ -1,4 +1,5 @@
 import { useAiChatStore } from '@/store/aiChat.store';
+import usePermission from '@/hooks/usePermission';
 import { useWorkflowEditor } from './useWorkflowEditor.hook';
 
 /**
@@ -7,11 +8,14 @@ import { useWorkflowEditor } from './useWorkflowEditor.hook';
  * the canvas, or a chat already started from that prompt.
  */
 export const useAiPanelAvailability = () => {
-	const { state } = useWorkflowEditor();
+	const { state, canEdit } = useWorkflowEditor();
 	const isChatActive = useAiChatStore((store) => store.isChatActive);
+	const { can } = usePermission();
+	const canUseBuilder = can('workflow.builder.use') && canEdit;
 
 	const isAiPanelAvailable =
-		state.nodes.length > 0 || state.ui.emptyCanvasView === 'chat-started' || isChatActive;
+		canUseBuilder &&
+		(state.nodes.length > 0 || state.ui.emptyCanvasView === 'chat-started' || isChatActive);
 
 	return {
 		isAiPanelAvailable,

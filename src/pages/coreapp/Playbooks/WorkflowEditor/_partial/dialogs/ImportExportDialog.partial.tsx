@@ -47,7 +47,7 @@ const downloadFile = (content: string, filename: string, mime: string) => {
 };
 
 const ImportExportDialog = () => {
-	const { state, dispatch } = useWorkflowEditor();
+	const { state, dispatch, canEdit } = useWorkflowEditor();
 	const [format, setFormat] = useState<TExportFormat>('json');
 	const [raw, setRaw] = useState('');
 	const [error, setError] = useState<string | null>(null);
@@ -75,27 +75,29 @@ const ImportExportDialog = () => {
 			title='Import / Export Workflow'
 			onClose={() => dispatch({ type: 'SET_IMPORT_EXPORT', open: false })}>
 			<div className='space-y-4'>
-				{/* Tabs */}
-				<div className='flex rounded-xl border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-700 dark:bg-zinc-900'>
-					{(['export', 'import'] as const).map((tab) => (
-						<button
-							key={tab}
-							type='button'
-							onClick={() => {
-								setActiveTab(tab);
-								setError(null);
-								if (tab === 'import') setRaw('');
-							}}
-							className={[
-								'flex-1 rounded-lg py-1.5 text-xs font-bold capitalize transition',
-								activeTab === tab
-									? 'bg-white text-zinc-800 shadow-sm dark:bg-zinc-800 dark:text-zinc-100'
-									: 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300',
-							].join(' ')}>
-							{tab}
-						</button>
-					))}
-				</div>
+				{/* Tabs: importing replaces the graph, so a read-only editor can only export */}
+				{canEdit && (
+					<div className='flex rounded-xl border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-700 dark:bg-zinc-900'>
+						{(['export', 'import'] as const).map((tab) => (
+							<button
+								key={tab}
+								type='button'
+								onClick={() => {
+									setActiveTab(tab);
+									setError(null);
+									if (tab === 'import') setRaw('');
+								}}
+								className={[
+									'flex-1 rounded-lg py-1.5 text-xs font-bold capitalize transition',
+									activeTab === tab
+										? 'bg-white text-zinc-800 shadow-sm dark:bg-zinc-800 dark:text-zinc-100'
+										: 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300',
+								].join(' ')}>
+								{tab}
+							</button>
+						))}
+					</div>
+				)}
 
 				{activeTab === 'export' ? (
 					<>

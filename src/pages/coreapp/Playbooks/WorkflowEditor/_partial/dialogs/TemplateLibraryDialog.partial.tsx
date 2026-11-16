@@ -196,13 +196,13 @@ const TemplateDetail = ({
 };
 
 const TemplateLibraryDialog = () => {
-	const { state, dispatch } = useWorkflowEditor();
+	const { state, dispatch, canEdit } = useWorkflowEditor();
 	const [search, setSearch] = useState('');
 	const [activeCategory, setActiveCategory] = useState(ALL_CATEGORIES);
 	const [sort, setSort] = useState<TSort>('popular');
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 
-	const isOpen = state.ui.templateLibraryOpen;
+	const isOpen = canEdit && state.ui.templateLibraryOpen;
 	const {
 		data: templates = [],
 		isLoading,

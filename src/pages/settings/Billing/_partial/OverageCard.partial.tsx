@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ShieldAlert } from 'lucide-react';
 import { notify } from '@/api/core';
 import { useCreditOverage, useUpdateCreditOverage } from '@/api/modules/billing';
+import usePermission from '@/hooks/usePermission';
 import type { TCreditOverage } from '@/types/billing.type';
 
 const cardClass =
@@ -81,6 +82,8 @@ const LimitForm = ({ ws, overage }: { ws: string; overage: TCreditOverage }) => 
 const OverageCard = ({ ws }: { ws: string }) => {
 	const { data: overage, isLoading, isError } = useCreditOverage(ws);
 	const update = useUpdateCreditOverage(ws);
+	const { can } = usePermission();
+	const canManage = can('billing.manage');
 
 	const toggle = () => {
 		if (!overage) return;
@@ -117,7 +120,8 @@ const OverageCard = ({ ws }: { ws: string }) => {
 						role='switch'
 						aria-checked={overage.enabled}
 						aria-label='Overage protection'
-						disabled={update.isPending}
+						title={canManage ? undefined : 'Only admins can change overage settings'}
+						disabled={!canManage || update.isPending}
 						onClick={toggle}
 						className={`relative h-6 w-11 shrink-0 rounded-full transition disabled:opacity-60 ${
 							overage.enabled ? 'bg-primary-400' : 'bg-zinc-200 dark:bg-zinc-700'
@@ -168,8 +172,13 @@ const OverageCard = ({ ws }: { ws: string }) => {
 							</span>
 						)}
 					</div>
-					{overage.enabled && (
+					{overage.enabled && canManage && (
 						<LimitForm key={String(overage.limit)} ws={ws} overage={overage} />
+					)}
+					{!canManage && (
+						<p className='mt-4 text-xs font-semibold text-zinc-400'>
+							Only workspace admins can change overage settings.
+						</p>
 					)}
 				</>
 			)}

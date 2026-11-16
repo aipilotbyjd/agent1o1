@@ -11,7 +11,7 @@ import paths from '@/Routes/paths';
 import { useWorkspaceContext } from '@/context/workspace';
 import { notify } from '@/api/core';
 import { useAgents } from '@/api/modules/agents';
-import { useWorkspace } from '@/api/modules/workspaces';
+import usePermission from '@/hooks/usePermission';
 import { useAgentActionInbox, useDecideAgentActions } from '@/api/modules/agent-actions';
 import { ApprovalCard } from '@/pages/coreapp/Agents/AgentBuilder/Build/_partial/AgentApprovalCards.partial';
 import { prettifyActionTool } from '@/pages/coreapp/Agents/AgentBuilder/Build/_helper/actionTool.helper';
@@ -98,8 +98,9 @@ const ApprovalsPage = () => {
 		page,
 	});
 	const { data: agents } = useAgents(ws);
-	const { data: workspace } = useWorkspace(ws);
-	const canManageAgents = ['owner', 'admin', 'editor'].includes(workspace?.role ?? '');
+	const { can } = usePermission();
+	const canDecide = can('agent.chat');
+	const canManageAgents = can('agent.manage');
 	const decide = useDecideAgentActions(ws);
 
 	const actions = data?.actions ?? [];
@@ -176,7 +177,7 @@ const ApprovalsPage = () => {
 					))}
 				</div>
 
-				{waiting && actions.length > 1 && (
+				{waiting && canDecide && actions.length > 1 && (
 					<div className='mb-3 flex flex-wrap items-center gap-2'>
 						<button
 							type='button'

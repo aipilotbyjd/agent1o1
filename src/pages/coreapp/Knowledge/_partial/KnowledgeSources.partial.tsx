@@ -1,5 +1,6 @@
 import { Lock, RefreshCw, Trash2, Globe, AlertTriangle, Pencil, Files } from 'lucide-react';
 import { useConfirm } from '@/context/confirm';
+import usePermission from '@/hooks/usePermission';
 import { ListSkeletonRows } from '@/parts/ListSkeleton.part';
 import {
 	useDeleteKnowledgeSource,
@@ -34,6 +35,8 @@ const KnowledgeSourcesPartial = ({
 	const { data: sources = [], isLoading } = useKnowledgeSources(ws);
 	const syncSource = useSyncKnowledgeSource(ws);
 	const deleteSource = useDeleteKnowledgeSource(ws);
+	const { can } = usePermission();
+	const canManageShared = can('agent.manage');
 
 	const handleDelete = async (source: TKnowledgeSource) => {
 		const confirmed = await confirm({
@@ -119,30 +122,36 @@ const KnowledgeSourcesPartial = ({
 							className='flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 text-slate-500 hover:bg-slate-50 dark:border-zinc-800 dark:text-zinc-400'>
 							<Files size={12} />
 						</button>
-						<button
-							aria-label='Edit source'
-							title='Edit'
-							onClick={() => onEdit(source)}
-							className='flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 text-slate-500 hover:bg-slate-50 dark:border-zinc-800 dark:text-zinc-400'>
-							<Pencil size={12} />
-						</button>
-						<button
-							aria-label='Sync now'
-							title='Sync now'
-							disabled={['pending', 'syncing'].includes(source.status)}
-							onClick={() => syncSource.mutate(source.id)}
-							className='flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 dark:border-zinc-800 dark:text-zinc-400'>
-							<RefreshCw
-								size={12}
-								className={source.status === 'syncing' ? 'animate-spin' : ''}
-							/>
-						</button>
-						<button
-							aria-label='Remove source'
-							onClick={() => handleDelete(source)}
-							className='flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 text-slate-400 hover:text-rose-500 dark:border-zinc-800'>
-							<Trash2 size={12} />
-						</button>
+						{(source.private || canManageShared) && (
+							<>
+								<button
+									aria-label='Edit source'
+									title='Edit'
+									onClick={() => onEdit(source)}
+									className='flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 text-slate-500 hover:bg-slate-50 dark:border-zinc-800 dark:text-zinc-400'>
+									<Pencil size={12} />
+								</button>
+								<button
+									aria-label='Sync now'
+									title='Sync now'
+									disabled={['pending', 'syncing'].includes(source.status)}
+									onClick={() => syncSource.mutate(source.id)}
+									className='flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 dark:border-zinc-800 dark:text-zinc-400'>
+									<RefreshCw
+										size={12}
+										className={
+											source.status === 'syncing' ? 'animate-spin' : ''
+										}
+									/>
+								</button>
+								<button
+									aria-label='Remove source'
+									onClick={() => handleDelete(source)}
+									className='flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 text-slate-400 hover:text-rose-500 dark:border-zinc-800'>
+									<Trash2 size={12} />
+								</button>
+							</>
+						)}
 					</div>
 				</div>
 			))}

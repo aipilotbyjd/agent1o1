@@ -38,7 +38,7 @@ import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import { Boxes, Maximize2, PlaySquare, Sparkles } from 'lucide-react';
 
 const BuildPage = () => {
-	const { state, dispatch } = useWorkflowEditor();
+	const { state, dispatch, canEdit } = useWorkflowEditor();
 	const reactFlow = useReactFlow();
 	const { width } = useDeviceScreen();
 	const isMobile = width !== undefined && width < 768;
@@ -219,7 +219,8 @@ const BuildPage = () => {
 						<div className='flex min-w-0 flex-1 flex-col overflow-hidden rounded-l-2xl border-l border-zinc-200 bg-white dark:border-white/10 dark:bg-zinc-950'>
 							<div className='relative flex min-h-0 flex-1'>
 								<AnimatePresence initial={false}>
-									{state.ui.leftPanelOpen && (
+									{/* The library only adds steps, so a read-only editor goes without it. */}
+									{canEdit && state.ui.leftPanelOpen && (
 										<motion.div
 											initial={
 												isMobile
@@ -266,7 +267,7 @@ const BuildPage = () => {
 									)}
 								</AnimatePresence>
 								<div className='relative flex min-w-0 flex-1 flex-col'>
-									{!state.ui.leftPanelOpen && (
+									{canEdit && !state.ui.leftPanelOpen && (
 										<button
 											type='button'
 											onClick={() => dispatch({ type: 'TOGGLE_LEFT_PANEL' })}
@@ -324,12 +325,14 @@ const BuildPage = () => {
 							<nav
 								aria-label='Editor tools'
 								className='absolute right-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-3 z-30 flex h-14 items-center justify-around rounded-2xl border border-zinc-200 bg-white/95 px-2 shadow-2xl backdrop-blur-xl md:hidden dark:border-white/10 dark:bg-zinc-950/95'>
-								<button
-									type='button'
-									onClick={openMobileNodes}
-									className='flex min-w-16 flex-col items-center gap-0.5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400'>
-									<Boxes size={18} /> Nodes
-								</button>
+								{canEdit && (
+									<button
+										type='button'
+										onClick={openMobileNodes}
+										className='flex min-w-16 flex-col items-center gap-0.5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400'>
+										<Boxes size={18} /> Nodes
+									</button>
+								)}
 								{isAiPanelAvailable && (
 									<button
 										type='button'

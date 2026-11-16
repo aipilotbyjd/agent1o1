@@ -6,7 +6,6 @@ import type { TUser } from '@/types/auth.type';
 export type TEnrichedUser = TUser & {
 	firstName: string;
 	lastName: string;
-	role: string;
 	isVerified: boolean;
 	image: { org?: string };
 };

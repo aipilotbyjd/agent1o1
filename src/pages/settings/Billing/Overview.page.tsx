@@ -18,7 +18,7 @@ import {
 	XCircle,
 	Zap,
 } from 'lucide-react';
-import { useWorkspace } from '@/api/modules/workspaces';
+import usePermission from '@/hooks/usePermission';
 import { useConfirm } from '@/context/confirm';
 import {
 	useBillingOverview,
@@ -111,7 +111,9 @@ const fmtDate = (value: string) =>
 
 const BillingOverviewPage = () => {
 	const { workspaceId } = useParams<{ workspaceId: string }>();
-	const { data: workspace } = useWorkspace(workspaceId!);
+	const { can } = usePermission();
+	const canView = can('billing.view');
+	const canManage = can('billing.manage');
 	const { data: overview, isLoading } = useBillingOverview(workspaceId!);
 	const portal = useCreateBillingPortalSession(workspaceId!);
 	const cancelSubscription = useCancelSubscription(workspaceId!);
@@ -121,10 +123,7 @@ const BillingOverviewPage = () => {
 
 	const toWorkspacePath = (to: string) => withWorkspace(to, workspaceId!);
 
-	const role = workspace?.role;
-	const canManage = role === 'admin' || role === 'owner';
-
-	if (!canManage) {
+	if (!canView) {
 		return (
 			<div className='flex min-h-[50vh] flex-col items-center justify-center gap-4 text-center'>
 				<ShieldCheck size={40} className='text-zinc-300 dark:text-zinc-600' />
@@ -132,7 +131,7 @@ const BillingOverviewPage = () => {
 					Access Restricted
 				</h2>
 				<p className='max-w-sm text-sm text-zinc-500 dark:text-zinc-400'>
-					Only workspace admins and owners can view billing.
+					Your role in this workspace does not include billing.
 				</p>
 			</div>
 		);
@@ -202,16 +201,19 @@ const BillingOverviewPage = () => {
 						className='shrink-0 text-amber-600 dark:text-amber-400'
 					/>
 					<p className='text-sm font-semibold text-amber-700 dark:text-amber-300'>
-						Your payment is past due. Update your payment method to keep your workspace
-						active.
+						{canManage
+							? 'Your payment is past due. Update your payment method to keep your workspace active.'
+							: 'Your payment is past due. Ask a workspace admin to update the payment method.'}
 					</p>
-					<button
-						type='button'
-						onClick={() => portal.mutate()}
-						disabled={portal.isPending}
-						className='flex h-10 w-full shrink-0 items-center justify-center rounded-lg bg-amber-500 px-3 text-xs font-bold text-white shadow-md shadow-amber-500/10 transition hover:bg-amber-600 disabled:opacity-60 sm:ml-auto sm:h-auto sm:w-auto sm:py-1.5'>
-						{portal.isPending ? 'Opening…' : 'Fix payment'}
-					</button>
+					{canManage && (
+						<button
+							type='button'
+							onClick={() => portal.mutate()}
+							disabled={portal.isPending}
+							className='flex h-10 w-full shrink-0 items-center justify-center rounded-lg bg-amber-500 px-3 text-xs font-bold text-white shadow-md shadow-amber-500/10 transition hover:bg-amber-600 disabled:opacity-60 sm:ml-auto sm:h-auto sm:w-auto sm:py-1.5'>
+							{portal.isPending ? 'Opening…' : 'Fix payment'}
+						</button>
+					)}
 				</div>
 			)}
 			{canResume && (
@@ -222,17 +224,19 @@ const BillingOverviewPage = () => {
 					/>
 					<p className='text-sm font-semibold text-amber-700 dark:text-amber-300'>
 						Your subscription is scheduled to cancel
-						{cancelsAt ? ` on ${fmtDate(cancelsAt)}` : ''}. Resume to keep your plan
-						active.
+						{cancelsAt ? ` on ${fmtDate(cancelsAt)}` : ''}.
+						{canManage ? ' Resume to keep your plan active.' : ''}
 					</p>
-					<button
-						type='button'
-						onClick={() => resumeSubscription.mutate()}
-						disabled={resumeSubscription.isPending}
-						className='flex h-10 w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-amber-500 px-3 text-xs font-bold text-white shadow-md shadow-amber-500/10 transition hover:bg-amber-600 disabled:opacity-60 sm:ml-auto sm:h-auto sm:w-auto sm:py-1.5'>
-						<RotateCcw size={13} />
-						{resumeSubscription.isPending ? 'Resuming…' : 'Resume subscription'}
-					</button>
+					{canManage && (
+						<button
+							type='button'
+							onClick={() => resumeSubscription.mutate()}
+							disabled={resumeSubscription.isPending}
+							className='flex h-10 w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-amber-500 px-3 text-xs font-bold text-white shadow-md shadow-amber-500/10 transition hover:bg-amber-600 disabled:opacity-60 sm:ml-auto sm:h-auto sm:w-auto sm:py-1.5'>
+							<RotateCcw size={13} />
+							{resumeSubscription.isPending ? 'Resuming…' : 'Resume subscription'}
+						</button>
+					)}
 				</div>
 			)}
 
@@ -246,32 +250,34 @@ const BillingOverviewPage = () => {
 						Your plan, credits, and payment settings - all in one place.
 					</p>
 				</div>
-				<div className='grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:gap-3'>
-					<button
-						type='button'
-						onClick={() => portal.mutate()}
-						disabled={portal.isPending}
-						className='flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:opacity-60 sm:h-10 sm:w-auto dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900'>
-						<ExternalLink size={14} />
-						{portal.isPending ? 'Opening…' : 'Manage billing'}
-					</button>
-					<Link
-						to={toWorkspacePath(billingPages.plans.to)}
-						className='bg-primary-400 text-primary-950 shadow-primary-500/15 hover:bg-primary-500 flex h-11 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold shadow-md transition sm:h-10 sm:w-auto'>
-						<Zap size={14} />
-						Upgrade plan
-					</Link>
-					{canCancel && (
+				{canManage && (
+					<div className='grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:gap-3'>
 						<button
 							type='button'
-							onClick={handleCancel}
-							disabled={cancelSubscription.isPending}
-							className='flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 text-sm font-bold text-red-600 shadow-sm transition hover:bg-red-50 disabled:opacity-60 sm:h-10 sm:w-auto dark:border-red-900/40 dark:bg-zinc-950 dark:text-red-400 dark:hover:bg-red-950/20'>
-							<XCircle size={14} />
-							{cancelSubscription.isPending ? 'Canceling…' : 'Cancel plan'}
+							onClick={() => portal.mutate()}
+							disabled={portal.isPending}
+							className='flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-700 shadow-sm transition hover:bg-zinc-50 disabled:opacity-60 sm:h-10 sm:w-auto dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900'>
+							<ExternalLink size={14} />
+							{portal.isPending ? 'Opening…' : 'Manage billing'}
 						</button>
-					)}
-				</div>
+						<Link
+							to={toWorkspacePath(billingPages.plans.to)}
+							className='bg-primary-400 text-primary-950 shadow-primary-500/15 hover:bg-primary-500 flex h-11 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold shadow-md transition sm:h-10 sm:w-auto'>
+							<Zap size={14} />
+							Upgrade plan
+						</Link>
+						{canCancel && (
+							<button
+								type='button'
+								onClick={handleCancel}
+								disabled={cancelSubscription.isPending}
+								className='flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 text-sm font-bold text-red-600 shadow-sm transition hover:bg-red-50 disabled:opacity-60 sm:h-10 sm:w-auto dark:border-red-900/40 dark:bg-zinc-950 dark:text-red-400 dark:hover:bg-red-950/20'>
+								<XCircle size={14} />
+								{cancelSubscription.isPending ? 'Canceling…' : 'Cancel plan'}
+							</button>
+						)}
+					</div>
+				)}
 			</div>
 
 			{/* Current plan + credits */}
@@ -374,12 +380,14 @@ const BillingOverviewPage = () => {
 						debt={overview.credit_debt ?? 0}
 						freeCredits={overview.free_credits ?? null}
 					/>
-					<Link
-						to={toWorkspacePath(billingPages.credits.to)}
-						className='text-primary-600 dark:text-primary-400 mt-3 inline-flex items-center gap-1 text-xs font-bold'>
-						<span>Buy more credits</span>
-						<ArrowRight size={12} />
-					</Link>
+					{canManage && (
+						<Link
+							to={toWorkspacePath(billingPages.credits.to)}
+							className='text-primary-600 dark:text-primary-400 mt-3 inline-flex items-center gap-1 text-xs font-bold'>
+							<span>Buy more credits</span>
+							<ArrowRight size={12} />
+						</Link>
+					)}
 				</div>
 			</div>
 

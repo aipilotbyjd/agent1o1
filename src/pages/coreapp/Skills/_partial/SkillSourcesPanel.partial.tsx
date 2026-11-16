@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import Modal, { ModalHeader, ModalBody } from '@/components/ui/Modal';
 import { notify } from '@/api/core';
+import usePermission from '@/hooks/usePermission';
 import {
 	agentSkillKeys,
 	isSkillSourceSyncing,
@@ -32,6 +33,8 @@ interface ISkillSourcesPanelProps {
 const SkillSourcesPanel = ({ ws }: ISkillSourcesPanelProps) => {
 	const { data: sources } = useSkillSources(ws);
 	const syncMutation = useSyncSkillSource(ws);
+	const { can } = usePermission();
+	const canManageSkills = can('agent.skill.manage');
 	const [forkId, setForkId] = useState<string | null>(null);
 	const [upstreamId, setUpstreamId] = useState<string | null>(null);
 	const forkSource = sources?.find((s) => s.id === forkId);
@@ -76,6 +79,7 @@ const SkillSourcesPanel = ({ ws }: ISkillSourcesPanelProps) => {
 					<SourceRow
 						key={source.id}
 						source={source}
+						canManage={canManageSkills}
 						isSyncRequested={
 							syncMutation.isPending && syncMutation.variables === source.id
 						}
@@ -161,6 +165,7 @@ const STATUS_LABELS: Record<TSkillSource['status'], string> = {
 
 const SourceRow = ({
 	source,
+	canManage,
 	isSyncRequested,
 	onSync,
 	onDisconnect,
@@ -170,6 +175,8 @@ const SourceRow = ({
 	onUpstream,
 }: {
 	source: TSkillSource;
+	/** Every repository action needs `agent.skill.manage`; without it the row is read-only. */
+	canManage: boolean;
 	isSyncRequested: boolean;
 	onSync: () => void;
 	onDisconnect: () => void;
@@ -220,33 +227,37 @@ const SourceRow = ({
 							? 'Changes waiting'
 							: STATUS_LABELS[source.status]}
 					</span>
-					<button
-						type='button'
-						onClick={onSettings}
-						disabled={isSyncing}
-						aria-label={`Sync settings for ${source.repo}`}
-						title='Sync settings'
-						className='rounded-lg border border-zinc-200 p-1.5 text-zinc-500 disabled:opacity-50 dark:border-zinc-800'>
-						<Settings2 size={12} />
-					</button>
-					<button
-						type='button'
-						onClick={onSync}
-						disabled={isSyncing}
-						title='Sync now'
-						aria-label={`Sync ${source.repo} now`}
-						className='hover:text-primary-600 flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-900'>
-						<RefreshCw size={12} className={isSyncing ? 'animate-spin' : ''} />
-					</button>
-					<button
-						type='button'
-						onClick={onDisconnect}
-						disabled={isSyncing}
-						title='Disconnect'
-						aria-label={`Disconnect ${source.repo}`}
-						className='flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:bg-white hover:text-rose-500 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-900'>
-						<Unplug size={12} />
-					</button>
+					{canManage && (
+						<>
+							<button
+								type='button'
+								onClick={onSettings}
+								disabled={isSyncing}
+								aria-label={`Sync settings for ${source.repo}`}
+								title='Sync settings'
+								className='rounded-lg border border-zinc-200 p-1.5 text-zinc-500 disabled:opacity-50 dark:border-zinc-800'>
+								<Settings2 size={12} />
+							</button>
+							<button
+								type='button'
+								onClick={onSync}
+								disabled={isSyncing}
+								title='Sync now'
+								aria-label={`Sync ${source.repo} now`}
+								className='hover:text-primary-600 flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-900'>
+								<RefreshCw size={12} className={isSyncing ? 'animate-spin' : ''} />
+							</button>
+							<button
+								type='button'
+								onClick={onDisconnect}
+								disabled={isSyncing}
+								title='Disconnect'
+								aria-label={`Disconnect ${source.repo}`}
+								className='flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 hover:bg-white hover:text-rose-500 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-900'>
+								<Unplug size={12} />
+							</button>
+						</>
+					)}
 				</div>
 			</div>
 			{(source.status === 'failed' ||
@@ -270,27 +281,29 @@ const SourceRow = ({
 					Publishing once. This skill becomes independent after publishing succeeds.
 				</p>
 			)}
-			<div className='mt-2 flex flex-wrap gap-2'>
-				{!source.two_way && (
-					<button
-						type='button'
-						onClick={onFork}
-						disabled={isSyncing && !source.fork_request}
-						className='rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-bold disabled:opacity-50 dark:border-zinc-700'>
-						{source.fork_request ? 'Continue fork setup' : 'Fork and customize'}
-					</button>
-				)}
-				{source.upstream_repo && (
-					<button
-						type='button'
-						onClick={onUpstream}
-						disabled={isSyncing}
-						className='rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-bold disabled:opacity-50 dark:border-zinc-700'>
-						Review original updates
-					</button>
-				)}
-			</div>
-			{(source.conflicts?.length ?? 0) > 0 && (
+			{canManage && (
+				<div className='mt-2 flex flex-wrap gap-2'>
+					{!source.two_way && (
+						<button
+							type='button'
+							onClick={onFork}
+							disabled={isSyncing && !source.fork_request}
+							className='rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-bold disabled:opacity-50 dark:border-zinc-700'>
+							{source.fork_request ? 'Continue fork setup' : 'Fork and customize'}
+						</button>
+					)}
+					{source.upstream_repo && (
+						<button
+							type='button'
+							onClick={onUpstream}
+							disabled={isSyncing}
+							className='rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-bold disabled:opacity-50 dark:border-zinc-700'>
+							Review original updates
+						</button>
+					)}
+				</div>
+			)}
+			{canManage && (source.conflicts?.length ?? 0) > 0 && (
 				<button
 					type='button'
 					onClick={onConflicts}

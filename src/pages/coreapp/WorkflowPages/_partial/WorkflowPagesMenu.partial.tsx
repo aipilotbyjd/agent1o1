@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { AppWindow, Plus } from 'lucide-react';
 import { useWorkflowPages } from '@/api/modules/workflow-pages';
 import paths from '@/Routes/paths';
+import usePermission from '@/hooks/usePermission';
 import CreatePageModal from './CreatePageModal.partial';
 
 const itemClass =
@@ -23,6 +24,8 @@ const WorkflowPagesMenu = ({
 }) => {
 	const { data: pages } = useWorkflowPages(ws, workflowId);
 	const [creating, setCreating] = useState(false);
+	const { can } = usePermission();
+	const canManagePages = can('page.manage');
 
 	return (
 		<>
@@ -32,7 +35,7 @@ const WorkflowPagesMenu = ({
 			{(pages ?? []).slice(0, 5).map((page) => (
 				<Link
 					key={page.id}
-					to={paths.editPage(ws, page.id)}
+					to={canManagePages ? paths.editPage(ws, page.id) : paths.usePage(ws, page.id)}
 					onClick={onNavigate}
 					className={itemClass}>
 					<AppWindow
@@ -45,10 +48,12 @@ const WorkflowPagesMenu = ({
 					/>
 				</Link>
 			))}
-			<button type='button' onClick={() => setCreating(true)} className={itemClass}>
-				<Plus size={14} className='text-primary-700 dark:text-primary-400' />
-				<span>Create a page for this workflow</span>
-			</button>
+			{canManagePages && (
+				<button type='button' onClick={() => setCreating(true)} className={itemClass}>
+					<Plus size={14} className='text-primary-700 dark:text-primary-400' />
+					<span>Create a page for this workflow</span>
+				</button>
+			)}
 			{creating && (
 				<CreatePageModal
 					ws={ws}

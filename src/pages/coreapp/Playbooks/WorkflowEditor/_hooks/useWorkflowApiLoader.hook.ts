@@ -5,12 +5,15 @@ import { useWorkflowEditor } from './useWorkflowEditor.hook';
 import { useNodeCategories } from '@/api/modules/catalog';
 import { mapApiCategoriesToGroups } from '../_helper/apiNodeCatalog.helper';
 import { NODE_CATALOG_MAP } from '../_helper/nodeCatalog.constants';
+import usePermission from '@/hooks/usePermission';
 
 export const useWorkflowApiLoader = (workspaceId: string, workflowId: string) => {
 	const { state, dispatch } = useWorkflowEditor();
 	const loadedKey = useRef<string | null>(null);
 	const workflowQuery = useWorkflow(workspaceId, workflowId);
-	const versionsQuery = useWorkflowVersions(workspaceId, workflowId);
+	const { can } = usePermission();
+	const canViewVersions = can('workflow.version');
+	const versionsQuery = useWorkflowVersions(workspaceId, canViewVersions ? workflowId : '');
 
 	// Load dynamic node categories/definitions from the API
 	const { data: apiCategories, isLoading: categoriesLoading } = useNodeCategories(true);

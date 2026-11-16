@@ -11,6 +11,7 @@ export const workspace: TPage = {
 			to: ws('assistant'),
 			text: 'Assistant',
 			icon: 'AiMagic',
+			permission: 'assistant.use',
 		},
 		dashboard: {
 			id: 'dashboard',
@@ -110,12 +111,15 @@ export const playbookEditor: TPage = {
 			to: ws('playbooks/new'),
 			text: 'New Playbook',
 			icon: 'PencilEdit01',
+			permission: 'workflow.manage',
 		},
 		edit: {
 			id: 'editPlaybook',
 			to: ws('playbooks/:workflowId/edit'),
 			text: 'Edit Playbook',
 			icon: 'PencilEdit01',
+			permission: 'workflow.manage',
+			fallbackTo: ws('playbooks/:workflowId'),
 		},
 		view: {
 			id: 'viewPlaybook',
@@ -149,6 +153,7 @@ export const agentEditor: TPage = {
 			to: ws('agents/new'),
 			text: 'Add Agent',
 			icon: 'Robot01',
+			permission: 'agent.manage',
 		},
 		edit: {
 			id: 'editAgent',
@@ -193,6 +198,7 @@ export const pageEditor: TPage = {
 			to: ws('pages/:pageId/edit'),
 			text: 'Edit Page',
 			icon: 'Browser',
+			permission: 'page.manage',
 		},
 		insights: {
 			id: 'pageInsights',

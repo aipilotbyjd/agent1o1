@@ -47,6 +47,11 @@ export class ApiError extends Error {
 		return this.status === 401;
 	}
 
+	/** The viewer's workspace role does not allow this, or they are no longer a member. */
+	get isForbidden(): boolean {
+		return this.status === 403;
+	}
+
 	get isValidation(): boolean {
 		return this.status === 422;
 	}

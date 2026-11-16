@@ -4,6 +4,7 @@ import { CheckCircle2, Copy, Mail, MessageSquare } from 'lucide-react';
 import { useBrand } from '@/context/brand';
 import { useAssistantChannels, useInstallAssistantSlack } from '@/api/modules/assistant';
 import { notify } from '@/api/core';
+import usePermission from '@/hooks/usePermission';
 import SmsChannelPartial from './SmsChannel.partial';
 
 const SLACK_RESULT_PARAM = 'slack';
@@ -18,6 +19,8 @@ const ChannelsPanelPartial = ({ workspaceId }: IChannelsPanelProps) => {
 	const [searchParams, setSearchParams] = useSearchParams();
 	const { data: channels } = useAssistantChannels(workspaceId);
 	const installSlack = useInstallAssistantSlack(workspaceId);
+	const { can } = usePermission();
+	const canInstallSlack = can('connector.manage');
 
 	// Slack sends the admin back here with ?slack=connected|failed|cancelled.
 	const slackResult = searchParams.get(SLACK_RESULT_PARAM);
@@ -80,7 +83,7 @@ const ChannelsPanelPartial = ({ workspaceId }: IChannelsPanelProps) => {
 								Connected to {channels.slack.team_name}
 							</span>
 						</div>
-					) : (
+					) : canInstallSlack ? (
 						<button
 							type='button'
 							onClick={() => installSlack.mutate()}
@@ -89,6 +92,10 @@ const ChannelsPanelPartial = ({ workspaceId }: IChannelsPanelProps) => {
 							<MessageSquare className='h-4 w-4' />
 							Add to Slack
 						</button>
+					) : (
+						<p className='text-sm font-medium text-zinc-500 dark:text-zinc-400'>
+							Ask a workspace admin to add {brand.name} to Slack.
+						</p>
 					)}
 					<p className='text-[11px] text-zinc-500'>
 						DM {brand.name} in Slack. Reply in the thread to keep going, !stop to stop,

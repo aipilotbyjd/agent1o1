@@ -9,6 +9,7 @@ import {
 	useTestNotificationChannel,
 } from '@/api/modules/notification-channels';
 import { useWorkspaceContext } from '@/context/workspace';
+import usePermission from '@/hooks/usePermission';
 import { notify } from '@/api/core';
 import formatDate from '@/utils/formatDate.util';
 import type { TNotificationChannel, TNotificationChannelType } from '@/types/notification.type';
@@ -40,6 +41,8 @@ const typeConfig = Object.fromEntries(typeOptions.map((o) => [o.value, o])) as R
 
 const NotificationChannelsPage = () => {
 	const { activeWorkspaceId } = useWorkspaceContext();
+	const { can } = usePermission();
+	const canManageChannels = can('notification-channel.manage');
 	const { data: channels = [], isLoading, error } = useNotificationChannels(activeWorkspaceId);
 	const createChannel = useCreateNotificationChannel(activeWorkspaceId);
 	const updateChannel = useUpdateNotificationChannel(activeWorkspaceId);
@@ -151,17 +154,21 @@ const NotificationChannelsPage = () => {
 						Notification Channels
 					</h1>
 					<p className='mt-1 text-sm font-medium text-zinc-500 dark:text-zinc-400'>
-						Deliver workspace notifications to Slack, Discord, or any webhook.
+						{canManageChannels
+							? 'Deliver workspace notifications to Slack, Discord, or any webhook.'
+							: 'Where workspace notifications are delivered. Only admins can change channels.'}
 					</p>
 				</div>
-				<Button
-					variant='solid'
-					color='primary'
-					icon='Add01'
-					onClick={() => setIsCreateModalOpen(true)}
-					className='shadow-primary-500/10 h-12 font-bold text-zinc-950 shadow-md'>
-					Add channel
-				</Button>
+				{canManageChannels && (
+					<Button
+						variant='solid'
+						color='primary'
+						icon='Add01'
+						onClick={() => setIsCreateModalOpen(true)}
+						className='shadow-primary-500/10 h-12 font-bold text-zinc-950 shadow-md'>
+						Add channel
+					</Button>
+				)}
 			</div>
 
 			{isLoading ? (
@@ -192,15 +199,19 @@ const NotificationChannelsPage = () => {
 						No channels yet
 					</h3>
 					<p className='mt-1 text-sm text-zinc-500 dark:text-zinc-400'>
-						Add a Slack, Discord, or webhook channel to route notifications to.
+						{canManageChannels
+							? 'Add a Slack, Discord, or webhook channel to route notifications to.'
+							: 'Only admins can add notification channels.'}
 					</p>
-					<button
-						type='button'
-						onClick={() => setIsCreateModalOpen(true)}
-						className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 mt-5 inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-xs font-bold shadow-md transition active:scale-95'>
-						<Plus size={14} />
-						<span>Add your first channel</span>
-					</button>
+					{canManageChannels && (
+						<button
+							type='button'
+							onClick={() => setIsCreateModalOpen(true)}
+							className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 mt-5 inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-xs font-bold shadow-md transition active:scale-95'>
+							<Plus size={14} />
+							<span>Add your first channel</span>
+						</button>
+					)}
 				</div>
 			) : (
 				<div className='space-y-3'>
@@ -231,31 +242,33 @@ const NotificationChannelsPage = () => {
 									</div>
 								</div>
 
-								<div className='flex items-center gap-2 pl-15 sm:pl-0'>
-									<button
-										type='button'
-										onClick={() => handleTest(channel)}
-										disabled={testingId === channel.id}
-										className='flex h-9 items-center gap-1.5 rounded-lg border border-zinc-200 px-3 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800'>
-										<PlayCircle size={14} />
-										{testingId === channel.id ? 'Sending…' : 'Send test'}
-									</button>
-									<button
-										type='button'
-										aria-label={`Edit ${channel.name}`}
-										title='Edit'
-										onClick={() => openEdit(channel)}
-										className='rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
-										<Pencil size={15} />
-									</button>
-									<button
-										type='button'
-										aria-label={`Delete ${channel.name}`}
-										onClick={() => setChannelToDelete(channel)}
-										className='rounded-lg p-2 text-zinc-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10'>
-										<Trash2 size={16} />
-									</button>
-								</div>
+								{canManageChannels && (
+									<div className='flex items-center gap-2 pl-15 sm:pl-0'>
+										<button
+											type='button'
+											onClick={() => handleTest(channel)}
+											disabled={testingId === channel.id}
+											className='flex h-9 items-center gap-1.5 rounded-lg border border-zinc-200 px-3 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800'>
+											<PlayCircle size={14} />
+											{testingId === channel.id ? 'Sending…' : 'Send test'}
+										</button>
+										<button
+											type='button'
+											aria-label={`Edit ${channel.name}`}
+											title='Edit'
+											onClick={() => openEdit(channel)}
+											className='rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'>
+											<Pencil size={15} />
+										</button>
+										<button
+											type='button'
+											aria-label={`Delete ${channel.name}`}
+											onClick={() => setChannelToDelete(channel)}
+											className='rounded-lg p-2 text-zinc-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10'>
+											<Trash2 size={16} />
+										</button>
+									</div>
+								)}
 							</div>
 						);
 					})}

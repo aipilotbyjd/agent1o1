@@ -12,6 +12,7 @@ import pages from '@/Routes/pages';
 import paths from '@/Routes/paths';
 import type { TPageView } from '@/types/workflow-page.type';
 import type { OutletContextType } from './_layouts/WorkflowPages.layout';
+import usePermission from '@/hooks/usePermission';
 
 
 const LivePage = ({ ws, pageId, view }: { ws: string; pageId: string; view: TPageView }) => {
@@ -34,6 +35,9 @@ const UsePagePage = () => {
 	const { setHeaderLeft } = useOutletContext<OutletContextType>();
 	const { workspaceId: ws = '', pageId = '' } = useParams<{ workspaceId: string; pageId: string }>();
 	const { data: view, isLoading, error } = useWorkflowPageView(ws, pageId);
+	const { can } = usePermission();
+	const canEditPage = can('page.manage');
+	const canRun = can('run.trigger');
 
 	useEffect(() => {
 		setHeaderLeft(
@@ -49,19 +53,31 @@ const UsePagePage = () => {
 
 	return (
 		<Container className='relative flex flex-col overflow-y-auto !p-0'>
-			<div className='absolute top-3 right-4 z-10'>
-				<Link
-					to={paths.editPage(ws, pageId)}
-					className='flex h-9 items-center gap-1.5 rounded-xl border border-zinc-200 bg-white/90 px-3 text-xs font-semibold text-zinc-700 shadow-sm backdrop-blur transition hover:bg-white dark:border-white/10 dark:bg-zinc-900/90 dark:text-zinc-200'>
-					<PencilRuler size={13} /> Edit page
-				</Link>
-			</div>
+			{canEditPage && (
+				<div className='absolute top-3 right-4 z-10'>
+					<Link
+						to={paths.editPage(ws, pageId)}
+						className='flex h-9 items-center gap-1.5 rounded-xl border border-zinc-200 bg-white/90 px-3 text-xs font-semibold text-zinc-700 shadow-sm backdrop-blur transition hover:bg-white dark:border-white/10 dark:bg-zinc-900/90 dark:text-zinc-200'>
+						<PencilRuler size={13} /> Edit page
+					</Link>
+				</div>
+			)}
 			{isLoading ? (
 				<div className='flex flex-1 items-center justify-center gap-2 text-sm text-zinc-500'>
 					<Loader2 size={16} className='animate-spin' /> Loading page…
 				</div>
 			) : view ? (
-				<LivePage ws={ws} pageId={pageId} view={view} />
+				<>
+					{!canRun && (
+						<div className='border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-xs font-semibold text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300'>
+							Your role can view this page but not submit it.
+						</div>
+					)}
+					{/* Submitting starts a run, which a viewer's role refuses. */}
+					<div inert={!canRun} className='flex flex-1 flex-col'>
+						<LivePage ws={ws} pageId={pageId} view={view} />
+					</div>
+				</>
 			) : (
 				<div className='flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center'>
 					<div className='bg-primary-400/15 text-primary-700 flex size-12 items-center justify-center rounded-2xl'>
@@ -73,11 +89,13 @@ const UsePagePage = () => {
 							? error.message
 							: 'Something went wrong loading it. Try again in a moment.'}
 					</p>
-					<Link
-						to={paths.editPage(ws, pageId)}
-						className='bg-primary-400 text-primary-950 mt-2 rounded-xl px-4 py-2 text-xs font-bold'>
-						Open the builder
-					</Link>
+					{canEditPage && (
+						<Link
+							to={paths.editPage(ws, pageId)}
+							className='bg-primary-400 text-primary-950 mt-2 rounded-xl px-4 py-2 text-xs font-bold'>
+							Open the builder
+						</Link>
+					)}
 				</div>
 			)}
 		</Container>

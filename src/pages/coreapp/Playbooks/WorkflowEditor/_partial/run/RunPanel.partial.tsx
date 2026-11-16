@@ -23,6 +23,7 @@ import RunCost from './RunCost.partial';
 import RunHistory from './RunHistory.partial';
 import RunValues from './RunValues.partial';
 import { WORKFLOW_OUTPUT_TYPE } from '../../_helper/variables.helper';
+import usePermission from '@/hooks/usePermission';
 
 const statusMeta = {
 	idle: {
@@ -62,6 +63,8 @@ const secondaryButton =
 const RunPanel = () => {
 	const { state, dispatch } = useWorkflowEditor();
 	const { runWorkflow, stopRun } = useRunWorkflow();
+	const { can } = usePermission();
+	const canRun = can('run.trigger');
 	const reactFlow = useReactFlow();
 	if (!state.ui.runPanelOpen) return null;
 	const run = state.run;
@@ -384,32 +387,38 @@ const RunPanel = () => {
 					</>
 				)}
 			</div>
-			<footer className='flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-zinc-200 bg-zinc-50/70 px-5 py-3.5 dark:border-white/10 dark:bg-white/[0.015]'>
-				<span className='flex items-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400'>
-					<Clock3 size={12} />
-					Manual run
-				</span>
-				<div className='flex flex-wrap gap-2'>
-					{run.status === 'running' ? (
-						<button
-							type='button'
-							onClick={() => void stopRun()}
-							className={secondaryButton}>
-							<Square size={12} />
-							Stop run
-						</button>
-					) : (
-						<button
-							type='button'
-							disabled={!steps.length}
-							onClick={() => void runWorkflow()}
-							className='dark:bg-primary-400 dark:text-primary-950 dark:hover:bg-primary-400 inline-flex items-center justify-center gap-2 rounded-lg bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:brightness-110'>
-							{run.status === 'idle' ? <Play size={13} /> : <RotateCw size={13} />}
-							{run.status === 'idle' ? 'Start run' : 'Run again'}
-						</button>
-					)}
-				</div>
-			</footer>
+			{canRun && (
+				<footer className='flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-zinc-200 bg-zinc-50/70 px-5 py-3.5 dark:border-white/10 dark:bg-white/[0.015]'>
+					<span className='flex items-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400'>
+						<Clock3 size={12} />
+						Manual run
+					</span>
+					<div className='flex flex-wrap gap-2'>
+						{run.status === 'running' ? (
+							<button
+								type='button'
+								onClick={() => void stopRun()}
+								className={secondaryButton}>
+								<Square size={12} />
+								Stop run
+							</button>
+						) : (
+							<button
+								type='button'
+								disabled={!steps.length}
+								onClick={() => void runWorkflow()}
+								className='dark:bg-primary-400 dark:text-primary-950 dark:hover:bg-primary-400 inline-flex items-center justify-center gap-2 rounded-lg bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:brightness-110'>
+								{run.status === 'idle' ? (
+									<Play size={13} />
+								) : (
+									<RotateCw size={13} />
+								)}
+								{run.status === 'idle' ? 'Start run' : 'Run again'}
+							</button>
+						)}
+					</div>
+				</footer>
+			)}
 		</section>
 	);
 };

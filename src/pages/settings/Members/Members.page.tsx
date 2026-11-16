@@ -11,7 +11,7 @@ import {
 import { useWorkspaceContext } from '@/context/workspace';
 
 import type { TWorkspaceMember } from '@/types/workspace-extras.type';
-import type { TAssignableWorkspaceRole, TWorkspaceRole } from '@/types/workspace.type';
+import type { TAssignableWorkspaceRole } from '@/types/workspace.type';
 import { notify } from '@/api/core';
 import Button from '@/components/ui/Button';
 import Modal, {
@@ -25,14 +25,12 @@ import Select from '@/components/form/Select';
 import Table, { TBody, THead, Td, Th, Tr } from '@/components/ui/Table';
 import Badge from '@/components/ui/Badge';
 import Spinner from '@/components/ui/Spinner';
-
-const roleOptions: { value: TWorkspaceRole; label: string; description: string }[] = [
-	{ value: 'owner', label: 'Owner', description: 'Full access to all settings and billing.' },
-	{ value: 'admin', label: 'Admin', description: 'Can manage members, settings, and workflows.' },
-	{ value: 'editor', label: 'Editor', description: 'Can create and edit workflows and agents.' },
-	{ value: 'member', label: 'Member', description: 'Can view and run workflows and agents.' },
-	{ value: 'viewer', label: 'Viewer', description: 'Read-only access to workflows and runs.' },
-];
+import usePermission from '@/hooks/usePermission';
+import {
+	ASSIGNABLE_WORKSPACE_ROLES,
+	WORKSPACE_ROLE_DESCRIPTIONS,
+	WORKSPACE_ROLE_LABELS,
+} from '@/constants/workspaceRole.constant';
 
 const getInitials = (name: string) => {
 	if (!name) return '?';
@@ -65,6 +63,11 @@ const MembersPage = () => {
 
 	const workspaceName = activeWorkspace?.name ?? 'this workspace';
 
+	const { can } = usePermission();
+	const canInvite = can('member.invite');
+	const canUpdateRole = can('member.update-role');
+	const canRemove = can('member.remove');
+
 	// Tabs state
 	const [activeTab, setActiveTab] = useState<'members' | 'invitations'>('members');
 
@@ -74,7 +77,7 @@ const MembersPage = () => {
 
 	// Invite Form state
 	const [inviteEmail, setInviteEmail] = useState('');
-	const [inviteRole, setInviteRole] = useState<TWorkspaceRole>('member');
+	const [inviteRole, setInviteRole] = useState<TAssignableWorkspaceRole>('member');
 
 	// API hooks
 	const {
@@ -138,7 +141,7 @@ const MembersPage = () => {
 		try {
 			await sendInvitationMutation.mutateAsync({
 				email: inviteEmail,
-				role: inviteRole as TAssignableWorkspaceRole,
+				role: inviteRole,
 			});
 			setIsInviteModalOpen(false);
 			setInviteEmail('');
@@ -166,19 +169,23 @@ const MembersPage = () => {
 						Members & Access
 					</h1>
 					<p className='mt-1 text-sm font-medium text-zinc-500 dark:text-zinc-400'>
-						Manage access roles, invite teammates, or remove accounts.
+						{canInvite || canUpdateRole || canRemove
+							? 'Manage access roles, invite teammates, or remove accounts.'
+							: 'See who has access to this workspace. Only admins can make changes.'}
 					</p>
 				</div>
-				<div>
-					<Button
-						variant='solid'
-						color='primary'
-						icon='UserAdd01'
-						onClick={() => setIsInviteModalOpen(true)}
-						className='shadow-primary-500/10 h-12 w-full justify-center font-bold text-zinc-950 shadow-md sm:w-auto'>
-						Invite member
-					</Button>
-				</div>
+				{canInvite && (
+					<div>
+						<Button
+							variant='solid'
+							color='primary'
+							icon='UserAdd01'
+							onClick={() => setIsInviteModalOpen(true)}
+							className='shadow-primary-500/10 h-12 w-full justify-center font-bold text-zinc-950 shadow-md sm:w-auto'>
+							Invite member
+						</Button>
+					</div>
+				)}
 			</div>
 
 			{/* Tabs & Filter Bar */}
@@ -299,7 +306,7 @@ const MembersPage = () => {
 													{member.user?.email}
 												</p>
 											</div>
-											{member.role !== 'owner' && (
+											{canRemove && member.role !== 'owner' && (
 												<button
 													type='button'
 													aria-label={`Remove ${member.user?.name ?? 'member'}`}
@@ -335,6 +342,10 @@ const MembersPage = () => {
 													<div className='text-primary-600 dark:text-primary-400 mt-1 flex items-center gap-1.5 text-xs font-black'>
 														<Shield size={14} /> Owner
 													</div>
+												) : !canUpdateRole ? (
+													<p className='mt-1 text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+														{WORKSPACE_ROLE_LABELS[member.role]}
+													</p>
 												) : (
 													<div className='relative mt-1'>
 														<select
@@ -348,18 +359,17 @@ const MembersPage = () => {
 																)
 															}
 															className='focus:border-primary-400 focus:ring-primary-100 h-10 w-full appearance-none rounded-xl border border-zinc-200 bg-white px-3 pr-8 text-xs font-bold text-zinc-800 outline-none focus:ring-2 dark:border-zinc-700 dark:bg-zinc-700 dark:text-zinc-200'>
-															{roleOptions
-																.filter(
-																	(option) =>
-																		option.value !== 'owner',
-																)
-																.map((option) => (
-																	<option
-																		key={option.value}
-																		value={option.value}>
-																		{option.label}
+															{ASSIGNABLE_WORKSPACE_ROLES.map(
+																(role) => (
+																	<option key={role} value={role}>
+																		{
+																			WORKSPACE_ROLE_LABELS[
+																				role
+																			]
+																		}
 																	</option>
-																))}
+																),
+															)}
 														</select>
 														<span className='pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[9px] text-zinc-400'>
 															▼
@@ -384,9 +394,11 @@ const MembersPage = () => {
 											<Th className='w-[180px] border-0 !bg-transparent text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
 												Access Role
 											</Th>
-											<Th className='w-[80px] border-0 !bg-transparent text-right text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
-												Actions
-											</Th>
+											{canRemove && (
+												<Th className='w-[80px] border-0 !bg-transparent text-right text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
+													Actions
+												</Th>
+											)}
 										</Tr>
 									</THead>
 									<TBody className='divide-y divide-zinc-200 bg-white dark:divide-zinc-700 dark:bg-zinc-800'>
@@ -431,6 +443,10 @@ const MembersPage = () => {
 															<Shield size={15} />
 															Owner
 														</div>
+													) : !canUpdateRole ? (
+														<div className='px-0.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300'>
+															{WORKSPACE_ROLE_LABELS[member.role]}
+														</div>
 													) : (
 														<div className='relative w-full max-w-[140px]'>
 															<select
@@ -444,19 +460,19 @@ const MembersPage = () => {
 																	)
 																}
 																className='focus:border-primary-300 focus:ring-primary-100/50 h-9 w-full cursor-pointer appearance-none rounded-lg border border-zinc-200 bg-white bg-none px-2.5 pr-8 text-xs font-bold text-zinc-800 shadow-xs outline-none focus:ring-2 dark:border-zinc-700 dark:bg-zinc-700 dark:text-zinc-200'>
-																{roleOptions
-																	.filter(
-																		(option) =>
-																			option.value !==
-																			'owner',
-																	)
-																	.map((option) => (
+																{ASSIGNABLE_WORKSPACE_ROLES.map(
+																	(role) => (
 																		<option
-																			key={option.value}
-																			value={option.value}>
-																			{option.label}
+																			key={role}
+																			value={role}>
+																			{
+																				WORKSPACE_ROLE_LABELS[
+																					role
+																				]
+																			}
 																		</option>
-																	))}
+																	),
+																)}
 															</select>
 															<div className='pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[8px] font-bold text-zinc-400 dark:text-zinc-600'>
 																▼
@@ -464,21 +480,23 @@ const MembersPage = () => {
 														</div>
 													)}
 												</Td>
-												<Td className='border-0 text-right'>
-													{member.role !== 'owner' ? (
-														<button
-															type='button'
-															aria-label={`Remove ${member.user?.name ?? 'member'}`}
-															onClick={() =>
-																setMemberToRemove(member)
-															}
-															className='rounded-lg p-2 text-zinc-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10'>
-															<Trash2 size={16} />
-														</button>
-													) : (
-														<span className='inline-block w-8' />
-													)}
-												</Td>
+												{canRemove && (
+													<Td className='border-0 text-right'>
+														{member.role !== 'owner' ? (
+															<button
+																type='button'
+																aria-label={`Remove ${member.user?.name ?? 'member'}`}
+																onClick={() =>
+																	setMemberToRemove(member)
+																}
+																className='rounded-lg p-2 text-zinc-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10'>
+																<Trash2 size={16} />
+															</button>
+														) : (
+															<span className='inline-block w-8' />
+														)}
+													</Td>
+												)}
 											</Tr>
 										))}
 									</TBody>
@@ -562,14 +580,16 @@ const MembersPage = () => {
 													: 'In 30 days'}
 											</p>
 										</div>
-										<Button
-											variant='outline'
-											color='red'
-											dimension='sm'
-											onClick={() => handleCancelInvitation(inv.id)}
-											className='h-10 border-red-500/25 px-4 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10'>
-											Revoke
-										</Button>
+										{canInvite && (
+											<Button
+												variant='outline'
+												color='red'
+												dimension='sm'
+												onClick={() => handleCancelInvitation(inv.id)}
+												className='h-10 border-red-500/25 px-4 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10'>
+												Revoke
+											</Button>
+										)}
 									</div>
 								</article>
 							))}
@@ -590,9 +610,11 @@ const MembersPage = () => {
 										<Th className='border-0 !bg-transparent text-left text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
 											Expires
 										</Th>
-										<Th className='w-[120px] border-0 !bg-transparent text-right text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
-											Action
-										</Th>
+										{canInvite && (
+											<Th className='w-[120px] border-0 !bg-transparent text-right text-xs font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400'>
+												Action
+											</Th>
+										)}
 									</Tr>
 								</THead>
 								<TBody className='divide-y divide-zinc-200 bg-white dark:divide-zinc-700 dark:bg-zinc-800'>
@@ -624,16 +646,20 @@ const MembersPage = () => {
 														)
 													: 'In 30 days'}
 											</Td>
-											<Td className='border-0 text-right'>
-												<Button
-													variant='outline'
-													color='red'
-													dimension='sm'
-													onClick={() => handleCancelInvitation(inv.id)}
-													className='h-8 border-red-500/25 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10'>
-													Revoke
-												</Button>
-											</Td>
+											{canInvite && (
+												<Td className='border-0 text-right'>
+													<Button
+														variant='outline'
+														color='red'
+														dimension='sm'
+														onClick={() =>
+															handleCancelInvitation(inv.id)
+														}
+														className='h-8 border-red-500/25 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10'>
+														Revoke
+													</Button>
+												</Td>
+											)}
 										</Tr>
 									))}
 								</TBody>
@@ -678,20 +704,18 @@ const MembersPage = () => {
 									aria-label='Access role'
 									value={inviteRole}
 									onChange={(e) =>
-										setInviteRole(e.target.value as TWorkspaceRole)
+										setInviteRole(e.target.value as TAssignableWorkspaceRole)
 									}
 									variant='default'
 									dimension='default'>
-									{roleOptions
-										.filter((option) => option.value !== 'owner')
-										.map((option) => (
-											<option key={option.value} value={option.value}>
-												{option.label}
-											</option>
-										))}
+									{ASSIGNABLE_WORKSPACE_ROLES.map((role) => (
+										<option key={role} value={role}>
+											{WORKSPACE_ROLE_LABELS[role]}
+										</option>
+									))}
 								</Select>
 								<p className='mt-2.5 text-xs leading-relaxed font-medium text-zinc-400 dark:text-zinc-500'>
-									{roleOptions.find((o) => o.value === inviteRole)?.description}
+									{WORKSPACE_ROLE_DESCRIPTIONS[inviteRole]}
 								</p>
 							</div>
 						</div>

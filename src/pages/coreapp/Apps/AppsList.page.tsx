@@ -8,7 +8,7 @@ import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
 import { notify } from '@/api/core';
 import { useWorkspaceContext } from '@/context/workspace';
-import { useWorkspace } from '@/api/modules/workspaces';
+import usePermission from '@/hooks/usePermission';
 import paths, { withWorkspace } from '@/Routes/paths';
 import type {
 	TConnectorCredential,
@@ -70,12 +70,10 @@ const AppsListPage = () => {
 	/** The URL is the source of truth for the workspace; the context covers the
 	 *  first render, before the route param is available. */
 	const { workspaceId } = useParams<{ workspaceId: string }>();
-	const { activeWorkspaceId, activeWorkspace } = useWorkspaceContext();
+	const { activeWorkspaceId } = useWorkspaceContext();
 	const currentWorkspaceId = workspaceId || activeWorkspaceId;
-	const { data: currentWorkspace } = useWorkspace(currentWorkspaceId);
-	/** Mirrors the backend: `connector.manage` is granted to owners and admins only. */
-	const workspaceRole = currentWorkspace?.role ?? activeWorkspace?.role;
-	const canManageConnections = workspaceRole === 'owner' || workspaceRole === 'admin';
+	const { can } = usePermission();
+	const canManageConnections = can('connector.manage');
 
 	const {
 		data: credentialsData,

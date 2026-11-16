@@ -13,7 +13,7 @@ import { useQueryClient } from '@tanstack/react-query';
 const MAINTENANCE_RETRY_MS = 30_000;
 
 export const useAutosave = () => {
-	const { state, dispatch } = useWorkflowEditor();
+	const { state, dispatch, canEdit } = useWorkflowEditor();
 	const persistWorkflowDraft = usePersistWorkflowDraft();
 	const timer = useRef<number | null>(null);
 	const queryClient = useQueryClient();
@@ -119,7 +119,7 @@ export const useAutosave = () => {
 	const { savingState, workspaceId, apiId, name, description } = state.workflow;
 
 	useEffect(() => {
-		if (savingState !== 'dirty' || isReadOnly) return;
+		if (savingState !== 'dirty' || isReadOnly || !canEdit) return;
 		if (timer.current) window.clearTimeout(timer.current);
 
 		const delay = Math.max(AUTOSAVE_DEBOUNCE_MS, blockedUntil.current - Date.now());
@@ -130,7 +130,17 @@ export const useAutosave = () => {
 		return () => {
 			if (timer.current) window.clearTimeout(timer.current);
 		};
-	}, [savingState, isReadOnly, workspaceId, apiId, name, description, state.nodes, state.edges]);
+	}, [
+		savingState,
+		isReadOnly,
+		canEdit,
+		workspaceId,
+		apiId,
+		name,
+		description,
+		state.nodes,
+		state.edges,
+	]);
 
 	// Leaving the editor in-app unmounts it and the cleanup above clears the pending
 	// timer with it, which silently dropped anything edited in the last 700ms. Flush

@@ -1,9 +1,12 @@
-import { ReactNode, useEffect, useMemo, useReducer } from 'react';
+import { ReactNode, useCallback, useEffect, useMemo, useReducer } from 'react';
 import {
+	EDIT_ACTIONS,
 	initialWorkflowEditorState,
 	WorkflowEditorContext,
 	workflowEditorReducer,
 } from './WorkflowEditorStore.context';
+import type { TWorkflowEditorAction } from './WorkflowEditorStore.context';
+import usePermission from '@/hooks/usePermission';
 import type { TRunRecord } from '../_types/run.type';
 import { useWorkflowRouteParams } from '../_hooks/useWorkflowRouteParams.hook';
 import safeStorage from '@/utils/safeStorage.util';
@@ -87,7 +90,20 @@ export const WorkflowEditorProvider = ({ children }: { children: ReactNode }) =>
 	// Drop the old global flag that opened the panel on every workflow.
 	useEffect(() => safeStorage.remove(AI_PANEL_OPEN_KEY), []);
 
-	const value = useMemo(() => ({ state, dispatch }), [state]);
+	const { can } = usePermission();
+	const canEdit = can('workflow.manage');
+	const guardedDispatch = useCallback(
+		(action: TWorkflowEditorAction) => {
+			if (!canEdit && EDIT_ACTIONS[action.type]) return;
+			dispatch(action);
+		},
+		[canEdit],
+	);
+
+	const value = useMemo(
+		() => ({ state, dispatch: guardedDispatch, canEdit }),
+		[state, guardedDispatch, canEdit],
+	);
 
 	return (
 		<WorkflowEditorContext.Provider value={value}>{children}</WorkflowEditorContext.Provider>

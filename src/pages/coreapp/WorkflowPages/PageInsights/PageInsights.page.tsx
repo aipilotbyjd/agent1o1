@@ -31,6 +31,7 @@ import {
 import { notify } from '@/api/core';
 import { useConfirm } from '@/context/confirm';
 import useDarkMode from '@/hooks/useDarkMode';
+import usePermission from '@/hooks/usePermission';
 import pages from '@/Routes/pages';
 import paths from '@/Routes/paths';
 import relativeTime from '@/utils/relativeTime.util';
@@ -190,6 +191,8 @@ const VariantComparison = ({
 }) => {
 	const { confirm } = useConfirm();
 	const variant = useWorkflowPageVariant(ws, pageId);
+	const { can } = usePermission();
+	const canManage = can('page.manage');
 	const [a, b] = insights.variants;
 	const callable =
 		a.views >= MIN_VIEWS_TO_CALL &&
@@ -233,48 +236,50 @@ const VariantComparison = ({
 					}`}>
 					{live ? `Running · ${split}% see B` : 'Not running'}
 				</span>
-				<div className='ml-auto flex gap-2'>
-					<button
-						type='button'
-						disabled={variant.promote.isPending}
-						onClick={async () => {
-							const ok = await confirm({
-								title: 'Make version B the main page?',
-								message:
-									'B replaces the page’s draft and the test ends. Visitors see the current page until you publish.',
-								confirmText: 'Make B the main page',
-								tone: 'primary',
-							});
-							if (ok)
-								variant.promote.mutate(undefined, {
-									onSuccess: () =>
-										notify.success(
-											'Version B is now the main page. Publish it to go live.',
-										),
+				{canManage && (
+					<div className='ml-auto flex gap-2'>
+						<button
+							type='button'
+							disabled={variant.promote.isPending}
+							onClick={async () => {
+								const ok = await confirm({
+									title: 'Make version B the main page?',
+									message:
+										'B replaces the page’s draft and the test ends. Visitors see the current page until you publish.',
+									confirmText: 'Make B the main page',
+									tone: 'primary',
 								});
-						}}
-						className='flex h-8 items-center gap-1.5 rounded-lg border border-zinc-200 px-3 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-white/[0.05]'>
-						<Trophy size={13} /> Make B the main page
-					</button>
-					<button
-						type='button'
-						disabled={variant.remove.isPending}
-						onClick={async () => {
-							const ok = await confirm({
-								title: 'End the test and delete version B?',
-								message:
-									'Everyone sees the main page straight away. B’s results stay in these numbers.',
-								confirmText: 'End test',
-							});
-							if (ok)
-								variant.remove.mutate(undefined, {
-									onSuccess: () => notify.success('Test ended.'),
+								if (ok)
+									variant.promote.mutate(undefined, {
+										onSuccess: () =>
+											notify.success(
+												'Version B is now the main page. Publish it to go live.',
+											),
+									});
+							}}
+							className='flex h-8 items-center gap-1.5 rounded-lg border border-zinc-200 px-3 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-white/[0.05]'>
+							<Trophy size={13} /> Make B the main page
+						</button>
+						<button
+							type='button'
+							disabled={variant.remove.isPending}
+							onClick={async () => {
+								const ok = await confirm({
+									title: 'End the test and delete version B?',
+									message:
+										'Everyone sees the main page straight away. B’s results stay in these numbers.',
+									confirmText: 'End test',
 								});
-						}}
-						className='h-8 rounded-lg px-3 text-xs font-semibold text-zinc-500 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50 dark:hover:bg-rose-500/10'>
-						End test
-					</button>
-				</div>
+								if (ok)
+									variant.remove.mutate(undefined, {
+										onSuccess: () => notify.success('Test ended.'),
+									});
+							}}
+							className='h-8 rounded-lg px-3 text-xs font-semibold text-zinc-500 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50 dark:hover:bg-rose-500/10'>
+							End test
+						</button>
+					</div>
+				)}
 			</div>
 
 			<div className='overflow-x-auto'>
@@ -422,6 +427,8 @@ const SubmissionsTable = ({
 	});
 	const [open, setOpen] = useState<string | null>(null);
 	const [exporting, setExporting] = useState(false);
+	const { can } = usePermission();
+	const canExport = can('page.manage');
 	const { data, isLoading, isFetching } = useWorkflowPageSubmissionsPage(ws, pageId, filters);
 	const set = (patch: Partial<TPageSubmissionFilters>) =>
 		setFilters((current) => ({ ...current, page: 1, ...patch }));
@@ -508,18 +515,20 @@ const SubmissionsTable = ({
 					/>
 					Test runs
 				</label>
-				<button
-					type='button'
-					onClick={() => void exportCsv()}
-					disabled={exporting || !data?.meta.total}
-					className='flex h-8 items-center gap-1.5 rounded-lg bg-zinc-900 px-3 text-xs font-bold text-white transition hover:bg-zinc-700 disabled:opacity-40 dark:bg-white dark:text-zinc-900'>
-					{exporting ? (
-						<Loader2 size={13} className='animate-spin' />
-					) : (
-						<Download size={13} />
-					)}
-					Export CSV
-				</button>
+				{canExport && (
+					<button
+						type='button'
+						onClick={() => void exportCsv()}
+						disabled={exporting || !data?.meta.total}
+						className='flex h-8 items-center gap-1.5 rounded-lg bg-zinc-900 px-3 text-xs font-bold text-white transition hover:bg-zinc-700 disabled:opacity-40 dark:bg-white dark:text-zinc-900'>
+						{exporting ? (
+							<Loader2 size={13} className='animate-spin' />
+						) : (
+							<Download size={13} />
+						)}
+						Export CSV
+					</button>
+				)}
 			</div>
 
 			{isLoading ? (
@@ -674,6 +683,8 @@ const PageInsightsPage = () => {
 	const { isDarkTheme: dark } = useDarkMode();
 	const [days, setDays] = useState<(typeof RANGES)[number]>(30);
 	const [includeTests, setIncludeTests] = useState(false);
+	const { can } = usePermission();
+	const canEditPage = can('page.manage');
 	const { data: page } = useWorkflowPage(ws, pageId);
 	const {
 		data: insights,
@@ -746,11 +757,13 @@ const PageInsightsPage = () => {
 						/>
 						Include test runs
 					</label>
-					<Link
-						to={paths.editPage(ws, pageId)}
-						className='flex h-8 items-center gap-1.5 rounded-lg border border-zinc-200 px-3 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-white/[0.05]'>
-						<PencilRuler size={13} /> Edit page
-					</Link>
+					{canEditPage && (
+						<Link
+							to={paths.editPage(ws, pageId)}
+							className='flex h-8 items-center gap-1.5 rounded-lg border border-zinc-200 px-3 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-white/[0.05]'>
+							<PencilRuler size={13} /> Edit page
+						</Link>
+					)}
 					{page?.is_published && (
 						<a
 							href={

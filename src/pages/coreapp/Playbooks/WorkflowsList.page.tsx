@@ -37,6 +37,8 @@ import pages from '@/Routes/pages';
 import paths from '@/Routes/paths';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import { useWorkspaceContext } from '@/context/workspace';
+import usePermission from '@/hooks/usePermission';
+import { formatWorkspaceRole } from '@/constants/workspaceRole.constant';
 import {
 	useFolders,
 	useCreateFolder,
@@ -192,6 +194,10 @@ const WorkflowsListPage = () => {
 	const workspaceSlug = activeWorkspace?.slug ?? workspaceSummary?.slug;
 	const workspaceRole = activeWorkspace?.role ?? workspaceSummary?.role ?? null;
 	const hasWorkspace = Boolean(activeWorkspaceId);
+	const { can } = usePermission();
+	const canManageWorkflows = can('workflow.manage');
+	const canPublishWorkflows = can('workflow.publish');
+	const canRunWorkflows = can('run.trigger');
 
 	// Fetch folders + workflows from the backend
 	const { data: apiFolders } = useFolders(currentWorkspaceId);
@@ -666,29 +672,33 @@ const WorkflowsListPage = () => {
 					navigate(paths.editPlaybook(currentWorkspaceId, workflow.id));
 				}}
 				className={menuItemClass}>
-				<Edit3 size={12} className='text-primary-500' /> Open editor
+				<Edit3 size={12} className='text-primary-500' />{' '}
+				{canManageWorkflows ? 'Open editor' : 'View workflow'}
 			</button>
-			<button
-				type='button'
-				onClick={(e) => {
-					setActiveMenuId(null);
-					handleRunNow(workflow.id, e);
-				}}
-				className={menuItemClass}>
-				<Play size={12} className='fill-emerald-500/10 text-emerald-500' /> Run now
-			</button>
-			{(workflow.status !== 'active' || workflow.hasUnpublishedChanges) && (
+			{canRunWorkflows && (
 				<button
 					type='button'
 					onClick={(e) => {
 						setActiveMenuId(null);
-						handlePublish(workflow.id, e);
+						handleRunNow(workflow.id, e);
 					}}
 					className={menuItemClass}>
-					<Rocket size={12} className='text-violet-500' />{' '}
-					{workflow.status === 'active' ? 'Publish changes' : 'Publish'}
+					<Play size={12} className='fill-emerald-500/10 text-emerald-500' /> Run now
 				</button>
 			)}
+			{canPublishWorkflows &&
+				(workflow.status !== 'active' || workflow.hasUnpublishedChanges) && (
+					<button
+						type='button'
+						onClick={(e) => {
+							setActiveMenuId(null);
+							handlePublish(workflow.id, e);
+						}}
+						className={menuItemClass}>
+						<Rocket size={12} className='text-violet-500' />{' '}
+						{workflow.status === 'active' ? 'Publish changes' : 'Publish'}
+					</button>
+				)}
 			<button
 				type='button'
 				onClick={(e) => {
@@ -704,44 +714,48 @@ const WorkflowsListPage = () => {
 				/>{' '}
 				{workflow.starred ? 'Remove from starred' : 'Add to starred'}
 			</button>
-			<button
-				type='button'
-				onClick={() => {
-					setRenameValue(workflow.title);
-					setRenamingId(workflow.id);
-					setActiveMenuId(null);
-				}}
-				className={menuItemClass}>
-				<Edit3 size={12} className='text-slate-400' /> Rename
-			</button>
-			<button
-				type='button'
-				onClick={() => {
-					setActiveMenuId(null);
-					setTaggingWorkflowId(workflow.id);
-				}}
-				className={menuItemClass}>
-				<Tag size={12} className='text-fuchsia-500' /> Manage tags
-			</button>
-			{renderMoveWorkflowMenu(workflow)}
-			<button
-				type='button'
-				onClick={(e) => {
-					setActiveMenuId(null);
-					handleDuplicate(workflow, e);
-				}}
-				className={menuItemClass}>
-				<Copy size={12} className='text-blue-500' /> Duplicate
-			</button>
-			<button
-				type='button'
-				onClick={(e) => {
-					setActiveMenuId(null);
-					handleDelete(workflow.id, e);
-				}}
-				className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10'>
-				<Trash2 size={12} /> Move to trash
-			</button>
+			{canManageWorkflows && (
+				<>
+					<button
+						type='button'
+						onClick={() => {
+							setRenameValue(workflow.title);
+							setRenamingId(workflow.id);
+							setActiveMenuId(null);
+						}}
+						className={menuItemClass}>
+						<Edit3 size={12} className='text-slate-400' /> Rename
+					</button>
+					<button
+						type='button'
+						onClick={() => {
+							setActiveMenuId(null);
+							setTaggingWorkflowId(workflow.id);
+						}}
+						className={menuItemClass}>
+						<Tag size={12} className='text-fuchsia-500' /> Manage tags
+					</button>
+					{renderMoveWorkflowMenu(workflow)}
+					<button
+						type='button'
+						onClick={(e) => {
+							setActiveMenuId(null);
+							handleDuplicate(workflow, e);
+						}}
+						className={menuItemClass}>
+						<Copy size={12} className='text-blue-500' /> Duplicate
+					</button>
+					<button
+						type='button'
+						onClick={(e) => {
+							setActiveMenuId(null);
+							handleDelete(workflow.id, e);
+						}}
+						className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10'>
+						<Trash2 size={12} /> Move to trash
+					</button>
+				</>
+			)}
 		</motion.div>
 	);
 
@@ -843,6 +857,7 @@ const WorkflowsListPage = () => {
 				</span>
 			);
 		}
+		if (!canPublishWorkflows) return null;
 		return (
 			<button
 				type='button'
@@ -1057,29 +1072,33 @@ const WorkflowsListPage = () => {
 						<GitMerge size={24} className='rotate-90' />
 					</div>
 					<h1 className='mt-5 text-2xl font-black tracking-tight text-slate-900 dark:text-white'>
-						Create your first workflow
+						{canManageWorkflows ? 'Create your first workflow' : 'No workflows yet'}
 					</h1>
 					<p className='mt-2 max-w-md text-sm leading-relaxed font-semibold text-slate-500 dark:text-zinc-400'>
-						Build an automation, connect the steps, and run it when you are ready.
+						{canManageWorkflows
+							? 'Build an automation, connect the steps, and run it when you are ready.'
+							: 'Workflows your team builds will show up here.'}
 					</p>
-					<div className='mt-6 flex w-full flex-col items-center gap-2.5 sm:w-auto sm:flex-row'>
-						<button
-							type='button'
-							onClick={() => handleQuickCreateWorkflow()}
-							disabled={!hasWorkspace || createWorkflowMutation.isPending}
-							className='from-primary-400 to-primary-400 text-primary-950 shadow-primary-500/15 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r px-5 text-xs font-black shadow-md transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto'>
-							<Plus size={15} strokeWidth={3} />
-							Create Workflow
-						</button>
-						<button
-							type='button'
-							onClick={() => setIsCreateFolderOpen(true)}
-							disabled={!hasWorkspace}
-							className='dark:border-border-main dark:bg-bg-card flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto dark:text-white dark:hover:bg-zinc-950/20'>
-							<FolderPlus size={15} />
-							New Folder
-						</button>
-					</div>
+					{canManageWorkflows && (
+						<div className='mt-6 flex w-full flex-col items-center gap-2.5 sm:w-auto sm:flex-row'>
+							<button
+								type='button'
+								onClick={() => handleQuickCreateWorkflow()}
+								disabled={!hasWorkspace || createWorkflowMutation.isPending}
+								className='from-primary-400 to-primary-400 text-primary-950 shadow-primary-500/15 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r px-5 text-xs font-black shadow-md transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto'>
+								<Plus size={15} strokeWidth={3} />
+								Create Workflow
+							</button>
+							<button
+								type='button'
+								onClick={() => setIsCreateFolderOpen(true)}
+								disabled={!hasWorkspace}
+								className='dark:border-border-main dark:bg-bg-card flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto dark:text-white dark:hover:bg-zinc-950/20'>
+								<FolderPlus size={15} />
+								New Folder
+							</button>
+						</div>
+					)}
 				</div>
 				{modals}
 			</Container>
@@ -1137,7 +1156,7 @@ const WorkflowsListPage = () => {
 								</h1>
 								{workspaceRole && (
 									<span className='bg-primary-100/70 text-primary-900 dark:bg-primary-950/40 dark:text-primary-300 rounded-md px-2 py-0.5 text-[9px] font-black tracking-wide uppercase'>
-										{workspaceRole}
+										{formatWorkspaceRole(workspaceRole)}
 									</span>
 								)}
 							</div>
@@ -1149,28 +1168,33 @@ const WorkflowsListPage = () => {
 						</div>
 					</div>
 
-					<div className='relative z-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center'>
-						<motion.button
-							type='button'
-							whileHover={{ scale: 1.02, y: -1 }}
-							whileTap={{ scale: 0.98 }}
-							onClick={() => setIsCreateFolderOpen(true)}
-							disabled={!hasWorkspace}
-							className='dark:border-border-main dark:bg-bg-card flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-white dark:hover:bg-zinc-950/20'>
-							<Folder size={14} className='text-primary-450 dark:text-[#CFF54A]' />
-							New Folder
-						</motion.button>
-						<motion.button
-							type='button'
-							whileHover={{ scale: 1.02, y: -1 }}
-							whileTap={{ scale: 0.98 }}
-							onClick={() => handleQuickCreateWorkflow()}
-							disabled={!hasWorkspace || createWorkflowMutation.isPending}
-							className='shadow-primary-500/10 flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#CFF54A] px-4.5 text-xs font-black text-black shadow-md transition-all hover:bg-[#B7E52F] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#CFF54A] dark:text-black dark:hover:bg-[#B7E52F]'>
-							<Plus size={15} strokeWidth={2.5} />
-							New Workflow
-						</motion.button>
-					</div>
+					{canManageWorkflows && (
+						<div className='relative z-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center'>
+							<motion.button
+								type='button'
+								whileHover={{ scale: 1.02, y: -1 }}
+								whileTap={{ scale: 0.98 }}
+								onClick={() => setIsCreateFolderOpen(true)}
+								disabled={!hasWorkspace}
+								className='dark:border-border-main dark:bg-bg-card flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-white dark:hover:bg-zinc-950/20'>
+								<Folder
+									size={14}
+									className='text-primary-450 dark:text-[#CFF54A]'
+								/>
+								New Folder
+							</motion.button>
+							<motion.button
+								type='button'
+								whileHover={{ scale: 1.02, y: -1 }}
+								whileTap={{ scale: 0.98 }}
+								onClick={() => handleQuickCreateWorkflow()}
+								disabled={!hasWorkspace || createWorkflowMutation.isPending}
+								className='shadow-primary-500/10 flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#CFF54A] px-4.5 text-xs font-black text-black shadow-md transition-all hover:bg-[#B7E52F] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#CFF54A] dark:text-black dark:hover:bg-[#B7E52F]'>
+								<Plus size={15} strokeWidth={2.5} />
+								New Workflow
+							</motion.button>
+						</div>
+					)}
 				</header>
 
 				{/* Summary Stats */}
@@ -1485,95 +1509,101 @@ const WorkflowsListPage = () => {
 												{groupedItems.length}
 											</span>
 										</button>
-										<div className='relative mr-4 shrink-0'>
-											<button
-												type='button'
-												aria-label={`Open actions for ${folder.name}`}
-												onClick={(e) => {
-													e.stopPropagation();
-													setActiveFolderMenuId(
+										{canManageWorkflows && (
+											<div className='relative mr-4 shrink-0'>
+												<button
+													type='button'
+													aria-label={`Open actions for ${folder.name}`}
+													onClick={(e) => {
+														e.stopPropagation();
+														setActiveFolderMenuId(
+															activeFolderMenuId === folder.id
+																? null
+																: folder.id,
+														);
+													}}
+													className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white ${
 														activeFolderMenuId === folder.id
-															? null
-															: folder.id,
-													);
-												}}
-												className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white ${
-													activeFolderMenuId === folder.id
-														? 'bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white'
-														: ''
-												}`}>
-												<MoreVertical size={14} />
-											</button>
-											<AnimatePresence>
-												{activeFolderMenuId === folder.id && (
-													<motion.div
-														initial={{ opacity: 0, scale: 0.95, y: 5 }}
-														animate={{ opacity: 1, scale: 1, y: 0 }}
-														exit={{ opacity: 0, scale: 0.95, y: 5 }}
-														onClick={(e) => e.stopPropagation()}
-														className='border-border-main bg-bg-card absolute right-0 z-50 mt-2 w-52 rounded-xl border p-1.5 text-left shadow-2xl'>
-														<button
-															type='button'
-															onClick={() => {
-																setActiveFolderMenuId(null);
-																handleQuickCreateWorkflow(
-																	folder.id,
-																);
+															? 'bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white'
+															: ''
+													}`}>
+													<MoreVertical size={14} />
+												</button>
+												<AnimatePresence>
+													{activeFolderMenuId === folder.id && (
+														<motion.div
+															initial={{
+																opacity: 0,
+																scale: 0.95,
+																y: 5,
 															}}
-															className={menuItemClass}>
-															<Plus
-																size={12}
-																className='text-primary-500'
-															/>{' '}
-															New workflow here
-														</button>
-														<button
-															type='button'
-															onClick={() => {
-																setActiveFolderMenuId(null);
-																openEditFolder(folder);
-															}}
-															className={menuItemClass}>
-															<Edit3
-																size={12}
-																className='text-slate-400'
-															/>{' '}
-															Rename / recolor
-														</button>
-														<button
-															type='button'
-															onClick={() =>
-																setExpandedFolders((prev) => ({
-																	...prev,
-																	[folder.id]: !isExpanded,
-																}))
-															}
-															className={menuItemClass}>
-															{isExpanded ? (
-																<ChevronRight
+															animate={{ opacity: 1, scale: 1, y: 0 }}
+															exit={{ opacity: 0, scale: 0.95, y: 5 }}
+															onClick={(e) => e.stopPropagation()}
+															className='border-border-main bg-bg-card absolute right-0 z-50 mt-2 w-52 rounded-xl border p-1.5 text-left shadow-2xl'>
+															<button
+																type='button'
+																onClick={() => {
+																	setActiveFolderMenuId(null);
+																	handleQuickCreateWorkflow(
+																		folder.id,
+																	);
+																}}
+																className={menuItemClass}>
+																<Plus
+																	size={12}
+																	className='text-primary-500'
+																/>{' '}
+																New workflow here
+															</button>
+															<button
+																type='button'
+																onClick={() => {
+																	setActiveFolderMenuId(null);
+																	openEditFolder(folder);
+																}}
+																className={menuItemClass}>
+																<Edit3
 																	size={12}
 																	className='text-slate-400'
-																/>
-															) : (
-																<ChevronDown
-																	size={12}
-																	className='text-slate-400'
-																/>
-															)}
-															{isExpanded ? 'Collapse' : 'Expand'}
-														</button>
-														<button
-															type='button'
-															onClick={() =>
-																handleDeleteFolder(folder)
-															}
-															className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10'>
-															<Trash2 size={12} /> Delete folder
-														</button>
-													</motion.div>
-												)}
-											</AnimatePresence>
-										</div>
+																/>{' '}
+																Rename / recolor
+															</button>
+															<button
+																type='button'
+																onClick={() =>
+																	setExpandedFolders((prev) => ({
+																		...prev,
+																		[folder.id]: !isExpanded,
+																	}))
+																}
+																className={menuItemClass}>
+																{isExpanded ? (
+																	<ChevronRight
+																		size={12}
+																		className='text-slate-400'
+																	/>
+																) : (
+																	<ChevronDown
+																		size={12}
+																		className='text-slate-400'
+																	/>
+																)}
+																{isExpanded ? 'Collapse' : 'Expand'}
+															</button>
+															<button
+																type='button'
+																onClick={() =>
+																	handleDeleteFolder(folder)
+																}
+																className='flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10'>
+																<Trash2 size={12} /> Delete folder
+															</button>
+														</motion.div>
+													)}
+												</AnimatePresence>
+											</div>
+										)}
 									</div>
 								)}
 
@@ -1598,7 +1628,10 @@ const WorkflowsListPage = () => {
 															role='link'
 															aria-label={wf.title}
 															tabIndex={0}
-															draggable={renamingId !== wf.id}
+															draggable={
+																canManageWorkflows &&
+																renamingId !== wf.id
+															}
 															onDragStart={(e) =>
 																handleDragStart(e, wf.id)
 															}
@@ -1810,7 +1843,10 @@ const WorkflowsListPage = () => {
 															{groupedItems.map((wf) => (
 																<tr
 																	key={wf.id}
-																	draggable={renamingId !== wf.id}
+																	draggable={
+																		canManageWorkflows &&
+																		renamingId !== wf.id
+																	}
 																	onDragStart={(e) =>
 																		handleDragStart(e, wf.id)
 																	}
@@ -1925,18 +1961,22 @@ const WorkflowsListPage = () => {
 																			{renderPublishControl(
 																				wf,
 																			)}
-																			<button
-																				type='button'
-																				onClick={(e) =>
-																					handleRunNow(
-																						wf.id,
-																						e,
-																					)
-																				}
-																				className='flex cursor-pointer items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-2.5 py-1 text-[10px] font-black text-emerald-600 transition hover:bg-emerald-500/10 dark:text-emerald-400'>
-																				<Play size={11} />{' '}
-																				Run
-																			</button>
+																			{canRunWorkflows && (
+																				<button
+																					type='button'
+																					onClick={(e) =>
+																						handleRunNow(
+																							wf.id,
+																							e,
+																						)
+																					}
+																					className='flex cursor-pointer items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-2.5 py-1 text-[10px] font-black text-emerald-600 transition hover:bg-emerald-500/10 dark:text-emerald-400'>
+																					<Play
+																						size={11}
+																					/>{' '}
+																					Run
+																				</button>
+																			)}
 																			{renderWorkflowMenuTrigger(
 																				wf,
 																			)}

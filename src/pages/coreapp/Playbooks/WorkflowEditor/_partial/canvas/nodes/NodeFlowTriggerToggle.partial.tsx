@@ -8,6 +8,7 @@ import {
 import TriggerStatusBadge from '@/parts/TriggerStatusBadge.part';
 import { useWorkflowEditor } from '../../../_hooks/useWorkflowEditor.hook';
 import { useWorkflowRouteParams } from '../../../_hooks/useWorkflowRouteParams.hook';
+import { noPermissionTo } from '@/constants/permission.constant';
 
 type Props = {
 	nodeId: string;
@@ -23,7 +24,7 @@ type Props = {
  * triggers; each starts its own runs.
  */
 const NodeFlowTriggerToggle = ({ nodeId, active }: Props) => {
-	const { dispatch } = useWorkflowEditor();
+	const { dispatch, canEdit } = useWorkflowEditor();
 	const { workspaceId, workflowId } = useWorkflowRouteParams();
 	const { data: workflowTriggers } = useWorkflowTrigger(workspaceId, workflowId);
 	const pauseTrigger = usePauseWorkflowTrigger(workspaceId);
@@ -101,13 +102,14 @@ const NodeFlowTriggerToggle = ({ nodeId, active }: Props) => {
 					role='switch'
 					aria-checked={active}
 					aria-label='Activate as flow trigger'
-					disabled={pauseTrigger.isPending || resumeTrigger.isPending}
+					disabled={!canEdit || pauseTrigger.isPending || resumeTrigger.isPending}
+					title={canEdit ? undefined : noPermissionTo('change triggers')}
 					onClick={(event) => {
 						event.stopPropagation();
 						handleToggle();
 					}}
 					className={[
-						'flex h-5 w-9 cursor-pointer items-center rounded-full border p-0.5 transition-all duration-200 disabled:opacity-50',
+						'flex h-5 w-9 cursor-pointer items-center rounded-full border p-0.5 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50',
 						active
 							? 'border-primary-400 bg-primary-400 justify-end'
 							: 'justify-start border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800',

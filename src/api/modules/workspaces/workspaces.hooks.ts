@@ -7,10 +7,12 @@ import { workspaceKeys } from './workspaces.keys';
 // Workspace Hooks
 // ============================================================
 
+/** Refetched on focus: it carries the viewer's role and permissions, which another admin can change. */
 export const useWorkspaces = (options?: { enabled?: boolean }) =>
 	useQuery({
 		queryKey: workspaceKeys.lists(),
 		queryFn: ({ signal }) => WorkspaceService.list(signal),
+		refetchOnWindowFocus: true,
 		...options,
 	});
 

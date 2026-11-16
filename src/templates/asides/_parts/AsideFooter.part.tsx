@@ -1,6 +1,7 @@
 import Button from '@/components/ui/Button';
 import Icon from '@/components/icon/Icon';
 import DARK_MODE from '@/constants/darkMode.constant';
+import { formatWorkspaceRole } from '@/constants/workspaceRole.constant';
 import pages from '@/Routes/pages';
 import User from '@/components/layout/User/User';
 import { NavItem, NavSeparator } from '@/components/layout/Navigation/Nav';
@@ -106,11 +107,7 @@ const AsideFooterPart = () => {
 			)}
 			<User
 				name={userData ? `${userData?.firstName} ${userData?.lastName}` : undefined}
-				position={
-					workspaceRole
-						? workspaceRole.charAt(0).toUpperCase() + workspaceRole.slice(1)
-						: undefined
-				}
+				position={workspaceRole ? formatWorkspaceRole(workspaceRole) : undefined}
 				nameSuffix={userData?.isVerified && <Icon icon='CheckmarkBadge02' color='blue' />}
 				src={userData?.image.org}>
 				<NavSeparator />

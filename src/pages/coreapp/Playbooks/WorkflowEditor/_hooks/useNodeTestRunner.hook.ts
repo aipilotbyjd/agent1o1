@@ -13,7 +13,7 @@ import { useWorkflowEditor } from './useWorkflowEditor.hook';
  * exactly one test path, never the `nodeTest.helper` mock.
  */
 export const useNodeTestRunner = (nodeId: string, defKey: string) => {
-	const { state, dispatch } = useWorkflowEditor();
+	const { state, dispatch, canEdit } = useWorkflowEditor();
 	const node = state.nodes.find((n) => n.id === nodeId);
 	const ws = state.workflow.workspaceId;
 	const workflowId = state.workflow.apiId;
@@ -46,7 +46,7 @@ export const useNodeTestRunner = (nodeId: string, defKey: string) => {
 	}, [state.edges, state.nodes, nodeId]);
 
 	const runTest = async () => {
-		if (!ws || !workflowId || testStatus === 'running') return;
+		if (!canEdit || !ws || !workflowId || testStatus === 'running') return;
 
 		dispatch({ type: 'SET_NODE_TEST_STATUS', id: nodeId, status: 'running' });
 
@@ -87,5 +87,5 @@ export const useNodeTestRunner = (nodeId: string, defKey: string) => {
 		}
 	};
 
-	return { runTest, testStatus, canRun: Boolean(ws && workflowId && defKey) };
+	return { runTest, testStatus, canRun: canEdit && Boolean(ws && workflowId && defKey) };
 };

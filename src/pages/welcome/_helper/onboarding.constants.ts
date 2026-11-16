@@ -1,6 +1,7 @@
 import type { TWorkspaceRole } from '@/types/workspace.type';
 import type { TOnboardingStepKey } from '@/types/onboarding.type';
 import type { IRoleData, IPlan } from '../_types/onboarding.type';
+import { WORKSPACE_ROLE_LABELS } from '@/constants/workspaceRole.constant';
 
 export const ROLES: IRoleData[] = [
 	{
@@ -70,10 +71,26 @@ export const SURVEY_OPTIONS: { value: string; label: string }[] = [
 ];
 
 export const ROLE_OPTIONS: { value: TWorkspaceRole; label: string; description: string }[] = [
-	{ value: 'admin', label: 'Admin', description: 'Manage workspace and teammates' },
-	{ value: 'editor', label: 'Editor', description: 'Build and publish workflows' },
-	{ value: 'member', label: 'Member', description: 'Run workflows and collaborate' },
-	{ value: 'viewer', label: 'Viewer', description: 'View workflows and activity' },
+	{
+		value: 'admin',
+		label: WORKSPACE_ROLE_LABELS.admin,
+		description: 'Manage workspace and teammates',
+	},
+	{
+		value: 'editor',
+		label: WORKSPACE_ROLE_LABELS.editor,
+		description: 'Build and publish workflows',
+	},
+	{
+		value: 'member',
+		label: WORKSPACE_ROLE_LABELS.member,
+		description: 'Run workflows and collaborate',
+	},
+	{
+		value: 'viewer',
+		label: WORKSPACE_ROLE_LABELS.viewer,
+		description: 'View workflows and activity',
+	},
 ];
 
 export const PLANS: IPlan[] = [

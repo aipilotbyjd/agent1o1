@@ -43,6 +43,7 @@ import PublishMenu from './PublishMenu.partial';
 import ShareMenu from './ShareMenu.partial';
 import VariantMenu from './VariantMenu.partial';
 import GenerateDialog from './GenerateDialog.partial';
+import usePermission from '@/hooks/usePermission';
 
 const FOCUS_RING =
 	'outline-none focus-visible:ring-2 focus-visible:ring-primary-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#07080b]';
@@ -225,6 +226,8 @@ const BuilderTopbar = ({ publishOpen, setPublishOpen }: { publishOpen: boolean; 
 	const { ws, page, flush } = usePageBuilder();
 	const { isDarkTheme, setDarkModeStatus } = useDarkMode();
 	const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false);
+	const { can } = usePermission();
+	const canSaveAsTemplate = can('template.manage');
 	const [generateOpen, setGenerateOpen] = useState(false);
 	const canUndo = usePageBuilderStore((store) => store.past.length > 0);
 	const canRedo = usePageBuilderStore((store) => store.future.length > 0);
@@ -356,9 +359,11 @@ const BuilderTopbar = ({ publishOpen, setPublishOpen }: { publishOpen: boolean; 
 					<IconButton label='Keyboard shortcuts (?)' onClick={() => usePageBuilderStore.getState().setOverlay('shortcuts')}>
 						<Keyboard size={14} />
 					</IconButton>
-					<IconButton label='Save as template' onClick={() => setSaveAsTemplateOpen(true)}>
-						<LayoutTemplate size={14} />
-					</IconButton>
+					{canSaveAsTemplate && (
+						<IconButton label='Save as template' onClick={() => setSaveAsTemplateOpen(true)}>
+							<LayoutTemplate size={14} />
+						</IconButton>
+					)}
 					<BuilderTooltip label={`Workflow: ${page.workflow?.name ?? 'missing'}`}>
 						<Link
 							to={paths.editPlaybook(ws, page.workflow_id)}

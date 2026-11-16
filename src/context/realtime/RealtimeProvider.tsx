@@ -6,6 +6,8 @@ import { getAccessToken, TOKEN_CHANGE_EVENT } from '@/api/core/token-manager';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationKeys } from '@/api/modules/notifications/notifications.keys';
 import { announcementKeys } from '@/api/modules/announcements/announcements.keys';
+import { workspaceKeys } from '@/api/modules/workspaces/workspaces.keys';
+import { workspaceMemberKeys } from '@/api/modules/workspace-members/workspace-members.keys';
 import { notify } from '@/api/core';
 import RealtimeContext from './RealtimeContext';
 import type { TRealtimeStatus } from './realtime.types';
@@ -95,11 +97,24 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
 		// Laravel broadcasts a notification to its notifiable's own channel.
 		newEcho
 			.private(`App.Models.User.${userId}`)
-			.notification((notification: { title?: string }) => {
-				notify.success(notification.title || 'New notification received');
-				qc.invalidateQueries({ queryKey: ['notifications'] });
-				qc.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
-			});
+			.notification(
+				(notification: { title?: string; type?: string; workspace_id?: string }) => {
+					notify.success(notification.title || 'New notification received');
+					qc.invalidateQueries({ queryKey: ['notifications'] });
+					qc.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
+					// Membership changed: roles (and so permissions) may have moved with it.
+					if (notification.type?.startsWith('workspace.member')) {
+						qc.invalidateQueries({ queryKey: workspaceKeys.all() });
+						if (notification.workspace_id) {
+							qc.invalidateQueries({
+								queryKey: workspaceMemberKeys.list(
+									String(notification.workspace_id),
+								),
+							});
+						}
+					}
+				},
+			);
 
 		let hasConnected = false;
 		let lastStatus: TRealtimeStatus = 'connecting';

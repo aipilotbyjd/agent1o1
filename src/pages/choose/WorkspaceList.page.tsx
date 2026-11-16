@@ -36,16 +36,23 @@ import { useConfirm } from '@/context/confirm';
 import WorkspaceCard from './_partial/WorkspaceCard.partial';
 import { getInitials } from './_helper/workspace.helper';
 import type { ITeammate, IWorkspaceCard } from './_types/workspace.type';
+import { workspaceAllows } from '@/utils/permission.util';
+import {
+	ASSIGNABLE_WORKSPACE_ROLES,
+	WORKSPACE_ROLE_DESCRIPTIONS,
+	WORKSPACE_ROLE_LABELS,
+	formatWorkspaceRole,
+} from '@/constants/workspaceRole.constant';
 
 // ─── helpers ───────────────────────────────────────────────────────────────────
 /** Owner is derived from workspace ownership, so it is never offered here:
  *  the same set the members settings screen grants. */
-const INVITE_ROLES: { value: TAssignableWorkspaceRole; label: string; hint: string }[] = [
-	{ value: 'admin', label: 'Admin', hint: 'Manage members, settings, and workflows.' },
-	{ value: 'editor', label: 'Editor', hint: 'Create and edit workflows and agents.' },
-	{ value: 'member', label: 'Member', hint: 'View and run workflows and agents.' },
-	{ value: 'viewer', label: 'Viewer', hint: 'Read-only access to workflows and runs.' },
-];
+const INVITE_ROLES: { value: TAssignableWorkspaceRole; label: string; hint: string }[] =
+	ASSIGNABLE_WORKSPACE_ROLES.map((role) => ({
+		value: role,
+		label: WORKSPACE_ROLE_LABELS[role],
+		hint: WORKSPACE_ROLE_DESCRIPTIONS[role],
+	}));
 
 // ─── types ─────────────────────────────────────────────────────────────────────
 interface IInvitation {
@@ -99,13 +106,12 @@ const mapApiWorkspaceToCard = (w: TWorkspace, currentUserId?: string): IWorkspac
 	const index = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
 	const g = GRADIENTS[index % GRADIENTS.length];
 
-	let role: 'Owner' | 'Admin' | 'Member' = 'Member';
-	if (w.role === 'owner') role = 'Owner';
-	else if (w.role === 'admin') role = 'Admin';
-	else if (w.owner?.id && currentUserId && String(w.owner.id) === String(currentUserId))
-		role = 'Owner';
+	const isOwner =
+		w.role === 'owner' ||
+		(!!w.owner?.id && !!currentUserId && String(w.owner.id) === String(currentUserId));
+	const role = isOwner ? 'owner' : (w.role ?? 'member');
 
-	const tier: TierName = role === 'Owner' ? 'Enterprise' : role === 'Admin' ? 'Pro' : 'Free';
+	const tier: TierName = role === 'owner' ? 'Enterprise' : role === 'admin' ? 'Pro' : 'Free';
 
 	const members: ITeammate[] = w.owner
 		? [
@@ -135,7 +141,11 @@ const mapApiWorkspaceToCard = (w: TWorkspace, currentUserId?: string): IWorkspac
 		id,
 		name: w.name,
 		tier,
-		role,
+		role: formatWorkspaceRole(role),
+		isOwner,
+		canRename: workspaceAllows(w, 'workspace.update'),
+		canDelete: workspaceAllows(w, 'workspace.delete'),
+		canInvite: workspaceAllows(w, 'member.invite'),
 		activeFlowsCount: w.workflows_count ?? 0,
 		totalNodes: 0,
 		activeAgentsCount: w.agents_count ?? 0,

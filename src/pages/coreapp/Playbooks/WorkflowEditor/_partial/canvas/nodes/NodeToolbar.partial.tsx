@@ -17,7 +17,7 @@ type Props = {
 
 /** Floating action bar shown above the selected node. */
 const NodeToolbar = ({ nodeId, defKey, label, fields }: Props) => {
-	const { dispatch } = useWorkflowEditor();
+	const { dispatch, canEdit } = useWorkflowEditor();
 	const [configureOpen, setConfigureOpen] = useState(false);
 	const [renaming, setRenaming] = useState(false);
 	const [draftLabel, setDraftLabel] = useState(label);
@@ -38,6 +38,8 @@ const NodeToolbar = ({ nodeId, defKey, label, fields }: Props) => {
 		event.stopPropagation();
 		runTest();
 	};
+
+	if (!canEdit) return null;
 
 	return (
 		<>

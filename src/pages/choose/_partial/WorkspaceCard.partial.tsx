@@ -87,17 +87,21 @@ const WorkspaceMenu = ({
 						animate={{ opacity: 1, scale: 1, y: 0 }}
 						exit={{ opacity: 0, scale: 0.95, y: 5 }}
 						className='absolute right-0 z-50 mt-1.5 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
-						<button
-							onClick={choose(() => onRename(wsp))}
-							className={`${MENU_ITEM_CLASS} text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-800`}>
-							<Edit2 size={12} className='text-primary-500' /> Rename
-						</button>
-						{wsp.role === 'Owner' ? (
+						{wsp.canRename && (
 							<button
-								onClick={choose(() => onDelete(wsp.id, wsp.name))}
-								className={DANGER_ITEM_CLASS}>
-								<Trash2 size={12} /> Delete
+								onClick={choose(() => onRename(wsp))}
+								className={`${MENU_ITEM_CLASS} text-slate-700 hover:bg-slate-50 dark:text-zinc-200 dark:hover:bg-zinc-800`}>
+								<Edit2 size={12} className='text-primary-500' /> Rename
 							</button>
+						)}
+						{wsp.isOwner ? (
+							wsp.canDelete && (
+								<button
+									onClick={choose(() => onDelete(wsp.id, wsp.name))}
+									className={DANGER_ITEM_CLASS}>
+									<Trash2 size={12} /> Delete
+								</button>
+							)
 						) : (
 							<button
 								onClick={choose(() => onLeave(wsp.id, wsp.name))}
@@ -135,7 +139,8 @@ const MemberAvatars = ({
 }: {
 	members: ITeammate[];
 	workspaceName: string;
-	onInvite: () => void;
+	/** Omitted when the viewer cannot invite to this workspace. */
+	onInvite?: () => void;
 }) => (
 	<div className='flex items-center -space-x-1.5'>
 		{members.map((member, idx) => (
@@ -146,14 +151,16 @@ const MemberAvatars = ({
 				{member.initials}
 			</div>
 		))}
-		<button
-			type='button'
-			aria-label={`Invite a member to ${workspaceName}`}
-			title={`Invite a member to ${workspaceName}`}
-			onClick={withoutSelecting(onInvite)}
-			className='text-slate-555 hover:bg-primary-500 hover:text-primary-950 flex h-7.5 w-7.5 items-center justify-center rounded-full border border-dashed border-slate-300 bg-slate-50 transition-all hover:scale-105 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'>
-			<UserPlus size={10} />
-		</button>
+		{onInvite && (
+			<button
+				type='button'
+				aria-label={`Invite a member to ${workspaceName}`}
+				title={`Invite a member to ${workspaceName}`}
+				onClick={withoutSelecting(onInvite)}
+				className='text-slate-555 hover:bg-primary-500 hover:text-primary-950 flex h-7.5 w-7.5 items-center justify-center rounded-full border border-dashed border-slate-300 bg-slate-50 transition-all hover:scale-105 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'>
+				<UserPlus size={10} />
+			</button>
+		)}
 	</div>
 );
 
@@ -251,7 +258,7 @@ const WorkspaceCard = ({
 			<MemberAvatars
 				members={wsp.members}
 				workspaceName={wsp.name}
-				onInvite={() => onInvite(wsp)}
+				onInvite={wsp.canInvite ? () => onInvite(wsp) : undefined}
 			/>
 			<EnterArrow />
 		</div>

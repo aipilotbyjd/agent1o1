@@ -8,7 +8,12 @@ export interface IWorkspaceCard {
 	id: string;
 	name: string;
 	tier: 'Free' | 'Pro' | 'Enterprise';
-	role: 'Owner' | 'Admin' | 'Member';
+	/** Display label of the viewer's role. */
+	role: string;
+	isOwner: boolean;
+	canRename: boolean;
+	canDelete: boolean;
+	canInvite: boolean;
 	activeFlowsCount: number;
 	totalNodes: number;
 	activeAgentsCount: number;

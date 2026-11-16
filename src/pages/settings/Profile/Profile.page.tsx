@@ -30,6 +30,7 @@ import { primaryBtn, secondaryBtn, dangerBtn } from '@/pages/settings/_shared/bu
 import { useWorkspaceContext } from '@/context/workspace';
 import formatDate from '@/utils/formatDate.util';
 import TimezoneSelect from '@/parts/TimezoneSelect.part';
+import { formatWorkspaceRole } from '@/constants/workspaceRole.constant';
 
 type TProfileForm = {
 	firstName: string;
@@ -64,11 +65,6 @@ const getInitials = (name: string) => {
 		.join('');
 };
 
-const formatRole = (role?: string | null) => {
-	if (!role) return 'Member';
-	return `${role.charAt(0).toUpperCase()}${role.slice(1)}`;
-};
-
 const SettingsFieldRow = ({
 	icon: FieldIcon,
 	title,
@@ -99,7 +95,8 @@ const SettingsFieldRow = ({
 const ProfilePage = () => {
 	const navigate = useNavigate();
 	const { data: userData } = useCurrentUser();
-	const { workspaces, activeWorkspaceId, isSwitching, switchWorkspace } = useWorkspaceContext();
+	const { workspaces, activeWorkspace, activeWorkspaceId, isSwitching, switchWorkspace } =
+		useWorkspaceContext();
 	const { confirm } = useConfirm();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const updateProfile = useUpdateProfile();
@@ -173,7 +170,7 @@ const ProfilePage = () => {
 		? (formatDate(userData.created_at) ?? 'Not available')
 		: '';
 	const workspaceName = userData?.current_workspace?.name ?? '';
-	const workspaceRole = formatRole(userData?.current_workspace?.role);
+	const workspaceRole = formatWorkspaceRole(activeWorkspace?.role) || 'Member';
 	const isEmailVerified = !!userData?.email_verified_at;
 	const emailStatus = isEmailVerified ? 'Email verified' : 'Email not verified';
 	const pendingEmail = userData?.pending_email ?? null;

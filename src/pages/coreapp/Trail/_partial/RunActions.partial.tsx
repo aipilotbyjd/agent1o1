@@ -3,6 +3,7 @@ import { notify } from '@/api/core';
 import { useCancelRun, useDecideRunApproval, useRetryRun } from '@/api/modules/runs';
 import { usePendingApprovals } from '@/api/modules/dashboard';
 import { useConfirm } from '@/context/confirm';
+import usePermission from '@/hooks/usePermission';
 import type { TRun, TRunStatus } from '@/types/run.type';
 
 const IN_FLIGHT: TRunStatus[] = ['pending', 'running', 'awaiting_approval', 'awaiting_callback'];
@@ -29,11 +30,13 @@ const RunActions = ({ ws, run, onRetried }: IRunActionsProps) => {
 	const cancelRun = useCancelRun(ws);
 	const retryRun = useRetryRun(ws);
 	const decide = useDecideRunApproval(ws, run.id);
+	const { can } = usePermission();
+	const canAct = can('run.trigger');
 
 	const isAwaitingApproval = run.status === 'awaiting_approval';
 	// The run resource carries no approvals, so the open one comes from the
 	// workspace's pending list.
-	const { data: pending } = usePendingApprovals(isAwaitingApproval ? ws : '');
+	const { data: pending } = usePendingApprovals(isAwaitingApproval && canAct ? ws : '');
 	const approval = pending?.approvals.find((a) => String(a.run_id) === String(run.id));
 
 	const isWorkflowRun = run.runnable_type === 'workflow';
@@ -79,7 +82,7 @@ const RunActions = ({ ws, run, onRetried }: IRunActionsProps) => {
 		);
 	};
 
-	if (!canCancel && !canRetry && !isAwaitingApproval) return null;
+	if (!canAct || (!canCancel && !canRetry && !isAwaitingApproval)) return null;
 
 	return (
 		<div className='flex flex-wrap items-center gap-2'>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Eye, Loader2, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { useWorkflowVersion, useWorkflowVersions } from '@/api/modules/workflows';
+import usePermission from '@/hooks/usePermission';
 import { useWorkflowShellStore } from '@/store/workflowShell.store';
 import type { TCanvasPosition } from '../../_types/canvas.type';
 import { diffGraphs } from '../../_helper/versionDiff.helper';
@@ -27,14 +28,16 @@ const VersionPreview = () => {
 	const workspaceId = state.workflow.workspaceId ?? '';
 	const workflowId = state.workflow.apiId ?? '';
 
-	const { data: versions } = useWorkflowVersions(workspaceId, workflowId);
+	const { can } = usePermission();
+	const canViewVersions = can('workflow.version');
+	const { data: versions } = useWorkflowVersions(workspaceId, canViewVersions ? workflowId : '');
 	const index = versions?.findIndex((version) => version.id === previewVersionId) ?? -1;
 	const previousId = index >= 0 ? versions?.[index + 1]?.id : undefined;
 
 	const versionQuery = useWorkflowVersion(workspaceId, workflowId, previewVersionId ?? '');
 	const previousQuery = useWorkflowVersion(workspaceId, workflowId, previousId ?? '');
 	const { status: draftStatus, liveVersionId } = useDraftStatus();
-	const { restore, isRestoring } = useVersionRestore();
+	const { restore, canRestore, isRestoring } = useVersionRestore();
 
 	const version = versionQuery.data;
 	const graph = version?.editor_graph;
@@ -119,7 +122,7 @@ const VersionPreview = () => {
 							<ArrowLeft size={13} />
 							Back to draft
 						</button>
-						{version && !(isLive && !draftHasChanges) && (
+						{canRestore && version && !(isLive && !draftHasChanges) && (
 							<button
 								type='button'
 								onClick={handleRestore}

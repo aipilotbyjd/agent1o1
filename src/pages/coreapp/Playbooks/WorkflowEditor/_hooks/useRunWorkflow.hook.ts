@@ -38,6 +38,7 @@ import { serverValidationIssues } from '../_helper/validation.helper';
 import type { TNodeRunStatus } from '../_types/node.type';
 import { messageFromError, notify } from '@/api/core/notify';
 import { useCredentialResolver } from './useCredentialResolver.hook';
+import usePermission from '@/hooks/usePermission';
 import {
 	initialRunFormValues,
 	RunFormJsonError,
@@ -104,7 +105,7 @@ const ACTIVE_RUN_STATUSES = new Set<TRunStatus>([
 ]);
 
 const useRunWorkflowController = () => {
-	const { state, dispatch } = useWorkflowEditor();
+	const { state, dispatch, canEdit } = useWorkflowEditor();
 	const { echo } = useRealtime();
 	const stopped = useRef(false);
 	const starting = useRef(false);
@@ -120,6 +121,9 @@ const useRunWorkflowController = () => {
 	const persistWorkflowDraft = usePersistWorkflowDraft();
 	const queryClient = useQueryClient();
 	const { data: publishPolicy } = usePublishApprovalPolicy(state.workflow.workspaceId ?? '');
+	const { can } = usePermission();
+	const canRun = can('run.trigger');
+	const canPublish = can('workflow.publish');
 
 	const ws = state.workflow.workspaceId;
 	const wfId = state.workflow.apiId;
@@ -389,6 +393,7 @@ const useRunWorkflowController = () => {
 	const runWorkflow = async () => {
 		if (state.nodes.length === 0) return;
 		if (state.run.status === 'running' || starting.current || inputRequest) return;
+		if (!canRun) return;
 		// The shortcut and the command palette reach here too, not only the button.
 		if (isReadOnly) {
 			notify.warn(maintenanceMessage ?? 'Running is paused while the app is in maintenance.');
@@ -404,6 +409,12 @@ const useRunWorkflowController = () => {
 		);
 
 		if (missingCredentialNode) {
+			if (!canEdit) {
+				notify.error(
+					'A step in this workflow needs an account connected. Ask an editor to connect it.',
+				);
+				return;
+			}
 			dispatch({
 				type: 'SET_LINK_CREDENTIALS_OPEN',
 				open: true,
@@ -456,19 +467,22 @@ const useRunWorkflowController = () => {
 				return;
 			}
 			const needsPublish = workflow.has_unpublished_changes || !workflow.current_version_id;
-			if (needsPublish && publishPolicy?.requires_approval) {
-				// Changes go live only through a review here, so Run can't publish
-				// them; it can still run what's live, without them.
+			if (needsPublish && (publishPolicy?.requires_approval || !canPublish)) {
+				// Changes go live only through a review here (or the viewer cannot
+				// publish), so Run can't publish them; it can still run what's live.
 				if (!workflow.current_version_id) {
 					notify.error(
-						'Nothing has been approved yet, so there is no live version to run. Send your changes for review first.',
+						canPublish
+							? 'Nothing has been approved yet, so there is no live version to run. Send your changes for review first.'
+							: 'This workflow has not been published yet, so there is no live version to run.',
 					);
 					return;
 				}
 				const confirmed = await confirm({
 					title: 'Run the live version?',
-					message:
-						'Your changes need a review before they go live, so this runs the live version without them.',
+					message: canPublish
+						? 'Your changes need a review before they go live, so this runs the live version without them.'
+						: 'This workflow has unpublished changes, so this runs the live version without them.',
 					confirmText: 'Run live version',
 					tone: 'primary',
 				});

@@ -8,6 +8,7 @@ import Breadcrumb from '@/components/layout/Breadcrumb';
 import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
 import { useWorkspaceContext } from '@/context/workspace';
+import usePermission from '@/hooks/usePermission';
 import { ListSkeletonRows } from '@/parts/ListSkeleton.part';
 import { notify } from '@/api/core';
 import {
@@ -57,6 +58,8 @@ const KnowledgeListPage = () => {
 	});
 	const deleteChunkMutation = useDeleteKnowledgeChunk(ws);
 	const deleteCollectionMutation = useDeleteKnowledgeCollection(ws);
+	const { can } = usePermission();
+	const canManageShared = can('agent.manage');
 
 	const [searchQuery, setSearchQuery] = useState('');
 	const searchMutation = useSearchKnowledge(ws);
@@ -166,12 +169,16 @@ const KnowledgeListPage = () => {
 									<span className='font-mono'>{c.collection}</span>
 									<span className='opacity-60'>{c.chunks_count}</span>
 								</button>
-								<button
-									aria-label={`Delete collection ${c.collection}`}
-									onClick={() => handleDeleteCollection(c.collection, c.private)}
-									className='rounded-lg p-1 opacity-100 transition-opacity hover:bg-black/10 sm:opacity-0 sm:group-hover:opacity-100'>
-									<Trash2 size={11} />
-								</button>
+								{(c.private || canManageShared) && (
+									<button
+										aria-label={`Delete collection ${c.collection}`}
+										onClick={() =>
+											handleDeleteCollection(c.collection, c.private)
+										}
+										className='rounded-lg p-1 opacity-100 transition-opacity hover:bg-black/10 sm:opacity-0 sm:group-hover:opacity-100'>
+										<Trash2 size={11} />
+									</button>
+								)}
 							</div>
 						))}
 						{!isLoadingCollections && collections?.length === 0 && (
@@ -352,14 +359,16 @@ const KnowledgeListPage = () => {
 												</p>
 											</div>
 										</div>
-										<button
-											aria-label='Delete chunk'
-											onClick={() =>
-												handleDeleteChunk(chunk.id, chunk.source)
-											}
-											className='flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-rose-100 text-rose-500 opacity-100 transition-all hover:border-rose-200 hover:bg-rose-50 active:scale-95 sm:h-8 sm:w-8 sm:border-slate-200 sm:text-slate-400 sm:opacity-0 sm:group-hover:opacity-100 sm:hover:text-rose-500 dark:border-rose-500/20 dark:hover:border-rose-900/30 dark:hover:bg-rose-950/20 dark:sm:border-zinc-800'>
-											<Trash2 size={12} />
-										</button>
+										{(chunk.private || canManageShared) && (
+											<button
+												aria-label='Delete chunk'
+												onClick={() =>
+													handleDeleteChunk(chunk.id, chunk.source)
+												}
+												className='flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-rose-100 text-rose-500 opacity-100 transition-all hover:border-rose-200 hover:bg-rose-50 active:scale-95 sm:h-8 sm:w-8 sm:border-slate-200 sm:text-slate-400 sm:opacity-0 sm:group-hover:opacity-100 sm:hover:text-rose-500 dark:border-rose-500/20 dark:hover:border-rose-900/30 dark:hover:bg-rose-950/20 dark:sm:border-zinc-800'>
+												<Trash2 size={12} />
+											</button>
+										)}
 									</motion.div>
 								))}
 							</AnimatePresence>

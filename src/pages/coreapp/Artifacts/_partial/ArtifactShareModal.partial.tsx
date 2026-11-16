@@ -10,10 +10,7 @@ import {
 import { useWorkspaceMembers } from '@/api/modules/workspace-members';
 import { useCurrentUser } from '@/api/modules/user';
 import type { TArtifact, TArtifactGeneralAccess, TArtifactShare } from '@/types/artifact.type';
-import type { TWorkspaceRole } from '@/types/workspace.type';
-
-/** Roles the backend grants `artifact.manage`: see `Permission::editorGrants()`. */
-const MANAGER_ROLES: TWorkspaceRole[] = ['owner', 'admin', 'editor'];
+import usePermission from '@/hooks/usePermission';
 
 /**
  * The backend has three levels, but with no anonymous request path
@@ -88,9 +85,9 @@ const ShareBody = ({ ws, artifact }: { ws: string; artifact: TArtifact }) => {
 	const [selectedUserId, setSelectedUserId] = useState('');
 
 	const myId = me ? String(me.id) : '';
-	const myRole = members?.find((m) => String(m.user_id) === myId)?.role;
-	const canShare =
-		String(artifact.creator?.id ?? '') === myId || (!!myRole && MANAGER_ROLES.includes(myRole));
+	const { can } = usePermission();
+	const canManageArtifacts = can('artifact.manage');
+	const canShare = String(artifact.creator?.id ?? '') === myId || canManageArtifacts;
 
 	const candidates = useMemo(() => {
 		const taken = new Set(shares.map((s) => String(s.user_id)));

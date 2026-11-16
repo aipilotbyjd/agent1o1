@@ -10,7 +10,7 @@ const NodeCommentsPanel = ({
 	nodeId: string;
 	comments: TNodeComment[];
 }) => {
-	const { dispatch } = useWorkflowEditor();
+	const { dispatch, canEdit } = useWorkflowEditor();
 	const [text, setText] = useState('');
 	const [open, setOpen] = useState(false);
 
@@ -70,50 +70,54 @@ const NodeCommentsPanel = ({
 												{new Date(comment.at).toLocaleTimeString()}
 											</div>
 										</div>
-										<button
-											aria-label='Delete'
-											type='button'
-											onClick={() =>
-												dispatch({
-													type: 'REMOVE_NODE_COMMENT',
-													id: nodeId,
-													commentId: comment.id,
-												})
-											}
-											className='flex h-5 w-5 shrink-0 items-center justify-center rounded text-zinc-300 hover:text-rose-500 dark:text-zinc-600 dark:hover:text-rose-400'>
-											<Trash2 size={11} />
-										</button>
+										{canEdit && (
+											<button
+												aria-label='Delete'
+												type='button'
+												onClick={() =>
+													dispatch({
+														type: 'REMOVE_NODE_COMMENT',
+														id: nodeId,
+														commentId: comment.id,
+													})
+												}
+												className='flex h-5 w-5 shrink-0 items-center justify-center rounded text-zinc-300 hover:text-rose-500 dark:text-zinc-600 dark:hover:text-rose-400'>
+												<Trash2 size={11} />
+											</button>
+										)}
 									</div>
 								))}
 							</div>
 						)}
 					</div>
 
-					{/* Add comment input */}
-					<div className='border-t border-zinc-100 p-2 dark:border-zinc-800'>
-						<div className='flex items-center gap-2'>
-							<input
-								aria-label='Add a comment…'
-								type='text'
-								value={text}
-								onChange={(e) => setText(e.target.value)}
-								onKeyDown={(e) => {
-									if (e.key === 'Enter') submit();
-									if (e.key === 'Escape') setOpen(false);
-								}}
-								placeholder='Add a comment…'
-								className='focus:border-primary-400 flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1.5 text-xs text-zinc-700 outline-none placeholder:text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200'
-							/>
-							<button
-								aria-label='Send'
-								type='button'
-								onClick={submit}
-								disabled={!text.trim()}
-								className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex h-7 w-7 items-center justify-center rounded-lg disabled:opacity-40'>
-								<Send size={11} />
-							</button>
+					{/* Add comment input: comments are saved with the workflow */}
+					{canEdit && (
+						<div className='border-t border-zinc-100 p-2 dark:border-zinc-800'>
+							<div className='flex items-center gap-2'>
+								<input
+									aria-label='Add a comment…'
+									type='text'
+									value={text}
+									onChange={(e) => setText(e.target.value)}
+									onKeyDown={(e) => {
+										if (e.key === 'Enter') submit();
+										if (e.key === 'Escape') setOpen(false);
+									}}
+									placeholder='Add a comment…'
+									className='focus:border-primary-400 flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1.5 text-xs text-zinc-700 outline-none placeholder:text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200'
+								/>
+								<button
+									aria-label='Send'
+									type='button'
+									onClick={submit}
+									disabled={!text.trim()}
+									className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex h-7 w-7 items-center justify-center rounded-lg disabled:opacity-40'>
+									<Send size={11} />
+								</button>
+							</div>
 						</div>
-					</div>
+					)}
 				</div>
 			)}
 		</div>

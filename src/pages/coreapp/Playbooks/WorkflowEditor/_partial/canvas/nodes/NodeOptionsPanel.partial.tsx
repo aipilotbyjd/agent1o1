@@ -18,8 +18,10 @@ type Props = {
  * without opening the full link-credentials dialog, and surfaces Configure Inputs.
  */
 const NodeOptionsPanel = ({ nodeId, fields, credentialField, credentialId }: Props) => {
-	const { dispatch } = useWorkflowEditor();
+	const { dispatch, canEdit } = useWorkflowEditor();
 	const [configureOpen, setConfigureOpen] = useState(false);
+
+	if (!canEdit) return null;
 
 	return (
 		<div className='pointer-events-none absolute top-0 right-[348px] z-10 flex w-[280px] flex-col'>

@@ -30,6 +30,7 @@ import {
 	useAgentEvalRun,
 	useRunAgentEvalSuite,
 } from '@/api/modules/agent-eval-suites';
+import usePermission from '@/hooks/usePermission';
 import type {
 	TAgentEvalCase,
 	TAgentEvalSuite,
@@ -272,6 +273,8 @@ const SuiteDetail = ({
 	const deleteMutation = useDeleteAgentEvalCase(ws, agentId, suite.id);
 	const updateSuiteMutation = useUpdateAgentEvalSuite(ws, agentId);
 	const runMutation = useRunAgentEvalSuite(ws, agentId, suite.id);
+	const { can } = usePermission();
+	const canManage = can('agent.manage');
 
 	const items = cases ?? [];
 	const isSaving = createMutation.isPending || updateMutation.isPending;
@@ -351,26 +354,30 @@ const SuiteDetail = ({
 							{current.description || 'No description.'}
 						</p>
 					</div>
-					<button
-						type='button'
-						onClick={startEditSuite}
-						title='Edit suite'
-						aria-label='Edit suite'
-						className='shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
-						<Pencil size={11} />
-					</button>
-				</div>
-				<button
-					onClick={() => runMutation.mutate()}
-					disabled={runMutation.isPending || items.length === 0}
-					className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-black disabled:opacity-50'>
-					{runMutation.isPending ? (
-						<Loader2 size={10} className='animate-spin' />
-					) : (
-						<Play size={10} />
+					{canManage && (
+						<button
+							type='button'
+							onClick={startEditSuite}
+							title='Edit suite'
+							aria-label='Edit suite'
+							className='shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
+							<Pencil size={11} />
+						</button>
 					)}
-					<span>Run</span>
-				</button>
+				</div>
+				{canManage && (
+					<button
+						onClick={() => runMutation.mutate()}
+						disabled={runMutation.isPending || items.length === 0}
+						className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-black disabled:opacity-50'>
+						{runMutation.isPending ? (
+							<Loader2 size={10} className='animate-spin' />
+						) : (
+							<Play size={10} />
+						)}
+						<span>Run</span>
+					</button>
+				)}
 			</div>
 
 			{/* Suite edit form */}
@@ -433,15 +440,17 @@ const SuiteDetail = ({
 				<span className='text-[9px] font-black tracking-wide text-zinc-400 uppercase'>
 					Cases ({items.length})
 				</span>
-				<button
-					onClick={() => {
-						resetForm();
-						setIsFormOpen(true);
-					}}
-					className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
-					<Plus size={10} />
-					<span>Add</span>
-				</button>
+				{canManage && (
+					<button
+						onClick={() => {
+							resetForm();
+							setIsFormOpen(true);
+						}}
+						className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
+						<Plus size={10} />
+						<span>Add</span>
+					</button>
+				)}
 			</div>
 
 			{/* Case form */}
@@ -613,20 +622,24 @@ const SuiteDetail = ({
 									))}
 								</div>
 							</div>
-							<button
-								type='button'
-								onClick={() => startEditCase(evalCase)}
-								title='Edit'
-								aria-label='Edit case'
-								className='shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
-								<Pencil size={12} />
-							</button>
-							<button
-								onClick={() => deleteMutation.mutate(evalCase.id)}
-								title='Delete'
-								className='shrink-0 text-zinc-400 hover:text-rose-500'>
-								<Trash2 size={12} />
-							</button>
+							{canManage && (
+								<>
+									<button
+										type='button'
+										onClick={() => startEditCase(evalCase)}
+										title='Edit'
+										aria-label='Edit case'
+										className='shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'>
+										<Pencil size={12} />
+									</button>
+									<button
+										onClick={() => deleteMutation.mutate(evalCase.id)}
+										title='Delete'
+										className='shrink-0 text-zinc-400 hover:text-rose-500'>
+										<Trash2 size={12} />
+									</button>
+								</>
+							)}
 						</div>
 					))}
 				</div>
@@ -674,6 +687,8 @@ const AgentEvalsPanel = ({ ws, agentId }: TProps) => {
 	const { data: suites, isLoading } = useAgentEvalSuites(ws, agentId ?? '');
 	const createMutation = useCreateAgentEvalSuite(ws, agentId ?? '');
 	const deleteMutation = useDeleteAgentEvalSuite(ws, agentId ?? '');
+	const { can } = usePermission();
+	const canManage = can('agent.manage');
 
 	if (!agentId) {
 		return (
@@ -722,15 +737,17 @@ const AgentEvalsPanel = ({ ws, agentId }: TProps) => {
 						Test suites that grade the agent's replies.
 					</p>
 				</div>
-				<button
-					onClick={() => {
-						resetForm();
-						setIsFormOpen(true);
-					}}
-					className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
-					<Plus size={10} />
-					<span>Add</span>
-				</button>
+				{canManage && (
+					<button
+						onClick={() => {
+							resetForm();
+							setIsFormOpen(true);
+						}}
+						className='text-primary-600 dark:border-primary-500/20 dark:text-primary-400 flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'>
+						<Plus size={10} />
+						<span>Add</span>
+					</button>
+				)}
 			</div>
 
 			{/* Form */}
@@ -819,12 +836,14 @@ const AgentEvalsPanel = ({ ws, agentId }: TProps) => {
 									</p>
 								</div>
 							</button>
-							<button
-								onClick={() => deleteMutation.mutate(suite.id)}
-								title='Delete'
-								className='shrink-0 text-zinc-400 hover:text-rose-500'>
-								<Trash2 size={12} />
-							</button>
+							{canManage && (
+								<button
+									onClick={() => deleteMutation.mutate(suite.id)}
+									title='Delete'
+									className='shrink-0 text-zinc-400 hover:text-rose-500'>
+									<Trash2 size={12} />
+								</button>
+							)}
 						</div>
 					))}
 				</div>

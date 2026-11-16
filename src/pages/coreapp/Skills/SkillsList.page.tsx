@@ -19,6 +19,7 @@ import Breadcrumb from '@/components/layout/Breadcrumb';
 import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
 import { useWorkspaceContext } from '@/context/workspace';
+import usePermission from '@/hooks/usePermission';
 import { useAgentSkills, useDeleteAgentSkill, useCopyAgentSkill } from '@/api/modules/agent-skills';
 import type { TAgentSkill } from '@/types/agent-skill.type';
 import ListSkeletonPart from '@/parts/ListSkeleton.part';
@@ -70,6 +71,8 @@ const SkillsListPage = () => {
 			},
 		});
 	const deleteSkillMutation = useDeleteAgentSkill(currentWorkspaceId);
+	const { can } = usePermission();
+	const canManageSkills = can('agent.skill.manage');
 
 	const [editorState, setEditorState] = useState<{ open: boolean; skillId: string | null }>({
 		open: false,
@@ -126,20 +129,22 @@ const SkillsListPage = () => {
 					<h1 className='text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white'>
 						Skills
 					</h1>
-					<div className='flex shrink-0 items-center gap-2'>
-						<button
-							onClick={() => setIsConnectOpen(true)}
-							className='flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 text-xs font-bold text-slate-700 transition-all hover:bg-slate-50 active:scale-95 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800'>
-							<FolderGit2 size={14} />
-							<span>Import from GitHub</span>
-						</button>
-						<button
-							onClick={() => setEditorState({ open: true, skillId: null })}
-							className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 hover:shadow-primary-500/20 flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl px-5 text-xs font-bold shadow-md transition-all hover:shadow-lg active:scale-95 dark:shadow-none'>
-							<Sparkles size={14} className='animate-pulse' />
-							<span>Create Skill</span>
-						</button>
-					</div>
+					{canManageSkills && (
+						<div className='flex shrink-0 items-center gap-2'>
+							<button
+								onClick={() => setIsConnectOpen(true)}
+								className='flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 text-xs font-bold text-slate-700 transition-all hover:bg-slate-50 active:scale-95 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800'>
+								<FolderGit2 size={14} />
+								<span>Import from GitHub</span>
+							</button>
+							<button
+								onClick={() => setEditorState({ open: true, skillId: null })}
+								className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 hover:shadow-primary-500/20 flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl px-5 text-xs font-bold shadow-md transition-all hover:shadow-lg active:scale-95 dark:shadow-none'>
+								<Sparkles size={14} className='animate-pulse' />
+								<span>Create Skill</span>
+							</button>
+						</div>
+					)}
 				</div>
 
 				<SkillSourcesPanel ws={currentWorkspaceId} />
@@ -222,6 +227,7 @@ const SkillsListPage = () => {
 								<SkillCard
 									key={skill.id}
 									skill={skill}
+									canManage={canManageSkills}
 									onEdit={() => setEditorState({ open: true, skillId: skill.id })}
 									onAttach={() => setAttachingSkill(skill)}
 									onDelete={() => handleDelete(skill)}
@@ -266,6 +272,7 @@ const SkillsListPage = () => {
 
 const SkillCard = ({
 	skill,
+	canManage,
 	onEdit,
 	onAttach,
 	onDelete,
@@ -273,6 +280,8 @@ const SkillCard = ({
 	onCopy,
 }: {
 	skill: TAgentSkill;
+	/** Editing, publishing, copying, deleting and attaching all need `agent.skill.manage`. */
+	canManage: boolean;
 	onEdit: () => void;
 	onAttach: () => void;
 	onDelete: () => void;
@@ -308,7 +317,8 @@ const SkillCard = ({
 						</span>
 					</div>
 				</div>
-				<div className='relative shrink-0'>
+				<div
+					className={`relative shrink-0 ${canManage || skill.origin_url || skill.source_url ? '' : 'hidden'}`}>
 					<button
 						onClick={() => setMenuOpen((o) => !o)}
 						title='More options'
@@ -317,7 +327,7 @@ const SkillCard = ({
 					</button>
 					{menuOpen && (
 						<div className='absolute top-8 right-0 z-10 w-44 overflow-hidden rounded-xl border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
-							{!isSynced && (
+							{canManage && !isSynced && (
 								<button
 									type='button'
 									onClick={() => {
@@ -329,7 +339,7 @@ const SkillCard = ({
 									Publish to GitHub
 								</button>
 							)}
-							{isSynced && (
+							{canManage && isSynced && (
 								<button
 									type='button'
 									onClick={() => {
@@ -349,7 +359,7 @@ const SkillCard = ({
 									View original
 								</a>
 							)}
-							{(!isSynced || skill.source_two_way) && (
+							{canManage && (!isSynced || skill.source_two_way) && (
 								<button
 									onClick={() => {
 										setMenuOpen(false);
@@ -394,14 +404,16 @@ const SkillCard = ({
 					onClick={onEdit}
 					className='flex h-8 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white text-[11px] font-bold text-slate-700 transition-all hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800'>
 					<Settings2 size={12} className='text-slate-500 dark:text-zinc-400' />
-					{isSynced && !skill.source_two_way ? 'View' : 'Edit'}
+					{!canManage || (isSynced && !skill.source_two_way) ? 'View' : 'Edit'}
 				</button>
-				<button
-					onClick={onAttach}
-					title='Add to agent'
-					className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl shadow-md transition-transform hover:scale-105 active:scale-95'>
-					<UserPlus size={14} />
-				</button>
+				{canManage && (
+					<button
+						onClick={onAttach}
+						title='Add to agent'
+						className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl shadow-md transition-transform hover:scale-105 active:scale-95'>
+						<UserPlus size={14} />
+					</button>
+				)}
 			</div>
 		</motion.div>
 	);

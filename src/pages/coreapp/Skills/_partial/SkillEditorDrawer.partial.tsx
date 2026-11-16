@@ -20,6 +20,7 @@ import type {
 	TSkillDraftScript,
 } from '@/types/agent-skill.type';
 import { notify } from '@/api/core';
+import usePermission from '@/hooks/usePermission';
 import { useModelCatalog } from '@/api/modules/catalog';
 import ModelPicker from '@/components/ai/model-picker/ModelPicker';
 import {
@@ -42,6 +43,7 @@ import {
 	SKILL_ICON_OPTIONS,
 	SKILL_COLOR_OPTIONS,
 } from '../_helper/skills.constants';
+import { noPermissionTo } from '@/constants/permission.constant';
 
 interface ISkillEditorDrawerProps {
 	ws: string;
@@ -78,9 +80,11 @@ const SkillEditorDrawer = ({
 	const [createdSkillId, setCreatedSkillId] = useState<string | null>(null);
 	const activeSkillId = skillId ?? createdSkillId;
 
+	const { can } = usePermission();
+	const canManageSkills = can('agent.skill.manage');
 	const { data: skillDetail } = useAgentSkill(ws, activeSkillId ?? '');
 	const { data: references } = useSkillReferences(ws, activeSkillId ?? '');
-	const { data: scripts } = useSkillScripts(ws, activeSkillId ?? '');
+	const { data: scripts } = useSkillScripts(ws, canManageSkills ? (activeSkillId ?? '') : '');
 	const createMutation = useCreateAgentSkill(ws);
 	const draftMutation = useDraftAgentSkill(ws);
 	const { data: modelCatalog } = useModelCatalog(ws);
@@ -154,6 +158,7 @@ const SkillEditorDrawer = ({
 	// One-way imports stay read-only; two-way skills can be edited.
 	const isLinked = isEdit && !!skillDetail?.skill_source_id;
 	const isSynced = isLinked && !skillDetail?.source_two_way;
+	const isViewOnly = !canManageSkills;
 	const isSaving = createMutation.isPending || updateMutation.isPending;
 
 	// Fills the form from a generated draft; nothing is saved until Create.
@@ -295,14 +300,16 @@ const SkillEditorDrawer = ({
 				<div className='flex items-center justify-between border-b border-zinc-200 px-6 py-5 dark:border-zinc-800'>
 					<div>
 						<h2 className='text-lg font-black tracking-tight text-zinc-900 dark:text-white'>
-							{isEdit ? 'Edit Skill' : 'Create Skill'}
+							{isViewOnly ? 'View Skill' : isEdit ? 'Edit Skill' : 'Create Skill'}
 						</h2>
 						<p className='mt-0.5 text-xs font-semibold text-zinc-400 dark:text-zinc-500'>
-							{isSynced
-								? 'Synced from GitHub. Edit it in the repository.'
-								: isEdit
-									? 'Update instructions, references, and scripts.'
-									: 'Generate it from a description, or write it yourself.'}
+							{isViewOnly
+								? noPermissionTo('change skills')
+								: isSynced
+									? 'Synced from GitHub. Edit it in the repository.'
+									: isEdit
+										? 'Update instructions, references, and scripts.'
+										: 'Generate it from a description, or write it yourself.'}
 						</p>
 					</div>
 					<button
@@ -313,7 +320,7 @@ const SkillEditorDrawer = ({
 					</button>
 				</div>
 
-				<div className='flex-1 space-y-5 px-6 py-5'>
+				<fieldset disabled={isViewOnly} className='min-w-0 flex-1 space-y-5 px-6 py-5'>
 					{isLinked && (
 						<div className='flex items-start gap-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 p-3.5 dark:border-zinc-800 dark:bg-zinc-900/40'>
 							<FolderGit2 size={15} className='text-primary-500 mt-0.5 shrink-0' />
@@ -580,12 +587,14 @@ const SkillEditorDrawer = ({
 						/>
 					)}
 
-					<button
-						onClick={handleSave}
-						disabled={isSaving || !form.name.trim() || !form.instructions.trim()}
-						className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 flex h-10 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl text-xs font-black shadow-md transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'>
-						{isEdit ? 'Save Changes' : 'Create Skill'}
-					</button>
+					{!isViewOnly && (
+						<button
+							onClick={handleSave}
+							disabled={isSaving || !form.name.trim() || !form.instructions.trim()}
+							className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 flex h-10 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl text-xs font-black shadow-md transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'>
+							{isEdit ? 'Save Changes' : 'Create Skill'}
+						</button>
+					)}
 
 					{activeSkillId && (
 						<>
@@ -671,7 +680,7 @@ const SkillEditorDrawer = ({
 													</p>
 												</div>
 												<div
-													className={`flex shrink-0 items-center gap-2 ${isSynced ? 'hidden' : ''}`}>
+													className={`flex shrink-0 items-center gap-2 ${isSynced || isViewOnly ? 'hidden' : ''}`}>
 													<button
 														aria-label={`Edit ${ref.title}`}
 														onClick={() => startEditReference(ref)}
@@ -693,7 +702,7 @@ const SkillEditorDrawer = ({
 								</div>
 
 								<div
-									className={`space-y-2 rounded-xl border border-dashed border-zinc-200 p-3 dark:border-zinc-800 ${isSynced ? 'hidden' : ''}`}>
+									className={`space-y-2 rounded-xl border border-dashed border-zinc-200 p-3 dark:border-zinc-800 ${isSynced || isViewOnly ? 'hidden' : ''}`}>
 									<input
 										aria-label='Reference title'
 										type='text'
@@ -733,239 +742,254 @@ const SkillEditorDrawer = ({
 							</div>
 
 							{/* Scripts */}
-							<div className='border-t border-zinc-200 pt-5 dark:border-zinc-800'>
-								<div className='mb-2.5 flex items-center gap-1.5'>
-									<Code2 size={13} className='text-primary-500' />
-									<h3 className='text-xs font-black text-zinc-700 dark:text-zinc-300'>
-										Scripts
-									</h3>
-								</div>
+							{canManageSkills && (
+								<div className='border-t border-zinc-200 pt-5 dark:border-zinc-800'>
+									<div className='mb-2.5 flex items-center gap-1.5'>
+										<Code2 size={13} className='text-primary-500' />
+										<h3 className='text-xs font-black text-zinc-700 dark:text-zinc-300'>
+											Scripts
+										</h3>
+									</div>
 
-								<div className='mb-3 space-y-2'>
-									{(scripts ?? []).map((script) =>
-										editingScript?.id === script.id ? (
-											<div
-												key={script.id}
-												className='border-primary-500/40 space-y-2 rounded-xl border bg-white p-3 dark:bg-zinc-900'>
-												<div className='flex gap-2'>
-													<input
-														type='text'
-														aria-label='Script name'
-														value={editingScript.name}
-														onChange={(e) =>
-															setEditingScript(
-																(x) =>
-																	x && {
-																		...x,
-																		name: e.target.value,
-																	},
-															)
-														}
-														className='focus:border-primary-500/80 block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
-													/>
-													<select
-														aria-label='Script language'
-														value={editingScript.language}
-														onChange={(e) =>
-															setEditingScript(
-																(x) =>
-																	x && {
-																		...x,
-																		language: e.target
-																			.value as (typeof SKILL_SCRIPT_LANGUAGES)[number],
-																	},
-															)
-														}
-														className='focus:border-primary-500/80 block h-8 shrink-0 rounded-lg border border-zinc-200 bg-white px-2 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'>
-														{SKILL_SCRIPT_LANGUAGES.map((lang) => (
-															<option key={lang} value={lang}>
-																{lang}
-															</option>
-														))}
-													</select>
-												</div>
-												<input
-													type='text'
-													aria-label='Script description'
-													placeholder='Short description'
-													value={editingScript.description}
-													onChange={(e) =>
-														setEditingScript(
-															(x) =>
-																x && {
-																	...x,
-																	description: e.target.value,
-																},
-														)
-													}
-													className='focus:border-primary-500/80 block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
-												/>
-												<textarea
-													aria-label='Script code'
-													rows={8}
-													value={editingScript.code}
-													onChange={(e) =>
-														setEditingScript(
-															(x) =>
-																x && { ...x, code: e.target.value },
-														)
-													}
-													className='focus:border-primary-500/80 block w-full resize-y rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
-												/>
-												<div className='flex items-center justify-between gap-2'>
-													<label className='flex cursor-pointer items-center gap-1.5 text-[11px] font-bold text-zinc-600 dark:text-zinc-300'>
+									<div className='mb-3 space-y-2'>
+										{(scripts ?? []).map((script) =>
+											editingScript?.id === script.id ? (
+												<div
+													key={script.id}
+													className='border-primary-500/40 space-y-2 rounded-xl border bg-white p-3 dark:bg-zinc-900'>
+													<div className='flex gap-2'>
 														<input
-															type='checkbox'
-															aria-label='Script enabled'
-															checked={editingScript.is_enabled}
+															type='text'
+															aria-label='Script name'
+															value={editingScript.name}
 															onChange={(e) =>
 																setEditingScript(
 																	(x) =>
 																		x && {
 																			...x,
-																			is_enabled:
-																				e.target.checked,
+																			name: e.target.value,
 																		},
 																)
 															}
-															className='accent-primary-500'
+															className='focus:border-primary-500/80 block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
 														/>
-														Enabled
-													</label>
-													<div className='flex gap-2'>
+														<select
+															aria-label='Script language'
+															value={editingScript.language}
+															onChange={(e) =>
+																setEditingScript(
+																	(x) =>
+																		x && {
+																			...x,
+																			language: e.target
+																				.value as (typeof SKILL_SCRIPT_LANGUAGES)[number],
+																		},
+																)
+															}
+															className='focus:border-primary-500/80 block h-8 shrink-0 rounded-lg border border-zinc-200 bg-white px-2 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'>
+															{SKILL_SCRIPT_LANGUAGES.map((lang) => (
+																<option key={lang} value={lang}>
+																	{lang}
+																</option>
+															))}
+														</select>
+													</div>
+													<input
+														type='text'
+														aria-label='Script description'
+														placeholder='Short description'
+														value={editingScript.description}
+														onChange={(e) =>
+															setEditingScript(
+																(x) =>
+																	x && {
+																		...x,
+																		description: e.target.value,
+																	},
+															)
+														}
+														className='focus:border-primary-500/80 block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
+													/>
+													<textarea
+														aria-label='Script code'
+														rows={8}
+														value={editingScript.code}
+														onChange={(e) =>
+															setEditingScript(
+																(x) =>
+																	x && {
+																		...x,
+																		code: e.target.value,
+																	},
+															)
+														}
+														className='focus:border-primary-500/80 block w-full resize-y rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
+													/>
+													<div className='flex items-center justify-between gap-2'>
+														<label className='flex cursor-pointer items-center gap-1.5 text-[11px] font-bold text-zinc-600 dark:text-zinc-300'>
+															<input
+																type='checkbox'
+																aria-label='Script enabled'
+																checked={editingScript.is_enabled}
+																onChange={(e) =>
+																	setEditingScript(
+																		(x) =>
+																			x && {
+																				...x,
+																				is_enabled:
+																					e.target
+																						.checked,
+																			},
+																	)
+																}
+																className='accent-primary-500'
+															/>
+															Enabled
+														</label>
+														<div className='flex gap-2'>
+															<button
+																onClick={() =>
+																	setEditingScript(null)
+																}
+																className='h-7 cursor-pointer rounded-lg border border-zinc-200 px-3 text-[11px] font-bold text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-900'>
+																Cancel
+															</button>
+															<button
+																onClick={handleSaveScript}
+																disabled={
+																	updateScriptMutation.isPending ||
+																	!editingScript.name.trim() ||
+																	!editingScript.code.trim()
+																}
+																className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex h-7 cursor-pointer items-center gap-1 rounded-lg px-3 text-[11px] font-black disabled:cursor-not-allowed disabled:opacity-50'>
+																{updateScriptMutation.isPending && (
+																	<Loader2
+																		size={11}
+																		className='animate-spin'
+																	/>
+																)}
+																Save
+															</button>
+														</div>
+													</div>
+												</div>
+											) : (
+												<div
+													key={script.id}
+													className='flex items-start justify-between gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/40'>
+													<div>
+														<p className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
+															{script.name}{' '}
+															<span className='ml-1 rounded bg-zinc-100 px-1.5 py-0.5 text-[9px] font-black tracking-wider text-zinc-500 uppercase dark:bg-zinc-800 dark:text-zinc-400'>
+																{script.language}
+															</span>
+															{!script.is_enabled && (
+																<span className='ml-1 rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-black tracking-wider text-amber-600 uppercase dark:bg-amber-950/40 dark:text-amber-400'>
+																	off
+																</span>
+															)}
+														</p>
+														<p className='mt-0.5 line-clamp-2 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500'>
+															{script.description}
+														</p>
+													</div>
+													<div
+														className={`flex shrink-0 items-center gap-2 ${isSynced || isViewOnly ? 'hidden' : ''}`}>
 														<button
-															onClick={() => setEditingScript(null)}
-															className='h-7 cursor-pointer rounded-lg border border-zinc-200 px-3 text-[11px] font-bold text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-900'>
-															Cancel
+															aria-label={`Edit ${script.name}`}
+															onClick={() => startEditScript(script)}
+															className='hover:text-primary-600 dark:hover:text-primary-400 cursor-pointer text-zinc-300 dark:text-zinc-600'>
+															<Pencil size={12} />
 														</button>
 														<button
-															onClick={handleSaveScript}
-															disabled={
-																updateScriptMutation.isPending ||
-																!editingScript.name.trim() ||
-																!editingScript.code.trim()
+															aria-label='Delete'
+															onClick={() =>
+																removeScriptMutation.mutate(
+																	script.id,
+																)
 															}
-															className='bg-primary-400 text-primary-950 hover:bg-primary-500 flex h-7 cursor-pointer items-center gap-1 rounded-lg px-3 text-[11px] font-black disabled:cursor-not-allowed disabled:opacity-50'>
-															{updateScriptMutation.isPending && (
-																<Loader2
-																	size={11}
-																	className='animate-spin'
-																/>
-															)}
-															Save
+															className='cursor-pointer text-zinc-300 hover:text-rose-500 dark:text-zinc-600'>
+															<Trash2 size={13} />
 														</button>
 													</div>
 												</div>
-											</div>
-										) : (
-											<div
-												key={script.id}
-												className='flex items-start justify-between gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/40'>
-												<div>
-													<p className='text-xs font-bold text-zinc-800 dark:text-zinc-200'>
-														{script.name}{' '}
-														<span className='ml-1 rounded bg-zinc-100 px-1.5 py-0.5 text-[9px] font-black tracking-wider text-zinc-500 uppercase dark:bg-zinc-800 dark:text-zinc-400'>
-															{script.language}
-														</span>
-														{!script.is_enabled && (
-															<span className='ml-1 rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-black tracking-wider text-amber-600 uppercase dark:bg-amber-950/40 dark:text-amber-400'>
-																off
-															</span>
-														)}
-													</p>
-													<p className='mt-0.5 line-clamp-2 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500'>
-														{script.description}
-													</p>
-												</div>
-												<div
-													className={`flex shrink-0 items-center gap-2 ${isSynced ? 'hidden' : ''}`}>
-													<button
-														aria-label={`Edit ${script.name}`}
-														onClick={() => startEditScript(script)}
-														className='hover:text-primary-600 dark:hover:text-primary-400 cursor-pointer text-zinc-300 dark:text-zinc-600'>
-														<Pencil size={12} />
-													</button>
-													<button
-														aria-label='Delete'
-														onClick={() =>
-															removeScriptMutation.mutate(script.id)
-														}
-														className='cursor-pointer text-zinc-300 hover:text-rose-500 dark:text-zinc-600'>
-														<Trash2 size={13} />
-													</button>
-												</div>
-											</div>
-										),
-									)}
-								</div>
+											),
+										)}
+									</div>
 
-								<div
-									className={`space-y-2 rounded-xl border border-dashed border-zinc-200 p-3 dark:border-zinc-800 ${isSynced ? 'hidden' : ''}`}>
-									<div className='flex gap-2'>
+									<div
+										className={`space-y-2 rounded-xl border border-dashed border-zinc-200 p-3 dark:border-zinc-800 ${isSynced || isViewOnly ? 'hidden' : ''}`}>
+										<div className='flex gap-2'>
+											<input
+												aria-label='Script name'
+												type='text'
+												placeholder='Script name'
+												value={newScript.name}
+												onChange={(e) =>
+													setNewScript((s) => ({
+														...s,
+														name: e.target.value,
+													}))
+												}
+												className='focus:border-primary-500/80 block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
+											/>
+											<select
+												value={newScript.language}
+												onChange={(e) =>
+													setNewScript((s) => ({
+														...s,
+														language: e.target
+															.value as (typeof SKILL_SCRIPT_LANGUAGES)[number],
+													}))
+												}
+												className='focus:border-primary-500/80 block h-8 shrink-0 rounded-lg border border-zinc-200 bg-white px-2 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'>
+												{SKILL_SCRIPT_LANGUAGES.map((lang) => (
+													<option key={lang} value={lang}>
+														{lang}
+													</option>
+												))}
+											</select>
+										</div>
 										<input
-											aria-label='Script name'
+											aria-label='Short description'
 											type='text'
-											placeholder='Script name'
-											value={newScript.name}
+											placeholder='Short description'
+											value={newScript.description}
 											onChange={(e) =>
 												setNewScript((s) => ({
 													...s,
-													name: e.target.value,
+													description: e.target.value,
 												}))
 											}
 											className='focus:border-primary-500/80 block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
 										/>
-										<select
-											value={newScript.language}
+										<textarea
+											aria-label='Code'
+											placeholder='Code'
+											rows={3}
+											value={newScript.code}
 											onChange={(e) =>
 												setNewScript((s) => ({
 													...s,
-													language: e.target
-														.value as (typeof SKILL_SCRIPT_LANGUAGES)[number],
+													code: e.target.value,
 												}))
 											}
-											className='focus:border-primary-500/80 block h-8 shrink-0 rounded-lg border border-zinc-200 bg-white px-2 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'>
-											{SKILL_SCRIPT_LANGUAGES.map((lang) => (
-												<option key={lang} value={lang}>
-													{lang}
-												</option>
-											))}
-										</select>
+											className='focus:border-primary-500/80 block w-full resize-none rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
+										/>
+										<button
+											onClick={handleAddScript}
+											disabled={
+												!newScript.name.trim() || !newScript.code.trim()
+											}
+											className='flex h-8 w-full cursor-pointer items-center justify-center gap-1 rounded-lg border border-zinc-200 text-[11px] font-bold text-zinc-600 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900'>
+											<Plus size={12} /> Add script
+										</button>
 									</div>
-									<input
-										aria-label='Short description'
-										type='text'
-										placeholder='Short description'
-										value={newScript.description}
-										onChange={(e) =>
-											setNewScript((s) => ({
-												...s,
-												description: e.target.value,
-											}))
-										}
-										className='focus:border-primary-500/80 block h-8 w-full rounded-lg border border-zinc-200 bg-white px-2.5 text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
-									/>
-									<textarea
-										aria-label='Code'
-										placeholder='Code'
-										rows={3}
-										value={newScript.code}
-										onChange={(e) =>
-											setNewScript((s) => ({ ...s, code: e.target.value }))
-										}
-										className='focus:border-primary-500/80 block w-full resize-none rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-[11px] font-semibold text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100'
-									/>
-									<button
-										onClick={handleAddScript}
-										disabled={!newScript.name.trim() || !newScript.code.trim()}
-										className='flex h-8 w-full cursor-pointer items-center justify-center gap-1 rounded-lg border border-zinc-200 text-[11px] font-bold text-zinc-600 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900'>
-										<Plus size={12} /> Add script
-									</button>
 								</div>
-							</div>
+							)}
 						</>
 					)}
-				</div>
+				</fieldset>
 			</motion.div>
 		</AnimatePresence>
 	);

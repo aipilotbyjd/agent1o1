@@ -19,6 +19,7 @@ import Container from '@/components/layout/Container';
 import pages from '@/Routes/pages';
 import { useBrand } from '@/context/brand';
 import useResolvePath from '@/hooks/useResolvePath';
+import usePermission from '@/hooks/usePermission';
 import { useWorkspaceContext } from '@/context/workspace';
 import { useArtifacts, useDeleteArtifact, useDownloadArtifact } from '@/api/modules/artifacts';
 import type { TArtifact, TArtifactMimeCategory } from '@/types/artifact.type';
@@ -68,6 +69,8 @@ const ArtifactsListPage = () => {
 	});
 	const deleteMutation = useDeleteArtifact(ws);
 	const downloadMutation = useDownloadArtifact(ws);
+	const { can } = usePermission();
+	const canManageArtifacts = can('artifact.manage');
 
 	const artifactList = data?.artifacts ?? [];
 	const meta = data?.meta;
@@ -105,12 +108,14 @@ const ArtifactsListPage = () => {
 					<h1 className='text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white'>
 						Artifacts
 					</h1>
-					<ArtifactUploadButton
-						ws={ws}
-						label='Upload'
-						multiple
-						className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-4 text-xs font-bold shadow-md transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60'
-					/>
+					{canManageArtifacts && (
+						<ArtifactUploadButton
+							ws={ws}
+							label='Upload'
+							multiple
+							className='bg-primary-400 text-primary-950 shadow-primary-500/10 hover:bg-primary-500 flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-4 text-xs font-bold shadow-md transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60'
+						/>
+					)}
 				</div>
 
 				<div className='mb-8 flex flex-col gap-4'>
@@ -168,14 +173,16 @@ const ArtifactsListPage = () => {
 						<p className='text-xs font-semibold text-slate-400 dark:text-zinc-500'>
 							Files your agents export during conversations will show up here.
 						</p>
-						{!searchQuery.trim() && selectedCategory === 'All' && (
-							<ArtifactUploadButton
-								ws={ws}
-								label='Upload a file'
-								multiple
-								className='border-border-main mt-2 flex h-8 cursor-pointer items-center gap-1.5 rounded-xl border px-3 text-[11px] font-bold text-slate-600 transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-zinc-300 dark:hover:bg-zinc-900'
-							/>
-						)}
+						{canManageArtifacts &&
+							!searchQuery.trim() &&
+							selectedCategory === 'All' && (
+								<ArtifactUploadButton
+									ws={ws}
+									label='Upload a file'
+									multiple
+									className='border-border-main mt-2 flex h-8 cursor-pointer items-center gap-1.5 rounded-xl border px-3 text-[11px] font-bold text-slate-600 transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-zinc-300 dark:hover:bg-zinc-900'
+								/>
+							)}
 					</div>
 				) : (
 					<>
@@ -193,7 +200,11 @@ const ArtifactsListPage = () => {
 												filename: artifact.filename,
 											})
 										}
-										onDelete={() => handleDelete(artifact)}
+										onDelete={
+											canManageArtifacts
+												? () => handleDelete(artifact)
+												: undefined
+										}
 									/>
 								))}
 							</AnimatePresence>
@@ -250,7 +261,8 @@ const ArtifactCard = ({
 	onShowVersions: () => void;
 	onShare: () => void;
 	onDownload: () => void;
-	onDelete: () => void;
+	/** Left out when the viewer may not delete artifacts. */
+	onDelete?: () => void;
 }) => {
 	const [menuOpen, setMenuOpen] = useState(false);
 	const brand = useBrand();
@@ -326,15 +338,17 @@ const ArtifactCard = ({
 								<Share2 size={12} />
 								Sharing
 							</button>
-							<button
-								onClick={() => {
-									setMenuOpen(false);
-									onDelete();
-								}}
-								className='flex w-full cursor-pointer items-center gap-1.5 px-3 py-2 text-left text-[11px] font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20'>
-								<Trash2 size={12} />
-								Delete
-							</button>
+							{onDelete && (
+								<button
+									onClick={() => {
+										setMenuOpen(false);
+										onDelete();
+									}}
+									className='flex w-full cursor-pointer items-center gap-1.5 px-3 py-2 text-left text-[11px] font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20'>
+									<Trash2 size={12} />
+									Delete
+								</button>
+							)}
 						</div>
 					)}
 				</div>

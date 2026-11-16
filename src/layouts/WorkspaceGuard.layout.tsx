@@ -2,6 +2,7 @@ import { Navigate, Outlet, useParams } from 'react-router';
 import { useWorkspaceContext } from '@/context/workspace';
 import useSyncActiveWorkspace from '@/hooks/useSyncActiveWorkspace';
 import pages from '@/Routes/pages';
+import RequirePermissionLayout from '@/layouts/RequirePermission.layout';
 
 /**
  * Gate for everything under `/:workspaceId`, and for the workspace picker. It
@@ -10,7 +11,8 @@ import pages from '@/Routes/pages';
  *
  * In order: no workspace at all goes to onboarding (signup creates none and
  * that step is mandatory); a workspace the user does not belong to goes to the
- * picker; otherwise the URL's workspace becomes the current one.
+ * picker; otherwise the URL's workspace becomes the current one and the page's
+ * own permission, if it declares one, is checked.
  */
 const WorkspaceGuardLayout = () => {
 	const { workspaceId } = useParams<{ workspaceId: string }>();
@@ -29,7 +31,7 @@ const WorkspaceGuardLayout = () => {
 
 	if (!isMember) return <Navigate to={pages.choose.to} replace />;
 
-	return isSwitching ? null : <Outlet />;
+	return isSwitching ? null : <RequirePermissionLayout />;
 };
 
 export default WorkspaceGuardLayout;

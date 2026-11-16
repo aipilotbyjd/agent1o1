@@ -94,7 +94,7 @@ const CredentialFlow = () => {
 };
 
 const LinkCredentialsDialog = () => {
-	const { state } = useWorkflowEditor();
-	return state.ui.linkCredentialsOpen ? <CredentialFlow /> : null;
+	const { state, canEdit } = useWorkflowEditor();
+	return canEdit && state.ui.linkCredentialsOpen ? <CredentialFlow /> : null;
 };
 export default LinkCredentialsDialog;

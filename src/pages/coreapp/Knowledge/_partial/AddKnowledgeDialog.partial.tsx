@@ -8,6 +8,7 @@ import {
 	useKnowledgeSourceApps,
 	useUpdateKnowledgeSource,
 } from '@/api/modules/knowledge-base';
+import usePermission from '@/hooks/usePermission';
 import type { TKnowledgeSource, TKnowledgeSourceType } from '@/types/knowledge-base.type';
 import {
 	ALLOWED_EXTENSIONS,
@@ -71,6 +72,8 @@ const AddKnowledgeDialog = ({
 	const ingest = useIngestKnowledge(ws);
 	const createSource = useCreateKnowledgeSource(ws);
 	const updateSource = useUpdateKnowledgeSource(ws);
+	const { can } = usePermission();
+	const canAddShared = can('agent.manage');
 	const editing = source ?? null;
 
 	const [kind, setKind] = useState<TKnowledgeKind>(initialKind);
@@ -124,6 +127,8 @@ const AddKnowledgeDialog = ({
 	if (!isOpen) return null;
 
 	const definition = KNOWLEDGE_KINDS[kind];
+	const mustBePrivate = !editing && !sharedOnly && !canAddShared;
+	const keepPrivate = isPrivate || mustBePrivate;
 	const isPending = ingest.isPending || createSource.isPending || updateSource.isPending;
 	const configChanged =
 		!!editing &&
@@ -170,7 +175,7 @@ const AddKnowledgeDialog = ({
 		}
 
 		// Mirrors the backend's default when no collection is named.
-		const addedTo = collection.trim() || (isPrivate ? 'personal' : 'default');
+		const addedTo = collection.trim() || (keepPrivate ? 'personal' : 'default');
 		const handleAdded = () => {
 			onAdded?.({ collection: addedTo, synced: definition.synced });
 			handleClose();
@@ -183,7 +188,7 @@ const AddKnowledgeDialog = ({
 					file: kind === 'file' ? (file ?? undefined) : undefined,
 					source: name.trim() || undefined,
 					collection: collection.trim() || undefined,
-					private: isPrivate,
+					private: keepPrivate,
 				},
 				{ onSuccess: handleAdded },
 			);
@@ -196,7 +201,7 @@ const AddKnowledgeDialog = ({
 				type: kind as TKnowledgeSourceType,
 				name: name.trim(),
 				collection: collection.trim() || undefined,
-				private: isPrivate,
+				private: keepPrivate,
 				credential_id: kind === 'url' ? undefined : credentialId,
 				config: cleanConfig(config),
 			},
@@ -403,11 +408,11 @@ const AddKnowledgeDialog = ({
 						</label>
 						<input
 							id='addknowledgedialog-collection'
-							aria-label={isPrivate ? 'personal' : 'default'}
+							aria-label={keepPrivate ? 'personal' : 'default'}
 							type='text'
 							value={collection}
 							onChange={(e) => setCollection(e.target.value)}
-							placeholder={isPrivate ? 'personal' : 'default'}
+							placeholder={keepPrivate ? 'personal' : 'default'}
 							disabled={!!editing}
 							className={`${inputClass} disabled:cursor-not-allowed disabled:opacity-60`}
 						/>
@@ -421,13 +426,15 @@ const AddKnowledgeDialog = ({
 					{!sharedOnly && (
 						<label
 							className={`flex items-start gap-2.5 rounded-xl border border-zinc-200 p-3 dark:border-zinc-800 ${
-								editing ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+								editing || mustBePrivate
+									? 'cursor-not-allowed opacity-60'
+									: 'cursor-pointer'
 							}`}>
 							<input
 								type='checkbox'
-								checked={isPrivate}
+								checked={keepPrivate}
 								onChange={(e) => setIsPrivate(e.target.checked)}
-								disabled={!!editing}
+								disabled={!!editing || mustBePrivate}
 								className='mt-0.5'
 							/>
 							<span>
@@ -435,8 +442,9 @@ const AddKnowledgeDialog = ({
 									Private to me
 								</span>
 								<span className='block text-[11px] font-semibold text-zinc-400 dark:text-zinc-500'>
-									Only you and your personal assistant can search it. Shared
-									knowledge reaches every agent and needs manage access.
+									{mustBePrivate
+										? 'Only you and your personal assistant can search it. Shared knowledge needs an editor or admin.'
+										: 'Only you and your personal assistant can search it. Shared knowledge reaches every agent and needs manage access.'}
 								</span>
 							</span>
 						</label>
