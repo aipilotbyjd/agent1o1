@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import { useOnboardingStore } from '../../_hooks/useOnboardingStore.hook';
-import { SURVEY_OPTIONS } from '../../_helper/onboarding.constants';
 import { useOnboardingState } from '@/api/modules/onboarding';
 
 const DiscoveryStep = () => {
@@ -8,7 +7,7 @@ const DiscoveryStep = () => {
 	const { selectedSurvey } = state;
 	const { data: onboardingData } = useOnboardingState(); // fetch from react-query cache
 
-	const sourcesList = onboardingData?.meta?.discovery_sources || SURVEY_OPTIONS;
+	const sourcesList = onboardingData?.meta?.discovery_sources ?? [];
 
 	return (
 		<>

@@ -23,7 +23,6 @@ const initialState: IOnboardingState = {
 	inviteMessage:
 		"Just set up our Agent1o1 workspace - jump in when you're ready. Excited to build together.",
 	invitesSent: false,
-	selectedRoleIndex: null,
 	selectedJobRole: '',
 	selectedPlan: 'free',
 	appSearch: '',

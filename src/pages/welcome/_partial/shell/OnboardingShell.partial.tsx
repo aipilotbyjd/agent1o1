@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import OnboardingProvider from '../../_context/OnboardingProvider.context';
 import { useOnboardingStore } from '../../_hooks/useOnboardingStore.hook';
-import { ONBOARDING_STEP_KEYS, ROLES } from '../../_helper/onboarding.constants';
+import { ONBOARDING_STEP_KEYS, ROLE_APPS } from '../../_helper/onboarding.constants';
 import { parseEmails, isValidEmail, resolveStartStep } from '../../_helper/onboarding.helper';
 import { useOnboardingNavigation } from '../../_hooks/useOnboardingNavigation.hook';
 import { useOnboardingSubmit } from '../../_hooks/useOnboardingSubmit.hook';
@@ -68,7 +68,7 @@ const OnboardingShellInner = () => {
 
 	const {
 		currentStep: step,
-		selectedRoleIndex,
+		selectedJobRole,
 		selectedPlan,
 		connectedApps,
 		inviteEmails,
@@ -96,6 +96,10 @@ const OnboardingShellInner = () => {
 		(plan) => plan.slug === selectedPlan,
 	)?.name;
 
+	const selectedRoleName = onboardingData?.meta?.job_roles?.find(
+		(role) => role.value === selectedJobRole,
+	)?.label;
+
 	// The profile picture is a single centred card; every other step has the preview panel.
 	const isDualColumn = stepKey !== 'profile_picture';
 	const isLastStep = isLastPendingStep;
@@ -114,8 +118,7 @@ const OnboardingShellInner = () => {
 			return ['slack', 'notion', 'github', 'google drive', 'gmail'];
 		if (stepKey === 'invite_team') return ['slack', 'gmail', 'notion', 'github'];
 		if (stepKey === 'role_selection') {
-			if (selectedRoleIndex === null) return ['slack', 'github', 'gmail'];
-			return ROLES[selectedRoleIndex].apps;
+			return ROLE_APPS[selectedJobRole] ?? ['slack', 'github', 'gmail'];
 		}
 		if (stepKey === 'choose_plan')
 			return ['slack', 'github', 'notion', 'google drive', 'figma'];
@@ -131,7 +134,7 @@ const OnboardingShellInner = () => {
 				? connectedApps.map((a) => a.toLowerCase())
 				: ['slack', 'github', 'gmail', 'notion'];
 		return ['slack', 'github', 'gmail'];
-	}, [stepKey, selectedRoleIndex, connectedApps]);
+	}, [stepKey, selectedJobRole, connectedApps]);
 
 	if (isLoading) {
 		return (
@@ -269,7 +272,7 @@ const OnboardingShellInner = () => {
 							<OrbitAnimation
 								stepKey={stepKey}
 								currentOrbitIcons={currentOrbitIcons}
-								selectedRoleIndex={selectedRoleIndex}
+								selectedRoleName={selectedRoleName}
 								selectedPlan={selectedPlan}
 								selectedPlanName={selectedPlanName}
 								connectedApps={connectedApps}

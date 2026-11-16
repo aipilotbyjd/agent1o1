@@ -9,6 +9,7 @@ import type {
 	TExecutionStatus,
 	TTriggerType,
 } from '../_types/dashboard.type';
+import type { TRun } from '@/types/run.type';
 
 /**
  * Ported-frontend adapter.
@@ -24,6 +25,9 @@ import type {
  * they are the backend-adaptation pass's input.
  */
 const PERIOD_DAYS: Record<TDashboardPeriod, number> = { '7d': 7, '30d': 30, '90d': 90 };
+
+/** What ran: the workflow, or the agent behind an agent run. */
+const runName = (run: TRun) => run.workflow?.name ?? run.agent?.name ?? 'Untitled run';
 
 const toMs = (iso: string | null) => (iso ? Date.parse(iso) : undefined);
 
@@ -43,8 +47,7 @@ export const useDashboard = (ws: string, period: TDashboardPeriod = '7d') => {
 		const recentExecutions: IExecutionSummary[] = recent_runs.map((run) => ({
 			id: run.id,
 			workflow_id: run.workflow_id ?? '',
-			// `recent_runs` carries no workflow name, only the id.
-			workflow_name: '',
+			workflow_name: runName(run),
 			status: run.status as TExecutionStatus,
 			trigger_type: run.trigger_type as TTriggerType,
 			duration_ms: run.duration_ms ?? undefined,
@@ -60,7 +63,7 @@ export const useDashboard = (ws: string, period: TDashboardPeriod = '7d') => {
 			.map((run) => ({
 				id: run.id,
 				workflow_id: run.workflow_id ?? '',
-				workflow_name: '',
+				workflow_name: runName(run),
 				error_message: run.error ?? 'Run failed',
 				failed_at: Date.parse(run.finished_at ?? run.created_at),
 			}));
