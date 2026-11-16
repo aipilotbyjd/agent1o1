@@ -5,4 +5,5 @@ export const DashboardEndpoints = {
 	runStats: (ws: string) => `${base(ws)}/run-stats`,
 	creditUsage: (ws: string) => `${base(ws)}/credit-usage`,
 	pendingApprovals: (ws: string) => `${base(ws)}/pending-approvals`,
+	dismissGettingStarted: (ws: string) => `${base(ws)}/getting-started/dismiss`,
 } as const;
