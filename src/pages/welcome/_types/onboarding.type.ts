@@ -13,7 +13,6 @@ export interface IOnboardingData {
 	inviteRole: TWorkspaceRole;
 	inviteMessage: string;
 	invitesSent: boolean;
-	selectedRoleIndex: number | null;
 	selectedJobRole: string;
 	selectedPlan: string;
 	appSearch: string;
@@ -21,10 +20,4 @@ export interface IOnboardingData {
 	selectedAppForAuth: TConnector | null;
 	authSuccess: boolean;
 	selectedSurvey: string | null;
-}
-
-export interface IRoleData {
-	name: string;
-	description: string;
-	apps: string[];
 }

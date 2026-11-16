@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { useOnboardingStore } from '../../_hooks/useOnboardingStore.hook';
-import { ROLES } from '../../_helper/onboarding.constants';
 import { useOnboardingState } from '@/api/modules/onboarding';
 
 const RoleSelectionStep = () => {
@@ -9,13 +8,7 @@ const RoleSelectionStep = () => {
 	const { selectedJobRole } = state;
 	const { data: onboardingData } = useOnboardingState(); // fetch from react-query cache
 
-	const rolesList =
-		onboardingData?.meta?.job_roles ||
-		ROLES.map((r) => ({
-			value: r.name.toLowerCase(),
-			label: r.name,
-			description: r.description,
-		}));
+	const rolesList = onboardingData?.meta?.job_roles ?? [];
 
 	return (
 		<>
@@ -30,7 +23,7 @@ const RoleSelectionStep = () => {
 			</div>
 
 			<div className='no-scrollbar max-h-[300px] space-y-2 overflow-y-auto pr-1'>
-				{rolesList.map((role, idx) => {
+				{rolesList.map((role) => {
 					const isSelected = selectedJobRole === role.value;
 					return (
 						<motion.button
@@ -39,10 +32,7 @@ const RoleSelectionStep = () => {
 							onClick={() =>
 								dispatch({
 									type: 'SET_FIELD',
-									payload: {
-										selectedJobRole: role.value,
-										selectedRoleIndex: idx,
-									},
+									payload: { selectedJobRole: role.value },
 								})
 							}
 							className={`flex w-full flex-col rounded-xl border p-3 px-4 text-left transition-all ${

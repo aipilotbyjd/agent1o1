@@ -2,12 +2,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Bot, UserPlus } from 'lucide-react';
 import BrandLogo from './BrandLogo.partial';
 import type { TOnboardingStepKey } from '@/types/onboarding.type';
-import { ROLES } from '../../_helper/onboarding.constants';
 
 interface IOrbitAnimationProps {
 	stepKey: TOnboardingStepKey;
 	currentOrbitIcons: string[];
-	selectedRoleIndex: number | null;
+	selectedRoleName?: string;
 	selectedPlan: string;
 	selectedPlanName?: string;
 	connectedApps: string[];
@@ -16,7 +15,7 @@ interface IOrbitAnimationProps {
 const OrbitAnimation = ({
 	stepKey,
 	currentOrbitIcons,
-	selectedRoleIndex,
+	selectedRoleName,
 	selectedPlan,
 	selectedPlanName,
 	connectedApps,
@@ -160,9 +159,7 @@ const OrbitAnimation = ({
 					{stepKey === 'create_workspace' && 'Your Workspace Hub'}
 					{stepKey === 'invite_team' && 'Bring Your Team'}
 					{stepKey === 'role_selection' &&
-						(selectedRoleIndex !== null
-							? `${ROLES[selectedRoleIndex].name} Workspace`
-							: 'Choose Your Role')}
+						(selectedRoleName ? `${selectedRoleName} Workspace` : 'Choose Your Role')}
 					{stepKey === 'choose_plan' &&
 						(selectedPlan === 'free'
 							? 'Free Plan Active'
