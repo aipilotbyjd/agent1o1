@@ -1,8 +1,10 @@
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
-import { TOTAL_STEPS, PLANS } from '../../_helper/onboarding.constants';
+import type { TOnboardingStepKey } from '@/types/onboarding.type';
+import { TOTAL_STEPS } from '../../_helper/onboarding.constants';
 
 interface INavigationBarProps {
 	step: number;
+	stepKey: TOnboardingStepKey;
 	isLastStep: boolean;
 	canGoBack: boolean;
 	canSkip: boolean;
@@ -12,6 +14,7 @@ interface INavigationBarProps {
 	hasValidEmails: boolean;
 	invitesSent: boolean;
 	selectedPlan: string;
+	selectedPlanName?: string;
 	onPrev: () => void;
 	onSkip: () => void;
 	onNext: () => void;
@@ -19,6 +22,7 @@ interface INavigationBarProps {
 
 const NavigationBar = ({
 	step,
+	stepKey,
 	isLastStep,
 	canGoBack,
 	canSkip,
@@ -28,17 +32,17 @@ const NavigationBar = ({
 	hasValidEmails,
 	invitesSent,
 	selectedPlan,
+	selectedPlanName,
 	onPrev,
 	onSkip,
 	onNext,
 }: INavigationBarProps) => {
 	const continueLabel = () => {
 		if (isLastStep) return 'Finish Setup';
-		if (step === 1 && isWorkspaceLoading) return null; // show spinner
-		if (step === 2 && hasValidEmails && !invitesSent) return 'Send & Continue';
-		if (step === 4 && selectedPlan === 'free') return 'Continue with Free';
-		if (step === 4 && selectedPlan !== 'free')
-			return `Upgrade to ${PLANS.find((p) => p.id === selectedPlan)?.name}`;
+		if (stepKey === 'create_workspace' && isWorkspaceLoading) return null; // show spinner
+		if (stepKey === 'invite_team' && hasValidEmails && !invitesSent) return 'Send & Continue';
+		if (stepKey === 'choose_plan' && selectedPlan === 'free') return 'Continue with Free';
+		if (stepKey === 'choose_plan') return `Upgrade to ${selectedPlanName ?? 'paid plan'}`;
 		return 'Continue';
 	};
 
@@ -79,7 +83,7 @@ const NavigationBar = ({
 					disabled={isContinueDisabled || sendInvitationPending}
 					onClick={onNext}
 					className='flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-xs font-black text-white transition-all hover:opacity-90 active:scale-95 disabled:pointer-events-none disabled:opacity-40 dark:bg-zinc-50 dark:text-slate-950'>
-					{isWorkspaceLoading && step === 1 ? (
+					{isWorkspaceLoading && stepKey === 'create_workspace' ? (
 						<>
 							<Loader2 className='h-3.5 w-3.5 animate-spin' />
 							Creating...

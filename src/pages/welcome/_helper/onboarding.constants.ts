@@ -1,6 +1,6 @@
 import type { TWorkspaceRole } from '@/types/workspace.type';
 import type { TOnboardingStepKey } from '@/types/onboarding.type';
-import type { IRoleData, IPlan } from '../_types/onboarding.type';
+import type { IRoleData } from '../_types/onboarding.type';
 import { WORKSPACE_ROLE_LABELS } from '@/constants/workspaceRole.constant';
 
 export const ROLES: IRoleData[] = [
@@ -93,63 +93,31 @@ export const ROLE_OPTIONS: { value: TWorkspaceRole; label: string; description: 
 	},
 ];
 
-export const PLANS: IPlan[] = [
-	{
-		id: 'free',
-		name: 'Free',
-		price: '$0',
-		period: 'forever',
-		features: ['3 active workflows', '1 workspace', '500 runs / month', '2 connected apps'],
-	},
-	{
-		id: 'pro',
-		name: 'Pro',
-		price: '$29',
-		period: '/ month',
-		features: [
-			'Unlimited workflows',
-			'10,000 runs / month',
-			'Unlimited apps',
-			'Priority support',
-		],
-		badge: 'Most Popular',
-		highlighted: true,
-	},
-	{
-		id: 'business',
-		name: 'Business',
-		price: '$79',
-		period: '/ month',
-		features: [
-			'Everything in Pro',
-			'100,000 runs / month',
-			'Team roles & SSO',
-			'Dedicated support',
-		],
-	},
-];
-
-export const STEP_LABELS = [
-	'Profile Picture',
-	'Create Workspace',
-	'Invite Team',
-	'Role Selection',
-	'Choose Plan',
-	'Connect AI',
-	'Connect Apps',
-	'Discovery Survey',
-];
-
-export const TOTAL_STEPS = STEP_LABELS.length;
-
-/** Backend step keys in screen order: the index of a key is the step's screen index. */
+/**
+ * Screen order, which is also the backend's (`OnboardingStep`): the two steps
+ * that set the account up come first, the optional ones after, and the profile
+ * picture last because nothing else depends on it.
+ */
 export const ONBOARDING_STEP_KEYS: TOnboardingStepKey[] = [
-	'profile_picture',
 	'create_workspace',
-	'invite_team',
 	'role_selection',
 	'choose_plan',
 	'connect_ai',
 	'connect_apps',
+	'invite_team',
 	'discovery_survey',
+	'profile_picture',
 ];
+
+export const STEP_LABELS: Record<TOnboardingStepKey, string> = {
+	create_workspace: 'Create Workspace',
+	role_selection: 'Role Selection',
+	choose_plan: 'Choose Plan',
+	connect_ai: 'Connect AI',
+	connect_apps: 'Connect Apps',
+	invite_team: 'Invite Team',
+	discovery_survey: 'Discovery Survey',
+	profile_picture: 'Profile Picture',
+};
+
+export const TOTAL_STEPS = ONBOARDING_STEP_KEYS.length;

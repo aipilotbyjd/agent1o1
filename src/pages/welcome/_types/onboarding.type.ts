@@ -28,13 +28,3 @@ export interface IRoleData {
 	description: string;
 	apps: string[];
 }
-
-export interface IPlan {
-	id: string;
-	name: string;
-	price: string;
-	period: string;
-	features: string[];
-	badge?: string;
-	highlighted?: boolean;
-}

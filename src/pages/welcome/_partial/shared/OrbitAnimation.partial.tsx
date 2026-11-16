@@ -1,21 +1,24 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Bot, UserPlus } from 'lucide-react';
 import BrandLogo from './BrandLogo.partial';
-import { ROLES, PLANS } from '../../_helper/onboarding.constants';
+import type { TOnboardingStepKey } from '@/types/onboarding.type';
+import { ROLES } from '../../_helper/onboarding.constants';
 
 interface IOrbitAnimationProps {
-	step: number;
+	stepKey: TOnboardingStepKey;
 	currentOrbitIcons: string[];
 	selectedRoleIndex: number | null;
 	selectedPlan: string;
+	selectedPlanName?: string;
 	connectedApps: string[];
 }
 
 const OrbitAnimation = ({
-	step,
+	stepKey,
 	currentOrbitIcons,
 	selectedRoleIndex,
 	selectedPlan,
+	selectedPlanName,
 	connectedApps,
 }: IOrbitAnimationProps) => {
 	return (
@@ -33,7 +36,7 @@ const OrbitAnimation = ({
 				<div className='absolute h-[130px] w-[130px] animate-[spin_30s_linear_infinite_reverse] rounded-full border border-dashed border-slate-200/30 dark:border-zinc-800/20' />
 
 				{/* Invite step: show user avatar icons in orbit instead of brand logos */}
-				{step === 2 ? (
+				{stepKey === 'invite_team' ? (
 					<>
 						<motion.div
 							animate={{
@@ -154,35 +157,35 @@ const OrbitAnimation = ({
 
 			<div className='z-10 mt-6 text-center'>
 				<h3 className='text-xs font-black tracking-widest text-slate-800 uppercase dark:text-zinc-200'>
-					{step === 1 && 'Your Workspace Hub'}
-					{step === 2 && 'Bring Your Team'}
-					{step === 3 &&
+					{stepKey === 'create_workspace' && 'Your Workspace Hub'}
+					{stepKey === 'invite_team' && 'Bring Your Team'}
+					{stepKey === 'role_selection' &&
 						(selectedRoleIndex !== null
 							? `${ROLES[selectedRoleIndex].name} Workspace`
 							: 'Choose Your Role')}
-					{step === 4 &&
+					{stepKey === 'choose_plan' &&
 						(selectedPlan === 'free'
 							? 'Free Plan Active'
-							: `${PLANS.find((p) => p.id === selectedPlan)?.name} Plan Selected`)}
-					{step === 5 && 'Your AI, Your Key'}
-					{step === 6 &&
+							: `${selectedPlanName ?? 'Paid'} Plan Selected`)}
+					{stepKey === 'connect_ai' && 'Your AI, Your Key'}
+					{stepKey === 'connect_apps' &&
 						`${connectedApps.length} App${connectedApps.length !== 1 ? 's' : ''} Connected`}
-					{step === 7 && 'Almost There!'}
+					{stepKey === 'discovery_survey' && 'Almost There!'}
 				</h3>
 				<p className='mx-auto mt-1 max-w-[200px] text-[10px] text-slate-400'>
-					{step === 1 &&
+					{stepKey === 'create_workspace' &&
 						'A central place for your workflows, credentials, and team decisions.'}
-					{step === 2 &&
+					{stepKey === 'invite_team' &&
 						'Invite teammates to collaborate on workflows and share credentials.'}
-					{step === 3 &&
+					{stepKey === 'role_selection' &&
 						'Orbiting tools are dynamically tailored based on your selected role.'}
-					{step === 4 &&
+					{stepKey === 'choose_plan' &&
 						'Upgrade any time from your workspace settings - no commitments.'}
-					{step === 5 &&
+					{stepKey === 'connect_ai' &&
 						'Agents run on your own AI account: you pay the provider directly, at their prices.'}
-					{step === 6 &&
+					{stepKey === 'connect_apps' &&
 						'Your secure connections are live-linked directly with the cloud nodes.'}
-					{step === 7 &&
+					{stepKey === 'discovery_survey' &&
 						'Your workspace is set up. One last question to personalize your experience.'}
 				</p>
 			</div>
