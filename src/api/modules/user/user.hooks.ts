@@ -1,6 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clearTokens } from '@/api/core';
-import type { TUpdateProfileDto, TSwitchWorkspaceDto } from '@/types/auth.type';
+import type {
+	TUpdateProfileDto,
+	TSwitchWorkspaceDto,
+	TDeleteAccountDto,
+	TDataExport,
+} from '@/types/auth.type';
 import type { TCreateApiKeyDto } from '@/types/auth.type';
 import { UserService } from './user.service';
 import { userKeys, apiKeyKeys } from './user.keys';
@@ -62,10 +67,18 @@ export const useCancelEmailChange = () => {
 	});
 };
 
+export const useAccountDeletionCheck = (enabled = true) =>
+	useQuery({
+		queryKey: userKeys.deletionCheck(),
+		queryFn: ({ signal }) => UserService.fetchDeletionCheck(signal),
+		enabled,
+		staleTime: 0,
+	});
+
 export const useDeleteAccount = () => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: () => UserService.destroy(),
+		mutationFn: (payload: TDeleteAccountDto) => UserService.destroy(payload),
 		onSuccess: () => {
 			clearTokens();
 			qc.clear();
@@ -73,6 +86,34 @@ export const useDeleteAccount = () => {
 		meta: { errorMessage: 'Failed to delete account' },
 	});
 };
+
+// ─── Data exports ────────────────────────────────────────────
+
+const isExportInFlight = (exports: TDataExport[] | undefined) =>
+	!!exports?.some((e) => e.status === 'pending' || e.status === 'processing');
+
+/** Polls while an export is being built, so the card flips to "ready" on its own. */
+export const useDataExports = () =>
+	useQuery({
+		queryKey: userKeys.dataExports(),
+		queryFn: ({ signal }) => UserService.listDataExports(signal),
+		refetchInterval: (query) => (isExportInFlight(query.state.data) ? 5000 : false),
+	});
+
+export const useRequestDataExport = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: () => UserService.requestDataExport(),
+		onSuccess: () => qc.invalidateQueries({ queryKey: userKeys.dataExports() }),
+		meta: { errorMessage: 'Failed to request data export' },
+	});
+};
+
+export const useDownloadDataExport = () =>
+	useMutation({
+		mutationFn: (dataExport: TDataExport) => UserService.downloadDataExport(dataExport),
+		meta: { errorMessage: 'Failed to download data export' },
+	});
 
 // ─── API keys ────────────────────────────────────────────────
 
