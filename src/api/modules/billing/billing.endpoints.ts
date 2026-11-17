@@ -7,6 +7,9 @@ export const BillingEndpoints = {
 	subscription: (ws: string) => `${base(ws)}/subscription`,
 	subscriptionCheckout: (ws: string) => `${base(ws)}/subscription/checkout`,
 	subscriptionPreview: (ws: string) => `${base(ws)}/subscription/preview`,
+	subscriptionCancellation: (ws: string) => `${base(ws)}/subscription/cancellation`,
+	subscriptionCancellationAcceptOffer: (ws: string) =>
+		`${base(ws)}/subscription/cancellation/accept-offer`,
 	subscriptionCancel: (ws: string) => `${base(ws)}/subscription/cancel`,
 	subscriptionResume: (ws: string) => `${base(ws)}/subscription/resume`,
 

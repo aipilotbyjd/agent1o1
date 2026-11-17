@@ -19,16 +19,15 @@ import {
 	Zap,
 } from 'lucide-react';
 import usePermission from '@/hooks/usePermission';
-import { useConfirm } from '@/context/confirm';
 import {
 	useBillingOverview,
-	useCancelSubscription,
 	useCreateBillingPortalSession,
 	useResumeSubscription,
 } from '@/api/modules/billing';
 import pages from '@/Routes/pages';
 import { withWorkspace } from '@/Routes/paths';
 import type { TSubscription } from '@/types/billing.type';
+import CancelSubscriptionModal from './_partial/CancelSubscriptionModal.partial';
 import OverageCard from './_partial/OverageCard.partial';
 import CreditAlertsCard from './_partial/CreditAlertsCard.partial';
 import CreditBreakdown from './_partial/CreditBreakdown.partial';
@@ -116,9 +115,8 @@ const BillingOverviewPage = () => {
 	const canManage = can('billing.manage');
 	const { data: overview, isLoading } = useBillingOverview(workspaceId!);
 	const portal = useCreateBillingPortalSession(workspaceId!);
-	const cancelSubscription = useCancelSubscription(workspaceId!);
 	const resumeSubscription = useResumeSubscription(workspaceId!);
-	const { confirm } = useConfirm();
+	const [isCancelOpen, setIsCancelOpen] = useState(false);
 	const [now] = useState(Date.now);
 
 	const toWorkspacePath = (to: string) => withWorkspace(to, workspaceId!);
@@ -183,17 +181,14 @@ const BillingOverviewPage = () => {
 	const creditsUsedPct =
 		total && total > 0 ? Math.min(100, Math.round(((total - remaining) / total) * 100)) : 0;
 
-	const handleCancel = async () => {
-		const confirmed = await confirm({
-			title: 'Cancel subscription',
-			confirmText: 'Cancel plan',
-			message: 'You will keep access until the end of the current billing period.',
-		});
-		if (confirmed) cancelSubscription.mutate();
-	};
-
 	return (
 		<div className='space-y-8 text-zinc-950 dark:text-zinc-50'>
+			<CancelSubscriptionModal
+				ws={workspaceId!}
+				isOpen={isCancelOpen}
+				plansPath={toWorkspacePath(billingPages.plans.to)}
+				onClose={() => setIsCancelOpen(false)}
+			/>
 			{dunning && (
 				<div className='flex flex-col items-stretch gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 sm:flex-row sm:items-center dark:border-amber-800/40 dark:bg-amber-950/20'>
 					<AlertTriangle
@@ -269,11 +264,10 @@ const BillingOverviewPage = () => {
 						{canCancel && (
 							<button
 								type='button'
-								onClick={handleCancel}
-								disabled={cancelSubscription.isPending}
+								onClick={() => setIsCancelOpen(true)}
 								className='flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 text-sm font-bold text-red-600 shadow-sm transition hover:bg-red-50 disabled:opacity-60 sm:h-10 sm:w-auto dark:border-red-900/40 dark:bg-zinc-950 dark:text-red-400 dark:hover:bg-red-950/20'>
 								<XCircle size={14} />
-								{cancelSubscription.isPending ? 'Canceling…' : 'Cancel plan'}
+								Cancel plan
 							</button>
 						)}
 					</div>

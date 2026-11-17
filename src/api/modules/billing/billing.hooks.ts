@@ -5,6 +5,8 @@ import type {
 	TCheckoutCreditPackDto,
 	TUpdateCreditOverageDto,
 	TUpdateCreditNotificationsDto,
+	TCancelSubscriptionDto,
+	TAcceptCancellationOfferDto,
 } from '@/types/billing.type';
 import { BillingService } from './billing.service';
 import { billingKeys } from './billing.keys';
@@ -64,9 +66,31 @@ export const useCheckoutSubscription = (ws: string) => {
 export const useCancelSubscription = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: () => BillingService.cancelSubscription(ws),
+		mutationFn: (payload: TCancelSubscriptionDto = {}) =>
+			BillingService.cancelSubscription(ws, payload),
 		onSuccess: () => invalidateBilling(qc, ws),
 		meta: { errorMessage: 'Failed to cancel subscription' },
+	});
+};
+
+export const useCancellationOptions = (ws: string, enabled = true) =>
+	useQuery({
+		queryKey: billingKeys.subscriptionCancellation(ws),
+		queryFn: ({ signal }) => BillingService.cancellationOptions(ws, signal),
+		enabled: !!ws && enabled,
+		// An offer depends on what the workspace has already taken, so never
+		// show one from an earlier visit to the screen.
+		staleTime: 0,
+		gcTime: 0,
+	});
+
+export const useAcceptCancellationOffer = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (payload: TAcceptCancellationOfferDto) =>
+			BillingService.acceptCancellationOffer(ws, payload),
+		onSuccess: () => invalidateBilling(qc, ws),
+		meta: { errorMessage: 'That offer could not be applied' },
 	});
 };
 
