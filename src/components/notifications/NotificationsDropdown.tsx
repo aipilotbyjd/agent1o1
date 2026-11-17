@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { isToday, isYesterday } from 'date-fns';
-import { ArrowRight, Bell, CheckCheck, Settings, Trash2 } from 'lucide-react';
+import { ArrowRight, Bell, CheckCheck, ExternalLink, Settings, Trash2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Dropdown, { DropdownMenu, DropdownToggle } from '@/components/ui/Dropdown';
 import Tooltip from '@/components/ui/Tooltip';
@@ -16,7 +16,15 @@ import { useWorkspaceContext } from '@/context/workspace';
 import paths from '@/Routes/paths';
 import relativeTime from '@/utils/relativeTime.util';
 import type { TNotification } from '@/types/notification.type';
-import { TONE_CLASSES, notificationHref, notificationMeta } from './notificationMeta';
+import {
+	TONE_CLASSES,
+	isAdminMessage,
+	notificationMeta,
+	notificationTarget,
+} from './notificationMeta';
+
+/** Who an admin message is from, shown where a workspace name would be. */
+const ADMIN_MESSAGE_SENDER = 'From the Agent1o1 team';
 
 type TTab = 'all' | 'unread';
 
@@ -32,20 +40,23 @@ const dayGroup = (iso: string): string => {
 const NotificationRow = ({
 	notification,
 	workspaceName,
+	activeWorkspaceId,
 	onOpen,
 	onMarkRead,
 	onDelete,
 }: {
 	notification: TNotification;
 	workspaceName: string | null;
+	activeWorkspaceId: string | null;
 	onOpen: (notification: TNotification) => void;
 	onMarkRead: (id: string) => void;
 	onDelete: (id: string) => void;
 }) => {
 	const unread = isUnread(notification);
-	const meta = notificationMeta(notification.type);
+	const meta = notificationMeta(notification);
 	const Icon = meta.icon;
-	const hasTarget = notificationHref(notification) !== null;
+	const target = notificationTarget(notification, activeWorkspaceId);
+	const source = isAdminMessage(notification) ? ADMIN_MESSAGE_SENDER : workspaceName;
 
 	// Sizes are in px: the app's root font is 12px, so rem-based text classes
 	// come out a size smaller than they read.
@@ -77,16 +88,25 @@ const NotificationRow = ({
 					<span title={new Date(notification.created_at).toLocaleString()}>
 						{relativeTime(notification.created_at) ?? ''}
 					</span>
-					{workspaceName && (
+					{source && (
 						<>
 							<span aria-hidden>·</span>
-							<span className='min-w-0 truncate'>{workspaceName}</span>
+							<span className='min-w-0 truncate'>{source}</span>
 						</>
 					)}
-					{hasTarget && meta.action && (
-						<span className='text-primary-600 dark:text-primary-400 ml-auto inline-flex shrink-0 items-center gap-0.5 pl-2 font-semibold opacity-0 transition-opacity group-hover/item:opacity-100'>
+					{target && meta.action && (
+						<span
+							className={`text-primary-600 dark:text-primary-400 ml-auto inline-flex shrink-0 items-center gap-0.5 pl-2 font-semibold transition-opacity ${
+								isAdminMessage(notification)
+									? ''
+									: 'opacity-0 group-hover/item:opacity-100'
+							}`}>
 							{meta.action}
-							<ArrowRight size={11} />
+							{target.external ? (
+								<ExternalLink size={11} />
+							) : (
+								<ArrowRight size={11} />
+							)}
 						</span>
 					)}
 				</div>
@@ -153,10 +173,14 @@ const NotificationsDropdown = () => {
 	const openNotification = async (notification: TNotification) => {
 		if (isUnread(notification)) markRead.mutate(notification.id);
 
-		const href = notificationHref(notification);
-		if (!href) return;
+		const target = notificationTarget(notification, activeWorkspaceId || null);
+		if (!target) return;
 
 		setIsOpen(false);
+		if (target.external) {
+			window.open(target.href, '_blank', 'noopener,noreferrer');
+			return;
+		}
 		if (notification.workspace_id && notification.workspace_id !== activeWorkspaceId) {
 			try {
 				await switchWorkspace(notification.workspace_id);
@@ -164,7 +188,7 @@ const NotificationsDropdown = () => {
 				return;
 			}
 		}
-		navigate(href);
+		navigate(target.href);
 	};
 
 	const settingsWorkspaceId = activeWorkspaceId || workspaces[0]?.id;
@@ -289,6 +313,7 @@ const NotificationsDropdown = () => {
 													)) ||
 												null
 											}
+											activeWorkspaceId={activeWorkspaceId || null}
 											onOpen={(n) => void openNotification(n)}
 											onMarkRead={(id) => markRead.mutate(id)}
 											onDelete={(id) => deleteNotification.mutate(id)}
@@ -307,8 +332,8 @@ const NotificationsDropdown = () => {
 							</p>
 							<p className='max-w-[260px] text-[12px] leading-[17px] text-zinc-400 dark:text-zinc-500'>
 								{tab === 'unread'
-									? 'New alerts about runs, agents and billing will show up here.'
-									: 'Failed runs, agent reviews, billing and team changes will show up here.'}
+									? 'New alerts and messages will show up here.'
+									: 'Alerts about your runs, agents, billing and team, and news from us, will show up here.'}
 							</p>
 						</div>
 					)}

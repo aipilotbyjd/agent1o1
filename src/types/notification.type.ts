@@ -20,6 +20,19 @@ export type TNotification = {
 	created_at: string;
 };
 
+/**
+ * `data` of an `admin.message` notification: a message the platform team sent
+ * from the admin panel. It has no workspace (`workspace_id` is null). The
+ * button link is a path in the app, where `:workspace` stands for the member's
+ * current workspace, or an https address.
+ */
+export type TAdminMessageData = {
+	campaign_id: string;
+	category: 'marketing' | 'service';
+	action_label: string | null;
+	action_url: string | null;
+};
+
 export type TUnreadCount = { unread: number };
 
 // ─── Notification channels (workspace-scoped) ────────────────
