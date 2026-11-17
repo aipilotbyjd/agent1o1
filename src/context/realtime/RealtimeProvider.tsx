@@ -9,6 +9,8 @@ import { announcementKeys } from '@/api/modules/announcements/announcements.keys
 import { workspaceKeys } from '@/api/modules/workspaces/workspaces.keys';
 import { workspaceMemberKeys } from '@/api/modules/workspace-members/workspace-members.keys';
 import { notify } from '@/api/core';
+import { shouldToast } from '@/components/notifications/notificationMeta';
+import type { TInboxNotificationEvent } from '@/types/notification.type';
 import RealtimeContext from './RealtimeContext';
 import type { TRealtimeStatus } from './realtime.types';
 
@@ -94,27 +96,27 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
 		// eslint-disable-next-line react-hooks/set-state-in-effect
 		setEcho(newEcho);
 
-		// Laravel broadcasts a notification to its notifiable's own channel.
+		// The inbox pushes each new (or grouped) notification on the member's own
+		// channel, in the same shape the list returns. Only urgent ones interrupt
+		// with a toast, in their own tone; the rest just update the bell.
 		newEcho
 			.private(`App.Models.User.${userId}`)
-			.notification(
-				(notification: { title?: string; type?: string; workspace_id?: string }) => {
-					notify.success(notification.title || 'New notification received');
-					qc.invalidateQueries({ queryKey: ['notifications'] });
-					qc.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
-					// Membership changed: roles (and so permissions) may have moved with it.
-					if (notification.type?.startsWith('workspace.member')) {
-						qc.invalidateQueries({ queryKey: workspaceKeys.all() });
-						if (notification.workspace_id) {
-							qc.invalidateQueries({
-								queryKey: workspaceMemberKeys.list(
-									String(notification.workspace_id),
-								),
-							});
-						}
+			.listen('.inbox.notification', ({ notification, grouped }: TInboxNotificationEvent) => {
+				if (!grouped && shouldToast(notification)) {
+					const toast = notification.severity === 'critical' ? notify.error : notify.warn;
+					toast(notification.title || 'New notification');
+				}
+				qc.invalidateQueries({ queryKey: notificationKeys.all });
+				// Membership changed: roles (and so permissions) may have moved with it.
+				if (notification.type?.startsWith('workspace.member')) {
+					qc.invalidateQueries({ queryKey: workspaceKeys.all() });
+					if (notification.workspace_id) {
+						qc.invalidateQueries({
+							queryKey: workspaceMemberKeys.list(String(notification.workspace_id)),
+						});
 					}
-				},
-			);
+				}
+			});
 
 		let hasConnected = false;
 		let lastStatus: TRealtimeStatus = 'connecting';

@@ -1,8 +1,10 @@
 import { axiosClient } from '@/api/client';
-import { unwrapKey } from '@/api/core';
-import type { TApiResponse, TMessageResponse } from '@/api/core';
+import { unwrapKey, unwrapNumberedPage } from '@/api/core';
+import type { TApiResponse, TMessageResponse, TNumberedPage } from '@/api/core';
+import type { TPaginationMeta } from '@/types/api.type';
 import type {
 	TNotificationChannel,
+	TNotificationDelivery,
 	TCreateNotificationChannelDto,
 	TUpdateNotificationChannelDto,
 } from '@/types/notification.type';
@@ -28,4 +30,25 @@ export const NotificationChannelService = {
 
 	test: (ws: string, id: string) =>
 		axiosClient.post<TMessageResponse>(E.test(ws, id)).then((r) => r.data),
+
+	/** Returns the channel with its new signing secret, shown only this once. */
+	rotateSecret: (ws: string, id: string) =>
+		axiosClient
+			.post<TApiResponse<{ channel: TNotificationChannel }>>(E.rotateSecret(ws, id))
+			.then(unwrapKey<TNotificationChannel>('channel')),
+
+	deliveries: (
+		ws: string,
+		id: string,
+		signal?: AbortSignal,
+	): Promise<TNumberedPage<TNotificationDelivery>> =>
+		axiosClient
+			.get<TApiResponse<TNotificationDelivery[]> & { meta: TPaginationMeta }>(
+				E.deliveries(ws, id),
+				{
+					params: { per_page: 20 },
+					signal,
+				},
+			)
+			.then(unwrapNumberedPage<TNotificationDelivery>),
 };

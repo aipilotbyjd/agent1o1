@@ -1,23 +1,28 @@
 import {
 	Bell,
-	Coins,
+	Bot,
 	CreditCard,
-	FileCheck2,
-	Gauge,
 	Gift,
-	Hand,
 	Megaphone,
-	PlugZap,
+	Play,
+	Plug,
+	ShieldCheck,
 	Sparkles,
-	TrendingDown,
 	Users,
-	XCircle,
+	Zap,
 	type LucideIcon,
 } from 'lucide-react';
-import paths from '@/Routes/paths';
-import type { TNotification } from '@/types/notification.type';
+import type {
+	TNotification,
+	TNotificationCategoryKey,
+	TNotificationSeverity,
+} from '@/types/notification.type';
 
-type TTone = 'danger' | 'warning' | 'success' | 'info' | 'agent' | 'neutral';
+// What a notification is (category, severity, link) comes from the API, so
+// this file only maps those to the app's own look. A new event needs nothing
+// here; a new category needs one icon.
+
+export type TTone = 'danger' | 'warning' | 'success' | 'info' | 'agent' | 'neutral';
 
 export const TONE_CLASSES: Record<TTone, string> = {
 	danger: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
@@ -28,190 +33,61 @@ export const TONE_CLASSES: Record<TTone, string> = {
 	neutral: 'bg-zinc-500/10 text-zinc-500 dark:text-zinc-400',
 };
 
-type TNotificationMeta = {
-	icon: LucideIcon;
-	tone: TTone;
-	/** What following the notification does, e.g. "View run". */
-	action?: string;
-	href?: (workspaceId: string, data: Record<string, unknown>) => string | null;
+const SEVERITY_TONE: Record<TNotificationSeverity, TTone> = {
+	critical: 'danger',
+	warning: 'warning',
+	success: 'success',
+	info: 'info',
 };
 
-const idFrom = (data: Record<string, unknown>, key: string): string | null =>
-	typeof data[key] === 'string' ? (data[key] as string) : null;
-
-const publishRequestHref = (ws: string, data: Record<string, unknown>) => {
-	const workflowId = idFrom(data, 'workflow_id');
-	const requestId = idFrom(data, 'publish_request_id');
-	if (!workflowId) return null;
-	const editor = paths.editPlaybook(ws, workflowId);
-	return requestId ? `${editor}?publish_request=${requestId}` : editor;
+/** By category key, and by the catalog's icon key (the same names). */
+export const CATEGORY_ICONS: Record<TNotificationCategoryKey, LucideIcon> = {
+	workspace: Users,
+	runs: Play,
+	triggers: Zap,
+	connections: Plug,
+	agents: Bot,
+	billing: CreditCard,
+	assistant: Sparkles,
+	referrals: Gift,
+	security: ShieldCheck,
+	product_updates: Megaphone,
 };
 
-const BY_TYPE: Record<string, TNotificationMeta> = {
-	'run.failed': {
-		icon: XCircle,
-		tone: 'danger',
-		action: 'View run',
-		href: (ws, data) => paths.trail(ws, idFrom(data, 'run_id') ?? undefined),
-	},
-	'run.approval_requested': {
-		icon: Hand,
-		tone: 'warning',
-		action: 'Review approval',
-		href: (ws, data) => paths.trail(ws, idFrom(data, 'run_id') ?? undefined),
-	},
-	'workflow.publish_review_requested': {
-		icon: FileCheck2,
-		tone: 'warning',
-		action: 'Review changes',
-		href: publishRequestHref,
-	},
-	'workflow.publish_request_decided': {
-		icon: FileCheck2,
-		tone: 'info',
-		action: 'Open workflow',
-		href: publishRequestHref,
-	},
-	'agent.reflection_run_completed': {
-		icon: Sparkles,
-		tone: 'agent',
-		action: 'Review suggestions',
-		href: (ws, data) => {
-			const agentId = idFrom(data, 'agent_id');
-			return agentId ? paths.agentInsights(ws, agentId, 'reflections') : null;
-		},
-	},
-	'agent.eval_regressed': {
-		icon: TrendingDown,
-		tone: 'danger',
-		action: 'Open evals',
-		href: (ws, data) => {
-			const agentId = idFrom(data, 'agent_id');
-			return agentId ? paths.agentInsights(ws, agentId, 'evals') : null;
-		},
-	},
-	'agent.session_evaluation_notify': {
-		icon: Gauge,
-		tone: 'warning',
-		action: 'Open grading',
-		href: (ws, data) => {
-			const agentId = idFrom(data, 'agent_id');
-			return agentId ? paths.agentInsights(ws, agentId, 'grading') : null;
-		},
-	},
-	'billing.credits_low': {
-		icon: Coins,
-		tone: 'warning',
-		action: 'Top up credits',
-		href: (ws) => paths.billingCredits(ws),
-	},
-	'billing.credits_exhausted': {
-		icon: Coins,
-		tone: 'danger',
-		action: 'Top up credits',
-		href: (ws) => paths.billingCredits(ws),
-	},
-	'billing.overage_cap_reached': {
-		icon: Coins,
-		tone: 'danger',
-		action: 'Open credits',
-		href: (ws) => paths.billingCredits(ws),
-	},
-	'billing.payment_failed': {
-		icon: CreditCard,
-		tone: 'danger',
-		action: 'Update payment',
-		href: (ws) => paths.billing(ws),
-	},
-	'billing.payment_recovered': {
-		icon: CreditCard,
-		tone: 'success',
-		action: 'Open billing',
-		href: (ws) => paths.billing(ws),
-	},
-	'billing.subscription_renewed': {
-		icon: CreditCard,
-		tone: 'success',
-		action: 'Open billing',
-		href: (ws) => paths.billing(ws),
-	},
-	'billing.subscription_canceled': {
-		icon: CreditCard,
-		tone: 'warning',
-		action: 'View plans',
-		href: (ws) => paths.billingPlans(ws),
-	},
-	'billing.trial_ending': {
-		icon: CreditCard,
-		tone: 'warning',
-		action: 'View plans',
-		href: (ws) => paths.billingPlans(ws),
-	},
-	'referral.signed_up': {
-		icon: Gift,
-		tone: 'info',
-		action: 'View referrals',
-		href: (ws) => paths.referrals(ws),
-	},
-	'referral.reward_granted': {
-		icon: Gift,
-		tone: 'success',
-		action: 'View rewards',
-		href: (ws) => paths.referrals(ws),
-	},
-	'referral.milestone_reached': {
-		icon: Gift,
-		tone: 'success',
-		action: 'View referrals',
-		href: (ws) => paths.referrals(ws),
-	},
-	'referral.plan_time_ending': {
-		icon: Gift,
-		tone: 'warning',
-		action: 'View plans',
-		href: (ws) => paths.billingPlans(ws),
-	},
-	'connector.credential_expired': {
-		icon: PlugZap,
-		tone: 'warning',
-		action: 'Reconnect app',
-		href: (ws, data) => {
-			const credentialId = idFrom(data, 'connector_credential_id');
-			return credentialId ? `${paths.apps(ws)}?account=${credentialId}` : paths.apps(ws);
-		},
-	},
-};
-
-const MEMBER_EVENT: TNotificationMeta = {
-	icon: Users,
-	tone: 'info',
-	action: 'Open members',
-	href: (ws) => paths.members(ws),
-};
-
-const FALLBACK: TNotificationMeta = { icon: Bell, tone: 'neutral' };
+export const categoryIcon = (category: string | null | undefined): LucideIcon =>
+	(category && CATEGORY_ICONS[category as TNotificationCategoryKey]) || Bell;
 
 /** A message the platform team sent from the admin panel (a broadcast campaign). */
 export const ADMIN_MESSAGE_TYPE = 'admin.message';
 
-const ADMIN_MESSAGE: TNotificationMeta = { icon: Megaphone, tone: 'info' };
-
 export const isAdminMessage = (notification: TNotification): boolean =>
 	notification.type === ADMIN_MESSAGE_TYPE;
 
+/** Who an admin message is from, shown where a workspace name would be. */
+export const ADMIN_MESSAGE_SENDER = 'From the Agent1o1 team';
+
+export const isUnread = (notification: TNotification): boolean => !notification.read_at;
+
+export type TNotificationMeta = {
+	icon: LucideIcon;
+	tone: TTone;
+	/** What following the notification does, e.g. "View run". */
+	action?: string;
+};
+
 export const notificationMeta = (notification: TNotification): TNotificationMeta => {
-	const { type } = notification;
-	if (type === ADMIN_MESSAGE_TYPE) {
-		const label = notification.data?.action_label;
+	const icon = categoryIcon(notification.category);
+	const action = notification.action?.label ?? undefined;
+
+	if (isAdminMessage(notification)) {
 		return {
-			...ADMIN_MESSAGE,
+			icon,
 			tone: notification.data?.category === 'marketing' ? 'agent' : 'info',
-			action: typeof label === 'string' && label ? label : undefined,
+			action,
 		};
 	}
-	if (type && BY_TYPE[type]) return BY_TYPE[type];
-	if (type?.startsWith('workspace.member')) return MEMBER_EVENT;
-	return FALLBACK;
+
+	return { icon, tone: SEVERITY_TONE[notification.severity] ?? 'neutral', action };
 };
 
 export type TNotificationTarget = {
@@ -221,16 +97,17 @@ export type TNotificationTarget = {
 };
 
 /**
- * An admin message's button link. The API only accepts a path inside the app
- * or an https address; anything else is ignored here too, so a stored value
- * can never become a `javascript:` link. `:workspace` in a path stands for the
- * member's current workspace, since the sender can't know anyone's id.
+ * Where clicking a notification should go, or null when it has nowhere to
+ * point. Only a path inside the app or an https address is followed, so a
+ * stored value can never become a `javascript:` link. `:workspace` in a path
+ * (written by the platform team, who can't know anyone's id) stands for the
+ * member's current workspace.
  */
-const adminMessageTarget = (
-	data: Record<string, unknown>,
-	activeWorkspaceId: string | null,
+export const notificationTarget = (
+	notification: TNotification,
+	activeWorkspaceId: string | null = null,
 ): TNotificationTarget | null => {
-	const url = idFrom(data, 'action_url');
+	const url = notification.action?.url;
 	if (!url) return null;
 
 	if (/^https:\/\/[^\s/?#]+/i.test(url)) return { href: url, external: true };
@@ -244,17 +121,6 @@ const adminMessageTarget = (
 	};
 };
 
-/** Where clicking the notification should go, or null when it has nowhere to point. */
-export const notificationTarget = (
-	notification: TNotification,
-	activeWorkspaceId: string | null = null,
-): TNotificationTarget | null => {
-	if (isAdminMessage(notification)) {
-		return adminMessageTarget(notification.data ?? {}, activeWorkspaceId);
-	}
-
-	const meta = notificationMeta(notification);
-	if (!meta.href || !notification.workspace_id) return null;
-	const href = meta.href(notification.workspace_id, notification.data ?? {});
-	return href ? { href, external: false } : null;
-};
+/** Whether a new notification is loud enough to interrupt with a toast. */
+export const shouldToast = (notification: TNotification): boolean =>
+	notification.severity === 'critical' || notification.severity === 'warning';

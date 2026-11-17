@@ -47,3 +47,20 @@ export const useTestNotificationChannel = (ws: string) =>
 		mutationFn: (id: string) => NotificationChannelService.test(ws, id),
 		meta: { errorMessage: 'Test delivery failed' },
 	});
+
+export const useRotateNotificationChannelSecret = (ws: string) => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => NotificationChannelService.rotateSecret(ws, id),
+		onSuccess: () => qc.invalidateQueries({ queryKey: notificationChannelKeys.lists(ws) }),
+		meta: { errorMessage: 'Failed to rotate the signing secret' },
+	});
+};
+
+/** The latest deliveries to one channel, while its panel is open. */
+export const useNotificationChannelDeliveries = (ws: string, id: string | null) =>
+	useQuery({
+		queryKey: notificationChannelKeys.deliveries(ws, id ?? ''),
+		queryFn: ({ signal }) => NotificationChannelService.deliveries(ws, id as string, signal),
+		enabled: !!ws && !!id,
+	});
