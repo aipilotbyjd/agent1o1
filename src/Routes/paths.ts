@@ -60,6 +60,8 @@ const paths = {
 
 	apps: (workspaceId: string) => buildPath(workspacePages.apps.to, { workspaceId }),
 	approvals: (workspaceId: string) => buildPath(workspacePages.approvals.to, { workspaceId }),
+	notifications: (workspaceId: string) =>
+		buildPath(workspacePages.notifications.to, { workspaceId }),
 	trail: (workspaceId: string, runId?: string) =>
 		buildPath(workspacePages.trail.to, { workspaceId }) + (runId ? `?run=${runId}` : ''),
 

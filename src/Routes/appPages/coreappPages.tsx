@@ -27,7 +27,9 @@ const WorkflowPagesLayout = lazy(
 );
 const PagesListPage = lazy(() => import('@/pages/coreapp/WorkflowPages/PagesList.page'));
 const UsePagePage = lazy(() => import('@/pages/coreapp/WorkflowPages/UsePage.page'));
-const PageInsightsPage = lazy(() => import('@/pages/coreapp/WorkflowPages/PageInsights/PageInsights.page'));
+const PageInsightsPage = lazy(
+	() => import('@/pages/coreapp/WorkflowPages/PageInsights/PageInsights.page'),
+);
 const PageBuilderPage = lazy(
 	() => import('@/pages/coreapp/WorkflowPages/PageBuilder/PageBuilder.page'),
 );
@@ -40,6 +42,12 @@ const AgentInsightsPage = lazy(() => import('@/pages/coreapp/Agents/AgentInsight
 const LibraryPage = lazy(() => import('@/pages/coreapp/Library/Library.page'));
 const ApprovalsLayout = lazy(() => import('@/pages/coreapp/Approvals/_layouts/Approvals.layout'));
 const ApprovalsPage = lazy(() => import('@/pages/coreapp/Approvals/Approvals.page'));
+const NotificationsLayout = lazy(
+	() => import('@/pages/coreapp/Notifications/_layouts/Notifications.layout'),
+);
+const NotificationsInboxPage = lazy(
+	() => import('@/pages/coreapp/Notifications/Notifications.page'),
+);
 const TrailLayout = lazy(() => import('@/pages/coreapp/Trail/_layouts/Trail.layout'));
 const TrailListPage = lazy(() => import('@/pages/coreapp/Trail/TrailList.page'));
 const SkillsLayout = lazy(() => import('@/pages/coreapp/Skills/_layouts/Skills.layout'));
@@ -119,6 +127,11 @@ const listRoutes: RouteObject[] = (
 			<ApprovalsPage key='page' />,
 		],
 		[workspacePages.trail.to, <TrailLayout key='layout' />, <TrailListPage key='page' />],
+		[
+			workspacePages.notifications.to,
+			<NotificationsLayout key='layout' />,
+			<NotificationsInboxPage key='page' />,
+		],
 		[
 			workspacePages.artifacts.to,
 			<ArtifactsLayout key='layout' />,

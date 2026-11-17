@@ -1,22 +1,58 @@
 // ============================================================
 // Notification Types
 // ------------------------------------------------------------
-// Three resources: account-level notifications (Laravel's database
-// notifications, not workspace-scoped), workspace notification
-// channels (delivery targets), and per-user, per-workspace
-// notification preferences keyed by a fixed event catalog.
+// The API owns what every notification is (`GET /notifications/catalog`):
+// its category, severity, defaults and link. The app renders whatever it
+// is told and never hard-codes an event, so a new event needs no change
+// here beyond, at most, an icon for a new category.
+//
+// - Inbox: account-level (spans workspaces), filterable, archivable.
+// - Preferences: per workspace for workspace events, per account for the
+//   rest. A key is an event key or a category key (`category:<name>`).
+// - Channels and routes: workspace chat/webhook destinations, and which
+//   events reach them.
 // ============================================================
 
-// ─── Account-level notifications ─────────────────────────────
+export type TNotificationSeverity = 'critical' | 'warning' | 'info' | 'success';
+
+export type TNotificationCategoryKey =
+	| 'workspace'
+	| 'runs'
+	| 'triggers'
+	| 'connections'
+	| 'agents'
+	| 'billing'
+	| 'assistant'
+	| 'referrals'
+	| 'security'
+	| 'product_updates';
+
+export type TNotificationScope = 'workspace' | 'account';
+
+// ─── Inbox ───────────────────────────────────────────────────
+
+export type TNotificationAction = {
+	label: string | null;
+	/** A path inside the app, or (platform messages only) an https address. */
+	url: string;
+};
 
 export type TNotification = {
 	id: string;
 	type: string | null;
+	category: TNotificationCategoryKey | null;
+	severity: TNotificationSeverity;
 	title: string | null;
 	body: string | null;
 	data: Record<string, unknown>;
 	workspace_id: string | null;
+	action: TNotificationAction | null;
+	needs_action: boolean;
+	/** How many occurrences this notification stands for (grouped repeats). */
+	group_count: number;
 	read_at: string | null;
+	archived_at: string | null;
+	occurred_at: string;
 	created_at: string;
 };
 
@@ -33,7 +69,117 @@ export type TAdminMessageData = {
 	action_url: string | null;
 };
 
+export type TNotificationStatusFilter = 'inbox' | 'unread' | 'archived' | 'all';
+
+export type TNotificationListParams = {
+	status?: TNotificationStatusFilter;
+	category?: TNotificationCategoryKey;
+	/** A workspace id, or `none` for account-level notifications. */
+	workspace_id?: string;
+	needs_action?: boolean;
+	per_page?: number;
+	page?: number;
+};
+
+export type TNotificationSummary = {
+	unread: number;
+	needs_action: number;
+	by_category: Partial<Record<TNotificationCategoryKey, number>>;
+	/** Keyed by workspace id; `none` for account-level notifications. */
+	by_workspace: Record<string, number>;
+};
+
 export type TUnreadCount = { unread: number };
+
+export type TMarkNotificationsReadDto =
+	| { ids: string[] }
+	| { all: true; category?: TNotificationCategoryKey; workspace_id?: string };
+
+/** Pushed on the member's private channel as `.inbox.notification`. */
+export type TInboxNotificationEvent = {
+	notification: TNotification;
+	/** A repeat folded into an existing notification rather than a new one. */
+	grouped: boolean;
+	emitted_at: number;
+};
+
+// ─── Catalog ─────────────────────────────────────────────────
+
+export type TNotificationEventKey = string;
+
+export type TNotificationEventCatalogEntry = {
+	key: TNotificationEventKey;
+	label: string;
+	description: string;
+	category: TNotificationCategoryKey;
+	severity: TNotificationSeverity;
+	scope: TNotificationScope;
+	/** Always sent; shown locked. */
+	mandatory: boolean;
+	/** Shown on the settings page with switches. */
+	configurable: boolean;
+	needs_action: boolean;
+	grouped: boolean;
+	defaults: { in_app: boolean; email: boolean };
+};
+
+export type TNotificationCategory = {
+	key: TNotificationCategoryKey;
+	label: string;
+	description: string;
+	/** Icon key the app maps to its own icon set. */
+	icon: string;
+	scope: TNotificationScope;
+	/** The key a whole-category preference is saved under. */
+	preference_key: string;
+	events: TNotificationEventCatalogEntry[];
+};
+
+export type TNotificationCatalog = { categories: TNotificationCategory[] };
+
+// ─── Preferences ─────────────────────────────────────────────
+
+/** A workspace preference row, as the API stores it. */
+export type TNotificationPreference = {
+	id: string;
+	workspace_id: string;
+	user_id: string;
+	/** An event key, or a category key (`category:<name>`). */
+	event_key: string;
+	in_app: boolean;
+	email: boolean;
+	email_digest: boolean;
+	created_at: string;
+	updated_at: string;
+};
+
+/** An account preference. `category:product_updates` is the marketing opt-out. */
+export type TAccountNotificationPreference = {
+	key: string;
+	in_app: boolean;
+	email: boolean;
+	email_digest: boolean;
+};
+
+export type TNotificationPreferenceChange = {
+	key: string;
+	in_app?: boolean;
+	email?: boolean;
+	email_digest?: boolean;
+};
+
+export type TUpdateNotificationPreferencesDto = {
+	preferences: TNotificationPreferenceChange[];
+};
+
+/** The channels one setting resolves to, after every layer applies. */
+export type TResolvedNotificationSetting = {
+	in_app: boolean;
+	email: boolean;
+	email_digest: boolean;
+	/** Where the value comes from: the event's own row, its category's, or the defaults. */
+	source: 'event' | 'category' | 'default';
+};
 
 // ─── Notification channels (workspace-scoped) ────────────────
 
@@ -44,6 +190,14 @@ export type TNotificationChannel = {
 	type: TNotificationChannelType;
 	name: string;
 	is_active: boolean;
+	consecutive_failures: number;
+	last_delivered_at: string | null;
+	last_failed_at: string | null;
+	last_error: string | null;
+	/** Set when the channel was switched off after repeated failures. */
+	disabled_at: string | null;
+	/** Webhooks only, and only right after creating or rotating it. */
+	signing_secret?: string;
 	created_at: string;
 	updated_at: string;
 };
@@ -66,60 +220,36 @@ export type TUpdateNotificationChannelDto = {
 	is_active?: boolean;
 };
 
-// ─── Notification preferences (workspace-scoped, per user) ───
+// ─── Routes and deliveries ───────────────────────────────────
 
-export type TNotificationEventKey =
-	| 'workspace.member_invited'
-	| 'workspace.member_joined'
-	| 'workspace.member_removed'
-	| 'workspace.member_role_changed'
-	| 'run.approval_requested'
-	| 'run.failed'
-	| 'connector.credential_expired'
-	| 'billing.payment_failed'
-	| 'billing.payment_recovered'
-	| 'billing.subscription_canceled'
-	| 'billing.trial_ending'
-	| 'billing.subscription_renewed'
-	| 'billing.credits_low'
-	| 'billing.credits_exhausted'
-	| 'billing.overage_cap_reached'
-	| 'agent.reflection_run_completed'
-	| 'agent.session_evaluation_notify'
-	| 'agent.eval_regressed'
-	| 'referral.signed_up'
-	| 'referral.reward_granted'
-	| 'referral.milestone_reached'
-	| 'referral.plan_time_ending';
-
-/** The fixed catalog of toggleable events, from GET /notifications/events. */
-export type TNotificationEventCatalogEntry = {
-	key: TNotificationEventKey;
-	label: string;
-	description: string;
-	defaults: { in_app: boolean; email: boolean };
-};
-
-/**
- * Returned as a raw Eloquent model (no API Resource on the backend), so
- * this shape is inferred from the columns the controller actually reads
- * and writes rather than from a documented resource contract.
- */
-export type TNotificationPreference = {
+/** Which events reach a channel: one event, one category, or (neither) all. */
+export type TNotificationRoute = {
 	id: string;
-	workspace_id: string;
-	user_id: string;
-	event_key: TNotificationEventKey;
-	in_app: boolean;
-	email: boolean;
-	channel_ids: string[] | null;
+	notification_channel_id: string;
+	channel?: Pick<TNotificationChannel, 'id' | 'type' | 'name' | 'is_active'> | null;
+	event_key: string | null;
+	category: TNotificationCategoryKey | null;
+	min_severity: TNotificationSeverity | null;
 	created_at: string;
 	updated_at: string;
 };
 
-export type TUpsertNotificationPreferenceDto = {
-	event_key: TNotificationEventKey;
-	in_app?: boolean;
-	email?: boolean;
-	channel_ids?: string[] | null;
+export type TNotificationRouteDto = {
+	notification_channel_id: string;
+	event_key?: string | null;
+	category?: TNotificationCategoryKey | null;
+	min_severity?: TNotificationSeverity | null;
+};
+
+export type TNotificationDeliveryStatus = 'pending' | 'sent' | 'failed' | 'skipped';
+
+export type TNotificationDelivery = {
+	id: string;
+	event_key: string | null;
+	channel: string;
+	status: TNotificationDeliveryStatus;
+	attempts: number;
+	error: string | null;
+	sent_at: string | null;
+	created_at: string;
 };

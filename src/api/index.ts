@@ -35,6 +35,7 @@ export * as billingApi from './modules/billing';
 export * as dashboardApi from './modules/dashboard';
 export * as notificationsApi from './modules/notifications';
 export * as notificationChannelsApi from './modules/notification-channels';
+export * as notificationRoutesApi from './modules/notification-routes';
 export * as notificationPreferencesApi from './modules/notification-preferences';
 export * as referralsApi from './modules/referrals';
 export * as announcementsApi from './modules/announcements';

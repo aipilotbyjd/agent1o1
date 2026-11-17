@@ -79,6 +79,12 @@ export const workspace: TPage = {
 			text: 'Trail',
 			icon: 'Clock01',
 		},
+		notifications: {
+			id: 'notifications',
+			to: ws('notifications'),
+			text: 'Notifications',
+			icon: 'Notification03',
+		},
 		artifacts: {
 			id: 'artifacts',
 			to: ws('artifacts'),
