@@ -1,6 +1,7 @@
 import { QueryClient, QueryCache, MutationCache } from '@tanstack/react-query';
 import { ApiError } from './errors';
 import { notify } from './notify';
+import { reportError } from '@/utils/sentry.util';
 import { announcementKeys } from '@/api/modules/announcements/announcements.keys';
 import { workspaceKeys } from '@/api/modules/workspaces/workspaces.keys';
 import type { TAnnouncementsPayload } from '@/types/announcement.type';
@@ -72,9 +73,15 @@ export const createQueryClient = () => {
 			? NO_PERMISSION_MESSAGE
 			: error.message;
 
+	/** Anything that is not an API answer is a bug in the app's own code: report it. */
+	const reportIfUnexpected = (error: unknown) => {
+		if (!ApiError.is(error)) reportError(error);
+	};
+
 	const client = new QueryClient({
 		queryCache: new QueryCache({
 			onError: (error, query) => {
+				reportIfUnexpected(error);
 				handleForbidden(error);
 				if (query.meta?.silent) return;
 				if (handleMaintenance(error)) return;
@@ -83,6 +90,7 @@ export const createQueryClient = () => {
 		}),
 		mutationCache: new MutationCache({
 			onError: (error, _vars, _ctx, mutation) => {
+				reportIfUnexpected(error);
 				handleForbidden(error);
 				if (mutation.meta?.silent) return;
 				if (handleMaintenance(error)) return;

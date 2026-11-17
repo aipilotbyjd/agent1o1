@@ -7,8 +7,9 @@ import { useLogout } from '@/api/modules/auth';
 import { WorkspaceProvider } from '@/context/workspace';
 import { RealtimeProvider, RunsRealtimeSync } from '@/context/realtime';
 import { BrandRealtimeSync } from '@/context/brand';
-import { PostHogSync } from '@/context/analytics';
+import { PostHogSync, SentrySync } from '@/context/analytics';
 import { isPostHogEnabled } from '@/utils/posthog.util';
+import { isSentryEnabled } from '@/utils/sentry.util';
 import pages from '@/Routes/pages';
 import AuthContext from './AuthContext';
 import type { IAuthContextProps } from './auth.types';
@@ -103,6 +104,7 @@ export const AuthProvider = () => {
 			<WorkspaceProvider>
 				<RealtimeProvider>
 					{isPostHogEnabled && <PostHogSync />}
+					{isSentryEnabled && <SentrySync />}
 					<BrandRealtimeSync />
 					<RunsRealtimeSync />
 					<Outlet />
