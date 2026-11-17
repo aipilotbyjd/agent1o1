@@ -2,7 +2,16 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 import path from 'path';
+
+// Error reports carry the commit they were built from (Netlify sets COMMIT_REF).
+process.env.VITE_SENTRY_RELEASE ||= process.env.COMMIT_REF ?? '';
+const release = process.env.VITE_SENTRY_RELEASE || undefined;
+
+// Source maps are only built when they can be uploaded to GlitchTip, and are
+// deleted from the output afterwards so they are never published.
+const uploadSourceMaps = Boolean(process.env.SENTRY_AUTH_TOKEN && release);
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -32,11 +41,24 @@ export default defineConfig({
 				],
 			},
 			workbox: {
+				sourcemap: false,
 				maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
 				// The full Hugeicons set is a lazy fallback (see components/icon/Icon.tsx);
 				// precaching it would download 3 MB in the background for every visitor.
 				globIgnores: ['**/huge-*.js'],
 			},
+		}),
+		sentryVitePlugin({
+			disable: !uploadSourceMaps,
+			url: process.env.SENTRY_URL,
+			org: process.env.SENTRY_ORG,
+			project: process.env.SENTRY_PROJECT,
+			authToken: process.env.SENTRY_AUTH_TOKEN,
+			telemetry: false,
+			release: { name: release, setCommits: false },
+			// A failed upload must not block a deploy; the maps are still deleted.
+			errorHandler: (error) => console.warn(error),
+			sourcemaps: { filesToDeleteAfterUpload: ['build/**/*.map'] },
 		}),
 	],
 	assetsInclude: ['**/*.md'],
@@ -47,7 +69,7 @@ export default defineConfig({
 	},
 	build: {
 		outDir: 'build',
-		sourcemap: false,
+		sourcemap: uploadSourceMaps ? 'hidden' : false,
 		rollupOptions: {
 			output: {
 				manualChunks(id) {

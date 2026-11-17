@@ -3,6 +3,7 @@ import { useNavigate, useRouteError } from 'react-router';
 import dayjs from 'dayjs';
 import Button from '@/components/ui/Button';
 import AppLogo from '@/components/AppLogo';
+import { reportError } from '@/utils/sentry.util';
 
 const RELOAD_FLAG = 'route-error-chunk-reload';
 
@@ -25,6 +26,8 @@ const RouteErrorPage = () => {
 
 	useEffect(() => {
 		if (import.meta.env.DEV) console.error(error);
+		// Thrown responses (404s and the like) are answers, not bugs.
+		if (!isChunkError && error instanceof Error) reportError(error);
 		if (!isChunkError) return;
 		try {
 			// Reload once; if the chunk is still missing, show the page instead of looping.
