@@ -6,6 +6,7 @@ import {
 	Gauge,
 	Gift,
 	Hand,
+	Megaphone,
 	PlugZap,
 	Sparkles,
 	TrendingDown,
@@ -190,15 +191,70 @@ const MEMBER_EVENT: TNotificationMeta = {
 
 const FALLBACK: TNotificationMeta = { icon: Bell, tone: 'neutral' };
 
-export const notificationMeta = (type: string | null): TNotificationMeta => {
+/** A message the platform team sent from the admin panel (a broadcast campaign). */
+export const ADMIN_MESSAGE_TYPE = 'admin.message';
+
+const ADMIN_MESSAGE: TNotificationMeta = { icon: Megaphone, tone: 'info' };
+
+export const isAdminMessage = (notification: TNotification): boolean =>
+	notification.type === ADMIN_MESSAGE_TYPE;
+
+export const notificationMeta = (notification: TNotification): TNotificationMeta => {
+	const { type } = notification;
+	if (type === ADMIN_MESSAGE_TYPE) {
+		const label = notification.data?.action_label;
+		return {
+			...ADMIN_MESSAGE,
+			tone: notification.data?.category === 'marketing' ? 'agent' : 'info',
+			action: typeof label === 'string' && label ? label : undefined,
+		};
+	}
 	if (type && BY_TYPE[type]) return BY_TYPE[type];
 	if (type?.startsWith('workspace.member')) return MEMBER_EVENT;
 	return FALLBACK;
 };
 
+export type TNotificationTarget = {
+	href: string;
+	/** Another site: opened in a new tab rather than routed inside the app. */
+	external: boolean;
+};
+
+/**
+ * An admin message's button link. The API only accepts a path inside the app
+ * or an https address; anything else is ignored here too, so a stored value
+ * can never become a `javascript:` link. `:workspace` in a path stands for the
+ * member's current workspace, since the sender can't know anyone's id.
+ */
+const adminMessageTarget = (
+	data: Record<string, unknown>,
+	activeWorkspaceId: string | null,
+): TNotificationTarget | null => {
+	const url = idFrom(data, 'action_url');
+	if (!url) return null;
+
+	if (/^https:\/\/[^\s/?#]+/i.test(url)) return { href: url, external: true };
+
+	if (!url.startsWith('/') || url.startsWith('//') || url.startsWith('/\\')) return null;
+	if (!url.includes(':workspace')) return { href: url, external: false };
+	if (!activeWorkspaceId) return null;
+	return {
+		href: url.replace(/:workspace/g, encodeURIComponent(activeWorkspaceId)),
+		external: false,
+	};
+};
+
 /** Where clicking the notification should go, or null when it has nowhere to point. */
-export const notificationHref = (notification: TNotification): string | null => {
-	const meta = notificationMeta(notification.type);
+export const notificationTarget = (
+	notification: TNotification,
+	activeWorkspaceId: string | null = null,
+): TNotificationTarget | null => {
+	if (isAdminMessage(notification)) {
+		return adminMessageTarget(notification.data ?? {}, activeWorkspaceId);
+	}
+
+	const meta = notificationMeta(notification);
 	if (!meta.href || !notification.workspace_id) return null;
-	return meta.href(notification.workspace_id, notification.data ?? {});
+	const href = meta.href(notification.workspace_id, notification.data ?? {});
+	return href ? { href, external: false } : null;
 };
