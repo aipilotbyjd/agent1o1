@@ -36,6 +36,44 @@ export type TSubscription = {
 	plan: TPlan | null;
 };
 
+export type TCancellationOfferType = 'discount' | 'downgrade' | 'help';
+
+export type TCancellationOffer = {
+	type: TCancellationOfferType;
+	percent_off: number | null;
+	months: number | null;
+};
+
+export type TCancellationReasonOption = {
+	value: string;
+	label: string;
+	comment_prompt: string;
+	offer: TCancellationOffer | null;
+};
+
+export type TCancellationOptions = {
+	ends_at: string | null;
+	reasons: TCancellationReasonOption[];
+};
+
+export type TCancelSubscriptionDto = {
+	reason?: string;
+	comment?: string;
+};
+
+export type TAcceptCancellationOfferDto = {
+	offer: Exclude<TCancellationOfferType, 'downgrade'>;
+	reason: string;
+	comment?: string;
+};
+
+export type TAcceptCancellationOfferResult = {
+	outcome: string;
+	percent_off: number | null;
+	months: number | null;
+	subscription: TSubscription | null;
+};
+
 export type TPlanGrant = {
 	id: string;
 	source: string;

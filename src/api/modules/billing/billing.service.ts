@@ -19,6 +19,10 @@ import type {
 	TCreditNotifications,
 	TUpdateCreditNotificationsDto,
 	TUsageInsights,
+	TCancellationOptions,
+	TCancelSubscriptionDto,
+	TAcceptCancellationOfferDto,
+	TAcceptCancellationOfferResult,
 } from '@/types/billing.type';
 import { BillingEndpoints as E } from './billing.endpoints';
 
@@ -67,9 +71,22 @@ export const BillingService = {
 			})
 			.then(unwrapKey<TInvoice | null>('invoice')),
 
-	cancelSubscription: (ws: string) =>
+	// The reasons to ask, the one offer that goes with each, and the end date.
+	cancellationOptions: (ws: string, signal?: AbortSignal) =>
 		axiosClient
-			.post<TApiResponse<{ subscription: TSubscription }>>(E.subscriptionCancel(ws))
+			.get<TApiResponse<TCancellationOptions>>(E.subscriptionCancellation(ws), { signal })
+			.then((r) => r.data.data),
+
+	acceptCancellationOffer: (ws: string, payload: TAcceptCancellationOfferDto) =>
+		axiosClient
+			.post<
+				TApiResponse<TAcceptCancellationOfferResult>
+			>(E.subscriptionCancellationAcceptOffer(ws), payload)
+			.then((r) => r.data.data),
+
+	cancelSubscription: (ws: string, payload: TCancelSubscriptionDto = {}) =>
+		axiosClient
+			.post<TApiResponse<{ subscription: TSubscription }>>(E.subscriptionCancel(ws), payload)
 			.then(unwrapKey<TSubscription>('subscription')),
 
 	resumeSubscription: (ws: string) =>
