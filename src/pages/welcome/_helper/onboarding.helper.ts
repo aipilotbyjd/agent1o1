@@ -1,3 +1,4 @@
+import type { TTemplateCatalogItem } from '@/types/template.type';
 import type { TOnboardingStep as TOnboardingStepState } from '@/types/onboarding.type';
 import { ONBOARDING_STEP_KEYS } from './onboarding.constants';
 import type { TOnboardingStep } from '../_types/onboarding.type';
@@ -56,3 +57,7 @@ export const resolveStartStep = (
 		(target as TOnboardingStep)
 	);
 };
+
+/** Page templates dress up a workflow's form, so they're added from a workflow page, not here. */
+export const isTemplateUsableInOnboarding = (template: Pick<TTemplateCatalogItem, 'type'>) =>
+	template.type !== 'page';

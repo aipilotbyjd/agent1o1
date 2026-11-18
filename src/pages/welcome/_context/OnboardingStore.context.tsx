@@ -13,7 +13,6 @@ type TOnboardingAction =
 
 const initialState: IOnboardingState = {
 	currentStep: 0,
-	avatarUrl: null,
 	workspaceName: '',
 	workspaceSlug: '',
 	workspaceCreated: false,
@@ -29,7 +28,10 @@ const initialState: IOnboardingState = {
 	connectedApps: [],
 	selectedAppForAuth: null,
 	authSuccess: false,
-	selectedSurvey: null,
+	templateSearch: '',
+	templateType: 'all',
+	selectedTemplate: null,
+	createdFromTemplate: null,
 };
 
 function onboardingReducer(state: IOnboardingState, action: TOnboardingAction): IOnboardingState {

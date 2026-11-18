@@ -10,6 +10,7 @@ import {
 } from '@/api/modules/onboarding';
 import { useAuth } from '@/context/auth';
 import pages, { type TPages } from '@/Routes/pages';
+import paths from '@/Routes/paths';
 
 const dashboardPath = (pages.workspace.subPages as TPages).dashboard.to;
 
@@ -23,18 +24,32 @@ export const useOnboardingNavigation = () => {
 	const { data: onboardingData } = useOnboardingState();
 	const steps = onboardingData?.steps ?? [];
 
-	const { currentStep, inviteEmails, invitesSent, createdWorkspaceId } = state;
+	const { currentStep, inviteEmails, invitesSent, createdWorkspaceId, createdFromTemplate } =
+		state;
 
 	const parsedInviteEmails = parseEmails(inviteEmails);
 	const validInviteEmails = parsedInviteEmails.filter(isValidEmail);
 	const hasValidEmails = validInviteEmails.length > 0;
 
 	/**
-	 * Leaving onboarding lands on the workspace dashboard, which is scoped
-	 * (`/:workspaceId/dashboard`). A user who never got a workspace goes to the workspace picker instead.
+	 * Leaving onboarding opens what the picked template created, else the
+	 * workspace dashboard, which is scoped (`/:workspaceId/dashboard`). A user
+	 * who never got a workspace goes to the workspace picker instead.
 	 */
 	const goToApp = () => {
 		const workspaceId = createdWorkspaceId || userData?.current_workspace_id;
+		const opens = createdFromTemplate?.opens;
+
+		// Starting from a template lands in what it made rather than on an empty dashboard.
+		if (workspaceId && opens) {
+			navigate(
+				opens.type === 'workflow'
+					? paths.editPlaybook(workspaceId, opens.id)
+					: paths.editAgent(workspaceId, opens.id),
+				{ replace: true },
+			);
+			return;
+		}
 
 		navigate(
 			workspaceId ? dashboardPath.replace(':workspaceId', workspaceId) : pages.choose.to,

@@ -34,6 +34,9 @@ import { useDashboard } from './_helper/dashboard.adapter';
 import PendingApprovalsCard from './_partial/PendingApprovalsCard.partial';
 import PendingAgentActionsCard from './_partial/PendingAgentActionsCard.partial';
 import GettingStartedCard from './_partial/GettingStartedCard.partial';
+import DiscoveryQuestionCard from './_partial/DiscoveryQuestionCard.partial';
+import FirstWorkflowEmptyState from './_partial/FirstWorkflowEmptyState.partial';
+import { useDashboardOverview } from '@/api/modules/dashboard';
 import { STATUS_BADGE_COLORS, type TExecutionStatus } from './_types/dashboard.type';
 
 const workspacePages = pages.workspace.subPages!;
@@ -119,6 +122,11 @@ const DashboardPage = () => {
 	const { data: dashboard, isLoading } = useDashboard(currentWorkspaceId);
 	const summary = dashboard?.summary;
 	const planName = useBillingOverview(currentWorkspaceId).data?.current_plan?.name;
+	// Same query (and key) the getting-started card reads.
+	const counts = useDashboardOverview(currentWorkspaceId, { days: 7 }).data?.counts;
+	// Nothing built yet: one clear next step instead of zeroed charts.
+	const isEmptyWorkspace =
+		canCreateWorkflow && counts !== undefined && counts.workflows === 0 && counts.agents === 0;
 
 	// ─── Monitoring data ──────────────────────────────────────────────────────
 	const runsToday = summary?.total_executions_today ?? 0;
@@ -435,295 +443,322 @@ const DashboardPage = () => {
 				</motion.div>
 
 				<GettingStartedCard ws={currentWorkspaceId} />
+				<DiscoveryQuestionCard ws={currentWorkspaceId} />
 
-				{/* ─── KPI row ─────────────────────────────────────────────────── */}
-				<section className='grid grid-cols-2 gap-4 lg:grid-cols-4'>
-					{kpis.map((kpi, i) => {
-						const IconComponent = kpi.icon;
-						return (
-							<motion.div
-								key={kpi.label}
-								initial={{ opacity: 0, y: 16 }}
-								animate={{ opacity: 1, y: 0 }}
-								transition={{ delay: i * 0.06, duration: 0.3 }}
-								className='border-border-main bg-bg-card relative flex flex-col justify-between overflow-hidden rounded-3xl border p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md'>
-								<div className='flex items-center justify-between'>
-									<span className='text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
-										{kpi.label}
-									</span>
-									<div
-										className={`flex h-9 w-9 items-center justify-center rounded-xl ${kpi.tone}`}>
-										<IconComponent size={16} />
-									</div>
-								</div>
-								<div className='mt-4'>
-									<div className='text-3xl font-black tracking-tight text-slate-900 dark:text-white'>
-										{isLoading ? '-' : kpi.value}
-									</div>
-									<div className='mt-0.5 text-[11px] font-semibold text-slate-400 dark:text-zinc-500'>
-										{kpi.sub}
-									</div>
-								</div>
-							</motion.div>
-						);
-					})}
-				</section>
-
-				{/* ─── Main monitoring grid ───────────────────────────────────── */}
-				<div className='grid grid-cols-1 gap-6 lg:grid-cols-3'>
-					{/* Left: needs attention + recent runs */}
-					<div className='space-y-6 lg:col-span-2'>
-						<PendingApprovalsCard ws={currentWorkspaceId} />
-						<PendingAgentActionsCard ws={currentWorkspaceId} />
-
-						{/* Needs attention */}
-						<div className='border-border-main bg-bg-card overflow-hidden rounded-3xl border shadow-sm'>
-							<div className='border-border-main flex items-center justify-between border-b px-5 py-4.5'>
-								<span className='text-text-main flex items-center gap-2 text-xs font-black tracking-widest uppercase'>
-									<AlertTriangle size={13} className='text-rose-500' />
-									Needs attention
-								</span>
-								{failures.length > 0 && (
-									<span className='rounded-full bg-rose-500/10 px-2 py-0.5 text-[10px] font-black text-rose-600 dark:text-rose-400'>
-										{failures.length}
-									</span>
-								)}
-							</div>
-							{failures.length === 0 ? (
-								<div className='flex flex-col items-center gap-2 px-5 py-9 text-center'>
-									<div className='flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'>
-										<ShieldCheck size={20} />
-									</div>
-									<p className='text-text-main text-xs font-bold'>
-										No failures - all clear
-									</p>
-									<p className='text-text-muted text-[11px] font-semibold'>
-										Failed runs from your workflows will show up here.
-									</p>
-								</div>
-							) : (
-								<div className='divide-border-main divide-y'>
-									{failures.slice(0, 4).map((f) => (
-										<div
-											key={f.id}
-											className='flex items-center justify-between gap-3 px-5 py-3.5'>
-											<div className='flex min-w-0 items-center gap-3'>
-												<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-500/10 text-rose-500'>
-													<AlertTriangle size={15} />
-												</div>
-												<div className='min-w-0'>
-													<p className='text-text-main truncate text-xs font-bold'>
-														{f.workflow_name}
-													</p>
-													<p className='truncate text-[10px] font-semibold text-rose-500/90'>
-														{f.error_message}
-													</p>
-												</div>
-											</div>
-											<div className='flex shrink-0 items-center gap-3'>
-												<span className='text-text-muted hidden text-[10px] font-semibold sm:block'>
-													{formatRelativeTime(f.failed_at)}
-												</span>
-												<button
-													onClick={() => openRun(f.id, f.workflow_id)}
-													className='flex h-7.5 items-center gap-1 rounded-lg border border-rose-500/25 bg-rose-500/5 px-2.5 text-[10px] font-black text-rose-600 transition hover:bg-rose-500 hover:text-white dark:text-rose-400'>
-													Fix <ArrowUpRight size={11} />
-												</button>
+				{isEmptyWorkspace ? (
+					<FirstWorkflowEmptyState
+						ws={currentWorkspaceId}
+						onCreateWorkflow={handleQuickCreateWorkflow}
+						isCreating={createWorkflowMutation.isPending}
+					/>
+				) : (
+					<>
+						{/* ─── KPI row ─────────────────────────────────────────────────── */}
+						<section className='grid grid-cols-2 gap-4 lg:grid-cols-4'>
+							{kpis.map((kpi, i) => {
+								const IconComponent = kpi.icon;
+								return (
+									<motion.div
+										key={kpi.label}
+										initial={{ opacity: 0, y: 16 }}
+										animate={{ opacity: 1, y: 0 }}
+										transition={{ delay: i * 0.06, duration: 0.3 }}
+										className='border-border-main bg-bg-card relative flex flex-col justify-between overflow-hidden rounded-3xl border p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md'>
+										<div className='flex items-center justify-between'>
+											<span className='text-[10px] font-black tracking-wider text-slate-400 uppercase dark:text-zinc-500'>
+												{kpi.label}
+											</span>
+											<div
+												className={`flex h-9 w-9 items-center justify-center rounded-xl ${kpi.tone}`}>
+												<IconComponent size={16} />
 											</div>
 										</div>
-									))}
-								</div>
-							)}
-						</div>
+										<div className='mt-4'>
+											<div className='text-3xl font-black tracking-tight text-slate-900 dark:text-white'>
+												{isLoading ? '-' : kpi.value}
+											</div>
+											<div className='mt-0.5 text-[11px] font-semibold text-slate-400 dark:text-zinc-500'>
+												{kpi.sub}
+											</div>
+										</div>
+									</motion.div>
+								);
+							})}
+						</section>
 
-						{/* Recent runs */}
-						<div className='border-border-main bg-bg-card overflow-hidden rounded-3xl border shadow-sm'>
-							<div className='border-border-main flex items-center justify-between border-b px-5 py-4.5'>
-								<span className='text-text-main flex items-center gap-2 text-xs font-black tracking-widest uppercase'>
-									<Activity size={13} className='text-primary-500' />
-									Recent runs
-								</span>
-								<button
-									onClick={() =>
-										navigate(
-											toWorkspacePath(pages.workspace.subPages!.trail.to),
-										)
-									}
-									className='flex cursor-pointer items-center gap-1 text-[11px] font-bold text-slate-500 transition-colors hover:text-slate-800 dark:text-zinc-400 dark:hover:text-white'>
-									View all <ArrowRight size={11} />
-								</button>
-							</div>
-							{isLoading && recentRuns.length === 0 ? (
-								<div className='text-text-muted px-5 py-10 text-center text-xs font-semibold'>
-									Loading recent runs…
-								</div>
-							) : recentRuns.length === 0 ? (
-								<div className='flex flex-col items-center gap-3 px-5 py-10 text-center'>
-									<div className='bg-primary-100/50 text-primary-600 dark:bg-primary-950/40 dark:text-primary-400 flex h-11 w-11 items-center justify-center rounded-2xl'>
-										<Inbox size={20} />
+						{/* ─── Main monitoring grid ───────────────────────────────────── */}
+						<div className='grid grid-cols-1 gap-6 lg:grid-cols-3'>
+							{/* Left: needs attention + recent runs */}
+							<div className='space-y-6 lg:col-span-2'>
+								<PendingApprovalsCard ws={currentWorkspaceId} />
+								<PendingAgentActionsCard ws={currentWorkspaceId} />
+
+								{/* Needs attention */}
+								<div className='border-border-main bg-bg-card overflow-hidden rounded-3xl border shadow-sm'>
+									<div className='border-border-main flex items-center justify-between border-b px-5 py-4.5'>
+										<span className='text-text-main flex items-center gap-2 text-xs font-black tracking-widest uppercase'>
+											<AlertTriangle size={13} className='text-rose-500' />
+											Needs attention
+										</span>
+										{failures.length > 0 && (
+											<span className='rounded-full bg-rose-500/10 px-2 py-0.5 text-[10px] font-black text-rose-600 dark:text-rose-400'>
+												{failures.length}
+											</span>
+										)}
 									</div>
-									<p className='text-text-main text-xs font-bold'>No runs yet</p>
-									{canCreateWorkflow && (
-										<button
-											onClick={handleQuickCreateWorkflow}
-											className='bg-primary-400 text-primary-950 mt-1 flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-[11px] font-black transition hover:brightness-110'>
-											<Plus size={12} strokeWidth={3} /> Create Workflow
-										</button>
+									{failures.length === 0 ? (
+										<div className='flex flex-col items-center gap-2 px-5 py-9 text-center'>
+											<div className='flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'>
+												<ShieldCheck size={20} />
+											</div>
+											<p className='text-text-main text-xs font-bold'>
+												No failures - all clear
+											</p>
+											<p className='text-text-muted text-[11px] font-semibold'>
+												Failed runs from your workflows will show up here.
+											</p>
+										</div>
+									) : (
+										<div className='divide-border-main divide-y'>
+											{failures.slice(0, 4).map((f) => (
+												<div
+													key={f.id}
+													className='flex items-center justify-between gap-3 px-5 py-3.5'>
+													<div className='flex min-w-0 items-center gap-3'>
+														<div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-500/10 text-rose-500'>
+															<AlertTriangle size={15} />
+														</div>
+														<div className='min-w-0'>
+															<p className='text-text-main truncate text-xs font-bold'>
+																{f.workflow_name}
+															</p>
+															<p className='truncate text-[10px] font-semibold text-rose-500/90'>
+																{f.error_message}
+															</p>
+														</div>
+													</div>
+													<div className='flex shrink-0 items-center gap-3'>
+														<span className='text-text-muted hidden text-[10px] font-semibold sm:block'>
+															{formatRelativeTime(f.failed_at)}
+														</span>
+														<button
+															onClick={() =>
+																openRun(f.id, f.workflow_id)
+															}
+															className='flex h-7.5 items-center gap-1 rounded-lg border border-rose-500/25 bg-rose-500/5 px-2.5 text-[10px] font-black text-rose-600 transition hover:bg-rose-500 hover:text-white dark:text-rose-400'>
+															Fix <ArrowUpRight size={11} />
+														</button>
+													</div>
+												</div>
+											))}
+										</div>
 									)}
 								</div>
-							) : (
-								<div className='divide-border-main divide-y'>
-									{recentRuns.slice(0, 6).map((run) => {
-										const badge =
-											STATUS_BADGE_COLORS[run.status as TExecutionStatus] ??
-											STATUS_BADGE_COLORS.queued;
-										return (
-											<div
-												key={run.id}
-												role='button'
-												tabIndex={0}
-												onClick={() => openRun(run.id, run.workflow_id)}
-												onKeyDown={activateOnKey(() =>
-													openRun(run.id, run.workflow_id),
-												)}
-												className='group flex cursor-pointer items-center justify-between gap-3 px-5 py-3.5 transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-800/15'>
-												<div className='flex min-w-0 items-center gap-3'>
-													<div className='border-primary-500/15 bg-primary-400/10 text-primary-500 dark:text-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border'>
-														<GitMerge size={15} />
-													</div>
-													<div className='min-w-0'>
-														<p className='text-text-main group-hover:text-primary-500 dark:group-hover:text-primary-400 truncate text-xs font-bold transition-colors'>
-															{run.workflow_name}
-														</p>
-														<p className='text-text-muted mt-0.5 flex items-center gap-1.5 text-[10px] font-semibold capitalize'>
-															<Clock size={10} />{' '}
-															{formatRelativeTime(run.created_at)}
-															<span className='text-slate-300 dark:text-zinc-700'>
-																·
-															</span>
-															{run.trigger_type}
-														</p>
-													</div>
-												</div>
-												<div className='flex shrink-0 items-center gap-3'>
-													{typeof run.duration_ms === 'number' && (
-														<span className='text-text-muted hidden text-[10px] font-bold sm:block'>
-															{formatDuration(run.duration_ms)}
-														</span>
-													)}
-													<span
-														className={`rounded-full px-2.5 py-0.5 text-[9px] font-black tracking-wider uppercase ${badge.bg} ${badge.text}`}>
-														{run.status}
-													</span>
-												</div>
-											</div>
-										);
-									})}
-								</div>
-							)}
-						</div>
-					</div>
 
-					{/* Right: activity trend + shortcuts */}
-					<div className='space-y-6'>
-						{/* Activity trend */}
-						<div className='border-border-main bg-bg-card overflow-hidden rounded-3xl border p-5 shadow-sm'>
-							<div className='flex items-center justify-between'>
-								<span className='text-text-main text-xs font-black tracking-widest uppercase'>
-									Run activity
-								</span>
-								<span className='text-text-muted text-[10px] font-semibold'>
-									peak {peakDay}
-								</span>
-							</div>
-							<div className='mt-4 h-24 w-full'>
-								{trend.line ? (
-									<svg
-										viewBox='0 0 100 30'
-										preserveAspectRatio='none'
-										className='h-full w-full overflow-visible'>
-										<defs>
-											<linearGradient
-												id='dash-trend'
-												x1='0'
-												y1='0'
-												x2='0'
-												y2='1'>
-												<stop
-													offset='0%'
-													stopColor='#CFF54A'
-													stopOpacity='0.28'
-												/>
-												<stop
-													offset='100%'
-													stopColor='#CFF54A'
-													stopOpacity='0'
-												/>
-											</linearGradient>
-										</defs>
-										<path d={trend.area} fill='url(#dash-trend)' />
-										<path
-											d={trend.line}
-											fill='none'
-											stroke='#CFF54A'
-											strokeWidth='2'
-											strokeLinecap='round'
-											strokeLinejoin='round'
-										/>
-									</svg>
-								) : (
-									<div className='text-text-muted flex h-full items-center justify-center text-[11px] font-semibold'>
-										No run data yet
+								{/* Recent runs */}
+								<div className='border-border-main bg-bg-card overflow-hidden rounded-3xl border shadow-sm'>
+									<div className='border-border-main flex items-center justify-between border-b px-5 py-4.5'>
+										<span className='text-text-main flex items-center gap-2 text-xs font-black tracking-widest uppercase'>
+											<Activity size={13} className='text-primary-500' />
+											Recent runs
+										</span>
+										<button
+											onClick={() =>
+												navigate(
+													toWorkspacePath(
+														pages.workspace.subPages!.trail.to,
+													),
+												)
+											}
+											className='flex cursor-pointer items-center gap-1 text-[11px] font-bold text-slate-500 transition-colors hover:text-slate-800 dark:text-zinc-400 dark:hover:text-white'>
+											View all <ArrowRight size={11} />
+										</button>
 									</div>
-								)}
+									{isLoading && recentRuns.length === 0 ? (
+										<div className='text-text-muted px-5 py-10 text-center text-xs font-semibold'>
+											Loading recent runs…
+										</div>
+									) : recentRuns.length === 0 ? (
+										<div className='flex flex-col items-center gap-3 px-5 py-10 text-center'>
+											<div className='bg-primary-100/50 text-primary-600 dark:bg-primary-950/40 dark:text-primary-400 flex h-11 w-11 items-center justify-center rounded-2xl'>
+												<Inbox size={20} />
+											</div>
+											<p className='text-text-main text-xs font-bold'>
+												No runs yet
+											</p>
+											{canCreateWorkflow && (
+												<button
+													onClick={handleQuickCreateWorkflow}
+													className='bg-primary-400 text-primary-950 mt-1 flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-[11px] font-black transition hover:brightness-110'>
+													<Plus size={12} strokeWidth={3} /> Create
+													Workflow
+												</button>
+											)}
+										</div>
+									) : (
+										<div className='divide-border-main divide-y'>
+											{recentRuns.slice(0, 6).map((run) => {
+												const badge =
+													STATUS_BADGE_COLORS[
+														run.status as TExecutionStatus
+													] ?? STATUS_BADGE_COLORS.queued;
+												return (
+													<div
+														key={run.id}
+														role='button'
+														tabIndex={0}
+														onClick={() =>
+															openRun(run.id, run.workflow_id)
+														}
+														onKeyDown={activateOnKey(() =>
+															openRun(run.id, run.workflow_id),
+														)}
+														className='group flex cursor-pointer items-center justify-between gap-3 px-5 py-3.5 transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-800/15'>
+														<div className='flex min-w-0 items-center gap-3'>
+															<div className='border-primary-500/15 bg-primary-400/10 text-primary-500 dark:text-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border'>
+																<GitMerge size={15} />
+															</div>
+															<div className='min-w-0'>
+																<p className='text-text-main group-hover:text-primary-500 dark:group-hover:text-primary-400 truncate text-xs font-bold transition-colors'>
+																	{run.workflow_name}
+																</p>
+																<p className='text-text-muted mt-0.5 flex items-center gap-1.5 text-[10px] font-semibold capitalize'>
+																	<Clock size={10} />{' '}
+																	{formatRelativeTime(
+																		run.created_at,
+																	)}
+																	<span className='text-slate-300 dark:text-zinc-700'>
+																		·
+																	</span>
+																	{run.trigger_type}
+																</p>
+															</div>
+														</div>
+														<div className='flex shrink-0 items-center gap-3'>
+															{typeof run.duration_ms ===
+																'number' && (
+																<span className='text-text-muted hidden text-[10px] font-bold sm:block'>
+																	{formatDuration(
+																		run.duration_ms,
+																	)}
+																</span>
+															)}
+															<span
+																className={`rounded-full px-2.5 py-0.5 text-[9px] font-black tracking-wider uppercase ${badge.bg} ${badge.text}`}>
+																{run.status}
+															</span>
+														</div>
+													</div>
+												);
+											})}
+										</div>
+									)}
+								</div>
 							</div>
-							<div className='border-border-main mt-3 flex items-center justify-between border-t pt-3 text-[11px] font-bold'>
-								<span className='text-text-muted'>This week</span>
-								<span className='text-text-main'>
-									{(summary?.total_executions_week ?? 0).toLocaleString()} runs
-								</span>
-							</div>
-						</div>
 
-						{/* Shortcuts */}
-						<div className='border-border-main bg-bg-card overflow-hidden rounded-3xl border shadow-sm'>
-							<div className='border-border-main border-b px-5 py-4.5'>
-								<span className='text-text-main text-xs font-black tracking-widest uppercase'>
-									Quick actions
-								</span>
-							</div>
-							<div className='space-y-2.5 p-4'>
-								{shortcuts.map((action) => {
-									const ActionIcon = action.icon;
-									return (
-										<motion.button
-											whileHover={{ scale: 1.015 }}
-											whileTap={{ scale: 0.985 }}
-											key={action.label}
-											onClick={action.onClick}
-											className='group border-border-main bg-bg-card hover:border-primary-400 hover:bg-primary-50 dark:hover:border-primary-400/30 dark:hover:bg-primary-400/5 flex w-full cursor-pointer items-center gap-3.5 rounded-2xl border p-3.5 text-left transition-all'>
-											<div className='border-primary-100 bg-primary-50 text-primary-500 dark:border-primary-400/20 dark:bg-primary-400/10 dark:text-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-transform group-hover:rotate-3'>
-												<ActionIcon size={15} />
+							{/* Right: activity trend + shortcuts */}
+							<div className='space-y-6'>
+								{/* Activity trend */}
+								<div className='border-border-main bg-bg-card overflow-hidden rounded-3xl border p-5 shadow-sm'>
+									<div className='flex items-center justify-between'>
+										<span className='text-text-main text-xs font-black tracking-widest uppercase'>
+											Run activity
+										</span>
+										<span className='text-text-muted text-[10px] font-semibold'>
+											peak {peakDay}
+										</span>
+									</div>
+									<div className='mt-4 h-24 w-full'>
+										{trend.line ? (
+											<svg
+												viewBox='0 0 100 30'
+												preserveAspectRatio='none'
+												className='h-full w-full overflow-visible'>
+												<defs>
+													<linearGradient
+														id='dash-trend'
+														x1='0'
+														y1='0'
+														x2='0'
+														y2='1'>
+														<stop
+															offset='0%'
+															stopColor='#CFF54A'
+															stopOpacity='0.28'
+														/>
+														<stop
+															offset='100%'
+															stopColor='#CFF54A'
+															stopOpacity='0'
+														/>
+													</linearGradient>
+												</defs>
+												<path d={trend.area} fill='url(#dash-trend)' />
+												<path
+													d={trend.line}
+													fill='none'
+													stroke='#CFF54A'
+													strokeWidth='2'
+													strokeLinecap='round'
+													strokeLinejoin='round'
+												/>
+											</svg>
+										) : (
+											<div className='text-text-muted flex h-full items-center justify-center text-[11px] font-semibold'>
+												No run data yet
 											</div>
-											<div className='min-w-0 flex-1'>
-												<p className='group-hover:text-primary-500 dark:group-hover:text-primary-400 text-xs font-bold text-slate-900 transition-colors dark:text-white'>
-													{action.label}
-												</p>
-												<p className='mt-0.5 text-[10px] font-semibold text-slate-400 dark:text-zinc-500'>
-													{action.description}
-												</p>
-											</div>
-											<ArrowRight
-												size={13}
-												className='group-hover:text-primary-500 ml-auto text-slate-400 opacity-80 transition-all group-hover:translate-x-1'
-											/>
-										</motion.button>
-									);
-								})}
+										)}
+									</div>
+									<div className='border-border-main mt-3 flex items-center justify-between border-t pt-3 text-[11px] font-bold'>
+										<span className='text-text-muted'>This week</span>
+										<span className='text-text-main'>
+											{(summary?.total_executions_week ?? 0).toLocaleString()}{' '}
+											runs
+										</span>
+									</div>
+								</div>
+
+								{/* Shortcuts */}
+								<div className='border-border-main bg-bg-card overflow-hidden rounded-3xl border shadow-sm'>
+									<div className='border-border-main border-b px-5 py-4.5'>
+										<span className='text-text-main text-xs font-black tracking-widest uppercase'>
+											Quick actions
+										</span>
+									</div>
+									<div className='space-y-2.5 p-4'>
+										{shortcuts.map((action) => {
+											const ActionIcon = action.icon;
+											return (
+												<motion.button
+													whileHover={{ scale: 1.015 }}
+													whileTap={{ scale: 0.985 }}
+													key={action.label}
+													onClick={action.onClick}
+													className='group border-border-main bg-bg-card hover:border-primary-400 hover:bg-primary-50 dark:hover:border-primary-400/30 dark:hover:bg-primary-400/5 flex w-full cursor-pointer items-center gap-3.5 rounded-2xl border p-3.5 text-left transition-all'>
+													<div className='border-primary-100 bg-primary-50 text-primary-500 dark:border-primary-400/20 dark:bg-primary-400/10 dark:text-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-transform group-hover:rotate-3'>
+														<ActionIcon size={15} />
+													</div>
+													<div className='min-w-0 flex-1'>
+														<p className='group-hover:text-primary-500 dark:group-hover:text-primary-400 text-xs font-bold text-slate-900 transition-colors dark:text-white'>
+															{action.label}
+														</p>
+														<p className='mt-0.5 text-[10px] font-semibold text-slate-400 dark:text-zinc-500'>
+															{action.description}
+														</p>
+													</div>
+													<ArrowRight
+														size={13}
+														className='group-hover:text-primary-500 ml-auto text-slate-400 opacity-80 transition-all group-hover:translate-x-1'
+													/>
+												</motion.button>
+											);
+										})}
+									</div>
+								</div>
 							</div>
 						</div>
-					</div>
-				</div>
+					</>
+				)}
 			</div>
 		</Container>
 	);

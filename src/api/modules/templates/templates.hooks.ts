@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getNextPageNumber } from '@/api/core';
 import type {
 	TCreateWorkflowTemplateDto,
 	TUpdateWorkflowTemplateDto,
@@ -15,21 +16,37 @@ import type {
 	TUseTemplateCollectionDto,
 	TAddTemplateCollectionItemDto,
 	TReorderTemplateCollectionItemsDto,
+	TTemplateCatalogParams,
 } from '@/types/template.type';
 import {
 	WorkflowTemplateService,
 	AgentTemplateService,
 	PageTemplateService,
 	TemplateCollectionService,
+	TemplateCatalogService,
 } from './templates.service';
 import {
 	workflowTemplateKeys,
 	agentTemplateKeys,
 	pageTemplateKeys,
 	templateCollectionKeys,
+	templateCatalogKeys,
 } from './templates.keys';
 import { workflowKeys } from '../workflows/workflows.keys';
 import { agentKeys } from '../agents/agents.keys';
+
+// ─── Combined catalog ──────────────────────────────────────────
+
+/** Every template type in one list, a page at a time: `fetchNextPage` loads more. */
+export const useTemplateCatalog = (ws: string, params: TTemplateCatalogParams = {}) =>
+	useInfiniteQuery({
+		queryKey: templateCatalogKeys.list(ws, params),
+		queryFn: ({ pageParam, signal }) =>
+			TemplateCatalogService.list(ws, { ...params, page: pageParam }, signal),
+		initialPageParam: 1,
+		getNextPageParam: getNextPageNumber,
+		enabled: !!ws,
+	});
 
 // ─── Workflow templates ────────────────────────────────────────
 

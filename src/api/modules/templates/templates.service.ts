@@ -1,6 +1,6 @@
 import { axiosClient } from '@/api/client';
-import { unwrapKey } from '@/api/core';
-import type { TApiResponse } from '@/api/core';
+import { unwrapKey, unwrapNumberedPage } from '@/api/core';
+import type { TApiResponse, TPaginationMeta } from '@/api/core';
 import type {
 	TWorkflowTemplate,
 	TCreateWorkflowTemplateDto,
@@ -22,6 +22,8 @@ import type {
 	TAddTemplateCollectionItemDto,
 	TReorderTemplateCollectionItemsDto,
 	TTemplateCollectionItem,
+	TTemplateCatalogItem,
+	TTemplateCatalogParams,
 } from '@/types/template.type';
 import type { TWorkflow } from '@/types/workflow.type';
 import type { TAgent } from '@/types/agent.type';
@@ -30,7 +32,19 @@ import {
 	AgentTemplateEndpoints as AT,
 	PageTemplateEndpoints as PT,
 	TemplateCollectionEndpoints as TC,
+	TemplateCatalogEndpoints as CAT,
 } from './templates.endpoints';
+
+export const TemplateCatalogService = {
+	/** One page of every template type, featured first. */
+	list: (ws: string, params: TTemplateCatalogParams & { page?: number }, signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<TTemplateCatalogItem[]> & { meta: TPaginationMeta }>(CAT.list(ws), {
+				params,
+				signal,
+			})
+			.then(unwrapNumberedPage<TTemplateCatalogItem>),
+};
 
 export const WorkflowTemplateService = {
 	list: (ws: string, signal?: AbortSignal) =>
