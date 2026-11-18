@@ -9,7 +9,7 @@ import { CONNECTOR_UNAVAILABLE_LABEL, isConnectorUnavailable } from '@/types/con
 
 const ConnectAppsStep = () => {
 	const { state, dispatch } = useOnboardingStore();
-	const { appSearch, connectedApps } = state;
+	const { appSearch } = state;
 	const workspaceId = useOnboardingWorkspaceId();
 
 	const { data: connectors, isLoading: isLoadingConnectors } = useConnectors();
@@ -19,8 +19,6 @@ const ConnectAppsStep = () => {
 		() => new Set((credentials ?? []).map((credential) => credential.connector_id)),
 		[credentials],
 	);
-
-	const connectedAppCredits = useMemo(() => connectedApps.length * 250, [connectedApps]);
 
 	/**
 	 * The orbit panel and the nav bar read connected apps by name off the
@@ -65,23 +63,18 @@ const ConnectAppsStep = () => {
 				</p>
 			</div>
 
-			<div className='flex gap-2'>
-				<div className='relative flex-1'>
-					<Search className='absolute top-3 left-3 h-4 w-4 text-slate-400' />
-					<input
-						aria-label='Search apps to connect...'
-						type='text'
-						placeholder='Search apps to connect...'
-						value={appSearch}
-						onChange={(e) =>
-							dispatch({ type: 'SET_FIELD', payload: { appSearch: e.target.value } })
-						}
-						className='focus:border-primary-500 h-10 w-full rounded-xl border border-slate-200/90 bg-white/50 pr-4 pl-9 text-xs font-semibold transition-all outline-none dark:border-zinc-800 dark:bg-zinc-950/40'
-					/>
-				</div>
-				<div className='flex items-center rounded-xl border border-slate-200 bg-white/50 px-3 text-xs font-bold text-slate-500 dark:border-zinc-800'>
-					{connectedAppCredits}/2000 creds
-				</div>
+			<div className='relative'>
+				<Search className='absolute top-3 left-3 h-4 w-4 text-slate-400' />
+				<input
+					aria-label='Search apps to connect...'
+					type='text'
+					placeholder='Search apps to connect...'
+					value={appSearch}
+					onChange={(e) =>
+						dispatch({ type: 'SET_FIELD', payload: { appSearch: e.target.value } })
+					}
+					className='focus:border-primary-500 h-10 w-full rounded-xl border border-slate-200/90 bg-white/50 pr-4 pl-9 text-xs font-semibold transition-all outline-none dark:border-zinc-800 dark:bg-zinc-950/40'
+				/>
 			</div>
 
 			<div className='no-scrollbar max-h-[220px] space-y-2 overflow-y-auto pr-1'>

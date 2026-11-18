@@ -46,8 +46,8 @@ export const ROLE_OPTIONS: { value: TWorkspaceRole; label: string; description: 
 /**
  * Screen order, which is also the backend's (`OnboardingStep`): the steps that
  * set the account up come first, a template is offered while the user is still
- * deciding what to build, and the profile picture is last because nothing else
- * depends on it.
+ * deciding what to build. There is no profile picture step: the avatar comes
+ * from Google or GitHub sign-in, or initials are shown.
  */
 export const ONBOARDING_STEP_KEYS: TOnboardingStepKey[] = [
 	'create_workspace',
@@ -58,7 +58,6 @@ export const ONBOARDING_STEP_KEYS: TOnboardingStepKey[] = [
 	'connect_apps',
 	'invite_team',
 	'discovery_survey',
-	'profile_picture',
 ];
 
 export const STEP_LABELS: Record<TOnboardingStepKey, string> = {
@@ -70,7 +69,6 @@ export const STEP_LABELS: Record<TOnboardingStepKey, string> = {
 	connect_apps: 'Connect Apps',
 	invite_team: 'Invite Team',
 	discovery_survey: 'Discovery Survey',
-	profile_picture: 'Profile Picture',
 };
 
 export const TOTAL_STEPS = ONBOARDING_STEP_KEYS.length;

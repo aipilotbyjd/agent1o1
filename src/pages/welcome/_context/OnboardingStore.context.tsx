@@ -13,7 +13,6 @@ type TOnboardingAction =
 
 const initialState: IOnboardingState = {
 	currentStep: 0,
-	avatarUrl: null,
 	workspaceName: '',
 	workspaceSlug: '',
 	workspaceCreated: false,

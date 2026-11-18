@@ -9,7 +9,6 @@
 import type { TPlan } from './billing.type';
 
 export type TOnboardingStepKey =
-	| 'profile_picture'
 	| 'create_workspace'
 	| 'invite_team'
 	| 'role_selection'

@@ -11,7 +11,6 @@ import StepIndicator from './StepIndicator.partial';
 import NavigationBar from './NavigationBar.partial';
 import ConnectAppModal from './ConnectAppModal.partial';
 import OrbitAnimation from '../shared/OrbitAnimation.partial';
-import ProfileStep from '../steps/ProfileStep.partial';
 import WorkspaceStep from '../steps/WorkspaceStep.partial';
 import InviteTeamStep from '../steps/InviteTeamStep.partial';
 import RoleSelectionStep from '../steps/RoleSelectionStep.partial';
@@ -24,12 +23,16 @@ import TemplateStep from '../steps/TemplateStep.partial';
 import { useOnboardingState } from '@/api/modules/onboarding';
 import AppLogo from '@/components/AppLogo';
 import { useAuth } from '@/context/auth';
+import { isPostHogEnabled, posthog } from '@/utils/posthog.util';
 
 const OnboardingShellInner = () => {
 	const { userData } = useAuth();
 	const { state, dispatch } = useOnboardingStore();
 	const { data: onboardingData, isLoading } = useOnboardingState();
 	const initialized = useRef(false);
+	// Set in the same update as the start step, so the first step logged as
+	// viewed is the one the user actually lands on, not step 1 before it loads.
+	const [isStartStepResolved, setIsStartStepResolved] = useState(false);
 	const [searchParams] = useSearchParams();
 	// `?step=<key>` (from the dashboard checklist) wins over the saved step,
 	// unless that step is already completed.
@@ -64,6 +67,7 @@ const OnboardingShellInner = () => {
 				},
 			});
 			initialized.current = true;
+			setIsStartStepResolved(true);
 		}
 	}, [onboardingData, dispatch, userData, requestedStep]);
 
@@ -98,6 +102,16 @@ const OnboardingShellInner = () => {
 		selectedTemplate !== null && createdFromTemplate?.templateId !== selectedTemplate.id;
 
 	const stepKey = ONBOARDING_STEP_KEYS[step];
+
+	/**
+	 * The first stage of each step in the onboarding funnel (docs/POSTHOG.md in
+	 * the API repo): the server records completed and skipped, but only the
+	 * browser knows a step was shown.
+	 */
+	useEffect(() => {
+		if (!isPostHogEnabled || !isStartStepResolved) return;
+		posthog.capture('onboarding_step_viewed', { step: stepKey, step_number: step + 1 });
+	}, [stepKey, step, isStartStepResolved]);
 	const selectedPlanName = onboardingData?.meta?.plans?.find(
 		(plan) => plan.slug === selectedPlan,
 	)?.name;
@@ -106,8 +120,6 @@ const OnboardingShellInner = () => {
 		(role) => role.value === selectedJobRole,
 	)?.label;
 
-	// The profile picture is a single centred card; every other step has the preview panel.
-	const isDualColumn = stepKey !== 'profile_picture';
 	const isLastStep = isLastPendingStep;
 
 	const parsedInviteEmails = parseEmails(inviteEmails);
@@ -201,10 +213,9 @@ const OnboardingShellInner = () => {
 				<motion.div
 					layout
 					transition={{ type: 'spring', stiffness: 220, damping: 26 }}
-					style={{ maxWidth: isDualColumn ? '1024px' : '480px' }}
+					style={{ maxWidth: '1024px' }}
 					className='relative w-full overflow-hidden border-slate-200/80 bg-white/95 shadow-2xl backdrop-blur-xl max-sm:flex max-sm:min-h-screen max-sm:flex-col max-sm:rounded-none max-sm:border-none max-sm:bg-white max-sm:shadow-none sm:rounded-[2rem] sm:border dark:border-zinc-800/80 dark:bg-zinc-900/95 dark:max-sm:bg-zinc-900'>
-					<div
-						className={`grid ${isDualColumn ? 'lg:grid-cols-2' : 'grid-cols-1'} max-sm:flex max-sm:flex-1 max-sm:flex-col`}>
+					<div className='grid max-sm:flex max-sm:flex-1 max-sm:flex-col lg:grid-cols-2'>
 						{/* Left: Form */}
 						<div className='flex min-h-[520px] flex-col justify-between p-6 max-sm:min-h-0 max-sm:flex-1 max-sm:px-5 max-sm:py-6 md:p-10'>
 							<div>
@@ -237,7 +248,6 @@ const OnboardingShellInner = () => {
 										exit={{ opacity: 0, x: 15 }}
 										transition={{ duration: 0.25 }}
 										className='space-y-6'>
-										{stepKey === 'profile_picture' && <ProfileStep />}
 										{stepKey === 'create_workspace' && (
 											<WorkspaceStep
 												workspaceError={workspaceError}
@@ -278,17 +288,15 @@ const OnboardingShellInner = () => {
 						</div>
 
 						{/* Right: Animated Orbit Panel */}
-						{isDualColumn && (
-							<OrbitAnimation
-								stepKey={stepKey}
-								currentOrbitIcons={currentOrbitIcons}
-								selectedRoleName={selectedRoleName}
-								selectedPlan={selectedPlan}
-								selectedPlanName={selectedPlanName}
-								connectedApps={connectedApps}
-								selectedTemplateName={selectedTemplate?.name}
-							/>
-						)}
+						<OrbitAnimation
+							stepKey={stepKey}
+							currentOrbitIcons={currentOrbitIcons}
+							selectedRoleName={selectedRoleName}
+							selectedPlan={selectedPlan}
+							selectedPlanName={selectedPlanName}
+							connectedApps={connectedApps}
+							selectedTemplateName={selectedTemplate?.name}
+						/>
 					</div>
 				</motion.div>
 			</section>
@@ -297,7 +305,7 @@ const OnboardingShellInner = () => {
 			<ConnectAppModal />
 
 			<footer className='relative z-10 hidden w-full py-6 text-center text-[10px] font-bold text-slate-400 sm:block dark:text-zinc-600'>
-				© {new Date().getFullYear()} Agent1o1. Built with premium micro-interactions.
+				© {new Date().getFullYear()} Agent1o1
 			</footer>
 		</main>
 	);

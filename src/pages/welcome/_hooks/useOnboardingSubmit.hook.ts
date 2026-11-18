@@ -1,6 +1,6 @@
 import { notify } from '@/api/core';
 import { useAuth } from '@/context/auth';
-import { useUploadAvatar, useSwitchWorkspace } from '@/api/modules/user';
+import { useSwitchWorkspace } from '@/api/modules/user';
 import { useCreateWorkspace } from '@/api/modules/workspaces';
 import { useCheckoutSubscription } from '@/api/modules/billing';
 import {
@@ -23,8 +23,7 @@ import { parseEmails, isValidEmail } from '../_helper/onboarding.helper';
 import { useOnboardingNavigation } from './useOnboardingNavigation.hook';
 
 export const useOnboardingSubmit = () => {
-	const { userData, refreshCurrentUser } = useAuth();
-	const uploadAvatar = useUploadAvatar();
+	const { refreshCurrentUser } = useAuth();
 	const createWorkspace = useCreateWorkspace();
 	const switchWorkspace = useSwitchWorkspace();
 	const inviteTeamMutation = useInviteOnboardingTeam();
@@ -64,23 +63,6 @@ export const useOnboardingSubmit = () => {
 	const parsedInviteEmails = parseEmails(inviteEmails);
 	const validInviteEmails = parsedInviteEmails.filter(isValidEmail);
 	const hasValidEmails = validInviteEmails.length > 0;
-
-	const handleFileSelect = async (file: File) => {
-		if (!file) return;
-		if (!file.type.startsWith('image/') || file.size > 2 * 1024 * 1024) return;
-		const reader = new FileReader();
-		reader.onload = (e) => {
-			if (e.target?.result)
-				dispatch({ type: 'SET_FIELD', payload: { avatarUrl: e.target.result as string } });
-		};
-		reader.readAsDataURL(file);
-		try {
-			await uploadAvatar.mutateAsync(file);
-			await refreshCurrentUser();
-		} catch {
-			dispatch({ type: 'SET_FIELD', payload: { avatarUrl: userData?.avatar ?? null } });
-		}
-	};
 
 	/**
 	 * Creates the workflow, agent or collection a template describes and says
@@ -259,11 +241,9 @@ export const useOnboardingSubmit = () => {
 		collectionFromTemplate.isPending;
 
 	return {
-		handleFileSelect,
 		handleNextStep,
 		isWorkspaceLoading,
 		isTemplateLoading,
 		sendInvitationPending: inviteTeamMutation.isPending,
-		uploadAvatarPending: uploadAvatar.isPending,
 	};
 };
