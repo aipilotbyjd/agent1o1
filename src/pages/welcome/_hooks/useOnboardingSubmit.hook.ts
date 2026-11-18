@@ -7,7 +7,6 @@ import {
 	useInviteOnboardingTeam,
 	useSelectOnboardingRole,
 	useSelectOnboardingPlan,
-	useSubmitOnboardingDiscovery,
 	useCompleteOnboarding,
 	useOnboardingState,
 } from '@/api/modules/onboarding';
@@ -29,7 +28,6 @@ export const useOnboardingSubmit = () => {
 	const inviteTeamMutation = useInviteOnboardingTeam();
 	const selectRoleMutation = useSelectOnboardingRole();
 	const selectPlanMutation = useSelectOnboardingPlan();
-	const submitDiscoveryMutation = useSubmitOnboardingDiscovery();
 	const completeMutation = useCompleteOnboarding();
 	const { data: onboardingData } = useOnboardingState();
 
@@ -53,7 +51,6 @@ export const useOnboardingSubmit = () => {
 		createdWorkspaceId,
 		selectedJobRole,
 		selectedPlan,
-		selectedSurvey,
 		selectedTemplate,
 		createdFromTemplate,
 	} = state;
@@ -202,15 +199,6 @@ export const useOnboardingSubmit = () => {
 					// mutation cache has already surfaced the error.
 					return;
 				}
-			}
-		}
-
-		// The survey is optional, so a rejected answer must not stop the wizard.
-		if (stepKey === 'discovery_survey' && selectedSurvey) {
-			try {
-				await submitDiscoveryMutation.mutateAsync({ discovery_source: selectedSurvey });
-			} catch {
-				// Non-blocking
 			}
 		}
 

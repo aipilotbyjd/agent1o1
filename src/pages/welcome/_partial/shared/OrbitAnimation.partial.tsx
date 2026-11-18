@@ -171,7 +171,6 @@ const OrbitAnimation = ({
 					{stepKey === 'connect_ai' && 'Your AI, Your Key'}
 					{stepKey === 'connect_apps' &&
 						`${connectedApps.length} App${connectedApps.length !== 1 ? 's' : ''} Connected`}
-					{stepKey === 'discovery_survey' && 'Almost There!'}
 				</h3>
 				<p className='mx-auto mt-1 max-w-[200px] text-[10px] text-slate-400'>
 					{stepKey === 'create_workspace' &&
@@ -190,8 +189,6 @@ const OrbitAnimation = ({
 						'Agents run on your own AI account: you pay the provider directly, at their prices.'}
 					{stepKey === 'connect_apps' &&
 						'Your secure connections are live-linked directly with the cloud nodes.'}
-					{stepKey === 'discovery_survey' &&
-						'Your workspace is set up. One last question to personalize your experience.'}
 				</p>
 			</div>
 		</div>

@@ -28,7 +28,6 @@ const initialState: IOnboardingState = {
 	connectedApps: [],
 	selectedAppForAuth: null,
 	authSuccess: false,
-	selectedSurvey: null,
 	templateSearch: '',
 	templateType: 'all',
 	selectedTemplate: null,

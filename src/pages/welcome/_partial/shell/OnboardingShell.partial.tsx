@@ -17,7 +17,6 @@ import RoleSelectionStep from '../steps/RoleSelectionStep.partial';
 import PlanSelectionStep from '../steps/PlanSelectionStep.partial';
 import ConnectAiStep from '../steps/ConnectAiStep.partial';
 import ConnectAppsStep from '../steps/ConnectAppsStep.partial';
-import DiscoveryStep from '../steps/DiscoveryStep.partial';
 import TemplateStep from '../steps/TemplateStep.partial';
 
 import { useOnboardingState } from '@/api/modules/onboarding';
@@ -148,10 +147,6 @@ const OnboardingShellInner = () => {
 			return connectedApps.length > 0
 				? connectedApps.map((a) => a.toLowerCase())
 				: ['slack', 'github', 'gmail', 'google drive'];
-		if (stepKey === 'discovery_survey')
-			return connectedApps.length > 0
-				? connectedApps.map((a) => a.toLowerCase())
-				: ['slack', 'github', 'gmail', 'notion'];
 		return ['slack', 'github', 'gmail'];
 	}, [stepKey, selectedJobRole, connectedApps]);
 
@@ -260,7 +255,6 @@ const OnboardingShellInner = () => {
 										{stepKey === 'choose_plan' && <PlanSelectionStep />}
 										{stepKey === 'connect_ai' && <ConnectAiStep />}
 										{stepKey === 'connect_apps' && <ConnectAppsStep />}
-										{stepKey === 'discovery_survey' && <DiscoveryStep />}
 									</motion.div>
 								</AnimatePresence>
 							</div>

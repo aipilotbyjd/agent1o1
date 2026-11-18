@@ -15,8 +15,7 @@ export type TOnboardingStepKey =
 	| 'choose_template'
 	| 'choose_plan'
 	| 'connect_ai'
-	| 'connect_apps'
-	| 'discovery_survey';
+	| 'connect_apps';
 
 export type TOnboardingStep = {
 	key: TOnboardingStepKey;
@@ -39,6 +38,8 @@ export type TOnboardingStateMeta = {
 
 export type TOnboardingState = {
 	dismissed: boolean;
+	/** Whether "how did you find us" has been answered; asked on the dashboard, not in the wizard. */
+	discovery_answered: boolean;
 	completed: boolean;
 	percent: number;
 	current_step: TOnboardingStepKey;
