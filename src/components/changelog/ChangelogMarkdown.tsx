@@ -9,7 +9,7 @@ const components: Components = {
 			href={href}
 			target='_blank'
 			rel='noopener noreferrer nofollow'
-			className='font-semibold text-indigo-600 underline underline-offset-2 hover:text-indigo-800 dark:text-indigo-400'>
+			className='decoration-primary-500 hover:bg-primary-500/20 font-semibold underline decoration-2 underline-offset-4 transition-colors'>
 			{children}
 		</a>
 	),
@@ -24,17 +24,17 @@ const components: Components = {
 		</h4>
 	),
 	code: ({ children }) => (
-		<code className='rounded bg-slate-500/10 px-1.5 py-0.5 font-mono text-[0.9em]'>
+		<code className='text-text-main rounded bg-slate-500/10 px-1.5 py-0.5 font-mono text-[0.9em]'>
 			{children}
 		</code>
 	),
 	pre: ({ children }) => (
-		<pre className='my-3 overflow-x-auto rounded-xl bg-slate-500/10 p-4 font-mono text-sm [&_code]:bg-transparent [&_code]:p-0'>
+		<pre className='text-text-main my-3 overflow-x-auto rounded-xl bg-slate-500/10 p-4 font-mono text-sm [&_code]:bg-transparent [&_code]:p-0 [&_code]:text-inherit'>
 			{children}
 		</pre>
 	),
 	blockquote: ({ children }) => (
-		<blockquote className='my-3 border-l-4 border-slate-300 pl-4 opacity-80'>
+		<blockquote className='border-primary-500 text-text-muted my-3 border-l-4 pl-4'>
 			{children}
 		</blockquote>
 	),

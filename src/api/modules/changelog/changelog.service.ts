@@ -11,12 +11,15 @@ export type TChangelogPage = {
 	meta: TPaginationMeta;
 };
 
-/** Empty filters are left out so they never reach the query string. */
+/**
+ * Empty filters are left out so they never reach the query string. Laravel's
+ * `boolean` rule accepts `1`/`0` but not the string "true", so flags go out as `1`.
+ */
 const cleanParams = (params: TChangelogParams) =>
 	Object.fromEntries(
-		Object.entries(params).filter(
-			([, value]) => value !== '' && value !== undefined && value !== false,
-		),
+		Object.entries(params)
+			.filter(([, value]) => value !== '' && value !== undefined && value !== false)
+			.map(([key, value]) => [key, value === true ? 1 : value]),
 	);
 
 export const ChangelogService = {

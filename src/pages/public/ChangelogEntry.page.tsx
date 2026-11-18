@@ -4,10 +4,12 @@ import dayjs from 'dayjs';
 import { ArrowLeft, Check, Link2 } from 'lucide-react';
 import { getAccessToken } from '@/api/core';
 import { useChangelogEntry, useMarkChangelogRead } from '@/api/modules/changelog';
+import ChangelogBackLink from '@/components/changelog/ChangelogBackLink';
 import ChangelogMarkdown from '@/components/changelog/ChangelogMarkdown';
-import ChangelogNav from '@/components/changelog/ChangelogNav';
+import ChangelogThemeToggle from '@/components/changelog/ChangelogThemeToggle';
 import { categoryMeta } from '@/components/changelog/changelogCategory';
 import Badge from '@/components/ui/Badge';
+import Button from '@/components/ui/Button';
 import Skeleton from '@/components/ui/Skeleton';
 import pages from '@/Routes/pages';
 
@@ -26,6 +28,14 @@ const useEntryMeta = (title?: string, description?: string) => {
 		};
 	}, [title, description]);
 };
+
+const BackLink = () => (
+	<Link
+		to={pages.changelog.to}
+		className='text-text-muted hover:text-text-main mb-8 inline-flex items-center gap-1.5 text-sm font-bold transition-colors'>
+		<ArrowLeft size={16} aria-hidden /> All updates
+	</Link>
+);
 
 const ChangelogEntryPage = () => {
 	const { slug = '' } = useParams<{ slug: string }>();
@@ -52,35 +62,34 @@ const ChangelogEntryPage = () => {
 	};
 
 	return (
-		<main className='min-h-screen bg-slate-50 text-slate-950'>
-			<div className='absolute inset-x-0 top-0 h-[320px] bg-[radial-gradient(circle_at_18%_16%,rgba(79,70,229,0.1),transparent_30%),linear-gradient(180deg,#fff,#f8fafc)]' />
-			<ChangelogNav />
+		<main className='bg-bg-main text-text-main relative min-h-screen overflow-hidden'>
+			<div className='pointer-events-none absolute inset-x-0 top-0 h-[320px] bg-[radial-gradient(ellipse_at_50%_0%,var(--soft-accent-bg),transparent_70%)]' />
 
-			<article className='relative mx-auto max-w-3xl px-6 pt-12 pb-24'>
-				<Link
-					to={pages.changelog.to}
-					className='mb-8 inline-flex items-center gap-1.5 text-sm font-bold text-slate-500 hover:text-slate-950'>
-					<ArrowLeft size={16} /> All updates
-				</Link>
+			<article className='relative mx-auto max-w-3xl px-6 pt-14 pb-24'>
+				<div className='mb-8 flex flex-wrap items-center justify-between gap-3'>
+					<ChangelogBackLink />
+					<ChangelogThemeToggle />
+				</div>
+				<BackLink />
 
 				{isPending && (
 					<div className='space-y-4'>
 						<Skeleton className='h-10 w-2/3' />
 						<Skeleton className='h-5 w-1/3' />
-						<Skeleton className='h-64 w-full' />
+						<Skeleton className='h-64 w-full rounded-3xl' />
 					</div>
 				)}
 
 				{isError && (
-					<div className='rounded-2xl border border-dashed border-slate-300 p-10 text-center'>
-						<h1 className='text-2xl font-bold'>We couldn&apos;t find that update</h1>
-						<p className='mt-2 text-slate-500'>
+					<div className='border-border-main bg-bg-card rounded-3xl border border-dashed p-12 text-center'>
+						<h1 className='text-2xl font-black'>We couldn&apos;t find that update</h1>
+						<p className='text-text-muted mt-2'>
 							It may have been removed, or it&apos;s only visible to some accounts.
 						</p>
-						<Link
-							to={pages.changelog.to}
-							className='mt-5 inline-block font-bold text-indigo-600 underline'>
-							See all updates
+						<Link to={pages.changelog.to} className='mt-5 inline-block'>
+							<Button variant='soft' color='primary' dimension='sm'>
+								See all updates
+							</Button>
 						</Link>
 					</div>
 				)}
@@ -88,48 +97,60 @@ const ChangelogEntryPage = () => {
 				{entry && (
 					<>
 						<header className='mb-8'>
-							<div className='mb-4 flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-500'>
+							<div className='text-text-muted mb-4 flex flex-wrap items-center gap-2 text-sm font-semibold'>
 								<Badge color={categoryMeta(entry.category).color} variant='soft'>
 									{entry.category_label}
 								</Badge>
-								{entry.version && (
-									<span className='font-mono'>v{entry.version}</span>
-								)}
 								<time dateTime={entry.published_at}>
 									{dayjs(entry.published_at).format('MMMM D, YYYY')}
 								</time>
-								<button
-									type='button'
-									onClick={copyLink}
-									className='ml-auto inline-flex items-center gap-1.5 text-slate-500 hover:text-slate-950'>
-									{copied ? <Check size={15} /> : <Link2 size={15} />}
+								{entry.version && (
+									<>
+										<span aria-hidden>·</span>
+										<span className='font-mono'>v{entry.version}</span>
+									</>
+								)}
+								<Button
+									variant='outline'
+									dimension='xs'
+									className='ml-auto'
+									onClick={copyLink}>
+									{copied ? (
+										<Check size={14} aria-hidden />
+									) : (
+										<Link2 size={14} aria-hidden />
+									)}
 									{copied ? 'Link copied' : 'Copy link'}
-								</button>
+								</Button>
 							</div>
-							<h1 className='text-4xl font-semibold tracking-tight md:text-5xl'>
+							<h1 className='text-4xl font-black tracking-tight md:text-5xl'>
 								{entry.title}
 							</h1>
-							<p className='mt-4 text-xl text-slate-600'>{entry.summary}</p>
+							<p className='text-text-muted mt-4 text-xl leading-relaxed'>
+								{entry.summary}
+							</p>
 						</header>
 
 						{entry.cover_image_url && (
 							<img
 								src={entry.cover_image_url}
 								alt=''
-								className='mb-8 w-full rounded-2xl border border-slate-200 object-cover'
+								className='border-border-main mb-8 w-full rounded-3xl border object-cover'
 							/>
 						)}
 
-						<ChangelogMarkdown className='text-lg text-slate-800'>
-							{entry.body}
-						</ChangelogMarkdown>
+						<div className='border-border-main bg-bg-card rounded-3xl border p-6 shadow-sm md:p-8'>
+							<ChangelogMarkdown className='text-base md:text-lg'>
+								{entry.body}
+							</ChangelogMarkdown>
+						</div>
 
 						{entry.areas.length > 0 && (
-							<ul className='mt-10 flex flex-wrap gap-2 border-t border-slate-200 pt-6'>
+							<ul className='mt-8 flex flex-wrap gap-2'>
 								{entry.areas.map((area) => (
 									<li
 										key={area}
-										className='rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600'>
+										className='border-border-main text-text-muted rounded-full border px-3 py-1 text-sm font-semibold'>
 										#{area}
 									</li>
 								))}
