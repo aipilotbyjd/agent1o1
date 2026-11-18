@@ -45,6 +45,7 @@ const triggerLabels: Record<string, string> = {
 	schedule: 'Schedule',
 	polling: 'Polling',
 	api: 'API',
+	sample: 'Sample run',
 };
 
 /** How often the panel re-checks the server, so trigger-fired runs show up without a reload. */

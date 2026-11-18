@@ -1,7 +1,8 @@
-import type { TTemplateCatalogItem } from '@/types/template.type';
-import type { TOnboardingStep as TOnboardingStepState } from '@/types/onboarding.type';
-import { ONBOARDING_STEP_KEYS } from './onboarding.constants';
-import type { TOnboardingStep } from '../_types/onboarding.type';
+import type {
+	TOnboardingState,
+	TOnboardingStep,
+	TOnboardingStepKey,
+} from '@/types/onboarding.type';
 
 export const slugify = (value: string) =>
 	value
@@ -10,54 +11,44 @@ export const slugify = (value: string) =>
 		.replace(/[^a-z0-9]+/g, '-')
 		.replace(/^-+|-+$/g, '');
 
-export const parseEmails = (value: string) =>
-	value
-		.split(/[\n,]+/)
-		.map((e) => e.trim())
-		.filter(Boolean);
-
 export const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-const isStepCompleted = (steps: TOnboardingStepState[], index: number) =>
-	steps.find((step) => step.key === ONBOARDING_STEP_KEYS[index])?.completed === true;
-
-/** The nearest step in `direction` from `from` that is not completed, or `null` if none is left. */
-export const findPendingStep = (
-	steps: TOnboardingStepState[],
-	from: number,
-	direction: 1 | -1,
-): TOnboardingStep | null => {
-	for (let i = from + direction; i >= 0 && i < ONBOARDING_STEP_KEYS.length; i += direction) {
-		if (!isStepCompleted(steps, i)) return i as TOnboardingStep;
-	}
-	return null;
-};
+const isOpen = (step: TOnboardingStep) => !step.completed;
 
 /**
- * Where the wizard opens: the requested step, else the saved one, but never a
- * step that is already completed. A completed target moves on to the next
- * pending step, then to the earliest pending one.
+ * Where the wizard opens: the requested step (`?step=`, from the dashboard),
+ * else the saved one. A finished step is never shown again, so a target that
+ * is done moves on to the next open step, then back to the earliest open
+ * one. `null` means every step is done.
  */
 export const resolveStartStep = (
-	steps: TOnboardingStepState[],
-	requestedKey: string | null,
-	savedKey: string,
-): TOnboardingStep => {
-	const requested = ONBOARDING_STEP_KEYS.findIndex((key) => key === requestedKey);
-	const saved = Math.max(
-		ONBOARDING_STEP_KEYS.findIndex((key) => key === savedKey),
+	state: TOnboardingState,
+	requested: string | null,
+): TOnboardingStepKey | null => {
+	const { steps } = state;
+	const requestedIndex = steps.findIndex((step) => step.key === requested);
+	const savedIndex = Math.max(
+		steps.findIndex((step) => step.key === state.current_step),
 		0,
 	);
-	const target = requested >= 0 ? requested : saved;
+	const from = requestedIndex >= 0 ? requestedIndex : savedIndex;
 
-	if (!isStepCompleted(steps, target)) return target as TOnboardingStep;
-	return (
-		findPendingStep(steps, target, 1) ??
-		findPendingStep(steps, -1, 1) ??
-		(target as TOnboardingStep)
-	);
+	const target = steps.slice(from).find(isOpen) ?? steps.slice(0, from).find(isOpen) ?? null;
+
+	return target?.key ?? null;
 };
 
-/** Page templates dress up a workflow's form, so they're added from a workflow page, not here. */
-export const isTemplateUsableInOnboarding = (template: Pick<TTemplateCatalogItem, 'type'>) =>
-	template.type !== 'page';
+/** The step after `key` that still needs doing, or `null` when it was the last. */
+export const nextOpenStep = (
+	steps: TOnboardingStep[],
+	key: TOnboardingStepKey,
+): TOnboardingStepKey | null => {
+	const index = steps.findIndex((step) => step.key === key);
+	return steps.slice(index + 1).find(isOpen)?.key ?? null;
+};
+
+/** A step key as people read it in a progress list: `send_email` → "Send email". */
+export const humanizeKey = (key: string) => {
+	const words = key.replace(/[_-]+/g, ' ').trim();
+	return words.charAt(0).toUpperCase() + words.slice(1);
+};

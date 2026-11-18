@@ -1,8 +1,24 @@
 import type { ComponentType } from 'react';
 import { useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Bot, Check, Circle, FileText, Mail, Play, Plug, X, Zap } from 'lucide-react';
-import { useDashboardOverview, useDismissGettingStarted } from '@/api/modules/dashboard';
+import {
+	ArrowRight,
+	Bot,
+	Check,
+	Circle,
+	FileText,
+	Gift,
+	Mail,
+	Play,
+	Plug,
+	X,
+	Zap,
+} from 'lucide-react';
+import {
+	useClaimGettingStartedReward,
+	useDashboardOverview,
+	useDismissGettingStarted,
+} from '@/api/modules/dashboard';
 import { useUseWorkflowTemplate } from '@/api/modules/templates';
 import usePermission from '@/hooks/usePermission';
 import pages from '@/Routes/pages';
@@ -19,8 +35,9 @@ const milestoneIcons: Record<TGettingStartedMilestoneKey, ComponentType<{ size?:
 
 /**
  * The checklist a new workspace works through. Milestones tick themselves off
- * from what the workspace does, so each one links to where that happens. A
- * workspace with no workflow yet is also offered templates to start from.
+ * from what the workspace does, so each one links to where that happens, and
+ * each pays a one-off credit reward that is claimed here. A workspace with no
+ * workflow yet is also offered templates to start from.
  */
 const GettingStartedCard = ({ ws }: { ws: string }) => {
 	const navigate = useNavigate();
@@ -28,6 +45,7 @@ const GettingStartedCard = ({ ws }: { ws: string }) => {
 	// Same query (and key) the dashboard itself reads, so this costs no request.
 	const { data: overview } = useDashboardOverview(ws, { days: 7 });
 	const dismiss = useDismissGettingStarted(ws);
+	const claim = useClaimGettingStartedReward(ws);
 	const useTemplate = useUseWorkflowTemplate(ws);
 
 	const gettingStarted = overview?.getting_started;
@@ -36,6 +54,10 @@ const GettingStartedCard = ({ ws }: { ws: string }) => {
 	const milestones = gettingStarted?.milestones ?? [];
 	const completedCount = milestones.filter((item) => item.completed).length;
 	const nextMilestone = milestones.find((item) => !item.completed);
+	const rewardsAvailable = gettingStarted?.rewards_available ?? false;
+	const creditsLeft = milestones
+		.filter((item) => !item.reward_claimed)
+		.reduce((total, item) => total + item.reward, 0);
 	const templates = can('workflow.manage') ? (gettingStarted?.recommended_templates ?? []) : [];
 	const hasWorkflows = (overview?.counts.workflows ?? 0) > 0;
 
@@ -75,6 +97,12 @@ const GettingStartedCard = ({ ws }: { ws: string }) => {
 							<h2 className='mt-1 text-sm font-black text-slate-950 dark:text-white'>
 								{completedCount} of {milestones.length} milestones complete
 							</h2>
+							{rewardsAvailable && creditsLeft > 0 && (
+								<p className='mt-1 flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-zinc-400'>
+									<Gift className='h-3.5 w-3.5' />
+									Earn {creditsLeft} more credits as you go
+								</p>
+							)}
 						</div>
 						<button
 							type='button'
@@ -161,12 +189,13 @@ const GettingStartedCard = ({ ws }: { ws: string }) => {
 									? 'bg-primary-100/60 text-primary-600 dark:bg-primary-950/40 dark:text-primary-400'
 									: 'bg-slate-50 text-slate-400 dark:bg-zinc-900 dark:text-zinc-600';
 							return (
-								<button
+								<div
 									key={item.key}
-									type='button'
-									onClick={() => navigate(milestonePaths[item.key])}
-									className={`bg-bg-card hover:border-primary-400 flex items-center justify-between gap-3 rounded-2xl border p-4 text-left transition-all duration-200 hover:shadow-md ${cardBorder}`}>
-									<div className='flex min-w-0 flex-1 items-center gap-3.5'>
+									className={`bg-bg-card hover:border-primary-400 flex items-center justify-between gap-3 rounded-2xl border p-4 transition-all duration-200 hover:shadow-md ${cardBorder}`}>
+									<button
+										type='button'
+										onClick={() => navigate(milestonePaths[item.key])}
+										className='flex min-w-0 flex-1 items-center gap-3.5 text-left focus:outline-none focus-visible:underline'>
 										<div
 											className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${iconStyle}`}>
 											<IconComp size={16} />
@@ -180,8 +209,26 @@ const GettingStartedCard = ({ ws }: { ws: string }) => {
 												{item.description}
 											</span>
 										</div>
-									</div>
-									<div className='shrink-0 pl-1'>
+									</button>
+									<div className='flex shrink-0 items-center gap-2 pl-1'>
+										{rewardsAvailable && item.reward_claimable && (
+											<button
+												type='button'
+												onClick={() => claim.mutate(item.key)}
+												disabled={claim.isPending}
+												className='bg-primary-500 text-primary-foreground hover:bg-primary-600 flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-black transition disabled:opacity-60'>
+												<Gift className='h-3 w-3' />
+												Claim +{item.reward}
+											</button>
+										)}
+										{rewardsAvailable && !item.reward_claimable && (
+											<span
+												className={`text-[10px] font-black ${item.reward_claimed ? 'text-primary-700 dark:text-primary-300' : 'text-slate-400 dark:text-zinc-500'}`}>
+												{item.reward_claimed
+													? `+${item.reward} earned`
+													: `+${item.reward} credits`}
+											</span>
+										)}
 										{item.completed ? (
 											<div className='bg-primary-400 text-primary-950 flex h-4.5 w-4.5 items-center justify-center rounded-full'>
 												<Check className='h-3 w-3 stroke-[3]' />
@@ -192,7 +239,7 @@ const GettingStartedCard = ({ ws }: { ws: string }) => {
 											/>
 										)}
 									</div>
-								</button>
+								</div>
 							);
 						})}
 					</div>

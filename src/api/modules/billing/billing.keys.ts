@@ -1,4 +1,6 @@
 export const billingKeys = {
+	/** Everything billing knows about a workspace: balance, plan, credits. */
+	all: (ws: string) => ['billing', ws] as const,
 	overview: (ws: string) => ['billing', ws, 'overview'] as const,
 	plans: (ws: string) => ['billing', ws, 'plans'] as const,
 	subscription: (ws: string) => ['billing', ws, 'subscription'] as const,

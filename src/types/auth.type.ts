@@ -33,14 +33,27 @@ export type TLoginDto = {
 	password: string;
 };
 
+/** Where a signup came from: see `signupAttribution.util`. */
+export type TSignupAttribution = {
+	utm_source?: string;
+	utm_medium?: string;
+	utm_campaign?: string;
+	utm_term?: string;
+	utm_content?: string;
+	referrer?: string;
+	landing_path?: string;
+	/** The template slug a `?template=` link pointed at. */
+	template?: string;
+};
+
 export type TRegisterDto = {
 	name: string;
 	email: string;
 	password: string;
-	password_confirmation: string;
 	/** From a `?ref=` link: see `referralAttribution.util`. Never blocks signup. */
 	referral_code?: string;
 	referral_visitor_id?: string;
+	attribution?: TSignupAttribution;
 };
 
 export type TForgotPasswordDto = {

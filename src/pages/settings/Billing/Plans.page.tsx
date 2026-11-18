@@ -6,6 +6,7 @@ import { useBillingOverview, useCheckoutSubscription, usePlans } from '@/api/mod
 import type { TBillingInterval } from '@/types/billing.type';
 import usePermission from '@/hooks/usePermission';
 import SwapPlanModal from './_partial/SwapPlanModal.partial';
+import { formatPlanLimit, formatPlanPrice } from '@/utils/planFormat.util';
 
 const FEATURE_LABELS: Record<string, string> = {
 	credit_packs: 'Credit pack top-ups',
@@ -22,15 +23,6 @@ const INTERVAL_LABELS: Record<TBillingInterval, string> = {
 	yearly: 'Yearly',
 	lifetime: 'Lifetime',
 };
-
-const fmtLimit = (val: number | null | undefined) =>
-	val === null || val === undefined || val < 0 ? '∞' : val.toLocaleString();
-
-const formatPlanPrice = (cents: number) =>
-	(cents / 100).toLocaleString('en-US', {
-		minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
-		maximumFractionDigits: 2,
-	});
 
 const priceForInterval = (
 	plan: {
@@ -186,7 +178,7 @@ const BillingPlansPage = () => {
 												: 'text-emerald-500'
 										}
 									/>
-									{fmtLimit(plan.credits_monthly)} credits/mo
+									{formatPlanLimit(plan.credits_monthly)} credits/mo
 								</li>
 								<li className='flex items-center gap-2'>
 									<Check
@@ -197,7 +189,7 @@ const BillingPlansPage = () => {
 												: 'text-emerald-500'
 										}
 									/>
-									{fmtLimit(plan.limits?.workflows)} workflows
+									{formatPlanLimit(plan.limits?.workflows)} workflows
 								</li>
 								<li className='flex items-center gap-2'>
 									<Check
@@ -208,7 +200,7 @@ const BillingPlansPage = () => {
 												: 'text-emerald-500'
 										}
 									/>
-									{fmtLimit(plan.limits?.agents)} agents
+									{formatPlanLimit(plan.limits?.agents)} agents
 								</li>
 								<li className='flex items-center gap-2'>
 									<Check
@@ -219,7 +211,7 @@ const BillingPlansPage = () => {
 												: 'text-emerald-500'
 										}
 									/>
-									{fmtLimit(plan.limits?.members)} team members
+									{formatPlanLimit(plan.limits?.members)} team members
 								</li>
 							</ul>
 

@@ -12,6 +12,8 @@ const TRIGGER_LABEL: Record<string, string> = {
 	webhook: 'Webhook',
 	schedule: 'Schedule',
 	api: 'API',
+	// A run on example data where app steps were shown, not sent (onboarding's first run).
+	sample: 'Sample run',
 };
 
 const STEP_STATUS: Record<TNodeRunStatus, { label: string; dot: string }> = {

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { TRunListParams } from '@/types/run.type';
+import type { TRunListParams, TRunStatus } from '@/types/run.type';
 import type { TDecideApprovalDto } from '@/types/run.type';
 import type { TStartRunDto } from '@/types/workflow.type';
 import { RunService } from './runs.service';
@@ -22,11 +22,23 @@ export const useRuns = (ws: string, params?: TRunListParams) =>
 		enabled: !!ws,
 	});
 
-export const useRun = (ws: string, id: string) =>
+/** Run statuses that will not change again. */
+export const TERMINAL_RUN_STATUSES: TRunStatus[] = ['completed', 'failed', 'cancelled'];
+
+/**
+ * One run with its steps. `pollMs` re-reads it on that interval until it
+ * reaches a final status, for a screen that watches a run finish.
+ */
+export const useRun = (ws: string, id: string, options?: { pollMs?: number }) =>
 	useQuery({
 		queryKey: runKeys.detail(ws, id),
 		queryFn: ({ signal }) => RunService.detail(ws, id, signal),
 		enabled: !!ws && !!id,
+		refetchInterval: (query) =>
+			options?.pollMs &&
+			!TERMINAL_RUN_STATUSES.includes(query.state.data?.status ?? 'pending')
+				? options.pollMs
+				: false,
 	});
 
 /** How often a run's cost is re-read while it is still running. */

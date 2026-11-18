@@ -7,6 +7,7 @@ import useDarkMode from './hooks/useDarkMode';
 import AppLogo from './components/AppLogo';
 import colors from './tailwindcss/colors.tailwind';
 import useReferralCapture from './hooks/useReferralCapture';
+import useSignupAttributionCapture from '@/hooks/useSignupAttributionCapture';
 
 const RootWrapper = ({ children }: { children: ReactNode }) => {
 	const { fontSize } = useFontSize();
@@ -36,6 +37,7 @@ const Root = () => {
 	const { isLoading } = useAuth();
 	const location = useLocation();
 	useReferralCapture();
+	useSignupAttributionCapture();
 
 	useEffect(() => {
 		window.scrollTo(0, 0);

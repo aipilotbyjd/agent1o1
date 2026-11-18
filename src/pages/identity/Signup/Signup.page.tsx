@@ -9,6 +9,7 @@ import useAfterAuthRedirect, { AFTER_AUTH_PATH } from '@/hooks/useAfterAuthRedir
 import pages from '@/Routes/pages';
 import applyApiFieldErrors from '@/utils/apiFormErrors.util';
 import { clearReferralAttribution, getReferralAttribution } from '@/utils/referralAttribution.util';
+import { clearSignupAttribution, getSignupAttribution } from '@/utils/signupAttribution.util';
 import Icon from '@/components/icon/Icon';
 import Spinner from '@/components/ui/Spinner';
 import Progress from '@/components/ui/Progress';
@@ -22,7 +23,6 @@ interface IRegisterFormValues {
 	name: string;
 	email: string;
 	password: string;
-	password_confirmation: string;
 }
 
 const passwordChecks = (password: string) => ({
@@ -43,9 +43,6 @@ const validationSchema = Yup.object().shape({
 		.matches(/[a-z]/, 'Must contain at least one lowercase letter')
 		.matches(/\d/, 'Must contain at least one number')
 		.matches(/[^A-Za-z0-9]/, 'Must contain at least one symbol'),
-	password_confirmation: Yup.string()
-		.required('Please confirm your password')
-		.oneOf([Yup.ref('password')], 'Passwords must match'),
 });
 
 const RegisterPage = () => {
@@ -60,10 +57,9 @@ const RegisterPage = () => {
 	const register = useRegister();
 
 	const [showPassword, setShowPassword] = useState(false);
-	const [showConfirm, setShowConfirm] = useState(false);
 
 	const formik = useFormik<IRegisterFormValues>({
-		initialValues: { name: '', email: '', password: '', password_confirmation: '' },
+		initialValues: { name: '', email: '', password: '' },
 		validationSchema,
 		onSubmit: async (values) => {
 			try {
@@ -72,8 +68,10 @@ const RegisterPage = () => {
 					...values,
 					referral_code: referral?.code,
 					referral_visitor_id: referral?.visitor_id,
+					attribution: getSignupAttribution() ?? undefined,
 				});
 				clearReferralAttribution();
+				clearSignupAttribution();
 				await redirectAfterAuth(from);
 			} catch (error) {
 				applyApiFieldErrors(error, formik);
@@ -216,8 +214,9 @@ const RegisterPage = () => {
 						<button
 							type='button'
 							onClick={() => setShowPassword(!showPassword)}
-							tabIndex={-1}
-							className='cursor-pointer text-zinc-400 hover:text-zinc-600 focus:outline-none'>
+							aria-label={showPassword ? 'Hide password' : 'Show password'}
+							aria-pressed={showPassword}
+							className='focus-visible:ring-primary-500 cursor-pointer rounded text-zinc-400 hover:text-zinc-600 focus:outline-none focus-visible:ring-2'>
 							<Icon
 								icon={showPassword ? 'View' : 'ViewOffSlash'}
 								className='size-4'
@@ -227,43 +226,6 @@ const RegisterPage = () => {
 					{formik.touched.password && formik.errors.password && (
 						<p className='mt-1 text-xs text-red-500'>{formik.errors.password}</p>
 					)}
-				</div>
-
-				{/* Confirm Password */}
-				<div>
-					<label
-						htmlFor='password_confirmation'
-						className='mb-1.5 block text-[10px] font-bold tracking-wider text-zinc-500 uppercase'>
-						CONFIRM PASSWORD
-					</label>
-					<div className='focus-within:border-primary-500 focus-within:ring-primary-500/15 flex items-center gap-2.5 rounded-xl border border-[#d8e2ee] bg-[#eef2f8] px-3.5 py-2.5 transition-all focus-within:bg-white focus-within:ring-2'>
-						<Icon icon='SquareLockPassword' className='size-4 shrink-0 text-zinc-400' />
-						<input
-							aria-label='Confirm your password'
-							type={showConfirm ? 'text' : 'password'}
-							className='input-clean w-full border-0 border-none bg-transparent p-0 font-mono text-sm text-zinc-950 shadow-none placeholder:font-sans placeholder:text-zinc-400 focus:border-none focus:ring-0 focus:outline-none'
-							id='password_confirmation'
-							name='password_confirmation'
-							autoComplete='new-password'
-							value={formik.values.password_confirmation}
-							onChange={formik.handleChange}
-							onBlur={formik.handleBlur}
-							placeholder='Confirm your password'
-						/>
-						<button
-							type='button'
-							onClick={() => setShowConfirm(!showConfirm)}
-							tabIndex={-1}
-							className='cursor-pointer text-zinc-400 hover:text-zinc-600 focus:outline-none'>
-							<Icon icon={showConfirm ? 'View' : 'ViewOffSlash'} className='size-4' />
-						</button>
-					</div>
-					{formik.touched.password_confirmation &&
-						formik.errors.password_confirmation && (
-							<p className='mt-1 text-xs text-red-500'>
-								{formik.errors.password_confirmation}
-							</p>
-						)}
 				</div>
 
 				{/* Password Strength Meter */}

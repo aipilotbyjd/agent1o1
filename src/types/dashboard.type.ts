@@ -68,6 +68,11 @@ export type TGettingStartedMilestone = {
 	label: string;
 	description: string;
 	completed: boolean;
+	/** Credits paid into the workspace once, from the checklist. */
+	reward: number;
+	reward_claimed: boolean;
+	/** Reached (a teammate counts once they have joined), not yet claimed, and the workspace earns rewards. */
+	reward_claimable: boolean;
 };
 
 export type TRecommendedTemplate = {
@@ -77,6 +82,10 @@ export type TRecommendedTemplate = {
 	category: string | null;
 	icon: string | null;
 	color: string | null;
+	/** Carries example answers, so a sample run can show it working straight away. */
+	has_sample: boolean;
+	/** Connector keys of the apps its steps act on. */
+	apps: string[];
 };
 
 /**
@@ -87,6 +96,8 @@ export type TRecommendedTemplate = {
 export type TGettingStarted = {
 	dismissed: boolean;
 	completed: boolean;
+	/** Whether this workspace earns checklist rewards: only an owner's first one does. */
+	rewards_available: boolean;
 	milestones: TGettingStartedMilestone[];
 	recommended_templates: TRecommendedTemplate[];
 };

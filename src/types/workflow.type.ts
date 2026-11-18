@@ -91,6 +91,36 @@ export type TStartRunDto = {
 	input?: Record<string, unknown>;
 };
 
+/** One field of a workflow's run form, with the template's example answer. */
+export type TSampleRunField = {
+	key: string;
+	label: string;
+	type: string;
+	required: boolean;
+	description: string | null;
+	sample: string | null;
+};
+
+/** An app step a sample run shows instead of calling the app. */
+export type TSampleRunAppStep = {
+	key: string;
+	name: string;
+	connector: string;
+	connected: boolean;
+};
+
+/** What the onboarding "Run it" screen shows before a sample run: see `SampleRuns::plan()`. */
+export type TSampleRunPlan = {
+	fields: TSampleRunField[];
+	app_steps: TSampleRunAppStep[];
+};
+
+/** A step a sample run previewed: what it would have sent, never sent. */
+export type TSampleStepOutput = {
+	sample: true;
+	would_send: Record<string, unknown>;
+};
+
 export type TSyncWorkflowTagsDto = {
 	tag_ids: string[];
 };
