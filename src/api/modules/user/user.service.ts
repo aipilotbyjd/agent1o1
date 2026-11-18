@@ -1,7 +1,14 @@
 import { axiosClient } from '@/api/client';
 import { unwrapKey } from '@/api/core';
 import type { TApiResponse } from '@/api/core';
-import type { TUser, TUpdateProfileDto, TSwitchWorkspaceDto } from '@/types/auth.type';
+import type {
+	TUser,
+	TUpdateProfileDto,
+	TSwitchWorkspaceDto,
+	TDeleteAccountDto,
+	TAccountDeletionCheck,
+	TDataExport,
+} from '@/types/auth.type';
 import type { TApiKey, TCreateApiKeyDto, TCreateApiKeyResult } from '@/types/auth.type';
 import { UserEndpoints } from './user.endpoints';
 
@@ -36,7 +43,40 @@ export const UserService = {
 			.delete<TApiResponse<{ user: TUser }>>(UserEndpoints.deleteAvatar)
 			.then(unwrapKey<TUser>('user')),
 
-	destroy: () => axiosClient.delete(UserEndpoints.destroy).then(() => undefined),
+	destroy: (payload: TDeleteAccountDto) =>
+		axiosClient.delete(UserEndpoints.destroy, { data: payload }).then(() => undefined),
+
+	fetchDeletionCheck: (signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<TAccountDeletionCheck>>(UserEndpoints.deletionCheck, { signal })
+			.then((r) => r.data.data),
+
+	// ─── Data exports ────────────────────────────────────────
+
+	listDataExports: (signal?: AbortSignal) =>
+		axiosClient
+			.get<TApiResponse<{ exports: TDataExport[] }>>(UserEndpoints.dataExports, { signal })
+			.then(unwrapKey<TDataExport[]>('exports')),
+
+	requestDataExport: () =>
+		axiosClient
+			.post<TApiResponse<{ export: TDataExport }>>(UserEndpoints.dataExports)
+			.then(unwrapKey<TDataExport>('export')),
+
+	/** Fetched with the API token, then saved: a plain link would carry no auth. */
+	downloadDataExport: async (dataExport: Pick<TDataExport, 'id' | 'requested_at'>) => {
+		const response = await axiosClient.get(UserEndpoints.dataExportDownload(dataExport.id), {
+			responseType: 'blob',
+		});
+		const url = URL.createObjectURL(response.data as Blob);
+		const link = document.createElement('a');
+		link.href = url;
+		link.download = `data-export-${dataExport.requested_at.slice(0, 10)}.zip`;
+		document.body.appendChild(link);
+		link.click();
+		link.remove();
+		URL.revokeObjectURL(url);
+	},
 
 	cancelEmailChange: () =>
 		axiosClient

@@ -25,11 +25,13 @@ import {
 	useUpdateProfile,
 	useUploadAvatar,
 } from '@/api/modules/user';
-import { useConfirm } from '@/context/confirm';
 import { primaryBtn, secondaryBtn, dangerBtn } from '@/pages/settings/_shared/buttons';
 import { useWorkspaceContext } from '@/context/workspace';
 import formatDate from '@/utils/formatDate.util';
 import TimezoneSelect from '@/parts/TimezoneSelect.part';
+import DataExportCard from './_partial/DataExportCard.partial';
+import DeleteAccountModal from './_partial/DeleteAccountModal.partial';
+import type { TDeleteAccountDto } from '@/types/auth.type';
 import { formatWorkspaceRole } from '@/constants/workspaceRole.constant';
 
 type TProfileForm = {
@@ -97,7 +99,6 @@ const ProfilePage = () => {
 	const { data: userData } = useCurrentUser();
 	const { workspaces, activeWorkspace, activeWorkspaceId, isSwitching, switchWorkspace } =
 		useWorkspaceContext();
-	const { confirm } = useConfirm();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const updateProfile = useUpdateProfile();
 	const uploadAvatar = useUploadAvatar();
@@ -107,6 +108,7 @@ const ProfilePage = () => {
 	const cancelEmailChange = useCancelEmailChange();
 
 	const [isDangerZoneOpen, setIsDangerZoneOpen] = useState(false);
+	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
 	const initialValues = useMemo<TProfileForm>(() => {
 		const nameParts = splitName(userData?.name);
@@ -217,22 +219,11 @@ const ProfilePage = () => {
 		}
 	};
 
-	const handleDeleteAccount = async () => {
-		const confirmed = await confirm({
-			title: 'Delete Account',
-			confirmText: 'Delete Account',
-			message:
-				'This will permanently delete your account and all of its data. This action cannot be undone.',
-		});
-		if (!confirmed) return;
-
-		try {
-			await deleteAccount.mutateAsync();
-			notify.success('Your account has been deleted.');
-			navigate('/login', { replace: true });
-		} catch {
-			// Toast is handled by the API hook.
-		}
+	const handleDeleteAccount = async (payload: TDeleteAccountDto) => {
+		await deleteAccount.mutateAsync(payload);
+		setIsDeleteModalOpen(false);
+		notify.success('Your account has been deleted.');
+		navigate('/login', { replace: true });
 	};
 
 	return (
@@ -501,6 +492,8 @@ const ProfilePage = () => {
 				</div>
 			</form>
 
+			<DataExportCard />
+
 			{/* Collapsible Danger Zone Section */}
 			<div className='mt-8 rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950'>
 				<button
@@ -530,19 +523,27 @@ const ProfilePage = () => {
 							</div>
 							<p className='mt-1 text-xs leading-normal font-semibold text-zinc-400 dark:text-zinc-500'>
 								This action cannot be undone. This will permanently delete your
-								account and all of its data.
+								account and every workspace you own on your own.
 							</p>
 						</div>
 						<button
 							type='button'
 							disabled={deleteAccount.isPending}
-							onClick={handleDeleteAccount}
+							onClick={() => setIsDeleteModalOpen(true)}
 							className={dangerBtn}>
 							{deleteAccount.isPending ? 'Deleting...' : 'Delete account'}
 						</button>
 					</div>
 				)}
 			</div>
+
+			<DeleteAccountModal
+				isOpen={isDeleteModalOpen}
+				onClose={() => setIsDeleteModalOpen(false)}
+				email={userData?.email ?? ''}
+				isPending={deleteAccount.isPending}
+				onConfirm={handleDeleteAccount}
+			/>
 		</div>
 	);
 };

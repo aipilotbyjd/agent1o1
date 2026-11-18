@@ -7,6 +7,8 @@
 // ============================================================
 export const userKeys = {
 	current: () => ['user', 'me'] as const,
+	deletionCheck: () => ['user', 'deletion-check'] as const,
+	dataExports: () => ['user', 'data-exports'] as const,
 };
 
 export const apiKeyKeys = {

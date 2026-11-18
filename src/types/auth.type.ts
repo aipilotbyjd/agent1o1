@@ -117,6 +117,35 @@ export type TExchangeSocialCodeDto = {
 	code: string;
 };
 
+// ─── Account deletion & data export ──────────────────────────
+
+export type TDeleteAccountDto = {
+	/** Must match the account email exactly. */
+	confirm_email: string;
+	/** Required unless the account signs in with Google or GitHub. */
+	current_password?: string;
+};
+
+export type TAccountDeletionBlockerReason = 'has_other_members' | 'active_subscription';
+
+export type TAccountDeletionCheck = {
+	/** Owned workspaces that must be resolved before the account can go. */
+	workspaces: { id: string; name: string; reasons: TAccountDeletionBlockerReason[] }[];
+	requires_password: boolean;
+};
+
+export type TDataExportStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'expired';
+
+export type TDataExport = {
+	id: string;
+	status: TDataExportStatus;
+	size_bytes: number | null;
+	is_downloadable: boolean;
+	requested_at: string;
+	completed_at: string | null;
+	expires_at: string | null;
+};
+
 // ─── Sessions (issued tokens) ────────────────────────────────
 
 export type TAuthSession = {
