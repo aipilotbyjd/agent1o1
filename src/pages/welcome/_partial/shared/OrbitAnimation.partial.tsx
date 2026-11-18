@@ -10,6 +10,7 @@ interface IOrbitAnimationProps {
 	selectedPlan: string;
 	selectedPlanName?: string;
 	connectedApps: string[];
+	selectedTemplateName?: string;
 }
 
 const OrbitAnimation = ({
@@ -19,6 +20,7 @@ const OrbitAnimation = ({
 	selectedPlan,
 	selectedPlanName,
 	connectedApps,
+	selectedTemplateName,
 }: IOrbitAnimationProps) => {
 	return (
 		<div className='relative hidden min-h-[520px] flex-col items-center justify-center border-l border-slate-100 bg-slate-50/50 p-8 lg:flex dark:border-zinc-800/80 dark:bg-zinc-950/20'>
@@ -164,6 +166,8 @@ const OrbitAnimation = ({
 						(selectedPlan === 'free'
 							? 'Free Plan Active'
 							: `${selectedPlanName ?? 'Paid'} Plan Selected`)}
+					{stepKey === 'choose_template' &&
+						(selectedTemplateName ? 'Template Selected' : 'Pick a Starting Point')}
 					{stepKey === 'connect_ai' && 'Your AI, Your Key'}
 					{stepKey === 'connect_apps' &&
 						`${connectedApps.length} App${connectedApps.length !== 1 ? 's' : ''} Connected`}
@@ -178,6 +182,10 @@ const OrbitAnimation = ({
 						'Orbiting tools are dynamically tailored based on your selected role.'}
 					{stepKey === 'choose_plan' &&
 						'Upgrade any time from your workspace settings - no commitments.'}
+					{stepKey === 'choose_template' &&
+						(selectedTemplateName
+							? `"${selectedTemplateName}" will be ready in your workspace.`
+							: 'Start from something that already works, then make it yours.')}
 					{stepKey === 'connect_ai' &&
 						'Agents run on your own AI account: you pay the provider directly, at their prices.'}
 					{stepKey === 'connect_apps' &&

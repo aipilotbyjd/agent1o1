@@ -19,6 +19,7 @@ import PlanSelectionStep from '../steps/PlanSelectionStep.partial';
 import ConnectAiStep from '../steps/ConnectAiStep.partial';
 import ConnectAppsStep from '../steps/ConnectAppsStep.partial';
 import DiscoveryStep from '../steps/DiscoveryStep.partial';
+import TemplateStep from '../steps/TemplateStep.partial';
 
 import { useOnboardingState } from '@/api/modules/onboarding';
 import AppLogo from '@/components/AppLogo';
@@ -75,6 +76,8 @@ const OnboardingShellInner = () => {
 		invitesSent,
 		workspaceName,
 		workspaceCreated,
+		selectedTemplate,
+		createdFromTemplate,
 	} = state;
 
 	// Local UI state that isn't part of the global onboarding data
@@ -89,7 +92,10 @@ const OnboardingShellInner = () => {
 		canLeaveOnboarding,
 		isLastPendingStep,
 	} = useOnboardingNavigation();
-	const { handleNextStep, isWorkspaceLoading, sendInvitationPending } = useOnboardingSubmit();
+	const { handleNextStep, isWorkspaceLoading, isTemplateLoading, sendInvitationPending } =
+		useOnboardingSubmit();
+	const hasTemplateToCreate =
+		selectedTemplate !== null && createdFromTemplate?.templateId !== selectedTemplate.id;
 
 	const stepKey = ONBOARDING_STEP_KEYS[step];
 	const selectedPlanName = onboardingData?.meta?.plans?.find(
@@ -122,6 +128,7 @@ const OnboardingShellInner = () => {
 		}
 		if (stepKey === 'choose_plan')
 			return ['slack', 'github', 'notion', 'google drive', 'figma'];
+		if (stepKey === 'choose_template') return ['slack', 'gmail', 'notion', 'github', 'hubspot'];
 		if (stepKey === 'connect_ai') return ['openai', 'anthropic', 'google', 'meta', 'mistral'];
 		// Nothing connected yet just means the user has not got there: keep the
 		// panel populated with the apps they are about to see rather than empty.
@@ -239,6 +246,7 @@ const OnboardingShellInner = () => {
 										)}
 										{stepKey === 'invite_team' && <InviteTeamStep />}
 										{stepKey === 'role_selection' && <RoleSelectionStep />}
+										{stepKey === 'choose_template' && <TemplateStep />}
 										{stepKey === 'choose_plan' && <PlanSelectionStep />}
 										{stepKey === 'connect_ai' && <ConnectAiStep />}
 										{stepKey === 'connect_apps' && <ConnectAppsStep />}
@@ -256,6 +264,8 @@ const OnboardingShellInner = () => {
 								canSkip={canSkipStep}
 								isContinueDisabled={isContinueDisabled}
 								isWorkspaceLoading={isWorkspaceLoading}
+								isTemplateLoading={isTemplateLoading}
+								hasTemplateToCreate={hasTemplateToCreate}
 								sendInvitationPending={sendInvitationPending}
 								hasValidEmails={hasValidEmails}
 								invitesSent={invitesSent}
@@ -276,6 +286,7 @@ const OnboardingShellInner = () => {
 								selectedPlan={selectedPlan}
 								selectedPlanName={selectedPlanName}
 								connectedApps={connectedApps}
+								selectedTemplateName={selectedTemplate?.name}
 							/>
 						)}
 					</div>

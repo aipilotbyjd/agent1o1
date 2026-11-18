@@ -13,6 +13,7 @@ export type TOnboardingStepKey =
 	| 'create_workspace'
 	| 'invite_team'
 	| 'role_selection'
+	| 'choose_template'
 	| 'choose_plan'
 	| 'connect_ai'
 	| 'connect_apps'

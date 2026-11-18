@@ -1,5 +1,10 @@
 const ws = (workspace: string) => `/workspaces/${workspace}`;
 
+/** Every template type in one paginated list. */
+export const TemplateCatalogEndpoints = {
+	list: (w: string) => `${ws(w)}/templates`,
+} as const;
+
 export const WorkflowTemplateEndpoints = {
 	list: (w: string) => `${ws(w)}/workflow-templates`,
 	create: (w: string) => `${ws(w)}/workflow-templates`,

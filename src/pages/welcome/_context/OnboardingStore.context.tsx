@@ -30,6 +30,10 @@ const initialState: IOnboardingState = {
 	selectedAppForAuth: null,
 	authSuccess: false,
 	selectedSurvey: null,
+	templateSearch: '',
+	templateType: 'all',
+	selectedTemplate: null,
+	createdFromTemplate: null,
 };
 
 function onboardingReducer(state: IOnboardingState, action: TOnboardingAction): IOnboardingState {

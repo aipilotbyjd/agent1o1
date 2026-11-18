@@ -203,3 +203,32 @@ export type TAddTemplateCollectionItemDto = {
 export type TReorderTemplateCollectionItemsDto = {
 	items: Array<{ id: string; position: number }>;
 };
+
+// ─── Combined catalog ────────────────────────────────────────
+
+/** Mirrors `App\Enums\Templates\TemplateType`. */
+export type TTemplateType = 'workflow' | 'agent' | 'collection' | 'page';
+
+/** One card in `GET /workspaces/{ws}/templates`: every template type in one list. */
+export type TTemplateCatalogItem = {
+	id: string;
+	type: TTemplateType;
+	type_label: string;
+	name: string;
+	description: string | null;
+	category: string | null;
+	icon: string | null;
+	color: string | null;
+	is_featured: boolean;
+	/** Saved by this workspace, rather than one of the built-in templates. */
+	is_own: boolean;
+	usage_count: number;
+	/** How many templates a collection holds; 0 for every other type. */
+	items_count: number;
+};
+
+export type TTemplateCatalogParams = {
+	type?: TTemplateType[];
+	search?: string;
+	per_page?: number;
+};

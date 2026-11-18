@@ -10,6 +10,9 @@ interface INavigationBarProps {
 	canSkip: boolean;
 	isContinueDisabled: boolean;
 	isWorkspaceLoading: boolean;
+	isTemplateLoading: boolean;
+	/** A template is picked on the template step and not created yet. */
+	hasTemplateToCreate: boolean;
 	sendInvitationPending: boolean;
 	hasValidEmails: boolean;
 	invitesSent: boolean;
@@ -28,6 +31,8 @@ const NavigationBar = ({
 	canSkip,
 	isContinueDisabled,
 	isWorkspaceLoading,
+	isTemplateLoading,
+	hasTemplateToCreate,
 	sendInvitationPending,
 	hasValidEmails,
 	invitesSent,
@@ -41,6 +46,7 @@ const NavigationBar = ({
 		if (isLastStep) return 'Finish Setup';
 		if (stepKey === 'create_workspace' && isWorkspaceLoading) return null; // show spinner
 		if (stepKey === 'invite_team' && hasValidEmails && !invitesSent) return 'Send & Continue';
+		if (stepKey === 'choose_template' && hasTemplateToCreate) return 'Use template & Continue';
 		if (stepKey === 'choose_plan' && selectedPlan === 'free') return 'Continue with Free';
 		if (stepKey === 'choose_plan') return `Upgrade to ${selectedPlanName ?? 'paid plan'}`;
 		return 'Continue';
@@ -80,13 +86,18 @@ const NavigationBar = ({
 				)}
 
 				<button
-					disabled={isContinueDisabled || sendInvitationPending}
+					disabled={isContinueDisabled || sendInvitationPending || isTemplateLoading}
 					onClick={onNext}
 					className='flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-xs font-black text-white transition-all hover:opacity-90 active:scale-95 disabled:pointer-events-none disabled:opacity-40 dark:bg-zinc-50 dark:text-slate-950'>
 					{isWorkspaceLoading && stepKey === 'create_workspace' ? (
 						<>
 							<Loader2 className='h-3.5 w-3.5 animate-spin' />
 							Creating...
+						</>
+					) : isTemplateLoading ? (
+						<>
+							<Loader2 className='h-3.5 w-3.5 animate-spin' />
+							Setting up...
 						</>
 					) : sendInvitationPending ? (
 						<>

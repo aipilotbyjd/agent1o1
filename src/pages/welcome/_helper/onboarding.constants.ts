@@ -44,13 +44,15 @@ export const ROLE_OPTIONS: { value: TWorkspaceRole; label: string; description: 
 ];
 
 /**
- * Screen order, which is also the backend's (`OnboardingStep`): the two steps
- * that set the account up come first, the optional ones after, and the profile
- * picture last because nothing else depends on it.
+ * Screen order, which is also the backend's (`OnboardingStep`): the steps that
+ * set the account up come first, a template is offered while the user is still
+ * deciding what to build, and the profile picture is last because nothing else
+ * depends on it.
  */
 export const ONBOARDING_STEP_KEYS: TOnboardingStepKey[] = [
 	'create_workspace',
 	'role_selection',
+	'choose_template',
 	'choose_plan',
 	'connect_ai',
 	'connect_apps',
@@ -62,6 +64,7 @@ export const ONBOARDING_STEP_KEYS: TOnboardingStepKey[] = [
 export const STEP_LABELS: Record<TOnboardingStepKey, string> = {
 	create_workspace: 'Create Workspace',
 	role_selection: 'Role Selection',
+	choose_template: 'Choose Template',
 	choose_plan: 'Choose Plan',
 	connect_ai: 'Connect AI',
 	connect_apps: 'Connect Apps',
