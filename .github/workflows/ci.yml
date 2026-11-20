@@ -86,9 +86,9 @@ jobs:
 
       - run: corepack enable
 
+      # No cache: this job reads the lockfile only, so there is no Yarn cache to save.
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: yarn
 
       - run: yarn npm audit --environment production --severity high
