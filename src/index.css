@@ -440,7 +440,6 @@
 	@apply bg-transparent dark:bg-transparent;
 }
 
-
 /* The "Built with Agent 101" badge: a gradient that drifts through the name and a soft sheen that crosses the pill now and then. */
 @keyframes badge-flow {
 	from {

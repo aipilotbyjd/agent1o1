@@ -45,15 +45,35 @@ export const PAGE_FONTS: Record<TPageFont, TFontMeta> = {
 	inter: { label: 'Inter', stack: `"Inter", ${SANS}`, google: 'Inter:wght@400..700' },
 	dm_sans: { label: 'DM Sans', stack: `"DM Sans", ${SANS}`, google: 'DM+Sans:wght@400..700' },
 	manrope: { label: 'Manrope', stack: `"Manrope", ${SANS}`, google: 'Manrope:wght@400..700' },
-	poppins: { label: 'Poppins', stack: `"Poppins", ${SANS}`, google: 'Poppins:wght@400;500;600;700' },
-	space_grotesk: { label: 'Space Grotesk', stack: `"Space Grotesk", ${SANS}`, google: 'Space+Grotesk:wght@400..700' },
+	poppins: {
+		label: 'Poppins',
+		stack: `"Poppins", ${SANS}`,
+		google: 'Poppins:wght@400;500;600;700',
+	},
+	space_grotesk: {
+		label: 'Space Grotesk',
+		stack: `"Space Grotesk", ${SANS}`,
+		google: 'Space+Grotesk:wght@400..700',
+	},
 	outfit: { label: 'Outfit', stack: `"Outfit", ${SANS}`, google: 'Outfit:wght@400..700' },
 	serif: { label: 'Serif', stack: SERIF },
-	playfair: { label: 'Playfair', stack: `"Playfair Display", ${SERIF}`, google: 'Playfair+Display:wght@400..700' },
+	playfair: {
+		label: 'Playfair',
+		stack: `"Playfair Display", ${SERIF}`,
+		google: 'Playfair+Display:wght@400..700',
+	},
 	lora: { label: 'Lora', stack: `"Lora", ${SERIF}`, google: 'Lora:wght@400..700' },
-	fraunces: { label: 'Fraunces', stack: `"Fraunces", ${SERIF}`, google: 'Fraunces:wght@400..700' },
+	fraunces: {
+		label: 'Fraunces',
+		stack: `"Fraunces", ${SERIF}`,
+		google: 'Fraunces:wght@400..700',
+	},
 	mono: { label: 'Mono', stack: MONO },
-	jetbrains_mono: { label: 'JetBrains Mono', stack: `"JetBrains Mono", ${MONO}`, google: 'JetBrains+Mono:wght@400..700' },
+	jetbrains_mono: {
+		label: 'JetBrains Mono',
+		stack: `"JetBrains Mono", ${MONO}`,
+		google: 'JetBrains+Mono:wght@400..700',
+	},
 };
 
 const requested = new Set<string>();

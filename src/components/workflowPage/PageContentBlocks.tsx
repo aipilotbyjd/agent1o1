@@ -408,7 +408,9 @@ export const StepsBlock = ({ block, mode }: { block: TPageBlockOf<'steps'>; mode
 						</span>
 						<div className='min-w-0 pt-0.5'>
 							<p className='text-sm font-bold'>
-								{item.title || <span className='text-[var(--pg-muted)]'>Step {index + 1}</span>}
+								{item.title || (
+									<span className='text-[var(--pg-muted)]'>Step {index + 1}</span>
+								)}
 							</p>
 							{item.description && (
 								<PageMarkdown className='mt-1 text-sm text-[var(--pg-text)]/75'>

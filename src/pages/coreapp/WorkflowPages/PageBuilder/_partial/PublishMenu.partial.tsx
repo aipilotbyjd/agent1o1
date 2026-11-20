@@ -1,7 +1,11 @@
 import { CheckCircle2, Globe, Loader2, Lock, Rocket, Users } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ApiError, notify } from '@/api/core';
-import { usePublishWorkflowPage, useUnpublishWorkflowPage, workflowPageKeys } from '@/api/modules/workflow-pages';
+import {
+	usePublishWorkflowPage,
+	useUnpublishWorkflowPage,
+	workflowPageKeys,
+} from '@/api/modules/workflow-pages';
 import { useConfirm } from '@/context/confirm';
 import relativeTime from '@/utils/relativeTime.util';
 import { usePageBuilder } from '../_context/PageBuilder.context';
@@ -43,17 +47,23 @@ const PublishMenu = ({ onClose, onShare }: { onClose: () => void; onShare: () =>
 	const onUnpublish = async () => {
 		const ok = await confirm({
 			title: 'Unpublish this page?',
-			message: 'Nobody will be able to open it until you publish it again. Your draft is kept.',
+			message:
+				'Nobody will be able to open it until you publish it again. Your draft is kept.',
 			confirmText: 'Unpublish',
 		});
-		if (ok) unpublish.mutate(undefined, { onSuccess: () => notify.success('Page unpublished.') });
+		if (ok)
+			unpublish.mutate(undefined, { onSuccess: () => notify.success('Page unpublished.') });
 	};
 
 	return (
 		<div className='w-[340px] rounded-xl border border-zinc-200 bg-white shadow-xl ring-1 ring-black/5 dark:border-white/10 dark:bg-zinc-950 dark:ring-white/5'>
 			<div className='border-b border-zinc-100 px-4 py-3 dark:border-white/[0.06]'>
 				<p className='text-sm font-bold text-zinc-900 dark:text-zinc-100'>
-					{page.is_published ? (upToDate ? 'Your page is live' : 'Publish your changes') : 'Publish this page'}
+					{page.is_published
+						? upToDate
+							? 'Your page is live'
+							: 'Publish your changes'
+						: 'Publish this page'}
 				</p>
 				<p className='mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400'>
 					{page.is_published && page.published_at
@@ -72,7 +82,10 @@ const PublishMenu = ({ onClose, onShare }: { onClose: () => void; onShare: () =>
 				type='button'
 				onClick={onShare}
 				className='flex w-full items-center gap-2.5 border-b border-zinc-100 px-4 py-2.5 text-left text-[11px] text-zinc-600 transition hover:bg-zinc-50 dark:border-white/[0.06] dark:text-zinc-300 dark:hover:bg-white/[0.03]'>
-				<access.icon size={14} className='text-primary-700 dark:text-primary-400 shrink-0' />
+				<access.icon
+					size={14}
+					className='text-primary-700 dark:text-primary-400 shrink-0'
+				/>
 				<span className='flex-1'>{access.label}</span>
 				<span className='text-primary-700 dark:text-primary-400 font-bold'>Change</span>
 			</button>

@@ -199,7 +199,10 @@ const Sketch = ({ block }: { block: TPageBlock }) => {
 			return (
 				<div className='grid grid-cols-3 gap-0.5'>
 					{[0, 1, 2].map((i) => (
-						<span key={i} className='block h-3 rounded-sm bg-zinc-300 dark:bg-zinc-700' />
+						<span
+							key={i}
+							className='block h-3 rounded-sm bg-zinc-300 dark:bg-zinc-700'
+						/>
 					))}
 				</div>
 			);
@@ -221,7 +224,10 @@ const Sketch = ({ block }: { block: TPageBlock }) => {
 			return (
 				<div className='flex justify-center gap-1'>
 					{[0, 1, 2].map((i) => (
-						<span key={i} className='block size-2.5 rounded-full bg-[var(--pg-accent)]' />
+						<span
+							key={i}
+							className='block size-2.5 rounded-full bg-[var(--pg-accent)]'
+						/>
 					))}
 				</div>
 			);

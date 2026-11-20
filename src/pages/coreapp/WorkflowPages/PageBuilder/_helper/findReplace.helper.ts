@@ -72,7 +72,11 @@ const preview = (text: string, match: RegExpMatchArray): string => {
 };
 
 /** The blocks, at any depth, whose text contains `query`, in page order. */
-export const findInBlocks = (blocks: TPageBlock[], query: string, options: TFindOptions): TFindMatch[] => {
+export const findInBlocks = (
+	blocks: TPageBlock[],
+	query: string,
+	options: TFindOptions,
+): TFindMatch[] => {
 	if (!query) return [];
 	const found: TFindMatch[] = [];
 	const walk = (list: TPageBlock[]) => {
@@ -118,7 +122,9 @@ export const replaceInBlocks = (
 							}),
 						),
 					} as TPageBlock);
-			return isContainer(next) ? ({ ...next, children: walk(next.children) } as TPageBlock) : next;
+			return isContainer(next)
+				? ({ ...next, children: walk(next.children) } as TPageBlock)
+				: next;
 		});
 	return { blocks: walk(blocks), replaced };
 };

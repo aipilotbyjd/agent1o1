@@ -42,7 +42,14 @@ import {
 	SocialBlock,
 	TimelineBlock,
 } from './PageMoreBlocks';
-import { DARK, PAGE_BLOCK_SPAN, PAGE_WIDTH, pageThemeStyle, usePageDark, usePageFonts } from './pageTheme';
+import {
+	DARK,
+	PAGE_BLOCK_SPAN,
+	PAGE_WIDTH,
+	pageThemeStyle,
+	usePageDark,
+	usePageFonts,
+} from './pageTheme';
 import type { TPageRun } from './usePageRun';
 
 /** A block as the renderer takes it: a field may carry the interface field
@@ -216,10 +223,8 @@ const MOBILE_SPACE_ABOVE = {
 } as const;
 const MOBILE_ALIGN = {
 	left: '@max-xl:text-left @max-xl:[&_h1]:text-left @max-xl:[&_h2]:text-left @max-xl:[&_h3]:text-left @max-xl:[&>.flex]:justify-start',
-	center:
-		'@max-xl:text-center @max-xl:[&_h1]:text-center @max-xl:[&_h2]:text-center @max-xl:[&_h3]:text-center @max-xl:[&>.flex]:justify-center',
-	right:
-		'@max-xl:text-right @max-xl:[&_h1]:text-right @max-xl:[&_h2]:text-right @max-xl:[&_h3]:text-right @max-xl:[&>.flex]:justify-end',
+	center: '@max-xl:text-center @max-xl:[&_h1]:text-center @max-xl:[&_h2]:text-center @max-xl:[&_h3]:text-center @max-xl:[&>.flex]:justify-center',
+	right: '@max-xl:text-right @max-xl:[&_h1]:text-right @max-xl:[&_h2]:text-right @max-xl:[&_h3]:text-right @max-xl:[&>.flex]:justify-end',
 } as const;
 
 /**
@@ -365,7 +370,11 @@ const MadeWithBadge = ({
 				className='size-[22px] rounded-full bg-white object-contain p-[3px] ring-[1.5px] ring-indigo-400'
 			/>
 			<span>
-				Built with <span className={`font-semibold [text-shadow:none] bg-linear-to-r bg-[length:200%_100%] bg-clip-text text-transparent motion-safe:animate-[badge-flow_5s_ease-in-out_infinite_alternate] ${nameGradient}`}>Agent 101</span>
+				Built with{' '}
+				<span
+					className={`bg-linear-to-r bg-[length:200%_100%] bg-clip-text font-semibold text-transparent [text-shadow:none] motion-safe:animate-[badge-flow_5s_ease-in-out_infinite_alternate] ${nameGradient}`}>
+					Agent 101
+				</span>
 			</span>
 		</>
 	);

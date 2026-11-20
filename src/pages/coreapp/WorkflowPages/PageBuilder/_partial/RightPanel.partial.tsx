@@ -1,9 +1,34 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
-import { AlignCenter, AlignLeft, AlignRight, BookmarkPlus, Copy, CopyPlus, ExternalLink, History, LayoutPanelTop, Lock, LockOpen, MessageSquare, Play, RefreshCw, SlidersHorizontal, Trash2 } from 'lucide-react';
+import {
+	AlignCenter,
+	AlignLeft,
+	AlignRight,
+	BookmarkPlus,
+	Copy,
+	CopyPlus,
+	ExternalLink,
+	History,
+	LayoutPanelTop,
+	Lock,
+	LockOpen,
+	MessageSquare,
+	Play,
+	RefreshCw,
+	SlidersHorizontal,
+	Trash2,
+} from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { TPageAlign, TPageBlock, TPageBlockDisplay, TPageBlockOf, TPageBlockProps, TPageColumnLayout, TPageSpacing } from '@/types/workflow-page.type';
+import type {
+	TPageAlign,
+	TPageBlock,
+	TPageBlockDisplay,
+	TPageBlockOf,
+	TPageBlockProps,
+	TPageColumnLayout,
+	TPageSpacing,
+} from '@/types/workflow-page.type';
 import { flattenBlocks } from '@/components/workflowPage/pageTree';
 import { useWorkflows } from '@/api/modules/workflows';
 import {
@@ -20,14 +45,33 @@ import relativeTime from '@/utils/relativeTime.util';
 import { BLOCK_CATALOG, WIDTH_OPTIONS } from '../_helper/blockCatalog.helper';
 import { findBlock, findPlace, isContainer } from '../_helper/blockTree.helper';
 import { copyBlocks } from '../_helper/clipboard.helper';
-import { alignBlock, canAlign, loadStylePresets, storeStylePresets, type TSavedStylePreset, captureStyle } from '../_helper/stylePreset.helper';
+import {
+	alignBlock,
+	canAlign,
+	loadStylePresets,
+	storeStylePresets,
+	type TSavedStylePreset,
+	captureStyle,
+} from '../_helper/stylePreset.helper';
 import CommentsPanel from './CommentsPanel.partial';
 import HistoryPanel from './HistoryPanel.partial';
-import { selectSelected, usePageBuilderStore, type TBuilderRightTab } from '../_store/pageBuilder.store';
+import {
+	selectSelected,
+	usePageBuilderStore,
+	type TBuilderRightTab,
+} from '../_store/pageBuilder.store';
 import ListEditor from './ListEditor.partial';
 import { usePageBuilder } from '../_context/PageBuilder.context';
 import { IssueList } from './IssuesChip.partial';
-import { PanelField, PanelSection, PanelSelect, PanelText, Segmented, Toggle, panelInputClass } from './controls.partial';
+import {
+	PanelField,
+	PanelSection,
+	PanelSelect,
+	PanelText,
+	Segmented,
+	Toggle,
+	panelInputClass,
+} from './controls.partial';
 
 const ALIGN_OPTIONS: { value: TPageAlign; label: ReactNode; title: string }[] = [
 	{ value: 'left', label: <AlignLeft size={13} />, title: 'Left' },
@@ -148,7 +192,9 @@ const FieldInspector = ({ block, set }: TPropsEditor<'field'>) => {
 				{variants.length > 0 && (
 					<Segmented
 						label='Style'
-						value={block.props.variant === 'auto' ? variants[0].value : block.props.variant}
+						value={
+							block.props.variant === 'auto' ? variants[0].value : block.props.variant
+						}
 						onChange={(value) => set({ variant: value })}
 						options={variants}
 					/>
@@ -168,7 +214,10 @@ const OutputInspector = ({ block, set }: TPropsEditor<'output'>) => {
 					value={block.props.output_name}
 					placeholder='Choose an output…'
 					onChange={(value) => set({ output_name: value })}
-					options={outputs.map(({ name }) => ({ value: name, label: `${humanize(name)} (${name})` }))}
+					options={outputs.map(({ name }) => ({
+						value: name,
+						label: `${humanize(name)} (${name})`,
+					}))}
 					hint='Only the outputs on the page are ever sent to the people using it.'
 				/>
 			</PanelSection>
@@ -176,13 +225,17 @@ const OutputInspector = ({ block, set }: TPropsEditor<'output'>) => {
 				<PanelText
 					label='Title'
 					value={block.props.label}
-					placeholder={block.props.output_name ? humanize(block.props.output_name) : 'Output'}
+					placeholder={
+						block.props.output_name ? humanize(block.props.output_name) : 'Output'
+					}
 					onChange={(value) => set({ label: value }, 'label')}
 				/>
 				<PanelSelect
 					label='Show as'
 					value={block.props.display}
-					onChange={(value) => set({ display: value as TPageBlockProps['output']['display'] })}
+					onChange={(value) =>
+						set({ display: value as TPageBlockProps['output']['display'] })
+					}
 					options={[
 						{ value: 'auto', label: 'Automatic' },
 						{ value: 'text', label: 'Plain text' },
@@ -199,7 +252,11 @@ const OutputInspector = ({ block, set }: TPropsEditor<'output'>) => {
 					placeholder='The result will appear here.'
 					onChange={(value) => set({ empty_text: value }, 'empty')}
 				/>
-				<Toggle label='Copy button' checked={block.props.copyable} onChange={(value) => set({ copyable: value })} />
+				<Toggle
+					label='Copy button'
+					checked={block.props.copyable}
+					onChange={(value) => set({ copyable: value })}
+				/>
 			</PanelSection>
 		</>
 	);
@@ -225,7 +282,10 @@ const ColumnsInspector = ({ block, set }: TPropsEditor<'columns'>) => {
 	return (
 		<PanelSection title='Columns'>
 			<PanelField label='Layout'>
-				<div className='grid grid-cols-5 gap-1.5' role='radiogroup' aria-label='Column layout'>
+				<div
+					className='grid grid-cols-5 gap-1.5'
+					role='radiogroup'
+					aria-label='Column layout'>
 					{LAYOUTS.map((layout) => (
 						<button
 							key={layout.value}
@@ -252,7 +312,8 @@ const ColumnsInspector = ({ block, set }: TPropsEditor<'columns'>) => {
 				</div>
 			</PanelField>
 			<p className='text-[10px] leading-snug text-zinc-400 dark:text-zinc-500'>
-				Fewer columns move the blocks of removed ones into the last column. Columns stack on phones.
+				Fewer columns move the blocks of removed ones into the last column. Columns stack on
+				phones.
 			</p>
 			<Segmented
 				label='Space between'
@@ -305,12 +366,22 @@ const ColumnInspector = ({ block, set }: TPropsEditor<'column'>) => {
 	);
 };
 
-const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record<string, unknown>, coalesce?: string) => void }) => {
+const PropsInspector = ({
+	block,
+	set,
+}: {
+	block: TPageBlock;
+	set: (props: Record<string, unknown>, coalesce?: string) => void;
+}) => {
 	switch (block.type) {
 		case 'heading':
 			return (
 				<PanelSection title='Heading'>
-					<PanelText label='Text' value={block.props.text} onChange={(text) => set({ text }, 'text')} />
+					<PanelText
+						label='Text'
+						value={block.props.text}
+						onChange={(text) => set({ text }, 'text')}
+					/>
 					<Segmented
 						label='Size'
 						value={block.props.level}
@@ -321,7 +392,12 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 							{ value: 3, label: 'Small' },
 						]}
 					/>
-					<Segmented label='Align' value={block.props.align} onChange={(align) => set({ align })} options={ALIGN_OPTIONS} />
+					<Segmented
+						label='Align'
+						value={block.props.align}
+						onChange={(align) => set({ align })}
+						options={ALIGN_OPTIONS}
+					/>
 				</PanelSection>
 			);
 		case 'text':
@@ -335,7 +411,12 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 						hint='Markdown works: **bold**, _italic_, [links](https://…), lists.'
 						onChange={(markdown) => set({ markdown }, 'markdown')}
 					/>
-					<Segmented label='Align' value={block.props.align} onChange={(align) => set({ align })} options={ALIGN_OPTIONS} />
+					<Segmented
+						label='Align'
+						value={block.props.align}
+						onChange={(align) => set({ align })}
+						options={ALIGN_OPTIONS}
+					/>
 				</PanelSection>
 			);
 		case 'image':
@@ -392,7 +473,12 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 							{ value: 'danger', label: 'Alert' },
 						]}
 					/>
-					<PanelText label='Title' value={block.props.title} placeholder='Optional' onChange={(title) => set({ title }, 'title')} />
+					<PanelText
+						label='Title'
+						value={block.props.title}
+						placeholder='Optional'
+						onChange={(title) => set({ title }, 'title')}
+					/>
 					<PanelText
 						label='Text'
 						multiline
@@ -434,7 +520,11 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 		case 'submit':
 			return (
 				<PanelSection title='Run button'>
-					<PanelText label='Label' value={block.props.label} onChange={(label) => set({ label }, 'label')} />
+					<PanelText
+						label='Label'
+						value={block.props.label}
+						onChange={(label) => set({ label }, 'label')}
+					/>
 					<PanelText
 						label='While running'
 						value={block.props.running_label}
@@ -473,7 +563,11 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 		case 'button':
 			return (
 				<PanelSection title='Button'>
-					<PanelText label='Label' value={block.props.label} onChange={(label) => set({ label }, 'label')} />
+					<PanelText
+						label='Label'
+						value={block.props.label}
+						onChange={(label) => set({ label }, 'label')}
+					/>
 					<PanelText
 						label='Link'
 						type='url'
@@ -503,7 +597,11 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 							{ value: 'stretch', label: 'Full' },
 						]}
 					/>
-					<Toggle label='Open in a new tab' checked={block.props.new_tab} onChange={(new_tab) => set({ new_tab })} />
+					<Toggle
+						label='Open in a new tab'
+						checked={block.props.new_tab}
+						onChange={(new_tab) => set({ new_tab })}
+					/>
 				</PanelSection>
 			);
 		case 'video':
@@ -517,7 +615,12 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 						hint='YouTube, Vimeo and Loom links play on the page, and so do .mp4 and .webm files.'
 						onChange={(url) => set({ url: url || null }, 'url')}
 					/>
-					<PanelText label='Caption' value={block.props.caption} placeholder='Optional' onChange={(caption) => set({ caption }, 'caption')} />
+					<PanelText
+						label='Caption'
+						value={block.props.caption}
+						placeholder='Optional'
+						onChange={(caption) => set({ caption }, 'caption')}
+					/>
 				</PanelSection>
 			);
 		case 'faq':
@@ -532,20 +635,51 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 						title={(item, i) => item.question || `Question ${i + 1}`}>
 						{(item, update) => (
 							<>
-								<PanelText label='Question' value={item.question} onChange={(question) => update({ question })} />
-								<PanelText label='Answer' multiline rows={3} value={item.answer} hint='Markdown works.' onChange={(answer) => update({ answer })} />
+								<PanelText
+									label='Question'
+									value={item.question}
+									onChange={(question) => update({ question })}
+								/>
+								<PanelText
+									label='Answer'
+									multiline
+									rows={3}
+									value={item.answer}
+									hint='Markdown works.'
+									onChange={(answer) => update({ answer })}
+								/>
 							</>
 						)}
 					</ListEditor>
-					<Toggle label='Open the first one' checked={block.props.open_first} onChange={(open_first) => set({ open_first })} />
+					<Toggle
+						label='Open the first one'
+						checked={block.props.open_first}
+						onChange={(open_first) => set({ open_first })}
+					/>
 				</PanelSection>
 			);
 		case 'testimonial':
 			return (
 				<PanelSection title='Testimonial'>
-					<PanelText label='Quote' multiline rows={4} value={block.props.quote} onChange={(quote) => set({ quote }, 'quote')} />
-					<PanelText label='Name' value={block.props.author} placeholder='Who said it' onChange={(author) => set({ author }, 'author')} />
-					<PanelText label='Role' value={block.props.role} placeholder='Job title, company' onChange={(role) => set({ role }, 'role')} />
+					<PanelText
+						label='Quote'
+						multiline
+						rows={4}
+						value={block.props.quote}
+						onChange={(quote) => set({ quote }, 'quote')}
+					/>
+					<PanelText
+						label='Name'
+						value={block.props.author}
+						placeholder='Who said it'
+						onChange={(author) => set({ author }, 'author')}
+					/>
+					<PanelText
+						label='Role'
+						value={block.props.role}
+						placeholder='Job title, company'
+						onChange={(role) => set({ role }, 'role')}
+					/>
 					<PanelText
 						label='Photo'
 						type='url'
@@ -558,7 +692,10 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 						label='Stars'
 						value={block.props.rating}
 						onChange={(rating) => set({ rating })}
-						options={[0, 1, 2, 3, 4, 5].map((value) => ({ value, label: value === 0 ? 'None' : String(value) }))}
+						options={[0, 1, 2, 3, 4, 5].map((value) => ({
+							value,
+							label: value === 0 ? 'None' : String(value),
+						}))}
 					/>
 				</PanelSection>
 			);
@@ -574,8 +711,18 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 						title={(item, i) => item.value || `Number ${i + 1}`}>
 						{(item, update) => (
 							<div className='grid grid-cols-[5rem_1fr] gap-2'>
-								<PanelText label='Value' value={item.value} placeholder='98%' onChange={(value) => update({ value })} />
-								<PanelText label='Label' value={item.label} placeholder='Happy users' onChange={(label) => update({ label })} />
+								<PanelText
+									label='Value'
+									value={item.value}
+									placeholder='98%'
+									onChange={(value) => update({ value })}
+								/>
+								<PanelText
+									label='Label'
+									value={item.label}
+									placeholder='Happy users'
+									onChange={(label) => update({ label })}
+								/>
 							</div>
 						)}
 					</ListEditor>
@@ -593,7 +740,12 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 		case 'logos':
 			return (
 				<PanelSection title='Logos'>
-					<PanelText label='Title' value={block.props.title} placeholder='Optional' onChange={(title) => set({ title }, 'title')} />
+					<PanelText
+						label='Title'
+						value={block.props.title}
+						placeholder='Optional'
+						onChange={(title) => set({ title }, 'title')}
+					/>
 					<ListEditor
 						items={block.props.items}
 						onChange={(items) => set({ items }, 'items')}
@@ -603,12 +755,27 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 						title={(item, i) => item.alt || `Logo ${i + 1}`}>
 						{(item, update) => (
 							<>
-								<PanelText label='Image link' type='url' value={item.url} placeholder='https://…/logo.svg' onChange={(url) => update({ url })} />
-								<PanelText label='Company' value={item.alt} placeholder='Read out by screen readers' onChange={(alt) => update({ alt })} />
+								<PanelText
+									label='Image link'
+									type='url'
+									value={item.url}
+									placeholder='https://…/logo.svg'
+									onChange={(url) => update({ url })}
+								/>
+								<PanelText
+									label='Company'
+									value={item.alt}
+									placeholder='Read out by screen readers'
+									onChange={(alt) => update({ alt })}
+								/>
 							</>
 						)}
 					</ListEditor>
-					<Toggle label='Greyscale until hovered' checked={block.props.grayscale} onChange={(grayscale) => set({ grayscale })} />
+					<Toggle
+						label='Greyscale until hovered'
+						checked={block.props.grayscale}
+						onChange={(grayscale) => set({ grayscale })}
+					/>
 				</PanelSection>
 			);
 		case 'tabs':
@@ -623,8 +790,19 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 						title={(item, i) => item.label || `Tab ${i + 1}`}>
 						{(item, update) => (
 							<>
-								<PanelText label='Name' value={item.label} onChange={(label) => update({ label })} />
-								<PanelText label='Text' multiline rows={4} value={item.markdown} hint='Markdown works.' onChange={(markdown) => update({ markdown })} />
+								<PanelText
+									label='Name'
+									value={item.label}
+									onChange={(label) => update({ label })}
+								/>
+								<PanelText
+									label='Text'
+									multiline
+									rows={4}
+									value={item.markdown}
+									hint='Markdown works.'
+									onChange={(markdown) => update({ markdown })}
+								/>
 							</>
 						)}
 					</ListEditor>
@@ -633,7 +811,12 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 		case 'steps':
 			return (
 				<PanelSection title='Steps'>
-					<PanelText label='Title' value={block.props.title} placeholder='Optional' onChange={(title) => set({ title }, 'title')} />
+					<PanelText
+						label='Title'
+						value={block.props.title}
+						placeholder='Optional'
+						onChange={(title) => set({ title }, 'title')}
+					/>
 					<ListEditor
 						items={block.props.items}
 						onChange={(items) => set({ items }, 'items')}
@@ -643,8 +826,19 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 						title={(item, i) => item.title || `Step ${i + 1}`}>
 						{(item, update) => (
 							<>
-								<PanelText label='Step' value={item.title} onChange={(title) => update({ title })} />
-								<PanelText label='Details' multiline rows={3} value={item.description} hint='Markdown works.' onChange={(description) => update({ description })} />
+								<PanelText
+									label='Step'
+									value={item.title}
+									onChange={(title) => update({ title })}
+								/>
+								<PanelText
+									label='Details'
+									multiline
+									rows={3}
+									value={item.description}
+									hint='Markdown works.'
+									onChange={(description) => update({ description })}
+								/>
 							</>
 						)}
 					</ListEditor>
@@ -653,7 +847,12 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 		case 'features':
 			return (
 				<PanelSection title='Features'>
-					<PanelText label='Title' value={block.props.title} placeholder='Optional' onChange={(title) => set({ title }, 'title')} />
+					<PanelText
+						label='Title'
+						value={block.props.title}
+						placeholder='Optional'
+						onChange={(title) => set({ title }, 'title')}
+					/>
 					<ListEditor
 						items={block.props.items}
 						onChange={(items) => set({ items }, 'items')}
@@ -663,8 +862,19 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 						title={(item, i) => item.title || `Feature ${i + 1}`}>
 						{(item, update) => (
 							<>
-								<PanelText label='Name' value={item.title} onChange={(title) => update({ title })} />
-								<PanelText label='Details' multiline rows={3} value={item.description} hint='Markdown works.' onChange={(description) => update({ description })} />
+								<PanelText
+									label='Name'
+									value={item.title}
+									onChange={(title) => update({ title })}
+								/>
+								<PanelText
+									label='Details'
+									multiline
+									rows={3}
+									value={item.description}
+									hint='Markdown works.'
+									onChange={(description) => update({ description })}
+								/>
 							</>
 						)}
 					</ListEditor>
@@ -672,44 +882,121 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 						label='Columns'
 						value={block.props.columns}
 						onChange={(columns) => set({ columns })}
-						options={([2, 3, 4] as const).map((value) => ({ value, label: String(value) }))}
+						options={([2, 3, 4] as const).map((value) => ({
+							value,
+							label: String(value),
+						}))}
 					/>
 				</PanelSection>
 			);
 		case 'code':
 			return (
 				<PanelSection title='Code'>
-					<PanelText label='Code' multiline rows={8} mono value={block.props.code} onChange={(code) => set({ code }, 'code')} />
+					<PanelText
+						label='Code'
+						multiline
+						rows={8}
+						mono
+						value={block.props.code}
+						onChange={(code) => set({ code }, 'code')}
+					/>
 					<div className='grid grid-cols-2 gap-2'>
-						<PanelText label='Language' value={block.props.language} placeholder='bash' onChange={(language) => set({ language: language || null }, 'language')} />
-						<PanelText label='File name' value={block.props.filename} placeholder='Optional' onChange={(filename) => set({ filename: filename || null }, 'filename')} />
+						<PanelText
+							label='Language'
+							value={block.props.language}
+							placeholder='bash'
+							onChange={(language) => set({ language: language || null }, 'language')}
+						/>
+						<PanelText
+							label='File name'
+							value={block.props.filename}
+							placeholder='Optional'
+							onChange={(filename) => set({ filename: filename || null }, 'filename')}
+						/>
 					</div>
-					<Toggle label='Show a copy button' checked={block.props.show_copy} onChange={(show_copy) => set({ show_copy })} />
+					<Toggle
+						label='Show a copy button'
+						checked={block.props.show_copy}
+						onChange={(show_copy) => set({ show_copy })}
+					/>
 				</PanelSection>
 			);
 		case 'pricing':
 			return (
 				<PanelSection title='Plans'>
-					<PanelText label='Title' value={block.props.title} placeholder='Optional' onChange={(title) => set({ title }, 'title')} />
+					<PanelText
+						label='Title'
+						value={block.props.title}
+						placeholder='Optional'
+						onChange={(title) => set({ title }, 'title')}
+					/>
 					<ListEditor
 						items={block.props.items}
 						onChange={(items) => set({ items }, 'items')}
-						create={() => ({ name: '', price: '', period: '', description: '', features: '', cta_label: '', cta_url: null, highlighted: false })}
+						create={() => ({
+							name: '',
+							price: '',
+							period: '',
+							description: '',
+							features: '',
+							cta_label: '',
+							cta_url: null,
+							highlighted: false,
+						})}
 						max={4}
 						addLabel='Add a plan'
 						title={(item, i) => item.name || `Plan ${i + 1}`}>
 						{(item, update) => (
 							<>
-								<PanelText label='Name' value={item.name} onChange={(name) => update({ name })} />
+								<PanelText
+									label='Name'
+									value={item.name}
+									onChange={(name) => update({ name })}
+								/>
 								<div className='grid grid-cols-2 gap-2'>
-									<PanelText label='Price' value={item.price} placeholder='$29' onChange={(price) => update({ price })} />
-									<PanelText label='Per' value={item.period} placeholder='/month' onChange={(period) => update({ period })} />
+									<PanelText
+										label='Price'
+										value={item.price}
+										placeholder='$29'
+										onChange={(price) => update({ price })}
+									/>
+									<PanelText
+										label='Per'
+										value={item.period}
+										placeholder='/month'
+										onChange={(period) => update({ period })}
+									/>
 								</div>
-								<PanelText label='Short description' value={item.description} onChange={(description) => update({ description })} />
-								<PanelText label='Features' multiline rows={4} value={item.features} hint='One per line.' onChange={(features) => update({ features })} />
-								<PanelText label='Button label' value={item.cta_label} onChange={(cta_label) => update({ cta_label })} />
-								<PanelText label='Button link' type='url' value={item.cta_url} placeholder='https://…' onChange={(cta_url) => update({ cta_url: cta_url || null })} />
-								<Toggle label='Highlight as popular' checked={item.highlighted} onChange={(highlighted) => update({ highlighted })} />
+								<PanelText
+									label='Short description'
+									value={item.description}
+									onChange={(description) => update({ description })}
+								/>
+								<PanelText
+									label='Features'
+									multiline
+									rows={4}
+									value={item.features}
+									hint='One per line.'
+									onChange={(features) => update({ features })}
+								/>
+								<PanelText
+									label='Button label'
+									value={item.cta_label}
+									onChange={(cta_label) => update({ cta_label })}
+								/>
+								<PanelText
+									label='Button link'
+									type='url'
+									value={item.cta_url}
+									placeholder='https://…'
+									onChange={(cta_url) => update({ cta_url: cta_url || null })}
+								/>
+								<Toggle
+									label='Highlight as popular'
+									checked={item.highlighted}
+									onChange={(highlighted) => update({ highlighted })}
+								/>
 							</>
 						)}
 					</ListEditor>
@@ -726,7 +1013,12 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 						hint='https links from Calendly, Cal.com, Typeform, Tally, Google Forms and Maps, Airtable, Figma, Notion, Loom, Spotify and CodePen. Others are removed when saved.'
 						onChange={(url) => set({ url: url || null }, 'url')}
 					/>
-					<PanelText label='Title' value={block.props.title} placeholder='Read out by screen readers' onChange={(title) => set({ title: title || null }, 'title')} />
+					<PanelText
+						label='Title'
+						value={block.props.title}
+						placeholder='Read out by screen readers'
+						onChange={(title) => set({ title: title || null }, 'title')}
+					/>
 					<Segmented
 						label='Height'
 						value={block.props.height}
@@ -752,8 +1044,19 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 						title={(item, i) => item.alt || `Image ${i + 1}`}>
 						{(item, update) => (
 							<>
-								<PanelText label='Image link' type='url' value={item.url} placeholder='https://…' onChange={(url) => update({ url })} />
-								<PanelText label='Description' value={item.alt} placeholder='Read out by screen readers' onChange={(alt) => update({ alt: alt || null })} />
+								<PanelText
+									label='Image link'
+									type='url'
+									value={item.url}
+									placeholder='https://…'
+									onChange={(url) => update({ url })}
+								/>
+								<PanelText
+									label='Description'
+									value={item.alt}
+									placeholder='Read out by screen readers'
+									onChange={(alt) => update({ alt: alt || null })}
+								/>
 							</>
 						)}
 					</ListEditor>
@@ -761,7 +1064,10 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 						label='Columns'
 						value={block.props.columns}
 						onChange={(columns) => set({ columns })}
-						options={([2, 3, 4] as const).map((value) => ({ value, label: String(value) }))}
+						options={([2, 3, 4] as const).map((value) => ({
+							value,
+							label: String(value),
+						}))}
 					/>
 					<Segmented
 						label='Shape'
@@ -773,7 +1079,11 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 							{ value: 'auto', label: 'Original' },
 						]}
 					/>
-					<Toggle label='Open images full size on click' checked={block.props.lightbox} onChange={(lightbox) => set({ lightbox })} />
+					<Toggle
+						label='Open images full size on click'
+						checked={block.props.lightbox}
+						onChange={(lightbox) => set({ lightbox })}
+					/>
 				</PanelSection>
 			);
 		case 'compare':
@@ -789,18 +1099,62 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 						]}
 					/>
 					<div className='grid grid-cols-2 gap-2'>
-						<PanelText label='Left title' value={block.props.before_label} placeholder='Before' onChange={(before_label) => set({ before_label: before_label || null }, 'before_label')} />
-						<PanelText label='Right title' value={block.props.after_label} placeholder='After' onChange={(after_label) => set({ after_label: after_label || null }, 'after_label')} />
+						<PanelText
+							label='Left title'
+							value={block.props.before_label}
+							placeholder='Before'
+							onChange={(before_label) =>
+								set({ before_label: before_label || null }, 'before_label')
+							}
+						/>
+						<PanelText
+							label='Right title'
+							value={block.props.after_label}
+							placeholder='After'
+							onChange={(after_label) =>
+								set({ after_label: after_label || null }, 'after_label')
+							}
+						/>
 					</div>
 					{block.props.mode === 'slider' ? (
 						<>
-							<PanelText label='Before image' type='url' value={block.props.before_url} placeholder='https://…' onChange={(before_url) => set({ before_url: before_url || null }, 'before_url')} />
-							<PanelText label='After image' type='url' value={block.props.after_url} placeholder='https://…' onChange={(after_url) => set({ after_url: after_url || null }, 'after_url')} />
+							<PanelText
+								label='Before image'
+								type='url'
+								value={block.props.before_url}
+								placeholder='https://…'
+								onChange={(before_url) =>
+									set({ before_url: before_url || null }, 'before_url')
+								}
+							/>
+							<PanelText
+								label='After image'
+								type='url'
+								value={block.props.after_url}
+								placeholder='https://…'
+								onChange={(after_url) =>
+									set({ after_url: after_url || null }, 'after_url')
+								}
+							/>
 						</>
 					) : (
 						<>
-							<PanelText label='Left list' multiline rows={4} value={block.props.before_items} hint='One per line.' onChange={(before_items) => set({ before_items }, 'before_items')} />
-							<PanelText label='Right list' multiline rows={4} value={block.props.after_items} hint='One per line.' onChange={(after_items) => set({ after_items }, 'after_items')} />
+							<PanelText
+								label='Left list'
+								multiline
+								rows={4}
+								value={block.props.before_items}
+								hint='One per line.'
+								onChange={(before_items) => set({ before_items }, 'before_items')}
+							/>
+							<PanelText
+								label='Right list'
+								multiline
+								rows={4}
+								value={block.props.after_items}
+								hint='One per line.'
+								onChange={(after_items) => set({ after_items }, 'after_items')}
+							/>
 						</>
 					)}
 				</PanelSection>
@@ -808,7 +1162,12 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 		case 'progress':
 			return (
 				<PanelSection title='Bars'>
-					<PanelText label='Title' value={block.props.title} placeholder='Optional' onChange={(title) => set({ title }, 'title')} />
+					<PanelText
+						label='Title'
+						value={block.props.title}
+						placeholder='Optional'
+						onChange={(title) => set({ title }, 'title')}
+					/>
 					<ListEditor
 						items={block.props.items}
 						onChange={(items) => set({ items }, 'items')}
@@ -818,12 +1177,32 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 						title={(item, i) => item.label || `Bar ${i + 1}`}>
 						{(item, update) => (
 							<div className='grid grid-cols-[1fr_4.5rem] gap-2'>
-								<PanelText label='Label' value={item.label} onChange={(label) => update({ label })} />
-								<PanelText label='Percent' type='number' value={String(item.value)} onChange={(value) => update({ value: Math.max(0, Math.min(100, Math.round(Number(value) || 0))) })} />
+								<PanelText
+									label='Label'
+									value={item.label}
+									onChange={(label) => update({ label })}
+								/>
+								<PanelText
+									label='Percent'
+									type='number'
+									value={String(item.value)}
+									onChange={(value) =>
+										update({
+											value: Math.max(
+												0,
+												Math.min(100, Math.round(Number(value) || 0)),
+											),
+										})
+									}
+								/>
 							</div>
 						)}
 					</ListEditor>
-					<Toggle label='Show the percentages' checked={block.props.show_values} onChange={(show_values) => set({ show_values })} />
+					<Toggle
+						label='Show the percentages'
+						checked={block.props.show_values}
+						onChange={(show_values) => set({ show_values })}
+					/>
 				</PanelSection>
 			);
 		case 'social':
@@ -841,14 +1220,28 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 								<PanelSelect
 									label='Where'
 									value={item.network}
-									onChange={(network) => update({ network: network as typeof item.network })}
+									onChange={(network) =>
+										update({ network: network as typeof item.network })
+									}
 									options={SOCIAL_NETWORK_OPTIONS}
 								/>
-								<PanelText label={item.network === 'email' ? 'Email address' : 'Link'} value={item.url.replace(/^mailto:/, '')} placeholder={item.network === 'email' ? 'hello@example.com' : 'https://…'} onChange={(url) => update({ url })} />
+								<PanelText
+									label={item.network === 'email' ? 'Email address' : 'Link'}
+									value={item.url.replace(/^mailto:/, '')}
+									placeholder={
+										item.network === 'email' ? 'hello@example.com' : 'https://…'
+									}
+									onChange={(url) => update({ url })}
+								/>
 							</>
 						)}
 					</ListEditor>
-					<Segmented label='Align' value={block.props.align} onChange={(align) => set({ align })} options={ALIGN_OPTIONS} />
+					<Segmented
+						label='Align'
+						value={block.props.align}
+						onChange={(align) => set({ align })}
+						options={ALIGN_OPTIONS}
+					/>
 					<Segmented
 						label='Style'
 						value={block.props.style}
@@ -863,7 +1256,12 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 		case 'timeline':
 			return (
 				<PanelSection title='Milestones'>
-					<PanelText label='Title' value={block.props.title} placeholder='Optional' onChange={(title) => set({ title }, 'title')} />
+					<PanelText
+						label='Title'
+						value={block.props.title}
+						placeholder='Optional'
+						onChange={(title) => set({ title }, 'title')}
+					/>
 					<ListEditor
 						items={block.props.items}
 						onChange={(items) => set({ items }, 'items')}
@@ -874,10 +1272,26 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 						{(item, update) => (
 							<>
 								<div className='grid grid-cols-[6rem_1fr] gap-2'>
-									<PanelText label='When' value={item.date} placeholder='2025' onChange={(date) => update({ date })} />
-									<PanelText label='Title' value={item.title} onChange={(title) => update({ title })} />
+									<PanelText
+										label='When'
+										value={item.date}
+										placeholder='2025'
+										onChange={(date) => update({ date })}
+									/>
+									<PanelText
+										label='Title'
+										value={item.title}
+										onChange={(title) => update({ title })}
+									/>
 								</div>
-								<PanelText label='Details' multiline rows={3} value={item.description} hint='Markdown works.' onChange={(description) => update({ description })} />
+								<PanelText
+									label='Details'
+									multiline
+									rows={3}
+									value={item.description}
+									hint='Markdown works.'
+									onChange={(description) => update({ description })}
+								/>
 							</>
 						)}
 					</ListEditor>
@@ -886,23 +1300,41 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 		case 'countdown':
 			return (
 				<PanelSection title='Countdown'>
-					<PanelField label='Counts down to' htmlFor={`countdown-${block.id}`} hint='In your time zone. Visitors see the time left wherever they are.'>
+					<PanelField
+						label='Counts down to'
+						htmlFor={`countdown-${block.id}`}
+						hint='In your time zone. Visitors see the time left wherever they are.'>
 						<input
 							id={`countdown-${block.id}`}
 							type='datetime-local'
 							value={toLocalInput(block.props.target)}
-							onChange={(e) => set({ target: e.target.value ? new Date(e.target.value).toISOString() : null })}
+							onChange={(e) =>
+								set({
+									target: e.target.value
+										? new Date(e.target.value).toISOString()
+										: null,
+								})
+							}
 							className={panelInputClass}
 						/>
 					</PanelField>
-					<PanelText label='Label' value={block.props.label} placeholder='Starts in' onChange={(label) => set({ label }, 'label')} />
+					<PanelText
+						label='Label'
+						value={block.props.label}
+						placeholder='Starts in'
+						onChange={(label) => set({ label }, 'label')}
+					/>
 					<PanelText
 						label='When it’s over'
 						value={block.props.ended_text}
 						placeholder='It’s started!'
 						onChange={(ended_text) => set({ ended_text }, 'ended')}
 					/>
-					<Toggle label='Show seconds' checked={block.props.show_seconds} onChange={(show_seconds) => set({ show_seconds })} />
+					<Toggle
+						label='Show seconds'
+						checked={block.props.show_seconds}
+						onChange={(show_seconds) => set({ show_seconds })}
+					/>
 				</PanelSection>
 			);
 		case 'section':
@@ -965,7 +1397,9 @@ const PropsInspector = ({ block, set }: { block: TPageBlock; set: (props: Record
 const SaveToLibrary = ({ block, onDone }: { block: TPageBlock; onDone: () => void }) => {
 	const { ws } = usePageBuilder();
 	const save = useSavePageSection(ws);
-	const [name, setName] = useState(block.type === 'section' ? 'My section' : BLOCK_CATALOG[block.type].label);
+	const [name, setName] = useState(
+		block.type === 'section' ? 'My section' : BLOCK_CATALOG[block.type].label,
+	);
 	const submit = () => {
 		const trimmed = name.trim();
 		if (!trimmed) return;
@@ -981,7 +1415,10 @@ const SaveToLibrary = ({ block, onDone }: { block: TPageBlock; onDone: () => voi
 	};
 	return (
 		<div className='space-y-2 border-b border-zinc-100 bg-zinc-50/70 px-4 py-3 dark:border-white/[0.06] dark:bg-white/[0.02]'>
-			<PanelField label='Save to library as' htmlFor='save-section-name' hint='Anyone building pages in this workspace can add it.'>
+			<PanelField
+				label='Save to library as'
+				htmlFor='save-section-name'
+				hint='Anyone building pages in this workspace can add it.'>
 				<input
 					id='save-section-name'
 					autoFocus
@@ -996,7 +1433,10 @@ const SaveToLibrary = ({ block, onDone }: { block: TPageBlock; onDone: () => voi
 				/>
 			</PanelField>
 			<div className='flex justify-end gap-2'>
-				<button type='button' onClick={onDone} className='h-7 rounded-md px-2.5 text-[11px] font-semibold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'>
+				<button
+					type='button'
+					onClick={onDone}
+					className='h-7 rounded-md px-2.5 text-[11px] font-semibold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'>
 					Cancel
 				</button>
 				<button
@@ -1023,7 +1463,10 @@ const StyleTools = ({ block }: { block: TPageBlock }) => {
 	const save = () => {
 		const label = name.trim();
 		if (!label) return;
-		const next = [...presets, { id: crypto.randomUUID(), name: label, preset: captureStyle(block) }];
+		const next = [
+			...presets,
+			{ id: crypto.randomUUID(), name: label, preset: captureStyle(block) },
+		];
 		setPresets(next);
 		storeStylePresets(next);
 		setName('');
@@ -1079,7 +1522,11 @@ const StyleTools = ({ block }: { block: TPageBlock }) => {
 					aria-label='Preset name'
 					className={`${panelInputClass} flex-1`}
 				/>
-				<button type='button' className={`${small} flex-none px-3`} disabled={!name.trim()} onClick={save}>
+				<button
+					type='button'
+					className={`${small} flex-none px-3`}
+					disabled={!name.trim()}
+					onClick={save}>
 					Save
 				</button>
 			</div>
@@ -1100,7 +1547,8 @@ const SPACE_OPTIONS = [
 /** Where a block shows, and the spacing and alignment it asks for on phones. */
 const DisplaySettings = ({ block }: { block: TPageBlock }) => {
 	const updateBlock = usePageBuilderStore((store) => store.updateBlock);
-	const display = (patch: Partial<TPageBlockDisplay>) => updateBlock(block.id, { display: patch });
+	const display = (patch: Partial<TPageBlockDisplay>) =>
+		updateBlock(block.id, { display: patch });
 	return (
 		<PanelSection title='Display'>
 			<Segmented
@@ -1123,14 +1571,18 @@ const DisplaySettings = ({ block }: { block: TPageBlock }) => {
 				label='Space above on phones'
 				value={block.mobile_space_above ?? ''}
 				placeholder='Same as above'
-				onChange={(value) => display({ mobile_space_above: (value || null) as TPageSpacing | null })}
+				onChange={(value) =>
+					display({ mobile_space_above: (value || null) as TPageSpacing | null })
+				}
 				options={SPACE_OPTIONS}
 			/>
 			<PanelSelect
 				label='Alignment on phones'
 				value={block.mobile_align ?? ''}
 				placeholder='Same as on desktop'
-				onChange={(value) => display({ mobile_align: (value || null) as TPageAlign | null })}
+				onChange={(value) =>
+					display({ mobile_align: (value || null) as TPageAlign | null })
+				}
 				options={[
 					{ value: 'left', label: 'Left' },
 					{ value: 'center', label: 'Centre' },
@@ -1138,7 +1590,8 @@ const DisplaySettings = ({ block }: { block: TPageBlock }) => {
 				]}
 			/>
 			<p className='text-[10px] leading-snug text-zinc-400 dark:text-zinc-500'>
-				A block hidden on the screen you’re previewing shows faded here, and is left out on the page.
+				A block hidden on the screen you’re previewing shows faded here, and is left out on
+				the page.
 			</p>
 		</PanelSection>
 	);
@@ -1153,7 +1606,9 @@ const BlockInspector = ({ block }: { block: TPageBlock }) => {
 	const Icon = meta.icon;
 	const issues = page.issues.filter((issue) => issue.block_id === block.id);
 	const inColumn = usePageBuilderStore((store) =>
-		store.content ? findPlace(store.content.blocks, block.id)?.parent?.type === 'column' : false,
+		store.content
+			? findPlace(store.content.blocks, block.id)?.parent?.type === 'column'
+			: false,
 	);
 	const isColumn = block.type === 'column';
 	const [saving, setSaving] = useState(false);
@@ -1165,47 +1620,55 @@ const BlockInspector = ({ block }: { block: TPageBlock }) => {
 					<Icon size={15} />
 				</span>
 				<div className='min-w-0 flex-1'>
-					<p className='text-xs font-bold text-zinc-900 dark:text-zinc-100'>{meta.label}</p>
+					<p className='text-xs font-bold text-zinc-900 dark:text-zinc-100'>
+						{meta.label}
+					</p>
 					<p className='truncate text-[10px] text-zinc-400'>{meta.description}</p>
 				</div>
 				{!isColumn && (
-				<>
-				<button
-					type='button'
-					aria-label={block.locked ? 'Unlock block' : 'Lock block'}
-					title={block.locked ? 'Unlock' : 'Lock, so it can’t be edited, moved or deleted by accident'}
-					aria-pressed={block.locked}
-					onClick={() => updateBlock(block.id, { display: { locked: !block.locked } })}
-					className={`rounded-lg p-1.5 transition ${block.locked ? 'bg-amber-100 text-amber-800 dark:bg-amber-400/15 dark:text-amber-300' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200'}`}>
-					{block.locked ? <Lock size={14} /> : <LockOpen size={14} />}
-				</button>
-				<button
-					type='button'
-					aria-label='Save to library'
-					title='Save to library, to reuse on any page'
-					aria-pressed={saving}
-					onClick={() => setSaving((open) => !open)}
-					className={`rounded-lg p-1.5 transition ${saving ? 'bg-primary-100 text-primary-800 dark:bg-primary-400/15 dark:text-primary-300' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200'}`}>
-					<BookmarkPlus size={14} />
-				</button>
-				<button
-					type='button'
-					aria-label='Duplicate block'
-					title='Duplicate (⌘D)'
-					onClick={() => duplicateBlock(block.id)}
-					className='rounded-lg p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200'>
-					<Copy size={14} />
-				</button>
-				<button
-					type='button'
-					aria-label='Delete block'
-					title='Delete (⌫)'
-					disabled={block.locked}
-					onClick={() => removeBlock(block.id)}
-					className='rounded-lg p-1.5 text-zinc-400 transition hover:bg-rose-50 disabled:pointer-events-none disabled:opacity-40 hover:text-rose-600 dark:hover:bg-rose-500/10'>
-					<Trash2 size={14} />
-				</button>
-				</>
+					<>
+						<button
+							type='button'
+							aria-label={block.locked ? 'Unlock block' : 'Lock block'}
+							title={
+								block.locked
+									? 'Unlock'
+									: 'Lock, so it can’t be edited, moved or deleted by accident'
+							}
+							aria-pressed={block.locked}
+							onClick={() =>
+								updateBlock(block.id, { display: { locked: !block.locked } })
+							}
+							className={`rounded-lg p-1.5 transition ${block.locked ? 'bg-amber-100 text-amber-800 dark:bg-amber-400/15 dark:text-amber-300' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200'}`}>
+							{block.locked ? <Lock size={14} /> : <LockOpen size={14} />}
+						</button>
+						<button
+							type='button'
+							aria-label='Save to library'
+							title='Save to library, to reuse on any page'
+							aria-pressed={saving}
+							onClick={() => setSaving((open) => !open)}
+							className={`rounded-lg p-1.5 transition ${saving ? 'bg-primary-100 text-primary-800 dark:bg-primary-400/15 dark:text-primary-300' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200'}`}>
+							<BookmarkPlus size={14} />
+						</button>
+						<button
+							type='button'
+							aria-label='Duplicate block'
+							title='Duplicate (⌘D)'
+							onClick={() => duplicateBlock(block.id)}
+							className='rounded-lg p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200'>
+							<Copy size={14} />
+						</button>
+						<button
+							type='button'
+							aria-label='Delete block'
+							title='Delete (⌫)'
+							disabled={block.locked}
+							onClick={() => removeBlock(block.id)}
+							className='rounded-lg p-1.5 text-zinc-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:pointer-events-none disabled:opacity-40 dark:hover:bg-rose-500/10'>
+							<Trash2 size={14} />
+						</button>
+					</>
 				)}
 			</div>
 			{saving && <SaveToLibrary block={block} onDone={() => setSaving(false)} />}
@@ -1219,20 +1682,25 @@ const BlockInspector = ({ block }: { block: TPageBlock }) => {
 					<Lock size={12} /> Locked. Unlock it to make changes.
 				</div>
 			)}
-			<fieldset disabled={block.locked} className={`m-0 min-w-0 border-0 p-0 ${block.locked ? 'opacity-50' : ''}`}>
-				<PropsInspector block={block} set={(props, coalesce) => updateBlock(block.id, { props }, coalesce)} />
+			<fieldset
+				disabled={block.locked}
+				className={`m-0 min-w-0 border-0 p-0 ${block.locked ? 'opacity-50' : ''}`}>
+				<PropsInspector
+					block={block}
+					set={(props, coalesce) => updateBlock(block.id, { props }, coalesce)}
+				/>
 				{!isContainer(block) && !inColumn && (
-				<PanelSection title='Layout'>
-					<Segmented
-						label='Width'
-						value={block.width}
-						onChange={(width) => updateBlock(block.id, { width })}
-						options={WIDTH_OPTIONS}
-					/>
-					<p className='text-[10px] leading-snug text-zinc-400 dark:text-zinc-500'>
-						Narrow blocks sit side by side on wide screens and stack on phones.
-					</p>
-				</PanelSection>
+					<PanelSection title='Layout'>
+						<Segmented
+							label='Width'
+							value={block.width}
+							onChange={(width) => updateBlock(block.id, { width })}
+							options={WIDTH_OPTIONS}
+						/>
+						<p className='text-[10px] leading-snug text-zinc-400 dark:text-zinc-500'>
+							Narrow blocks sit side by side on wide screens and stack on phones.
+						</p>
+					</PanelSection>
 				)}
 				{!isColumn && <DisplaySettings block={block} />}
 				{!isColumn && <StyleTools block={block} />}
@@ -1282,17 +1750,25 @@ const PagePanel = () => {
 						value={name}
 						onChange={(e) => setName(e.target.value)}
 						onBlur={saveName}
-						onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+						onKeyDown={(e) =>
+							e.key === 'Enter' && (e.target as HTMLInputElement).blur()
+						}
 						className={panelInputClass}
 					/>
 				</PanelField>
-				<PanelField label='Description' htmlFor='page-description' hint='For your team. Shown in the pages list.'>
+				<PanelField
+					label='Description'
+					htmlFor='page-description'
+					hint='For your team. Shown in the pages list.'>
 					<textarea
 						id='page-description'
 						rows={3}
 						value={description}
 						onChange={(e) => setDescription(e.target.value)}
-						onBlur={() => description !== (page.description ?? '') && update.mutate({ description: description || null })}
+						onBlur={() =>
+							description !== (page.description ?? '') &&
+							update.mutate({ description: description || null })
+						}
 						className={`${panelInputClass} resize-y`}
 					/>
 				</PanelField>
@@ -1303,8 +1779,12 @@ const PagePanel = () => {
 					value={page.workflow_id}
 					onChange={(value) => void changeWorkflow(value)}
 					options={[
-						...(workflows ?? []).map((workflow) => ({ value: workflow.id, label: workflow.name })),
-						...(page.workflow && !(workflows ?? []).some((workflow) => workflow.id === page.workflow_id)
+						...(workflows ?? []).map((workflow) => ({
+							value: workflow.id,
+							label: workflow.name,
+						})),
+						...(page.workflow &&
+						!(workflows ?? []).some((workflow) => workflow.id === page.workflow_id)
 							? [{ value: page.workflow_id, label: page.workflow.name }]
 							: []),
 					]}
@@ -1325,12 +1805,15 @@ const PagePanel = () => {
 				{page.issues.length ? (
 					<IssueList issues={page.issues} />
 				) : (
-					<p className='text-[11px] text-emerald-600 dark:text-emerald-400'>Everything’s connected. Ready to publish.</p>
+					<p className='text-[11px] text-emerald-600 dark:text-emerald-400'>
+						Everything’s connected. Ready to publish.
+					</p>
 				)}
 			</PanelSection>
 			<PanelSection>
 				<p className='text-[11px] leading-relaxed text-zinc-400 dark:text-zinc-500'>
-					Click a block on the canvas to edit it. Drag blocks to reorder them, or use ⌥↑ and ⌥↓.
+					Click a block on the canvas to edit it. Drag blocks to reorder them, or use ⌥↑
+					and ⌥↓.
 				</p>
 			</PanelSection>
 		</>
@@ -1359,7 +1842,11 @@ const RunsPanel = () => {
 				<button
 					type='button'
 					aria-label='Refresh'
-					onClick={() => qc.invalidateQueries({ queryKey: workflowPageKeys.submissions(ws, page.id) })}
+					onClick={() =>
+						qc.invalidateQueries({
+							queryKey: workflowPageKeys.submissions(ws, page.id),
+						})
+					}
 					className='rounded-lg p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/[0.06]'>
 					<RefreshCw size={13} className={isFetching ? 'animate-spin' : ''} />
 				</button>
@@ -1369,8 +1856,12 @@ const RunsPanel = () => {
 			) : !submissions?.length ? (
 				<div className='flex flex-col items-center gap-2 px-6 py-10 text-center'>
 					<History size={22} className='text-zinc-300 dark:text-zinc-600' />
-					<p className='text-xs font-semibold text-zinc-600 dark:text-zinc-300'>No runs yet</p>
-					<p className='text-[11px] text-zinc-400'>Runs from this page, including test runs from Preview, show up here.</p>
+					<p className='text-xs font-semibold text-zinc-600 dark:text-zinc-300'>
+						No runs yet
+					</p>
+					<p className='text-[11px] text-zinc-400'>
+						Runs from this page, including test runs from Preview, show up here.
+					</p>
 				</div>
 			) : (
 				<ul className='divide-y divide-zinc-100 dark:divide-white/[0.06]'>
@@ -1382,10 +1873,14 @@ const RunsPanel = () => {
 									to={submission.run ? paths.trail(ws, submission.run.id) : '#'}
 									target='_blank'
 									className='flex items-center gap-3 px-4 py-2.5 transition hover:bg-zinc-50 dark:hover:bg-white/[0.03]'>
-									<span className={`size-2 shrink-0 rounded-full ${STATUS_DOT[status] ?? 'bg-zinc-400'}`} />
+									<span
+										className={`size-2 shrink-0 rounded-full ${STATUS_DOT[status] ?? 'bg-zinc-400'}`}
+									/>
 									<span className='min-w-0 flex-1'>
 										<span className='flex items-center gap-1.5 text-xs font-semibold text-zinc-800 dark:text-zinc-100'>
-											<span className='truncate'>{submission.user?.name ?? 'Visitor'}</span>
+											<span className='truncate'>
+												{submission.user?.name ?? 'Visitor'}
+											</span>
 											{submission.is_test && (
 												<span className='rounded bg-zinc-100 px-1 text-[9px] font-bold text-zinc-500 uppercase dark:bg-white/[0.06]'>
 													Test
@@ -1393,7 +1888,8 @@ const RunsPanel = () => {
 											)}
 										</span>
 										<span className='block text-[10px] text-zinc-400'>
-											{humanize(status)} · {relativeTime(submission.created_at)}
+											{humanize(status)} ·{' '}
+											{relativeTime(submission.created_at)}
 										</span>
 									</span>
 									<ExternalLink size={12} className='shrink-0 text-zinc-300' />
@@ -1434,7 +1930,9 @@ const SelectionPanel = ({ ids }: { ids: string[] }) => {
 	});
 	const resizable = ids.every((id) => {
 		const place = findPlace(blocks, id);
-		return !!place && place.parent?.type !== 'column' && !isContainer(place.siblings[place.index]);
+		return (
+			!!place && place.parent?.type !== 'column' && !isContainer(place.siblings[place.index])
+		);
 	});
 	const button =
 		'flex h-9 w-full items-center gap-2 rounded-lg border border-zinc-200 px-3 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-40 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-white/[0.04]';
@@ -1442,26 +1940,41 @@ const SelectionPanel = ({ ids }: { ids: string[] }) => {
 	return (
 		<>
 			<div className='border-b border-zinc-100 px-4 py-3 dark:border-white/[0.06]'>
-				<p className='text-xs font-bold text-zinc-900 dark:text-zinc-100'>{ids.length} blocks selected</p>
-				<p className='text-[10px] text-zinc-400'>Shift- or ⌘-click blocks to add or remove them.</p>
+				<p className='text-xs font-bold text-zinc-900 dark:text-zinc-100'>
+					{ids.length} blocks selected
+				</p>
+				<p className='text-[10px] text-zinc-400'>
+					Shift- or ⌘-click blocks to add or remove them.
+				</p>
 			</div>
 			<PanelSection title='Do to all'>
 				<button type='button' className={button} onClick={() => void copyBlocks(ids)}>
-					<Copy size={13} /> Copy <span className='ml-auto text-[10px] text-zinc-400'>⌘C</span>
+					<Copy size={13} /> Copy{' '}
+					<span className='ml-auto text-[10px] text-zinc-400'>⌘C</span>
 				</button>
 				<button type='button' className={button} onClick={() => duplicateBlocks(ids)}>
-					<CopyPlus size={13} /> Duplicate <span className='ml-auto text-[10px] text-zinc-400'>⌘D</span>
+					<CopyPlus size={13} /> Duplicate{' '}
+					<span className='ml-auto text-[10px] text-zinc-400'>⌘D</span>
 				</button>
 				<button
 					type='button'
 					className={button}
 					disabled={!onPage}
-					title={onPage ? undefined : 'Only blocks placed directly on the page can be grouped.'}
+					title={
+						onPage
+							? undefined
+							: 'Only blocks placed directly on the page can be grouped.'
+					}
 					onClick={() => wrapInSection(ids)}>
-					<LayoutPanelTop size={13} /> Group in a section <span className='ml-auto text-[10px] text-zinc-400'>⌘G</span>
+					<LayoutPanelTop size={13} /> Group in a section{' '}
+					<span className='ml-auto text-[10px] text-zinc-400'>⌘G</span>
 				</button>
-				<button type='button' className={`${button} text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10`} onClick={() => removeBlocks(ids)}>
-					<Trash2 size={13} /> Delete <span className='ml-auto text-[10px] text-zinc-400'>⌫</span>
+				<button
+					type='button'
+					className={`${button} text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10`}
+					onClick={() => removeBlocks(ids)}>
+					<Trash2 size={13} /> Delete{' '}
+					<span className='ml-auto text-[10px] text-zinc-400'>⌫</span>
 				</button>
 			</PanelSection>
 			{alignable && (
@@ -1481,7 +1994,11 @@ const SelectionPanel = ({ ids }: { ids: string[] }) => {
 					type='button'
 					className={button}
 					disabled={!copiedStyle}
-					title={copiedStyle ? undefined : 'Pick a block, then use Copy style in its Style section.'}
+					title={
+						copiedStyle
+							? undefined
+							: 'Pick a block, then use Copy style in its Style section.'
+					}
 					onClick={() => pasteStyle(ids)}>
 					Paste copied style
 				</button>
@@ -1492,7 +2009,9 @@ const SelectionPanel = ({ ids }: { ids: string[] }) => {
 						label='Width'
 						value={(() => {
 							const widths = new Set(ids.map((id) => findBlock(blocks, id)?.width));
-							return widths.size === 1 ? [...widths][0]! : ('' as TPageBlock['width']);
+							return widths.size === 1
+								? [...widths][0]!
+								: ('' as TPageBlock['width']);
 						})()}
 						onChange={(width) => ids.forEach((id) => updateBlock(id, { width }))}
 						options={WIDTH_OPTIONS}
@@ -1511,7 +2030,10 @@ const RightPanel = () => {
 
 	return (
 		<aside className='flex h-full min-h-0 flex-col border-l border-zinc-200 bg-white dark:border-white/10 dark:bg-zinc-950'>
-			<div role='tablist' aria-label='Inspector' className='flex shrink-0 gap-1 border-b border-zinc-200 p-2 dark:border-white/10'>
+			<div
+				role='tablist'
+				aria-label='Inspector'
+				className='flex shrink-0 gap-1 border-b border-zinc-200 p-2 dark:border-white/10'>
 				{TABS.map(({ id, label, icon: Icon }) => (
 					<button
 						key={id}

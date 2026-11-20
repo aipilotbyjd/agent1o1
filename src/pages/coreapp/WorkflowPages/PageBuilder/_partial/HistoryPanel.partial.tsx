@@ -150,7 +150,8 @@ const HistoryPanel = () => {
 		if (!ok || !(await flush())) return;
 		restore.mutate(version.id, {
 			onSuccess: (restored) => {
-				if (restored.content) load(restored.id, restored.content, 'a', restored.draft_revision);
+				if (restored.content)
+					load(restored.id, restored.content, 'a', restored.draft_revision);
 				setPreviewing(null);
 				notify.success(`Version ${version.number} restored. Publish to make it live.`);
 			},

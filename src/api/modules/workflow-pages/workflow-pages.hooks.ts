@@ -16,7 +16,8 @@ export const workflowPageKeys = {
 		['workspaces', ws, 'pages', 'list', workflowId ?? 'all'] as const,
 	detail: (ws: string, id: string) => ['workspaces', ws, 'pages', 'detail', id] as const,
 	view: (ws: string, id: string) => ['workspaces', ws, 'pages', 'view', id] as const,
-	submissions: (ws: string, id: string) => ['workspaces', ws, 'pages', 'submissions', id] as const,
+	submissions: (ws: string, id: string) =>
+		['workspaces', ws, 'pages', 'submissions', id] as const,
 	sections: (ws: string) => ['workspaces', ws, 'pages', 'sections'] as const,
 	insights: (ws: string, id: string) => ['workspaces', ws, 'pages', 'insights', id] as const,
 	versions: (ws: string, id: string) => ['workspaces', ws, 'pages', 'versions', id] as const,
@@ -70,14 +71,23 @@ export const useWorkflowPageCommentActions = (ws: string, id: string) => {
 	const refresh = () => qc.invalidateQueries({ queryKey: workflowPageKeys.comments(ws, id) });
 	return {
 		add: useMutation({
-			mutationFn: (payload: { body: string; block_id?: string | null; parent_id?: string | null }) =>
-				WorkflowPageService.addComment(ws, id, payload),
+			mutationFn: (payload: {
+				body: string;
+				block_id?: string | null;
+				parent_id?: string | null;
+			}) => WorkflowPageService.addComment(ws, id, payload),
 			onSuccess: refresh,
 			meta: { errorMessage: 'Could not post the comment' },
 		}),
 		update: useMutation({
-			mutationFn: ({ commentId, ...payload }: { commentId: string; body?: string; resolved?: boolean }) =>
-				WorkflowPageService.updateComment(ws, id, commentId, payload),
+			mutationFn: ({
+				commentId,
+				...payload
+			}: {
+				commentId: string;
+				body?: string;
+				resolved?: boolean;
+			}) => WorkflowPageService.updateComment(ws, id, commentId, payload),
 			onSuccess: refresh,
 			meta: { errorMessage: 'Could not update the comment' },
 		}),
@@ -96,10 +106,16 @@ export const useWorkflowPageGeneration = (ws: string, id: string, generationId: 
 		queryFn: ({ signal }) => WorkflowPageService.generation(ws, id, generationId!, signal),
 		enabled: !!ws && !!id && !!generationId,
 		refetchInterval: (query) =>
-			query.state.data && ['completed', 'failed'].includes(query.state.data.status) ? false : 2500,
+			query.state.data && ['completed', 'failed'].includes(query.state.data.status)
+				? false
+				: 2500,
 	});
 
-export const useWorkflowPageInsights = (ws: string, id: string, params: { days: number; include_tests: boolean }) =>
+export const useWorkflowPageInsights = (
+	ws: string,
+	id: string,
+	params: { days: number; include_tests: boolean },
+) =>
 	useQuery({
 		queryKey: [...workflowPageKeys.insights(ws, id), params],
 		queryFn: ({ signal }) => WorkflowPageService.insights(ws, id, params, signal),
@@ -107,7 +123,11 @@ export const useWorkflowPageInsights = (ws: string, id: string, params: { days: 
 		placeholderData: keepPreviousData,
 	});
 
-export const useWorkflowPageSubmissionsPage = (ws: string, id: string, filters: TPageSubmissionFilters) =>
+export const useWorkflowPageSubmissionsPage = (
+	ws: string,
+	id: string,
+	filters: TPageSubmissionFilters,
+) =>
 	useQuery({
 		queryKey: [...workflowPageKeys.submissions(ws, id), 'table', filters],
 		queryFn: ({ signal }) => WorkflowPageService.submissionsPage(ws, id, filters, signal),
@@ -120,9 +140,18 @@ export const useWorkflowPageVariant = (ws: string, id: string) => {
 	const store = useStorePage(ws);
 	const options = { onSuccess: store, meta: { errorMessage: 'Could not change version B' } };
 	return {
-		create: useMutation({ mutationFn: () => WorkflowPageService.createVariant(ws, id), ...options }),
-		remove: useMutation({ mutationFn: () => WorkflowPageService.removeVariant(ws, id), ...options }),
-		promote: useMutation({ mutationFn: () => WorkflowPageService.promoteVariant(ws, id), ...options }),
+		create: useMutation({
+			mutationFn: () => WorkflowPageService.createVariant(ws, id),
+			...options,
+		}),
+		remove: useMutation({
+			mutationFn: () => WorkflowPageService.removeVariant(ws, id),
+			...options,
+		}),
+		promote: useMutation({
+			mutationFn: () => WorkflowPageService.promoteVariant(ws, id),
+			...options,
+		}),
 	};
 };
 
@@ -136,7 +165,8 @@ export const usePageSections = (ws: string) =>
 export const useSavePageSection = (ws: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (payload: { name: string; block: TPageBlock }) => PageSectionService.create(ws, payload),
+		mutationFn: (payload: { name: string; block: TPageBlock }) =>
+			PageSectionService.create(ws, payload),
 		onSuccess: () => qc.invalidateQueries({ queryKey: workflowPageKeys.sections(ws) }),
 		meta: { errorMessage: 'Could not save the section' },
 	});
@@ -155,7 +185,11 @@ export const useWorkflowPages = (ws: string, workflowId?: string) =>
 	useQuery({
 		queryKey: workflowPageKeys.list(ws, workflowId),
 		queryFn: ({ signal }) =>
-			WorkflowPageService.list(ws, workflowId ? { workflow_id: workflowId } : undefined, signal),
+			WorkflowPageService.list(
+				ws,
+				workflowId ? { workflow_id: workflowId } : undefined,
+				signal,
+			),
 		enabled: !!ws,
 	});
 
@@ -209,7 +243,8 @@ export const useCreateWorkflowPage = (ws: string) => {
 export const useUpdateWorkflowPage = (ws: string, id: string, silentStatuses: number[] = []) => {
 	const store = useStorePage(ws);
 	return useMutation({
-		mutationFn: (payload: TUpdateWorkflowPageDto) => WorkflowPageService.update(ws, id, payload),
+		mutationFn: (payload: TUpdateWorkflowPageDto) =>
+			WorkflowPageService.update(ws, id, payload),
 		onSuccess: store,
 		meta: { errorMessage: 'Could not save the page', silentStatuses: [422, ...silentStatuses] },
 	});
@@ -231,7 +266,9 @@ export const useCloneWorkflowPage = (ws: string) => {
 		mutationFn: ({ id, ...payload }: TClonePageDto & { id: string }) =>
 			WorkflowPageService.clone(ws, id, payload),
 		onSuccess: (_page, variables) => {
-			qc.invalidateQueries({ queryKey: [...workflowPageKeys.all(variables.target_workspace_id), 'list'] });
+			qc.invalidateQueries({
+				queryKey: [...workflowPageKeys.all(variables.target_workspace_id), 'list'],
+			});
 		},
 		meta: { errorMessage: 'Could not copy the page' },
 	});

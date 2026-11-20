@@ -61,7 +61,11 @@ export type TPageBlockProps = {
 		rating: number;
 	};
 	stats: { items: { value: string; label: string }[]; align: 'center' | 'left' };
-	logos: { title: string | null; items: { url: string; alt: string | null }[]; grayscale: boolean };
+	logos: {
+		title: string | null;
+		items: { url: string; alt: string | null }[];
+		grayscale: boolean;
+	};
 	tabs: { items: { label: string; markdown: string }[] };
 	/** `target` is an ISO 8601 moment in UTC. */
 	countdown: {
@@ -109,7 +113,11 @@ export type TPageBlockProps = {
 		before_items: string | null;
 		after_items: string | null;
 	};
-	progress: { title: string | null; items: { label: string; value: number }[]; show_values: boolean };
+	progress: {
+		title: string | null;
+		items: { label: string; value: number }[];
+		show_values: boolean;
+	};
 	social: {
 		items: { network: TPageSocialNetwork; url: string }[];
 		align: TPageAlign;
@@ -175,7 +183,8 @@ export type TPageBlockOf<T extends TPageBlockType> = {
 	type: T;
 	width: TPageBlockWidth;
 	props: TPageBlockProps[T];
-} & TPageBlockDisplay & (T extends TPageContainerType ? TPageBlockChildren : unknown);
+} & TPageBlockDisplay &
+	(T extends TPageContainerType ? TPageBlockChildren : unknown);
 
 export type TPageBlock = { [T in TPageBlockType]: TPageBlockOf<T> }[TPageBlockType];
 
@@ -422,7 +431,10 @@ export type TPageInsights = {
 	totals: TPageInsightCounts & { avg_duration_seconds: number | null };
 	daily: (TPageInsightCounts & { date: string })[];
 	/** Version A then B, while an A/B test runs or has data; empty otherwise. */
-	variants: (TPageInsightCounts & { variant: TPageVariant; avg_duration_seconds: number | null })[];
+	variants: (TPageInsightCounts & {
+		variant: TPageVariant;
+		avg_duration_seconds: number | null;
+	})[];
 };
 
 // ─── Building together ───────────────────────────────────────

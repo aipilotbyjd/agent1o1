@@ -72,7 +72,13 @@ export const BLOCK_CATALOG: { [T in TPageBlockType]: TBlockMeta<T> } = {
 		description: 'Shows a value the workflow returns',
 		icon: LogOut,
 		group: 'workflow',
-		defaults: { output_name: '', label: null, display: 'auto', empty_text: null, copyable: true },
+		defaults: {
+			output_name: '',
+			label: null,
+			display: 'auto',
+			empty_text: null,
+			copyable: true,
+		},
 	},
 	status: {
 		label: 'Run status',
@@ -93,7 +99,10 @@ export const BLOCK_CATALOG: { [T in TPageBlockType]: TBlockMeta<T> } = {
 		description: 'A paragraph, with Markdown',
 		icon: Type,
 		group: 'content',
-		defaults: { markdown: 'Explain what this page does and what people get back.', align: 'left' },
+		defaults: {
+			markdown: 'Explain what this page does and what people get back.',
+			align: 'left',
+		},
 	},
 	image: {
 		label: 'Image',
@@ -107,7 +116,11 @@ export const BLOCK_CATALOG: { [T in TPageBlockType]: TBlockMeta<T> } = {
 		description: 'A highlighted note or warning',
 		icon: Megaphone,
 		group: 'content',
-		defaults: { tone: 'info', title: null, markdown: 'Something people should know before they run this.' },
+		defaults: {
+			tone: 'info',
+			title: null,
+			markdown: 'Something people should know before they run this.',
+		},
 	},
 	divider: {
 		label: 'Divider',
@@ -145,7 +158,10 @@ export const BLOCK_CATALOG: { [T in TPageBlockType]: TBlockMeta<T> } = {
 		defaults: {
 			items: [
 				{ question: 'How long does it take?', answer: 'Usually under a minute.' },
-				{ question: 'Is my data stored?', answer: 'Only what’s needed to give you your result.' },
+				{
+					question: 'Is my data stored?',
+					answer: 'Only what’s needed to give you your result.',
+				},
 			],
 			open_first: true,
 		},
@@ -155,7 +171,13 @@ export const BLOCK_CATALOG: { [T in TPageBlockType]: TBlockMeta<T> } = {
 		description: 'A quote from a happy customer',
 		icon: Quote,
 		group: 'content',
-		defaults: { quote: 'This saved our team hours every week.', author: 'Alex Morgan', role: 'Operations lead', avatar_url: null, rating: 5 },
+		defaults: {
+			quote: 'This saved our team hours every week.',
+			author: 'Alex Morgan',
+			role: 'Operations lead',
+			avatar_url: null,
+			rating: 5,
+		},
 	},
 	stats: {
 		label: 'Stats',
@@ -231,7 +253,12 @@ export const BLOCK_CATALOG: { [T in TPageBlockType]: TBlockMeta<T> } = {
 		description: 'A snippet with a copy button',
 		icon: CodeXml,
 		group: 'content',
-		defaults: { code: "curl https://api.example.com/run", language: 'bash', filename: null, show_copy: true },
+		defaults: {
+			code: 'curl https://api.example.com/run',
+			language: 'bash',
+			filename: null,
+			show_copy: true,
+		},
 	},
 	pricing: {
 		label: 'Pricing',
@@ -241,8 +268,26 @@ export const BLOCK_CATALOG: { [T in TPageBlockType]: TBlockMeta<T> } = {
 		defaults: {
 			title: null,
 			items: [
-				{ name: 'Starter', price: '$0', period: '/month', description: 'For trying it out', features: 'Basic runs\nCommunity support', cta_label: 'Get started', cta_url: null, highlighted: false },
-				{ name: 'Pro', price: '$29', period: '/month', description: 'For busy teams', features: 'Unlimited runs\nPriority support\nShared history', cta_label: 'Choose Pro', cta_url: null, highlighted: true },
+				{
+					name: 'Starter',
+					price: '$0',
+					period: '/month',
+					description: 'For trying it out',
+					features: 'Basic runs\nCommunity support',
+					cta_label: 'Get started',
+					cta_url: null,
+					highlighted: false,
+				},
+				{
+					name: 'Pro',
+					price: '$29',
+					period: '/month',
+					description: 'For busy teams',
+					features: 'Unlimited runs\nPriority support\nShared history',
+					cta_label: 'Choose Pro',
+					cta_url: null,
+					highlighted: true,
+				},
 			],
 		},
 	},
@@ -355,10 +400,16 @@ export const createBlock = <T extends TPageBlockType>(
 	type: T,
 	props: Partial<TPageBlockProps[T]> = {},
 ): Extract<TPageBlock, { type: T }> => {
-	const merged = structuredClone({ ...BLOCK_CATALOG[type].defaults, ...props }) as TPageBlockProps[T];
+	const merged = structuredClone({
+		...BLOCK_CATALOG[type].defaults,
+		...props,
+	}) as TPageBlockProps[T];
 	const children =
 		type === 'columns'
-			? Array.from({ length: columnCount((merged as TPageBlockProps['columns']).layout) }, () => createBlock('column'))
+			? Array.from(
+					{ length: columnCount((merged as TPageBlockProps['columns']).layout) },
+					() => createBlock('column'),
+				)
 			: type === 'section' || type === 'column'
 				? []
 				: undefined;
@@ -373,7 +424,10 @@ export const createBlock = <T extends TPageBlockType>(
 };
 
 /** Attaches to each field block, at any depth, the interface field it fills in. */
-export const resolveBlocks = (blocks: TPageBlock[], fields: TWorkflowInterfaceField[]): TRenderBlock[] =>
+export const resolveBlocks = (
+	blocks: TPageBlock[],
+	fields: TWorkflowInterfaceField[],
+): TRenderBlock[] =>
 	blocks.map((block) =>
 		isContainer(block)
 			? ({ ...block, children: resolveBlocks(block.children, fields) } as TRenderBlock)
@@ -388,7 +442,10 @@ export const withoutUnboundFields = (blocks: TRenderBlock[]): TRenderBlock[] =>
 		.filter((block) => block.type !== 'field' || block.field)
 		.map((block) =>
 			isContainer(block)
-				? ({ ...block, children: withoutUnboundFields(block.children as TRenderBlock[]) } as TRenderBlock)
+				? ({
+						...block,
+						children: withoutUnboundFields(block.children as TRenderBlock[]),
+					} as TRenderBlock)
 				: block,
 		);
 
@@ -410,7 +467,10 @@ export const blockSummary = (block: TPageBlock, fields: TWorkflowInterfaceField[
 		case 'submit':
 			return block.props.label;
 		case 'output':
-			return block.props.label || (block.props.output_name ? humanize(block.props.output_name) : 'Not connected');
+			return (
+				block.props.label ||
+				(block.props.output_name ? humanize(block.props.output_name) : 'Not connected')
+			);
 		case 'status':
 			return 'Progress and result';
 		case 'divider':
@@ -432,27 +492,54 @@ export const blockSummary = (block: TPageBlock, fields: TWorkflowInterfaceField[
 		case 'tabs':
 			return block.props.items.map((item) => item.label).join(' · ') || 'No tabs yet';
 		case 'countdown':
-			return block.props.target ? new Date(block.props.target).toLocaleString() : 'No date yet';
+			return block.props.target
+				? new Date(block.props.target).toLocaleString()
+				: 'No date yet';
 		case 'steps':
-			return block.props.title || `${block.props.items.length} step${block.props.items.length === 1 ? '' : 's'}`;
+			return (
+				block.props.title ||
+				`${block.props.items.length} step${block.props.items.length === 1 ? '' : 's'}`
+			);
 		case 'features':
-			return block.props.title || `${block.props.items.length} feature${block.props.items.length === 1 ? '' : 's'}`;
+			return (
+				block.props.title ||
+				`${block.props.items.length} feature${block.props.items.length === 1 ? '' : 's'}`
+			);
 		case 'code':
-			return block.props.filename || block.props.language || block.props.code.split('\n')[0].slice(0, 50) || 'No code yet';
+			return (
+				block.props.filename ||
+				block.props.language ||
+				block.props.code.split('\n')[0].slice(0, 50) ||
+				'No code yet'
+			);
 		case 'pricing':
-			return block.props.items.map((plan) => plan.name).filter(Boolean).join(' · ') || 'No plans yet';
+			return (
+				block.props.items
+					.map((plan) => plan.name)
+					.filter(Boolean)
+					.join(' · ') || 'No plans yet'
+			);
 		case 'embed':
-			return block.props.title || (block.props.url ? new URL(block.props.url).hostname : 'No link yet');
+			return (
+				block.props.title ||
+				(block.props.url ? new URL(block.props.url).hostname : 'No link yet')
+			);
 		case 'gallery':
 			return `${block.props.items.length} image${block.props.items.length === 1 ? '' : 's'}`;
 		case 'compare':
 			return block.props.mode === 'slider' ? 'Before / after' : 'Two lists';
 		case 'progress':
-			return block.props.title || `${block.props.items.length} bar${block.props.items.length === 1 ? '' : 's'}`;
+			return (
+				block.props.title ||
+				`${block.props.items.length} bar${block.props.items.length === 1 ? '' : 's'}`
+			);
 		case 'social':
 			return `${block.props.items.length} link${block.props.items.length === 1 ? '' : 's'}`;
 		case 'timeline':
-			return block.props.title || `${block.props.items.length} milestone${block.props.items.length === 1 ? '' : 's'}`;
+			return (
+				block.props.title ||
+				`${block.props.items.length} milestone${block.props.items.length === 1 ? '' : 's'}`
+			);
 		case 'section':
 			return `${block.children.length} block${block.children.length === 1 ? '' : 's'}`;
 		case 'columns':

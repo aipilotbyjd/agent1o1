@@ -16,8 +16,14 @@ import {
  * public link hands back to read a result; members don't need one.
  */
 export type TPageTransport = {
-	submit: (input: Record<string, unknown>) => Promise<{ result: TPageSubmissionResult; secret?: string }>;
-	poll: (submissionId: string, secret: string | undefined, signal: AbortSignal) => Promise<TPageSubmissionResult>;
+	submit: (
+		input: Record<string, unknown>,
+	) => Promise<{ result: TPageSubmissionResult; secret?: string }>;
+	poll: (
+		submissionId: string,
+		secret: string | undefined,
+		signal: AbortSignal,
+	) => Promise<TPageSubmissionResult>;
 	/** Where the run in progress is remembered, so a reload picks it back up.
 	 *  `submit` and `poll` must keep their identity between renders. */
 	storageKey?: string;
@@ -63,13 +69,18 @@ const readStored = (key?: string): TStored | null => {
 	}
 };
 
-export const usePageRun = (fields: TWorkflowInterfaceField[], transport: TPageTransport): TPageRun => {
+export const usePageRun = (
+	fields: TWorkflowInterfaceField[],
+	transport: TPageTransport,
+): TPageRun => {
 	const fieldsKey = fields.map((field) => `${field.key}:${field.type}`).join('|');
 	const [syncedFieldsKey, setSyncedFieldsKey] = useState(fieldsKey);
 	const [values, setValues] = useState<TRunFormValues>(() => initialRunFormValues(fields));
 	const [errors, setErrors] = useState<Record<string, string>>({});
 	const [formError, setFormError] = useState<string | null>(null);
-	const [tracking, setTracking] = useState<TStored | null>(() => readStored(transport.storageKey));
+	const [tracking, setTracking] = useState<TStored | null>(() =>
+		readStored(transport.storageKey),
+	);
 	const [phase, setPhase] = useState<TPageRunPhase>(() => (tracking ? 'running' : 'idle'));
 	const [result, setResult] = useState<TPageSubmissionResult | null>(null);
 
@@ -180,26 +191,31 @@ export const usePageRun = (fields: TWorkflowInterfaceField[], transport: TPageTr
 					);
 					return;
 				}
-				setFormError(ApiError.is(error) ? error.message : 'Something went wrong. Try again.');
+				setFormError(
+					ApiError.is(error) ? error.message : 'Something went wrong. Try again.',
+				);
 			});
 	}, [fields, values, send, storageKey]);
 
 	const started = useRef(false);
 	const onStart = transport.onStart;
 
-	const setValue = useCallback((key: string, value: unknown) => {
-		if (!started.current) {
-			started.current = true;
-			onStart?.();
-		}
-		setValues((current) => ({ ...current, [key]: value }));
-		setErrors((current) => {
-			if (!(key in current)) return current;
-			const next = { ...current };
-			delete next[key];
-			return next;
-		});
-	}, [onStart]);
+	const setValue = useCallback(
+		(key: string, value: unknown) => {
+			if (!started.current) {
+				started.current = true;
+				onStart?.();
+			}
+			setValues((current) => ({ ...current, [key]: value }));
+			setErrors((current) => {
+				if (!(key in current)) return current;
+				const next = { ...current };
+				delete next[key];
+				return next;
+			});
+		},
+		[onStart],
+	);
 
 	const reset = useCallback(() => {
 		setTracking(null);

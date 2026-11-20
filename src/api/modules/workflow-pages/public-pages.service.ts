@@ -32,26 +32,31 @@ export const PublicPageService = {
 
 	submit: (token: string, input: Record<string, unknown>, accessToken?: string | null) =>
 		axiosClient
-			.post<TApiResponse<{ submission: TPageSubmissionResult; secret: string }>>(
-				E.submit(token),
-				{ input },
-				{ headers: accessHeaders(accessToken) },
-			)
+			.post<
+				TApiResponse<{ submission: TPageSubmissionResult; secret: string }>
+			>(E.submit(token), { input }, { headers: accessHeaders(accessToken) })
 			.then((res) => res.data.data),
 
 	/** The visitor started filling in the page. */
 	started: (token: string) =>
-		axiosClient.post(E.events(token), { type: 'start' }, { headers: accessHeaders() }).then(() => undefined),
+		axiosClient
+			.post(E.events(token), { type: 'start' }, { headers: accessHeaders() })
+			.then(() => undefined),
 
 	/** The visitor clicked the "Made with Agent1o1" badge. */
 	badgeClicked: (token: string) =>
-		axiosClient.post(E.events(token), { type: 'badge_click' }, { headers: accessHeaders() }).then(() => undefined),
+		axiosClient
+			.post(E.events(token), { type: 'badge_click' }, { headers: accessHeaders() })
+			.then(() => undefined),
 
 	result: (token: string, submissionId: string, secret: string, signal?: AbortSignal) =>
 		axiosClient
-			.get<TApiResponse<{ submission: TPageSubmissionResult }>>(E.result(token, submissionId), {
-				headers: { [SECRET_HEADER]: secret },
-				signal,
-			})
+			.get<TApiResponse<{ submission: TPageSubmissionResult }>>(
+				E.result(token, submissionId),
+				{
+					headers: { [SECRET_HEADER]: secret },
+					signal,
+				},
+			)
 			.then((res) => res.data.data.submission),
 };

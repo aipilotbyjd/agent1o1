@@ -294,7 +294,10 @@ const FindReplace = ({ onClose }: { onClose: () => void }) => {
 	const [query, setQuery] = useState('');
 	const [replacement, setReplacement] = useState('');
 	const [matchCase, setMatchCase] = useState(false);
-	const matches = useMemo(() => findInBlocks(blocks ?? [], query, { matchCase }), [blocks, query, matchCase]);
+	const matches = useMemo(
+		() => findInBlocks(blocks ?? [], query, { matchCase }),
+		[blocks, query, matchCase],
+	);
 	const total = matches.reduce((sum, match) => sum + match.count, 0);
 	const names = useMemo(() => {
 		const map = new Map<string, string>();
@@ -315,7 +318,11 @@ const FindReplace = ({ onClose }: { onClose: () => void }) => {
 
 	const replaceAll = () => {
 		const replaced = replaceText(query, replacement, { matchCase });
-		notify.success(replaced > 0 ? `Replaced ${replaced} ${replaced === 1 ? 'match' : 'matches'}` : 'Nothing to replace');
+		notify.success(
+			replaced > 0
+				? `Replaced ${replaced} ${replaced === 1 ? 'match' : 'matches'}`
+				: 'Nothing to replace',
+		);
 		if (replaced > 0) setQuery('');
 	};
 
@@ -346,14 +353,20 @@ const FindReplace = ({ onClose }: { onClose: () => void }) => {
 				<input
 					value={replacement}
 					onChange={(event) => setReplacement(event.target.value)}
-					onKeyDown={(event) => event.key === 'Enter' && matches.length > 0 && replaceAll()}
+					onKeyDown={(event) =>
+						event.key === 'Enter' && matches.length > 0 && replaceAll()
+					}
 					placeholder='Replace with'
 					aria-label='Replace with'
 					className={input}
 				/>
 				<div className='flex items-center justify-between gap-3'>
 					<label className='flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-300'>
-						<input type='checkbox' checked={matchCase} onChange={(event) => setMatchCase(event.target.checked)} />
+						<input
+							type='checkbox'
+							checked={matchCase}
+							onChange={(event) => setMatchCase(event.target.checked)}
+						/>
 						Match case
 					</label>
 					<button
@@ -382,7 +395,9 @@ const FindReplace = ({ onClose }: { onClose: () => void }) => {
 								<span className='block truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100'>
 									{match.preview}
 								</span>
-								<span className='block text-[10px] text-zinc-400'>{names.get(match.blockId)}</span>
+								<span className='block text-[10px] text-zinc-400'>
+									{names.get(match.blockId)}
+								</span>
 							</span>
 							<span className='shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-bold text-zinc-600 dark:bg-white/10 dark:text-zinc-300'>
 								{match.count}

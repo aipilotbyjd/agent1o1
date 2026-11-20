@@ -49,7 +49,8 @@ const InlineEditor = ({ block }: { block: TPageBlock }) => {
 		if (!element) return;
 		element.focus();
 		// A short label is usually retyped; a paragraph is usually added to.
-		if (target?.multiline) element.setSelectionRange(element.value.length, element.value.length);
+		if (target?.multiline)
+			element.setSelectionRange(element.value.length, element.value.length);
 		else element.select();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);

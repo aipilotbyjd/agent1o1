@@ -6,7 +6,15 @@ import type { ReactNode } from 'react';
 export const panelInputClass =
 	'w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500';
 
-export const PanelSection = ({ title, children, action }: { title?: string; children: ReactNode; action?: ReactNode }) => (
+export const PanelSection = ({
+	title,
+	children,
+	action,
+}: {
+	title?: string;
+	children: ReactNode;
+	action?: ReactNode;
+}) => (
 	<section className='space-y-3 border-b border-zinc-100 px-4 py-4 last:border-b-0 dark:border-white/[0.06]'>
 		{(title || action) && (
 			<div className='flex items-center justify-between gap-2'>
@@ -34,11 +42,15 @@ export const PanelField = ({
 	htmlFor?: string;
 }) => (
 	<div className='space-y-1.5'>
-		<label htmlFor={htmlFor} className='block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300'>
+		<label
+			htmlFor={htmlFor}
+			className='block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300'>
 			{label}
 		</label>
 		{children}
-		{hint && <p className='text-[10px] leading-snug text-zinc-400 dark:text-zinc-500'>{hint}</p>}
+		{hint && (
+			<p className='text-[10px] leading-snug text-zinc-400 dark:text-zinc-500'>{hint}</p>
+		)}
 	</div>
 );
 
@@ -143,7 +155,11 @@ export const Toggle = ({
 	<div className='flex items-start justify-between gap-3'>
 		<div className='min-w-0'>
 			<p className='text-[11px] font-semibold text-zinc-700 dark:text-zinc-300'>{label}</p>
-			{hint && <p className='mt-0.5 text-[10px] leading-snug text-zinc-400 dark:text-zinc-500'>{hint}</p>}
+			{hint && (
+				<p className='mt-0.5 text-[10px] leading-snug text-zinc-400 dark:text-zinc-500'>
+					{hint}
+				</p>
+			)}
 		</div>
 		<button
 			type='button'
@@ -179,7 +195,11 @@ export const PanelSelect = ({
 	const id = useId();
 	return (
 		<PanelField label={label} hint={hint} htmlFor={id}>
-			<select id={id} value={value} onChange={(e) => onChange(e.target.value)} className={panelInputClass}>
+			<select
+				id={id}
+				value={value}
+				onChange={(e) => onChange(e.target.value)}
+				className={panelInputClass}>
 				{placeholder !== undefined && <option value=''>{placeholder}</option>}
 				{options.map((option) => (
 					<option key={option.value} value={option.value} disabled={option.disabled}>

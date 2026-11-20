@@ -331,7 +331,7 @@ const CreatePageModal = ({
 										onChange={(e) => setLayoutQuery(e.target.value)}
 										placeholder='Search layouts…'
 										aria-label='Search layouts'
-										className='h-9 w-full rounded-xl border border-zinc-200 bg-white pr-3 pl-9 text-xs outline-none focus:border-primary-500 dark:border-white/10 dark:bg-zinc-900 dark:text-white'
+										className='focus:border-primary-500 h-9 w-full rounded-xl border border-zinc-200 bg-white pr-3 pl-9 text-xs outline-none dark:border-white/10 dark:bg-zinc-900 dark:text-white'
 									/>
 								</div>
 								<div
@@ -386,11 +386,13 @@ const CreatePageModal = ({
 											onPreview={() => setPreviewId(template.id)}
 										/>
 									))}
-									{!templatesLoading && layoutSearch && shownTemplates.length === 0 && (
-										<p className='col-span-full py-6 text-center text-xs text-zinc-400'>
-											No layouts match “{layoutQuery.trim()}”.
-										</p>
-									)}
+									{!templatesLoading &&
+										layoutSearch &&
+										shownTemplates.length === 0 && (
+											<p className='col-span-full py-6 text-center text-xs text-zinc-400'>
+												No layouts match “{layoutQuery.trim()}”.
+											</p>
+										)}
 									{templatesLoading &&
 										Array.from({ length: 2 }, (_, i) => (
 											<div

@@ -14,15 +14,25 @@ import safeStorage from '@/utils/safeStorage.util';
 
 const accessKey = (token: string) => `page-access:${token}`;
 
-const LivePage = ({ token, view, accessToken }: { token: string; view: TPageView; accessToken: string | null }) => {
+const LivePage = ({
+	token,
+	view,
+	accessToken,
+}: {
+	token: string;
+	view: TPageView;
+	accessToken: string | null;
+}) => {
 	const fields = useMemo(() => viewFields(view.blocks), [view]);
 	const transport = useMemo<TPageTransport>(
 		() => ({
 			submit: (input) =>
-				PublicPageService.submit(token, input, accessToken).then(({ submission, secret }) => ({
-					result: submission,
-					secret,
-				})),
+				PublicPageService.submit(token, input, accessToken).then(
+					({ submission, secret }) => ({
+						result: submission,
+						secret,
+					}),
+				),
 			poll: (id, secret, signal) => PublicPageService.result(token, id, secret ?? '', signal),
 			storageKey: `page-run:${token}`,
 			onStart: () => void PublicPageService.started(token).catch(() => undefined),
@@ -38,12 +48,22 @@ const LivePage = ({ token, view, accessToken }: { token: string; view: TPageView
 			run={run}
 			workspaceName={view.workspace_name}
 			brandingUrl={view.branding?.url}
-			onBrandingClick={() => void PublicPageService.badgeClicked(token).catch(() => undefined)}
+			onBrandingClick={() =>
+				void PublicPageService.badgeClicked(token).catch(() => undefined)
+			}
 		/>
 	);
 };
 
-const PasswordGate = ({ token, view, onUnlocked }: { token: string; view: TPageView; onUnlocked: (accessToken: string, view: TPageView) => void }) => {
+const PasswordGate = ({
+	token,
+	view,
+	onUnlocked,
+}: {
+	token: string;
+	view: TPageView;
+	onUnlocked: (accessToken: string, view: TPageView) => void;
+}) => {
 	const dark = usePageDark(view.theme.appearance);
 	usePageFonts(view.theme.font);
 	const [password, setPassword] = useState('');
@@ -56,12 +76,20 @@ const PasswordGate = ({ token, view, onUnlocked }: { token: string; view: TPageV
 		setError(null);
 		PublicPageService.unlock(token, password)
 			.then(({ access_token, page }) => onUnlocked(access_token, page))
-			.catch((err: unknown) => setError(ApiError.is(err) ? (err.field('password') ?? err.message) : 'Something went wrong.'))
+			.catch((err: unknown) =>
+				setError(
+					ApiError.is(err)
+						? (err.field('password') ?? err.message)
+						: 'Something went wrong.',
+				),
+			)
 			.finally(() => setBusy(false));
 	};
 
 	return (
-		<div style={pageThemeStyle(view.theme, dark)} className='flex min-h-dvh items-center justify-center px-4'>
+		<div
+			style={pageThemeStyle(view.theme, dark)}
+			className='flex min-h-dvh items-center justify-center px-4'>
 			<form
 				onSubmit={(event) => {
 					event.preventDefault();
@@ -73,7 +101,9 @@ const PasswordGate = ({ token, view, onUnlocked }: { token: string; view: TPageV
 				</div>
 				<div>
 					<h1 className='text-lg font-extrabold'>{view.name}</h1>
-					<p className='mt-1 text-sm text-[var(--pg-muted)]'>Enter the password to use this page.</p>
+					<p className='mt-1 text-sm text-[var(--pg-muted)]'>
+						Enter the password to use this page.
+					</p>
 				</div>
 				<input
 					type='password'
@@ -112,13 +142,16 @@ const NEUTRAL: TPageTheme = {
 const Unavailable = () => {
 	const dark = usePageDark('auto');
 	return (
-		<div style={pageThemeStyle(NEUTRAL, dark)} className='flex min-h-dvh flex-col items-center justify-center gap-3 px-6 text-center'>
+		<div
+			style={pageThemeStyle(NEUTRAL, dark)}
+			className='flex min-h-dvh flex-col items-center justify-center gap-3 px-6 text-center'>
 			<div className='flex size-12 items-center justify-center rounded-2xl bg-[var(--pg-accent-soft)] text-[var(--pg-accent)]'>
 				<AppWindow size={22} />
 			</div>
 			<h1 className='text-lg font-extrabold'>This page isn’t available</h1>
 			<p className='max-w-sm text-sm text-[var(--pg-muted)]'>
-				The link may be old, or the page may have been turned off. Ask whoever shared it for a new link.
+				The link may be old, or the page may have been turned off. Ask whoever shared it for
+				a new link.
 			</p>
 		</div>
 	);
@@ -128,9 +161,15 @@ const Unavailable = () => {
 const PublicPagePage = () => {
 	const { token = '' } = useParams<{ token: string }>();
 	const qc = useQueryClient();
-	const [accessToken, setAccessToken] = useState<string | null>(() => safeStorage.get(accessKey(token), 'session'));
+	const [accessToken, setAccessToken] = useState<string | null>(() =>
+		safeStorage.get(accessKey(token), 'session'),
+	);
 	const queryKey = ['public-page', token, accessToken] as const;
-	const { data: view, isLoading, isError } = useQuery({
+	const {
+		data: view,
+		isLoading,
+		isError,
+	} = useQuery({
 		queryKey,
 		queryFn: ({ signal }) => PublicPageService.show(token, accessToken, signal),
 		enabled: !!token,

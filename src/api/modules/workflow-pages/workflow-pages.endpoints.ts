@@ -21,11 +21,13 @@ export const WorkflowPageEndpoints = {
 	promoteVariant: (ws: string, id: string) => `${page(ws, id)}/variant/promote`,
 	versions: (ws: string, id: string) => `${page(ws, id)}/versions`,
 	version: (ws: string, id: string, versionId: string) => `${page(ws, id)}/versions/${versionId}`,
-	restoreVersion: (ws: string, id: string, versionId: string) => `${page(ws, id)}/versions/${versionId}/restore`,
+	restoreVersion: (ws: string, id: string, versionId: string) =>
+		`${page(ws, id)}/versions/${versionId}/restore`,
 	comments: (ws: string, id: string) => `${page(ws, id)}/comments`,
 	comment: (ws: string, id: string, commentId: string) => `${page(ws, id)}/comments/${commentId}`,
 	generations: (ws: string, id: string) => `${page(ws, id)}/generations`,
-	generation: (ws: string, id: string, generationId: string) => `${page(ws, id)}/generations/${generationId}`,
+	generation: (ws: string, id: string, generationId: string) =>
+		`${page(ws, id)}/generations/${generationId}`,
 	submission: (ws: string, id: string, submissionId: string) =>
 		`${page(ws, id)}/submissions/${submissionId}`,
 } as const;
