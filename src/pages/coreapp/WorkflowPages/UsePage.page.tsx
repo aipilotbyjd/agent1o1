@@ -14,12 +14,12 @@ import type { TPageView } from '@/types/workflow-page.type';
 import type { OutletContextType } from './_layouts/WorkflowPages.layout';
 import usePermission from '@/hooks/usePermission';
 
-
 const LivePage = ({ ws, pageId, view }: { ws: string; pageId: string; view: TPageView }) => {
 	const fields = useMemo(() => viewFields(view.blocks), [view]);
 	const transport = useMemo<TPageTransport>(
 		() => ({
-			submit: (input) => WorkflowPageService.submit(ws, pageId, input).then((result) => ({ result })),
+			submit: (input) =>
+				WorkflowPageService.submit(ws, pageId, input).then((result) => ({ result })),
 			poll: (id, _secret, signal) => WorkflowPageService.submission(ws, pageId, id, signal),
 			storageKey: `page-run:member:${pageId}`,
 			onStart: () => void WorkflowPageService.started(ws, pageId).catch(() => undefined),
@@ -27,13 +27,25 @@ const LivePage = ({ ws, pageId, view }: { ws: string; pageId: string; view: TPag
 		[ws, pageId],
 	);
 	const run = usePageRun(fields, transport);
-	return <PageRenderer theme={view.theme} blocks={view.blocks} mode='live' run={run} workspaceName={view.workspace_name} className='flex-1' />;
+	return (
+		<PageRenderer
+			theme={view.theme}
+			blocks={view.blocks}
+			mode='live'
+			run={run}
+			workspaceName={view.workspace_name}
+			className='flex-1'
+		/>
+	);
 };
 
 /** A published page as a workspace member uses it, inside the app. */
 const UsePagePage = () => {
 	const { setHeaderLeft } = useOutletContext<OutletContextType>();
-	const { workspaceId: ws = '', pageId = '' } = useParams<{ workspaceId: string; pageId: string }>();
+	const { workspaceId: ws = '', pageId = '' } = useParams<{
+		workspaceId: string;
+		pageId: string;
+	}>();
 	const { data: view, isLoading, error } = useWorkflowPageView(ws, pageId);
 	const { can } = usePermission();
 	const canEditPage = can('page.manage');
@@ -44,7 +56,11 @@ const UsePagePage = () => {
 			<Breadcrumb
 				list={[
 					{ ...pages.workspace.subPages!.pages },
-					{ ...pages.pageEditor.subPages!.use, text: view?.name ?? 'Page', to: paths.usePage(ws, pageId) },
+					{
+						...pages.pageEditor.subPages!.use,
+						text: view?.name ?? 'Page',
+						to: paths.usePage(ws, pageId),
+					},
 				]}
 			/>,
 		);
@@ -83,7 +99,9 @@ const UsePagePage = () => {
 					<div className='bg-primary-400/15 text-primary-700 flex size-12 items-center justify-center rounded-2xl'>
 						<AppWindow size={22} />
 					</div>
-					<p className='text-base font-extrabold text-zinc-900 dark:text-white'>This page isn’t live yet</p>
+					<p className='text-base font-extrabold text-zinc-900 dark:text-white'>
+						This page isn’t live yet
+					</p>
 					<p className='max-w-sm text-sm text-zinc-500'>
 						{ApiError.is(error) && error.status === 404
 							? error.message

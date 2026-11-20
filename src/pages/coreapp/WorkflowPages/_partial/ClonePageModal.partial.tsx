@@ -44,7 +44,12 @@ const ClonePageModal = ({ ws, page, isOpen, onClose }: Props) => {
 
 	const submit = () =>
 		clone.mutate(
-			{ id: page.id, target_workspace_id: targetId, workflow_id: chosenWorkflow, name: name.trim() || undefined },
+			{
+				id: page.id,
+				target_workspace_id: targetId,
+				workflow_id: chosenWorkflow,
+				name: name.trim() || undefined,
+			},
 			{ onSuccess: (copy) => navigate(paths.editPage(targetId, copy.id)) },
 		);
 
@@ -68,7 +73,9 @@ const ClonePageModal = ({ ws, page, isOpen, onClose }: Props) => {
 			<ModalBody>
 				<div className='space-y-4'>
 					<label className='block space-y-1.5'>
-						<span className='text-xs font-bold text-zinc-700 dark:text-zinc-300'>Workspace</span>
+						<span className='text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+							Workspace
+						</span>
 						<select
 							value={targetId}
 							onChange={(event) => {
@@ -90,7 +97,9 @@ const ClonePageModal = ({ ws, page, isOpen, onClose }: Props) => {
 						)}
 					</label>
 					<label className='block space-y-1.5'>
-						<span className='text-xs font-bold text-zinc-700 dark:text-zinc-300'>Workflow it runs there</span>
+						<span className='text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+							Workflow it runs there
+						</span>
 						<select
 							value={chosenWorkflow}
 							onChange={(event) => setWorkflowId(event.target.value)}
@@ -108,11 +117,14 @@ const ClonePageModal = ({ ws, page, isOpen, onClose }: Props) => {
 							</span>
 						)}
 						<span className='block text-[11px] text-zinc-400'>
-							Inputs and outputs are matched by name; any that don’t exist there are dropped.
+							Inputs and outputs are matched by name; any that don’t exist there are
+							dropped.
 						</span>
 					</label>
 					<label className='block space-y-1.5'>
-						<span className='text-xs font-bold text-zinc-700 dark:text-zinc-300'>Name</span>
+						<span className='text-xs font-bold text-zinc-700 dark:text-zinc-300'>
+							Name
+						</span>
 						<input
 							value={name}
 							onChange={(event) => setName(event.target.value)}

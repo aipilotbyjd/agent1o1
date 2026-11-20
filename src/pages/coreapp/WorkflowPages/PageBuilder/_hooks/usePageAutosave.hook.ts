@@ -25,7 +25,14 @@ export const usePageAutosave = (ws: string, pageId: string) => {
 		async (options?: { silent?: boolean; force?: boolean }): Promise<boolean> => {
 			if (inFlight.current) await inFlight.current;
 
-			const { content, variant, revision: saving, savedRevision, pageId: loaded, baseRevision } = usePageBuilderStore.getState();
+			const {
+				content,
+				variant,
+				revision: saving,
+				savedRevision,
+				pageId: loaded,
+				baseRevision,
+			} = usePageBuilderStore.getState();
 			if (!content || loaded !== pageId) return false;
 			if (saving === savedRevision) return true;
 
@@ -47,7 +54,8 @@ export const usePageAutosave = (ws: string, pageId: string) => {
 						return false;
 					}
 					usePageBuilderStore.getState().markSaveFailed();
-					if (!options?.silent) notify.error(messageFromError(error, 'Could not save the page'));
+					if (!options?.silent)
+						notify.error(messageFromError(error, 'Could not save the page'));
 					return false;
 				})
 				.finally(() => {
@@ -93,7 +101,8 @@ export const usePageAutosave = (ws: string, pageId: string) => {
 		if (timer.current) window.clearTimeout(timer.current);
 		let saved = await save();
 		// An edit made while that save was in flight still needs its own.
-		if (saved === false && usePageBuilderStore.getState().saveState === 'dirty') saved = await save();
+		if (saved === false && usePageBuilderStore.getState().saveState === 'dirty')
+			saved = await save();
 		return saved;
 	}, [save]);
 
@@ -111,7 +120,8 @@ export const usePageAutosave = (ws: string, pageId: string) => {
 			qc.setQueryData(workflowPageKeys.detail(ws, pageId), page);
 			const { variant, load } = usePageBuilderStore.getState();
 			const content = variant === 'b' ? page.variant.content : page.content;
-			if (content) load(page.id, content, page.variant.exists ? variant : 'a', page.draft_revision);
+			if (content)
+				load(page.id, content, page.variant.exists ? variant : 'a', page.draft_revision);
 		},
 		[save, qc, ws, pageId],
 	);

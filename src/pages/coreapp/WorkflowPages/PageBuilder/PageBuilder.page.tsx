@@ -29,7 +29,10 @@ const NO_FIELDS: never[] = [];
  * tablet or phone size, and the selected block's settings on the right.
  */
 const PageBuilderPage = () => {
-	const { workspaceId: ws = '', pageId = '' } = useParams<{ workspaceId: string; pageId: string }>();
+	const { workspaceId: ws = '', pageId = '' } = useParams<{
+		workspaceId: string;
+		pageId: string;
+	}>();
 	const pageQuery = useWorkflowPage(ws, pageId);
 	const page = pageQuery.data;
 	const interfaceQuery = useWorkflowInterface(ws, page?.workflow_id ?? '');
@@ -48,7 +51,8 @@ const PageBuilderPage = () => {
 	// The draft is read from the server once per page; from then on the
 	// builder owns it and the autosave only writes.
 	useEffect(() => {
-		if (page?.content && loadedId !== page.id) load(page.id, page.content, 'a', page.draft_revision);
+		if (page?.content && loadedId !== page.id)
+			load(page.id, page.content, 'a', page.draft_revision);
 	}, [page, loadedId, load]);
 
 	// The workflow may be edited in another tab: re-read its inputs and the
@@ -66,7 +70,8 @@ const PageBuilderPage = () => {
 
 	// Version B can be removed or promoted while it's open; go back to the page.
 	useEffect(() => {
-		if (page?.content && variant === 'b' && !page.variant.exists && loadedId === page.id) load(page.id, page.content, 'a', page.draft_revision);
+		if (page?.content && variant === 'b' && !page.variant.exists && loadedId === page.id)
+			load(page.id, page.content, 'a', page.draft_revision);
 	}, [page, variant, loadedId, load]);
 
 	const switchVariant = useCallback(
@@ -85,8 +90,12 @@ const PageBuilderPage = () => {
 	useEffect(() => {
 		if (!echo || !ws || !pageId) return;
 		return subscribeToPage(echo as unknown as IEchoLike, ws, pageId, {
-			onComments: () => void qc.invalidateQueries({ queryKey: workflowPageKeys.comments(ws, pageId) }),
-			onGeneration: (event) => void qc.invalidateQueries({ queryKey: workflowPageKeys.generation(ws, pageId, event.id) }),
+			onComments: () =>
+				void qc.invalidateQueries({ queryKey: workflowPageKeys.comments(ws, pageId) }),
+			onGeneration: (event) =>
+				void qc.invalidateQueries({
+					queryKey: workflowPageKeys.generation(ws, pageId, event.id),
+				}),
 		});
 	}, [echo, ws, pageId, qc]);
 
@@ -110,7 +119,18 @@ const PageBuilderPage = () => {
 						switchVariant,
 					}
 				: null,
-		[ws, page, variant, interfaceQuery.data, interfaceQuery.isLoading, saveState, retry, flush, switchVariant, resolveConflict],
+		[
+			ws,
+			page,
+			variant,
+			interfaceQuery.data,
+			interfaceQuery.isLoading,
+			saveState,
+			retry,
+			flush,
+			switchVariant,
+			resolveConflict,
+		],
 	);
 
 	if (pageQuery.isError) {
@@ -124,7 +144,9 @@ const PageBuilderPage = () => {
 						className='bg-primary-400 text-primary-950 rounded-lg px-4 py-2 text-xs font-bold'>
 						Retry
 					</button>
-					<Link to={paths.pages(ws)} className='rounded-lg border border-zinc-200 px-4 py-2 text-xs font-semibold dark:border-white/10'>
+					<Link
+						to={paths.pages(ws)}
+						className='rounded-lg border border-zinc-200 px-4 py-2 text-xs font-semibold dark:border-white/10'>
 						Back to Pages
 					</Link>
 				</div>
@@ -176,7 +198,9 @@ const PageBuilderPage = () => {
 							minWidth={260}
 							maxWidth={420}
 							enable={{ right: true }}
-							onResizeStop={(_event, _direction, ref) => setLeftWidth(ref.offsetWidth)}
+							onResizeStop={(_event, _direction, ref) =>
+								setLeftWidth(ref.offsetWidth)
+							}
 							className='min-h-0 shrink-0'>
 							<LeftPanel />
 						</Resizable>
@@ -190,7 +214,9 @@ const PageBuilderPage = () => {
 							minWidth={280}
 							maxWidth={460}
 							enable={{ left: true }}
-							onResizeStop={(_event, _direction, ref) => setRightWidth(ref.offsetWidth)}
+							onResizeStop={(_event, _direction, ref) =>
+								setRightWidth(ref.offsetWidth)
+							}
 							className='min-h-0 shrink-0'>
 							<RightPanel />
 						</Resizable>

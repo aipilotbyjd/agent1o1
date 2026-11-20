@@ -37,7 +37,13 @@ import useDarkMode from '@/hooks/useDarkMode';
 import paths from '@/Routes/paths';
 import { useUpdateWorkflowPage } from '@/api/modules/workflow-pages';
 import SaveAsTemplateModal from '@/parts/SaveAsTemplateModal.part';
-import { usePageBuilderStore, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP, type TBuilderDevice } from '../_store/pageBuilder.store';
+import {
+	usePageBuilderStore,
+	ZOOM_MAX,
+	ZOOM_MIN,
+	ZOOM_STEP,
+	type TBuilderDevice,
+} from '../_store/pageBuilder.store';
 import { usePageBuilder } from '../_context/PageBuilder.context';
 import PublishMenu from './PublishMenu.partial';
 import ShareMenu from './ShareMenu.partial';
@@ -48,7 +54,15 @@ import usePermission from '@/hooks/usePermission';
 const FOCUS_RING =
 	'outline-none focus-visible:ring-2 focus-visible:ring-primary-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#07080b]';
 
-export const BuilderTooltip = ({ label, children, align = 'center' }: { label: string; children: ReactNode; align?: 'center' | 'right' }) => (
+export const BuilderTooltip = ({
+	label,
+	children,
+	align = 'center',
+}: {
+	label: string;
+	children: ReactNode;
+	align?: 'center' | 'right';
+}) => (
 	<div className='group/tip relative inline-flex'>
 		{children}
 		<span
@@ -179,7 +193,11 @@ const SaveStatus = () => {
 		);
 	}
 	const { Icon, label, className } = {
-		saved: { Icon: CloudCheck, label: 'All changes saved', className: 'text-emerald-600 dark:text-emerald-400' },
+		saved: {
+			Icon: CloudCheck,
+			label: 'All changes saved',
+			className: 'text-emerald-600 dark:text-emerald-400',
+		},
 		saving: { Icon: Loader2, label: 'Saving…', className: 'animate-spin text-zinc-400' },
 		dirty: { Icon: CloudUpload, label: 'Unsaved changes', className: 'text-amber-500' },
 		error: { Icon: CloudOff, label: 'Save failed. Click to retry', className: 'text-rose-500' },
@@ -200,14 +218,30 @@ const SaveStatus = () => {
 export const StatusPill = () => {
 	const { page } = usePageBuilder();
 	const { label, className } = !page.is_published
-		? { label: 'Draft', className: 'bg-zinc-100 text-zinc-600 dark:bg-white/[0.06] dark:text-zinc-300' }
+		? {
+				label: 'Draft',
+				className: 'bg-zinc-100 text-zinc-600 dark:bg-white/[0.06] dark:text-zinc-300',
+			}
 		: page.has_unpublished_changes
-			? { label: 'Live · edited', className: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' }
+			? {
+					label: 'Live · edited',
+					className:
+						'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300',
+				}
 			: !page.is_enabled
-				? { label: 'Turned off', className: 'bg-zinc-100 text-zinc-500 dark:bg-white/[0.06] dark:text-zinc-400' }
-				: { label: 'Live', className: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' };
+				? {
+						label: 'Turned off',
+						className:
+							'bg-zinc-100 text-zinc-500 dark:bg-white/[0.06] dark:text-zinc-400',
+					}
+				: {
+						label: 'Live',
+						className:
+							'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300',
+					};
 	return (
-		<span className={`hidden h-6 items-center gap-1.5 rounded-full px-2.5 text-[10px] font-bold sm:inline-flex ${className}`}>
+		<span
+			className={`hidden h-6 items-center gap-1.5 rounded-full px-2.5 text-[10px] font-bold sm:inline-flex ${className}`}>
 			<span className='size-1.5 rounded-full bg-current' />
 			{label}
 		</span>
@@ -222,7 +256,13 @@ const DEVICES: { id: TBuilderDevice; label: string; icon: typeof Monitor }[] = [
 
 type TMenu = 'share' | 'publish' | null;
 
-const BuilderTopbar = ({ publishOpen, setPublishOpen }: { publishOpen: boolean; setPublishOpen: (open: boolean) => void }) => {
+const BuilderTopbar = ({
+	publishOpen,
+	setPublishOpen,
+}: {
+	publishOpen: boolean;
+	setPublishOpen: (open: boolean) => void;
+}) => {
 	const { ws, page, flush } = usePageBuilder();
 	const { isDarkTheme, setDarkModeStatus } = useDarkMode();
 	const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false);
@@ -260,7 +300,10 @@ const BuilderTopbar = ({ publishOpen, setPublishOpen }: { publishOpen: boolean; 
 		return () => window.removeEventListener('keydown', onKeyDown);
 	}, [menu, setPublishOpen]);
 
-	const liveUrl = page.access === 'workspace' ? paths.usePage(ws, page.id) : paths.publicPage(page.public_token);
+	const liveUrl =
+		page.access === 'workspace'
+			? paths.usePage(ws, page.id)
+			: paths.publicPage(page.public_token);
 
 	return (
 		<header className='relative z-40 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-zinc-200/80 bg-white/90 px-3 backdrop-blur-md select-none sm:px-4 dark:border-white/[0.08] dark:bg-[#07080b]/90'>
@@ -277,7 +320,10 @@ const BuilderTopbar = ({ publishOpen, setPublishOpen }: { publishOpen: boolean; 
 						<ChevronLeft size={18} />
 					</Link>
 				</BuilderTooltip>
-				<Link to={paths.dashboard(ws)} className={`hidden rounded-lg sm:flex ${FOCUS_RING}`} aria-label='Dashboard'>
+				<Link
+					to={paths.dashboard(ws)}
+					className={`hidden rounded-lg sm:flex ${FOCUS_RING}`}
+					aria-label='Dashboard'>
 					<AppLogo className='ring-primary-500/20 size-7 ring-1' />
 				</Link>
 				<span className='hidden text-zinc-300 sm:inline dark:text-zinc-700'>/</span>
@@ -288,22 +334,38 @@ const BuilderTopbar = ({ publishOpen, setPublishOpen }: { publishOpen: boolean; 
 
 			<div className='hidden items-center gap-2 md:flex'>
 				<div className='flex items-center rounded-lg border border-zinc-200/80 bg-zinc-50/70 p-0.5 dark:border-white/10 dark:bg-zinc-900/60'>
-					<IconButton label='Undo (⌘Z)' onClick={undo} disabled={!canUndo || mode === 'preview'}>
+					<IconButton
+						label='Undo (⌘Z)'
+						onClick={undo}
+						disabled={!canUndo || mode === 'preview'}>
 						<Undo2 size={14} />
 					</IconButton>
-					<IconButton label='Redo (⌘⇧Z)' onClick={redo} disabled={!canRedo || mode === 'preview'}>
+					<IconButton
+						label='Redo (⌘⇧Z)'
+						onClick={redo}
+						disabled={!canRedo || mode === 'preview'}>
 						<Redo2 size={14} />
 					</IconButton>
 				</div>
-				<div role='radiogroup' aria-label='Preview size' className='flex items-center rounded-lg border border-zinc-200/80 bg-zinc-50/70 p-0.5 dark:border-white/10 dark:bg-zinc-900/60'>
+				<div
+					role='radiogroup'
+					aria-label='Preview size'
+					className='flex items-center rounded-lg border border-zinc-200/80 bg-zinc-50/70 p-0.5 dark:border-white/10 dark:bg-zinc-900/60'>
 					{DEVICES.map(({ id, label, icon: Icon }) => (
-						<IconButton key={id} label={label} active={device === id} onClick={() => setDevice(id)}>
+						<IconButton
+							key={id}
+							label={label}
+							active={device === id}
+							onClick={() => setDevice(id)}>
 							<Icon size={14} />
 						</IconButton>
 					))}
 				</div>
 				<div className='flex items-center rounded-lg border border-zinc-200/80 bg-zinc-50/70 p-0.5 dark:border-white/10 dark:bg-zinc-900/60'>
-					<IconButton label='Zoom out' onClick={() => setZoom(zoom - ZOOM_STEP)} disabled={zoom <= ZOOM_MIN}>
+					<IconButton
+						label='Zoom out'
+						onClick={() => setZoom(zoom - ZOOM_STEP)}
+						disabled={zoom <= ZOOM_MIN}>
 						<ZoomOut size={14} />
 					</IconButton>
 					<button
@@ -313,14 +375,24 @@ const BuilderTopbar = ({ publishOpen, setPublishOpen }: { publishOpen: boolean; 
 						className={`h-7 min-w-10 rounded-md px-1 text-[11px] font-bold text-zinc-600 tabular-nums hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/[0.06] ${FOCUS_RING}`}>
 						{zoom}%
 					</button>
-					<IconButton label='Zoom in' onClick={() => setZoom(zoom + ZOOM_STEP)} disabled={zoom >= ZOOM_MAX}>
+					<IconButton
+						label='Zoom in'
+						onClick={() => setZoom(zoom + ZOOM_STEP)}
+						disabled={zoom >= ZOOM_MAX}>
 						<ZoomIn size={14} />
 					</IconButton>
-					<IconButton label='Show outlines and the centre line' active={guides} onClick={() => setGuides(!guides)} disabled={mode === 'preview'}>
+					<IconButton
+						label='Show outlines and the centre line'
+						active={guides}
+						onClick={() => setGuides(!guides)}
+						disabled={mode === 'preview'}>
 						<Ruler size={14} />
 					</IconButton>
 				</div>
-				<div role='radiogroup' aria-label='Mode' className='flex items-center rounded-xl border border-zinc-200/80 bg-zinc-100/80 p-0.5 dark:border-white/10 dark:bg-zinc-900/80'>
+				<div
+					role='radiogroup'
+					aria-label='Mode'
+					className='flex items-center rounded-xl border border-zinc-200/80 bg-zinc-100/80 p-0.5 dark:border-white/10 dark:bg-zinc-900/80'>
 					{(
 						[
 							{ id: 'edit', label: 'Edit', icon: PencilRuler },
@@ -333,7 +405,11 @@ const BuilderTopbar = ({ publishOpen, setPublishOpen }: { publishOpen: boolean; 
 							role='radio'
 							aria-checked={mode === id}
 							onClick={() => setMode(id)}
-							title={id === 'preview' ? 'Try the page for real (⌘P)' : 'Edit the page (⌘P)'}
+							title={
+								id === 'preview'
+									? 'Try the page for real (⌘P)'
+									: 'Edit the page (⌘P)'
+							}
 							className={`flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition ${FOCUS_RING} ${
 								mode === id
 									? 'text-primary-800 ring-primary-500/25 dark:text-primary-300 bg-white shadow-xs ring-1 dark:bg-zinc-800'
@@ -350,17 +426,26 @@ const BuilderTopbar = ({ publishOpen, setPublishOpen }: { publishOpen: boolean; 
 				<div className='hidden items-center gap-1 lg:flex'>
 					<IconButton
 						label={isDarkTheme ? 'Light mode' : 'Dark mode'}
-						onClick={() => setDarkModeStatus(isDarkTheme ? DARK_MODE.LIGHT : DARK_MODE.DARK)}>
+						onClick={() =>
+							setDarkModeStatus(isDarkTheme ? DARK_MODE.LIGHT : DARK_MODE.DARK)
+						}>
 						{isDarkTheme ? <Sun size={14} /> : <Moon size={14} />}
 					</IconButton>
-					<IconButton label='Find and replace (⇧⌘F)' onClick={() => usePageBuilderStore.getState().setOverlay('find')} disabled={mode === 'preview'}>
+					<IconButton
+						label='Find and replace (⇧⌘F)'
+						onClick={() => usePageBuilderStore.getState().setOverlay('find')}
+						disabled={mode === 'preview'}>
 						<Search size={14} />
 					</IconButton>
-					<IconButton label='Keyboard shortcuts (?)' onClick={() => usePageBuilderStore.getState().setOverlay('shortcuts')}>
+					<IconButton
+						label='Keyboard shortcuts (?)'
+						onClick={() => usePageBuilderStore.getState().setOverlay('shortcuts')}>
 						<Keyboard size={14} />
 					</IconButton>
 					{canSaveAsTemplate && (
-						<IconButton label='Save as template' onClick={() => setSaveAsTemplateOpen(true)}>
+						<IconButton
+							label='Save as template'
+							onClick={() => setSaveAsTemplateOpen(true)}>
 							<LayoutTemplate size={14} />
 						</IconButton>
 					)}
@@ -370,7 +455,10 @@ const BuilderTopbar = ({ publishOpen, setPublishOpen }: { publishOpen: boolean; 
 							target='_blank'
 							aria-label='Open the workflow'
 							className={`flex h-8 max-w-[180px] items-center gap-1.5 rounded-lg border border-zinc-200/80 bg-white px-2.5 text-xs font-semibold text-zinc-700 shadow-xs transition hover:bg-zinc-50 dark:border-white/10 dark:bg-zinc-900/60 dark:text-zinc-300 dark:hover:bg-white/[0.06] ${FOCUS_RING}`}>
-							<GitMerge size={13} className='text-primary-700 dark:text-primary-400 shrink-0' />
+							<GitMerge
+								size={13}
+								className='text-primary-700 dark:text-primary-400 shrink-0'
+							/>
 							<span className='truncate'>{page.workflow?.name ?? 'Workflow'}</span>
 						</Link>
 					</BuilderTooltip>
@@ -426,7 +514,11 @@ const BuilderTopbar = ({ publishOpen, setPublishOpen }: { publishOpen: boolean; 
 					<AnimatePresence>
 						{menu === 'share' && (
 							<>
-								<div aria-hidden className='fixed inset-0 z-40' onClick={() => setShareOpen(false)} />
+								<div
+									aria-hidden
+									className='fixed inset-0 z-40'
+									onClick={() => setShareOpen(false)}
+								/>
 								<motion.div
 									initial={{ opacity: 0, y: 4, scale: 0.98 }}
 									animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -448,13 +540,22 @@ const BuilderTopbar = ({ publishOpen, setPublishOpen }: { publishOpen: boolean; 
 						onClick={() => open('publish')}
 						className={`bg-primary-400 text-primary-950 flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-black shadow-sm transition hover:brightness-110 active:scale-[0.98] ${FOCUS_RING}`}>
 						<Rocket size={13} />
-						{page.is_published && !page.has_unpublished_changes ? 'Published' : 'Publish'}
-						<ChevronDown size={12} className={`transition-transform ${menu === 'publish' ? 'rotate-180' : ''}`} />
+						{page.is_published && !page.has_unpublished_changes
+							? 'Published'
+							: 'Publish'}
+						<ChevronDown
+							size={12}
+							className={`transition-transform ${menu === 'publish' ? 'rotate-180' : ''}`}
+						/>
 					</button>
 					<AnimatePresence>
 						{menu === 'publish' && (
 							<>
-								<div aria-hidden className='fixed inset-0 z-40' onClick={() => setPublishOpen(false)} />
+								<div
+									aria-hidden
+									className='fixed inset-0 z-40'
+									onClick={() => setPublishOpen(false)}
+								/>
 								<motion.div
 									initial={{ opacity: 0, y: 4, scale: 0.98 }}
 									animate={{ opacity: 1, y: 0, scale: 1 }}

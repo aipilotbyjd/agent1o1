@@ -1,4 +1,9 @@
-import type { TPageAlign, TPageBlock, TPageBlockDisplay, TPageBlockType } from '@/types/workflow-page.type';
+import type {
+	TPageAlign,
+	TPageBlock,
+	TPageBlockDisplay,
+	TPageBlockType,
+} from '@/types/workflow-page.type';
 
 /** The props that change how a block looks, never what it says. */
 const STYLE_KEYS = [
@@ -32,7 +37,10 @@ const ALIGNABLE = new Set<TPageBlockType>(['heading', 'text', 'button', 'submit'
 export type TStylePreset = {
 	type: TPageBlockType;
 	width: TPageBlock['width'];
-	display: Pick<TPageBlockDisplay, 'visibility' | 'space_above' | 'mobile_space_above' | 'mobile_align'>;
+	display: Pick<
+		TPageBlockDisplay,
+		'visibility' | 'space_above' | 'mobile_space_above' | 'mobile_align'
+	>;
 	props: Record<string, unknown>;
 };
 
@@ -50,7 +58,9 @@ export const captureStyle = (block: TPageBlock): TStylePreset => {
 			mobile_space_above: block.mobile_space_above,
 			mobile_align: block.mobile_align,
 		},
-		props: Object.fromEntries(STYLE_KEYS.filter((key) => key in props).map((key) => [key, props[key]])),
+		props: Object.fromEntries(
+			STYLE_KEYS.filter((key) => key in props).map((key) => [key, props[key]]),
+		),
 	};
 };
 
@@ -59,7 +69,11 @@ export const captureStyle = (block: TPageBlock): TStylePreset => {
  * and the look props when it is the same kind of block. Containers keep
  * their width, and a locked block is left alone.
  */
-export const applyStyle = (block: TPageBlock, preset: TStylePreset, keepWidth: boolean): TPageBlock => {
+export const applyStyle = (
+	block: TPageBlock,
+	preset: TStylePreset,
+	keepWidth: boolean,
+): TPageBlock => {
 	if (block.locked) return block;
 	const sameType = block.type === preset.type;
 	const own = block.props as Record<string, unknown>;
@@ -95,7 +109,10 @@ export const loadStylePresets = (): TSavedStylePreset[] => {
 		return Array.isArray(parsed)
 			? parsed.filter(
 					(item): item is TSavedStylePreset =>
-						!!item && typeof item.id === 'string' && typeof item.name === 'string' && !!item.preset?.type,
+						!!item &&
+						typeof item.id === 'string' &&
+						typeof item.name === 'string' &&
+						!!item.preset?.type,
 				)
 			: [];
 	} catch {

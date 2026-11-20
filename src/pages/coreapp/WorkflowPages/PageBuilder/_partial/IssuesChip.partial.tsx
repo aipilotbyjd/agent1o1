@@ -62,8 +62,14 @@ const IssuesChip = () => {
 						exit={{ opacity: 0, y: 6 }}
 						className='absolute bottom-11 left-0 w-80 rounded-xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-white/10 dark:bg-zinc-950'>
 						<div className='flex items-center justify-between px-2 pt-1 pb-2'>
-							<p className='text-xs font-bold text-zinc-900 dark:text-zinc-100'>Before you publish</p>
-							<button type='button' aria-label='Close' onClick={() => setOpen(false)} className='text-zinc-400 hover:text-zinc-700'>
+							<p className='text-xs font-bold text-zinc-900 dark:text-zinc-100'>
+								Before you publish
+							</p>
+							<button
+								type='button'
+								aria-label='Close'
+								onClick={() => setOpen(false)}
+								className='text-zinc-400 hover:text-zinc-700'>
 								<X size={14} />
 							</button>
 						</div>
@@ -82,7 +88,13 @@ const IssuesChip = () => {
 							? 'border-amber-200 bg-amber-50/95 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-300'
 							: 'border-emerald-200 bg-emerald-50/95 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300'
 				} ${stale ? 'opacity-70' : ''}`}>
-				{errors > 0 ? <OctagonAlert size={14} /> : warnings > 0 ? <AlertTriangle size={14} /> : <CheckCircle2 size={14} />}
+				{errors > 0 ? (
+					<OctagonAlert size={14} />
+				) : warnings > 0 ? (
+					<AlertTriangle size={14} />
+				) : (
+					<CheckCircle2 size={14} />
+				)}
 				{errors > 0
 					? `${errors} to fix${warnings ? ` · ${warnings} warning${warnings > 1 ? 's' : ''}` : ''}`
 					: warnings > 0

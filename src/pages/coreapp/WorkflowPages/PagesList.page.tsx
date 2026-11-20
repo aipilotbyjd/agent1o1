@@ -27,7 +27,11 @@ import { notify } from '@/api/core';
 import { useConfirm } from '@/context/confirm';
 import { useWorkspaceContext } from '@/context/workspace';
 import usePermission from '@/hooks/usePermission';
-import { useDeleteWorkflowPage, useDuplicateWorkflowPage, useWorkflowPages } from '@/api/modules/workflow-pages';
+import {
+	useDeleteWorkflowPage,
+	useDuplicateWorkflowPage,
+	useWorkflowPages,
+} from '@/api/modules/workflow-pages';
 import type { TWorkflowPage } from '@/types/workflow-page.type';
 import relativeTime from '@/utils/relativeTime.util';
 import type { OutletContextType } from './_layouts/WorkflowPages.layout';
@@ -44,16 +48,32 @@ const ACCESS = {
 
 const status = (page: TWorkflowPage) =>
 	!page.is_published
-		? { label: 'Draft', className: 'bg-zinc-100 text-zinc-600 dark:bg-white/[0.06] dark:text-zinc-300' }
+		? {
+				label: 'Draft',
+				className: 'bg-zinc-100 text-zinc-600 dark:bg-white/[0.06] dark:text-zinc-300',
+			}
 		: !page.is_enabled
-			? { label: 'Turned off', className: 'bg-zinc-100 text-zinc-500 dark:bg-white/[0.06] dark:text-zinc-400' }
+			? {
+					label: 'Turned off',
+					className: 'bg-zinc-100 text-zinc-500 dark:bg-white/[0.06] dark:text-zinc-400',
+				}
 			: page.has_unpublished_changes
-				? { label: 'Live · edited', className: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' }
-				: { label: 'Live', className: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' };
+				? {
+						label: 'Live · edited',
+						className:
+							'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300',
+					}
+				: {
+						label: 'Live',
+						className:
+							'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300',
+					};
 
 const errorMessages = (page: TWorkflowPage) => [
 	...page.issues.filter((issue) => issue.severity === 'error').map((issue) => issue.message),
-	...page.variant.issues.filter((issue) => issue.severity === 'error').map((issue) => `Version B: ${issue.message}`),
+	...page.variant.issues
+		.filter((issue) => issue.severity === 'error')
+		.map((issue) => `Version B: ${issue.message}`),
 ];
 
 const liveUrl = (ws: string, page: TWorkflowPage) =>
@@ -91,143 +111,187 @@ const PageCard = ({ ws, page }: { ws: string; page: TWorkflowPage }) => {
 			title: 'Delete page',
 			message: (
 				<>
-					Delete <strong className='font-semibold text-zinc-800 dark:text-zinc-200'>“{page.name}”</strong>? Its link stops working and
-					its run history goes with it. The workflow isn’t touched.
+					Delete{' '}
+					<strong className='font-semibold text-zinc-800 dark:text-zinc-200'>
+						“{page.name}”
+					</strong>
+					? Its link stops working and its run history goes with it. The workflow isn’t
+					touched.
 				</>
 			),
 			confirmText: 'Delete page',
 		});
-		if (ok) remove.mutate(page.id, { onSuccess: () => notify.success(`“${page.name}” deleted.`) });
+		if (ok)
+			remove.mutate(page.id, { onSuccess: () => notify.success(`“${page.name}” deleted.`) });
 	};
 
-	const menuItem = 'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold transition';
+	const menuItem =
+		'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold transition';
 
 	return (
 		<>
-		<article className='group hover:border-primary-400/50 relative flex flex-col rounded-3xl border border-zinc-200 bg-white shadow-xs transition hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
-			<Link
-				to={openTo}
-				className='relative flex h-28 items-center justify-center overflow-hidden rounded-t-3xl border-b border-zinc-100 bg-gradient-to-br from-zinc-50 to-zinc-100 dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950'>
-				<div className='w-[62%] space-y-1.5 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm transition group-hover:-translate-y-0.5 dark:border-zinc-700 dark:bg-zinc-800'>
-					<div className='h-2 w-1/2 rounded-full bg-zinc-800/80 dark:bg-zinc-200/80' />
-					<div className='h-1.5 w-3/4 rounded-full bg-zinc-200 dark:bg-zinc-600' />
-					<div className='h-4 w-full rounded-md border border-zinc-200 dark:border-zinc-600' />
-					<div className='bg-primary-400 h-3 w-1/3 rounded-md' />
-				</div>
-			</Link>
-
-			<div className='flex flex-1 flex-col gap-3 p-4'>
-				<div className='flex items-start justify-between gap-2'>
-					<div className='min-w-0'>
-						<Link
-							to={openTo}
-							className='hover:text-primary-700 block truncate text-sm font-extrabold text-zinc-900 dark:text-white'>
-							{page.name}
-						</Link>
-						<p className='mt-0.5 flex items-center gap-1 truncate text-[11px] text-zinc-500 dark:text-zinc-400'>
-							<GitMerge size={11} className='shrink-0' />
-							<span className='truncate'>
-								{page.workflow ? page.workflow.name : 'Workflow missing'}
-								{page.workflow?.trashed ? ' (in trash)' : ''}
-							</span>
-						</p>
+			<article className='group hover:border-primary-400/50 relative flex flex-col rounded-3xl border border-zinc-200 bg-white shadow-xs transition hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900'>
+				<Link
+					to={openTo}
+					className='relative flex h-28 items-center justify-center overflow-hidden rounded-t-3xl border-b border-zinc-100 bg-gradient-to-br from-zinc-50 to-zinc-100 dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950'>
+					<div className='w-[62%] space-y-1.5 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm transition group-hover:-translate-y-0.5 dark:border-zinc-700 dark:bg-zinc-800'>
+						<div className='h-2 w-1/2 rounded-full bg-zinc-800/80 dark:bg-zinc-200/80' />
+						<div className='h-1.5 w-3/4 rounded-full bg-zinc-200 dark:bg-zinc-600' />
+						<div className='h-4 w-full rounded-md border border-zinc-200 dark:border-zinc-600' />
+						<div className='bg-primary-400 h-3 w-1/3 rounded-md' />
 					</div>
-					<div ref={menuRef} className='relative shrink-0'>
-						<button
-							type='button'
-							aria-label='Page actions'
-							aria-haspopup='menu'
-							aria-expanded={menuOpen}
-							onClick={() => setMenuOpen((open) => !open)}
-							className='rounded-lg p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200'>
-							<MoreHorizontal size={16} />
-						</button>
-						{menuOpen && (
-							<div role='menu' className='absolute top-8 right-0 z-30 w-48 rounded-xl border border-zinc-200 bg-white p-1 shadow-xl dark:border-white/10 dark:bg-zinc-950'>
-								{canManage && (
-									<button role='menuitem' type='button' onClick={() => navigate(paths.editPage(ws, page.id))} className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
-										<PencilRuler size={13} /> Open builder
+				</Link>
+
+				<div className='flex flex-1 flex-col gap-3 p-4'>
+					<div className='flex items-start justify-between gap-2'>
+						<div className='min-w-0'>
+							<Link
+								to={openTo}
+								className='hover:text-primary-700 block truncate text-sm font-extrabold text-zinc-900 dark:text-white'>
+								{page.name}
+							</Link>
+							<p className='mt-0.5 flex items-center gap-1 truncate text-[11px] text-zinc-500 dark:text-zinc-400'>
+								<GitMerge size={11} className='shrink-0' />
+								<span className='truncate'>
+									{page.workflow ? page.workflow.name : 'Workflow missing'}
+									{page.workflow?.trashed ? ' (in trash)' : ''}
+								</span>
+							</p>
+						</div>
+						<div ref={menuRef} className='relative shrink-0'>
+							<button
+								type='button'
+								aria-label='Page actions'
+								aria-haspopup='menu'
+								aria-expanded={menuOpen}
+								onClick={() => setMenuOpen((open) => !open)}
+								className='rounded-lg p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200'>
+								<MoreHorizontal size={16} />
+							</button>
+							{menuOpen && (
+								<div
+									role='menu'
+									className='absolute top-8 right-0 z-30 w-48 rounded-xl border border-zinc-200 bg-white p-1 shadow-xl dark:border-white/10 dark:bg-zinc-950'>
+									{canManage && (
+										<button
+											role='menuitem'
+											type='button'
+											onClick={() => navigate(paths.editPage(ws, page.id))}
+											className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
+											<PencilRuler size={13} /> Open builder
+										</button>
+									)}
+									<button
+										role='menuitem'
+										type='button'
+										onClick={() => navigate(paths.pageInsights(ws, page.id))}
+										className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
+										<ChartColumn size={13} /> Insights
 									</button>
-								)}
-								<button role='menuitem' type='button' onClick={() => navigate(paths.pageInsights(ws, page.id))} className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
-									<ChartColumn size={13} /> Insights
-								</button>
-								{page.is_published && (
-									<>
-										<a role='menuitem' href={liveUrl(ws, page)} target='_blank' rel='noopener noreferrer' className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
-											<ExternalLink size={13} /> Open page
-										</a>
+									{page.is_published && (
+										<>
+											<a
+												role='menuitem'
+												href={liveUrl(ws, page)}
+												target='_blank'
+												rel='noopener noreferrer'
+												className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
+												<ExternalLink size={13} /> Open page
+											</a>
+											<button
+												role='menuitem'
+												type='button'
+												onClick={() => {
+													setMenuOpen(false);
+													void navigator.clipboard
+														.writeText(liveUrl(ws, page))
+														.then(() => notify.success('Link copied.'));
+												}}
+												className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
+												<Link2 size={13} /> Copy link
+											</button>
+										</>
+									)}
+									{canManage && (
 										<button
 											role='menuitem'
 											type='button'
 											onClick={() => {
 												setMenuOpen(false);
-												void navigator.clipboard.writeText(liveUrl(ws, page)).then(() => notify.success('Link copied.'));
+												duplicate.mutate(page.id, {
+													onSuccess: () =>
+														notify.success('Page duplicated.'),
+												});
 											}}
 											className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
-											<Link2 size={13} /> Copy link
+											<Copy size={13} /> Duplicate
 										</button>
-									</>
-								)}
-								{canManage && (
+									)}
 									<button
 										role='menuitem'
 										type='button'
 										onClick={() => {
 											setMenuOpen(false);
-											duplicate.mutate(page.id, { onSuccess: () => notify.success('Page duplicated.') });
+											setCloneOpen(true);
 										}}
 										className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
-										<Copy size={13} /> Duplicate
+										<CopyPlus size={13} /> Copy to workspace…
 									</button>
-								)}
-								<button
-									role='menuitem'
-									type='button'
-									onClick={() => {
-										setMenuOpen(false);
-										setCloneOpen(true);
-									}}
-									className={`${menuItem} text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/[0.05]`}>
-									<CopyPlus size={13} /> Copy to workspace…
-								</button>
-								{canManage && (
-									<button role='menuitem' type='button' onClick={() => void onDelete()} className={`${menuItem} text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10`}>
-										<Trash2 size={13} /> Delete
-									</button>
-								)}
-							</div>
+									{canManage && (
+										<button
+											role='menuitem'
+											type='button'
+											onClick={() => void onDelete()}
+											className={`${menuItem} text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10`}>
+											<Trash2 size={13} /> Delete
+										</button>
+									)}
+								</div>
+							)}
+						</div>
+					</div>
+
+					{page.description && (
+						<p className='line-clamp-2 text-xs text-zinc-500 dark:text-zinc-400'>
+							{page.description}
+						</p>
+					)}
+
+					<div className='mt-auto flex flex-wrap items-center gap-1.5'>
+						<span
+							className={`inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[10px] font-bold ${pill.className}`}>
+							<span className='size-1.5 rounded-full bg-current' />
+							{pill.label}
+						</span>
+						<span className='inline-flex h-6 items-center gap-1 rounded-full bg-zinc-100 px-2.5 text-[10px] font-bold text-zinc-600 dark:bg-white/[0.06] dark:text-zinc-300'>
+							<access.icon size={11} />
+							{access.label}
+						</span>
+						{errors.length > 0 && (
+							<span
+								title={errors.join('\n')}
+								className='inline-flex h-6 items-center gap-1 rounded-full bg-rose-50 px-2.5 text-[10px] font-bold text-rose-600 dark:bg-rose-500/10 dark:text-rose-300'>
+								<AlertTriangle size={11} />
+								{errors.length === 1
+									? 'Needs attention'
+									: `${errors.length} issues`}
+							</span>
 						)}
 					</div>
+					<p className='text-[11px] text-zinc-400 dark:text-zinc-500'>
+						{page.runs_count
+							? `${page.runs_count} run${page.runs_count === 1 ? '' : 's'}`
+							: 'No runs yet'}
+						{page.last_run_at ? ` · last ${relativeTime(page.last_run_at)}` : ''}
+					</p>
 				</div>
-
-				{page.description && <p className='line-clamp-2 text-xs text-zinc-500 dark:text-zinc-400'>{page.description}</p>}
-
-				<div className='mt-auto flex flex-wrap items-center gap-1.5'>
-					<span className={`inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[10px] font-bold ${pill.className}`}>
-						<span className='size-1.5 rounded-full bg-current' />
-						{pill.label}
-					</span>
-					<span className='inline-flex h-6 items-center gap-1 rounded-full bg-zinc-100 px-2.5 text-[10px] font-bold text-zinc-600 dark:bg-white/[0.06] dark:text-zinc-300'>
-						<access.icon size={11} />
-						{access.label}
-					</span>
-					{errors.length > 0 && (
-						<span
-							title={errors.join('\n')}
-							className='inline-flex h-6 items-center gap-1 rounded-full bg-rose-50 px-2.5 text-[10px] font-bold text-rose-600 dark:bg-rose-500/10 dark:text-rose-300'>
-							<AlertTriangle size={11} />
-							{errors.length === 1 ? 'Needs attention' : `${errors.length} issues`}
-						</span>
-					)}
-				</div>
-				<p className='text-[11px] text-zinc-400 dark:text-zinc-500'>
-					{page.runs_count ? `${page.runs_count} run${page.runs_count === 1 ? '' : 's'}` : 'No runs yet'}
-					{page.last_run_at ? ` · last ${relativeTime(page.last_run_at)}` : ''}
-				</p>
-			</div>
-		</article>
-		<ClonePageModal ws={ws} page={page} isOpen={cloneOpen} onClose={() => setCloneOpen(false)} />
+			</article>
+			<ClonePageModal
+				ws={ws}
+				page={page}
+				isOpen={cloneOpen}
+				onClose={() => setCloneOpen(false)}
+			/>
 		</>
 	);
 };
@@ -271,9 +335,12 @@ const PagesListPage = () => {
 			<div className='mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8'>
 				<div className='mb-8 flex flex-wrap items-end justify-between gap-4'>
 					<div>
-						<h1 className='text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white'>Pages</h1>
+						<h1 className='text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white'>
+							Pages
+						</h1>
 						<p className='mt-1 max-w-xl text-sm text-zinc-500 dark:text-zinc-400'>
-							Turn a workflow into a page anyone can use: a form for its inputs and a place for its result.
+							Turn a workflow into a page anyone can use: a form for its inputs and a
+							place for its result.
 						</p>
 					</div>
 					{canCreate && (
@@ -358,7 +425,9 @@ const PagesListPage = () => {
 					</div>
 				)}
 			</div>
-			{creating && <CreatePageModal ws={ws} isOpen={creating} onClose={() => setCreating(false)} />}
+			{creating && (
+				<CreatePageModal ws={ws} isOpen={creating} onClose={() => setCreating(false)} />
+			)}
 		</Container>
 	);
 };

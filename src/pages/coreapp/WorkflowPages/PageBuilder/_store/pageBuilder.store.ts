@@ -46,7 +46,11 @@ export type TDropTarget =
  * there, else right after the selection (or after the nearest container
  * around it that it may sit beside) else at the end of the page.
  */
-export const placeForNew = (blocks: TPageBlock[], selectedId: string | null, type: TPageBlockType): TBlockPlace => {
+export const placeForNew = (
+	blocks: TPageBlock[],
+	selectedId: string | null,
+	type: TPageBlockType,
+): TBlockPlace => {
 	const selected = selectedId ? findBlock(blocks, selectedId) : undefined;
 	if (selected && isContainer(selected) && fitsIn(type, selected.type)) {
 		return { parentId: selected.id, index: selected.children.length };
@@ -55,7 +59,8 @@ export const placeForNew = (blocks: TPageBlock[], selectedId: string | null, typ
 	while (id) {
 		const place = findPlace(blocks, id);
 		if (!place) break;
-		if (fitsIn(type, place.parent?.type ?? null)) return { parentId: place.parent?.id ?? null, index: place.index + 1 };
+		if (fitsIn(type, place.parent?.type ?? null))
+			return { parentId: place.parent?.id ?? null, index: place.index + 1 };
 		id = place.parent?.id ?? null;
 	}
 	return { parentId: null, index: blocks.length };
@@ -66,11 +71,16 @@ export const placeForDrop = (blocks: TPageBlock[], target: TDropTarget): TBlockP
 	if (target.kind === 'end') {
 		if (target.parentId === null) return { parentId: null, index: blocks.length };
 		const parent = findBlock(blocks, target.parentId);
-		return parent && isContainer(parent) ? { parentId: parent.id, index: parent.children.length } : null;
+		return parent && isContainer(parent)
+			? { parentId: parent.id, index: parent.children.length }
+			: null;
 	}
 	const place = findPlace(blocks, target.id);
 	if (!place) return null;
-	return { parentId: place.parent?.id ?? null, index: place.index + (target.side === 'after' ? 1 : 0) };
+	return {
+		parentId: place.parent?.id ?? null,
+		index: place.index + (target.side === 'after' ? 1 : 0),
+	};
 };
 
 export const ZOOM_MIN = 50;
@@ -116,7 +126,12 @@ type TState = {
 };
 
 type TActions = {
-	load: (pageId: string, content: TPageContent, variant?: TPageVariant, baseRevision?: number | null) => void;
+	load: (
+		pageId: string,
+		content: TPageContent,
+		variant?: TPageVariant,
+		baseRevision?: number | null,
+	) => void;
 	change: (update: (content: TPageContent) => TPageContent, coalesceKey?: string) => void;
 	undo: () => void;
 	redo: () => void;
@@ -144,7 +159,11 @@ type TActions = {
 	nudgeBlock: (id: string, by: -1 | 1) => void;
 	updateBlock: (
 		id: string,
-		patch: { props?: Record<string, unknown>; width?: TPageBlock['width']; display?: Partial<TPageBlockDisplay> },
+		patch: {
+			props?: Record<string, unknown>;
+			width?: TPageBlock['width'];
+			display?: Partial<TPageBlockDisplay>;
+		},
 		coalesceKey?: string,
 	) => void;
 	removeBlock: (id: string) => void;
@@ -201,7 +220,8 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 		const { content, past, lastEdit, revision } = get();
 		if (!content) return;
 		const now = Date.now();
-		const coalesce = !!coalesceKey && lastEdit?.key === coalesceKey && now - lastEdit.at < COALESCE_MS;
+		const coalesce =
+			!!coalesceKey && lastEdit?.key === coalesceKey && now - lastEdit.at < COALESCE_MS;
 		set({
 			content: next,
 			past: coalesce ? past : [...past, content].slice(-HISTORY_LIMIT),
@@ -273,20 +293,37 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 
 		select: (id, options) => {
 			const { selectedIds, rightTab } = get();
-			const tab = options?.keepTab ? rightTab : rightTab === 'runs' || rightTab === 'history' ? 'design' : rightTab;
+			const tab = options?.keepTab
+				? rightTab
+				: rightTab === 'runs' || rightTab === 'history'
+					? 'design'
+					: rightTab;
 			if (!id) {
 				set({ selectedId: null, selectedIds: [], editingId: null });
 				return;
 			}
 			if (options?.additive) {
-				const next = selectedIds.includes(id) ? selectedIds.filter((item) => item !== id) : [...selectedIds, id];
-				set({ selectedIds: next, selectedId: next[next.length - 1] ?? null, rightTab: tab, editingId: null });
+				const next = selectedIds.includes(id)
+					? selectedIds.filter((item) => item !== id)
+					: [...selectedIds, id];
+				set({
+					selectedIds: next,
+					selectedId: next[next.length - 1] ?? null,
+					rightTab: tab,
+					editingId: null,
+				});
 				return;
 			}
-			set({ selectedId: id, selectedIds: [id], rightTab: tab, editingId: get().editingId === id ? id : null });
+			set({
+				selectedId: id,
+				selectedIds: [id],
+				rightTab: tab,
+				editingId: get().editingId === id ? id : null,
+			});
 		},
 
-		setEditing: (editingId) => set({ editingId: editingId && isLocked(editingId) ? null : editingId }),
+		setEditing: (editingId) =>
+			set({ editingId: editingId && isLocked(editingId) ? null : editingId }),
 		setOverlay: (overlay) => set({ overlay }),
 
 		copiedStyle: null,
@@ -301,7 +338,11 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 			if (!style) return;
 			get().updateBlocks(ids, (block) => {
 				const place = findPlace(blocks(), block.id);
-				return applyStyle(block, style, isContainer(block) || place?.parent?.type === 'column');
+				return applyStyle(
+					block,
+					style,
+					isContainer(block) || place?.parent?.type === 'column',
+				);
 			});
 		},
 
@@ -316,7 +357,8 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 
 		replaceText: (query, replacement, options) => {
 			const result = replaceInBlocks(blocks(), query, replacement, options);
-			if (result.replaced > 0) get().change((content) => ({ ...content, blocks: result.blocks }));
+			if (result.replaced > 0)
+				get().change((content) => ({ ...content, blocks: result.blocks }));
 			return result.replaced;
 		},
 
@@ -338,7 +380,10 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 		removeBlocks: (all) => {
 			const ids = all.filter((id) => !isLocked(id));
 			if (ids.length === 0) return;
-			get().change((content) => ({ ...content, blocks: ids.reduce((list, id) => removeById(list, id), content.blocks) }));
+			get().change((content) => ({
+				...content,
+				blocks: ids.reduce((list, id) => removeById(list, id), content.blocks),
+			}));
 			set({ selectedId: null, selectedIds: [], editingId: null });
 		},
 
@@ -350,7 +395,11 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 					const place = findPlace(list, id);
 					if (!place) continue;
 					const copy = cloneBlock(place.siblings[place.index], newBlockId);
-					list = insertAt(list, { parentId: place.parent?.id ?? null, index: place.index + 1 }, copy);
+					list = insertAt(
+						list,
+						{ parentId: place.parent?.id ?? null, index: place.index + 1 },
+						copy,
+					);
 					copies.push(copy.id);
 				}
 				return { ...content, blocks: list };
@@ -363,9 +412,18 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 			const list = blocks();
 			const places = ids.map((id) => ({ id, place: findPlace(list, id) }));
 			// Only blocks side by side on the page itself can go into a new section.
-			if (places.some(({ place }) => !place || place.parent !== null || list[place.index].type === 'section')) return;
+			if (
+				places.some(
+					({ place }) =>
+						!place || place.parent !== null || list[place.index].type === 'section',
+				)
+			)
+				return;
 			const ordered = places.sort((a, b) => a.place!.index - b.place!.index);
-			const section = { ...createBlock('section'), children: ordered.map(({ place }) => list[place!.index]) } as TPageBlock;
+			const section = {
+				...createBlock('section'),
+				children: ordered.map(({ place }) => list[place!.index]),
+			} as TPageBlock;
 			const first = ordered[0].place!.index;
 			get().change((content) => ({
 				...content,
@@ -380,7 +438,10 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 
 		insertBlock: (block, place) => {
 			const at = place ?? placeForNew(blocks(), get().selectedId, block.type);
-			get().change((content) => ({ ...content, blocks: insertAt(content.blocks, at, block) }));
+			get().change((content) => ({
+				...content,
+				blocks: insertAt(content.blocks, at, block),
+			}));
 			set({ selectedId: block.id, selectedIds: [block.id], rightTab: 'design' });
 		},
 
@@ -402,7 +463,10 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 			if (!place) return;
 			const target = place.index + by;
 			if (target < 0 || target >= place.siblings.length) return;
-			get().moveBlock(id, { parentId: place.parent?.id ?? null, index: by > 0 ? target + 1 : target });
+			get().moveBlock(id, {
+				parentId: place.parent?.id ?? null,
+				index: by > 0 ? target + 1 : target,
+			});
 		},
 
 		updateBlock: (id, patch, coalesceKey) => {
@@ -410,13 +474,16 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 			get().change(
 				(content) => ({
 					...content,
-					blocks: updateById(content.blocks, id, (block) =>
-						({
-							...block,
-							...patch.display,
-							width: patch.width ?? block.width,
-							props: { ...block.props, ...patch.props },
-						}) as TPageBlock,
+					blocks: updateById(
+						content.blocks,
+						id,
+						(block) =>
+							({
+								...block,
+								...patch.display,
+								width: patch.width ?? block.width,
+								props: { ...block.props, ...patch.props },
+							}) as TPageBlock,
 					),
 				}),
 				coalesceKey ? `${id}:${coalesceKey}` : undefined,
@@ -431,7 +498,9 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 						? {
 								...block,
 								props: { ...block.props, layout },
-								children: fitColumns(block.children, layout, () => createBlock('column')),
+								children: fitColumns(block.children, layout, () =>
+									createBlock('column'),
+								),
 							}
 						: block,
 				),
@@ -441,9 +510,11 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 			const place = findPlace(blocks(), id);
 			if (!place || isLocked(id)) return;
 			const selectedId = get().selectedId;
-			const neighbour = place.siblings[place.index + 1] ?? place.siblings[place.index - 1] ?? place.parent;
+			const neighbour =
+				place.siblings[place.index + 1] ?? place.siblings[place.index - 1] ?? place.parent;
 			get().change((content) => ({ ...content, blocks: removeById(content.blocks, id) }));
-			const removedSelection = !!selectedId && !findBlock(get().content?.blocks ?? [], selectedId);
+			const removedSelection =
+				!!selectedId && !findBlock(get().content?.blocks ?? [], selectedId);
 			const nextId = removedSelection ? (neighbour?.id ?? null) : selectedId;
 			set({ selectedId: nextId, selectedIds: nextId ? [nextId] : [], editingId: null });
 		},
@@ -463,12 +534,22 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 
 		markSaving: () => set({ saveState: 'saving' }),
 		markSaved: (revision, baseRevision) =>
-			set({ savedRevision: revision, baseRevision, saveState: get().revision === revision ? 'saved' : 'dirty' }),
+			set({
+				savedRevision: revision,
+				baseRevision,
+				saveState: get().revision === revision ? 'saved' : 'dirty',
+			}),
 		markConflict: () => set({ saveState: 'conflict' }),
 		markSaveFailed: () => set({ saveState: 'error' }),
 
 		setDevice: (device) => set({ device }),
-		setZoom: (zoom) => set({ zoom: Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(zoom / ZOOM_STEP) * ZOOM_STEP)) }),
+		setZoom: (zoom) =>
+			set({
+				zoom: Math.min(
+					ZOOM_MAX,
+					Math.max(ZOOM_MIN, Math.round(zoom / ZOOM_STEP) * ZOOM_STEP),
+				),
+			}),
 		setGuides: (guides) => set({ guides }),
 		setMode: (mode) =>
 			set(
@@ -478,7 +559,8 @@ export const usePageBuilderStore = create<TState & TActions>()((set, get) => {
 			),
 		setLeftTab: (leftTab) => set({ leftTab }),
 		setRightTab: (rightTab) => set({ rightTab }),
-		setDragging: (dragging) => set({ dragging, dropTarget: dragging ? get().dropTarget : null }),
+		setDragging: (dragging) =>
+			set({ dragging, dropTarget: dragging ? get().dropTarget : null }),
 		setDropTarget: (dropTarget) => set({ dropTarget }),
 	};
 });
@@ -487,7 +569,9 @@ const NO_BLOCKS: TPageBlock[] = [];
 
 /** The selected block, wherever it sits in the tree. */
 export const selectSelected = (state: TState) =>
-	state.selectedId && state.content ? findBlock(state.content.blocks, state.selectedId) : undefined;
+	state.selectedId && state.content
+		? findBlock(state.content.blocks, state.selectedId)
+		: undefined;
 
 /** The draft's blocks, with a stable empty list before a page is loaded. */
 export const selectBlocks = (state: TState) => state.content?.blocks ?? NO_BLOCKS;

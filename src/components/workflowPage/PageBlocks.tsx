@@ -1,4 +1,15 @@
-import { AlertTriangle, CheckCircle2, Clock, ImageIcon, Info, Loader2, OctagonAlert, Play, TriangleAlert, Unplug } from 'lucide-react';
+import {
+	AlertTriangle,
+	CheckCircle2,
+	Clock,
+	ImageIcon,
+	Info,
+	Loader2,
+	OctagonAlert,
+	Play,
+	TriangleAlert,
+	Unplug,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { TWorkflowInterfaceField } from '@/types/workflow-extras.type';
 import type { TPageAlign, TPageBlockOf } from '@/types/workflow-page.type';
@@ -21,16 +32,26 @@ const Placeholder = ({ children }: { children: ReactNode }) => (
 );
 
 export const humanize = (name: string) => {
-	const spaced = name.replace(/[_-]+/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').trim();
+	const spaced = name
+		.replace(/[_-]+/g, ' ')
+		.replace(/([a-z])([A-Z])/g, '$1 $2')
+		.trim();
 	return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 };
 
-export const HeadingBlock = ({ block, mode }: { block: TPageBlockOf<'heading'>; mode: TPageMode }) => {
+export const HeadingBlock = ({
+	block,
+	mode,
+}: {
+	block: TPageBlockOf<'heading'>;
+	mode: TPageMode;
+}) => {
 	const { text, level, align } = block.props;
 	const content = text || (mode === 'edit' ? <Placeholder>Heading</Placeholder> : null);
 	if (!content) return null;
 	const className = `${ALIGN[align]} tracking-tight break-words text-[var(--pg-text)]`;
-	if (level === 1) return <h1 className={`${className} text-3xl leading-tight font-extrabold`}>{content}</h1>;
+	if (level === 1)
+		return <h1 className={`${className} text-3xl leading-tight font-extrabold`}>{content}</h1>;
 	if (level === 3) return <h3 className={`${className} text-base font-bold`}>{content}</h3>;
 	return <h2 className={`${className} text-xl font-bold`}>{content}</h2>;
 };
@@ -76,7 +97,13 @@ export const DividerBlock = ({ block }: { block: TPageBlockOf<'divider'> }) => (
 
 const SPACER = { sm: 'h-3', md: 'h-8', lg: 'h-14', xl: 'h-24' } as const;
 
-export const SpacerBlock = ({ block, mode }: { block: TPageBlockOf<'spacer'>; mode: TPageMode }) => (
+export const SpacerBlock = ({
+	block,
+	mode,
+}: {
+	block: TPageBlockOf<'spacer'>;
+	mode: TPageMode;
+}) => (
 	<div
 		aria-hidden
 		className={`${SPACER[block.props.size]} ${mode === 'edit' ? 'rounded-md bg-[repeating-linear-gradient(45deg,transparent,transparent_6px,var(--pg-subtle)_6px,var(--pg-subtle)_12px)]' : ''}`}
@@ -84,13 +111,31 @@ export const SpacerBlock = ({ block, mode }: { block: TPageBlockOf<'spacer'>; mo
 );
 
 const CALLOUT = {
-	info: { Icon: Info, className: 'border-sky-500/30 bg-sky-500/10 [--callout:var(--color-sky-500)]' },
-	success: { Icon: CheckCircle2, className: 'border-emerald-500/30 bg-emerald-500/10 [--callout:var(--color-emerald-500)]' },
-	warning: { Icon: TriangleAlert, className: 'border-amber-500/30 bg-amber-500/10 [--callout:var(--color-amber-500)]' },
-	danger: { Icon: OctagonAlert, className: 'border-rose-500/30 bg-rose-500/10 [--callout:var(--color-rose-500)]' },
+	info: {
+		Icon: Info,
+		className: 'border-sky-500/30 bg-sky-500/10 [--callout:var(--color-sky-500)]',
+	},
+	success: {
+		Icon: CheckCircle2,
+		className: 'border-emerald-500/30 bg-emerald-500/10 [--callout:var(--color-emerald-500)]',
+	},
+	warning: {
+		Icon: TriangleAlert,
+		className: 'border-amber-500/30 bg-amber-500/10 [--callout:var(--color-amber-500)]',
+	},
+	danger: {
+		Icon: OctagonAlert,
+		className: 'border-rose-500/30 bg-rose-500/10 [--callout:var(--color-rose-500)]',
+	},
 } as const;
 
-export const CalloutBlock = ({ block, mode }: { block: TPageBlockOf<'callout'>; mode: TPageMode }) => {
+export const CalloutBlock = ({
+	block,
+	mode,
+}: {
+	block: TPageBlockOf<'callout'>;
+	mode: TPageMode;
+}) => {
 	const { tone, title, markdown } = block.props;
 	const { Icon, className } = CALLOUT[tone];
 	return (
@@ -150,7 +195,15 @@ const SUBMIT_ALIGN = {
 	stretch: '[&>button]:w-full',
 } as const;
 
-export const SubmitBlock = ({ block, mode, run }: { block: TPageBlockOf<'submit'>; mode: TPageMode; run?: TPageRun }) => {
+export const SubmitBlock = ({
+	block,
+	mode,
+	run,
+}: {
+	block: TPageBlockOf<'submit'>;
+	mode: TPageMode;
+	run?: TPageRun;
+}) => {
 	const busy = run?.phase === 'submitting' || run?.phase === 'running';
 	return (
 		<div className='space-y-2'>
@@ -160,12 +213,18 @@ export const SubmitBlock = ({ block, mode, run }: { block: TPageBlockOf<'submit'
 					disabled={busy}
 					tabIndex={mode === 'edit' ? -1 : undefined}
 					className='inline-flex h-11 items-center justify-center gap-2 rounded-[calc(var(--pg-radius)*0.8)] bg-[var(--pg-accent)] px-6 text-sm font-bold text-[var(--pg-accent-fg)] shadow-sm transition hover:brightness-110 focus-visible:ring-4 focus-visible:ring-[var(--pg-accent-soft)] focus-visible:outline-none active:scale-[0.99] disabled:cursor-progress disabled:opacity-75'>
-					{busy ? <Loader2 size={16} className='animate-spin' /> : <Play size={15} className='fill-current' />}
+					{busy ? (
+						<Loader2 size={16} className='animate-spin' />
+					) : (
+						<Play size={15} className='fill-current' />
+					)}
 					{busy ? block.props.running_label : block.props.label}
 				</button>
 			</div>
 			{run?.formError && (
-				<p role='alert' className='flex items-start gap-1.5 text-xs font-medium text-rose-500'>
+				<p
+					role='alert'
+					className='flex items-start gap-1.5 text-xs font-medium text-rose-500'>
 					<AlertTriangle size={13} className='mt-px shrink-0' />
 					{run.formError}
 				</p>
@@ -174,7 +233,15 @@ export const SubmitBlock = ({ block, mode, run }: { block: TPageBlockOf<'submit'
 	);
 };
 
-export const OutputBlock = ({ block, mode, run }: { block: TPageBlockOf<'output'>; mode: TPageMode; run?: TPageRun }) => {
+export const OutputBlock = ({
+	block,
+	mode,
+	run,
+}: {
+	block: TPageBlockOf<'output'>;
+	mode: TPageMode;
+	run?: TPageRun;
+}) => {
 	const { output_name: name, label, display, empty_text: emptyText, copyable } = block.props;
 	const result = run?.result;
 	const hasValue = result?.state === 'completed' && name in result.outputs;
@@ -202,7 +269,11 @@ export const OutputBlock = ({ block, mode, run }: { block: TPageBlockOf<'output'
 					<p className='text-sm text-[var(--pg-muted)]'>
 						{mode === 'edit' && name ? (
 							<>
-								Shows <code className='rounded bg-[var(--pg-subtle)] px-1 font-mono text-xs'>{name}</code> from the workflow
+								Shows{' '}
+								<code className='rounded bg-[var(--pg-subtle)] px-1 font-mono text-xs'>
+									{name}
+								</code>{' '}
+								from the workflow
 							</>
 						) : result?.state === 'completed' ? (
 							'The workflow finished without returning this.'
@@ -242,14 +313,22 @@ export const StatusBlock = ({ block, run }: { block: TPageBlockOf<'status'>; run
 	if (result?.state === 'failed') {
 		return (
 			<div className='rounded-[var(--pg-radius)] border border-rose-500/30 bg-rose-500/10 p-3.5'>
-				{row(<OctagonAlert size={16} />, result.error || 'The workflow could not finish.', 'text-rose-600')}
+				{row(
+					<OctagonAlert size={16} />,
+					result.error || 'The workflow could not finish.',
+					'text-rose-600',
+				)}
 			</div>
 		);
 	}
 
 	if (result?.state === 'completed') {
 		const took = seconds(result.started_at, result.finished_at);
-		return row(<CheckCircle2 size={16} />, took ? `Done in ${took}s` : 'Done', 'text-emerald-600');
+		return row(
+			<CheckCircle2 size={16} />,
+			took ? `Done in ${took}s` : 'Done',
+			'text-emerald-600',
+		);
 	}
 
 	return (

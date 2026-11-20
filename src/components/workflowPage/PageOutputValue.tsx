@@ -11,7 +11,8 @@ const isHttpUrl = (value: unknown): value is string =>
 const looksLikeImage = (value: string) =>
 	/\.(png|jpe?g|gif|webp|svg|avif)(\?.*)?$/i.test(value.trim());
 
-const looksLikeMarkdown = (value: string) => /(^|\n)\s*(#{1,6}\s|[-*]\s|\d+\.\s|>\s)|\*\*|`/.test(value);
+const looksLikeMarkdown = (value: string) =>
+	/(^|\n)\s*(#{1,6}\s|[-*]\s|\d+\.\s|>\s)|\*\*|`/.test(value);
 
 const isRowList = (value: unknown): value is Record<string, unknown>[] =>
 	Array.isArray(value) &&
@@ -107,7 +108,11 @@ export const PageOutputBody = ({ value, display }: { value: unknown; display: TD
 				<PageOutputBody value={value} display='text' />
 			);
 		default:
-			return <p className='text-sm leading-relaxed break-words whitespace-pre-wrap'>{asText(value)}</p>;
+			return (
+				<p className='text-sm leading-relaxed break-words whitespace-pre-wrap'>
+					{asText(value)}
+				</p>
+			);
 	}
 };
 

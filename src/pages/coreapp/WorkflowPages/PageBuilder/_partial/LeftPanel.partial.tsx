@@ -1,13 +1,31 @@
 import { useState } from 'react';
 import type { DragEvent, ReactNode } from 'react';
-import { Bookmark, Check, Columns3, EyeOff, GripVertical, Layers, Lock, LogOut, Palette, Plus, TextCursorInput, Trash2 } from 'lucide-react';
+import {
+	Bookmark,
+	Check,
+	Columns3,
+	EyeOff,
+	GripVertical,
+	Layers,
+	Lock,
+	LogOut,
+	Palette,
+	Plus,
+	TextCursorInput,
+	Trash2,
+} from 'lucide-react';
 import type { TPageBlock, TPageBlockType, TPageFont, TPageTheme } from '@/types/workflow-page.type';
 import { PAGE_FONTS, usePageFonts } from '@/components/workflowPage/pageTheme';
 import { humanize } from '@/components/workflowPage/PageBlocks';
 import { flattenBlocks } from '@/components/workflowPage/pageTree';
 import { useDeletePageSection, usePageSections } from '@/api/modules/workflow-pages';
 import { useConfirm } from '@/context/confirm';
-import { BLOCK_CATALOG, blockSummary, createBlock, newBlockId } from '../_helper/blockCatalog.helper';
+import {
+	BLOCK_CATALOG,
+	blockSummary,
+	createBlock,
+	newBlockId,
+} from '../_helper/blockCatalog.helper';
 import { cloneBlock, isContainer } from '../_helper/blockTree.helper';
 import {
 	placeForDrop,
@@ -59,14 +77,18 @@ const LibraryItem = ({
 		onDragStart={(event) => startDrag(event, { kind: 'new', block: makeBlock() })}
 		onDragEnd={endDrag}
 		onClick={onAdd}
-		className={`group flex w-full cursor-grab items-center gap-2.5 rounded-xl border border-zinc-200/80 bg-white px-2.5 py-2 text-left transition hover:border-primary-400/60 hover:bg-primary-50/50 hover:shadow-sm active:cursor-grabbing dark:border-white/[0.07] dark:bg-zinc-900/60 dark:hover:border-primary-400/30 dark:hover:bg-primary-400/5 ${muted ? 'opacity-60' : ''}`}>
-		<span className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 transition group-hover:bg-primary-100 group-hover:text-primary-800 dark:bg-white/[0.06] dark:text-zinc-300 dark:group-hover:bg-primary-400/15 dark:group-hover:text-primary-300'>
+		className={`group hover:border-primary-400/60 hover:bg-primary-50/50 dark:hover:border-primary-400/30 dark:hover:bg-primary-400/5 flex w-full cursor-grab items-center gap-2.5 rounded-xl border border-zinc-200/80 bg-white px-2.5 py-2 text-left transition hover:shadow-sm active:cursor-grabbing dark:border-white/[0.07] dark:bg-zinc-900/60 ${muted ? 'opacity-60' : ''}`}>
+		<span className='group-hover:bg-primary-100 group-hover:text-primary-800 dark:group-hover:bg-primary-400/15 dark:group-hover:text-primary-300 flex size-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 transition dark:bg-white/[0.06] dark:text-zinc-300'>
 			{icon}
 		</span>
 		<span className='min-w-0 flex-1'>
-			<span className='block truncate text-xs font-semibold text-zinc-800 dark:text-zinc-100'>{label}</span>
+			<span className='block truncate text-xs font-semibold text-zinc-800 dark:text-zinc-100'>
+				{label}
+			</span>
 			{description && (
-				<span className='block truncate text-[10px] text-zinc-400 dark:text-zinc-500'>{description}</span>
+				<span className='block truncate text-[10px] text-zinc-400 dark:text-zinc-500'>
+					{description}
+				</span>
 			)}
 		</span>
 		{trailing}
@@ -91,8 +113,12 @@ const AddTab = () => {
 	const addBlock = usePageBuilderStore((store) => store.addBlock);
 
 	const all = flattenBlocks(blocks);
-	const placedFields = new Set(all.flatMap((block) => (block.type === 'field' ? [block.props.field_key] : [])));
-	const placedOutputs = new Set(all.flatMap((block) => (block.type === 'output' ? [block.props.output_name] : [])));
+	const placedFields = new Set(
+		all.flatMap((block) => (block.type === 'field' ? [block.props.field_key] : [])),
+	);
+	const placedOutputs = new Set(
+		all.flatMap((block) => (block.type === 'output' ? [block.props.output_name] : [])),
+	);
 
 	const addAfterSelection = (block: TPageBlock) => insertBlock(block);
 
@@ -128,7 +154,10 @@ const AddTab = () => {
 									makeBlock={() => cloneBlock(section.block, newBlockId)}
 									trailing={
 										<span className='flex shrink-0 items-center gap-0.5'>
-											<Icon size={12} className='text-zinc-300 dark:text-zinc-600' />
+											<Icon
+												size={12}
+												className='text-zinc-300 dark:text-zinc-600'
+											/>
 											<span
 												role='button'
 												tabIndex={0}
@@ -140,7 +169,10 @@ const AddTab = () => {
 												onKeyDown={(event) => {
 													if (event.key === 'Enter') {
 														event.stopPropagation();
-														void removeSection(section.id, section.name);
+														void removeSection(
+															section.id,
+															section.name,
+														);
 													}
 												}}
 												className='rounded p-1 text-zinc-400 opacity-0 transition group-hover:opacity-100 hover:bg-rose-50 hover:text-rose-600 focus-visible:opacity-100 dark:hover:bg-rose-500/10'>
@@ -160,7 +192,8 @@ const AddTab = () => {
 					<p className='text-[11px] text-zinc-400'>Reading the workflow…</p>
 				) : fields.length === 0 ? (
 					<p className='text-[11px] leading-relaxed text-zinc-400 dark:text-zinc-500'>
-						This workflow asks for nothing. Add Input steps to it to collect values here.
+						This workflow asks for nothing. Add Input steps to it to collect values
+						here.
 					</p>
 				) : (
 					<div className='space-y-1.5'>
@@ -173,11 +206,19 @@ const AddTab = () => {
 									label={field.label || field.key}
 									description={`${field.type}${field.required ? ' · required' : ''}`}
 									muted={placed}
-									onAdd={() => addAfterSelection(createBlock('field', { field_key: field.key }))}
+									onAdd={() =>
+										addAfterSelection(
+											createBlock('field', { field_key: field.key }),
+										)
+									}
 									makeBlock={() => createBlock('field', { field_key: field.key })}
 									trailing={
 										placed ? (
-											<Check size={14} className='shrink-0 text-emerald-500' aria-label='On the page' />
+											<Check
+												size={14}
+												className='shrink-0 text-emerald-500'
+												aria-label='On the page'
+											/>
 										) : field.required ? (
 											<span className='shrink-0 rounded-full bg-rose-50 px-1.5 py-0.5 text-[9px] font-bold text-rose-600 dark:bg-rose-500/10 dark:text-rose-400'>
 												Needed
@@ -194,7 +235,8 @@ const AddTab = () => {
 			<PanelSection title='Workflow outputs'>
 				{interfaceLoading ? null : outputs.length === 0 ? (
 					<p className='text-[11px] leading-relaxed text-zinc-400 dark:text-zinc-500'>
-						This workflow returns nothing yet. Add Output steps to it to show its result here.
+						This workflow returns nothing yet. Add Output steps to it to show its result
+						here.
 					</p>
 				) : (
 					<div className='space-y-1.5'>
@@ -205,11 +247,17 @@ const AddTab = () => {
 								label={humanize(name)}
 								description={name}
 								muted={placedOutputs.has(name)}
-								onAdd={() => addAfterSelection(createBlock('output', { output_name: name }))}
+								onAdd={() =>
+									addAfterSelection(createBlock('output', { output_name: name }))
+								}
 								makeBlock={() => createBlock('output', { output_name: name })}
 								trailing={
 									placedOutputs.has(name) ? (
-										<Check size={14} className='shrink-0 text-emerald-500' aria-label='On the page' />
+										<Check
+											size={14}
+											className='shrink-0 text-emerald-500'
+											aria-label='On the page'
+										/>
 									) : null
 								}
 							/>
@@ -238,13 +286,43 @@ const AddTab = () => {
 
 			<PanelSection title='Content'>
 				<div className='space-y-1.5'>
-					{(['heading', 'text', 'image', 'button', 'video', 'callout', 'code', 'gallery', 'compare', 'embed', 'social', 'divider', 'spacer'] as const).map(generic)}
+					{(
+						[
+							'heading',
+							'text',
+							'image',
+							'button',
+							'video',
+							'callout',
+							'code',
+							'gallery',
+							'compare',
+							'embed',
+							'social',
+							'divider',
+							'spacer',
+						] as const
+					).map(generic)}
 				</div>
 			</PanelSection>
 
 			<PanelSection title='Sections'>
 				<div className='space-y-1.5'>
-					{(['faq', 'testimonial', 'stats', 'logos', 'tabs', 'countdown', 'steps', 'features', 'timeline', 'pricing', 'progress'] as const).map(generic)}
+					{(
+						[
+							'faq',
+							'testimonial',
+							'stats',
+							'logos',
+							'tabs',
+							'countdown',
+							'steps',
+							'features',
+							'timeline',
+							'pricing',
+							'progress',
+						] as const
+					).map(generic)}
 				</div>
 			</PanelSection>
 		</>
@@ -269,7 +347,11 @@ const LayerRows = ({
 	const select = usePageBuilderStore((store) => store.select);
 	const moveBlock = usePageBuilderStore((store) => store.moveBlock);
 	const removeBlock = usePageBuilderStore((store) => store.removeBlock);
-	const flagged = new Map(page.issues.filter((issue) => issue.block_id).map((issue) => [issue.block_id, issue.severity]));
+	const flagged = new Map(
+		page.issues
+			.filter((issue) => issue.block_id)
+			.map((issue) => [issue.block_id, issue.severity]),
+	);
 
 	return (
 		<>
@@ -292,20 +374,31 @@ const LayerRows = ({
 								setOver(null);
 							}}
 							onDragOver={(event) => {
-								if (usePageBuilderStore.getState().dragging?.kind !== 'move') return;
+								if (usePageBuilderStore.getState().dragging?.kind !== 'move')
+									return;
 								event.preventDefault();
 								event.stopPropagation();
 								const rect = event.currentTarget.getBoundingClientRect();
-								const side = event.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
-								if (over?.id !== block.id || over.side !== side) setOver({ id: block.id, side });
+								const side =
+									event.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+								if (over?.id !== block.id || over.side !== side)
+									setOver({ id: block.id, side });
 							}}
 							onDrop={(event) => {
 								event.preventDefault();
 								event.stopPropagation();
 								const { dragging, content } = usePageBuilderStore.getState();
 								const place =
-									content && over ? placeForDrop(content.blocks, { kind: 'beside', id: over.id, side: over.side, axis: 'y' }) : null;
-								if (dragging?.kind === 'move' && place) moveBlock(dragging.id, place);
+									content && over
+										? placeForDrop(content.blocks, {
+												kind: 'beside',
+												id: over.id,
+												side: over.side,
+												axis: 'y',
+											})
+										: null;
+								if (dragging?.kind === 'move' && place)
+									moveBlock(dragging.id, place);
 								endDrag();
 								setOver(null);
 							}}
@@ -321,7 +414,11 @@ const LayerRows = ({
 								/>
 							)}
 							{depth > 0 && (
-								<span aria-hidden className='absolute top-0 bottom-0 w-px bg-zinc-200 dark:bg-white/10' style={{ left: depth * 14 - 3 }} />
+								<span
+									aria-hidden
+									className='absolute top-0 bottom-0 w-px bg-zinc-200 dark:bg-white/10'
+									style={{ left: depth * 14 - 3 }}
+								/>
 							)}
 							<GripVertical
 								size={13}
@@ -329,21 +426,41 @@ const LayerRows = ({
 							/>
 							<button
 								type='button'
-								onClick={(event) => select(block.id, { additive: event.shiftKey || event.metaKey || event.ctrlKey })}
+								onClick={(event) =>
+									select(block.id, {
+										additive: event.shiftKey || event.metaKey || event.ctrlKey,
+									})
+								}
 								className='flex min-w-0 flex-1 items-center gap-2 text-left'>
 								<Icon size={14} className='shrink-0 opacity-70' />
 								<span className='min-w-0 flex-1'>
 									<span className='block truncate text-xs font-semibold'>
-										{isContainer(block) ? meta.label : blockSummary(block, fields)}
+										{isContainer(block)
+											? meta.label
+											: blockSummary(block, fields)}
 									</span>
 									<span className='block truncate text-[10px] opacity-60'>
-										{isContainer(block) ? blockSummary(block, fields) : meta.label}
-										{!isContainer(block) && block.width !== 'full' && ` · ${block.width.replace('_', ' ')}`}
+										{isContainer(block)
+											? blockSummary(block, fields)
+											: meta.label}
+										{!isContainer(block) &&
+											block.width !== 'full' &&
+											` · ${block.width.replace('_', ' ')}`}
 									</span>
 								</span>
-								{block.locked && <Lock size={11} className='shrink-0 text-amber-500' aria-label='Locked' />}
+								{block.locked && (
+									<Lock
+										size={11}
+										className='shrink-0 text-amber-500'
+										aria-label='Locked'
+									/>
+								)}
 								{block.visibility !== 'all' && (
-									<EyeOff size={11} className='shrink-0 opacity-50' aria-label={`Only on ${block.visibility}`} />
+									<EyeOff
+										size={11}
+										className='shrink-0 opacity-50'
+										aria-label={`Only on ${block.visibility}`}
+									/>
 								)}
 								{flag && (
 									<span
@@ -364,7 +481,12 @@ const LayerRows = ({
 						</div>
 						{isContainer(block) && block.children.length > 0 && (
 							<ol className='space-y-0.5 pt-0.5'>
-								<LayerRows blocks={block.children} depth={depth + 1} over={over} setOver={setOver} />
+								<LayerRows
+									blocks={block.children}
+									depth={depth + 1}
+									over={over}
+									setOver={setOver}
+								/>
 							</ol>
 						)}
 					</li>
@@ -381,21 +503,37 @@ const LayersTab = () => {
 	if (blocks.length === 0) {
 		return (
 			<PanelSection>
-				<p className='text-[11px] text-zinc-400'>The page is empty. Add blocks from the Add tab.</p>
+				<p className='text-[11px] text-zinc-400'>
+					The page is empty. Add blocks from the Add tab.
+				</p>
 			</PanelSection>
 		);
 	}
 
 	return (
-		<ol className='space-y-0.5 p-2' aria-label='Blocks on the page' onDragLeave={(event) => {
-			if (!event.currentTarget.contains(event.relatedTarget as Node)) setOver(null);
-		}}>
+		<ol
+			className='space-y-0.5 p-2'
+			aria-label='Blocks on the page'
+			onDragLeave={(event) => {
+				if (!event.currentTarget.contains(event.relatedTarget as Node)) setOver(null);
+			}}>
 			<LayerRows blocks={blocks} depth={0} over={over} setOver={setOver} />
 		</ol>
 	);
 };
 
-const ACCENTS = ['#4f46e5', '#2563eb', '#0891b2', '#059669', '#65a30d', '#d97706', '#dc2626', '#db2777', '#7c3aed', '#18181b'];
+const ACCENTS = [
+	'#4f46e5',
+	'#2563eb',
+	'#0891b2',
+	'#059669',
+	'#65a30d',
+	'#d97706',
+	'#dc2626',
+	'#db2777',
+	'#7c3aed',
+	'#18181b',
+];
 
 const FONT_KEYS = Object.keys(PAGE_FONTS) as TPageFont[];
 
@@ -420,9 +558,13 @@ const ThemeTab = () => {
 							onClick={() => set('accent', accent)}
 							style={{ backgroundColor: accent }}
 							className={`flex h-8 items-center justify-center rounded-lg transition hover:scale-105 ${
-								theme.accent === accent ? 'ring-2 ring-zinc-900 ring-offset-2 dark:ring-white dark:ring-offset-zinc-950' : ''
+								theme.accent === accent
+									? 'ring-2 ring-zinc-900 ring-offset-2 dark:ring-white dark:ring-offset-zinc-950'
+									: ''
 							}`}>
-							{theme.accent === accent && <Check size={14} className='text-white mix-blend-difference' />}
+							{theme.accent === accent && (
+								<Check size={14} className='text-white mix-blend-difference' />
+							)}
 						</button>
 					))}
 				</div>
@@ -485,7 +627,7 @@ const ThemeTab = () => {
 									style={{ fontFamily: PAGE_FONTS[font].stack }}
 									className={`h-8 truncate rounded-lg border px-2 text-left text-[13px] transition ${
 										active
-											? 'border-primary-400 bg-primary-50 text-zinc-900 dark:border-primary-400/50 dark:bg-primary-400/10 dark:text-white'
+											? 'border-primary-400 bg-primary-50 dark:border-primary-400/50 dark:bg-primary-400/10 text-zinc-900 dark:text-white'
 											: 'border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 dark:border-white/10 dark:text-zinc-300 dark:hover:border-white/20 dark:hover:text-white'
 									}`}>
 									{PAGE_FONTS[font].label}
@@ -538,7 +680,10 @@ const LeftPanel = () => {
 
 	return (
 		<aside className='flex h-full min-h-0 flex-col border-r border-zinc-200 bg-zinc-50/70 dark:border-white/10 dark:bg-zinc-950'>
-			<div role='tablist' aria-label='Builder panels' className='flex shrink-0 gap-1 border-b border-zinc-200 p-2 dark:border-white/10'>
+			<div
+				role='tablist'
+				aria-label='Builder panels'
+				className='flex shrink-0 gap-1 border-b border-zinc-200 p-2 dark:border-white/10'>
 				{TABS.map(({ id, label, icon: Icon }) => (
 					<button
 						key={id}

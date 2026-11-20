@@ -189,6 +189,8 @@ export default tseslint.config(
 			'template-curly-spacing': ['error', 'never'],
 			'prefer-template': 'error',
 			'react/react-in-jsx-scope': 'off',
+			// TypeScript checks component props; runtime prop-types are redundant.
+			'react/prop-types': 'off',
 		},
 	},
 	{

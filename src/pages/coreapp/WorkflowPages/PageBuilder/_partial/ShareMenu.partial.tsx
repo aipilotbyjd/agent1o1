@@ -548,7 +548,10 @@ const ShareMenu = ({ onClose }: { onClose: () => void }) => {
 								</button>
 							)
 						}>
-						<LinkCard preview={editingCard && livePreview ? livePreview : preview} host={host} />
+						<LinkCard
+							preview={editingCard && livePreview ? livePreview : preview}
+							host={host}
+						/>
 						{editingCard ? (
 							<div className='space-y-2'>
 								<label className='block space-y-1'>

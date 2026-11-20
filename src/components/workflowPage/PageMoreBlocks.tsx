@@ -31,7 +31,9 @@ export const CodeBlock = ({ block, mode }: { block: TPageBlockOf<'code'>; mode: 
 	const timer = useRef<number>(undefined);
 	useEffect(() => () => window.clearTimeout(timer.current), []);
 	if (!code)
-		return mode === 'edit' ? <Placeholder>Paste a code snippet in the inspector</Placeholder> : null;
+		return mode === 'edit' ? (
+			<Placeholder>Paste a code snippet in the inspector</Placeholder>
+		) : null;
 	const copy = async () => {
 		try {
 			await navigator.clipboard.writeText(code);
@@ -107,18 +109,27 @@ export const PricingBlock = ({
 							{plan.name || <span className='text-[var(--pg-muted)]'>Plan</span>}
 						</p>
 						<p className='mt-2 flex items-baseline gap-1'>
-							<span className='text-3xl font-extrabold tracking-tight'>{plan.price}</span>
+							<span className='text-3xl font-extrabold tracking-tight'>
+								{plan.price}
+							</span>
 							{plan.period && (
-								<span className='text-xs font-semibold text-[var(--pg-muted)]'>{plan.period}</span>
+								<span className='text-xs font-semibold text-[var(--pg-muted)]'>
+									{plan.period}
+								</span>
 							)}
 						</p>
 						{plan.description && (
-							<p className='mt-2 text-xs text-[var(--pg-muted)]'>{plan.description}</p>
+							<p className='mt-2 text-xs text-[var(--pg-muted)]'>
+								{plan.description}
+							</p>
 						)}
 						<ul className='mt-4 flex-1 space-y-2 text-sm'>
 							{splitLines(plan.features).map((feature, i) => (
 								<li key={i} className='flex items-start gap-2'>
-									<Check size={15} className='mt-0.5 shrink-0 text-[var(--pg-accent)]' />
+									<Check
+										size={15}
+										className='mt-0.5 shrink-0 text-[var(--pg-accent)]'
+									/>
 									<span>{feature}</span>
 								</li>
 							))}
@@ -193,7 +204,8 @@ export const GalleryBlock = ({
 		if (open === null) return;
 		const onKey = (event: KeyboardEvent) => {
 			if (event.key === 'Escape') setOpen(null);
-			else if (event.key === 'ArrowRight') setOpen((i) => (i === null ? i : (i + 1) % items.length));
+			else if (event.key === 'ArrowRight')
+				setOpen((i) => (i === null ? i : (i + 1) % items.length));
 			else if (event.key === 'ArrowLeft')
 				setOpen((i) => (i === null ? i : (i - 1 + items.length) % items.length));
 		};
@@ -272,8 +284,12 @@ const CompareSlider = ({
 }) => {
 	const [position, setPosition] = useState(50);
 	return (
-		<div className='relative aspect-video w-full select-none overflow-hidden rounded-[var(--pg-radius)] bg-[var(--pg-subtle)]'>
-			<img src={after} alt={afterLabel ?? 'After'} className='absolute inset-0 size-full object-cover' />
+		<div className='relative aspect-video w-full overflow-hidden rounded-[var(--pg-radius)] bg-[var(--pg-subtle)] select-none'>
+			<img
+				src={after}
+				alt={afterLabel ?? 'After'}
+				className='absolute inset-0 size-full object-cover'
+			/>
 			<img
 				src={before}
 				alt={beforeLabel ?? 'Before'}
@@ -342,7 +358,9 @@ export const CompareBlock = ({
 	const left = splitLines(beforeItems);
 	const right = splitLines(afterItems);
 	if (left.length === 0 && right.length === 0)
-		return mode === 'edit' ? <Placeholder>Add the two lists in the inspector</Placeholder> : null;
+		return mode === 'edit' ? (
+			<Placeholder>Add the two lists in the inspector</Placeholder>
+		) : null;
 	const column = (label: string | null, lines: string[], good: boolean) => (
 		<div
 			className={`rounded-[var(--pg-radius)] border p-4 ${
@@ -393,7 +411,11 @@ export const ProgressBlock = ({
 					<li key={index} className='space-y-1.5'>
 						<div className='flex items-center justify-between gap-3 text-sm font-semibold'>
 							<span className='min-w-0 truncate'>{item.label}</span>
-							{showValues && <span className='text-xs text-[var(--pg-muted)]'>{item.value}%</span>}
+							{showValues && (
+								<span className='text-xs text-[var(--pg-muted)]'>
+									{item.value}%
+								</span>
+							)}
 						</div>
 						<div
 							role='progressbar'
@@ -430,7 +452,11 @@ const SOCIAL_MARK: Record<TPageBlockOf<'social'>['props']['items'][number]['netw
 	discord: 'D',
 };
 
-const SOCIAL_ALIGN = { left: 'justify-start', center: 'justify-center', right: 'justify-end' } as const;
+const SOCIAL_ALIGN = {
+	left: 'justify-start',
+	center: 'justify-center',
+	right: 'justify-end',
+} as const;
 
 export const SocialBlock = ({
 	block,
@@ -495,7 +521,9 @@ export const TimelineBlock = ({
 							</p>
 						)}
 						<p className='text-sm font-bold'>
-							{item.title || <span className='text-[var(--pg-muted)]'>Milestone</span>}
+							{item.title || (
+								<span className='text-[var(--pg-muted)]'>Milestone</span>
+							)}
 						</p>
 						{item.description && (
 							<PageMarkdown className='mt-1 text-sm text-[var(--pg-text)]/75'>

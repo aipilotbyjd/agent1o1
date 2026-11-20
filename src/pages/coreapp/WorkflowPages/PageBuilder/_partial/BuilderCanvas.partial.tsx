@@ -1,10 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent, ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowDown, ArrowUp, Copy, Eye, GripVertical, Lock, MessageSquare, MousePointerClick, Plus, Trash2 } from 'lucide-react';
+import {
+	ArrowDown,
+	ArrowUp,
+	Copy,
+	Eye,
+	GripVertical,
+	Lock,
+	MessageSquare,
+	MousePointerClick,
+	Plus,
+	Trash2,
+} from 'lucide-react';
 import PageRenderer, { type TRenderBlock } from '@/components/workflowPage/PageRenderer';
 import { usePageRun, type TPageTransport } from '@/components/workflowPage/usePageRun';
-import { WorkflowPageService, useWorkflowPageComments, workflowPageKeys } from '@/api/modules/workflow-pages';
+import {
+	WorkflowPageService,
+	useWorkflowPageComments,
+	workflowPageKeys,
+} from '@/api/modules/workflow-pages';
 import InlineEditor, { INLINE_EDITABLE } from './InlineEditor.partial';
 import type { TPageBlock, TPageBlockType, TPageBlockWidth } from '@/types/workflow-page.type';
 import { BLOCK_CATALOG, resolveBlocks, withoutUnboundFields } from '../_helper/blockCatalog.helper';
@@ -43,12 +58,14 @@ const canDropInto = (parent: TPageBlock | null) => {
 };
 
 const applyDrop = () => {
-	const { dragging, dropTarget, content, insertBlock, moveBlock } = usePageBuilderStore.getState();
+	const { dragging, dropTarget, content, insertBlock, moveBlock } =
+		usePageBuilderStore.getState();
 	const place = content && dropTarget ? placeForDrop(content.blocks, dropTarget) : null;
 	if (dragging && place) {
 		const parent = place.parentId ? findBlock(content!.blocks, place.parentId) : null;
 		if (dragging.kind === 'new') {
-			if (fitsIn(dragging.block.type, parent?.type ?? null)) insertBlock(dragging.block, place);
+			if (fitsIn(dragging.block.type, parent?.type ?? null))
+				insertBlock(dragging.block, place);
 		} else {
 			moveBlock(dragging.id, place);
 		}
@@ -56,7 +73,17 @@ const applyDrop = () => {
 	endDrag();
 };
 
-const ToolbarButton = ({ label, onClick, children, danger }: { label: string; onClick: () => void; children: ReactNode; danger?: boolean }) => (
+const ToolbarButton = ({
+	label,
+	onClick,
+	children,
+	danger,
+}: {
+	label: string;
+	onClick: () => void;
+	children: ReactNode;
+	danger?: boolean;
+}) => (
 	<button
 		type='button'
 		aria-label={label}
@@ -85,13 +112,25 @@ const SNAPS: { span: number; width: TPageBlockWidth; label: string }[] = [
  * the block starts on the page's six-column grid) and an outline shows
  * the width it will take.
  */
-const ResizeHandle = ({ block, frame }: { block: TRenderBlock; frame: React.RefObject<HTMLDivElement | null> }) => {
-	const [drag, setDrag] = useState<{ grid: number; room: number; snap: (typeof SNAPS)[number] } | null>(null);
+const ResizeHandle = ({
+	block,
+	frame,
+}: {
+	block: TRenderBlock;
+	frame: React.RefObject<HTMLDivElement | null>;
+}) => {
+	const [drag, setDrag] = useState<{
+		grid: number;
+		room: number;
+		snap: (typeof SNAPS)[number];
+	} | null>(null);
 
 	const snapFor = (offset: number, grid: number, room: number) => {
 		const allowed = SNAPS.filter((snap) => (snap.span / 6) * grid <= room + 2);
 		return allowed.reduce((best, snap) =>
-			Math.abs((snap.span / 6) * grid - offset) < Math.abs((best.span / 6) * grid - offset) ? snap : best,
+			Math.abs((snap.span / 6) * grid - offset) < Math.abs((best.span / 6) * grid - offset)
+				? snap
+				: best,
 		);
 	};
 
@@ -112,14 +151,25 @@ const ResizeHandle = ({ block, frame }: { block: TRenderBlock; frame: React.RefO
 					const left = cell.getBoundingClientRect().left;
 					const room = grid.right - left;
 					(event.target as HTMLElement).setPointerCapture(event.pointerId);
-					setDrag({ grid: grid.width, room, snap: snapFor(event.clientX - left, grid.width, room) });
+					setDrag({
+						grid: grid.width,
+						room,
+						snap: snapFor(event.clientX - left, grid.width, room),
+					});
 					const onMove = (move: PointerEvent) =>
-						setDrag({ grid: grid.width, room, snap: snapFor(move.clientX - left, grid.width, room) });
+						setDrag({
+							grid: grid.width,
+							room,
+							snap: snapFor(move.clientX - left, grid.width, room),
+						});
 					const onUp = (up: PointerEvent) => {
 						window.removeEventListener('pointermove', onMove);
 						window.removeEventListener('pointerup', onUp);
 						const snap = snapFor(up.clientX - left, grid.width, room);
-						if (snap.width !== block.width) usePageBuilderStore.getState().updateBlock(block.id, { width: snap.width });
+						if (snap.width !== block.width)
+							usePageBuilderStore
+								.getState()
+								.updateBlock(block.id, { width: snap.width });
 						setDrag(null);
 					};
 					window.addEventListener('pointermove', onMove);
@@ -129,19 +179,23 @@ const ResizeHandle = ({ block, frame }: { block: TRenderBlock; frame: React.RefO
 			/>
 			{drag && (
 				<span aria-hidden className='pointer-events-none absolute -inset-y-4 left-0 z-30'>
-					{SNAPS.filter((snap) => (snap.span / 6) * drag.grid <= drag.room + 2).map((snap) => (
-						<span
-							key={snap.span}
-							className={`absolute top-0 bottom-0 w-px ${snap === drag.snap ? 'bg-primary-500' : 'bg-primary-400/40 border-dashed'}`}
-							style={{ left: (snap.span / 6) * drag.grid - 1 }}>
+					{SNAPS.filter((snap) => (snap.span / 6) * drag.grid <= drag.room + 2).map(
+						(snap) => (
 							<span
-								className={`absolute -top-5 -translate-x-1/2 rounded px-1 text-[9px] font-bold ${
-									snap === drag.snap ? 'bg-primary-500 text-white' : 'bg-white/90 text-zinc-500 dark:bg-zinc-900/90'
-								}`}>
-								{snap.label}
+								key={snap.span}
+								className={`absolute top-0 bottom-0 w-px ${snap === drag.snap ? 'bg-primary-500' : 'bg-primary-400/40 border-dashed'}`}
+								style={{ left: (snap.span / 6) * drag.grid - 1 }}>
+								<span
+									className={`absolute -top-5 -translate-x-1/2 rounded px-1 text-[9px] font-bold ${
+										snap === drag.snap
+											? 'bg-primary-500 text-white'
+											: 'bg-white/90 text-zinc-500 dark:bg-zinc-900/90'
+									}`}>
+									{snap.label}
+								</span>
 							</span>
-						</span>
-					))}
+						),
+					)}
 					<span
 						className='border-primary-500 bg-primary-500/5 absolute top-4 bottom-4 left-0 rounded-md border-2 border-dashed'
 						style={{ width: (drag.snap.span / 6) * drag.grid - 16 }}
@@ -156,7 +210,9 @@ const ResizeHandle = ({ block, frame }: { block: TRenderBlock; frame: React.RefO
 const CommentBadge = ({ block }: { block: TRenderBlock }) => {
 	const { ws, page } = usePageBuilder();
 	const { data: comments } = useWorkflowPageComments(ws, page.id);
-	const count = (comments ?? []).filter((thread) => thread.block_id === block.id && !thread.resolved_at).length;
+	const count = (comments ?? []).filter(
+		(thread) => thread.block_id === block.id && !thread.resolved_at,
+	).length;
 	if (count === 0) return null;
 	return (
 		<button
@@ -180,15 +236,23 @@ const BlockFrame = ({ block, children }: { block: TRenderBlock; children: ReactN
 	const { page } = usePageBuilder();
 	const ref = useRef<HTMLDivElement>(null);
 	const selected = usePageBuilderStore((store) => store.selectedIds.includes(block.id));
-	const primary = usePageBuilderStore((store) => store.selectedId === block.id && store.selectedIds.length <= 1);
+	const primary = usePageBuilderStore(
+		(store) => store.selectedId === block.id && store.selectedIds.length <= 1,
+	);
 	const editing = usePageBuilderStore((store) => store.editingId === block.id);
 	const inColumn = usePageBuilderStore((store) =>
-		store.content ? findPlace(store.content.blocks, block.id)?.parent?.type === 'column' : false,
+		store.content
+			? findPlace(store.content.blocks, block.id)?.parent?.type === 'column'
+			: false,
 	);
 	const dropTarget = usePageBuilderStore((store) =>
-		store.dropTarget?.kind === 'beside' && store.dropTarget.id === block.id ? store.dropTarget : null,
+		store.dropTarget?.kind === 'beside' && store.dropTarget.id === block.id
+			? store.dropTarget
+			: null,
 	);
-	const isDragged = usePageBuilderStore((store) => store.dragging?.kind === 'move' && store.dragging.id === block.id);
+	const isDragged = usePageBuilderStore(
+		(store) => store.dragging?.kind === 'move' && store.dragging.id === block.id,
+	);
 	const store = usePageBuilderStore.getState;
 	const issue = page.issues.find((item) => item.block_id === block.id);
 	const meta = BLOCK_CATALOG[block.type];
@@ -221,7 +285,12 @@ const BlockFrame = ({ block, children }: { block: TRenderBlock; children: ReactN
 		const side = before ? 'before' : 'after';
 		const current = store().dropTarget;
 		if (current?.kind !== 'beside' || current.id !== block.id || current.side !== side) {
-			store().setDropTarget({ kind: 'beside', id: block.id, side, axis: horizontal ? 'x' : 'y' });
+			store().setDropTarget({
+				kind: 'beside',
+				id: block.id,
+				side,
+				axis: horizontal ? 'x' : 'y',
+			});
 		}
 	};
 
@@ -254,7 +323,10 @@ const BlockFrame = ({ block, children }: { block: TRenderBlock; children: ReactN
 			onClick={(event) => {
 				event.stopPropagation();
 				if (editing) return;
-				store().select(block.id, { additive: event.shiftKey || event.metaKey || event.ctrlKey, keepTab: store().rightTab === 'comments' });
+				store().select(block.id, {
+					additive: event.shiftKey || event.metaKey || event.ctrlKey,
+					keepTab: store().rightTab === 'comments',
+				});
 			}}
 			onDoubleClick={(event) => {
 				if (!INLINE_EDITABLE.has(block.type)) return;
@@ -267,7 +339,9 @@ const BlockFrame = ({ block, children }: { block: TRenderBlock; children: ReactN
 			{/* Takes the clicks, so form controls can't be typed into; containers let them through to their blocks. */}
 			{!container && !editing && <span aria-hidden className='absolute inset-0 z-10' />}
 			<CommentBadge block={block} />
-			{primary && !editing && !container && !inColumn && <ResizeHandle block={block} frame={ref} />}
+			{primary && !editing && !container && !inColumn && (
+				<ResizeHandle block={block} frame={ref} />
+			)}
 			<span
 				aria-hidden
 				className={`pointer-events-none absolute z-10 rounded-lg transition ${container ? '-inset-1' : '-inset-2'} ${
@@ -282,7 +356,12 @@ const BlockFrame = ({ block, children }: { block: TRenderBlock; children: ReactN
 								: 'group-hover/block:ring-primary-400/60 ring-0 group-hover/block:ring-1'
 				}`}
 			/>
-			{indicator && <span aria-hidden className={`bg-primary-500 absolute z-30 rounded-full shadow ${indicator}`} />}
+			{indicator && (
+				<span
+					aria-hidden
+					className={`bg-primary-500 absolute z-30 rounded-full shadow ${indicator}`}
+				/>
+			)}
 			<span
 				className={`absolute -top-5 left-0 z-20 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm transition ${
 					selected
@@ -295,23 +374,34 @@ const BlockFrame = ({ block, children }: { block: TRenderBlock; children: ReactN
 				{block.locked && <Lock size={10} />}
 				{meta.label}
 				{block.visibility !== 'all' && (
-					<span className='rounded bg-white/20 px-1 text-[9px] uppercase'>{block.visibility} only</span>
+					<span className='rounded bg-white/20 px-1 text-[9px] uppercase'>
+						{block.visibility} only
+					</span>
 				)}
 			</span>
 			{primary && !editing && (
 				<div className='absolute -top-6 right-0 z-20 flex items-center gap-0.5 rounded-lg bg-zinc-900 p-0.5 text-white shadow-lg dark:bg-zinc-800'>
-					<ToolbarButton label={isColumn ? 'Move left' : 'Move up'} onClick={() => store().nudgeBlock(block.id, -1)}>
+					<ToolbarButton
+						label={isColumn ? 'Move left' : 'Move up'}
+						onClick={() => store().nudgeBlock(block.id, -1)}>
 						<ArrowUp size={12} className={isColumn ? '-rotate-90' : ''} />
 					</ToolbarButton>
-					<ToolbarButton label={isColumn ? 'Move right' : 'Move down'} onClick={() => store().nudgeBlock(block.id, 1)}>
+					<ToolbarButton
+						label={isColumn ? 'Move right' : 'Move down'}
+						onClick={() => store().nudgeBlock(block.id, 1)}>
 						<ArrowDown size={12} className={isColumn ? '-rotate-90' : ''} />
 					</ToolbarButton>
 					{!isColumn && (
 						<>
-							<ToolbarButton label='Duplicate' onClick={() => store().duplicateBlock(block.id)}>
+							<ToolbarButton
+								label='Duplicate'
+								onClick={() => store().duplicateBlock(block.id)}>
 								<Copy size={12} />
 							</ToolbarButton>
-							<ToolbarButton label={block.locked ? 'Locked' : 'Delete'} danger onClick={() => store().removeBlock(block.id)}>
+							<ToolbarButton
+								label={block.locked ? 'Locked' : 'Delete'}
+								danger
+								onClick={() => store().removeBlock(block.id)}>
 								<Trash2 size={12} />
 							</ToolbarButton>
 						</>
@@ -345,7 +435,10 @@ const ContainerEnd = ({ container }: { container: TPageBlock }) => {
 				if (!canDropInto(container)) return;
 				event.preventDefault();
 				event.stopPropagation();
-				if (!active) usePageBuilderStore.getState().setDropTarget({ kind: 'end', parentId: container.id });
+				if (!active)
+					usePageBuilderStore
+						.getState()
+						.setDropTarget({ kind: 'end', parentId: container.id });
 			}}
 			onDrop={(event) => {
 				event.preventDefault();
@@ -375,7 +468,9 @@ const ContainerEnd = ({ container }: { container: TPageBlock }) => {
 };
 
 const EndDropZone = ({ empty }: { empty?: boolean }) => {
-	const active = usePageBuilderStore((store) => store.dropTarget?.kind === 'end' && store.dropTarget.parentId === null);
+	const active = usePageBuilderStore(
+		(store) => store.dropTarget?.kind === 'end' && store.dropTarget.parentId === null,
+	);
 	const dragging = usePageBuilderStore((store) => !!store.dragging);
 	const setLeftTab = usePageBuilderStore((store) => store.setLeftTab);
 
@@ -385,7 +480,8 @@ const EndDropZone = ({ empty }: { empty?: boolean }) => {
 				if (!canDropInto(null)) return;
 				event.preventDefault();
 				event.stopPropagation();
-				if (!active) usePageBuilderStore.getState().setDropTarget({ kind: 'end', parentId: null });
+				if (!active)
+					usePageBuilderStore.getState().setDropTarget({ kind: 'end', parentId: null });
 			}}
 			onDrop={(event) => {
 				event.preventDefault();
@@ -393,7 +489,11 @@ const EndDropZone = ({ empty }: { empty?: boolean }) => {
 				applyDrop();
 			}}
 			className={`col-span-6 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed text-center transition ${
-				empty ? 'min-h-[220px] p-8' : dragging ? 'min-h-16 p-3' : 'min-h-12 p-2 opacity-0 hover:opacity-100'
+				empty
+					? 'min-h-[220px] p-8'
+					: dragging
+						? 'min-h-16 p-3'
+						: 'min-h-12 p-2 opacity-0 hover:opacity-100'
 			} ${
 				active
 					? 'border-primary-500 bg-primary-500/10 text-primary-700'
@@ -404,7 +504,8 @@ const EndDropZone = ({ empty }: { empty?: boolean }) => {
 					<MousePointerClick size={26} />
 					<p className='text-sm font-bold text-zinc-600'>Build your page</p>
 					<p className='max-w-xs text-xs'>
-						Drag blocks here from the library, or click one to add it. Start with the workflow’s inputs and a Run button.
+						Drag blocks here from the library, or click one to add it. Start with the
+						workflow’s inputs and a Run button.
 					</p>
 				</>
 			) : (
@@ -431,7 +532,13 @@ const PreviewSurface = ({ blocks }: { blocks: TRenderBlock[] }) => {
 	const transport = useMemo<TPageTransport>(
 		() => ({
 			submit: (input) =>
-				WorkflowPageService.submit(ws, page.id, input, true, usePageBuilderStore.getState().variant).then((result) => ({ result })),
+				WorkflowPageService.submit(
+					ws,
+					page.id,
+					input,
+					true,
+					usePageBuilderStore.getState().variant,
+				).then((result) => ({ result })),
 			poll: (id, _secret, signal) => WorkflowPageService.submission(ws, page.id, id, signal),
 		}),
 		[ws, page.id],
@@ -439,7 +546,8 @@ const PreviewSurface = ({ blocks }: { blocks: TRenderBlock[] }) => {
 	const run = usePageRun(fields, transport);
 
 	useEffect(() => {
-		if (run.phase === 'done') qc.invalidateQueries({ queryKey: workflowPageKeys.submissions(ws, page.id) });
+		if (run.phase === 'done')
+			qc.invalidateQueries({ queryKey: workflowPageKeys.submissions(ws, page.id) });
 	}, [run.phase, qc, ws, page.id]);
 
 	if (!theme) return null;
@@ -509,11 +617,14 @@ const BuilderCanvas = () => {
 					<div
 						className={`relative min-h-0 flex-1 overflow-y-auto ${
 							guides && mode === 'edit'
-								? '[&_[data-block-frame]]:outline [&_[data-block-frame]]:outline-1 [&_[data-block-frame]]:outline-dashed [&_[data-block-frame]]:outline-offset-2 [&_[data-block-frame]]:outline-sky-400/70'
+								? '[&_[data-block-frame]]:outline [&_[data-block-frame]]:outline-1 [&_[data-block-frame]]:outline-offset-2 [&_[data-block-frame]]:outline-sky-400/70 [&_[data-block-frame]]:outline-dashed'
 								: ''
 						}`}>
 						{guides && mode === 'edit' && (
-							<span aria-hidden className='pointer-events-none absolute inset-y-0 left-1/2 z-40 w-px border-l border-dashed border-fuchsia-400/60' />
+							<span
+								aria-hidden
+								className='pointer-events-none absolute inset-y-0 left-1/2 z-40 w-px border-l border-dashed border-fuchsia-400/60'
+							/>
 						)}
 						{mode === 'preview' ? (
 							<PreviewSurface blocks={blocks} />
@@ -523,7 +634,9 @@ const BuilderCanvas = () => {
 								blocks={blocks}
 								mode='edit'
 								fill
-								wrapBlock={(block, content) => <BlockFrame block={block}>{content}</BlockFrame>}
+								wrapBlock={(block, content) => (
+									<BlockFrame block={block}>{content}</BlockFrame>
+								)}
 								containerEnd={(container) => <ContainerEnd container={container} />}
 								empty={<EndDropZone empty />}
 								after={blocks.length > 0 ? <EndDropZone /> : undefined}
