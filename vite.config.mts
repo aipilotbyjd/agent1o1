@@ -1,9 +1,10 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import path from 'path';
+import { buildSecurityHeaders, toNetlifyHeaders } from './scripts/security-headers.mjs';
 
 // Error reports carry the commit they were built from (Netlify sets COMMIT_REF).
 process.env.VITE_SENTRY_RELEASE ||= process.env.COMMIT_REF ?? '';
@@ -13,11 +14,31 @@ const release = process.env.VITE_SENTRY_RELEASE || undefined;
 // deleted from the output afterwards so they are never published.
 const uploadSourceMaps = Boolean(process.env.SENTRY_AUTH_TOKEN && release);
 
+/** Writes Netlify's `_headers` file into the build, with a CSP built from this deploy's env. */
+const netlifySecurityHeaders = (): Plugin => {
+	let env: Record<string, string> = {};
+	return {
+		name: 'netlify-security-headers',
+		apply: 'build',
+		configResolved(config) {
+			env = loadEnv(config.mode, config.envDir || process.cwd(), '');
+		},
+		generateBundle() {
+			this.emitFile({
+				type: 'asset',
+				fileName: '_headers',
+				source: toNetlifyHeaders(buildSecurityHeaders(env)),
+			});
+		},
+	};
+};
+
 // https://vite.dev/config/
 export default defineConfig({
 	plugins: [
 		react(),
 		tailwindcss(),
+		netlifySecurityHeaders(),
 		VitePWA({
 			registerType: 'autoUpdate',
 			manifest: {

@@ -226,4 +226,11 @@ export default tseslint.config(
 			'import/extensions': 'off',
 		},
 	},
+	{
+		// Node's ESM loader needs the `.mjs` on local imports too.
+		files: ['scripts/**/*.mjs'],
+		rules: {
+			'import/extensions': 'off',
+		},
+	},
 );
