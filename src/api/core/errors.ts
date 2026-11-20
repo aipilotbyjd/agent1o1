@@ -61,6 +61,11 @@ export class ApiError extends Error {
 		return this.status === 409;
 	}
 
+	/** The workspace's plan does not cover this: a limit is reached or credits ran out. */
+	get isPaymentRequired(): boolean {
+		return this.status === 402;
+	}
+
 	/** The app is read-only for a maintenance window; nothing is wrong with the request. */
 	get isMaintenance(): boolean {
 		return this.status === 503 && String(this.fields?.reason) === 'maintenance';

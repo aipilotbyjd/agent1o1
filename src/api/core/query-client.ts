@@ -1,6 +1,7 @@
 import { QueryClient, QueryCache, MutationCache } from '@tanstack/react-query';
 import { ApiError } from './errors';
 import { notify } from './notify';
+import { upgradeEvents } from './upgrade-events';
 import { reportError } from '@/utils/sentry.util';
 import { announcementKeys } from '@/api/modules/announcements/announcements.keys';
 import { workspaceKeys } from '@/api/modules/workspaces/workspaces.keys';
@@ -67,6 +68,16 @@ export const createQueryClient = () => {
 		client.invalidateQueries({ queryKey: workspaceKeys.all() });
 	};
 
+	/**
+	 * A plan limit or an empty credit balance is a reason to upgrade, not an
+	 * error: the app shell offers the upgrade instead of a red toast.
+	 */
+	const handlePaymentRequired = (error: unknown): boolean => {
+		if (!ApiError.is(error) || !error.isPaymentRequired) return false;
+		upgradeEvents.emit({ message: error.message });
+		return true;
+	};
+
 	/** Laravel's stock refusal text reads poorly in a toast; specific messages are kept. */
 	const messageFor = (error: ApiError) =>
 		error.isForbidden && error.message === LARAVEL_FORBIDDEN_MESSAGE
@@ -94,6 +105,7 @@ export const createQueryClient = () => {
 				handleForbidden(error);
 				if (mutation.meta?.silent) return;
 				if (handleMaintenance(error)) return;
+				if (handlePaymentRequired(error)) return;
 				const silentStatuses = mutation.meta?.silentStatuses as number[] | undefined;
 				if (ApiError.is(error) && error.status && silentStatuses?.includes(error.status))
 					return;

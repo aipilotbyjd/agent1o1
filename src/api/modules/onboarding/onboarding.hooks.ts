@@ -1,12 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type {
-	TInviteTeamDto,
 	TSelectRoleDto,
-	TSelectPlanDto,
 	TSubmitDiscoveryDto,
 	TSkipStepDto,
 	TContinueStepDto,
 } from '@/types/onboarding.type';
+import { userKeys } from '@/api/modules/user/user.keys';
+import { workspaceKeys } from '@/api/modules/workspaces/workspaces.keys';
 import { OnboardingService } from './onboarding.service';
 import { onboardingKeys } from './onboarding.keys';
 
@@ -15,6 +15,25 @@ export const useOnboardingState = () =>
 		queryKey: onboardingKeys.state(),
 		queryFn: ({ signal }) => OnboardingService.state(signal),
 	});
+
+/**
+ * Opens the wizard. A workspace may have been created for the user, so the
+ * current user and the workspace list are read again.
+ */
+export const useStartOnboarding = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: () => OnboardingService.start(),
+		onSuccess: async (state) => {
+			qc.setQueryData(onboardingKeys.state(), state);
+			await Promise.all([
+				qc.invalidateQueries({ queryKey: userKeys.current() }),
+				qc.invalidateQueries({ queryKey: workspaceKeys.all() }),
+			]);
+		},
+		meta: { errorMessage: 'Could not set up your workspace' },
+	});
+};
 
 export const useDismissOnboarding = () => {
 	const qc = useQueryClient();
@@ -25,30 +44,12 @@ export const useDismissOnboarding = () => {
 	});
 };
 
-export const useInviteOnboardingTeam = () => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (payload: TInviteTeamDto) => OnboardingService.inviteTeam(payload),
-		onSuccess: (state) => qc.setQueryData(onboardingKeys.state(), state),
-		meta: { errorMessage: 'Failed to send invitations' },
-	});
-};
-
 export const useSelectOnboardingRole = () => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (payload: TSelectRoleDto) => OnboardingService.selectRole(payload),
 		onSuccess: (state) => qc.setQueryData(onboardingKeys.state(), state),
 		meta: { errorMessage: 'Failed to save role' },
-	});
-};
-
-export const useSelectOnboardingPlan = () => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (payload: TSelectPlanDto) => OnboardingService.selectPlan(payload),
-		onSuccess: (state) => qc.setQueryData(onboardingKeys.state(), state),
-		meta: { errorMessage: 'Failed to select plan' },
 	});
 };
 

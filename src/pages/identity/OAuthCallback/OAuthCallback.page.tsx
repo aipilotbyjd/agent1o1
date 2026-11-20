@@ -4,6 +4,8 @@ import { useExchangeSocialCode } from '@/api/modules/auth';
 import { messageFromError } from '@/api/core';
 import { ReferralService } from '@/api/modules/referrals';
 import { clearReferralAttribution, getReferralAttribution } from '@/utils/referralAttribution.util';
+import { clearSignupAttribution, getSignupAttribution } from '@/utils/signupAttribution.util';
+import { UserService } from '@/api/modules/user';
 import useAfterAuthRedirect from '@/hooks/useAfterAuthRedirect';
 import Wordmark from '@/components/common/Wordmark';
 import Card, { CardBody } from '@/components/ui/Card';
@@ -40,6 +42,24 @@ const claimStoredReferral = async () => {
 	}
 };
 
+/**
+ * Where a social signup came from, sent once the session exists. The server
+ * keeps it only for an account made in the last day, so a returning user
+ * signing in again is never attributed.
+ */
+const recordStoredAttribution = async () => {
+	const attribution = getSignupAttribution();
+	if (!attribution) return;
+
+	try {
+		await UserService.recordSignupAttribution(attribution);
+	} catch {
+		// Attribution is advisory: it never stands in the way of signing in.
+	} finally {
+		clearSignupAttribution();
+	}
+};
+
 const OAuthCallbackPage = () => {
 	const [searchParams] = useSearchParams();
 	const redirectAfterAuth = useAfterAuthRedirect();
@@ -64,7 +84,7 @@ const OAuthCallbackPage = () => {
 			{ code },
 			{
 				onSuccess: async () => {
-					await claimStoredReferral();
+					await Promise.all([claimStoredReferral(), recordStoredAttribution()]);
 					void redirectAfterAuth();
 				},
 				onError: (err) =>

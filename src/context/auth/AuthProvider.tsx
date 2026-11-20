@@ -6,6 +6,7 @@ import { useCurrentUser } from '@/api/modules/user';
 import { useLogout } from '@/api/modules/auth';
 import { WorkspaceProvider } from '@/context/workspace';
 import { RealtimeProvider, RunsRealtimeSync } from '@/context/realtime';
+import UpgradePrompt from '@/components/billing/UpgradePrompt';
 import { BrandRealtimeSync } from '@/context/brand';
 import { PostHogSync, SentrySync } from '@/context/analytics';
 import { isPostHogEnabled } from '@/utils/posthog.util';
@@ -107,6 +108,7 @@ export const AuthProvider = () => {
 					{isSentryEnabled && <SentrySync />}
 					<BrandRealtimeSync />
 					<RunsRealtimeSync />
+					<UpgradePrompt />
 					<Outlet />
 				</RealtimeProvider>
 			</WorkspaceProvider>

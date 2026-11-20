@@ -12,6 +12,7 @@ export const UserEndpoints = {
 	destroy: '/user',
 	cancelEmailChange: '/user/pending-email',
 	switchWorkspace: '/user/switch-workspace',
+	signupAttribution: '/user/signup-attribution',
 	uploadAvatar: '/user/avatar',
 	deleteAvatar: '/user/avatar',
 	deletionCheck: '/user/deletion-blockers',

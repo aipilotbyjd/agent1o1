@@ -8,6 +8,7 @@ import type {
 	TDeleteAccountDto,
 	TAccountDeletionCheck,
 	TDataExport,
+	TSignupAttribution,
 } from '@/types/auth.type';
 import type { TApiKey, TCreateApiKeyDto, TCreateApiKeyResult } from '@/types/auth.type';
 import { UserEndpoints } from './user.endpoints';
@@ -27,6 +28,10 @@ export const UserService = {
 		axiosClient
 			.post<TApiResponse<{ user: TUser }>>(UserEndpoints.switchWorkspace, payload)
 			.then(unwrapKey<TUser>('user')),
+
+	/** Where a Google or GitHub signup came from; the server keeps only the first, for new accounts. */
+	recordSignupAttribution: (attribution: TSignupAttribution) =>
+		axiosClient.post(UserEndpoints.signupAttribution, { attribution }).then(() => undefined),
 
 	uploadAvatar: (file: File) => {
 		const form = new FormData();

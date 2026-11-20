@@ -3,14 +3,15 @@ import { unwrap } from '@/api/core';
 import type { TApiResponse } from '@/api/core';
 import type {
 	TOnboardingState,
-	TInviteTeamDto,
 	TSelectRoleDto,
-	TSelectPlanDto,
 	TSubmitDiscoveryDto,
 	TSkipStepDto,
 	TContinueStepDto,
 } from '@/types/onboarding.type';
 import { OnboardingEndpoints as E } from './onboarding.endpoints';
+
+const post = <TBody>(url: string, payload?: TBody) =>
+	axiosClient.post<TApiResponse<TOnboardingState>>(url, payload).then(unwrap<TOnboardingState>);
 
 export const OnboardingService = {
 	state: (signal?: AbortSignal) =>
@@ -18,38 +19,18 @@ export const OnboardingService = {
 			.get<TApiResponse<TOnboardingState>>(E.state, { signal })
 			.then(unwrap<TOnboardingState>),
 
+	/** Opening the wizard: sets up the user's own workspace when they have none. */
+	start: () => post(E.start),
+
 	dismiss: () => axiosClient.post(E.dismiss).then(() => undefined),
 
-	inviteTeam: (payload: TInviteTeamDto) =>
-		axiosClient
-			.post<TApiResponse<TOnboardingState>>(E.inviteTeam, payload)
-			.then(unwrap<TOnboardingState>),
+	selectRole: (payload: TSelectRoleDto) => post(E.selectRole, payload),
 
-	selectRole: (payload: TSelectRoleDto) =>
-		axiosClient
-			.post<TApiResponse<TOnboardingState>>(E.selectRole, payload)
-			.then(unwrap<TOnboardingState>),
+	submitDiscovery: (payload: TSubmitDiscoveryDto) => post(E.submitDiscovery, payload),
 
-	selectPlan: (payload: TSelectPlanDto) =>
-		axiosClient
-			.post<TApiResponse<TOnboardingState>>(E.selectPlan, payload)
-			.then(unwrap<TOnboardingState>),
+	continueStep: (payload: TContinueStepDto) => post(E.continueStep, payload),
 
-	submitDiscovery: (payload: TSubmitDiscoveryDto) =>
-		axiosClient
-			.post<TApiResponse<TOnboardingState>>(E.submitDiscovery, payload)
-			.then(unwrap<TOnboardingState>),
+	skipStep: (payload: TSkipStepDto) => post(E.skip, payload),
 
-	continueStep: (payload: TContinueStepDto) =>
-		axiosClient
-			.post<TApiResponse<TOnboardingState>>(E.continueStep, payload)
-			.then(unwrap<TOnboardingState>),
-
-	skipStep: (payload: TSkipStepDto) =>
-		axiosClient
-			.post<TApiResponse<TOnboardingState>>(E.skip, payload)
-			.then(unwrap<TOnboardingState>),
-
-	complete: () =>
-		axiosClient.post<TApiResponse<TOnboardingState>>(E.complete).then(unwrap<TOnboardingState>),
+	complete: () => post(E.complete),
 };

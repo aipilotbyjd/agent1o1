@@ -7,6 +7,8 @@ import type {
 	TRunStatsParams,
 	TCreditUsage,
 	TPendingApproval,
+	TGettingStarted,
+	TGettingStartedMilestoneKey,
 } from '@/types/dashboard.type';
 import { DashboardEndpoints as E } from './dashboard.endpoints';
 
@@ -28,6 +30,14 @@ export const DashboardService = {
 
 	dismissGettingStarted: (ws: string) =>
 		axiosClient.post<void>(E.dismissGettingStarted(ws)).then(() => undefined),
+
+	/** Pays a reached milestone's credits into the workspace; returns the updated checklist. */
+	claimGettingStartedReward: (ws: string, milestone: TGettingStartedMilestoneKey) =>
+		axiosClient
+			.post<
+				TApiResponse<{ credits: number; getting_started: TGettingStarted }>
+			>(E.claimGettingStartedReward(ws, milestone))
+			.then((r) => r.data.data),
 
 	// Paginated: `data` sits flat in the envelope, `meta` alongside it.
 	pendingApprovals: (
