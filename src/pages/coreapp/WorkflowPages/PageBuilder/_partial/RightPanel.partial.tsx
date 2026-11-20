@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import {
@@ -1456,9 +1456,8 @@ const StyleTools = ({ block }: { block: TPageBlock }) => {
 	const copiedStyle = usePageBuilderStore((store) => store.copiedStyle);
 	const copyStyle = usePageBuilderStore((store) => store.copyStyle);
 	const pasteStyle = usePageBuilderStore((store) => store.pasteStyle);
-	const [presets, setPresets] = useState<TSavedStylePreset[]>([]);
+	const [presets, setPresets] = useState<TSavedStylePreset[]>(loadStylePresets);
 	const [name, setName] = useState('');
-	useEffect(() => setPresets(loadStylePresets()), []);
 	const mine = presets.filter((item) => item.preset.type === block.type);
 	const save = () => {
 		const label = name.trim();
