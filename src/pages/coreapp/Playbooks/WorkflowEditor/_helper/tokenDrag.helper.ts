@@ -1,6 +1,6 @@
 /**
  * Shared contract for dragging a node's output "pill" onto an input field to
- * insert an expression token: the Gumloop-style visual mapping. The drag source
+ * insert an expression token: the visual mapping. The drag source
  * (NodeIOPanel output pills) and the drop target (ExpressionInput) both go
  * through here so the MIME type and token format never drift apart.
  */

@@ -18,7 +18,7 @@ export type TAiChatMode = TBuilderMessageMode;
 /**
  * One entry in the live "scratchpad": an ordered timeline of reasoning text
  * and tool calls exactly as they streamed in, rendered directly (no chat
- * bubble) the way Gumloop's builder shows its work.
+ * bubble) the way the builder shows its work.
  */
 export type TAiTimelineItem =
 	| { kind: 'text'; id: string; text: string }

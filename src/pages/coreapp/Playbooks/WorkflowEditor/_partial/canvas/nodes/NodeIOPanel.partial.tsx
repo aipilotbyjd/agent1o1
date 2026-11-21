@@ -151,7 +151,7 @@ const CountBadge = ({ count, tone }: { count: number; tone: 'in' | 'out' | 'mute
 };
 
 /**
- * Full-height side panel mirroring Gumloop, showing Inputs and Outputs together.
+ * Full-height side panel showing Inputs and Outputs together.
  * Inputs are grouped by their source node (each collapsible); outputs are
  * draggable tokens tinted by port type. Each section filters and scrolls
  * independently so a long list never floods the canvas.

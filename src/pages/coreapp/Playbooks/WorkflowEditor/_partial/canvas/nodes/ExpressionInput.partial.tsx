@@ -107,7 +107,7 @@ const domToValue = (root: Node): string => {
 
 /**
  * Inline expression editor. Renders `{{nodes.<id>.field}}` tokens as chips right
- * inside an editable surface (Gumloop-style), so you can drag values in, type text
+ * inside an editable surface, so you can drag values in, type text
  * around them, and delete a chip with Backspace or its ✕: all in one field. The
  * underlying value stays the `{{…}}` string, with a live resolved preview below.
  */
@@ -118,7 +118,7 @@ const ExpressionInput = ({ field, value, onChange, compact, nodeId, className }:
 	const editorRef = useRef<HTMLDivElement | null>(null);
 	const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	// Start offset (in the value string) of the fragment autocomplete replaces:
-	// the `{{` for a brace trigger or the `@` for the Gumloop-style inserter.
+	// the `{{` for a brace trigger or the `@` for the inserter.
 	const triggerStart = useRef<number>(-1);
 	const [query, setQuery] = useState<string | null>(null);
 	const [activeIndex, setActiveIndex] = useState(0);

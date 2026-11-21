@@ -100,7 +100,7 @@ export type TWorkflowEditorAction =
 	| { type: 'RESTORE_DRAFT'; nodes: TCanvasNode[]; edges: TCanvasEdge[] }
 	// Granular live-apply: the AI builder dispatches these per tool call as it
 	// works, so the canvas updates node-by-node instead of waiting for the whole
-	// reply (Gumloop-style). APPLY_BUILDER_DRAFT still runs once at the end as
+	// reply. APPLY_BUILDER_DRAFT still runs once at the end as
 	// the authoritative reconciliation.
 	| { type: 'BUILDER_ADD_NODE'; node: TCanvasNode }
 	| {

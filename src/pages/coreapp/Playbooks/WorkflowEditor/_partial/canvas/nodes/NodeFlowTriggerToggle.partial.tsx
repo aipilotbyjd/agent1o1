@@ -17,7 +17,7 @@ type Props = {
 };
 
 /**
- * Gumloop's "Activate as flow trigger" strip. The switch is the node's
+ * The "Activate as flow trigger" strip. The switch is the node's
  * `activate` config, so it's saved with the workflow and publishing turns the
  * trigger on or off to match (`TriggerNodeSync`). Once published it also flips
  * the live trigger straight away, no republish needed. A flow may have several

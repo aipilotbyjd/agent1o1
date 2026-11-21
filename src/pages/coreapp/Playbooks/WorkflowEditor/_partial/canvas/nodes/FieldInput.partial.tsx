@@ -440,7 +440,7 @@ const FieldInput = ({ field, value, onChange, compact, nodeId, host }: FieldInpu
 	}
 
 	// Every text-like field gets the expression editor so upstream values can be
-	// dropped in as {{variables}} (Gumloop-style), with autocomplete + live preview.
+	// dropped in as {{variables}}, with autocomplete + live preview.
 	if (nodeId && (field.kind === 'text' || field.kind === 'longtext' || field.kind === 'code')) {
 		return (
 			<ExpressionInput

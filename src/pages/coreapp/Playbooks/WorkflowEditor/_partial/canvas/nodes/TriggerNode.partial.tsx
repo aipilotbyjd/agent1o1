@@ -191,7 +191,7 @@ const TriggerNode = ({ id, data, selected, dragging }: NodeProps<TCanvasNode>) =
 					? 'border-primary-500 ring-primary-500/15 dark:border-primary-500 ring-2'
 					: 'border-zinc-200 dark:border-zinc-800',
 			].join(' ')}>
-			{/* Top Bar: Gumloop's "Activate as flow trigger". A manual trigger has no
+			{/* Top Bar: "Activate as flow trigger". A manual trigger has no
 			    switch: it is simply where a manual run starts. */}
 			{isManualTrigger ? (
 				<div className='flex items-center gap-1 px-3 py-2 text-[10px] font-semibold text-zinc-500'>

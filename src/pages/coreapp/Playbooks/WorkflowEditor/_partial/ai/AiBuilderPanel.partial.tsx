@@ -312,7 +312,7 @@ const AiBuilderPanel = () => {
 	}, [mentionQuery, state.nodes]);
 
 	// The last timeline entry is "in progress"; everything before it is settled
-	// history, shown in a collapsible section: mirrors Gumloop's builder.
+	// history, shown in a collapsible section.
 	const activeItem: TAiTimelineItem | undefined = streamTimeline[streamTimeline.length - 1];
 	const historyItems = streamTimeline.slice(0, -1);
 	const toolCount = streamTimeline.filter((item) => item.kind === 'tool').length;

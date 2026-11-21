@@ -354,7 +354,7 @@ const Canvas = () => {
 		[dispatch],
 	);
 
-	// Gumloop-style: if the connection is released over a node's body (not exactly
+	// If the connection is released over a node's body (not exactly
 	// on a handle), connect to that node instead of dropping the connection.
 	const onConnectEnd: OnConnectEnd = useCallback(
 		(event, connectionState) => {

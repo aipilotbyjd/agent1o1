@@ -22,7 +22,7 @@ export const nodeLabel = (nodes: TCanvasNode[], id: unknown): string => {
 
 /**
  * Icon + dynamic present-tense caption for a live tool call, built from that
- * call's actual arguments (not a generic per-tool label): Gumloop-style.
+ * call's actual arguments (not a generic per-tool label).
  * `toolName` is the builder tool's `name()` (`App\Ai\Tools\WorkflowBuilder\*`).
  */
 export const describeToolCall = (

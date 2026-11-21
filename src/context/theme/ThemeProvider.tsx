@@ -19,10 +19,10 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 	 */
 	const { i18n } = useTranslation();
 	const [language, setLanguage] = useState<TLang>(
-		(safeStorage.get('bolt_language') as TLang) || 'en',
+		(safeStorage.get('agent1o1_language') as TLang) || 'en',
 	);
 	useLayoutEffect(() => {
-		safeStorage.set('bolt_language', language);
+		safeStorage.set('agent1o1_language', language);
 
 		i18n.changeLanguage(language)
 			.then(() => {
@@ -73,11 +73,11 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 	 */
 	const { width } = useDeviceScreen();
 	const [asideStatus, setAsideStatus] = useState(
-		safeStorage.get('bolt_asideStatus') ? safeStorage.get('bolt_asideStatus') === 'true' : true,
+		safeStorage.get('agent1o1_asideStatus') ? safeStorage.get('agent1o1_asideStatus') === 'true' : true,
 	);
 	useLayoutEffect(() => {
 		if (Number(theme.screens.md.replace('rem', '')) * 16 <= Number(width))
-			safeStorage.set('bolt_asideStatus', asideStatus?.toString());
+			safeStorage.set('agent1o1_asideStatus', asideStatus?.toString());
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [asideStatus]);
 	// Narrow screens start with the aside closed; widening again restores the
@@ -90,8 +90,8 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 		if (isNarrow) setAsideStatus(false);
 		else if (!isFirstWidth)
 			setAsideStatus(
-				safeStorage.get('bolt_asideStatus')
-					? safeStorage.get('bolt_asideStatus') === 'true'
+				safeStorage.get('agent1o1_asideStatus')
+					? safeStorage.get('agent1o1_asideStatus') === 'true'
 					: true,
 			);
 	}
@@ -100,10 +100,10 @@ export const ThemeContextProvider: FC<IThemeContextProviderProps> = ({ children 
 	 * Font Size
 	 */
 	const [fontSize, setFontSize] = useState<number>(
-		Number(safeStorage.get('bolt_fontSize')) ? Number(safeStorage.get('bolt_fontSize')) : 13,
+		Number(safeStorage.get('agent1o1_fontSize')) ? Number(safeStorage.get('agent1o1_fontSize')) : 13,
 	);
 	useLayoutEffect(() => {
-		safeStorage.set('bolt_fontSize', fontSize?.toString());
+		safeStorage.set('agent1o1_fontSize', fontSize?.toString());
 	}, [fontSize]);
 
 	const values: IThemeContextProps = useMemo(
