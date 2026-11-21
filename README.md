@@ -50,4 +50,15 @@ src
 
 ## Deployment
 
-Deployed on Netlify. `netlify.toml` sends every route to `index.html` so client-side routing works.
+Deployed as a Cloudflare Worker that serves the static build (`build/`). `wrangler.jsonc` sends every
+route to `index.html` so client-side routing works, and Cloudflare applies the `build/_headers` file
+(security headers) on its own.
+
+Build command: `yarn build`. Deploy command: `npx wrangler deploy`.
+
+Set the `VITE_*` values from `.env.example` as build variables, not runtime ones. `VITE_API_URL` is
+required (for example `https://api.agent1o1.io/api/v1`); the app refuses to start without it.
+
+`netlify.toml` and `netlify/edge-functions/page-meta.ts` are kept for the shared-page link previews
+(`/p/{token}`), which are not running on Cloudflare yet. Until they are, a pasted page link shows the
+generic Agent1o1 card.

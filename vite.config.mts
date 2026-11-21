@@ -6,8 +6,10 @@ import { sentryVitePlugin } from '@sentry/vite-plugin';
 import path from 'path';
 import { buildSecurityHeaders, toNetlifyHeaders } from './scripts/security-headers.mjs';
 
-// Error reports carry the commit they were built from (Netlify sets COMMIT_REF).
-process.env.VITE_SENTRY_RELEASE ||= process.env.COMMIT_REF ?? '';
+// Error reports carry the commit they were built from (Cloudflare sets
+// WORKERS_CI_COMMIT_SHA, Netlify sets COMMIT_REF).
+process.env.VITE_SENTRY_RELEASE ||=
+	process.env.WORKERS_CI_COMMIT_SHA ?? process.env.COMMIT_REF ?? '';
 const release = process.env.VITE_SENTRY_RELEASE || undefined;
 
 // Source maps are only built when they can be uploaded to GlitchTip, and are
