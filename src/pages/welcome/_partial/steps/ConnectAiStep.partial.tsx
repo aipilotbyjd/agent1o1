@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
+	ArrowRight,
 	CheckCircle2,
 	ExternalLink,
 	Gift,
@@ -16,7 +17,14 @@ import {
 import type { TAiProvider } from '@/types/ai-provider.type';
 import ProviderLogo from '@/components/ai/ProviderLogo';
 import ConnectKeyModal from '@/pages/settings/AiProviders/_partial/ConnectKeyModal.partial';
-import { useOnboardingWorkspaceId } from '../../_hooks/useOnboardingWorkspace.hook';
+import StepHeading from '../shared/StepHeading.partial';
+import WizardButton from '../shared/WizardButton.partial';
+
+type TProps = {
+	ws: string;
+	onContinue: () => void;
+	isSaving: boolean;
+};
 
 const modelCount = (provider: TAiProvider) =>
 	provider.models.length > 0
@@ -27,11 +35,10 @@ const modelCount = (provider: TAiProvider) =>
  * Onboarding's "Connect AI" step (`connect_ai`): bring your own AI key before
  * building anything. One-click providers come first (sign in and approve,
  * nothing to copy), then providers with a free tier, then "paste any key".
- * Skippable: the workspace can start on the platform's starter model and
- * connect later in Settings → AI Providers.
+ * Required: there is no platform model, so the first run needs a key of the
+ * workspace's own.
  */
-const ConnectAiStep = () => {
-	const ws = useOnboardingWorkspaceId();
+const ConnectAiStep = ({ ws, onContinue, isSaving }: TProps) => {
 	const providersQuery = useAiProviders(ws);
 	const credentialsQuery = useAiProviderCredentials(ws);
 	const connectProvider = useConnectAiProvider(ws);
@@ -50,6 +57,7 @@ const ConnectAiStep = () => {
 	const oneClick = (providers?.providers ?? []).filter((p) => p.connect);
 	const freeTier = (providers?.providers ?? []).filter((p) => p.free_tier && !p.connect);
 	const canAdd = !!providers && (providers.can_add_team || providers.can_add_personal);
+	const hasKey = connectedKeys.size > 0;
 	const pending = connectProvider.isPending ? connectProvider.variables : null;
 
 	const handleOneClick = async (provider: TAiProvider) => {
@@ -62,7 +70,7 @@ const ConnectAiStep = () => {
 	};
 
 	const rowClass = (connected: boolean) =>
-		`flex items-center justify-between gap-3 rounded-xl border p-3 ${connected ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-slate-100 bg-white/40 dark:border-zinc-800/80 dark:bg-zinc-950/20'}`;
+		`flex items-center justify-between gap-3 rounded-xl border p-3 ${connected ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900'}`;
 
 	const connectedBadge = (
 		<span className='flex h-7 items-center gap-1 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 text-xs font-bold text-emerald-600 dark:text-emerald-400'>
@@ -72,16 +80,11 @@ const ConnectAiStep = () => {
 	);
 
 	return (
-		<>
-			<div>
-				<h1 className='text-3xl leading-tight font-extrabold tracking-tight text-slate-950 dark:text-zinc-50'>
-					Bring your own AI
-				</h1>
-				<p className='mt-2 text-sm font-medium text-slate-500 dark:text-zinc-400'>
-					Your agents run on your own AI account: you pay the provider directly, at their
-					prices, with no markup on tokens.
-				</p>
-			</div>
+		<div className='mx-auto flex max-w-2xl flex-col gap-6'>
+			<StepHeading
+				title='Connect your AI'
+				description='Your workflows think with your own AI account: you pay the provider directly, at their prices, with no markup. Several providers have a free tier to start on.'
+			/>
 
 			{!ws || providersQuery.isLoading ? (
 				<div className='flex items-center justify-center gap-2 py-8 text-xs font-bold text-slate-400'>
@@ -90,10 +93,11 @@ const ConnectAiStep = () => {
 				</div>
 			) : !canAdd ? (
 				<p className='rounded-xl border border-slate-100 bg-white/40 p-4 text-xs font-medium text-slate-500 dark:border-zinc-800 dark:bg-zinc-950/20 dark:text-zinc-400'>
-					Your workspace admin manages AI keys here. You can carry on.
+					Your workspace admin manages AI keys here. Ask them to connect a provider, then
+					come back to run your first workflow.
 				</p>
 			) : (
-				<div className='no-scrollbar max-h-[300px] space-y-4 overflow-y-auto pr-1'>
+				<div className='space-y-4'>
 					{oneClick.length > 0 && (
 						<section className='space-y-2'>
 							<p className='flex items-center gap-1.5 text-[10px] font-black tracking-wider text-slate-400 uppercase'>
@@ -202,10 +206,20 @@ const ConnectAiStep = () => {
 				</div>
 			)}
 
-			<p className='text-[11px] font-medium text-slate-400'>
-				No key yet? Skip this step to start on the free starter model, and connect later in
-				Settings → AI Providers.
-			</p>
+			<div className='flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 pt-5 dark:border-zinc-800'>
+				<p className='text-xs font-medium text-zinc-500 dark:text-zinc-400'>
+					{hasKey
+						? 'Connected. You can add or change providers later in Settings → AI Providers.'
+						: 'Connect one provider to continue.'}
+				</p>
+				<WizardButton
+					onClick={onContinue}
+					disabled={!hasKey}
+					isLoading={isSaving}
+					icon={!isSaving ? <ArrowRight className='size-4' /> : undefined}>
+					Continue
+				</WizardButton>
+			</div>
 
 			{pasting !== undefined && providers && (
 				<ConnectKeyModal
@@ -219,7 +233,7 @@ const ConnectAiStep = () => {
 					onClose={() => setPasting(undefined)}
 				/>
 			)}
-		</>
+		</div>
 	);
 };
 

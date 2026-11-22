@@ -21,6 +21,11 @@ export const WorkflowEndpoints = {
 	favorite: (ws: string, id: string) => `${workflow(ws, id)}/favorite`,
 } as const;
 
+export const WorkflowSampleRunEndpoints = {
+	plan: (ws: string, workflowId: string) => `${workflow(ws, workflowId)}/sample-run`,
+	start: (ws: string, workflowId: string) => `${workflow(ws, workflowId)}/sample-runs`,
+} as const;
+
 export const WorkflowVersionEndpoints = {
 	list: (ws: string, workflowId: string) => `${workflow(ws, workflowId)}/versions`,
 	publish: (ws: string, workflowId: string) => `${workflow(ws, workflowId)}/versions`,

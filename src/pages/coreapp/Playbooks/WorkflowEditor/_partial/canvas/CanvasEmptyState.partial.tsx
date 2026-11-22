@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { createEditor, Editor, type Range, type RangeRef } from 'slate';
 import { withHistory } from 'slate-history';
 import { ReactEditor, withReact } from 'slate-react';
 import { useAiPanelAvailability } from '../../_hooks/useAiPanelAvailability.hook';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
+import { BUILD_FROM_DESCRIPTION_PARAM } from '@/constants/onboarding.constant';
 import { useWorkflowEditor } from '../../_hooks/useWorkflowEditor.hook';
 import { useAiChatStore } from '@/store/aiChat.store';
 import { useEditorWorkspaceId } from '../../_hooks/useEditorWorkspaceId.hook';
@@ -117,6 +118,16 @@ const CanvasEmptyState = () => {
 			? describeToolCall(runningTool.toolName, runningTool.arguments, state.nodes)
 			: null;
 
+	/** Opens the AI panel on a new chat, and the canvas's build view for a build. */
+	const openChat = (chatMode: 'build' | 'ask') => {
+		if (!state.ui.aiPanelOpen) {
+			dispatch({ type: 'TOGGLE_AI_PANEL' });
+		}
+
+		// Ask mode answers in the chat: there is no build to show on the canvas.
+		if (chatMode === 'build') dispatch({ type: 'SET_EMPTY_CANVAS_VIEW', view: 'chat-started' });
+	};
+
 	const handleGenerate = () => {
 		const cleanPrompt = prompt.trim();
 		if (!cleanPrompt && attachedFiles.length === 0) return;
@@ -133,14 +144,34 @@ const CanvasEmptyState = () => {
 		);
 		setAttachedFiles([]);
 		setIsAttachOpen(false);
-
-		if (!state.ui.aiPanelOpen) {
-			dispatch({ type: 'TOGGLE_AI_PANEL' });
-		}
-
-		// Ask mode answers in the chat: there is no build to show on the canvas.
-		if (mode === 'build') dispatch({ type: 'SET_EMPTY_CANVAS_VIEW', view: 'chat-started' });
+		openChat(mode);
 	};
+
+	// A description handed over by onboarding (`?build=`) is built straight
+	// away, once the chat is bound to this workflow, and only once.
+	const [searchParams, setSearchParams] = useSearchParams();
+	const buildRequest = searchParams.get(BUILD_FROM_DESCRIPTION_PARAM)?.trim() ?? '';
+	const chatWorkflowId = useAiChatStore((store) => store.workflowId);
+	const isChatBoundHere =
+		!!state.workflow.apiId && chatWorkflowId === String(state.workflow.apiId);
+	const hasStartedBuild = useRef(false);
+
+	useEffect(() => {
+		if (!buildRequest || !isChatBoundHere || hasStartedBuild.current) return;
+		hasStartedBuild.current = true;
+
+		setSearchParams(
+			(current) => {
+				const next = new URLSearchParams(current);
+				next.delete(BUILD_FROM_DESCRIPTION_PARAM);
+				return next;
+			},
+			{ replace: true },
+		);
+		startChat(buildRequest, 'build');
+		openChat('build');
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [buildRequest, isChatBoundHere]);
 
 	return (
 		<div className='pointer-events-none absolute inset-0 z-10 flex flex-col justify-between p-6 select-none'>

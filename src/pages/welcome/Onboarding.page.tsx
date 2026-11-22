@@ -1,5 +1,5 @@
-import OnboardingShell from './_partial/shell/OnboardingShell.partial';
+import OnboardingWizard from './_partial/OnboardingWizard.partial';
 
-const OnboardingPage = () => <OnboardingShell />;
+const OnboardingPage = () => <OnboardingWizard />;
 
 export default OnboardingPage;

@@ -4,6 +4,7 @@ export * from './envelope';
 export * from './errors';
 export * from './notify';
 export * from './auth-events';
+export * from './upgrade-events';
 export * from './query-client';
 export * from './keys';
 export * from './resource';
