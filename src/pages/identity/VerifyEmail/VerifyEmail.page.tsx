@@ -10,6 +10,15 @@ import Spinner from '@/components/ui/Spinner';
 import pages from '@/Routes/pages';
 import { messageFromError } from '@/api/core';
 
+/**
+ * Failure outcomes the API's verify-email link redirects here with as `?status=`.
+ * Any status not listed here and not a success is treated as invalid below.
+ */
+const FAILED_STATUS_MESSAGES: Record<string, string> = {
+	expired: 'This verification link has expired. Sign in and request a new one.',
+	invalid: 'This verification link is invalid. Sign in and request a new one.',
+};
+
 const EmailVerifiedPage = () => {
 	const navigate = useNavigate();
 	const [searchParams] = useSearchParams();
@@ -21,8 +30,15 @@ const EmailVerifiedPage = () => {
 	const id = searchParams.get('id');
 	const hash = searchParams.get('hash');
 
-	const [isVerified, setIsVerified] = useState(status === 'verified');
-	const [error, setError] = useState<string | null>(errorParam);
+	const isAlreadyVerified = status === 'already-verified';
+	const isSuccessStatus = status === 'verified' || isAlreadyVerified;
+	const [isVerified, setIsVerified] = useState(isSuccessStatus);
+	const [error, setError] = useState<string | null>(() => {
+		if (errorParam) return errorParam;
+		if (isSuccessStatus) return null;
+		if (status) return FAILED_STATUS_MESSAGES[status] ?? FAILED_STATUS_MESSAGES.invalid;
+		return !id || !hash ? FAILED_STATUS_MESSAGES.invalid : null;
+	});
 	const [isLoading, setIsLoading] = useState(!isVerified && !error && !!id && !!hash);
 
 	const hasVerifiedRef = useRef(false);
@@ -106,11 +122,12 @@ const EmailVerifiedPage = () => {
 							<div className='grid gap-y-6 text-center'>
 								<div>
 									<h1 className='block text-2xl font-bold text-zinc-800 dark:text-white'>
-										Email verified!
+										{isAlreadyVerified ? 'Already verified' : 'Email verified!'}
 									</h1>
 									<p className='mt-2 text-sm text-zinc-600 dark:text-zinc-400'>
-										Your email address has been successfully verified. You now
-										have full access to your account and workspaces.
+										{isAlreadyVerified
+											? 'Your email address was already verified. You have full access to your account and workspaces.'
+											: 'Your email address has been successfully verified. You now have full access to your account and workspaces.'}
 									</p>
 								</div>
 
