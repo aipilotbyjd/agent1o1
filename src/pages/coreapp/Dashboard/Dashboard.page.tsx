@@ -1,5 +1,5 @@
 import { activateOnKey } from '@/utils/activateOnKey.util';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useOutletContext, useNavigate, useParams } from 'react-router';
 import { motion } from 'framer-motion';
 import {
@@ -89,6 +89,9 @@ const TONES = {
 	rose: 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400',
 	blue: 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400',
 } as const;
+
+/** How long after signup the dashboard greets someone as new rather than returning. */
+const NEW_USER_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 const DashboardPage = () => {
 	const { setHeaderLeft } = useOutletContext<OutletContextType>();
@@ -190,6 +193,11 @@ const DashboardPage = () => {
 	const activeWorkspace =
 		workspaces.find((w) => String(w.id) === String(currentWorkspaceId)) || workspaces[0];
 	const userName = userData?.firstName || userData?.name?.split(' ')[0] || 'there';
+	// A user who signed up in the last day has not been here before, so "back" is wrong.
+	const [openedAt] = useState(() => Date.now());
+	const isNewUser =
+		!!userData?.created_at &&
+		openedAt - new Date(userData.created_at).getTime() < NEW_USER_WINDOW_MS;
 
 	useEffect(() => {
 		setHeaderLeft(<Breadcrumb list={[{ ...pages.workspace.subPages!.dashboard }]} />);
@@ -238,7 +246,7 @@ const DashboardPage = () => {
 					<div className='relative flex flex-col justify-between gap-6 md:flex-row md:items-center'>
 						<div className='flex-1 space-y-4'>
 							<h1 className='flex flex-wrap items-center gap-2 text-2xl font-black tracking-tight text-slate-900 md:text-3xl dark:text-white'>
-								Welcome back,{' '}
+								{isNewUser ? 'Welcome,' : 'Welcome back,'}{' '}
 								<span className='dark:from-primary-400 dark:to-primary-300 text-slate-900 dark:bg-gradient-to-r dark:bg-clip-text dark:text-transparent'>
 									{userName}
 								</span>

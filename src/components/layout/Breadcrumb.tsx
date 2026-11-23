@@ -5,6 +5,8 @@ import Icon from '@/components/icon/Icon';
 import { Link, useNavigate } from 'react-router';
 import Dropdown, { DropdownItem, DropdownMenu, DropdownToggle } from '@/components/ui/Dropdown';
 import Button from '@/components/ui/Button';
+import useResolvePath from '@/hooks/useResolvePath';
+import pages from '@/Routes/pages';
 
 interface IBreadcrumbItemProps {
 	text: string;
@@ -14,11 +16,18 @@ interface IBreadcrumbItemProps {
 interface IBreadcrumbProps {
 	className?: string;
 	list: IBreadcrumbItemProps[];
+	/** Defaults to the current workspace's dashboard. */
 	homePath?: string;
 }
 const Breadcrumb: FC<IBreadcrumbProps> = (props) => {
-	const { className, list, homePath = '/sales' } = props;
+	const { className, list } = props;
 	const navigate = useNavigate();
+	const { workspaceId, resolvePath } = useResolvePath();
+	// Page paths are templates (`/:workspaceId/agents`); without the id filled in
+	// a crumb points at a literal `/:workspaceId/...` URL.
+	const homePath = resolvePath(
+		props.homePath ?? (workspaceId ? pages.workspace.subPages!.dashboard.to : pages.choose.to),
+	);
 
 	return (
 		<div
@@ -47,7 +56,7 @@ const Breadcrumb: FC<IBreadcrumbProps> = (props) => {
 									key={item.text}
 									className='last:hidden'
 									icon={item.icon}>
-									<Link to={item.to}>{item.text}</Link>
+									<Link to={resolvePath(item.to)}>{item.text}</Link>
 								</DropdownItem>
 							);
 						}
@@ -68,7 +77,7 @@ const Breadcrumb: FC<IBreadcrumbProps> = (props) => {
 
 				if (item.to) {
 					return (
-						<Link key={item.text} className={className} to={item.to}>
+						<Link key={item.text} className={className} to={resolvePath(item.to)}>
 							{item.icon && <Icon icon={item.icon} />}
 							<div className='truncate max-md:max-w-32'>{item.text}</div>
 						</Link>
