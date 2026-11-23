@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useVerifyEmail } from '@/api/modules/auth';
 import { useAuth } from '@/context/auth';
+import AppLogo from '@/components/AppLogo';
 import Wordmark from '@/components/common/Wordmark';
 import Card, { CardBody } from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
@@ -79,7 +80,13 @@ const EmailVerifiedPage = () => {
 			<div className='mx-auto w-full max-w-md p-6'>
 				<Card>
 					<CardBody className='p-8!'>
-						<div className='mb-8 flex w-full items-center justify-center'>
+						<div className='mb-8 flex w-full items-center justify-center gap-2'>
+							<AppLogo
+								variant='light'
+								className='ring-primary-500/25 size-9 shadow-[0_4px_12px_-2px_rgb(183_229_47/0.4)] ring-1'
+								rounded='rounded-xl'
+								alt=''
+							/>
 							<Wordmark size='lg' />
 						</div>
 
